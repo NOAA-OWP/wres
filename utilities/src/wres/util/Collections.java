@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NavigableMap;
+import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.TreeSet;
@@ -263,23 +264,25 @@ public final class Collections
      * 
      * Equality is determined by using o.equals rather than ==
      * @param <U> the type of object in the array
-     * @param array The array to search
      * @param value The value to find
+     * @param array The array to search
      * @return Boolean indicating whether or not the indicated value exists within the
      * indicated array
      */
-    public static <U> boolean contains(final U[] array, final U value)
+    public static <U> boolean in( final U value, final U[] array )
     {
-        boolean has_object = false;
+        boolean hasObject = false;
 
         for (U arrayValue : array) {
-            if (arrayValue.equals(value)) {
-                has_object = true;
+            if (( Objects.isNull(value) && Objects.isNull( arrayValue )) ||
+                arrayValue.equals(value))
+            {
+                hasObject = true;
                 break;
             }
         }
         
-        return has_object;
+        return hasObject;
     }
 
     /**

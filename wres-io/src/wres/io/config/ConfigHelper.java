@@ -309,19 +309,6 @@ public class ConfigHelper
                               t1Description );
             }
 
-            if ( Strings.hasValue( feature.getHuc() ) &&
-                 Strings.hasValue( t1.getHuc() ) )
-            {
-                return feature.getHuc().compareTo( t1.getHuc() );
-            }
-            else
-            {
-                LOGGER.trace( "Either {} and {} have the same huc or "
-                              + "one or both of them don't have one.",
-                              featureDescription,
-                              t1Description );
-            }
-
             if ( Strings.hasValue( feature.getGageId() ) &&
                  Strings.hasValue( t1.getGageId() ) )
             {
@@ -1586,7 +1573,7 @@ public class ConfigHelper
      * 
      * @param projectConfig the project configuration
      * @param mutate the map of results to mutate
-     * @param second the second map
+     * @param group The group of metrics to add the threshold to
      * @param units the optional units associated with the threshold values
      * @throws MetricConfigException if the metric configuration is invalid
      * @throws NullPointerException if any input is null
@@ -1632,7 +1619,7 @@ public class ConfigHelper
     }
 
     /**
-     * Reads a {@link ThresholdConfig} and returns a corresponding {@link Set} of external {@link Threshold}
+     * Reads a {@link ThresholdsConfig} and returns a corresponding {@link Set} of external {@link Threshold}
      * by {@link FeaturePlus}.
      * 
      * @param threshold the threshold configuration

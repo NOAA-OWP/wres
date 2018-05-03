@@ -3,6 +3,7 @@ package wres.io.reading.nwm;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collections;
 import java.util.HashSet;
@@ -30,11 +31,13 @@ import wres.io.config.ConfigHelper;
 import wres.io.config.SystemSettings;
 import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Ensembles;
+import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
 import wres.io.data.details.SourceDetails;
 import wres.io.data.details.TimeSeries;
 import wres.io.utilities.Database;
+import wres.io.utilities.ScriptBuilder;
 import wres.util.NetCDF;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
@@ -274,8 +277,7 @@ class VectorNWMValueSaver extends WRESRunnable
      * @throws IOException Thrown if communication with the source file failed
      * @throws SQLException Thrown if an error occurred while accessing the database
      */
-    private Integer getSourceID()
-            throws IOException, SQLException
+    private Integer getSourceID() throws IOException, SQLException
     {
         if (this.sourceID == null)
         {
@@ -658,36 +660,16 @@ class VectorNWMValueSaver extends WRESRunnable
         synchronized ( VectorNWMValueSaver.addedVariables)
         {
             // Only add variable positions for variables that haven't had positions
-            // added in this session. It doesn't scale well.
+            // added in this session. If we don't do this, each file will attempt
+            // to create their own variable positions. We only want this done
+            // once per variable.
             if ( !VectorNWMValueSaver.addedVariables.contains( this.getVariableID() ) )
             {
-                // Build a script to add an entry to wres.VariablePosition for each
-                // variable and each location in the database that we can tie to a
-                // NetCDF index that does not exist
-                StringBuilder script = new StringBuilder();
-
-                script.append(
-                        "INSERT INTO wres.VariablePosition (variable_id, x_position)" )
-                      .append( NEWLINE );
-                script.append( "SELECT " )
-                      .append( this.getVariableID() )
-                      .append( ", F.feature_id" )
-                      .append( NEWLINE );
-                script.append( "FROM wres.Feature F" ).append( NEWLINE );
-                script.append( "WHERE F.nwm_index IS NOT NULL" )
-                      .append( NEWLINE );
-                script.append( "     AND NOT EXISTS (" ).append( NEWLINE );
-                script.append( "         SELECT 1" ).append( NEWLINE );
-                script.append( "         FROM wres.VariablePosition VP" )
-                      .append( NEWLINE );
-                script.append( "         WHERE VP.variable_id = " )
-                      .append( this.getVariableID() )
-                      .append( NEWLINE );
-                script.append( "             AND VP.x_position = F.feature_id" )
-                      .append( NEWLINE );
-                script.append( ");" );
-
-                Database.execute( script.toString() );
+                // TODO: The schema is currently set to handle vector NetCDF
+                // data set up through NHDPlus coordinate information. We need
+                // a way of handling non-NHDPlus coordinates (if that is thing
+                // that is used).
+                Features.addNHDPlusVariablePositions(this.getVariableID());
                 VectorNWMValueSaver.addedVariables.add( this.getVariableID() );
             }
         }
@@ -834,12 +816,11 @@ class VectorNWMValueSaver extends WRESRunnable
                      || !VectorNWMValueSaver.indexMapping.containsKey( key ) )
                 {
                     // Add all missing locations for variables
-                    // TODO: Implement mechanism to ensure this only occurs once
                     this.addVariablePositions();
 
                     String keyLabel = "nwm_index";
                     String valueLabel;
-                    String script;
+                    ScriptBuilder script = new ScriptBuilder(  );
 
                     if ( this.isForecast() )
                     {
@@ -850,44 +831,48 @@ class VectorNWMValueSaver extends WRESRunnable
                         // valid location for each time series for this set
                         // of data
                         valueLabel = "timeseries_id";
-                        script =
-                                "SELECT F.nwm_index, TS.timeseries_id" + NEWLINE
-                                +
-                                "FROM wres.TimeSeries TS" + NEWLINE +
-                                "INNER JOIN wres.VariablePosition VP"
-                                + NEWLINE +
-                                "     ON VP.variableposition_id = TS.variableposition_id"
-                                + NEWLINE +
-                                "INNER JOIN wres.ForecastSource FS" +
-                                NEWLINE +
-                                "       ON FS.forecast_id = TS.timeseries_id"
-                                + NEWLINE +
-                                "INNER JOIN wres.Feature F" + NEWLINE +
-                                "     ON F.feature_id = VP.x_position" + NEWLINE
-                                +
-                                "WHERE TS.initialization_date = '" +
-                                NetCDF.getInitializedTime( this.getSource() ) + "'"
-                                + NEWLINE +
-                                "     AND F.nwm_index IS NOT NULL;";
+                        script.addLine("SELECT F.", keyLabel, ", TS.", valueLabel);
+                        script.addLine("FROM wres.TimeSeries TS");
+                        script.addLine("INNER JOIN (");
+                        script.addTab().addLine("SELECT VP.variableposition_id, F.nwm_index");
+                        script.addTab().addLine("FROM wres.Feature F");
+                        script.addTab().addLine("INNER JOIN wres.VariablePosition VP");
+                        script.addTab(  2  ).addLine("ON VP.x_position = F.feature_id");
+                        script.addTab().addLine("WHERE F.nwm_index IS NOT NULL");
+                        script.addTab(  2  ).addLine("AND VP.variable_id = ", this.getVariableID());
+                        script.addLine(") AS F");
+                        script.addTab().addLine("ON F.variableposition_id = TS.variableposition_id");
+                        script.addLine("WHERE TS.initialization_date = '", initializationTime, "'");
+                        script.addTab().addLine("AND TS.ensemble_id = ", ensembleID);
+                        script.addTab().addLine("AND EXISTS (");
+                        script.addTab(  2  ).addLine("SELECT 1");
+                        script.addTab(  2  ).addLine("FROM wres.ForecastSource FS");
+                        script.addTab(  2  ).addLine("INNER JOIN (");
+                        script.addTab(   3   ).addLine("SELECT S.source_id");
+                        script.addTab(   3   ).addLine("FROM wres.Source S");
+                        script.addTab(   3   ).addLine("WHERE S.output_time = '", NetCDF.getInitializedTime( this.getSource() ), "'");
+                        script.addTab(  2  ).addLine(") AS S");
+                        script.addTab(   3   ).addLine("ON S.source_id = FS.source_id");
+                        script.addTab(  2  ).addLine("LEFT OUTER JOIN wres.ProjectSource PS");
+                        script.addTab(   3   ).addLine("ON PS.source_id = FS.source_id");
+                        script.addTab(  2  ).addLine("WHERE NOT EXISTS (");
+                        script.addTab(   3   ).addLine("SELECT 1");
+                        script.addTab(   3   ).addLine("FROM wres.ProjectSource PS");
+                        script.addTab(   3   ).addLine("WHERE PS.source_id = S.source_id");
+                        script.addTab(  2  ).addLine(")");
+                        script.addTab(   3   ).addLine("AND FS.forecast_id = TS.timeseries_id;");
                     }
                     else
                     {
                         // Form a script that will map each variable position
                         // to each valid location for the variable in question
                         valueLabel = "variableposition_id";
-                        script = "SELECT " + keyLabel + ", " + valueLabel
-                                 + NEWLINE +
-                                 "FROM wres.VariablePosition VP"
-                                 + NEWLINE +
-                                 "INNER JOIN wres.Feature F"
-                                 + NEWLINE +
-                                 "  ON F.feature_id = VP.x_position"
-                                 + NEWLINE +
-                                 "WHERE F.nwm_index IS NOT null"
-                                 + NEWLINE +
-                                 "  AND VP.variable_id = "
-                                 + this.getVariableID()
-                                 + ";";
+                        script.addLine("SELECT ", keyLabel, ", ", valueLabel);
+                        script.addLine("FROM wres.VariablePosition VP");
+                        script.addLine("INNER JOIN wres.Feature F");
+                        script.addTab().addLine("ON F.feature_id = VP.x_position");
+                        script.addLine("WHERE F.nwm_index IS NOT NULL");
+                        script.addTab().addLine("AND VP.variable_id = ", this.getVariableID(), ";");
                     }
 
                     // If a map hasn't been created yet, create it
@@ -901,11 +886,9 @@ class VectorNWMValueSaver extends WRESRunnable
                     Map<Integer, Integer> currentVariableIndices =
                             new ConcurrentHashMap<>();
 
-                    // Populate the newly created map with the generated script
-                    Database.populateMap( currentVariableIndices,
-                                          script,
-                                          keyLabel,
-                                          valueLabel );
+                    script.consume( ( ResultSet results ) -> {
+                        currentVariableIndices.put(results.getInt( keyLabel), results.getInt(valueLabel));
+                    } );
 
                     // Add the populated map to the overal collection
                     VectorNWMValueSaver.indexMapping.put( key,

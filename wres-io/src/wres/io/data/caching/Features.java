@@ -36,6 +36,7 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
 
     private static final Object DETAIL_LOCK = new Object();
     private static final Object KEY_LOCK = new Object();
+    private static final Object POSITION_LOCK = new Object();
 
     @Override
     protected Object getDetailLock()
@@ -581,13 +582,76 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
     public static Integer getVariablePositionIDByLID(String lid, Integer variableID)
             throws SQLException
     {
-        return Features.getDetailsByLID( lid ).getVariablePositionID( variableID );
+        FeatureDetails featureDetails = Features.getDetailsByLID( lid );
+        return Features.getVariablePositionByFeature( featureDetails, variableID );
     }
 
     public static Integer getVariablePositionID(Feature feature, Integer variableID)
             throws SQLException
     {
-        return Features.getDetails( feature ).getVariablePositionID( variableID );
+        FeatureDetails featureDetails = Features.getDetails( feature );
+        return Features.getVariablePositionByFeature( featureDetails, variableID );
+    }
+
+    public static Integer getVariablePositionByFeature(FeatureDetails featureDetails, Integer variableId) throws SQLException
+    {
+        synchronized ( Features.POSITION_LOCK )
+        {
+            Integer id = featureDetails.getVariablePositionID( variableId );
+
+            if (id == null)
+            {
+                ScriptBuilder script = new ScriptBuilder(  );
+
+                script.addLine("WITH new_variableposition_id AS");
+                script.addLine("(");
+                script.addTab().addLine("INSERT INTO wres.VariablePosition (variable_id, x_position)");
+                script.addTab().addLine("SELECT ", variableId, ", ", featureDetails.getId());
+                script.addTab().addLine("WHERE NOT EXISTS (");
+                script.addTab(  2  ).addLine("SELECT 1");
+                script.addTab(  2  ).addLine("FROM wres.VariablePosition VP");
+                script.addTab(  2  ).addLine("WHERE VP.variable_id = ", variableId);
+                script.addTab(   3   ).addLine("AND VP.x_position = ", featureDetails.getId());
+                script.addTab().addLine(")");
+                script.addTab().addLine("RETURNING variableposition_id");
+                script.addLine(")");
+                script.addLine("SELECT variableposition_id");
+                script.addLine("FROM new_variableposition_id");
+                script.addLine();
+                script.addLine("UNION");
+                script.addLine();
+                script.addLine("SELECT variableposition_id");
+                script.addLine("FROM wres.VariablePosition VP");
+                script.addLine("WHERE VP.variable_id = ", variableId);
+                script.addTab().addLine("AND VP.x_position = ", featureDetails.getId(), ";");
+
+                id = script.retrieve( "variableposition_id" );
+
+                featureDetails.addVariablePosition( variableId, id );
+            }
+
+            return id;
+        }
+    }
+
+    public static void addNHDPlusVariablePositions(Integer variableId)
+            throws SQLException
+    {
+        synchronized ( Features.POSITION_LOCK )
+        {
+            ScriptBuilder script = new ScriptBuilder(  );
+            script.addLine("INSERT INTO wres.VariablePosition (variable_id, x_position)");
+            script.addLine("SELECT ", variableId, ", F.feature_id");
+            script.addLine("FROM wres.Feature F");
+            script.addLine("WHERE F.nwm_index IS NOT NULL");
+            script.addTab().addLine("AND NOT EXISTS (");
+            script.addTab(  2  ).addLine("SELECT 1");
+            script.addTab(  2  ).addLine("FROM wres.VariablePosition VP");
+            script.addTab(  2  ).addLine("WHERE VP.variable_id = ", variableId);
+            script.addTab(   3   ).addLine("AND VP.x_position = F.feature_id");
+            script.addTab().addLine(");");
+            script.execute();
+        }
     }
 	
 	@Override

@@ -139,6 +139,11 @@ public final class ScriptGenerator
         script.addTab(   3   ).addLine("WHERE PS.project_id = ", projectDetails.getId());
         script.addTab(    4    ).addLine("AND PS.member = 'right'");
         script.addTab(    4    ).addLine("AND TS.variableposition_id = VP.variableposition_id");
+        script.addTab(    4    ).addLine("AND EXISTS (");
+        script.addTab(     5     ).addLine("SELECT 1");
+        script.addTab(     5     ).addLine("FROM wres.ForecastValue FV");
+        script.addTab(     5     ).addLine("WHERE FV.timeseries_id = TS.timeseries_id");
+        script.addTab(    4    ).addLine(")");
         script.addTab(   3   ).addLine(")");
         script.addTab().addLine("GROUP BY VP.variableposition_id, F.feature_id");
         script.addLine(")");

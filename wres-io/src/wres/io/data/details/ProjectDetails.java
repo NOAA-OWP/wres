@@ -2122,29 +2122,39 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
 
         while (!futureOffsets.isEmpty())
         {
+            // Get the key for the first feature offset being evaluated
             FeatureDetails.FeatureKey key = ( FeatureDetails.FeatureKey)futureOffsets.keySet().toArray()[0];
+
+            // Remove that first feature from the map/queue
             Future<Integer> futureOffset = futureOffsets.remove( key );
+
+            // Determine the feature definition for the offset
             Feature feature = new FeatureDetails( key ).toFeature();
             Integer offset;
             try
             {
                 LOGGER.trace( "Loading the offset for '{}'", ConfigHelper.getFeatureDescription( feature ));
 
+                // If the current task is the last/only task left to evaluate, wait for the result
                 if (futureOffsets.isEmpty())
                 {
                     offset = futureOffset.get();
                 }
                 else
                 {
+                    // Otherwise, give the offset 500 milliseconds before
+                    // quiting and moving on to another task
                     offset = futureOffset.get( 500, TimeUnit.MILLISECONDS );
                 }
 
+                // If the returned value doesn't exist, move on
                 if (offset == null)
                 {
                     continue;
                 }
                 LOGGER.trace("The offset was: {}", offset);
 
+                // Add the non-null value to the mapping with the feature as the key
                 this.leadOffsets.put(
                         feature,
                         offset
@@ -2163,6 +2173,8 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
             }
             catch ( TimeoutException e )
             {
+                // If the task took more than 500 milliseconds to evaluate, put
+                // it back into the queue and move on to the next one
                 LOGGER.trace("It took too long to get the offset for '{}'; "
                              + "moving on to another location while we wait "
                              + "for the output on this location",
@@ -2498,7 +2510,7 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
         {
             FeatureDetails feature = featureDetails.get();
             Integer variableId = this.getVariableId( dataSourceConfig );
-            Integer variablePositionId = feature.getVariablePositionID( variableId );
+            Integer variablePositionId = Features.getVariablePositionByFeature( feature, variableId );
             Integer arbitraryEnsembleId = Ensembles.getSingleEnsembleID(this.getId(), variablePositionId);
 
             String variablePositionClause = ConfigHelper.getVariablePositionClause(
