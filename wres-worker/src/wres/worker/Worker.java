@@ -1,35 +1,22 @@
 package wres.worker;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Paths;
-import java.security.KeyManagementException;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.UnrecoverableKeyException;
-import java.security.cert.CertificateException;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.TrustManagerFactory;
-import javax.net.ssl.X509TrustManager;
 
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.Channel;
 
 import com.rabbitmq.client.DefaultSaslConfig;
-import com.rabbitmq.client.SaslConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import wres.messages.BrokerHelper;
 
 /**
  * A long-running, light-weight process that takes a job from a queue, and runs
@@ -41,12 +28,6 @@ public class Worker
     private static final Logger LOGGER = LoggerFactory.getLogger( Worker.class );
     private static final String RECV_QUEUE_NAME = "wres.job";
 
-    private static final String BROKER_HOST_PROPERTY_NAME = "wres.broker";
-    private static final String DEFAULT_BROKER_HOST = "localhost";
-
-    private static final String BROKER_VHOST_PROPERTY_NAME = "wres.broker.vhost";
-    private static final String DEFAULT_BROKER_VHOST = "wres";
-
     private static final int BROKER_PORT = 5671;
 
     /**
@@ -57,14 +38,11 @@ public class Worker
      * @throws java.net.ConnectException when connection to queue fails.
      * @throws TimeoutException when connection to the queue times out.
      * @throws InterruptedException when interrupted while waiting for work.
-     * @throws NoSuchAlgorithmException when TLSv1.2 is unavailable
-     * @throws KeyManagementException when creating trust manager fails?
      * @throws IllegalStateException when setting up our custom trust list fails
      */
 
     public static void main( String[] args )
-            throws IOException, TimeoutException, InterruptedException,
-            NoSuchAlgorithmException, KeyManagementException
+            throws IOException, TimeoutException, InterruptedException
     {
         if ( args.length != 1 )
         {
@@ -84,8 +62,8 @@ public class Worker
         }
 
         // Determine the actual broker name, whether from -D or default
-        String brokerHost = Worker.getBrokerHost();
-        String brokerVhost = Worker.getBrokerVhost();
+        String brokerHost = BrokerHelper.getBrokerHost();
+        String brokerVhost = BrokerHelper.getBrokerVhost();
         LOGGER.info( "Using broker at host '{}'", brokerHost );
 
         // Get work from the queue
@@ -95,7 +73,7 @@ public class Worker
         factory.setPort( BROKER_PORT );
         factory.setSaslConfig( DefaultSaslConfig.EXTERNAL );
 
-        factory.useSslProtocol( Worker.getSSLContextWithClientCertificate() );
+        factory.useSslProtocol( BrokerHelper.getSSLContextWithClientCertificate() );
 
         try ( Connection connection = factory.newConnection();
               Channel receiveChannel = connection.createChannel() )
@@ -127,205 +105,5 @@ public class Worker
                 }
             }
         }
-    }
-
-    /**
-     * Helper to get the broker host name. Returns what was set in -D args
-     * or a default value if -D is not set.
-     * @return the broker host name to try connecting to.
-     */
-
-    private static String getBrokerHost()
-    {
-        String brokerFromDashD= System.getProperty( BROKER_HOST_PROPERTY_NAME );
-
-        if ( brokerFromDashD != null )
-        {
-            return brokerFromDashD;
-        }
-        else
-        {
-            return DEFAULT_BROKER_HOST;
-        }
-    }
-
-    /**
-     * Helper to get the broker vhost name. Returns what was set in -D args
-     * or a default value if -D is not set.
-     * @return the broker host name to try connecting to.
-     */
-
-    private static String getBrokerVhost()
-    {
-        String brokerVhostFromDashD= System.getProperty( BROKER_VHOST_PROPERTY_NAME );
-
-        if ( brokerVhostFromDashD != null )
-        {
-            return brokerVhostFromDashD;
-        }
-        else
-        {
-            return DEFAULT_BROKER_VHOST;
-        }
-    }
-
-    /**
-     * Return an X509 trust manager tied to our custom java trusted certificates
-     * @return the default trust manager
-     */
-    private static TrustManager getDefaultTrustManager()
-    {
-        KeyStore customTrustStore;
-        String ourCustomTrustFileName = "trustedCertificateAuthorities.jks";
-
-        try
-        {
-            customTrustStore = KeyStore.getInstance( "JKS" );
-        }
-        catch ( KeyStoreException kse )
-        {
-            throw new IllegalStateException( "Expected jdk to have KeyStore.getDefaultType()", kse );
-        }
-
-        InputStream customTrustStoreFile = Worker.class.getClassLoader()
-                                                       .getResourceAsStream( ourCustomTrustFileName );
-
-        try
-        {
-            customTrustStore.load( customTrustStoreFile,
-                                   "changeit".toCharArray() );
-        }
-        catch ( IOException | NoSuchAlgorithmException | CertificateException e )
-        {
-            throw new IllegalStateException( "Could not open " + ourCustomTrustFileName, e );
-        }
-
-        TrustManagerFactory trustManagerFactory;
-        String algorithm = "PKIX";
-
-        try
-        {
-            trustManagerFactory = TrustManagerFactory.getInstance( algorithm );
-        }
-        catch ( NoSuchAlgorithmException nsae )
-        {
-            throw new IllegalStateException( "No " + algorithm + " algorithm existed.", nsae );
-        }
-
-        try
-        {
-            trustManagerFactory.init( customTrustStore );
-        }
-        catch ( KeyStoreException kse )
-        {
-            throw new IllegalStateException( "Could not initialize trust manager factory.", kse );
-        }
-
-        for ( TrustManager trustManager : trustManagerFactory.getTrustManagers() )
-        {
-            if ( trustManager instanceof X509TrustManager )
-            {
-                return trustManager;
-            }
-        }
-
-        throw new IllegalStateException( "No trust manager was found." );
-    }
-
-
-    /**
-     * Get an SSLContext that is set up with a wres-worker client certificate,
-     * used to authenticate to the wres-broker
-     * @return SSLContext ready to go for connecting to the broker
-     * @throws IllegalStateException when anything goes wrong setting up
-     * keystores, trust managers, factories, reading files, parsing certificate,
-     * decrypting contents, etc.
-     */
-
-    private static SSLContext getSSLContextWithClientCertificate()
-    {
-        String ourClientCertificateFilename = "wres-worker_client_private_key_and_x509_cert.p12";
-        char[] keyPassphrase = "wres-worker-passphrase".toCharArray();
-        KeyStore keyStore;
-
-        try
-        {
-            keyStore = KeyStore.getInstance( "PKCS12" );
-        }
-        catch ( KeyStoreException kse )
-        {
-            throw new IllegalStateException( "WRES expected JVM to be able to read PKCS#12 keystores.",
-                                             kse );
-        }
-
-        try
-        {
-            InputStream clientCertificateInputStream = new FileInputStream( ourClientCertificateFilename );
-            keyStore.load( clientCertificateInputStream, keyPassphrase );
-        }
-        catch ( IOException | NoSuchAlgorithmException | CertificateException e )
-        {
-            throw new IllegalStateException( "WRES expected to find a file '"
-                                             + ourClientCertificateFilename
-                                             + "' with PKCS#12 format, with"
-                                             + " both a client certificate AND"
-                                             + " the private key inside, used "
-                                             + "to authenticate to the broker.",
-                                             e );
-        }
-
-        KeyManagerFactory keyManagerFactory;
-
-        try
-        {
-            keyManagerFactory = KeyManagerFactory.getInstance( "SunX509" );
-        }
-        catch ( NoSuchAlgorithmException nsae )
-        {
-            throw new IllegalStateException( "WRES expected JVM to have SunX509.",
-                                             nsae );
-        }
-
-        try
-        {
-            keyManagerFactory.init( keyStore, keyPassphrase );
-        }
-        catch ( KeyStoreException | NoSuchAlgorithmException | UnrecoverableKeyException e )
-        {
-            throw new IllegalStateException( "WRES expected to be able to read "
-                                             + "and decrypt the file '"
-                                             + ourClientCertificateFilename +
-                                             "'.",
-                                             e );
-        }
-
-        SSLContext sslContext;
-        String protocol = "TLSv1.2";
-
-        try
-        {
-            sslContext = SSLContext.getInstance( protocol );
-        }
-        catch ( NoSuchAlgorithmException nsae )
-        {
-            throw new IllegalStateException( "WRES expected to be able to use protocol '"
-                                             + protocol + "'",
-                                             nsae );
-        }
-
-        TrustManager[] trustManagers = { Worker.getDefaultTrustManager() };
-
-        try
-        {
-            sslContext.init( keyManagerFactory.getKeyManagers(),
-                             trustManagers,
-                             null );
-        }
-        catch ( KeyManagementException kme )
-        {
-            throw new IllegalStateException( "WRES expected to be able to initialize SSLContext.", kme );
-        }
-
-        return sslContext;
     }
 }
