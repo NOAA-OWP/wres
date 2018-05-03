@@ -18,4 +18,7 @@ WORKDIR /etc/rabbitmq
 COPY nonsrc/rabbitmq.conf .
 COPY nonsrc/definitions.json .
 
+# Enable authentication with x509 client certificates (requires some conf too):
+RUN rabbitmq-plugins enable --offline rabbitmq_auth_mechanism_ssl
+
 USER wres_docker

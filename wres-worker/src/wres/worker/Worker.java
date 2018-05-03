@@ -1,6 +1,7 @@
 package wres.worker;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Paths;
@@ -8,12 +9,15 @@ import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
@@ -22,6 +26,8 @@ import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.Channel;
 
+import com.rabbitmq.client.DefaultSaslConfig;
+import com.rabbitmq.client.SaslConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -87,8 +93,9 @@ public class Worker
         factory.setHost( brokerHost );
         factory.setVirtualHost( brokerVhost );
         factory.setPort( BROKER_PORT );
+        factory.setSaslConfig( DefaultSaslConfig.EXTERNAL );
 
-        factory.useSslProtocol( "TLSv1.2", Worker.getDefaultTrustManager() );
+        factory.useSslProtocol( Worker.getSSLContextWithClientCertificate() );
 
         try ( Connection connection = factory.newConnection();
               Channel receiveChannel = connection.createChannel() )
@@ -173,7 +180,7 @@ public class Worker
 
         try
         {
-            customTrustStore = KeyStore.getInstance( KeyStore.getDefaultType() );
+            customTrustStore = KeyStore.getInstance( "JKS" );
         }
         catch ( KeyStoreException kse )
         {
@@ -223,5 +230,102 @@ public class Worker
         }
 
         throw new IllegalStateException( "No trust manager was found." );
+    }
+
+
+    /**
+     * Get an SSLContext that is set up with a wres-worker client certificate,
+     * used to authenticate to the wres-broker
+     * @return SSLContext ready to go for connecting to the broker
+     * @throws IllegalStateException when anything goes wrong setting up
+     * keystores, trust managers, factories, reading files, parsing certificate,
+     * decrypting contents, etc.
+     */
+
+    private static SSLContext getSSLContextWithClientCertificate()
+    {
+        String ourClientCertificateFilename = "wres-worker_client_private_key_and_x509_cert.p12";
+        char[] keyPassphrase = "wres-worker-passphrase".toCharArray();
+        KeyStore keyStore;
+
+        try
+        {
+            keyStore = KeyStore.getInstance( "PKCS12" );
+        }
+        catch ( KeyStoreException kse )
+        {
+            throw new IllegalStateException( "WRES expected JVM to be able to read PKCS#12 keystores.",
+                                             kse );
+        }
+
+        try
+        {
+            InputStream clientCertificateInputStream = new FileInputStream( ourClientCertificateFilename );
+            keyStore.load( clientCertificateInputStream, keyPassphrase );
+        }
+        catch ( IOException | NoSuchAlgorithmException | CertificateException e )
+        {
+            throw new IllegalStateException( "WRES expected to find a file '"
+                                             + ourClientCertificateFilename
+                                             + "' with PKCS#12 format, with"
+                                             + " both a client certificate AND"
+                                             + " the private key inside, used "
+                                             + "to authenticate to the broker.",
+                                             e );
+        }
+
+        KeyManagerFactory keyManagerFactory;
+
+        try
+        {
+            keyManagerFactory = KeyManagerFactory.getInstance( "SunX509" );
+        }
+        catch ( NoSuchAlgorithmException nsae )
+        {
+            throw new IllegalStateException( "WRES expected JVM to have SunX509.",
+                                             nsae );
+        }
+
+        try
+        {
+            keyManagerFactory.init( keyStore, keyPassphrase );
+        }
+        catch ( KeyStoreException | NoSuchAlgorithmException | UnrecoverableKeyException e )
+        {
+            throw new IllegalStateException( "WRES expected to be able to read "
+                                             + "and decrypt the file '"
+                                             + ourClientCertificateFilename +
+                                             "'.",
+                                             e );
+        }
+
+        SSLContext sslContext;
+        String protocol = "TLSv1.2";
+
+        try
+        {
+            sslContext = SSLContext.getInstance( protocol );
+        }
+        catch ( NoSuchAlgorithmException nsae )
+        {
+            throw new IllegalStateException( "WRES expected to be able to use protocol '"
+                                             + protocol + "'",
+                                             nsae );
+        }
+
+        TrustManager[] trustManagers = { Worker.getDefaultTrustManager() };
+
+        try
+        {
+            sslContext.init( keyManagerFactory.getKeyManagers(),
+                             trustManagers,
+                             null );
+        }
+        catch ( KeyManagementException kme )
+        {
+            throw new IllegalStateException( "WRES expected to be able to initialize SSLContext.", kme );
+        }
+
+        return sslContext;
     }
 }
