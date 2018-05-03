@@ -23,6 +23,12 @@ public class BrokerHelper
     private static final String BROKER_VHOST_PROPERTY_NAME = "wres.broker.vhost";
     private static final String DEFAULT_BROKER_VHOST = "wres";
 
+    public enum Role
+    {
+        WORKER,
+        TASKER
+    }
+
     private BrokerHelper()
     {
         // Static helper class, no construction
@@ -142,10 +148,13 @@ public class BrokerHelper
      * decrypting contents, etc.
      */
 
-    public static SSLContext getSSLContextWithClientCertificate()
+    public static SSLContext getSSLContextWithClientCertificate( Role role )
     {
-        String ourClientCertificateFilename = "wres-worker_client_private_key_and_x509_cert.p12";
-        char[] keyPassphrase = "wres-worker-passphrase".toCharArray();
+        String ourClientCertificateFilename = "wres-" + role.name()
+                                                            .toLowerCase()
+                                              + "_client_private_key_and_x509_cert.p12";
+        char[] keyPassphrase = ("wres-" + role.name().toLowerCase()
+                                + "-passphrase").toCharArray();
         KeyStore keyStore;
 
         try

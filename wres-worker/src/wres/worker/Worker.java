@@ -73,7 +73,8 @@ public class Worker
         factory.setPort( BROKER_PORT );
         factory.setSaslConfig( DefaultSaslConfig.EXTERNAL );
 
-        factory.useSslProtocol( BrokerHelper.getSSLContextWithClientCertificate() );
+        factory.useSslProtocol( BrokerHelper.getSSLContextWithClientCertificate(
+                BrokerHelper.Role.WORKER) );
 
         try ( Connection connection = factory.newConnection();
               Channel receiveChannel = connection.createChannel() )
