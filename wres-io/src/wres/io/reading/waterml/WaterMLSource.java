@@ -252,7 +252,7 @@ public class WaterMLSource
             FeatureDetails feature = Features.getDetailsByGageID( gageId );
             this.variablePositionIDs.put(
                     gageId,
-                    feature.getVariablePositionID( this.variableId )
+                    Features.getVariablePositionByFeature( feature, this.variableId )
             );
         }
         return this.variablePositionIDs.get(gageId);

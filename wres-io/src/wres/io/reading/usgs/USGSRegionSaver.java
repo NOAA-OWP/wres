@@ -30,6 +30,7 @@ import wres.io.concurrency.WRESCallable;
 import wres.io.config.ConfigHelper;
 import wres.io.config.SystemSettings;
 import wres.io.data.caching.DataSources;
+import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.USGSParameters;
 import wres.io.data.caching.Variables;
@@ -686,8 +687,11 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
                                                                        gageID ) );
 
             this.variablePositionIDs.put( gageID,
-                                          details.getVariablePositionID(
-                                                  this.getVariableID() ) );
+                                          Features.getVariablePositionByFeature(
+                                                  details,
+                                                  this.getVariableID()
+                                          )
+            );
         }
 
         return this.variablePositionIDs.get( gageID );

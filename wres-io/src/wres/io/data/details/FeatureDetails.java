@@ -181,62 +181,23 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
     }
 	
 	/**
-	 * Finds the variable position id of the feature for a given variable. A position is
-	 * added if there is not one for this pair of variable and feature
+	 * Retrieves the stored variable position id for the given variable
 	 * @param variableID The ID of the variable to look for
-	 * @return The id of the variable position mapping the feature to the variable
-	 * @throws SQLException if the attempt to find the position fails
+	 * @return The id of the variable position mapping the feature to the
+     * variable, null if an ID has not been added for the variable
 	 */
-	public Integer getVariablePositionID(Integer variableID) throws SQLException
+	public Integer getVariablePositionID(Integer variableID)
 	{
-		Integer id;
-
 		synchronized (POSITION_LOCK)
         {
-			if (!variablePositions.containsKey(variableID))
-			{
-                String script = "";
-
-                script += "WITH new_variableposition_id AS" + NEWLINE;
-                script += "(" + NEWLINE;
-                script += "		INSERT INTO wres.VariablePosition (variable_id, x_position)" + NEWLINE;
-                script += "		SELECT " + variableID + ", " + getId() + NEWLINE;
-                script += "		WHERE NOT EXISTS (" + NEWLINE;
-                script += "			SELECT 1" + NEWLINE;
-                script += "			FROM wres.VariablePosition VP" + NEWLINE;
-                script += "			WHERE VP.variable_id = " + variableID + NEWLINE;
-                script += "				AND VP.x_position = " + getId() + NEWLINE;
-                script += "		)" + NEWLINE;
-                script += "		RETURNING variableposition_id" + NEWLINE;
-                script += ")" + NEWLINE;
-                script += "SELECT variableposition_id" + NEWLINE;
-                script += "FROM new_variableposition_id" + NEWLINE + NEWLINE;
-                script += "";
-                script += "UNION" + NEWLINE + NEWLINE;
-                script += "";
-                script += "SELECT variableposition_id" + NEWLINE;
-                script += "FROM wres.VariablePosition VP" + NEWLINE;
-                script += "WHERE VP.variable_id = " + variableID + NEWLINE;
-                script += "		AND VP.x_position = " + getId() + ";";
-
-                Integer dbResult = Database.getResult(script, "variableposition_id");
-
-                if ( dbResult == null )
-                {
-                    throw new InconsistentDataException( "Expected a result but"
-                                                         + " got none:"
-                                                         + NEWLINE
-                                                         + script );
-                }
-
-				variablePositions.putIfAbsent(variableID, dbResult);
-			}
-
-			id = variablePositions.get(variableID);
-		}
-		
-		return id;
+            return this.variablePositions.get( variableID );
+        }
 	}
+
+	public void addVariablePosition(int variableId, int variablepositionId)
+    {
+        this.variablePositions.putIfAbsent( variableId, variablepositionId );
+    }
 	
 	/**
 	 * Sets the LID of the Feature
