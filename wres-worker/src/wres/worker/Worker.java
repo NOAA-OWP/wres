@@ -8,6 +8,8 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import javax.net.ssl.SSLContext;
+
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.Channel;
@@ -28,7 +30,6 @@ public class Worker
     private static final Logger LOGGER = LoggerFactory.getLogger( Worker.class );
     private static final String RECV_QUEUE_NAME = "wres.job";
 
-    private static final int BROKER_PORT = 5671;
 
     /**
      * Expects exactly one arg with a path to WRES executable
@@ -64,18 +65,22 @@ public class Worker
         // Determine the actual broker name, whether from -D or default
         String brokerHost = BrokerHelper.getBrokerHost();
         String brokerVhost = BrokerHelper.getBrokerVhost();
-        LOGGER.info( "Using broker at host '{}'", brokerHost );
+        int brokerPort = BrokerHelper.getBrokerPort();
+        LOGGER.info( "Using broker at host '{}', vhost '{}', port '{}'",
+                     brokerHost, brokerVhost, brokerPort );
 
-        // Get work from the queue
+        // Set up connection parameters for connection to broker
         ConnectionFactory factory = new ConnectionFactory();
         factory.setHost( brokerHost );
         factory.setVirtualHost( brokerVhost );
-        factory.setPort( BROKER_PORT );
+        factory.setPort( brokerPort );
         factory.setSaslConfig( DefaultSaslConfig.EXTERNAL );
 
-        factory.useSslProtocol( BrokerHelper.getSSLContextWithClientCertificate(
-                BrokerHelper.Role.WORKER) );
+        SSLContext sslContext =
+                BrokerHelper.getSSLContextWithClientCertificate( BrokerHelper.Role.WORKER );
+        factory.useSslProtocol( sslContext );
 
+        // Get work from the queue
         try ( Connection connection = factory.newConnection();
               Channel receiveChannel = connection.createChannel() )
         {

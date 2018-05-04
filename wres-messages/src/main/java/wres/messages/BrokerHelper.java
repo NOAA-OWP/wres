@@ -15,6 +15,11 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
 
+/**
+ * Helper for worker and tasker to get information about the broker, e.g.
+ * hostname, virtual hostname, port, connection setup, etc.
+ */
+
 public class BrokerHelper
 {
     private static final String BROKER_HOST_PROPERTY_NAME = "wres.broker";
@@ -22,6 +27,8 @@ public class BrokerHelper
 
     private static final String BROKER_VHOST_PROPERTY_NAME = "wres.broker.vhost";
     private static final String DEFAULT_BROKER_VHOST = "wres";
+
+    private static final int BROKER_PORT = 5671;
 
     public enum Role
     {
@@ -54,6 +61,7 @@ public class BrokerHelper
         }
     }
 
+
     /**
      * Helper to get the broker vhost name. Returns what was set in -D args
      * or a default value if -D is not set.
@@ -73,6 +81,14 @@ public class BrokerHelper
             return DEFAULT_BROKER_VHOST;
         }
     }
+
+
+    /** Helper to get the broker port number. */
+    public static int getBrokerPort()
+    {
+        return BROKER_PORT;
+    }
+
 
     /**
      * Return an X509 trust manager tied to our custom java trusted certificates
@@ -141,7 +157,8 @@ public class BrokerHelper
 
     /**
      * Get an SSLContext that is set up with a wres-worker client certificate,
-     * used to authenticate to the wres-broker
+     * used to authenticate to the wres-broker.
+     * @param role the role of the module connecting to the broker
      * @return SSLContext ready to go for connecting to the broker
      * @throws IllegalStateException when anything goes wrong setting up
      * keystores, trust managers, factories, reading files, parsing certificate,
