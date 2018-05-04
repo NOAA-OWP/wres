@@ -18,6 +18,13 @@ import javax.net.ssl.X509TrustManager;
 /**
  * Helper for worker and tasker to get information about the broker, e.g.
  * hostname, virtual hostname, port, connection setup, etc.
+ *
+ * For the time being, attempting to avoid a dependency on rabbitmq jars,
+ * as this is an optional-for-clients-to-use helper, just like the messages
+ * themselves are optional-for-clients-to-use. Keeps the explicit connection
+ * setup (however repetitive) in the worker and tasker. If this becomes absurd
+ * at some point, maybe a getPreBakedConnectionFactory() method can be added
+ * here.
  */
 
 public class BrokerHelper
@@ -29,6 +36,9 @@ public class BrokerHelper
     private static final String DEFAULT_BROKER_VHOST = "wres";
 
     private static final int BROKER_PORT = 5671;
+
+    private static final String SECRETS_DIR_PROPERTY_NAME = "wres.secrets_dir";
+    private static final String DEFAULT_SECRETS_DIR = "/wres_secrets";
 
     public enum Role
     {
@@ -91,8 +101,35 @@ public class BrokerHelper
 
 
     /**
-     * Return an X509 trust manager tied to our custom java trusted certificates
-     * @return the default trust manager
+     * Return the secrets directory, either from -D args or a default if -D is
+     * not set. The secrets directory has PKCS#12 files with client certificate
+     * and client key inside each, for clients to authenticate to the broker.
+     * The convention for the filename is
+     * ${secretsDir}/wres-${role}_client_private_key_and_x509_cert.p12
+     * @return the secrets directory containing p12 files for authentication
+     */
+
+    private static String getSecretsDir()
+    {
+
+        String secretsDirFromDashD = System.getProperty( SECRETS_DIR_PROPERTY_NAME );
+
+        if ( secretsDirFromDashD != null )
+        {
+            return secretsDirFromDashD;
+        }
+        else
+        {
+            return DEFAULT_SECRETS_DIR;
+        }
+    }
+
+
+    /**
+     * Returns a TrustManager that trusts the certificates contained in a
+     * trusted certificates file available on the classpath named
+     * trustedCertificateAuthorities.jks
+     * @return the TrustManager
      */
 
     private static TrustManager getDefaultTrustManager()
@@ -106,7 +143,7 @@ public class BrokerHelper
         }
         catch ( KeyStoreException kse )
         {
-            throw new IllegalStateException( "Expected jdk to have KeyStore.getDefaultType()", kse );
+            throw new IllegalStateException( "WRES expected JRE to have JKS KeyStore instance", kse );
         }
 
         InputStream customTrustStoreFile = BrokerHelper.class.getClassLoader()
@@ -119,7 +156,7 @@ public class BrokerHelper
         }
         catch ( IOException | NoSuchAlgorithmException | CertificateException e )
         {
-            throw new IllegalStateException( "Could not open " + ourCustomTrustFileName, e );
+            throw new IllegalStateException( "WRES could not open TrustStoreFile " + ourCustomTrustFileName, e );
         }
 
         TrustManagerFactory trustManagerFactory;
@@ -131,7 +168,8 @@ public class BrokerHelper
         }
         catch ( NoSuchAlgorithmException nsae )
         {
-            throw new IllegalStateException( "No " + algorithm + " algorithm existed.", nsae );
+            throw new IllegalStateException( "WRES expected JRE to support algorithm '"
+                                             + algorithm + "'.", nsae );
         }
 
         try
@@ -140,7 +178,8 @@ public class BrokerHelper
         }
         catch ( KeyStoreException kse )
         {
-            throw new IllegalStateException( "Could not initialize trust manager factory.", kse );
+            throw new IllegalStateException( "WRES expected to be able to initialize trust manager factory.",
+                                             kse );
         }
 
         for ( TrustManager trustManager : trustManagerFactory.getTrustManagers() )
@@ -151,7 +190,7 @@ public class BrokerHelper
             }
         }
 
-        throw new IllegalStateException( "No trust manager was found." );
+        throw new IllegalStateException( "WRES expected an X509TrustManager to exist in JRE, but no trust manager was found." );
     }
 
 
@@ -167,8 +206,9 @@ public class BrokerHelper
 
     public static SSLContext getSSLContextWithClientCertificate( Role role )
     {
-        String ourClientCertificateFilename = "wres-" + role.name()
-                                                            .toLowerCase()
+        String ourClientCertificateFilename = BrokerHelper.getSecretsDir() + "/"
+                                              + "wres-" + role.name()
+                                                             .toLowerCase()
                                               + "_client_private_key_and_x509_cert.p12";
         char[] keyPassphrase = ("wres-" + role.name().toLowerCase()
                                 + "-passphrase").toCharArray();
