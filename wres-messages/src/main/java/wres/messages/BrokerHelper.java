@@ -109,7 +109,7 @@ public class BrokerHelper
      * @return the secrets directory containing p12 files for authentication
      */
 
-    private static String getSecretsDir()
+    public static String getSecretsDir()
     {
 
         String secretsDirFromDashD = System.getProperty( SECRETS_DIR_PROPERTY_NAME );
@@ -195,7 +195,7 @@ public class BrokerHelper
 
 
     /**
-     * Get an SSLContext that is set up with a wres-worker client certificate,
+     * Get an SSLContext that is set up with a client certificate,
      * used to authenticate to the wres-broker.
      * @param role the role of the module connecting to the broker
      * @return SSLContext ready to go for connecting to the broker
