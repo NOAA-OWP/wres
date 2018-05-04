@@ -2,15 +2,15 @@ version: '3'
 services:
     tasker:
         ports:
-         - "8585:8585"
-        image: "032c30588ef5"
+         - "443:8443"
+        image: "8072a61e65a7"
         restart: always
         depends_on:
          - "broker"
         volumes:
          - /mnt/wres_secrets:/wres_secrets
         environment:
-         - JAVA_OPTS=-Dwres.broker=broker
+         - JAVA_OPTS=-Dwres.broker=broker -Dwres.env=ti
     broker:
         ports:
          - "5671:5671"

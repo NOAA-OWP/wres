@@ -18,7 +18,7 @@ RUN unzip wres-tasker-${version}.zip \
     && rm wres-tasker-${version}.zip
 
 WORKDIR /opt/wres-tasker-${version}
-EXPOSE 8585
+EXPOSE 8443
 USER wres_tasker_docker
 CMD [ "bin/wres-tasker" ]
 
