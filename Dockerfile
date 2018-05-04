@@ -31,3 +31,4 @@ USER wres_docker
 CMD [ "bin/wres-worker", "/usr/bin/wres" ]
 
 VOLUME /wres_data
+VOLUME /wres_secrets

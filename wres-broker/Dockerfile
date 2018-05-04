@@ -22,3 +22,5 @@ COPY nonsrc/definitions.json .
 RUN rabbitmq-plugins enable --offline rabbitmq_auth_mechanism_ssl
 
 USER wres_docker
+
+VOLUME /wres_secrets

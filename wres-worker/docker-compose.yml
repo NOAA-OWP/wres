@@ -1,9 +1,9 @@
 version: '3'
 services:
     worker:
-        image: "efbb0d6d8ce4"
+        image: "75a2dfbab302"
         restart: always
         volumes:
          - /mnt/wres_share:/wres_data
+         - /mnt/wres_secrets:/wres_secrets
         network_mode: "host"
-
