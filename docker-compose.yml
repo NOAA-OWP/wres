@@ -16,10 +16,11 @@ services:
         ports:
          - "5671:5671"
          - "15671:15671"
-        image: "d878bdf609c1"
+        image: "eb866545d771"
         restart: always
         volumes:
          - /mnt/wres_secrets:/wres_secrets:ro,z
+        mem_limit: 360m
     worker:
         image: "75a2dfbab302"
         restart: always
