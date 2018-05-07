@@ -145,7 +145,8 @@ public enum MetricConstants
      * Identifier for a Peirce Skill Score.
      */
 
-    PEIRCE_SKILL_SCORE( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.DOUBLE_SCORE ),
+    PEIRCE_SKILL_SCORE( new MetricInputGroup[] { MetricInputGroup.DICHOTOMOUS, MetricInputGroup.MULTICATEGORY },
+            MetricOutputGroup.DOUBLE_SCORE ),
 
     /**
      * Identifier for a Probability Of Detection.
@@ -202,12 +203,12 @@ public enum MetricConstants
     SAMPLE_SIZE( new MetricInputGroup[] { MetricInputGroup.SINGLE_VALUED,
                                           MetricInputGroup.ENSEMBLE },
             MetricOutputGroup.DOUBLE_SCORE, ScoreOutputGroup.UNIVARIATE_STATISTIC ),
-    
+
     /**
      * Identifier for a Sum of Square Error.
      */
 
-    SUM_OF_SQUARE_ERROR( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.DOUBLE_SCORE ),    
+    SUM_OF_SQUARE_ERROR( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.DOUBLE_SCORE ),
 
     /**
      * Identifier for the Volumetric Efficiency.
