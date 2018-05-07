@@ -7,6 +7,7 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.glassfish.jersey.servlet.ServletContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,6 +19,13 @@ public class Tasker
     private static final Logger LOGGER = LoggerFactory.getLogger( Tasker.class );
 
     private static final int SERVER_PORT = 8443;
+
+    /**
+     * We purposely set a count of server threads for memory predictability
+     * in the docker environment. It is probably fine to use Jetty's default of
+     * 200 or another value, but starting with something small.
+     */
+    private static final int MAX_SERVER_THREADS = 100;
 
     private static final String ENV_PROPERTY_NAME = "wres.env";
     private static final String DEFAULT_ENV = ""; // Production is blank
@@ -56,10 +64,15 @@ public class Tasker
         // Have to chain/wrap the handler this way to get both static/dynamic:
         resourceHandler.setHandler( context );
 
-        Server jettyServer = new Server();
+        // Fix the max server threads for better stack memory predictability,
+        // 1 thread = 1000KiB of stack by default.
+        QueuedThreadPool threadPool = new QueuedThreadPool( MAX_SERVER_THREADS );
+
+        Server jettyServer = new Server( threadPool );
 
         jettyServer.setHandler( resourceHandler );
 
+        // Use TLS
         SslContextFactory contextFactory = Tasker.getSslContextFactory();
         ServerConnector serverConnector = new ServerConnector( jettyServer, contextFactory );
         serverConnector.setPort( Tasker.SERVER_PORT );

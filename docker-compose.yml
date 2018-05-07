@@ -1,4 +1,4 @@
-version: '3'
+version: '2.2'
 services:
     tasker:
         ports:
@@ -10,7 +10,8 @@ services:
         volumes:
          - /mnt/wres_secrets:/wres_secrets
         environment:
-         - JAVA_OPTS=-Dwres.broker=broker -Dwres.env=ti
+         - JAVA_OPTS=-Xms160m -Xmx160m -Dwres.broker=broker -Dwres.env=ti
+        mem_limit: 360m
     broker:
         ports:
          - "5671:5671"
