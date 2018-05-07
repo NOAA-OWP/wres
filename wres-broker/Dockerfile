@@ -10,6 +10,9 @@ RUN echo "wres_docker:x:498:1370800073::/home/wres_docker:" >> /etc/passwd \
     && mkdir /home/wres_docker \
     && chown wres_docker: /home/wres_docker
 
+# Enable authentication with x509 client certificates (requires some conf too):
+RUN rabbitmq-plugins enable --offline rabbitmq_auth_mechanism_ssl
+
 WORKDIR /opt/wres-broker
 COPY nonsrc/*x509*pem ./
 RUN chown wres_docker:wres . && chown wres_docker:wres *
@@ -17,9 +20,6 @@ RUN chown wres_docker:wres . && chown wres_docker:wres *
 WORKDIR /etc/rabbitmq
 COPY nonsrc/rabbitmq.conf .
 COPY nonsrc/definitions.json .
-
-# Enable authentication with x509 client certificates (requires some conf too):
-RUN rabbitmq-plugins enable --offline rabbitmq_auth_mechanism_ssl
 
 USER wres_docker
 
