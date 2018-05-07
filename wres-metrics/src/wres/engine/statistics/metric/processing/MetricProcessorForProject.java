@@ -18,8 +18,6 @@ import wres.engine.statistics.metric.MetricFactory;
  * Helper class that collates concrete metric processors together.
  * 
  * @author james.brown@hydrosolved.com
- * @since 0.1
- * @version 0.4
  */
 
 public class MetricProcessorForProject
