@@ -1,4 +1,4 @@
-package wres.engine.statistics.metric;
+package wres.engine.statistics.metric.processing;
 
 import static org.junit.Assert.assertTrue;
 
@@ -6,12 +6,14 @@ import java.util.Objects;
 
 import org.junit.Test;
 
+import wres.engine.statistics.metric.MetricParameterException;
+
 /**
- * Tests the {@link MetricParameterException}.
+ * Tests the {@link MetricProcessorException}.
  * 
  * @author james.brown@hydrosolved.com
  */
-public final class MetricParameterExceptionTest
+public final class MetricProcessorExceptionTest
 {
 
     /**
@@ -21,13 +23,13 @@ public final class MetricParameterExceptionTest
     @Test
     public void testMetricConfigurationException()
     {
-        assertTrue( Objects.nonNull( new MetricParameterException() ) );
+        assertTrue( Objects.nonNull( new MetricProcessorException() ) );
         
-        MetricParameterException f = new MetricParameterException("Test exception.");
+        MetricProcessorException f = new MetricProcessorException("Test exception.");
         assertTrue( Objects.nonNull( f ) );
         assertTrue( f.getMessage().equals( "Test exception." ) );
         
-        MetricParameterException g = new MetricParameterException(f.getMessage(), f);
+        MetricProcessorException g = new MetricProcessorException(f.getMessage(), f);
         
         assertTrue( Objects.nonNull( f ) );
         assertTrue( g.getMessage().equals( "Test exception." ) );
