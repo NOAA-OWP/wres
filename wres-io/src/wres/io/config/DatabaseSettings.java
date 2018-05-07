@@ -10,6 +10,7 @@ import wres.util.Strings;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import java.beans.PropertyVetoException;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -445,12 +446,6 @@ final class DatabaseSettings
 			this.username = usernameOverride;
 		}
 
-		String passwordOverride = System.getProperty( "wres.password" );
-		if ( passwordOverride != null )
-		{
-			this.password = passwordOverride;
-		}
-
 		String databaseNameOverride = System.getProperty( "wres.databaseName" );
 		if ( databaseNameOverride != null )
 		{
@@ -462,5 +457,37 @@ final class DatabaseSettings
 		{
 			this.url = urlOverride;
 		}
+
+		String passwordOverride = System.getProperty( "wres.password" );
+
+		if ( passwordOverride != null )
+		{
+			this.password = passwordOverride;
+		}
+		else
+		{
+			if ( PgPassReader.pgPassExistsAndReadable() )
+			{
+				try
+				{
+					this.password = PgPassReader.getPassphrase( this.url,
+																5432,
+																this.databaseName,
+																this.username );
+				}
+				catch ( IOException ioe )
+				{
+					LOGGER.warn( "Failed to read pgpass file.", ioe );
+				}
+
+				if ( this.password == null )
+				{
+					LOGGER.warn( "Could not find password for {}:{}:{}:{}",
+								 this.url, 5432, this.databaseName, this.username );
+				}
+			}
+		}
+
+
 	}
 }
