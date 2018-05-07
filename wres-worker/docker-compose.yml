@@ -1,4 +1,4 @@
-version: '3'
+version: '2.2'
 services:
     worker:
         image: "75a2dfbab302"
@@ -7,3 +7,6 @@ services:
          - /mnt/wres_share:/wres_data
          - /mnt/wres_secrets:/wres_secrets
         network_mode: "host"
+        environment:
+         - JAVA_OPTS=-Xms1728m -Xmx1728m -Dwres.broker=***REMOVED***wres-broker-ti
+        mem_limit: 2048m
