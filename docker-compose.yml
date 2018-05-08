@@ -3,7 +3,7 @@ services:
     tasker:
         ports:
          - "443:8443"
-        image: "8072a61e65a7"
+        image: "ca5f9cb15d97"
         restart: always
         depends_on:
          - "broker"
@@ -17,14 +17,14 @@ services:
         ports:
          - "5671:5671"
          - "15671:15671"
-        image: "eb866545d771"
+        image: "3136d3c05577"
         restart: always
         volumes:
          - /mnt/wres_secrets:/wres_secrets:ro,z
         # rabbitmq.conf should have 180m specified as high watermark
         mem_limit: 360m
     worker:
-        image: "75a2dfbab302"
+        image: "5fe385192ea6"
         restart: always
         depends_on:
          - "broker"
