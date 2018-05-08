@@ -458,36 +458,47 @@ final class DatabaseSettings
 			this.url = urlOverride;
 		}
 
+		// Intended order of passphrase precedence:
+        // 1) -Dwres.password (but perhaps we should remove this)
+        // 2) .pgpass file
+        // 3) wresconfig.xml
+
+        // Even though pgpass is not a "system property override" it seems
+        // necessary for the logic to be here due to the above order of
+        // precedence, combined with the dependency of having the user name,
+        // host name, database name to search the pgpass file with.
+
 		String passwordOverride = System.getProperty( "wres.password" );
 
 		if ( passwordOverride != null )
 		{
 			this.password = passwordOverride;
 		}
-		else
-		{
-			if ( PgPassReader.pgPassExistsAndReadable() )
-			{
-				try
-				{
-					this.password = PgPassReader.getPassphrase( this.url,
-																5432,
-																this.databaseName,
-																this.username );
-				}
-				catch ( IOException ioe )
-				{
-					LOGGER.warn( "Failed to read pgpass file.", ioe );
-				}
+		else if ( PgPassReader.pgPassExistsAndReadable() )
+        {
+            String pgPass = null;
 
-				if ( this.password == null )
-				{
-					LOGGER.warn( "Could not find password for {}:{}:{}:{}",
-								 this.url, 5432, this.databaseName, this.username );
-				}
-			}
-		}
+            try
+            {
+                pgPass = PgPassReader.getPassphrase( this.url,
+                                                     5432,
+                                                     this.databaseName,
+                                                     this.username );
+            }
+            catch ( IOException ioe )
+            {
+                LOGGER.warn( "Failed to read pgpass file.", ioe );
+            }
 
-
+            if ( pgPass != null )
+            {
+                this.password = pgPass;
+            }
+            else
+            {
+                LOGGER.warn( "Could not find password for {}:{}:{}:{} in pgpass file.",
+                             this.url, 5432, this.databaseName, this.username );
+            }
+        }
 	}
 }
