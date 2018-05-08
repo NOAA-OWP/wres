@@ -62,6 +62,13 @@ import wres.engine.statistics.metric.MetricParameterException;
 public abstract class MetricProcessorByTime<S extends MetricInput<?>>
         extends MetricProcessor<S, MetricOutputForProjectByTimeAndThreshold>
 {
+    
+    /**
+     * Message that indicates processing is complete.
+     */
+    
+    static final String PROCESSING_COMPLETE_MESSAGE = "Completed processing of metrics for feature '{}' "
+            + "at time window '{}'.";
 
     /**
      * The metric futures from previous calls, indexed by {@link TimeWindow}.
