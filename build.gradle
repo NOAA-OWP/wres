@@ -620,7 +620,7 @@ apply plugin: 'application'
 
 mainClassName = 'wres.Main'
 
-applicationDefaultJvmArgs = ['-Xms1024m']
+applicationDefaultJvmArgs = ['-Xms1628m', '-Xmx1628m']
 
 // Get the commit and date from the TOP for this project, it is outermost.
 def gitCommit = grgit.head()
