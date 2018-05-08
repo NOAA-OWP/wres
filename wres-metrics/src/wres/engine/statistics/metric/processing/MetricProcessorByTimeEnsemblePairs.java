@@ -39,8 +39,8 @@ import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.ScoreOutput;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
-import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdGroup;
+import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricCollection;
@@ -154,12 +154,9 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         }
 
         // Log
-        if ( LOGGER.isDebugEnabled() )
-        {
-            LOGGER.debug( "Completed processing of metrics for feature '{}' at time window '{}'.",
-                          input.getMetadata().getIdentifier().getGeospatialID(),
-                          input.getMetadata().getTimeWindow() );
-        }
+        LOGGER.debug( PROCESSING_COMPLETE_MESSAGE,
+                      input.getMetadata().getIdentifier().getGeospatialID(),
+                      input.getMetadata().getTimeWindow() );
 
         //Process and return the result       
         MetricFuturesByTime futureResults = futures.build();

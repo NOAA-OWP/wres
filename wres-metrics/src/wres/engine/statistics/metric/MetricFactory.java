@@ -1384,6 +1384,7 @@ public class MetricFactory
     /**
      * Return a default {@link PeirceSkillScore} function.
      * 
+     * @param <S> the type of pairs
      * @return a default {@link PeirceSkillScore} function
      * @throws MetricParameterException if one or more parameter values is incorrect
      */
