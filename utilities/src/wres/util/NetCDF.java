@@ -33,7 +33,7 @@ public final class NetCDF {
 
     private static final Pattern NETCDF_FILENAME_PATTERN = Pattern.compile( ".+\\.nc(\\.gz)?" );
 
-    private static final Pattern SHORT_DATE_PATTERN = Pattern.compile("\\d{8}");
+    private static final Pattern SHORT_DATE_PATTERN = Pattern.compile(".*\\d{8}");
 
     public static class Ensemble
     {

@@ -74,11 +74,14 @@ class PoolingForecastScripter extends Scripter
         this.addLine( "        AND F.feature_id = ", Features.getFeatureID(this.getFeature()));
         this.addTab(2).addLine("AND ", this.getProjectDetails().getLeadQualifier( this.getFeature(), this.getProgress(), "F" ));
 
+        // TODO: Should time shift adjustments be added here?
         this.add( "        AND F.basis_time >= ('", this.getProjectDetails().getEarliestIssueDate(), "'::timestamp without time zone + (INTERVAL '1 HOUR' * ");
         this.add( frequency );
         this.addLine(" ) * ", this.getSequenceStep(), ")");
         this.add( "        AND F.basis_time <= ('", this.getProjectDetails().getEarliestIssueDate() );
         this.add("'::timestamp without time zone + (INTERVAL '1 HOUR' * ", frequency, ") * ", this.getSequenceStep(), ")");
+
+        // TODO: Is there a reason why valid times aren't being considered?
 
         if (span > 0)
         {

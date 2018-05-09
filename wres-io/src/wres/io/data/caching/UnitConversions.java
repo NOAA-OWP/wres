@@ -1,6 +1,5 @@
 package wres.io.data.caching;
 
-import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Map;
@@ -9,8 +8,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static wres.io.data.caching.Cache.NEWLINE;
 
 import wres.io.utilities.Database;
 import wres.io.utilities.ScriptBuilder;

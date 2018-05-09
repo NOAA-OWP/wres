@@ -38,6 +38,7 @@ import wres.io.retrieval.InputGenerator;
 import wres.io.utilities.Database;
 import wres.io.utilities.ScriptBuilder;
 import wres.io.writing.PairWriter;
+import wres.io.writing.netcdf.NetCDFCopier;
 import wres.util.ProgressMonitor;
 
 public final class Operations {
@@ -50,7 +51,7 @@ public final class Operations {
     public static void prepareForExecution( ProjectDetails projectDetails ) throws IOException
     {
         LOGGER.info("Loading preliminary metadata...");
-        UnitConversions.initialize();
+        Future unitConversionLoad = Executor.execute( UnitConversions::initialize );
 
         try
         {
@@ -60,6 +61,21 @@ public final class Operations {
         {
             throw new IOException("This project could not be prepared for "
                                   + "execution.", exception);
+        }
+
+        try
+        {
+            unitConversionLoad.get();
+        }
+        catch ( InterruptedException e )
+        {
+            LOGGER.error("The process for loading unit conversions was interrupted.");
+            Thread.currentThread().interrupt();
+        }
+        catch ( ExecutionException e )
+        {
+            // If loading failed, it will attempt to try again later.
+            LOGGER.error("The process for loading unit conversions failed.", e);
         }
     }
 
@@ -514,5 +530,15 @@ public final class Operations {
                        + "            AND FS.forecast_id = TS.timeseries_id" + NEWLINE
                        + "    );";
         return (long) Database.getResult( query, LABEL );
+    }
+
+    public static void createNetCDFOutputTemplate(final String sourceName, final String templateName)
+            throws IOException
+    {
+        try (NetCDFCopier
+                writer = new NetCDFCopier( sourceName, templateName ))
+        {
+            writer.write();
+        }
     }
 }

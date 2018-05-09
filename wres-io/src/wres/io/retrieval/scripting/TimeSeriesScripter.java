@@ -2,13 +2,10 @@ package wres.io.retrieval.scripting;
 
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.StringJoiner;
 
 import wres.config.generated.DataSourceConfig;
-import wres.config.generated.EnsembleCondition;
 import wres.config.generated.Feature;
 import wres.io.config.ConfigHelper;
-import wres.io.data.caching.Ensembles;
 import wres.io.data.details.ProjectDetails;
 import wres.util.Strings;
 

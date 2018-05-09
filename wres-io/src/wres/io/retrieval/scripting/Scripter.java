@@ -266,8 +266,6 @@ public abstract class Scripter extends ScriptBuilder
             this.add(" + ", this.getTimeShift() * 3600);
         }
 
-        /*this.add("(", this.getValueDate());
-        this.applyTimeShift();*/
         this.addLine(")::bigint AS value_date,");
     }
 

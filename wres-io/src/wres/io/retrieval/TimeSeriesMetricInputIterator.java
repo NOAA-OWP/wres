@@ -12,7 +12,6 @@ import wres.datamodel.inputs.MetricInput;
 import wres.io.concurrency.Executor;
 import wres.io.config.ConfigHelper;
 import wres.io.data.details.ProjectDetails;
-import wres.io.utilities.Database;
 import wres.io.utilities.ScriptBuilder;
 
 public class TimeSeriesMetricInputIterator extends MetricInputIterator

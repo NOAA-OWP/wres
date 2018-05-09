@@ -133,7 +133,7 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
     private final Map<Feature, Integer> lastLeads = java.util.Collections.synchronizedMap( new LRUMap<>( 100 ) );
 
     /**
-     * Stores the lead hour offset for each person
+     * Stores the lead hour offset for each feature
      *
      * <p>
      * If there is a 6 hour offset at feature x, it means that the lead times
@@ -419,9 +419,9 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
 
     public void prepareForExecution() throws SQLException, IOException
     {
-        this.populateFeatures();
+        //this.populateFeatures();
 
-        if( !this.shouldCalculateLeads() )
+        /*if( !this.shouldCalculateLeads() )
         {
             this.populateDiscreteLeads();
         }
@@ -429,7 +429,7 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
         if (ProjectConfigs.hasTimeSeriesMetrics( this.getProjectConfig() ))
         {
             this.getNumberOfSeriesToRetrieve();
-        }
+        }*/
 
         if (!ConfigHelper.isSimulation( this.getRight() ) &&
             !ProjectConfigs.hasTimeSeriesMetrics( this.getProjectConfig() ) &&
@@ -481,6 +481,8 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
                 this.features = new HashSet<>();
 
                 ScriptBuilder script = new ScriptBuilder();
+
+                // TODO: it is most likely safe to assume the left will be observations
 
                 // Select all features where...
                 script.addLine( "SELECT *" );
@@ -2122,10 +2124,7 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
 
         while (!futureOffsets.isEmpty())
         {
-            // Get the key for the first feature offset being evaluated
             FeatureDetails.FeatureKey key = ( FeatureDetails.FeatureKey)futureOffsets.keySet().toArray()[0];
-
-            // Remove that first feature from the map/queue
             Future<Integer> futureOffset = futureOffsets.remove( key );
 
             // Determine the feature definition for the offset
@@ -2835,7 +2834,7 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
                 script += "        INNER JOIN wres.ForecastSource FS" + NEWLINE;
                 script += "            ON FS.source_id = PS.source_id" + NEWLINE;
                 script += "        WHERE PS.project_id = " + this.getId() + NEWLINE;
-                script += "            AND PS.inactive_time IS NULL" + NEWLINE;
+                script += "            AND PS.member = " + ProjectDetails.RIGHT_MEMBER + NEWLINE;
                 script += "            AND FS.forecast_id = TS.timeseries_id" + NEWLINE;
                 script += "    );";
 
