@@ -2,7 +2,6 @@ package wres.tasker;
 
 import java.io.IOException;
 import java.util.Random;
-import java.util.StringJoiner;
 import java.util.concurrent.TimeoutException;
 import javax.net.ssl.SSLContext;
 import javax.ws.rs.Consumes;
@@ -23,6 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.messages.BrokerHelper;
+import wres.messages.generated.Job;
 
 @Path( "/job")
 public class WresJob
@@ -72,21 +72,19 @@ public class WresJob
     public Response postWresJob( @FormParam( "projectPath" ) String projectPath,
                                  @FormParam( "databaseUrl" ) String databaseUrl,
                                  @FormParam( "databaseName" ) String databaseName,
-                                 @FormParam( "databaseUser" ) String databaseUser,
-                                 @FormParam( "databasePassword" ) String databasePassword )
+                                 @FormParam( "databaseUser" ) String databaseUser )
     {
-        StringJoiner messageBuilder = new StringJoiner( "," );
-        messageBuilder.add( "projectConfig=" + projectPath );
-        messageBuilder.add( "JAVA_OPTS=-Dwres.url=" + databaseUrl + " "
-                            + "-Dwres.databaseName=" + databaseName + " "
-                            + "-Dwres.username=" + databaseUser + " "
-                            + "-Dwres.password=" + databasePassword );
-
+        Job.job jobMessage = Job.job.newBuilder()
+                                    .setDatabaseHostname( databaseUrl )
+                                    .setDatabaseName( databaseName )
+                                    .setDatabaseUsername( databaseUser )
+                                    .setProjectConfig( projectPath )
+                                    .build();
         String jobId;
 
         try
         {
-            jobId = sendMessage( messageBuilder.toString() );
+            jobId = sendMessage( jobMessage.toByteArray() );
         }
         catch ( IOException | TimeoutException e )
         {
@@ -113,7 +111,7 @@ public class WresJob
      * @throws IOException when connectivity, queue declaration, or publication fails
      * @throws TimeoutException
      */
-    private String sendMessage( String message )
+    private String sendMessage( byte[] message )
             throws IOException, TimeoutException
     {
         // Use a shared connection across requests.
@@ -147,7 +145,7 @@ public class WresJob
             channel.basicPublish( "",
                                   SEND_QUEUE_NAME,
                                   properties,
-                                  message.getBytes() );
+                                  message );
 
             LOGGER.info( "I sent this message to queue '{}' with properties '{}': {}.",
                          SEND_QUEUE_NAME, properties, message );

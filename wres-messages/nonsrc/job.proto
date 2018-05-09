@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package wres.messages.generated;
+
+message job
+{
+    string database_hostname = 1;
+    string database_name = 2;
+    string database_username = 3;
+    string project_config = 4;
+}
