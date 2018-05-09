@@ -111,7 +111,7 @@ public enum DefaultMetadataFactory implements MetadataFactory
             public int hashCode()
             {
                 return Objects.hash( super.hashCode(),
-                                     sampleSize,
+                                     getSampleSize(),
                                      getMetricID(),
                                      getMetricComponentID(),
                                      getInputDimension() );

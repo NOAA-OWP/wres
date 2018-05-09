@@ -2,24 +2,31 @@ package wres.engine.statistics.metric;
 
 import static org.junit.Assert.assertTrue;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.BiPredicate;
 
+import org.hamcrest.CoreMatchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.mockito.Mockito;
+import org.slf4j.Logger;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.inputs.pairs.MulticategoryPairs;
@@ -30,7 +37,7 @@ import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MetricOutput;
 import wres.datamodel.outputs.MetricOutputMapByMetric;
 import wres.engine.statistics.metric.MetricCollection.MetricCollectionBuilder;
-import wres.engine.statistics.metric.singlevalued.DoubleErrorScore;
+import wres.engine.statistics.metric.singlevalued.MeanError;
 
 /**
  * Tests the {@link MetricCollection}.
@@ -483,6 +490,105 @@ public class MetricCollectionTest
     }
 
     /**
+     * Tests that logging occurs at the start of a calculation when required.
+     * 
+     * @throws MetricCalculationException if the execution fails
+     * @throws MetricParameterException if the metric construction fails
+     * @throws InvocationTargetException if the underlying method throws an exception
+     * @throws IllegalArgumentException if the method inputs are unexpected
+     * @throws IllegalAccessException if the method is inaccessible
+     * @throws SecurityException if the request is denied
+     * @throws NoSuchMethodException if the method does not exist
+     */
+
+    @Test
+    public void testLogStartOfCalculation() throws MetricParameterException, IllegalAccessException,
+            IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException
+    {
+        MetricCollection<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput> collection =
+                metF.ofSingleValuedScoreCollection( MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
+        Method logStart = collection.getClass().getDeclaredMethod( "logStartOfCalculation", Logger.class );
+        logStart.setAccessible( true );
+
+        Logger logger = Mockito.mock( Logger.class );
+        Mockito.when( logger.isDebugEnabled() ).thenReturn( true );
+
+        logStart.invoke( collection, logger );
+
+        Mockito.verify( logger ).debug( "Attempting to compute metrics for a collection that contains {} "
+                                        + "ordinary metric(s) and {} collectable metric(s). The metrics include {}.",
+                                        0,
+                                        1,
+                                        Collections.singleton( MetricConstants.PEARSON_CORRELATION_COEFFICIENT ) );
+    }
+
+    /**
+     * Tests that logging occurs at the end of a calculation when required.
+     * 
+     * @throws MetricCalculationException if the execution fails
+     * @throws MetricParameterException if the metric construction fails
+     * @throws InvocationTargetException if the underlying method throws an exception
+     * @throws IllegalArgumentException if the method inputs are unexpected
+     * @throws IllegalAccessException if the method is inaccessible
+     * @throws SecurityException if the request is denied
+     * @throws NoSuchMethodException if the method does not exist
+     */
+
+    @Test
+    public void testLogEndOfCalculation() throws MetricParameterException, IllegalAccessException,
+            IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException
+    {
+        MetricCollection<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput> collection =
+                metF.ofSingleValuedScoreCollection( MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
+        Method logEnd = collection.getClass().getDeclaredMethod( "logEndOfCalculation", Logger.class, Map.class );
+        logEnd.setAccessible( true );
+
+        Logger logger = Mockito.mock( Logger.class );
+        Mockito.when( logger.isDebugEnabled() ).thenReturn( true );
+
+        logEnd.invoke( collection, logger, Collections.emptyMap() );
+
+        Mockito.verify( logger ).debug( "Finished computing metrics for a collection that contains {} "
+                                        + "ordinary metric(s) and {} collectable metric(s). Obtained {} result(s) of "
+                                        + "the {} result(s) expected. Results were obtained for these metrics {}.",
+                                        0,
+                                        1,
+                                        0,
+                                        1,
+                                        Collections.emptySet() );
+    }
+    
+    /**
+     * Tests that {@link MetricCollection#apply(MetricInput, Set)} throws an expected exception when cancelled.
+     * 
+     * @throws MetricCalculationException if the execution fails
+     * @throws MetricParameterException if the metric construction fails
+     * @throws InvocationTargetException if the underlying method throws an exception
+     * @throws IllegalArgumentException if the method inputs are unexpected
+     * @throws IllegalAccessException if the method is inaccessible
+     * @throws SecurityException if the request is denied
+     * @throws NoSuchMethodException if the method does not exist
+     */
+
+    @Test
+    public void testApplyThrowsExceptionWhenInterrupted() throws MetricParameterException, IllegalAccessException,
+            IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException
+    {
+        exception.expect( InvocationTargetException.class );
+        exception.expectCause( CoreMatchers.isA( MetricCalculationException.class ) );
+        
+        MetricCollection<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput> collection =
+                metF.ofSingleValuedScoreCollection( MetricConstants.MEAN_ERROR );
+        Method method = collection.getClass().getDeclaredMethod( "apply", MetricInput.class, Set.class );
+        method.setAccessible( true );
+
+        Set<?> ignore = Mockito.mock( Set.class );
+        Mockito.when( ignore.size() ).thenThrow( InterruptedException.class );
+
+        method.invoke( collection, MetricTestDataFactory.getSingleValuedPairsOne(), ignore );
+    }
+
+    /**
      * Expects a {@link MetricCalculationException} from a metric within a {@link MetricCollection}.
      * 
      * @throws MetricCalculationException if the execution fails
@@ -494,19 +600,22 @@ public class MetricCollectionTest
     {
 
         //Generate some data
-        final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
+        SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
+
+        MeanError meanError = Mockito.mock( MeanError.class );
+        Mockito.when( meanError.getID() ).thenReturn( MetricConstants.MEAN_ERROR );
+        Mockito.when( meanError.apply( input ) ).thenThrow( IllegalArgumentException.class );
 
         exception.expect( MetricCalculationException.class );
-        exception.expectMessage( "While processing metric 'MEAN ERROR'." );
+        exception.expectMessage( "Computation of the metric collection failed: " );
 
-        final MetricCollectionBuilder<SingleValuedPairs, MetricOutput<?>, DoubleScoreOutput> failed =
+        MetricCollectionBuilder<SingleValuedPairs, MetricOutput<?>, DoubleScoreOutput> failed =
                 MetricCollectionBuilder.of();
         failed.setOutputFactory( outF )
               .setExecutorService( metricPool )
-              .addMetric( new MeanErrorException() )
+              .addMetric( meanError )
               .build()
               .apply( input );
-
     }
 
     /**
@@ -624,55 +733,13 @@ public class MetricCollectionTest
                     + "collection.", actual.equals( expected ) );
     }
 
-    /**
-     * Class for testing runtime exceptions.
-     */
-
-    private static class MeanErrorException extends DoubleErrorScore<SingleValuedPairs>
-    {
-        private MeanErrorException() throws MetricParameterException
-        {
-            super( (MeanErrorExceptionBuilder) new MeanErrorExceptionBuilder().setOutputFactory( DefaultDataFactory.getInstance() ) );
-        }
-
-        @Override
-        public DoubleScoreOutput apply( SingleValuedPairs input )
-        {
-            throw new IllegalArgumentException();
-        }
-
-        private static class MeanErrorExceptionBuilder extends DoubleErrorScoreBuilder<SingleValuedPairs>
-        {
-            @Override
-            public MeanErrorException build() throws MetricParameterException
-            {
-                return new MeanErrorException();
-            }
-        }
-
-        @Override
-        public boolean isSkillScore()
-        {
-            return false;
-        }
-
-        @Override
-        public MetricConstants getID()
-        {
-            return MetricConstants.MEAN_ERROR;
-        }
-
-        @Override
-        public boolean hasRealUnits()
-        {
-            return false;
-        }
-    }
-    
     @After
     public void tearDownAfterEachTest()
     {
         metricPool.shutdownNow();
+        
+        // Return the interrupted status of the thread running the test
+        Thread.interrupted();
     }
 
 }

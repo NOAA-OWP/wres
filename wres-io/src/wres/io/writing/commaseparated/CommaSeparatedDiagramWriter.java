@@ -36,8 +36,6 @@ import wres.io.config.ConfigHelper;
  * Helps write box plots comprising {@link MultiVectorOutput} to a file of Comma Separated Values (CSV).
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 1.0
  */
 
 public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter

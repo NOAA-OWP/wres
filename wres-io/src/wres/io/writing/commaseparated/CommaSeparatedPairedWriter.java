@@ -32,8 +32,6 @@ import wres.io.config.ConfigHelper;
  * @param <S> the left side of the paired output type
  * @param <T> the right side if the paired output type
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 1.0
  */
 
 public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedWriter

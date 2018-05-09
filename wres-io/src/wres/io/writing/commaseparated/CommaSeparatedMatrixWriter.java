@@ -31,8 +31,6 @@ import wres.io.config.ConfigHelper;
  * Helps write contingency tables comprising {@link MatrixOutput} to a file of Comma Separated Values (CSV).
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 1.0
  */
 
 public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter

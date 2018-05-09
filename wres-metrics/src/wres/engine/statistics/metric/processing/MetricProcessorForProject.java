@@ -13,6 +13,7 @@ import wres.datamodel.outputs.MetricOutputException;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.engine.statistics.metric.MetricFactory;
+import wres.engine.statistics.metric.MetricParameterException;
 
 /**
  * Helper class that collates concrete metric processors together.
@@ -42,7 +43,7 @@ public class MetricProcessorForProject
      * @param externalThresholds an optional set of external thresholds, may be null
      * @param thresholdExecutor an executor service for processing thresholds
      * @param metricExecutor an executor service for processing metrics
-     * @throws MetricProcessorException if the metric processor could not be built
+     * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
     public MetricProcessorForProject( final MetricFactory metricFactory,
@@ -50,7 +51,7 @@ public class MetricProcessorForProject
                                       final ThresholdsByMetric externalThresholds,
                                       final ExecutorService thresholdExecutor,
                                       final ExecutorService metricExecutor )
-            throws MetricProcessorException
+            throws MetricParameterException
     {
         DatasourceType type = projectConfig.getInputs().getRight().getType();
         if ( type.equals( DatasourceType.SINGLE_VALUED_FORECASTS ) || type.equals( DatasourceType.SIMULATIONS ) )

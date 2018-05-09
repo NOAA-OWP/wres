@@ -16,7 +16,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
 import java.util.function.Predicate;
 
@@ -701,14 +700,13 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
      * @param dataFactory the data factory
      * @param config the project configuration
      * @param externalThresholds an optional set of canonical thresholds, may be null
-     * @param thresholdExecutor an optional {@link ExecutorService} for executing thresholds. Defaults to the 
-     *            {@link ForkJoinPool#commonPool()}
-     * @param metricExecutor an optional {@link ExecutorService} for executing metrics. Defaults to the 
-     *            {@link ForkJoinPool#commonPool()}  
+     * @param thresholdExecutor an {@link ExecutorService} for executing thresholds, cannot be null 
+     * @param metricExecutor an {@link ExecutorService} for executing metrics, cannot be null
      * @param mergeSet a list of {@link MetricOutputGroup} whose outputs should be retained and merged across calls to
      *            {@link #apply(Object)}
      * @throws MetricConfigException if the metrics are configured incorrectly
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
+     * @throws NullPointerException if a required input is null
      */
 
     MetricProcessorByTime( final DataFactory dataFactory,

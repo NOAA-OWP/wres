@@ -6,7 +6,6 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ForkJoinPool;
 import java.util.function.DoublePredicate;
 import java.util.function.Function;
 
@@ -344,14 +343,13 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
      * @param dataFactory the data factory
      * @param config the project configuration
      * @param externalThresholds an optional set of external thresholds, may be null
-     * @param thresholdExecutor an optional {@link ExecutorService} for executing thresholds. Defaults to the 
-     *            {@link ForkJoinPool#commonPool()}
-     * @param metricExecutor an optional {@link ExecutorService} for executing metrics. Defaults to the 
-     *            {@link ForkJoinPool#commonPool()}                    
+     * @param thresholdExecutor an {@link ExecutorService} for executing thresholds, cannot be null 
+     * @param metricExecutor an {@link ExecutorService} for executing metrics, cannot be null
      * @param mergeSet a list of {@link MetricOutputGroup} whose outputs should be retained and merged across calls to
      *            {@link #apply(Object)}
      * @throws MetricConfigException if the metrics are configured incorrectly
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
+     * @throws NullPointerException if a required input is null
      */
 
     MetricProcessor( final DataFactory dataFactory,
@@ -369,7 +367,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
         
         Objects.requireNonNull( thresholdExecutor, "Specify a non-null threshold executor service." );
         
-        Objects.requireNonNull( thresholdExecutor, "Specify a non-null metric executor service." );
+        Objects.requireNonNull( metricExecutor, "Specify a non-null metric executor service." );
         
         this.dataFactory = dataFactory;
         this.metrics = MetricConfigHelper.getMetricsFromConfig( config );
