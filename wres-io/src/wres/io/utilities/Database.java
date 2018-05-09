@@ -2011,4 +2011,21 @@ public final class Database {
         }
     }
 
+
+    /**
+     * For system-level monitoring information, return the number of tasks in
+     * the database queue.
+     * @return the count of tasks waiting to be performed by the db workers.
+     */
+
+    public static int getDatabaseQueueTaskCount()
+    {
+        if ( Database.SQL_TASKS != null
+             && Database.SQL_TASKS.getQueue() != null )
+        {
+            return Database.SQL_TASKS.getQueue().size();
+        }
+
+        return 0;
+    }
 }

@@ -25,7 +25,7 @@ public final class Executor {
 	// The underlying thread executor
 	private static final ThreadPoolExecutor SERVICE = createService();
 
-	private static final ExecutorService HIGH_PRIORITY_TASKS = createHighPriorityService();
+	private static final ThreadPoolExecutor HIGH_PRIORITY_TASKS = createHighPriorityService();
 
     private static final Logger LOGGER = LoggerFactory.getLogger( Executor.class );
 
@@ -49,7 +49,7 @@ public final class Executor {
 		return (ThreadPoolExecutor)Executors.newFixedThreadPool(SystemSettings.maximumThreadCount(), factory);
 	}
 
-	private static ExecutorService createHighPriorityService()
+	private static ThreadPoolExecutor createHighPriorityService()
 	{
 		if (HIGH_PRIORITY_TASKS != null)
 		{
@@ -58,7 +58,7 @@ public final class Executor {
 		}
 
 		ThreadFactory factory = runnable -> new Thread(runnable, "High Priority Database Thread");
-		return Executors.newFixedThreadPool(10, factory);
+		return (ThreadPoolExecutor) Executors.newFixedThreadPool(10, factory);
 	}
 
 	public static <V> Future<V> submitHighPriorityTask(Callable<V> task)
@@ -153,5 +153,41 @@ public final class Executor {
         abandonedTasks.addAll( abandonedTwo );
 
         return abandonedTasks;
+    }
+
+
+	/**
+	 * For system-level monitoring information, return the number of tasks in
+	 * the io executor queue.
+	 * @return the count of tasks waiting to be performed by the workers.
+	 */
+
+	public static int getIoExecutorQueueTaskCount()
+	{
+		if ( Executor.SERVICE != null
+             && Executor.SERVICE.getQueue() != null )
+        {
+            return Executor.SERVICE.getQueue().size();
+        }
+
+		return 0;
+	}
+
+
+    /**
+     * For system-level monitoring information, return the number of tasks in
+     * the high priority tasks queue.
+     * @return the count of tasks waiting to be performed by the hi pri workers.
+     */
+
+    public static int getHiPriIoExecutorQueueTaskCount()
+    {
+        if ( Executor.HIGH_PRIORITY_TASKS != null
+             && Executor.HIGH_PRIORITY_TASKS.getQueue() != null )
+        {
+            return Executor.HIGH_PRIORITY_TASKS.getQueue().size();
+        }
+
+        return 0;
     }
 }

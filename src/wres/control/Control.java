@@ -7,9 +7,13 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -23,7 +27,9 @@ import wres.config.ProjectConfigException;
 import wres.config.ProjectConfigPlus;
 import wres.config.Validation;
 import wres.control.ProcessorHelper.ExecutorServices;
+import wres.io.concurrency.Executor;
 import wres.io.config.SystemSettings;
+import wres.io.utilities.Database;
 
 /**
  * A complete implementation of a processing pipeline originating from one or more {@link ProjectConfig}.
@@ -95,14 +101,20 @@ public class Control implements Function<String[], Integer>
         ThreadFactory thresholdFactory = runnable -> new Thread( runnable, "Threshold Dispatch Thread" );
         ThreadFactory metricFactory = runnable -> new Thread( runnable, "Metric Thread" );
         ThreadFactory productFactory = runnable -> new Thread( runnable, "Product Thread" );
-        
-        // Processes features                
+
+        // Name our queues in order to easily monitor them
+        BlockingQueue<Runnable> featureQueue =new ArrayBlockingQueue<>( SystemSettings.maximumThreadCount() * 5 );
+        BlockingQueue<Runnable> pairQueue = new ArrayBlockingQueue<>( SystemSettings.maximumThreadCount() * 5 );
+        BlockingQueue<Runnable> thresholdQueue = new LinkedBlockingQueue<>();
+        BlockingQueue<Runnable> metricQueue = new ArrayBlockingQueue<>( SystemSettings.maximumThreadCount() * 5 );
+        BlockingQueue<Runnable> productQueue = new ArrayBlockingQueue<>( SystemSettings.maximumThreadCount() * 5 );
+
+        // Processes features
         ThreadPoolExecutor featureExecutor = new ThreadPoolExecutor( SystemSettings.maximumThreadCount(),
                                                                   SystemSettings.maximumThreadCount(),
                                                                   SystemSettings.poolObjectLifespan(),
                                                                   TimeUnit.MILLISECONDS,
-                                                                  new ArrayBlockingQueue<>( SystemSettings.maximumThreadCount()
-                                                                                            * 5 ),
+                                                                  featureQueue,
                                                                   featureFactory );
         
         // Processes pairs       
@@ -110,47 +122,64 @@ public class Control implements Function<String[], Integer>
                                                                   SystemSettings.maximumThreadCount(),
                                                                   SystemSettings.poolObjectLifespan(),
                                                                   TimeUnit.MILLISECONDS,
-                                                                  new ArrayBlockingQueue<>( SystemSettings.maximumThreadCount()
-                                                                                            * 5 ),
+                                                                  pairQueue,
                                                                   pairFactory );
-        
+
         // Dispatches thresholds
-        ExecutorService thresholdExecutor = Executors.newSingleThreadExecutor( thresholdFactory );
-        
+        ThreadPoolExecutor thresholdExecutor = new ThreadPoolExecutor( 1,
+                                                                       1,
+                                                                       0,
+                                                                       TimeUnit.SECONDS,
+                                                                       thresholdQueue,
+                                                                       thresholdFactory );
+
         // Processes metrics
         ThreadPoolExecutor metricExecutor = new ThreadPoolExecutor( SystemSettings.maximumThreadCount(),
                                                                     SystemSettings.maximumThreadCount(),
                                                                     SystemSettings.poolObjectLifespan(),
                                                                     TimeUnit.MILLISECONDS,
-                                                                    new ArrayBlockingQueue<>( SystemSettings.maximumThreadCount()
-                                                                                              * 5 ),
+                                                                    metricQueue,
                                                                     metricFactory );
-        
+
         // Processes products
         ThreadPoolExecutor productExecutor = new ThreadPoolExecutor( SystemSettings.maximumThreadCount(),
                                                                      SystemSettings.maximumThreadCount(),
                                                                      SystemSettings.poolObjectLifespan(),
                                                                      TimeUnit.MILLISECONDS,
-                                                                     new ArrayBlockingQueue<>( SystemSettings.maximumThreadCount()
-                                                                                               * 5 ),
+                                                                     productQueue,
                                                                      productFactory );
-        
+
         // Set the rejection policy to run in the caller, slowing producers           
         featureExecutor.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
         pairExecutor.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
         metricExecutor.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
         productExecutor.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
-        
+
+        ScheduledExecutorService monitoringService = new ScheduledThreadPoolExecutor( 1 );
+
+        QueueMonitor queueMonitor = new QueueMonitor( featureQueue,
+                                                      pairQueue,
+                                                      thresholdQueue,
+                                                      metricQueue,
+                                                      productQueue );
+
         try
         {
-
             // Reduce our set of executors to one object
             ExecutorServices executors = new ExecutorServices( featureExecutor,
                                                                pairExecutor,
                                                                thresholdExecutor,
                                                                metricExecutor,
                                                                productExecutor );
-                       
+
+            if ( System.getProperty( "wres.monitorTaskQueues" ) != null )
+            {
+                monitoringService.scheduleAtFixedRate( queueMonitor,
+                                                       1,
+                                                       500,
+                                                       TimeUnit.MILLISECONDS );
+            }
+
             // Process the configuration
             ProcessorHelper.processProjectConfig( projectConfigPlus,
                                                   executors );
@@ -171,6 +200,7 @@ public class Control implements Function<String[], Integer>
         // Shutdown
         finally
         {
+            shutDownGracefully( monitoringService );
             shutDownGracefully(productExecutor);
             shutDownGracefully(metricExecutor);
             shutDownGracefully(thresholdExecutor);
@@ -283,4 +313,66 @@ public class Control implements Function<String[], Integer>
         }
     }
 
+    private static class QueueMonitor implements Runnable
+    {
+        private Queue<?> featureQueue;
+        private Queue<?> pairQueue;
+        private Queue<?> thresholdQueue;
+        private Queue<?> metricQueue;
+        private Queue<?> productQueue;
+
+        QueueMonitor( Queue<?> featureQueue,
+                      Queue<?> pairQueue,
+                      Queue<?> thresholdQueue,
+                      Queue<?> metricQueue,
+                      Queue<?> productQueue )
+        {
+            this.featureQueue = featureQueue;
+            this.pairQueue = pairQueue;
+            this.thresholdQueue = thresholdQueue;
+            this.metricQueue = metricQueue;
+            this.productQueue = productQueue;
+        }
+
+        @Override
+        public void run()
+        {
+            int featureCount = 0;
+            int pairCount = 0;
+            int ioCount = Executor.getIoExecutorQueueTaskCount();
+            int databaseCount = Database.getDatabaseQueueTaskCount();
+            int hiPriCount = Executor.getHiPriIoExecutorQueueTaskCount();
+            int thresholdCount = 0;
+            int metricCount = 0;
+            int productCount = 0;
+
+            if ( this.featureQueue != null )
+            {
+                featureCount = this.featureQueue.size();
+            }
+
+            if ( this.pairQueue != null )
+            {
+                pairCount = this.pairQueue.size();
+            }
+
+            if ( this.thresholdQueue != null )
+            {
+                thresholdCount = this.thresholdQueue.size();
+            }
+
+            if ( this.metricQueue != null )
+            {
+                metricCount = this.metricQueue.size();
+            }
+
+            if ( this.productQueue != null )
+            {
+                productCount = this.productQueue.size();
+            }
+
+            LOGGER.info( "IoQ={}, IoHiPriQ={}, FeatureQ={}, PairQ={}, DatabaseQ={}, ThresholdQ={}, MetricQ={}, ProductQ={}",
+                         ioCount, hiPriCount, featureCount, pairCount, databaseCount, thresholdCount, metricCount, productCount );
+        }
+    }
 }
