@@ -8,12 +8,17 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import javax.net.ssl.SSLContext;
+
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.Channel;
 
+import com.rabbitmq.client.DefaultSaslConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import wres.messages.BrokerHelper;
 
 /**
  * A long-running, light-weight process that takes a job from a queue, and runs
@@ -25,8 +30,6 @@ public class Worker
     private static final Logger LOGGER = LoggerFactory.getLogger( Worker.class );
     private static final String RECV_QUEUE_NAME = "wres.job";
 
-    private static final String BROKER_HOST_PROPERTY_NAME = "wres.broker";
-    private static final String DEFAULT_BROKER_HOST = "localhost";
 
     /**
      * Expects exactly one arg with a path to WRES executable
@@ -36,6 +39,7 @@ public class Worker
      * @throws java.net.ConnectException when connection to queue fails.
      * @throws TimeoutException when connection to the queue times out.
      * @throws InterruptedException when interrupted while waiting for work.
+     * @throws IllegalStateException when setting up our custom trust list fails
      */
 
     public static void main( String[] args )
@@ -59,13 +63,24 @@ public class Worker
         }
 
         // Determine the actual broker name, whether from -D or default
-        String brokerHost = Worker.getBrokerHost();
-        LOGGER.info( "Using broker at host '{}'", brokerHost );
+        String brokerHost = BrokerHelper.getBrokerHost();
+        String brokerVhost = BrokerHelper.getBrokerVhost();
+        int brokerPort = BrokerHelper.getBrokerPort();
+        LOGGER.info( "Using broker at host '{}', vhost '{}', port '{}'",
+                     brokerHost, brokerVhost, brokerPort );
 
-        // Get work from the queue
+        // Set up connection parameters for connection to broker
         ConnectionFactory factory = new ConnectionFactory();
         factory.setHost( brokerHost );
+        factory.setVirtualHost( brokerVhost );
+        factory.setPort( brokerPort );
+        factory.setSaslConfig( DefaultSaslConfig.EXTERNAL );
 
+        SSLContext sslContext =
+                BrokerHelper.getSSLContextWithClientCertificate( BrokerHelper.Role.WORKER );
+        factory.useSslProtocol( sslContext );
+
+        // Get work from the queue
         try ( Connection connection = factory.newConnection();
               Channel receiveChannel = connection.createChannel() )
         {
@@ -97,25 +112,4 @@ public class Worker
             }
         }
     }
-
-    /**
-     * Helper to get the broker host name. Returns what was set in -D args
-     * or a default value if -D is not set.
-     * @return the broker host name to try connecting to.
-     */
-
-    private static String getBrokerHost()
-    {
-        String brokerFromDashD= System.getProperty( BROKER_HOST_PROPERTY_NAME );
-
-        if ( brokerFromDashD != null )
-        {
-            return brokerFromDashD;
-        }
-        else
-        {
-            return DEFAULT_BROKER_HOST;
-        }
-    }
-
 }

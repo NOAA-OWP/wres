@@ -23,7 +23,6 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
-import wres.datamodel.inputs.InsufficientDataException;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.io.Operations;
 import wres.io.config.ConfigHelper;
@@ -210,8 +209,7 @@ class ProcessorHelper
     }
 
     /**
-     * Look at a chain of exceptions, returns true if ANY is a NoDataException
-     * or if ANY is an InsufficientDataException
+     * Look at a chain of exceptions, returns true if ANY is a NoDataException.
      *
      * Intended as a stop-gap measure until we figure out how to avoid creating
      * NoDataExceptions at lower levels of the software. Once that is resolved,
@@ -222,13 +220,12 @@ class ProcessorHelper
      * found, false otherwise
      */
 
-    static boolean wasInsufficientDataOrNoDataInThisStack( Exception e )
+    static boolean wasNoDataExceptionInThisStack( Exception e )
     {
         Throwable cause = e;
         while ( cause != null )
         {
-            if ( cause instanceof NoDataException
-                 || cause instanceof InsufficientDataException )
+            if ( cause instanceof NoDataException )
             {
                 return true;
             }

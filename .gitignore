@@ -32,6 +32,10 @@ out
 *.hprof*.txt
 *.iml
 
+# Certificate-related, such as private keys or certificate signing requests
+*private*key*pem
+*pkcs10*request*pem
+
 # sundry
 /*.xml
 /resources

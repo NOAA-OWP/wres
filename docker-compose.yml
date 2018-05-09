@@ -1,28 +1,37 @@
-version: '3'
+version: '2.2'
 services:
     tasker:
         ports:
-         - "8585:8585"
-        image: "b1e45dc08b14"
-        restart: always
-        depends_on:
-         - "broker"
-        environment:
-         - JAVA_OPTS=-Dwres.broker=broker
-    broker:
-        ports:
-         - "4369:4369"
-         - "5671:5671"
-         - "5672:5672"
-         - "25672:25672"
-        image: "rabbitmq:3.7.4-alpine"
-        restart: always
-    worker:
-        image: "efbb0d6d8ce4"
+         - "443:8443"
+        image: "ca5f9cb15d97"
         restart: always
         depends_on:
          - "broker"
         volumes:
-         - /mnt/wres_share:/wres_data
+         - /mnt/wres_secrets:/wres_secrets:ro,z
+        environment:
+         - JAVA_OPTS=-Dwres.broker=broker -Dwres.env=ti
+        # Tasker JVM should have 160m max heap specified at launch
+        mem_limit: 360m
+    broker:
+        ports:
+         - "5671:5671"
+         - "15671:15671"
+        image: "3136d3c05577"
+        restart: always
+        volumes:
+         - /mnt/wres_secrets:/wres_secrets:ro,z
+        # rabbitmq.conf should have 180m specified as high watermark
+        mem_limit: 360m
+    worker:
+        image: "5fe385192ea6"
+        restart: always
+        depends_on:
+         - "broker"
+        volumes:
+         - /mnt/wres_share:/wres_data:z
+         - /mnt/wres_secrets:/wres_secrets:ro,z
         environment:
          - JAVA_OPTS=-Dwres.broker=broker
+        # Worker JVM should have 32m heap, wres should have 1628m heap
+        mem_limit: 2048m

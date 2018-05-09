@@ -2,8 +2,8 @@ package wres.tasker;
 
 import java.io.IOException;
 import java.util.Random;
-import java.util.StringJoiner;
 import java.util.concurrent.TimeoutException;
+import javax.net.ssl.SSLContext;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.FormParam;
 import javax.ws.rs.GET;
@@ -17,8 +17,12 @@ import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
+import com.rabbitmq.client.DefaultSaslConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import wres.messages.BrokerHelper;
+import wres.messages.generated.Job;
 
 @Path( "/job")
 public class WresJob
@@ -26,9 +30,6 @@ public class WresJob
     private static final Logger LOGGER = LoggerFactory.getLogger( WresJob.class );
 
     private static final String SEND_QUEUE_NAME = "wres.job";
-
-    private static final String BROKER_HOST_PROPERTY_NAME = "wres.broker";
-    private static final String DEFAULT_BROKER_HOST = "localhost";
 
     // Using a member variable fails, make it same across instances.
     private static final ConnectionFactory CONNECTION_FACTORY = new ConnectionFactory();
@@ -38,8 +39,16 @@ public class WresJob
     static
     {
         // Determine the actual broker name, whether from -D or default
-        String brokerHost = WresJob.getBrokerHost();
+        String brokerHost = BrokerHelper.getBrokerHost();
+        String brokerVhost = BrokerHelper.getBrokerVhost();
+        int brokerPort = BrokerHelper.getBrokerPort();
         CONNECTION_FACTORY.setHost( brokerHost );
+        CONNECTION_FACTORY.setVirtualHost( brokerVhost );
+        CONNECTION_FACTORY.setPort( brokerPort );
+        CONNECTION_FACTORY.setSaslConfig( DefaultSaslConfig.EXTERNAL );
+        SSLContext sslContext =
+                BrokerHelper.getSSLContextWithClientCertificate( BrokerHelper.Role.TASKER );
+        CONNECTION_FACTORY.useSslProtocol( sslContext );
     }
 
     private static final JobResults JOB_RESULTS = new JobResults( CONNECTION_FACTORY );
@@ -63,21 +72,19 @@ public class WresJob
     public Response postWresJob( @FormParam( "projectPath" ) String projectPath,
                                  @FormParam( "databaseUrl" ) String databaseUrl,
                                  @FormParam( "databaseName" ) String databaseName,
-                                 @FormParam( "databaseUser" ) String databaseUser,
-                                 @FormParam( "databasePassword" ) String databasePassword )
+                                 @FormParam( "databaseUser" ) String databaseUser )
     {
-        StringJoiner messageBuilder = new StringJoiner( "," );
-        messageBuilder.add( "projectConfig=" + projectPath );
-        messageBuilder.add( "JAVA_OPTS=-Dwres.url=" + databaseUrl + " "
-                            + "-Dwres.databaseName=" + databaseName + " "
-                            + "-Dwres.username=" + databaseUser + " "
-                            + "-Dwres.password=" + databasePassword );
-
+        Job.job jobMessage = Job.job.newBuilder()
+                                    .setDatabaseHostname( databaseUrl )
+                                    .setDatabaseName( databaseName )
+                                    .setDatabaseUsername( databaseUser )
+                                    .setProjectConfig( projectPath )
+                                    .build();
         String jobId;
 
         try
         {
-            jobId = sendMessage( messageBuilder.toString() );
+            jobId = sendMessage( jobMessage.toByteArray() );
         }
         catch ( IOException | TimeoutException e )
         {
@@ -104,7 +111,7 @@ public class WresJob
      * @throws IOException when connectivity, queue declaration, or publication fails
      * @throws TimeoutException
      */
-    private String sendMessage( String message )
+    private String sendMessage( byte[] message )
             throws IOException, TimeoutException
     {
         // Use a shared connection across requests.
@@ -138,7 +145,7 @@ public class WresJob
             channel.basicPublish( "",
                                   SEND_QUEUE_NAME,
                                   properties,
-                                  message.getBytes() );
+                                  message );
 
             LOGGER.info( "I sent this message to queue '{}' with properties '{}': {}.",
                          SEND_QUEUE_NAME, properties, message );
@@ -151,27 +158,6 @@ public class WresJob
         return Response.serverError()
                        .entity("<!DOCTYPE html><html><head><title>Our mistake</title></head><body><h1>Internal Server Error</h1><p>An issue occurred that is not your fault.</p></body></html>")
                        .build();
-    }
-
-
-    /**
-     * Helper to get the broker host name. Returns what was set in -D args
-     * or a default value if -D is not set.
-     * @return the broker host name to try connecting to.
-     */
-
-    private static String getBrokerHost()
-    {
-        String brokerFromDashD= System.getProperty( BROKER_HOST_PROPERTY_NAME );
-
-        if ( brokerFromDashD != null )
-        {
-            return brokerFromDashD;
-        }
-        else
-        {
-            return DEFAULT_BROKER_HOST;
-        }
     }
 
     private static Connection getConnection()

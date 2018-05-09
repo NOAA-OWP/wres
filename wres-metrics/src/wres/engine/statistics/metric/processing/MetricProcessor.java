@@ -32,10 +32,10 @@ import wres.datamodel.outputs.MetricOutputForProject;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.ScoreOutput;
 import wres.datamodel.thresholds.Threshold;
-import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdType;
+import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricCollection;
@@ -200,7 +200,14 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
 
     public Set<MetricOutputGroup> getCachedMetricOutputTypes() throws InterruptedException
     {
-        return this.getCachedMetricOutput().getOutputTypes();
+        T output = this.getCachedMetricOutput();
+
+        if ( Objects.isNull( output ) )
+        {
+            return Collections.emptySet();
+        }
+
+        return output.getOutputTypes();
     }
 
     /**
@@ -234,8 +241,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
 
     public Set<MetricOutputGroup> getMetricOutputTypesToCache()
     {
-        return Objects.nonNull( this.mergeSet ) ? Collections.unmodifiableSet( new HashSet<>( this.mergeSet ) )
-                                                : Collections.emptySet();
+        return Collections.unmodifiableSet( new HashSet<>( this.mergeSet ) );
     }
 
     /**
@@ -275,7 +281,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
 
     public boolean hasMetrics( MetricOutputGroup outGroup )
     {
-        return metrics.stream().anyMatch( a -> a.isInGroup( outGroup ) );
+        return this.metrics.stream().anyMatch( a -> a.isInGroup( outGroup ) );
     }
 
     /**
@@ -294,8 +300,9 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
 
     public boolean hasThresholdMetrics()
     {
-        return hasMetrics( MetricInputGroup.DISCRETE_PROBABILITY ) || hasMetrics( MetricInputGroup.DICHOTOMOUS )
-               || hasMetrics( MetricInputGroup.MULTICATEGORY );
+        return this.hasMetrics( MetricInputGroup.DISCRETE_PROBABILITY )
+                || this.hasMetrics( MetricInputGroup.MULTICATEGORY )
+                || this.hasMetrics( MetricInputGroup.DICHOTOMOUS );
     }
 
     /**
@@ -359,7 +366,11 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
         Objects.requireNonNull( config, MetricConfigHelper.NULL_CONFIGURATION_ERROR );
 
         Objects.requireNonNull( dataFactory, MetricConfigHelper.NULL_DATA_FACTORY_ERROR );
-
+        
+        Objects.requireNonNull( thresholdExecutor, "Specify a non-null threshold executor service." );
+        
+        Objects.requireNonNull( thresholdExecutor, "Specify a non-null metric executor service." );
+        
         this.dataFactory = dataFactory;
         this.metrics = MetricConfigHelper.getMetricsFromConfig( config );
         this.metricFactory = MetricFactory.getInstance( dataFactory );
@@ -426,14 +437,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
         }
 
         //Set the executor for processing thresholds
-        if ( Objects.nonNull( thresholdExecutor ) )
-        {
-            this.thresholdExecutor = thresholdExecutor;
-        }
-        else
-        {
-            this.thresholdExecutor = ForkJoinPool.commonPool();
-        }
+        this.thresholdExecutor = thresholdExecutor;
 
         this.allDataThreshold = dataFactory.ofThreshold( dataFactory.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
                                                          Operator.GREATER,

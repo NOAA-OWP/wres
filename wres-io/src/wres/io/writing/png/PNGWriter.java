@@ -13,7 +13,6 @@ import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartEngineException;
 import ohd.hseb.charter.ChartTools;
 import ohd.hseb.charter.datasource.XYChartDataSourceException;
-
 import wres.config.ProjectConfigPlus;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.MetricConfig;
@@ -31,8 +30,6 @@ import wres.io.config.SystemSettings;
  * Helps to write a {@link ChartEngine} to a graphical product file in Portable Network Graphics (PNG) format.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.2
- * @since 0.1
  */
 
 abstract class PNGWriter
@@ -102,8 +99,6 @@ abstract class PNGWriter
      * A helper class that builds the parameters required for graphics generation.
      * 
      * @author james.brown@hydrosolved.com
-     * @version 0.1
-     * @since 1.0
      */
 
     static class GraphicsHelper

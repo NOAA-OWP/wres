@@ -1,12 +1,16 @@
 package wres.engine.statistics.metric.ensemble;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
@@ -25,25 +29,46 @@ import wres.engine.statistics.metric.ensemble.ContinuousRankedProbabilityScore.C
  * Tests the {@link ContinuousRankedProbabilityScore}.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 public final class ContinousRankedProbabilityScoreTest
 {
 
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
+
     /**
-     * Constructs a {@link ContinuousRankedProbabilityScore} and compares the actual result to the expected result for
-     * a scenario without missing data. Also, checks the parameters of the metric.
-     * @throws MetricParameterException if the metric could not be constructed
+     * Default instance of a {@link ContinuousRankedProbabilityScore}.
+     */
+
+    private ContinuousRankedProbabilityScore crps;
+
+    /**
+     * Instance of a data factory.
+     */
+
+    private DataFactory outF;
+
+    @Before
+    public void setupBeforeEachTest() throws MetricParameterException
+    {
+        CRPSBuilder b = new CRPSBuilder();
+        this.outF = DefaultDataFactory.getInstance();
+        b.setOutputFactory( outF );
+        b.setDecompositionID( ScoreOutputGroup.NONE );
+        this.crps = b.build();
+    }
+
+    /**
+     * Compares the output from {@link ContinuousRankedProbabilityScore#apply(EnsemblePairs)} against expected output
+     * where the input contains no missing data.
      */
 
     @Test
-    public void test1CRPSNoMissings() throws MetricParameterException
+    public void testApplyWithNoMissings()
     {
         //Generate some data
-        final DataFactory outF = DefaultDataFactory.getInstance();
-        final MetadataFactory metaFac = outF.getMetadataFactory();
-        final List<PairOfDoubleAndVectorOfDoubles> pairs = new ArrayList<>();
+        MetadataFactory metaFac = outF.getMetadataFactory();
+        List<PairOfDoubleAndVectorOfDoubles> pairs = new ArrayList<>();
         pairs.add( outF.pairOf( 25.7, new double[] { 23, 43, 45, 23, 54 } ) );
         pairs.add( outF.pairOf( 21.4, new double[] { 19, 16, 57, 23, 9 } ) );
         pairs.add( outF.pairOf( 32.1, new double[] { 23, 54, 23, 12, 32 } ) );
@@ -52,15 +77,8 @@ public final class ContinousRankedProbabilityScoreTest
         pairs.add( outF.pairOf( 43, new double[] { 23, 12, 12, 34, 10 } ) );
         EnsemblePairs input = outF.ofEnsemblePairs( pairs, metaFac.getMetadata() );
 
-        //Build the metric
-        final CRPSBuilder b = new CRPSBuilder();
-
-        b.setDecompositionID( ScoreOutputGroup.NONE ).setOutputFactory( outF );
-
-        final ContinuousRankedProbabilityScore crps = b.build();
-
         //Metadata for the output
-        final MetricOutputMetadata m1 =
+        MetricOutputMetadata m1 =
                 metaFac.getOutputMetadata( input.getRawData().size(),
                                            metaFac.getDimension(),
                                            metaFac.getDimension(),
@@ -74,31 +92,20 @@ public final class ContinousRankedProbabilityScoreTest
                     + expected.getData()
                     + ".",
                     actual.equals( expected ) );
-        //Check the parameters
-        assertTrue( "Unexpected name for the Continuous Ranked Probability Score.",
-                    crps.getName()
-                        .equals( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE.toString() ) );
-        assertTrue( "The Continuous Ranked Probability Score is decomposable.", crps.isDecomposable() );
-        assertTrue( "The Continuous Ranked Probability Score is not a skill score.", !crps.isSkillScore() );
-        assertTrue( "Expected no decomposition for the Continuous Ranked Probability Score.",
-                    crps.getScoreOutputGroup() == ScoreOutputGroup.NONE );
-        assertTrue( "The Continuous Ranked Probability Score is proper.", crps.isProper() );
-        assertTrue( "The Continuous Ranked Probability Score is strictly proper.", crps.isStrictlyProper() );
     }
 
     /**
-     * Constructs a {@link ContinuousRankedProbabilityScore} and compares the actual result to the expected result for
-     * a scenario without  missing data.
-     * @throws MetricParameterException if the metric could not be constructed
+     * Compares the output from {@link ContinuousRankedProbabilityScore#apply(EnsemblePairs)} against expected output
+     * where the input contains missing data.
      */
 
     @Test
-    public void test2CRPSWithMissings() throws MetricParameterException
+    public void testApplyWithMissings()
     {
+
         //Generate some data
-        final DataFactory outF = DefaultDataFactory.getInstance();
-        final MetadataFactory metaFac = outF.getMetadataFactory();
-        final List<PairOfDoubleAndVectorOfDoubles> pairs = new ArrayList<>();
+        MetadataFactory metaFac = outF.getMetadataFactory();
+        List<PairOfDoubleAndVectorOfDoubles> pairs = new ArrayList<>();
         pairs.add( outF.pairOf( 25.7, new double[] { 23, 43, 45, 34.2, 23, 54 } ) );
         pairs.add( outF.pairOf( 21.4, new double[] { 19, 16, 57, 23, 9 } ) );
         pairs.add( outF.pairOf( 32.1, new double[] { 23, 54, 23, 12, 32, 45.3, 67.1 } ) );
@@ -107,23 +114,48 @@ public final class ContinousRankedProbabilityScoreTest
         pairs.add( outF.pairOf( 43, new double[] { 23, 12, 12 } ) );
         EnsemblePairs input = outF.ofEnsemblePairs( pairs, metaFac.getMetadata() );
 
-        //Build the metric
-        final CRPSBuilder b = new CRPSBuilder();
-
-        b.setDecompositionID( ScoreOutputGroup.NONE ).setOutputFactory( outF );
-
-        final ContinuousRankedProbabilityScore crps = b.build();
-
         //Metadata for the output
-        final MetricOutputMetadata m1 =
+        MetricOutputMetadata m1 =
                 metaFac.getOutputMetadata( input.getRawData().size(),
                                            metaFac.getDimension(),
                                            metaFac.getDimension(),
                                            MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE,
                                            MetricConstants.MAIN );
         //Check the results       
-        final DoubleScoreOutput actual = crps.apply( input );
-        final DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 8.734401927437641, m1 );
+        DoubleScoreOutput actual = crps.apply( input );
+        DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 8.734401927437641, m1 );
+        assertTrue( "Actual: " + actual.getData()
+                    + ". Expected: "
+                    + expected.getData()
+                    + ".",
+                    actual.equals( expected ) );
+
+    }
+
+    /**
+     * Compares the output from {@link ContinuousRankedProbabilityScore#apply(EnsemblePairs)} against expected output
+     * where the observation falls below the lowest member.
+     */
+
+    @Test
+    public void testApplyObsMissesLow()
+    {
+        //Generate some data
+        MetadataFactory metaFac = outF.getMetadataFactory();
+        List<PairOfDoubleAndVectorOfDoubles> pairs = new ArrayList<>();
+        pairs.add( outF.pairOf( 8, new double[] { 23, 54, 23, 12, 32 } ) );
+        EnsemblePairs input = outF.ofEnsemblePairs( pairs, metaFac.getMetadata() );
+
+        //Metadata for the output
+        MetricOutputMetadata m1 =
+                metaFac.getOutputMetadata( input.getRawData().size(),
+                                           metaFac.getDimension(),
+                                           metaFac.getDimension(),
+                                           MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE,
+                                           MetricConstants.MAIN );
+        //Check the results       
+        DoubleScoreOutput actual = crps.apply( input );
+        DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 13.36, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -132,39 +164,31 @@ public final class ContinousRankedProbabilityScoreTest
     }
     
     /**
-     * Constructs a {@link ContinuousRankedProbabilityScore} and compares the actual result to the expected result for
-     * a scenario where the observed value overlaps one ensemble member. This exposes a mistake in the Hersbach (2000) 
-     * paper where rows 1 and 3 of table/eqn. 26 should be inclusive bounds.
-     * @throws MetricParameterException if the metric could not be constructed 
+     * Compares the output from {@link ContinuousRankedProbabilityScore#apply(EnsemblePairs)} against expected output
+     * for a scenario where the observed value overlaps one ensemble member. This exposes a mistake in the Hersbach 
+     * (2000) paper where rows 1 and 3 of table/eqn. 26 should be inclusive bounds.
      */
 
     @Test
-    public void test3CRPSObsEqualsMember() throws MetricParameterException
+    public void testApplyObsEqualsMember()
     {
+
         //Generate some data
-        final DataFactory outF = DefaultDataFactory.getInstance();
-        final MetadataFactory metaFac = outF.getMetadataFactory();
-        final List<PairOfDoubleAndVectorOfDoubles> pairs = new ArrayList<>();
+        MetadataFactory metaFac = outF.getMetadataFactory();
+        List<PairOfDoubleAndVectorOfDoubles> pairs = new ArrayList<>();
         pairs.add( outF.pairOf( 32, new double[] { 23, 54, 23, 12, 32 } ) );
         EnsemblePairs input = outF.ofEnsemblePairs( pairs, metaFac.getMetadata() );
 
-        //Build the metric
-        final CRPSBuilder b = new CRPSBuilder();
-
-        b.setDecompositionID( ScoreOutputGroup.NONE ).setOutputFactory( outF );
-
-        final ContinuousRankedProbabilityScore crps = b.build();
-
         //Metadata for the output
-        final MetricOutputMetadata m1 =
+        MetricOutputMetadata m1 =
                 metaFac.getOutputMetadata( input.getRawData().size(),
                                            metaFac.getDimension(),
                                            metaFac.getDimension(),
                                            MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE,
                                            MetricConstants.MAIN );
         //Check the results       
-        final DoubleScoreOutput actual = crps.apply( input );
-        final DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 4.56, m1 );
+        DoubleScoreOutput actual = crps.apply( input );
+        DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 4.56, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -172,31 +196,115 @@ public final class ContinousRankedProbabilityScoreTest
                     actual.equals( expected ) );
     }    
     
+
     /**
-     * Constructs a {@link ContinuousRankedProbabilityScore} and checks for exceptional cases.
-     * @throws MetricParameterException if the metric could not be constructed
+     * Validates the output from {@link ContinuousRankedProbabilityScore#apply(EnsemblePairs)} when supplied with no 
+     * data.
      */
 
     @Test
-    public void test4Exceptions() throws MetricParameterException
+    public void testApplyWithNoData()
     {
-        //Obtain the factories
-        final DataFactory outF = DefaultDataFactory.getInstance();
+        // Generate empty data
+        EnsemblePairs input =
+                outF.ofEnsemblePairs( Arrays.asList(), outF.getMetadataFactory().getMetadata() );
 
-        //Build the metric
-        final CRPSBuilder b = new CRPSBuilder();
-        b.setDecompositionID( ScoreOutputGroup.NONE ).setOutputFactory( outF );
-        final ContinuousRankedProbabilityScore crps = b.build();
+        DoubleScoreOutput actual = crps.apply( input );
 
-        //Check exceptions
-        try
-        {
-            crps.apply( null );
-            fail( "Expected an exception on null input." );
-        }
-        catch(MetricInputException e)
-        {          
-        }
-    }    
+        assertTrue( actual.getData().isNaN() );
+    }
+
+    /**
+     * Checks that the {@link ContinuousRankedProbabilityScore#getName()} returns 
+     * {@link MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE.toString()}
+     */
+
+    @Test
+    public void testGetName()
+    {
+        assertTrue( crps.getName().equals( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE.toString() ) );
+    }
+
+    /**
+     * Checks that the {@link ContinuousRankedProbabilityScore#isDecomposable()} returns <code>true</code>.
+     */
+
+    @Test
+    public void testIsDecomposable()
+    {
+        assertTrue( crps.isDecomposable() );
+    }
+
+    /**
+     * Checks that the {@link ContinuousRankedProbabilityScore#isSkillScore()} returns <code>false</code>.
+     */
+
+    @Test
+    public void testIsSkillScore()
+    {
+        assertFalse( crps.isSkillScore() );
+    }
+
+    /**
+     * Checks that the {@link ContinuousRankedProbabilityScore#getScoreOutputGroup()} returns the result provided on 
+     * construction.
+     */
+
+    @Test
+    public void testGetScoreOutputGroup()
+    {
+        assertTrue( crps.getScoreOutputGroup() == ScoreOutputGroup.NONE );
+    }
+
+    /**
+     * Checks that the {@link ContinuousRankedProbabilityScore#isProper()} returns <code>true</code>.
+     */
+
+    @Test
+    public void testIsProper()
+    {
+        assertTrue( crps.isProper() );
+    }
+
+    /**
+     * Checks that the {@link ContinuousRankedProbabilityScore#isStrictlyProper()} returns <code>true</code>.
+     */
+
+    @Test
+    public void testIsStrictlyProper()
+    {
+        assertTrue( crps.isStrictlyProper() );
+    }
+
+    /**
+     * Tests for an expected exception on calling {@link ContinuousRankedProbabilityScore#apply(EnsemblePairs)} with 
+     * null input.
+     */
+
+    @Test
+    public void testApplyExceptionOnNullInput()
+    {
+        exception.expect( MetricInputException.class );
+        exception.expectMessage( "Specify non-null input to the 'CONTINUOUS RANKED PROBABILITY SCORE'." );
+
+        crps.apply( null );
+    }
+    
+    /**
+     * Tests for an expected exception on building a {@link ContinuousRankedProbabilityScore} with 
+     * an unrecognized decomposition identifier.
+     * @throws MetricParameterException if the metric could not be built for an unexpected reason
+     */
+
+    @Test
+    public void testApplyExceptionOnUnrecognizedDecompositionIdentifier() throws MetricParameterException
+    {
+        exception.expect( MetricParameterException.class );
+        exception.expectMessage( "Unsupported decomposition identifier 'LBR'." );
+        CRPSBuilder b = new CRPSBuilder();
+        b.setOutputFactory( outF );
+        b.setDecompositionID( ScoreOutputGroup.LBR );
+        b.build();
+    }
 
 }

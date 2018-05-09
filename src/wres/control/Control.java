@@ -30,8 +30,6 @@ import wres.io.config.SystemSettings;
  * 
  * @author james.brown@hydrosolved.com
  * @author jesse
- * @version 0.1
- * @since 0.1
  */
 public class Control implements Function<String[], Integer>
 {
@@ -98,18 +96,14 @@ public class Control implements Function<String[], Integer>
         ThreadFactory metricFactory = runnable -> new Thread( runnable, "Metric Thread" );
         ThreadFactory productFactory = runnable -> new Thread( runnable, "Product Thread" );
         
-        // Processes features
-// !!!!!UNCOMMENT NEXT BLOCK TO TEST ASYNCHRONOUS EXECUTION OF FEATURES!!!!!                
-//        ThreadPoolExecutor featureExecutor = new ThreadPoolExecutor( SystemSettings.maximumThreadCount(),
-//                                                                  SystemSettings.maximumThreadCount(),
-//                                                                  SystemSettings.poolObjectLifespan(),
-//                                                                  TimeUnit.MILLISECONDS,
-//                                                                  new ArrayBlockingQueue<>( SystemSettings.maximumThreadCount()
-//                                                                                            * 5 ),
-//                                                                  featureFactory );
-
-// !!!!!COMMENT OUT NEXT LINE TO TEST ASYNCHRONOUS EXECUTION OF FEATURES!!!!!        
-        ExecutorService featureExecutor = Executors.newSingleThreadExecutor( featureFactory );
+        // Processes features                
+        ThreadPoolExecutor featureExecutor = new ThreadPoolExecutor( SystemSettings.maximumThreadCount(),
+                                                                  SystemSettings.maximumThreadCount(),
+                                                                  SystemSettings.poolObjectLifespan(),
+                                                                  TimeUnit.MILLISECONDS,
+                                                                  new ArrayBlockingQueue<>( SystemSettings.maximumThreadCount()
+                                                                                            * 5 ),
+                                                                  featureFactory );
         
         // Processes pairs       
         ThreadPoolExecutor pairExecutor = new ThreadPoolExecutor( SystemSettings.maximumThreadCount(),
@@ -141,10 +135,8 @@ public class Control implements Function<String[], Integer>
                                                                                                * 5 ),
                                                                      productFactory );
         
-        // Set the rejection policy to run in the caller, slowing producers   
-        
-// !!!!!UNCOMMENT NEXT LINE TO TEST ASYNCHRONOUS EXECUTION OF FEATURES!!!!!        
-//        featureExecutor.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
+        // Set the rejection policy to run in the caller, slowing producers           
+        featureExecutor.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
         pairExecutor.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
         metricExecutor.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
         productExecutor.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );

@@ -380,7 +380,7 @@ public class MetricCollectionTest
      */
 
     @Test
-    public void testApplyWithNullSetToIgnore() throws  MetricParameterException
+    public void testApplyWithNullSetToIgnore() throws MetricParameterException
     {
 
         //Create a collection of metrics that consume single-valued pairs and produce a scalar output
@@ -409,7 +409,7 @@ public class MetricCollectionTest
      */
 
     @Test
-    public void testApplyWithAllMetricsToIgnore() throws  MetricParameterException
+    public void testApplyWithAllMetricsToIgnore() throws MetricParameterException
     {
 
         //Create a collection of metrics that consume single-valued pairs and produce a scalar output
@@ -426,8 +426,8 @@ public class MetricCollectionTest
         exception.expectMessage( "Cannot ignore all metrics in the store: specify some metrics to process." );
 
         collection.apply( input, Collections.singleton( MetricConstants.MEAN_ERROR ) );
-    }    
-    
+    }
+
     /**
      * Expects a {@link MetricParameterException} when building a {@link MetricCollection} without an 
      * {@link ExecutorService}.
@@ -557,31 +557,31 @@ public class MetricCollectionTest
                     + actualFirst
                     + ".",
                     testMe.test( actualFirst, expectedFirst ) );
-        
+
         assertTrue( "Expected value: " + expectedSecond
                     + ". Actual value: "
                     + actualSecond
                     + ".",
                     testMe.test( actualSecond, expectedSecond ) );
-        
+
         assertTrue( "Expected value: " + expectedThird
                     + ". Actual value: "
                     + actualThird
                     + ".",
                     testMe.test( actualThird, expectedThird ) );
-        
+
         assertTrue( "Expected value: " + expectedFourth
                     + ". Actual value: "
                     + actualFourth
                     + ".",
                     testMe.test( actualFourth, expectedFourth ) );
-        
+
         assertTrue( "Expected value: " + expectedFifth
                     + ". Actual value: "
                     + actualFifth
                     + ".",
                     testMe.test( actualFifth, expectedFifth ) );
-        
+
     }
 
     /**
@@ -668,7 +668,7 @@ public class MetricCollectionTest
             return false;
         }
     }
-
+    
     @After
     public void tearDownAfterEachTest()
     {

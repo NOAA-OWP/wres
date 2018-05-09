@@ -1,12 +1,15 @@
 package wres.engine.statistics.metric.discreteprobability;
 
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
@@ -19,39 +22,52 @@ import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
-import wres.engine.statistics.metric.discreteprobability.RelativeOperatingCharacteristicDiagram;
 import wres.engine.statistics.metric.discreteprobability.RelativeOperatingCharacteristicDiagram.RelativeOperatingCharacteristicBuilder;
 
 /**
  * Tests the {@link RelativeOperatingCharacteristicDiagram}.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 public final class RelativeOperatingCharacteristicDiagramTest
 {
 
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
+
     /**
-     * Constructs a {@link RelativeOperatingCharacteristicDiagram} and compares the actual result to the expected result. Also,
-     * checks the parameters of the metric. Uses the data from
-     * {@link MetricTestDataFactory#getDiscreteProbabilityPairsThree()}.
-     * @throws MetricParameterException if the metric could not be constructed
+     * Default instance of a {@link RelativeOperatingCharacteristicDiagram}.
+     */
+
+    private RelativeOperatingCharacteristicDiagram roc;
+
+    /**
+     * Instance of a data factory.
+     */
+
+    private DataFactory outF;
+
+    @Before
+    public void setupBeforeEachTest() throws MetricParameterException
+    {
+        RelativeOperatingCharacteristicBuilder b = new RelativeOperatingCharacteristicBuilder();
+        this.outF = DefaultDataFactory.getInstance();
+        b.setOutputFactory( outF );
+        this.roc = b.build();
+    }
+
+    /**
+     * Compares the output from {@link RelativeOperatingCharacteristicDiagram#apply(DiscreteProbabilityPairs)} against 
+     * expected output.
      */
 
     @Test
-    public void test1RelativeOperatingCharacteristic() throws MetricParameterException
+    public void testApply() throws MetricParameterException
     {
         //Generate some data
-        final DiscreteProbabilityPairs input = MetricTestDataFactory.getDiscreteProbabilityPairsThree();
+        DiscreteProbabilityPairs input = MetricTestDataFactory.getDiscreteProbabilityPairsThree();
 
-        //Build the metric
-        final RelativeOperatingCharacteristicBuilder b = new RelativeOperatingCharacteristicBuilder();
-        final DataFactory outF = DefaultDataFactory.getInstance();
-        final MetadataFactory metaFac = outF.getMetadataFactory();
-        b.setOutputFactory( outF );
-
-        final RelativeOperatingCharacteristicDiagram roc = b.build();
+        MetadataFactory metaFac = outF.getMetadataFactory();
 
         //Metadata for the output
         final MetricOutputMetadata m1 =
@@ -77,37 +93,58 @@ public final class RelativeOperatingCharacteristicDiagramTest
         output.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, expectedPOFD );
         final MultiVectorOutput expected = outF.ofMultiVectorOutput( output, m1 );
         assertTrue( "Difference between actual and expected ROC.", actual.equals( expected ) );
-        //Check the parameters
-        assertTrue( "Unexpected name for the Relative Operating Characteristic.",
-                    roc.getName().equals( MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM.toString() ) );
     }
 
     /**
-     * Constructs a {@link RelativeOperatingCharacteristicDiagram} and checks for exceptional cases.
-     * @throws MetricParameterException if the metric could not be constructed
+     * Validates the output from {@link RelativeOperatingCharacteristicDiagram#apply(DiscreteProbabilityPairs)} when 
+     * supplied with no data.
      */
 
     @Test
-    public void test4Exceptions() throws MetricParameterException
+    public void testApplyWithNoData()
     {
+        // Generate empty data
+        DiscreteProbabilityPairs input =
+                outF.ofDiscreteProbabilityPairs( Arrays.asList(), outF.getMetadataFactory().getMetadata() );
 
-        //Build the metric
-        final RelativeOperatingCharacteristicBuilder b = new RelativeOperatingCharacteristicBuilder();
-        final DataFactory outF = DefaultDataFactory.getInstance();
-        b.setOutputFactory( outF );
+        MultiVectorOutput actual = roc.apply( input );
+        
+        double[] source = new double[11];
+        
+        Arrays.fill( source, Double.NaN );
+        
+        assertTrue( Arrays.equals( actual.getData()
+                          .get( MetricDimension.PROBABILITY_OF_DETECTION )
+                          .getDoubles(), source ) );
 
-        final RelativeOperatingCharacteristicDiagram roc = b.build();
-
-        //Check exceptions
-        try
-        {
-            roc.apply( null );
-            fail( "Expected an exception on null input." );
-        }
-        catch ( MetricInputException e )
-        {
-        }
+        assertTrue( Arrays.equals( actual.getData()
+                          .get( MetricDimension.PROBABILITY_OF_FALSE_DETECTION )
+                          .getDoubles(), source ) );
     }
 
+    /**
+     * Checks that the {@link RelativeOperatingCharacteristicDiagram#getName()} returns 
+     * {@link MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM.toString()}
+     */
+
+    @Test
+    public void testGetName()
+    {
+        assertTrue( roc.getName().equals( MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM.toString() ) );
+    }
+
+    /**
+     * Tests for an expected exception on calling 
+     * {@link RelativeOperatingCharacteristicDiagram#apply(DiscreteProbabilityPairs)} with null input.
+     */
+
+    @Test
+    public void testApplyExceptionOnNullInput()
+    {
+        exception.expect( MetricInputException.class );
+        exception.expectMessage( "Specify non-null input to the 'RELATIVE OPERATING CHARACTERISTIC DIAGRAM'." );
+        
+        roc.apply( null );
+    }
 
 }
