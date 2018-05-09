@@ -1,6 +1,5 @@
 package wres.io.data.caching;
 
-import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Objects;
@@ -9,7 +8,6 @@ import java.util.concurrent.ConcurrentSkipListMap;
 
 import org.apache.commons.lang3.StringUtils;
 
-import wres.io.utilities.Database;
 import wres.io.utilities.ScriptBuilder;
 
 public class USGSParameters

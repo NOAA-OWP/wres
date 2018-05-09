@@ -856,11 +856,12 @@ class VectorNWMValueSaver extends WRESRunnable
                         script.addTab(  2  ).addLine("LEFT OUTER JOIN wres.ProjectSource PS");
                         script.addTab(   3   ).addLine("ON PS.source_id = FS.source_id");
                         script.addTab(  2  ).addLine("WHERE NOT EXISTS (");
-                        script.addTab(   3   ).addLine("SELECT 1");
-                        script.addTab(   3   ).addLine("FROM wres.ProjectSource PS");
-                        script.addTab(   3   ).addLine("WHERE PS.source_id = S.source_id");
-                        script.addTab(  2  ).addLine(")");
-                        script.addTab(   3   ).addLine("AND FS.forecast_id = TS.timeseries_id;");
+                        script.addTab(    4    ).addLine("SELECT 1");
+                        script.addTab(    4    ).addLine("FROM wres.ProjectSource PS");
+                        script.addTab(    4    ).addLine("WHERE PS.source_id = S.source_id");
+                        script.addTab(   3   ).addLine(")");
+                        script.addTab(   3   ).addLine("AND FS.forecast_id = TS.timeseries_id");
+                        script.addTab().addLine(");");
                     }
                     else
                     {

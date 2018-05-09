@@ -3,6 +3,7 @@ package wres;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -25,9 +26,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import ucar.ma2.Array;
+import ucar.ma2.InvalidRangeException;
 import ucar.nc2.Attribute;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
+
+import wres.config.ProjectConfigPlus;
+import wres.config.Validation;
 import wres.config.generated.Format;
 import wres.config.generated.ProjectConfig;
 import wres.control.Control;
@@ -54,8 +59,8 @@ import wres.util.Strings;
  */
 final class MainFunctions
 {
-	public static final Integer FAILURE = -1;
-	public static final Integer SUCCESS = 0;
+	static final Integer FAILURE = -1;
+	static final Integer SUCCESS = 0;
     private static final Logger LOGGER = LoggerFactory.getLogger(MainFunctions.class);
 
 	// Mapping of String names to corresponding methods
@@ -83,7 +88,7 @@ final class MainFunctions
 	 * @param operation The desired operation to perform
 	 * @return True if there is a method mapped to the operation name
 	 */
-	public static boolean hasOperation (final String operation)
+	static boolean hasOperation (final String operation)
     {
 		return FUNCTIONS.containsKey(operation.toLowerCase());
 	}
@@ -94,7 +99,7 @@ final class MainFunctions
 	 * @param operation The name of the desired method to call
 	 * @param args      The desired arguments to use when calling the method
 	 */
-	public static Integer call (String operation, final String[] args) {
+	static Integer call (String operation, final String[] args) {
 	    Integer result = FAILURE;
 		operation = operation.toLowerCase();
 
@@ -124,11 +129,12 @@ final class MainFunctions
 		functions.put("install", install());
 		functions.put("ingest", MainFunctions::ingest);
 		functions.put("loadfeatures", loadFeatures());
-		functions.put("killconnections", killWRESConnections());
 		functions.put( "loadusgsparameters", loadUSGSParameters());
 		functions.put( "latestprojecterror", getLatestProjectError() );
 		functions.put( "getexecutions", getExecutions() );
 		functions.put("viewruns", viewRuns());
+		functions.put("createnetcdftemplate", MainFunctions::createNetCDFTemplate);
+		functions.put("validate", MainFunctions::validate);
 
 		return functions;
 	}
@@ -156,33 +162,6 @@ final class MainFunctions
             {
                 LOGGER.error("The path to the USGS parameter definition CSV is required.");
                 LOGGER.error("usage: loadUSGSParameters parameters.csv");
-            }
-
-            return result;
-        };
-    }
-
-	private static Function<String[], Integer> killWRESConnections()
-    {
-        return (final String[] args) -> {
-            Integer result = FAILURE;
-            final String NEWLINE = System.lineSeparator();
-
-            try
-            {
-                StringBuilder script = new StringBuilder();
-                script.append("SELECT pg_cancel_backend(pid)").append(NEWLINE);
-                script.append("FROM pg_stat_activity").append(NEWLINE);
-                script.append("WHERE client_port != -1").append(NEWLINE);
-                script.append("     AND application_name = 'PostgreSQL JDBC Driver'").append(NEWLINE);
-                script.append("     AND state = 'idle';");
-                Database.execute(script.toString());
-                result = SUCCESS;
-            }
-            catch (SQLException e) {
-                MainFunctions.addException( e );
-                LOGGER.error("Orphaned WRES connections to the WRES database could not be canceled.");
-                LOGGER.error(Strings.getStackTrace(e));
             }
 
             return result;
@@ -780,6 +759,105 @@ final class MainFunctions
         return result;
     }
 
+    private static Integer validate(String[] args)
+    {
+        int result = FAILURE;
+
+        if (args.length > 0)
+        {
+            Path configPath = Paths.get( args[0] );
+            ProjectConfigPlus projectConfigPlus;
+
+            String fullPath = configPath.toAbsolutePath().toString();
+
+            try
+            {
+                // Unmarshal the configuration
+                projectConfigPlus = ProjectConfigPlus.from( configPath );
+            }
+            catch ( IOException ioe )
+            {
+                System.err.println("Failed to unmarshal the project configuration at '" + fullPath + "'");
+                System.err.println(Strings.getStackTrace( ioe ));
+                return result; // Or return 400 - Bad Request (see #41467)
+            }
+
+            // Validate unmarshalled configurations
+            final boolean validated =
+                    Validation.isProjectValid( projectConfigPlus );
+
+            if ( validated )
+            {
+                System.out.println("'" + fullPath + "' is a valid project config.");
+                result = SUCCESS;
+            }
+            else
+            {
+                // Even though the application performed its job, we still want
+                // to return a failure so that the return code may be used to
+                // determine the validity
+                System.out.println("'" + fullPath + "' is not a valid config.");
+            }
+
+        }
+        else
+        {
+            System.err.println( "A project path was not passed in" );
+            System.err.println("usage: validate <path to project>");
+        }
+
+        return result;
+    }
+
+    private static Integer createNetCDFTemplate(String[] args)
+    {
+        int result = FAILURE;
+
+        if (args.length > 1)
+        {
+            try
+            {
+                String fromFileName = args[0];
+                String toFileName = args[1];
+
+                if (!Files.exists( Paths.get( fromFileName ) ))
+                {
+                    throw new IllegalArgumentException( "The source file '" +
+                                                        fromFileName +
+                                                        "' does not exist. A "
+                                                        + "template file must "
+                                                        + "have a valid source "
+                                                        + "file." );
+                }
+
+                if (!toFileName.toLowerCase().endsWith( "nc" ))
+                {
+                    throw new IllegalArgumentException( "The name for the "
+                                                        + "template is invalid; "
+                                                        + "it must end with "
+                                                        + "'*.nc' to indicate "
+                                                        + "that it is a NetCDF "
+                                                        + "file." );
+                }
+
+                Operations.createNetCDFOutputTemplate( fromFileName, toFileName );
+                result = SUCCESS;
+            }
+            catch (IOException | RuntimeException error)
+            {
+                MainFunctions.addException( error );
+                LOGGER.error(Strings.getStackTrace( error ));
+            }
+        }
+        else
+        {
+            LOGGER.error("There are not enough arguments to create a template.");
+            LOGGER.error("usage: createnetcdftemplate <path to original file> <path to template>");
+        }
+
+        return result;
+    }
+
     private static Function<String[], Integer> loadCoordinates() {
 		return (final String[] args) -> {
 			Integer result = FAILURE;
@@ -1051,7 +1129,7 @@ final class MainFunctions
                                 return MainFunctions.LOGGER;
                             }
 
-                            public WRESRunnable init(List<int[]> parameters)
+                            WRESRunnable init(List<int[]> parameters)
                             {
                                 this.parameters = parameters;
                                 return this;
@@ -1085,12 +1163,7 @@ final class MainFunctions
                     Database.completeAllIngestTasks();
 
                 }
-                catch (IOException e)
-                {
-                    MainFunctions.addException( e );
-                    LOGGER.error(Strings.getStackTrace(e));
-                }
-                catch (SQLException e)
+                catch (IOException | SQLException e)
                 {
                     MainFunctions.addException( e );
                     LOGGER.error(Strings.getStackTrace(e));
@@ -1174,7 +1247,7 @@ final class MainFunctions
         };
     }
 
-    private static final Function<String[], Integer> getExecutions()
+    private static Function<String[], Integer> getExecutions()
     {
         return args -> {
             Integer result = SUCCESS;
@@ -1187,7 +1260,7 @@ final class MainFunctions
             script.addLine("SELECT 'Arguments: ' || arguments || '");
             script.addLine("User: ' || username || ':' || address || '");
             script.addLine("Run Time: ' || run_time::text || '");
-            script.addLine("Errors: ||");
+            script.addLine("Errors:' ||");
             script.addTab().addLine("CASE");
             script.addTab(  2  ).addLine("WHEN (error IS NULL || error = '') THEN 'None'");
             script.addTab(  2  ).addLine("ELSE '");
@@ -1325,7 +1398,7 @@ final class MainFunctions
         }
     }
 
-    public static List<Exception> getEncounteredExceptions()
+    static List<Exception> getEncounteredExceptions()
     {
         synchronized ( EXCEPTION_LOCK )
         {

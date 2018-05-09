@@ -101,13 +101,10 @@ public class MeasurementUnits extends Cache<MeasurementDetails, String> {
             script.addLine("FROM wres.MeasurementUnit");
             script.add("LIMIT ", this.getMaxDetails(), ";");
 
-            script.consume(
-                    unitRow -> this.getKeyIndex()
-                                   .put(
-                                           unitRow.getString( "unit_name" ),
-                                           unitRow.getInt( "measurementunit_id" )
-                                   )
-            );
+            Database.populateMap( this.getKeyIndex(),
+                                  script.toString(),
+                                  "unit_name",
+                                  "measurementunit_id" );
         }
         catch (SQLException error)
         {

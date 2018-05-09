@@ -48,7 +48,6 @@ import wres.grid.client.Response;
 import wres.io.concurrency.Executor;
 import wres.io.concurrency.WRESCallable;
 import wres.io.config.ConfigHelper;
-import wres.io.data.caching.DataSources;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.UnitConversions;
 import wres.io.data.details.ProjectDetails;
