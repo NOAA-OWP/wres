@@ -16,7 +16,6 @@ import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -48,9 +47,9 @@ public class ZippedSource extends BasicSource {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ZippedSource.class);
 
-    private final ExecutorService readerService = createReaderService();
+    private final ThreadPoolExecutor readerService = createReaderService();
 
-    private ExecutorService createReaderService()
+    private ThreadPoolExecutor createReaderService()
     {
         int threadCount = ((Double)Math.ceil(SystemSettings.maximumThreadCount() / 10F)).intValue();
         threadCount = Math.max(threadCount, 2);
@@ -324,6 +323,24 @@ public class ZippedSource extends BasicSource {
         }
 
         return bytesRead;
+    }
+
+
+    /**
+     * For system-level monitoring information, return the number of tasks in
+     * the reader queue.
+     * @return the count of tasks waiting to be performed.
+     */
+
+    public int getQueueCount()
+    {
+        if ( this.readerService != null
+             && this.readerService.getQueue() != null )
+        {
+            return this.readerService.getQueue().size();
+        }
+
+        return 0;
     }
 
     private final String directoryPath;
