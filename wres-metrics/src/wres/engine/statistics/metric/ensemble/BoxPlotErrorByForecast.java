@@ -24,8 +24,6 @@ import wres.engine.statistics.metric.MetricParameterException;
  * value may be prescribed.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 
 public class BoxPlotErrorByForecast extends BoxPlot

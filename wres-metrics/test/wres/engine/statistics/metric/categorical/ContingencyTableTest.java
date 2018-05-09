@@ -94,12 +94,11 @@ public final class ContingencyTableTest
     }
 
     /**
-     * Checks that the {@link ContingencyTable#getName()} returns {@link MetricConstants.CONTINGENCY_TABLE.toString()}
-     * @throws MetricParameterException if the metric could not be constructed 
+     * Checks that the {@link ContingencyTable#getName()} returns {@link MetricConstants.CONTINGENCY_TABLE.toString()} 
      */
 
     @Test
-    public void testContingencyTableIsNamedCorrectly() throws MetricParameterException
+    public void testContingencyTableIsNamedCorrectly()
     {
         assertTrue( table.getName().equals( MetricConstants.CONTINGENCY_TABLE.toString() ) );
     }

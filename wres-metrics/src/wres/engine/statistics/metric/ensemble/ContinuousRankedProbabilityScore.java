@@ -34,8 +34,6 @@ import wres.engine.statistics.metric.ProbabilityScore;
  * </p>
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 public class ContinuousRankedProbabilityScore extends DecomposableScore<EnsemblePairs>
         implements ProbabilityScore<EnsemblePairs, DoubleScoreOutput>
@@ -121,8 +119,8 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<Ensemble
             case CR:
                 break;
             default:
-                throw new MetricParameterException( "Unsupported decomposition identifier: "
-                                                    + getScoreOutputGroup() );
+                throw new MetricParameterException( "Unsupported decomposition identifier '"
+                                                    + getScoreOutputGroup()+"'." );
         }
     }
 

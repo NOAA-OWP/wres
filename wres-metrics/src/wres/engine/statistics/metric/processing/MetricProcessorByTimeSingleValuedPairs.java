@@ -132,12 +132,9 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
         }
 
         // Log
-        if ( LOGGER.isDebugEnabled() )
-        {
-            LOGGER.debug( "Completed processing of metrics for feature '{}' at time window '{}'.",
-                          input.getMetadata().getIdentifier().getGeospatialID(),
-                          input.getMetadata().getTimeWindow() );
-        }
+        LOGGER.debug( PROCESSING_COMPLETE_MESSAGE,
+                      input.getMetadata().getIdentifier().getGeospatialID(),
+                      input.getMetadata().getTimeWindow() );
 
         //Process and return the result       
         MetricFuturesByTime futureResults = futures.build();
@@ -184,7 +181,8 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
             this.timeSeries = metricFactory.ofSingleValuedTimeSeriesCollection( metricExecutor,
                                                                                 timingErrorMetrics );
             //Summary statistics
-            Map<MetricConstants, TimingErrorDurationStatistics> localStatistics = new EnumMap<>( MetricConstants.class );
+            Map<MetricConstants, TimingErrorDurationStatistics> localStatistics =
+                    new EnumMap<>( MetricConstants.class );
 
             // Iterate the timing error metrics
             for ( MetricConstants nextMetric : timingErrorMetrics )
@@ -256,14 +254,8 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
 
         // Metrics that are explicitly configured as time-series
         if ( ProjectConfigs.hasTimeSeriesMetrics( config )
-             && ( hasMetrics( MetricInputGroup.SINGLE_VALUED ) || hasMetrics( MetricInputGroup.DICHOTOMOUS ) ) )
-        {
-            throw new MetricConfigException( message );
-        }
-
-        // Time-series metrics that are configured as regular metrics, not time-series
-        if ( hasMetrics( MetricInputGroup.SINGLE_VALUED_TIME_SERIES )
-             && ( hasMetrics( MetricInputGroup.SINGLE_VALUED ) || hasMetrics( MetricInputGroup.DICHOTOMOUS ) ) )
+             && ( this.hasMetrics( MetricInputGroup.SINGLE_VALUED )
+                  || this.hasMetrics( MetricInputGroup.DICHOTOMOUS ) ) )
         {
             throw new MetricConfigException( message );
         }

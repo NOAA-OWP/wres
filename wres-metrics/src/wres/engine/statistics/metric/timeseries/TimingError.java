@@ -2,7 +2,6 @@ package wres.engine.statistics.metric.timeseries;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.List;
 import java.util.Objects;
 import java.util.Random;
 
@@ -106,7 +105,7 @@ public abstract class TimingError implements Metric<TimeSeriesOfSingleValuedPair
      * @throws MetricParameterException if one or more parameters is invalid 
      */
 
-    protected TimingError( final TimingErrorBuilder builder ) throws MetricParameterException
+    TimingError( final TimingErrorBuilder builder ) throws MetricParameterException
     {
         if ( Objects.isNull( builder ) )
         {
@@ -139,26 +138,6 @@ public abstract class TimingError implements Metric<TimeSeriesOfSingleValuedPair
     Random getRNG()
     {
         return rng;
-    }
-    
-    /**
-     * Resolves ties between times by randomly selecting one time from the input.
-     * 
-     * @param tiedTimes a collection of tied times
-     * @returned a randomly selected time from the input
-     * @throws NullPointerException if the input is null or any of the contained times is null
-     */
-
-    Instant resolveTiesByRandomSelection( List<Instant> tiedTimes )
-    {
-        Objects.requireNonNull( tiedTimes, "Cannot resolve ties for null input." );
-
-        if ( tiedTimes.contains( null ) )
-        {
-            throw new NullPointerException( "One or more of the tied times is null." );
-        }
-        
-        return tiedTimes.get(  rng.nextInt( tiedTimes.size() ) );
     }
 
 }

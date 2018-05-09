@@ -1,14 +1,17 @@
 package wres.engine.statistics.metric.ensemble;
 
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
@@ -20,47 +23,66 @@ import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.engine.statistics.metric.MetricParameterException;
-import wres.engine.statistics.metric.ensemble.RankHistogram;
 import wres.engine.statistics.metric.ensemble.RankHistogram.RankHistogramBuilder;
 
 /**
  * Tests the {@link RankHistogram}.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 public final class RankHistogramTest
 {
 
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
+
     /**
-     * Constructs a {@link RankHistogram} and compares the actual result to the expected result for a synthetic dataset,
-     * involving sampling from a uniform probability distribution whose expected frequencies are 1/N+1, where N=9 
-     * ensemble members. Also, checks the parameters of the metric.
-     * @throws MetricParameterException if the metric could not be constructed
+     * Default instance of a {@link RankHistogram}.
+     */
+
+    private RankHistogram rh;
+
+    /**
+     * Instance of a data factory.
+     */
+
+    private DataFactory outF;
+    
+    /**
+     * Instance of a random number generator.
+     */
+
+    private Random rng;
+    
+    @Before
+    public void setupBeforeEachTest() throws MetricParameterException
+    {
+        RankHistogramBuilder b = new RankHistogramBuilder();
+        this.outF = DefaultDataFactory.getInstance();
+        b.setOutputFactory( outF );
+        rng = new Random( 12345678 );
+        b.setRNGForTies( rng );
+        this.rh = b.build();
+    }
+
+    /**
+     * Compares the output from {@link RankHistogram#apply(EnsemblePairs)} against expected output for pairs without
+     * ties.
      */
 
     @Test
-    public void test1RankHistogram() throws MetricParameterException
+    public void testApplyWithoutTies() throws MetricParameterException
     {
-        //Build the metric
-        final RankHistogramBuilder b = new RankHistogramBuilder();
-        final DataFactory outF = DefaultDataFactory.getInstance();
-        final MetadataFactory metaFac = outF.getMetadataFactory();
-        b.setOutputFactory( outF );
+        MetadataFactory metaFac = outF.getMetadataFactory();
 
-        final RankHistogram rh = b.build();
-
-        //Generate some data using an RNG for a uniform U[0,1] distribution with a fixed seed
-        Random r = new Random( 12345678 );
         final List<PairOfDoubleAndVectorOfDoubles> values = new ArrayList<>();
         for ( int i = 0; i < 10000; i++ )
         {
-            double left = r.nextDouble();
+            double left = rng.nextDouble();
             double[] right = new double[9];
             for ( int j = 0; j < 9; j++ )
             {
-                right[j] = r.nextDouble();
+                right[j] = rng.nextDouble();
             }
             values.add( outF.pairOf( left, right ) );
         }
@@ -80,29 +102,17 @@ public final class RankHistogramTest
                     Arrays.equals( actualRanks, expectedRanks ) );
         assertTrue( "Difference between actual and expected relative frequencies.",
                     Arrays.equals( actualRFreqs, expectedRFreqs ) );
-
-        //Check the parameters
-        assertTrue( "Unexpected name for the Rank Histogram.",
-                    rh.getName().equals( MetricConstants.RANK_HISTOGRAM.toString() ) );
     }
-
+    
     /**
-     * Constructs a {@link RankHistogram} and compares the actual result to the expected result for a synthetic dataset
-     * with ties.
-     * @throws MetricParameterException if the metric could not be constructed
+     * Compares the output from {@link RankHistogram#apply(EnsemblePairs)} against expected output for pairs with
+     * ties.
      */
 
     @Test
-    public void test2RankHistogramWithTies() throws MetricParameterException
+    public void testApplyWithTies()
     {
-        //Build the metric
-        final RankHistogramBuilder b = new RankHistogramBuilder();
-        final DataFactory outF = DefaultDataFactory.getInstance();
-        final MetadataFactory metaFac = outF.getMetadataFactory();
-        b.setOutputFactory( outF );
-        b.setRNGForTies( new Random( 12345678 ) ); //Fixed seed in RNG
-        final RankHistogram rh = b.build();
-
+        MetadataFactory metaFac = outF.getMetadataFactory();
 
         //Generate some data using an RNG for a uniform U[0,1] distribution with a fixed seed
         final List<PairOfDoubleAndVectorOfDoubles> values = new ArrayList<>();
@@ -124,30 +134,72 @@ public final class RankHistogramTest
         assertTrue( "Difference between actual and expected relative frequencies.",
                     Arrays.equals( actualRFreqs, expectedRFreqs ) );
     }
+    
 
     /**
-     * Constructs a {@link RankHistogram} and checks for exceptional cases.
-     * @throws MetricParameterException if the metric could not be constructed
+     * Validates the output from {@link RankHistogram#apply(EnsemblePairs)} when 
+     * supplied with no data.
      */
 
     @Test
-    public void test2Exceptions() throws MetricParameterException
+    public void testApplyWithNoData()
     {
-        //Build the metric
-        final RankHistogramBuilder b = new RankHistogramBuilder();
-        final DataFactory outF = DefaultDataFactory.getInstance();
-        b.setOutputFactory( outF );
+        // Generate empty data
+        EnsemblePairs input =
+                outF.ofEnsemblePairs( Arrays.asList(), outF.getMetadataFactory().getMetadata() );
 
-        final RankHistogram rh = b.build();
+        MultiVectorOutput actual = rh.apply( input );
+        
+        double[] source = new double[1];
+        
+        Arrays.fill( source, Double.NaN );
 
-        //Check exceptions
-        try
-        {
-            rh.apply( null );
-            fail( "Expected an exception on null input." );
-        }
-        catch ( MetricInputException e )
-        {
-        }
+        assertTrue( Arrays.equals( actual.getData()
+                          .get( MetricDimension.RANK_ORDER )
+                          .getDoubles(), source ) );
+
+        assertTrue( Arrays.equals( actual.getData()
+                          .get( MetricDimension.OBSERVED_RELATIVE_FREQUENCY )
+                          .getDoubles(), source ) );
     }
+
+    /**
+     * Checks that the {@link RankHistogram#getName()} returns 
+     * {@link MetricConstants.RANK_HISTOGRAM.toString()}
+     */
+
+    @Test
+    public void testGetName()
+    {
+        assertTrue( rh.getName().equals( MetricConstants.RANK_HISTOGRAM.toString() ) );
+    }
+
+    /**
+     * Tests for an expected exception on calling 
+     * {@link RankHistogram#apply(EnsemblePairs)} with null input.
+     */
+
+    @Test
+    public void testApplyExceptionOnNullInput()
+    {
+        exception.expect( MetricInputException.class );
+        exception.expectMessage( "Specify non-null input to the 'RANK HISTOGRAM'." );
+        
+        rh.apply( null );
+    }    
+
+    
+    /**
+     * Tests for the correct construction of a {@link RankHistogram} when a random number generator is not supplied.
+     * @throws MetricParameterException if construction fails for an unexpected reason
+     */
+
+    @Test
+    public void testConstructionWithoutRNG() throws MetricParameterException
+    {
+        RankHistogramBuilder b = new RankHistogramBuilder();
+        b.setOutputFactory( outF );
+        assertTrue( Objects.nonNull( b.build() ) );               
+    }  
+    
 }

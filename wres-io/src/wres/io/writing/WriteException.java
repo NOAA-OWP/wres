@@ -6,8 +6,6 @@ import wres.datamodel.DataException;
  * A runtime exception associated with writing metric outputs.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 1.0
  */
 
 public class WriteException extends DataException

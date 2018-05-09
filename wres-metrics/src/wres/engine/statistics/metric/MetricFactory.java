@@ -1067,7 +1067,7 @@ public class MetricFactory
     {
         if ( MetricConstants.PEIRCE_SKILL_SCORE.equals( metric ) )
         {
-            return ofPeirceSkillScoreMulti();
+            return ofPeirceSkillScore();
         }
         else
         {
@@ -1382,29 +1382,16 @@ public class MetricFactory
     }
 
     /**
-     * Return a default {@link PeirceSkillScore} function for a dichotomous event.
+     * Return a default {@link PeirceSkillScore} function.
      * 
-     * @return a default {@link PeirceSkillScore} function for a dichotomous event
+     * @param <S> the type of pairs
+     * @return a default {@link PeirceSkillScore} function
      * @throws MetricParameterException if one or more parameter values is incorrect
      */
 
-    public PeirceSkillScore<DichotomousPairs> ofPeirceSkillScore() throws MetricParameterException
+    public <S extends MulticategoryPairs> PeirceSkillScore<S> ofPeirceSkillScore() throws MetricParameterException
     {
-        return (PeirceSkillScore<DichotomousPairs>) new PeirceSkillScore.PeirceSkillScoreBuilder<DichotomousPairs>().setOutputFactory( outputFactory )
-                                                                                                                    .build();
-    }
-
-    /**
-     * Return a default {@link PeirceSkillScore} function for a multicategory event.
-     * 
-     * @return a default {@link PeirceSkillScore} function for a multicategory event
-     * @throws MetricParameterException if one or more parameter values is incorrect 
-     */
-
-    public PeirceSkillScore<MulticategoryPairs> ofPeirceSkillScoreMulti() throws MetricParameterException
-    {
-        return (PeirceSkillScore<MulticategoryPairs>) new PeirceSkillScore.PeirceSkillScoreBuilder<MulticategoryPairs>().setOutputFactory( outputFactory )
-                                                                                                                        .build();
+        return (PeirceSkillScore<S>) new PeirceSkillScore.PeirceSkillScoreBuilder<S>().setOutputFactory( outputFactory ).build();
     }
 
     /**

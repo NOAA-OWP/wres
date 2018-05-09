@@ -32,8 +32,6 @@ import wres.engine.statistics.metric.MetricParameterException;
  * occurred, based on the forecast probability.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 
 public class RelativeOperatingCharacteristicDiagram extends Diagram<DiscreteProbabilityPairs, MultiVectorOutput>

@@ -1,5 +1,9 @@
 package wres.engine.statistics.metric;
 
+import static org.junit.Assert.assertTrue;
+
+import java.util.Objects;
+
 import org.junit.Test;
 
 /**
@@ -15,10 +19,18 @@ public final class MetricParameterExceptionTest
      */
 
     @Test
-    public void test1MetricConfigurationException()
+    public void testMetricConfigurationException()
     {
-        final MetricParameterException e = new MetricParameterException();
-        final MetricParameterException f = new MetricParameterException("Test exception.");
-        new MetricParameterException(f.getMessage(), e);
+        assertTrue( Objects.nonNull( new MetricParameterException() ) );
+        
+        MetricParameterException f = new MetricParameterException("Test exception.");
+        assertTrue( Objects.nonNull( f ) );
+        assertTrue( f.getMessage().equals( "Test exception." ) );
+        
+        MetricParameterException g = new MetricParameterException(f.getMessage(), f);
+        
+        assertTrue( Objects.nonNull( f ) );
+        assertTrue( g.getMessage().equals( "Test exception." ) );
+        assertTrue( g.getCause().equals( f ) );
     }
 }

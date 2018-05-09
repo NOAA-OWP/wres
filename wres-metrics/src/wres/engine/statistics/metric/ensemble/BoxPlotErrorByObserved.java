@@ -18,8 +18,6 @@ import wres.engine.statistics.metric.MetricParameterException;
  * are mapped to prescribed quantiles (probability thresholds).
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 
 public class BoxPlotErrorByObserved extends BoxPlot
