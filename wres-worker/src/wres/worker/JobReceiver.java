@@ -1,12 +1,11 @@
 package wres.worker;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DefaultConsumer;
@@ -14,7 +13,7 @@ import com.rabbitmq.client.Envelope;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.messages.generated.JobResult;
+import wres.messages.generated.Job;
 
 /**
  * The concrete class that does the work of taking a job message and creating
@@ -69,11 +68,8 @@ class JobReceiver extends DefaultConsumer
                                 AMQP.BasicProperties properties,
                                 byte[] body )
     {
-        String message = new String( body, Charset.forName( "UTF-8" ) );
-        LOGGER.info( "Received job message {}", message );
-
         // Translate the message into a command
-        ProcessBuilder processBuilder = createBuilderFromMessage( message );
+        ProcessBuilder processBuilder = createBuilderFromMessage( body );
         // Set up the information needed to launch process and send info back
         WresProcess wresProcess = new WresProcess( processBuilder,
                                                    properties.getReplyTo(),
@@ -88,42 +84,32 @@ class JobReceiver extends DefaultConsumer
     /**
      * Translate a message from the queue into a ProcessBuilder to run
      * @param message a message from the queue
-     * @return a ProcessBuilder to attempt to run, or null if invalid message
+     * @return a ProcessBuilder to attempt to run
+     * @throws IllegalArgumentException if the message is not well formed
      */
 
-    private ProcessBuilder createBuilderFromMessage( String message )
+    private ProcessBuilder createBuilderFromMessage( byte[] message )
     {
+        Job.job jobMessage;
+
+        try
+        {
+            jobMessage = Job.job.parseFrom( message );
+        }
+        catch ( InvalidProtocolBufferException ipbe )
+        {
+            throw new IllegalArgumentException( "Bad message received", ipbe );
+        }
+
+        String javaOpts = "-Dwres.url=" + jobMessage.getDatabaseHostname()
+                          + " -Dwres.databaseName=" + jobMessage.getDatabaseName()
+                          + " -Dwres.username=" + jobMessage.getDatabaseUsername();
+
         List<String> result = new ArrayList<>();
 
-        String javaOpts = null;
         String executable = this.getWresExecutable().getPath();
         String command = "execute";
-        String projectConfig = null;
-
-        String[] messageParts = message.split( "," );
-
-        for ( String messagePart : messageParts )
-        {
-            int indexOfEquals = messagePart.indexOf( '=' );
-
-            if ( indexOfEquals < 1 || indexOfEquals == messagePart.length() )
-            {
-                LOGGER.warn( "Bad message, no equals here, or nothing after equals: '{}'", messagePart );
-                return null;
-            }
-
-            String first = messagePart.substring( 0, indexOfEquals);
-            String second = messagePart.substring( indexOfEquals + 1);
-
-            if ( first.toUpperCase().equals( "JAVA_OPTS" ) )
-            {
-                javaOpts = second;
-            }
-            else if ( first.toLowerCase().equals( "projectconfig" ) )
-            {
-                projectConfig = second;
-            }
-        }
+        String projectConfig = jobMessage.getProjectConfig();
 
         // Make sure we have a project config...
         if ( projectConfig == null )
@@ -138,19 +124,9 @@ class JobReceiver extends DefaultConsumer
 
         ProcessBuilder processBuilder = new ProcessBuilder( result );
 
-        // Cause process builder to echo the subprocess's output when started.
-        //processBuilder.inheritIO();
-        // May not be able to set inheritIO when capturing stdout and stderr
-
-
-        // Cause process builder to get java options if needed
-        if ( javaOpts != null )
-        {
-            processBuilder.environment().put( "JAVA_OPTS", javaOpts );
-        }
+        // Cause process builder to get java options
+        processBuilder.environment().put( "JAVA_OPTS", javaOpts );
 
         return processBuilder;
     }
-
-
 }
