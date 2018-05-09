@@ -91,11 +91,12 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
      * 
      * @param input the input
      * @return the collection output
+     * @throws MetricCalculationException if the calculation fails for any reason
      */
 
     public MetricOutputMapByMetric<U> apply( final S input )
     {
-        return this.applyParallel( input, Collections.emptySet() );
+        return this.apply( input, Collections.emptySet() );
     }
 
     /**
@@ -103,12 +104,26 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
      * 
      * @param input the input
      * @param ignoreTheseMetrics the set of metrics to ignore
+     * @throws MetricCalculationException if the calculation fails for any reason
      */
 
     @Override
     public MetricOutputMapByMetric<U> apply( final S input, final Set<MetricConstants> ignoreTheseMetrics )
     {
-        return this.applyParallel( input, ignoreTheseMetrics );
+        try
+        {
+            return this.applyInternal( input, ignoreTheseMetrics );
+        }
+        catch ( ExecutionException e )
+        {
+            throw new MetricCalculationException( "Computation of the metric collection failed: ", e );
+        }
+        catch ( InterruptedException e )
+        {
+            Thread.currentThread().interrupt();
+
+            throw new MetricCalculationException( "Computation of the metric collection was cancelled: ", e );
+        }
     }
 
     /**
@@ -237,11 +252,13 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
      * @param input the metric input
      * @param ignoreTheseMetrics a set of metrics that should be ignored when computing this collection
      * @return the output for each metric, contained in a collection
-     * @throws MetricCalculationException if the calculation fails for any reason, with the cause set
+     * @throws ExecutionException if the execution fails
+     * @throws InterruptedException if the execution is cancelled
+     * @throws MetricCalculationException if one or more of the inputs is invalid
      */
 
-    private MetricOutputMapByMetric<U> applyParallel( final S input, Set<MetricConstants> ignoreTheseMetrics )
-            throws MetricCalculationException
+    private MetricOutputMapByMetric<U> applyInternal( final S input, final Set<MetricConstants> ignoreTheseMetrics )
+            throws InterruptedException, ExecutionException
     {
         //Bounds checks
         if ( Objects.isNull( input ) )
@@ -253,7 +270,7 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
             throw new MetricCalculationException( "Specify a non-null set of metrics to ignore, such as the empty "
                                                   + "set." );
         }
-        
+
         // Count elements in metrics and collected metrics
         int count = this.metrics.size() + this.collectableMetrics.values().stream().mapToInt( Map::size ).sum();
         if ( ignoreTheseMetrics.size() == count )
@@ -268,7 +285,7 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
                 new EnumMap<>( this.collectableMetrics );
         localMetrics.keySet().removeAll( ignoreTheseMetrics );
         localCollectableMetrics.keySet().removeAll( ignoreTheseMetrics );
-        
+
         //Remove from each map in the collection
         localCollectableMetrics.forEach( ( key, value ) -> value.keySet().removeAll( ignoreTheseMetrics ) );
 
@@ -279,10 +296,10 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
         for ( Map<MetricConstants, Collectable<S, T, U>> next : localCollectableMetrics.values() )
         {
             // Proceed
-            if ( ! next.isEmpty() )
+            if ( !next.isEmpty() )
             {
                 Iterator<Collectable<S, T, U>> iterator = next.values().iterator();
-                
+
                 Collectable<S, T, U> baseMetric = iterator.next();
                 final CompletableFuture<T> baseFuture =
                         CompletableFuture.supplyAsync( () -> baseMetric.getInputForAggregation( input ),
@@ -301,28 +318,15 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
         Map<MetricConstants, U> returnMe = new EnumMap<>( MetricConstants.class );
         MetricConstants nextMetric = null;
 
-        this.logStartOfCalculation();
+        this.logStartOfCalculation( LOGGER );
 
-        try
+        for ( Map.Entry<MetricConstants, CompletableFuture<U>> nextResult : metricFutures.entrySet() )
         {
-            for ( Map.Entry<MetricConstants, CompletableFuture<U>> nextResult : metricFutures.entrySet() )
-            {
-                nextMetric = nextResult.getKey();
-                returnMe.put( nextMetric, nextResult.getValue().get() ); //This is blocking
-            }
-        }
-        catch ( ExecutionException e )
-        {
-            throw new MetricCalculationException( "While processing metric '" + nextMetric + "'.", e );
-        }
-        catch ( InterruptedException e )
-        {
-            Thread.currentThread().interrupt();
-
-            throw new MetricCalculationException( "While processing metric '" + nextMetric + "'.", e );
+            nextMetric = nextResult.getKey();
+            returnMe.put( nextMetric, nextResult.getValue().get() ); //This is blocking
         }
 
-        this.logEndOfCalculation( returnMe );
+        this.logEndOfCalculation( LOGGER, returnMe );
 
         return this.dataFactory.ofMetricOutputMapByMetric( returnMe );
     }
@@ -385,11 +389,13 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
 
     /**
      * Logs the start of a calculation.
+     * 
+     * @param logger the logger to use
      */
 
-    private void logStartOfCalculation()
+    private void logStartOfCalculation( Logger logger )
     {
-        if ( LOGGER.isDebugEnabled() )
+        if ( logger.isDebugEnabled() )
         {
             // Determine the metrics to compute
             Set<MetricConstants> started = new TreeSet<>();
@@ -398,7 +404,7 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
             started.addAll( metrics.keySet() );
             started.addAll( collected );
 
-            LOGGER.debug( "Attempting to compute metrics for a collection that contains {} ordinary metric(s) and {} "
+            logger.debug( "Attempting to compute metrics for a collection that contains {} ordinary metric(s) and {} "
                           + "collectable metric(s). The metrics include {}.",
                           metrics.size(),
                           collected.size(),
@@ -409,19 +415,20 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
     /**
      * Logs the end of a calculation.
      * 
+     * @param logger the logger to use
      * @param results the results to log
      */
 
-    private void logEndOfCalculation( Map<MetricConstants,U> results )
+    private void logEndOfCalculation( Logger logger, Map<MetricConstants, U> results )
     {
-        if ( LOGGER.isDebugEnabled() )
+        if ( logger.isDebugEnabled() )
         {
             // Determine the metrics computed
             Set<MetricConstants> collected = new TreeSet<>();
             collectableMetrics.values().forEach( next -> collected.addAll( next.keySet() ) );
             Set<MetricConstants> completed = results.keySet();
 
-            LOGGER.debug( "Finished computing metrics for a collection that contains {} ordinary metric(s) and {} "
+            logger.debug( "Finished computing metrics for a collection that contains {} ordinary metric(s) and {} "
                           + "collectable metric(s). Obtained {} result(s) of the {} result(s) expected. Results were "
                           + "obtained for these metrics {}.",
                           metrics.size(),

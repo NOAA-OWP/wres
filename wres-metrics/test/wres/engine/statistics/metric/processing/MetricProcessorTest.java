@@ -165,7 +165,7 @@ public final class MetricProcessorTest
      */
 
     @Test
-    public void testHasMetricsForMetricInputGroup() throws MetricProcessorException, IOException
+    public void testHasMetricsForMetricInputGroup() throws MetricParameterException, IOException
     {
         String configPath = "testinput/metricProcessorTest/testAllValid.xml";
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
@@ -188,7 +188,7 @@ public final class MetricProcessorTest
      */
 
     @Test
-    public void testHasMetricsForMetricOutputGroup() throws MetricProcessorException, IOException
+    public void testHasMetricsForMetricOutputGroup() throws MetricParameterException, IOException
     {
         String configPath = "testinput/metricProcessorTest/testAllValid.xml";
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
@@ -210,7 +210,7 @@ public final class MetricProcessorTest
      */
 
     @Test
-    public void testHasMetricsForMetricInputGroupAndMetricOutputGroup() throws MetricProcessorException, IOException
+    public void testHasMetricsForMetricInputGroupAndMetricOutputGroup() throws MetricParameterException, IOException
     {
         String configPath = "testinput/metricProcessorTest/testAllValid.xml";
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
@@ -234,7 +234,7 @@ public final class MetricProcessorTest
 
     @Test
     public void testHasThresholdMetrics()
-            throws IOException, MetricProcessorException
+            throws IOException, MetricParameterException
     {
 
         // Mock some metrics

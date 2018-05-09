@@ -35,8 +35,6 @@ import wres.io.config.ConfigHelper;
  * 
  * @param <T> the score component type
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 1.0
  */
 
 public class CommaSeparatedScoreWriter<T extends ScoreOutput<?, T>> extends CommaSeparatedWriter

@@ -328,8 +328,15 @@ public final class MetricTestDataFactory
         final Metadata meta = metFac.getMetadata( metFac.getDimension( "CMS" ),
                                                   metFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ),
                                                   window );
+        
+        final Metadata baseMeta = metFac.getMetadata( metFac.getDimension( "CMS" ),
+                                                      metFac.getDatasetIdentifier( "DRRC2", "SQIN", "ESP" ),
+                                                      window );
+        
         return metIn.ofEnsemblePairs( values,
+                                      values,
                                       meta,
+                                      baseMeta,
                                       metIn.vectorOf( climatology.toArray( new Double[climatology.size()] ) ) );
     }
 

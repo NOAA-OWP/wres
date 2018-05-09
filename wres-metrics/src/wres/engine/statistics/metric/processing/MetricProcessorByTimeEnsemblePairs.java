@@ -7,11 +7,11 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.ToDoubleFunction;
 
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -39,6 +39,7 @@ import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.ScoreOutput;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
+import wres.datamodel.thresholds.ThresholdConstants;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdGroup;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.engine.statistics.metric.Metric;
@@ -55,13 +56,17 @@ import wres.engine.statistics.metric.processing.MetricProcessorByTime.MetricFutu
  * function, such as an ensemble mean.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 
 public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<EnsemblePairs>
 {
 
+    /**
+     * Function that computes an average from an array.
+     */
+    
+    private static final ToDoubleFunction<double[]> AVERAGE = right -> Arrays.stream( right ).average().getAsDouble();
+    
     /**
      * A {@link MetricCollection} of {@link Metric} that consume {@link DiscreteProbabilityPairs} and produce
      * {@link DoubleScoreOutput}.
@@ -173,14 +178,13 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
      * @param dataFactory the data factory
      * @param config the project configuration
      * @param externalThresholds an optional set of external thresholds, may be null
-     * @param thresholdExecutor an optional {@link ExecutorService} for executing thresholds. Defaults to the 
-     *            {@link ForkJoinPool#commonPool()}
-     * @param metricExecutor an optional {@link ExecutorService} for executing metrics. Defaults to the 
-     *            {@link ForkJoinPool#commonPool()} 
+     * @param thresholdExecutor an {@link ExecutorService} for executing thresholds, cannot be null 
+     * @param metricExecutor an {@link ExecutorService} for executing metrics, cannot be null
      * @param mergeSet a list of {@link MetricOutputGroup} whose outputs should be retained and merged across calls to
-     *            {@link #apply(EnsemblePairs)}
+     *            {@link #apply(Object)}
      * @throws MetricConfigException if the metrics are configured incorrectly
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
+     * @throws NullPointerException if a required input is null
      */
 
     public MetricProcessorByTimeEnsemblePairs( final DataFactory dataFactory,
@@ -272,11 +276,14 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
      * @param threshold the threshold
      * @return the predicate for filtering pairs
      * @throws UnsupportedOperationException if the threshold data type is unrecognized
+     * @throws NullPointerException if the {@link Threshold#getDataType()} is null
      */
 
     static Predicate<PairOfDoubleAndVectorOfDoubles> getFilterForEnsemblePairs( Threshold input )
-    {
-        switch ( input.getDataType() )
+    {        
+        ThresholdConstants.ThresholdDataType type = input.getDataType();
+        
+        switch ( type )
         {
             case LEFT:
                 return Slicer.leftVector( input::test );
@@ -289,11 +296,11 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
             case LEFT_AND_ANY_RIGHT:
                 return Slicer.leftAndAnyOfRight( input::test );
             case RIGHT_MEAN:
-                return Slicer.right( input::test, right -> Arrays.stream( right ).average().getAsDouble() );
+                return Slicer.right( input::test, AVERAGE );
             case LEFT_AND_RIGHT_MEAN:
-                return Slicer.leftAndRight( input::test, right -> Arrays.stream( right ).average().getAsDouble() );
+                return Slicer.leftAndRight( input::test, AVERAGE );
             default:
-                throw new UnsupportedOperationException( "Cannot map the threshold data type '" + input.getDataType()
+                throw new UnsupportedOperationException( "Cannot map the threshold data type '" + type
                                                          + "'." );
         }
     }
@@ -333,7 +340,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                  && Objects.isNull( config.getInputs().getBaseline() ) )
             {
                 throw new MetricConfigException( "Specify a non-null baseline from which to generate the '"
-                                                 + MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE.name()
+                                                 + MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE
                                                  + "'." );
             }
         }
@@ -728,16 +735,16 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                 this.getThresholdsByMetric().getThresholds( ThresholdGroup.PROBABILITY_CLASSIFIER );
 
         // Dichotomous
-        if ( this.hasMetrics( MetricInputGroup.DICHOTOMOUS ) )
+        if ( this.hasMetrics( MetricInputGroup.MULTICATEGORY ) )
         {
-            MetricConstants[] check = this.getMetrics( MetricInputGroup.DICHOTOMOUS, null );
+            MetricConstants[] check = this.getMetrics( MetricInputGroup.MULTICATEGORY, null );
 
 
             if ( !Arrays.stream( check ).allMatch( next -> probabilityClassifiers.containsKey( next )
                                                            && !probabilityClassifiers.get( next ).isEmpty() ) )
             {
-                throw new MetricConfigException( "In order to configure dichotomous metrics for ensemble "
-                                                 + "inputs, every metric group that contains dichotomous "
+                throw new MetricConfigException( "In order to configure multicategory metrics for ensemble "
+                                                 + "inputs, every metric group that contains multicategory "
                                                  + "metrics must also contain thresholds for classifying "
                                                  + "the forecast probabilities into occurrences and "
                                                  + "non-occurrences." );
@@ -745,13 +752,13 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         }
 
         // Multicategory
-        if ( this.hasMetrics( MetricInputGroup.MULTICATEGORY ) )
+        if ( this.hasMetrics( MetricInputGroup.DICHOTOMOUS ) )
         {
-            MetricConstants[] check = this.getMetrics( MetricInputGroup.MULTICATEGORY, null );
+            MetricConstants[] check = this.getMetrics( MetricInputGroup.DICHOTOMOUS, null );
             if ( !Arrays.stream( check ).allMatch( next -> probabilityClassifiers.containsKey( next )
                                                            && !probabilityClassifiers.get( next ).isEmpty() ) )
             {
-                throw new MetricConfigException( "In order to configure multicategory metrics for ensemble "
+                throw new MetricConfigException( "In order to configure dichotomous metrics for ensemble "
                                                  + "inputs, every metric group that contains dichotomous "
                                                  + "metrics must also contain thresholds for classifying "
                                                  + "the forecast probabilities into occurrences and "

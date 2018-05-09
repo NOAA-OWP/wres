@@ -124,13 +124,6 @@ public class MetricFactory
             "While building the metric processor, a configuration exception occurred: ";
 
     /**
-     * String used in several error messages to denote a parameter error.
-     */
-
-    private static final String PARAMETER_ERROR =
-            "While building the metric processor, a parameter exception occurred: ";
-
-    /**
      * Instance of an {@link DataFactory} for building metric outputs.
      */
 
@@ -161,14 +154,15 @@ public class MetricFactory
      * @param thresholdExecutor an executor service for processing thresholds
      * @param metricExecutor an executor service for processing metrics
      * @return a metric processor
-     * @throws MetricProcessorException if the metric processor could not be built
+     * @throws MetricProcessorException if the metrics are configured incorrectly
+     * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
     public MetricProcessorForProject ofMetricProcessorForProject( final ProjectConfig projectConfig,
                                                                   final ThresholdsByMetric externalThresholds,
                                                                   final ExecutorService thresholdExecutor,
                                                                   final ExecutorService metricExecutor )
-            throws MetricProcessorException
+            throws MetricParameterException
     {
         return new MetricProcessorForProject( this,
                                               projectConfig,
@@ -188,13 +182,14 @@ public class MetricFactory
      * @param config the project configuration
      * @param mergeSet an optional list of {@link MetricOutputGroup} for which results should be retained and merged
      * @return the {@link MetricProcessorByTime}
-     * @throws MetricProcessorException if the metric processor could not be built
+     * @throws MetricProcessorException if the metrics are configured incorrectly
+     * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
     public MetricProcessorByTime<SingleValuedPairs>
             ofMetricProcessorByTimeSingleValuedPairs( final ProjectConfig config,
                                                       final Set<MetricOutputGroup> mergeSet )
-                    throws MetricProcessorException
+                    throws MetricParameterException
     {
         return this.ofMetricProcessorByTimeSingleValuedPairs( config,
                                                               null,
@@ -214,13 +209,14 @@ public class MetricFactory
      * @param config the project configuration
      * @param mergeSet an optional list of {@link MetricOutputGroup} for which results should be retained and merged
      * @return the {@link MetricProcessorByTime}
-     * @throws MetricProcessorException if the metric processor could not be built
+     * @throws MetricProcessorException if the metrics are configured incorrectly
+     * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
     public MetricProcessorByTime<EnsemblePairs>
             ofMetricProcessorByTimeEnsemblePairs( final ProjectConfig config,
                                                   final Set<MetricOutputGroup> mergeSet )
-                    throws MetricProcessorException
+                    throws MetricParameterException
     {
         return this.ofMetricProcessorByTimeEnsemblePairs( config,
                                                           null,
@@ -241,14 +237,15 @@ public class MetricFactory
      * @param externalThresholds an optional set of external thresholds, may be null
      * @param mergeSet an optional list of {@link MetricOutputGroup} for which results should be retained and merged
      * @return the {@link MetricProcessorByTime}
-     * @throws MetricProcessorException if the metric processor could not be built
+     * @throws MetricProcessorException if the metrics are configured incorrectly
+     * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
     public MetricProcessorByTime<SingleValuedPairs>
             ofMetricProcessorByTimeSingleValuedPairs( final ProjectConfig config,
                                                       final ThresholdsByMetric externalThresholds,
                                                       final Set<MetricOutputGroup> mergeSet )
-                    throws MetricProcessorException
+                    throws MetricParameterException
     {
         return this.ofMetricProcessorByTimeSingleValuedPairs( config,
                                                               externalThresholds,
@@ -269,14 +266,15 @@ public class MetricFactory
      * @param externalThresholds an optional set of external thresholds (one per metric), may be null
      * @param mergeSet an optional list of {@link MetricOutputGroup} for which results should be retained and merged
      * @return the {@link MetricProcessorByTime}
-     * @throws MetricProcessorException if the metric processor could not be built
+     * @throws MetricProcessorException if the metrics are configured incorrectly
+     * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
     public MetricProcessorByTime<EnsemblePairs>
             ofMetricProcessorByTimeEnsemblePairs( final ProjectConfig config,
                                                   final ThresholdsByMetric externalThresholds,
                                                   final Set<MetricOutputGroup> mergeSet )
-                    throws MetricProcessorException
+                    throws MetricParameterException
     {
         return this.ofMetricProcessorByTimeEnsemblePairs( config,
                                                           externalThresholds,
@@ -298,7 +296,8 @@ public class MetricFactory
      * @param metricExecutor an optional {@link ExecutorService} for executing metrics. Defaults to the 
      *            {@link ForkJoinPool#commonPool()} 
      * @return the {@link MetricProcessorByTime}
-     * @throws MetricProcessorException if the metric processor could not be built
+     * @throws MetricProcessorException if the metrics are configured incorrectly
+     * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
     public MetricProcessorByTime<SingleValuedPairs>
@@ -306,7 +305,7 @@ public class MetricFactory
                                                       final ThresholdsByMetric externalThresholds,
                                                       final ExecutorService thresholdExecutor,
                                                       final ExecutorService metricExecutor )
-                    throws MetricProcessorException
+                    throws MetricParameterException
     {
         try
         {
@@ -335,14 +334,15 @@ public class MetricFactory
      * @param metricExecutor an optional {@link ExecutorService} for executing metrics. Defaults to the 
      *            {@link ForkJoinPool#commonPool()} 
      * @return the {@link MetricProcessorByTime}
-     * @throws MetricProcessorException if the metric processor could not be built
+     * @throws MetricProcessorException if the metrics are configured incorrectly
+     * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
     public MetricProcessorByTime<EnsemblePairs> ofMetricProcessorByTimeEnsemblePairs( final ProjectConfig config,
                                                                                       final ThresholdsByMetric externalThresholds,
                                                                                       final ExecutorService thresholdExecutor,
                                                                                       final ExecutorService metricExecutor )
-            throws MetricProcessorException
+            throws MetricParameterException
     {
         try
         {
@@ -372,7 +372,8 @@ public class MetricFactory
      *            {@link ForkJoinPool#commonPool()} 
      * @param mergeSet an optional list of {@link MetricOutputGroup} for which results should be retained and merged
      * @return the {@link MetricProcessorByTime}
-     * @throws MetricProcessorException if the metric processor could not be built
+     * @throws MetricProcessorException if the metrics are configured incorrectly
+     * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
     public MetricProcessorByTime<SingleValuedPairs>
@@ -381,7 +382,7 @@ public class MetricFactory
                                                       final ExecutorService thresholdExecutor,
                                                       final ExecutorService metricExecutor,
                                                       final Set<MetricOutputGroup> mergeSet )
-                    throws MetricProcessorException
+                    throws MetricParameterException
     {
         try
         {
@@ -395,10 +396,6 @@ public class MetricFactory
         catch ( MetricConfigException e )
         {
             throw new MetricProcessorException( CONFIGURATION_ERROR, e );
-        }
-        catch ( MetricParameterException e )
-        {
-            throw new MetricProcessorException( PARAMETER_ERROR, e );
         }
     }
 
@@ -416,7 +413,8 @@ public class MetricFactory
      *            {@link ForkJoinPool#commonPool()} 
      * @param mergeSet an optional set of {@link MetricOutputGroup} for which results should be retained and merged
      * @return the {@link MetricProcessorByTime}
-     * @throws MetricProcessorException if the metric processor could not be built
+     * @throws MetricProcessorException if the metrics are configured incorrectly
+     * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
     public MetricProcessorByTime<EnsemblePairs> ofMetricProcessorByTimeEnsemblePairs( final ProjectConfig config,
@@ -424,7 +422,7 @@ public class MetricFactory
                                                                                       final ExecutorService thresholdExecutor,
                                                                                       final ExecutorService metricExecutor,
                                                                                       final Set<MetricOutputGroup> mergeSet )
-            throws MetricProcessorException
+            throws MetricParameterException
     {
         try
         {
@@ -438,10 +436,6 @@ public class MetricFactory
         catch ( MetricConfigException e )
         {
             throw new MetricProcessorException( CONFIGURATION_ERROR, e );
-        }
-        catch ( MetricParameterException e )
-        {
-            throw new MetricProcessorException( PARAMETER_ERROR, e );
         }
     }
 
