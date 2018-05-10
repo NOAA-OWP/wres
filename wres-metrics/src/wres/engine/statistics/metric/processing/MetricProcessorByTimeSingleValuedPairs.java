@@ -47,7 +47,7 @@ import wres.engine.statistics.metric.MetricCollection;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.config.MetricConfigHelper;
-import wres.engine.statistics.metric.processing.MetricProcessorByTime.MetricFuturesByTime.MetricFuturesByTimeBuilder;
+import wres.engine.statistics.metric.processing.MetricFuturesByTime.MetricFuturesByTimeBuilder;
 import wres.engine.statistics.metric.timeseries.TimingErrorDurationStatistics;
 
 /**
