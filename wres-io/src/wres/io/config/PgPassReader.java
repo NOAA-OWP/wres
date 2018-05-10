@@ -6,18 +6,26 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Objects;
 
 
 /**
  * Used as a utility class to get credentials from a PgPass file.
  * The idea is to not have any instances lying around with credentials in them.
- * Does not support the environment variables PGPASSFILE nor PGPASSWORD, always
- * looks in user's home dir for .pgpass
+ * Supports environment variable PGPASSFILE but not PGPASSWORD, supports
+ * Windows and Unix conventions of where to find pgpass according to
+ * https://www.postgresql.org/docs/9.6/static/libpq-pgpass.html
+ *
+ * Disagreements with the description at above url:
+ * Does not check permissions on the file other than this process having read
+ * access. Interprets the empty string as "localhost" which may not be exactly
+ * correct.
  */
 
 public class PgPassReader
 {
-    private static final Path PG_PASS_PATH = Paths.get( System.getProperty( "user.home" ), ".pgpass" );
+    private static final Path PG_PASS_PATH = PgPassReader.getPgPassPath();
+    private static final String MATCH_ANY = "*";
 
     private PgPassReader()
     {
@@ -77,22 +85,10 @@ public class PgPassReader
                 continue;
             }
 
-            int specifiedPort;
-
-            // Valid ports are able to be integers
-            try
-            {
-                specifiedPort = Integer.parseInt( splitted[1] );
-            }
-            catch ( NumberFormatException nfe )
-            {
-                continue;
-            }
-
-            if ( splitted[0].equals( hostname )
-                 && specifiedPort == port
-                 && splitted[2].equals( databaseName )
-                 && splitted[3].equals( username ) )
+            if ( PgPassReader.hostnameMatches( splitted[0], hostname )
+                 && PgPassReader.portMatches( splitted[1], port )
+                 && PgPassReader.stringMatches( splitted[2], databaseName )
+                 && PgPassReader.stringMatches( splitted[3], username ) )
             {
                 return splitted[4];
             }
@@ -100,5 +96,96 @@ public class PgPassReader
 
         // Nothing found.
         return null;
+    }
+
+
+    private static boolean hostnameMatches( String inPgPass, String specified )
+    {
+        Objects.requireNonNull( inPgPass );
+        Objects.requireNonNull( specified );
+
+        // Special case:
+        // "Each of the first four fields can ... *, which matches anything"
+        if ( inPgPass.equals( MATCH_ANY ) )
+        {
+            return true;
+        }
+
+        // Special case: empty matches localhost, see #45798-13
+        // Not sure if this is actually how it is supposed to work...
+        if ( inPgPass.isEmpty() && specified.equals( "localhost" ) )
+        {
+            return true;
+        }
+
+        return inPgPass.equals( specified );
+    }
+
+
+    private static boolean portMatches( String inPgPass, int specified )
+    {
+        Objects.requireNonNull( inPgPass );
+
+        // Special case:
+        // "Each of the first four fields can ... *, which matches anything"
+        if ( inPgPass.equals( MATCH_ANY ) )
+        {
+            return true;
+        }
+
+        int parsedFromPgPass;
+
+        // Valid ports are able to be integers
+        try
+        {
+            parsedFromPgPass = Integer.parseInt( inPgPass );
+        }
+        catch ( NumberFormatException nfe )
+        {
+            return false;
+        }
+
+        return parsedFromPgPass == specified;
+    }
+
+    private static boolean stringMatches( String inPgPass, String specified )
+    {
+        Objects.requireNonNull( inPgPass );
+        Objects.requireNonNull( specified );
+
+        // Special case:
+        // "Each of the first four fields can ... *, which matches anything"
+        if ( inPgPass.equals( MATCH_ANY ) )
+        {
+            return true;
+        }
+
+        return inPgPass.equals( specified );
+    }
+
+    private static Path getPgPassPath()
+    {
+        // If $PGPASSFILE exists, it overrides all.
+        if ( System.getenv( "PGPASSFILE" ) != null )
+        {
+            return Paths.get( System.getenv( "PGPASSFILE" ) );
+        }
+
+        if ( System.getProperty( "os.name" ) != null
+             && System.getProperty( "os.name" )
+                      .toLowerCase()
+                      .contains( "windows" ) )
+        {
+            // When on windows, %APPDATA%\postgres\pgpass.conf
+            return Paths.get( System.getenv( "APPDATA" ),
+                              "postgres",
+                              "pgpass.conf" );
+        }
+        else
+        {
+            // When on unix, $HOME/.pgpass
+            return Paths.get( System.getProperty( "user.home" ),
+                              ".pgpass" );
+        }
     }
 }
