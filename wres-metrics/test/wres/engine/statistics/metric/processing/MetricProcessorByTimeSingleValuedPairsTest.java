@@ -464,7 +464,8 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         MetricOutputMultiMapByTimeAndThreshold<PairedOutput<Instant, Duration>> expected =
                 (MetricOutputMultiMapByTimeAndThreshold<PairedOutput<Instant, Duration>>) builder.build();
 
-        assertTrue( "Actual output differs from expected output for time-series metrics. ", actual.equals( expected ) );
+        assertTrue( "Actual output differs from expected output for time-series metrics. ",
+                    actual.equals( expected ) );
     }
 
     /**
@@ -755,12 +756,12 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                 MetricFactory.getInstance( dataFac )
                              .ofMetricProcessorByTimeSingleValuedPairs( config,
                                                                         MetricOutputGroup.set() );
-        
+
         TimeSeriesOfSingleValuedPairs pairs = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsFour();
 
         //Compute the metrics
         processor.apply( pairs );
-        
+
         //Validate the outputs
         MetricOutputMultiMapByTimeAndThreshold<DurationScoreOutput> actualScores =
                 processor.getCachedMetricOutput().getDurationScoreOutput();
@@ -798,7 +799,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         scoreBuilder.put( dataFac.getMapKey( MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC ), mappedScores );
         MetricOutputMultiMapByTimeAndThreshold<DurationScoreOutput> expectedScores =
                 (MetricOutputMultiMapByTimeAndThreshold<DurationScoreOutput>) scoreBuilder.build();
-        
+
         assertTrue( "Actual output differs from expected output for time-series metrics. ",
                     actualScores.equals( expectedScores ) );
     }

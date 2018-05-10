@@ -369,12 +369,6 @@ class SafeMetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>> implement
         private MetricOutputMetadata overrideMeta;
 
         /**
-         * The reference metadata.
-         */
-
-        private MetricOutputMetadata referenceMetadata;
-
-        /**
          * Adds a mapping to the store.
          * 
          * @param key the key
@@ -385,10 +379,6 @@ class SafeMetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>> implement
         protected SafeMetricOutputMapByTimeAndThresholdBuilder<T> put( final Pair<TimeWindow, OneOrTwoThresholds> key,
                                                                        final T value )
         {
-            if ( Objects.isNull( referenceMetadata ) )
-            {
-                referenceMetadata = value.getMetadata();
-            }
             this.store.put( key, value );
             return this;
         }
@@ -435,7 +425,7 @@ class SafeMetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>> implement
         this.internal = new ArrayList<>( this.store.keySet() );
 
         //Set the metadata, updating the time window to find the union of the inputs, if available
-        final MetricOutputMetadata checkAgainst = builder.referenceMetadata;
+        final MetricOutputMetadata checkAgainst = this.store.firstEntry().getValue().getMetadata();
         MetricOutputMetadata builderLocalMeta;
         if ( Objects.nonNull( builder.overrideMeta ) )
         {
