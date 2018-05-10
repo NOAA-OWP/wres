@@ -68,21 +68,17 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
     @Override
     MetricOutputForProjectByTimeAndThreshold getCachedMetricOutputInternal()
     {
-        MetricOutputForProjectByTimeAndThreshold returnMe = null;
+        MetricFuturesByTime.MetricFuturesByTimeBuilder builder =
+                new MetricFuturesByTime.MetricFuturesByTimeBuilder();
+        builder.setDataFactory( dataFactory );
         if ( this.hasCachedMetricOutput() )
         {
-            MetricFuturesByTime.MetricFuturesByTimeBuilder builder =
-                    new MetricFuturesByTime.MetricFuturesByTimeBuilder();
-            builder.setDataFactory( dataFactory );
-
             for ( MetricFuturesByTime future : futures )
             {
                 builder.addFutures( future );
             }
-
-            returnMe = builder.build().getMetricOutput();
         }
-        return returnMe;
+        return builder.build().getMetricOutput();
     }
 
     /**

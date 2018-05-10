@@ -199,14 +199,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
 
     public Set<MetricOutputGroup> getCachedMetricOutputTypes() throws InterruptedException
     {
-        T output = this.getCachedMetricOutput();
-
-        if ( Objects.isNull( output ) )
-        {
-            return Collections.emptySet();
-        }
-
-        return output.getOutputTypes();
+        return this.getCachedMetricOutput().getOutputTypes();
     }
 
     /**
@@ -328,8 +321,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
     abstract void completeCachedOutput() throws InterruptedException;
 
     /**
-     * Returns a {@link MetricOutputForProject} for the last available results or null if
-     * {@link #hasCachedMetricOutput()} returns false.
+     * Returns a {@link MetricOutputForProject} for the last available results.
      * 
      * @return a {@link MetricOutputForProject} or null
      * @throws MetricOutputMergeException if the outputs cannot be merged across calls
