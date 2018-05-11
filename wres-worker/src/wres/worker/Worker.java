@@ -29,7 +29,7 @@ public class Worker
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( Worker.class );
     private static final String RECV_QUEUE_NAME = "wres.job";
-
+    private static volatile boolean killed = false;
 
     /**
      * Expects exactly one arg with a path to WRES executable
@@ -61,6 +61,9 @@ public class Worker
         {
             throw new IllegalArgumentException( "First arg must be an *executable* wres path." );
         }
+
+        // This is to satisfy SonarQube and IntelliJ IDEA re: infinite loop
+        Runtime.getRuntime().addShutdownHook( new Thread(() -> { Worker.killed = true; } ) );
 
         // Determine the actual broker name, whether from -D or default
         String brokerHost = BrokerHelper.getBrokerHost();
@@ -97,7 +100,7 @@ public class Worker
 
             receiveChannel.basicConsume( RECV_QUEUE_NAME, false, receiver );
 
-            while ( true )
+            while ( !Worker.killed )
             {
                 LOGGER.info( "Waiting for work..." );
                 WresProcess wresProcess = processToLaunch.poll( 2, TimeUnit.SECONDS );
