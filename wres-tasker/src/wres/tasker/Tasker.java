@@ -74,14 +74,13 @@ public class Tasker
 
         // Use TLS
         SslContextFactory contextFactory = Tasker.getSslContextFactory();
-        ServerConnector serverConnector = new ServerConnector( jettyServer, contextFactory );
-        serverConnector.setPort( Tasker.SERVER_PORT );
-        ServerConnector[] serverConnectors = { serverConnector };
 
-        jettyServer.setConnectors( serverConnectors );
-
-        try
+        try ( ServerConnector serverConnector = new ServerConnector( jettyServer, contextFactory ) )
         {
+            serverConnector.setPort( Tasker.SERVER_PORT );
+            ServerConnector[] serverConnectors = { serverConnector };
+            jettyServer.setConnectors( serverConnectors );
+
             // Stinks that start() throws blanket Exception, oh well: propagate.
             jettyServer.start();
             jettyServer.dump( System.err );
