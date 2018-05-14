@@ -10,7 +10,7 @@ services:
         volumes:
          - /mnt/wres_secrets:/wres_secrets:ro,z
         environment:
-         - JAVA_OPTS=-Dwres.broker=broker -Dwres.env=ti
+         - JAVA_OPTS=-Dwres.broker=broker
         # Tasker JVM should have 160m max heap specified at launch
         mem_limit: 360m
     broker:
@@ -21,6 +21,8 @@ services:
         restart: always
         volumes:
          - /mnt/wres_secrets:/wres_secrets:ro,z
+        environment:
+         - RABBITMQ_CONFIG_FILE=rabbitmq${WRES_ENV_SUFFIX}.conf
         # rabbitmq.conf should have 180m specified as high watermark
         mem_limit: 360m
     worker:
@@ -33,5 +35,6 @@ services:
          - /mnt/wres_secrets:/wres_secrets:ro,z
         environment:
          - JAVA_OPTS=-Dwres.broker=broker
+         - PGPASSFILE=/wres_secrets/.pgpass
         # Worker JVM should have 32m heap, wres should have 1628m heap
         mem_limit: 2048m
