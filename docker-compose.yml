@@ -8,7 +8,7 @@ services:
         depends_on:
          - "broker"
         volumes:
-         - /mnt/wres_secrets:/wres_secrets:ro,z
+         - /mnt/wres_secrets:/wres_secrets:ro
         environment:
          - JAVA_OPTS=-Dwres.broker=broker
          # Make sure to pass through WRES_ENV_SUFFIX to tasker at runtime
@@ -22,7 +22,7 @@ services:
         image: "134e0d68f034"
         restart: always
         volumes:
-         - /mnt/wres_secrets:/wres_secrets:ro,z
+         - /mnt/wres_secrets:/wres_secrets:ro
         environment:
          - RABBITMQ_CONFIG_FILE=rabbitmq${WRES_ENV_SUFFIX}.conf
         # rabbitmq.conf should have 180m specified as high watermark
@@ -33,8 +33,8 @@ services:
         depends_on:
          - "broker"
         volumes:
-         - /mnt/wres_share:/wres_data:z
-         - /mnt/wres_secrets:/wres_secrets:ro,z
+         - /mnt/wres_share:/mnt/wres_share
+         - /mnt/wres_secrets:/wres_secrets:ro
         environment:
          - JAVA_OPTS=-Dwres.broker=broker
          - PGPASSFILE=/wres_secrets/.pgpass
