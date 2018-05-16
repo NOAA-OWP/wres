@@ -13,8 +13,7 @@
                 <unit>hours</unit>
             </existingTimeScale>
         </left>
-        
-        <right label="NWM Medium Range Ensemble">
+        <right label="Experimental NWM Medium Range Ensemble">
             <type>ensemble forecasts</type>
             <source format="netCDF" pattern="**/*.nc">/wres_share/testing/data/sr1.perftest/medium_range.0hrsold.fctlen240hrs/</source>
             <source format="netCDF" pattern="**/*.nc">/wres_share/testing/data/sr1.perftest/medium_range.6hrsold.fctlen234hrs/</source>
@@ -25,17 +24,13 @@
                 <unit>hours</unit>
             </existingTimeScale>
         </right>
-
     </inputs>
 
-    <pair label="Pairs by location and lead time">
+    <pair>
         <unit>CMS</unit>
         <feature rfc="abrfc" />
         <leadHours minimum="1" maximum="234" /> 
-        
-        <!-- Without dates, the code crashed due to parsing a date.  Let's try it with dates.-->
-        <dates earliest="2017-05-07T00:00:00Z" latest="2017-05-30T00:00:00Z" />
-
+        <dates earliest="2017-05-07T00:00:00Z" latest="2017-06-30T00:00:00Z" />
         <desiredTimeScale>
             <function>avg</function> 
             <period>3</period>
@@ -44,8 +39,8 @@
     </pair>
 
     <metrics>
-        <metric> <name>mean error</name> </metric>
-        <metric> <name>sample size</name> </metric>
+        <metric><name>mean error</name></metric>
+        <metric><name>sample size</name></metric>
     </metrics>
 
     <outputs>
@@ -56,4 +51,5 @@
             <path>output</path>
         </destination>
     </outputs>
+
 </project>
