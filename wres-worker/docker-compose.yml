@@ -4,8 +4,8 @@ services:
         image: "4a1a1e8c4df5"
         restart: always
         volumes:
-         - /mnt/wres_share:/wres_data,z
-         - /mnt/wres_secrets:/wres_secrets:ro,z
+         - /mnt/wres_share:/mnt/wres_share
+         - /mnt/wres_secrets:/wres_secrets:ro
         network_mode: "host"
         environment:
          - JAVA_OPTS=-Dwres.broker=***REMOVED***wres-broker${WRES_ENV_SUFFIX}
