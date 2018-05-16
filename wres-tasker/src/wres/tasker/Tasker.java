@@ -58,7 +58,7 @@ public class Tasker
 
         // Static handler:
         ResourceHandler resourceHandler = new ResourceHandler();
-        resourceHandler.setBaseResource( Resource.newClassPathResource( "job_tester.html" ) );
+        resourceHandler.setBaseResource( Resource.newClassPathResource( "index.html" ) );
 
         // Have to chain/wrap the handler this way to get both static/dynamic:
         resourceHandler.setHandler( context );
