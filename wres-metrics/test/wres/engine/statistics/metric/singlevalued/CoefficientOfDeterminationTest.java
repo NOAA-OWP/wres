@@ -1,15 +1,21 @@
 package wres.engine.statistics.metric.singlevalued;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
+import java.util.Arrays;
+
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
+import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
@@ -22,80 +28,154 @@ import wres.engine.statistics.metric.singlevalued.CoefficientOfDetermination.Coe
  * Tests the {@link CoefficientOfDetermination}.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 public final class CoefficientOfDeterminationTest
 {
+    
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
+    
+    /**
+     * Default instance of a {@link CoefficientOfDetermination}.
+     */
+
+    private CoefficientOfDetermination cod;
 
     /**
-     * Constructs a {@link CoefficientOfDetermination}.
-     * @throws MetricParameterException if the metric could not be constructed 
+     * Instance of a data factory.
+     */
+
+    private DataFactory outF;
+
+    @Before
+    public void setupBeforeEachTest() throws MetricParameterException
+    {
+        CoefficientOfDeterminationBuilder b = new CoefficientOfDetermination.CoefficientOfDeterminationBuilder();
+        this.outF = DefaultDataFactory.getInstance();
+        b.setOutputFactory( outF );
+        this.cod = b.build();
+    }
+
+    /**
+     * Compares the output from {@link CoefficientOfDetermination#apply(SingleValuedPairs)} against expected output.
      */
 
     @Test
-    public void test1CoefficientOfDetermination() throws MetricParameterException
+    public void testApply()
     {
-        //Obtain the factories
-        final DataFactory dataF = DefaultDataFactory.getInstance();
-        final MetadataFactory metaFac = dataF.getMetadataFactory();
-
         SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
-
-        //Build the metric
-        final CoefficientOfDeterminationBuilder b = new CoefficientOfDetermination.CoefficientOfDeterminationBuilder();
-        b.setOutputFactory( dataF );
-        final CoefficientOfDetermination cod = b.build();
-
-        final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getRawData().size(),
+        
+        MetadataFactory metaFac = outF.getMetadataFactory();
+        MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getRawData().size(),
                                                                    metaFac.getDimension(),
                                                                    metaFac.getDimension(),
                                                                    MetricConstants.COEFFICIENT_OF_DETERMINATION,
                                                                    MetricConstants.MAIN );
 
         //Compute normally
-        final DoubleScoreOutput actual = cod.apply( input );
-        final DoubleScoreOutput expected = dataF.ofDoubleScoreOutput( Math.pow( 0.9999999910148981, 2 ), m1 );
+        DoubleScoreOutput actual = cod.apply( input );
+        DoubleScoreOutput expected = outF.ofDoubleScoreOutput( Math.pow( 0.9999999910148981, 2 ), m1 );
         assertTrue( "Actual: " + actual.getData().doubleValue()
                     + ". Expected: "
                     + expected.getData().doubleValue()
                     + ".",
                     actual.equals( expected ) );
-
-        //Check the parameters
-        assertTrue( "Unexpected name for coefficient of determination.",
-                    cod.getName().equals( MetricConstants.COEFFICIENT_OF_DETERMINATION.toString() ) );
-        assertTrue( "Coefficient of determination is not decomposable.", !cod.isDecomposable() );
-        assertTrue( "Coefficient of determination is not a skill score.", !cod.isSkillScore() );
-        assertTrue( "Coefficient of determination cannot be decomposed.",
-                    cod.getScoreOutputGroup() == ScoreOutputGroup.NONE );
-        assertTrue( "Coefficient of determination does not have real units", !cod.hasRealUnits() );
     }
 
     /**
-     * Constructs a {@link CoefficientOfDetermination} and checks for exceptional cases.
-     * @throws MetricParameterException if the metric could not be constructed 
+     * Validates the output from {@link CoefficientOfDetermination#apply(SingleValuedPairs)} when supplied with no data.
      */
 
     @Test
-    public void test2Exceptions() throws MetricParameterException
+    public void testApplyWithNoData()
     {
-        //Build the metric
-        final DataFactory outF = DefaultDataFactory.getInstance();
-        final CoefficientOfDeterminationBuilder b = new CoefficientOfDetermination.CoefficientOfDeterminationBuilder();
-        b.setOutputFactory( outF );
-        final CoefficientOfDetermination cod = b.build();
+        // Generate empty data
+        DiscreteProbabilityPairs input =
+                outF.ofDiscreteProbabilityPairs( Arrays.asList(), outF.getMetadataFactory().getMetadata() );
+ 
+        DoubleScoreOutput actual = cod.apply( input );
 
-        //Check the exceptions
-        try
-        {
-            cod.apply( (SingleValuedPairs) null );
-            fail( "Expected an exception on null input." );
-        }
-        catch ( MetricInputException e )
-        {
-        }
+        assertTrue( actual.getData().isNaN() );
     }
 
+    /**
+     * Checks that the {@link CoefficientOfDetermination#getName()} returns 
+     * {@link MetricConstants#BIAS_FRACTION.toString()}
+     */
 
+    @Test
+    public void testGetName()
+    {
+        assertTrue( cod.getName().equals( MetricConstants.COEFFICIENT_OF_DETERMINATION.toString() ) );
+    }
+
+    /**
+     * Checks that the {@link CoefficientOfDetermination#isDecomposable()} returns <code>false</code>.
+     */
+
+    @Test
+    public void testIsDecomposable()
+    {
+        assertFalse( cod.isDecomposable() );
+    }
+
+    /**
+     * Checks that the {@link CoefficientOfDetermination#isSkillScore()} returns <code>false</code>.
+     */
+
+    @Test
+    public void testIsSkillScore()
+    {
+        assertFalse( cod.isSkillScore() );
+    }
+
+    /**
+     * Checks that the {@link CoefficientOfDetermination#getScoreOutputGroup()} returns the result provided on construction.
+     */
+
+    @Test
+    public void testGetScoreOutputGroup()
+    {
+        assertTrue( cod.getScoreOutputGroup() == ScoreOutputGroup.NONE );
+    }
+
+    /**
+     * Checks that the {@link CoefficientOfDetermination#getCollectionOf()} returns 
+     * {@link MetricConstants#PEARSON_CORRELATION_COEFFICIENT}.
+     */
+
+    @Test
+    public void testGetCollectionOf()
+    {
+        assertTrue( cod.getCollectionOf().equals( MetricConstants.PEARSON_CORRELATION_COEFFICIENT ) );
+    }    
+    
+    /**
+     * Tests for an expected exception on calling {@link CoefficientOfDetermination#apply(SingleValuedPairs)} with null 
+     * input.
+     */
+
+    @Test
+    public void testApplyExceptionOnNullInput()
+    {
+        exception.expect( MetricInputException.class );
+        exception.expectMessage( "Specify non-null input to the 'COEFFICIENT OF DETERMINATION'." );
+        
+        cod.apply( null );
+    }    
+    
+    /**
+     * Tests for an expected exception on calling {@link CoefficientOfDetermination#aggregate(DoubleScoreOutput)} with 
+     * null input.
+     */
+
+    @Test
+    public void testAggregateExceptionOnNullInput()
+    {
+        exception.expect( MetricInputException.class );
+        exception.expectMessage( "Specify non-null input to the 'COEFFICIENT OF DETERMINATION'." );
+        
+        cod.aggregate( null );
+    }
+    
 }

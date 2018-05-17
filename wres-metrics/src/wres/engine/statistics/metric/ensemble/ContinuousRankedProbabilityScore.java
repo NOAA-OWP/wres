@@ -113,7 +113,7 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<Ensemble
     ContinuousRankedProbabilityScore( final CRPSBuilder builder ) throws MetricParameterException
     {
         super( builder );
-        switch ( getScoreOutputGroup() )
+        switch ( this.getScoreOutputGroup() )
         {
             case NONE:
             case CR:
