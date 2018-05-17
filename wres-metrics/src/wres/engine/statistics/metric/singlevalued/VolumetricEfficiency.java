@@ -19,8 +19,6 @@ import wres.engine.statistics.metric.MetricParameterException;
  * the measure is <code>-Inf</code> and a score below zero indicates a VP that exceeds the VO.</p>
  *
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.3
  */
 public class VolumetricEfficiency extends DoubleErrorScore<SingleValuedPairs>
 {
