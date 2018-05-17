@@ -103,7 +103,7 @@ public class Worker
             while ( !Worker.killed )
             {
                 LOGGER.info( "Waiting for work..." );
-                WresProcess wresProcess = processToLaunch.poll( 2, TimeUnit.SECONDS );
+                WresProcess wresProcess = processToLaunch.poll( 2, TimeUnit.MINUTES );
 
                 if ( wresProcess != null )
                 {
