@@ -1,7 +1,10 @@
 package wres.engine.statistics.metric.singlevalued;
 
+import java.util.Objects;
+
 import wres.datamodel.Dimension;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
@@ -59,11 +62,8 @@ public class RootMeanSquareError extends DoubleErrorScore<SingleValuedPairs>
         final MetadataFactory f = getDataFactory().getMetadataFactory();
         
         // Set the output dimension
-        Dimension outputDimension = f.getDimension();
-        if( hasRealUnits() )
-        {
-            outputDimension = metIn.getDimension();
-        }
+        Dimension outputDimension = metIn.getDimension();
+
         MetricOutputMetadata meta = f.getOutputMetadata( metIn.getSampleSize(),
                                                          outputDimension,
                                                          metIn.getDimension(),
@@ -77,6 +77,10 @@ public class RootMeanSquareError extends DoubleErrorScore<SingleValuedPairs>
     @Override
     public DoubleScoreOutput getInputForAggregation( SingleValuedPairs input )
     {
+        if ( Objects.isNull( input ) )
+        {
+            throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
+        }
         return sse.apply( input );
     }
 

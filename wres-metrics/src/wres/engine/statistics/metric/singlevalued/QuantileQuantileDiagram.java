@@ -23,8 +23,6 @@ import wres.engine.statistics.metric.MetricParameterException;
  * distribution, the order statistics (and hence the quantiles) should be the same, notwithstanding any sampling error.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 
 public class QuantileQuantileDiagram extends Diagram<SingleValuedPairs, MultiVectorOutput>

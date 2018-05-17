@@ -34,8 +34,8 @@ public class MeanSquareError<S extends SingleValuedPairs> extends SumOfSquareErr
             case LBR:
             case CR_AND_LBR:
             default:
-                throw new MetricCalculationException( "The Mean Square Error decomposition is not currently "
-                                                      + "implemented." );
+                throw new MetricCalculationException( "Decomposition is not currently implemented for the '" + this
+                                                      + "'." );
         }
     }
 
@@ -58,13 +58,13 @@ public class MeanSquareError<S extends SingleValuedPairs> extends SumOfSquareErr
         {
             throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
         }
-        
+
         final MetricOutputMetadata metIn = output.getMetadata();
         final MetadataFactory f = getDataFactory().getMetadataFactory();
-        
+
         // Set the output dimension
         Dimension outputDimension = f.getDimension();
-        if( hasRealUnits() )
+        if ( hasRealUnits() )
         {
             outputDimension = metIn.getDimension();
         }
@@ -75,10 +75,10 @@ public class MeanSquareError<S extends SingleValuedPairs> extends SumOfSquareErr
                                                          MetricConstants.MAIN,
                                                          metIn.getIdentifier(),
                                                          metIn.getTimeWindow() );
-        
+
         double mse = FunctionFactory.finiteOrMissing()
                                     .applyAsDouble( output.getData() / metIn.getSampleSize() );
-            
+
         return this.getDataFactory().ofDoubleScoreOutput( mse, meta );
     }
 

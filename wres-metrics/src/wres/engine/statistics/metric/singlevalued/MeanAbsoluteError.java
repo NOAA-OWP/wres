@@ -10,8 +10,6 @@ import wres.engine.statistics.metric.MetricParameterException;
  * single-valued predictand and verifying observation. It measures the first-order bias of the predictand.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 public class MeanAbsoluteError extends DoubleErrorScore<SingleValuedPairs>
 {

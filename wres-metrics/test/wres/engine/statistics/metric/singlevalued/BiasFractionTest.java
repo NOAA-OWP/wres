@@ -1,15 +1,21 @@
 package wres.engine.statistics.metric.singlevalued;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
+import java.util.Arrays;
+
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
+import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
@@ -22,79 +28,129 @@ import wres.engine.statistics.metric.singlevalued.BiasFraction.BiasFractionBuild
  * Tests the {@link BiasFraction}.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 public final class BiasFractionTest
 {
 
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
+    
     /**
-     * Constructs a {@link BiasFraction} and compares the actual result to the expected result. Also, checks the
-     * parameters of the metric.
-     * @throws MetricParameterException if the metric could not be constructed
+     * Default instance of a {@link BiasFraction}.
+     */
+
+    private BiasFraction biasFraction;
+
+    /**
+     * Instance of a data factory.
+     */
+
+    private DataFactory outF;
+
+    @Before
+    public void setupBeforeEachTest() throws MetricParameterException
+    {
+        BiasFractionBuilder b = new BiasFraction.BiasFractionBuilder();
+        this.outF = DefaultDataFactory.getInstance();
+        b.setOutputFactory( outF );
+        this.biasFraction = b.build();
+    }
+
+    /**
+     * Compares the output from {@link BiasFraction#apply(SingleValuedPairs)} against expected output.
      */
 
     @Test
-    public void test1BiasFraction() throws MetricParameterException
+    public void testApply()
     {
-        //Obtain the factories
-        final DataFactory outF = DefaultDataFactory.getInstance();
-        final MetadataFactory metaFac = outF.getMetadataFactory();
-
         //Generate some data
-        final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
+        SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Metadata for the output
-        final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getRawData().size(),
+        MetadataFactory metaFac = outF.getMetadataFactory();
+        MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getRawData().size(),
                                                                    metaFac.getDimension(),
                                                                    metaFac.getDimension(),
                                                                    MetricConstants.BIAS_FRACTION,
                                                                    MetricConstants.MAIN );
-        //Build the metric
-        final BiasFractionBuilder b = new BiasFraction.BiasFractionBuilder();
-        b.setOutputFactory( outF );
-        final BiasFraction bf = b.build();
-
         //Check the results
-        final DoubleScoreOutput actual = bf.apply( input );
-        final DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 0.056796297974534414, m1 );
+        DoubleScoreOutput actual = biasFraction.apply( input );
+        DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 0.056796297974534414, m1 );
         assertTrue( "Actual: " + actual.getData().doubleValue()
                     + ". Expected: "
                     + expected.getData().doubleValue()
                     + ".",
                     actual.equals( expected ) );
-
-        //Check the parameters
-        assertTrue( "Unexpected name for the Bias Fraction.",
-                    bf.getName().equals( MetricConstants.BIAS_FRACTION.toString() ) );
-        assertTrue( "The Bias Fraction is not decomposable.", !bf.isDecomposable() );
-        assertTrue( "The Bias Fraction is not a skill score.", !bf.isSkillScore() );
-        assertTrue( "The Bias Fraction cannot be decomposed.", bf.getScoreOutputGroup() == ScoreOutputGroup.NONE );
     }
 
     /**
-     * Constructs a {@link BiasFraction} and checks for exceptional cases.
-     * @throws MetricParameterException if the metric could not be constructed
+     * Validates the output from {@link BiasFraction#apply(SingleValuedPairs)} when supplied with no data.
      */
 
     @Test
-    public void test2Exceptions() throws MetricParameterException
+    public void testApplyWithNoData()
     {
-        //Build the metric
-        final DataFactory outF = DefaultDataFactory.getInstance();
-        final BiasFractionBuilder b = new BiasFraction.BiasFractionBuilder();
-        b.setOutputFactory( outF );
-        final BiasFraction bf = b.build();
+        // Generate empty data
+        DiscreteProbabilityPairs input =
+                outF.ofDiscreteProbabilityPairs( Arrays.asList(), outF.getMetadataFactory().getMetadata() );
+ 
+        DoubleScoreOutput actual = biasFraction.apply( input );
 
-        //Check the exceptions
-        try
-        {
-            bf.apply( (SingleValuedPairs) null );
-            fail( "Expected an exception on null input." );
-        }
-        catch ( MetricInputException e )
-        {
-        }
+        assertTrue( actual.getData().isNaN() );
+    }
+
+    /**
+     * Checks that the {@link BiasFraction#getName()} returns {@link MetricConstants#BIAS_FRACTION.toString()}
+     */
+
+    @Test
+    public void testGetName()
+    {
+        assertTrue( biasFraction.getName().equals( MetricConstants.BIAS_FRACTION.toString() ) );
+    }
+
+    /**
+     * Checks that the {@link BiasFraction#isDecomposable()} returns <code>false</code>.
+     */
+
+    @Test
+    public void testIsDecomposable()
+    {
+        assertFalse( biasFraction.isDecomposable() );
+    }
+
+    /**
+     * Checks that the {@link BiasFraction#isSkillScore()} returns <code>false</code>.
+     */
+
+    @Test
+    public void testIsSkillScore()
+    {
+        assertFalse( biasFraction.isSkillScore() );
+    }
+
+    /**
+     * Checks that the {@link BiasFraction#getScoreOutputGroup()} returns the result provided on construction.
+     */
+
+    @Test
+    public void testGetScoreOutputGroup()
+    {
+        assertTrue( biasFraction.getScoreOutputGroup() == ScoreOutputGroup.NONE );
+    }
+
+    /**
+     * Tests for an expected exception on calling {@link BiasFraction#apply(SingleValuedPairs)} with null 
+     * input.
+     */
+
+    @Test
+    public void testApplyExceptionOnNullInput()
+    {
+        exception.expect( MetricInputException.class );
+        exception.expectMessage( "Specify non-null input to the 'BIAS FRACTION'." );
+        
+        biasFraction.apply( null );
     }
 
 }
