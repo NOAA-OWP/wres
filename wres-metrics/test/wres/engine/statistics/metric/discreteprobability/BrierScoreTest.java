@@ -175,5 +175,23 @@ public final class BrierScoreTest
         
         brierScore.apply( null );
     }
+    
+    /**
+     * Tests for an expected exception on attempting to build the {@link BrierScore} with a null decomposition
+     * identifier.
+     * @throws MetricParameterException if the metric could not be built for an unexpected reason
+     */
+
+    @Test
+    public void testBuildThrowsExceptionOnNullDecompositionIdentifier() throws MetricParameterException
+    {
+        exception.expect( MetricParameterException.class );
+        exception.expectMessage( "Specify a non-null decomposition identifier." );
+        
+        BrierScoreBuilder b = new BrierScore.BrierScoreBuilder();
+        b.setDecompositionID( null );
+        this.outF = DefaultDataFactory.getInstance();
+        b.setOutputFactory( outF ).build();
+    }
 
 }

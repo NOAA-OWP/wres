@@ -5,11 +5,11 @@
 # Read the options, which is currently only one: -l to indicate a run of latest. 
 if [ $# -lt 1 ]
 then
-	echo "Usage: $0 [-l 0|1] [-d WRES_DB_NAME] scenarios"
+	echo "Usage: $0 [-l 0|1] [-d WRES_DB_NAME] [-t systestsDir] scenarios"
 	exit 2
 fi
 latest=0
-while getopts "l:d:" option; do
+while getopts "l:d:t:" option; do
      case "${option}"
      in
          l)
@@ -19,9 +19,12 @@ while getopts "l:d:" option; do
 	d)	
 		export WRES_DB_NAME=$OPTARG
 		;;
+	t)
+		systestsDir=$OPTARG
+		;;	
 	?)
 		echo "Unknown option -$OPTARG" >&2
-		echo "Usage: $0 [-l 0|1] [-d WRES_DB_NAME] scenarios"
+		echo "Usage: $0 [-l 0|1] [-d WRES_DB_NAME] [-t systestsDir] scenarios"
 		exit 2
 		;;
      esac
@@ -29,6 +32,7 @@ done
 shift $((OPTIND -1))
 
 echo "latest = $latest, WRES_DB_NAME = $WRES_DB_NAME"
+echo "systestDir = $systestsDir"
 echo "scenarios = $*"
 #exit 0
 
@@ -47,7 +51,10 @@ fi
 # ============================================================
 # Arguments
 # ============================================================
-systestsDir=$(pwd)
+if [ -z $systestsDir ]
+then
+	systestsDir=$(pwd)
+fi
 configName=project_config.xml
 outputDirName=output
 benchDirName=benchmarks

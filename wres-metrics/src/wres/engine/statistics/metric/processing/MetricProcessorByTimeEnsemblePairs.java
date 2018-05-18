@@ -64,9 +64,9 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
     /**
      * Function that computes an average from an array.
      */
-    
+
     private static final ToDoubleFunction<double[]> AVERAGE = right -> Arrays.stream( right ).average().getAsDouble();
-    
+
     /**
      * A {@link MetricCollection} of {@link Metric} that consume {@link DiscreteProbabilityPairs} and produce
      * {@link DoubleScoreOutput}.
@@ -275,34 +275,41 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
      * 
      * @param threshold the threshold
      * @return the predicate for filtering pairs
-     * @throws UnsupportedOperationException if the threshold data type is unrecognized
      * @throws NullPointerException if the {@link Threshold#getDataType()} is null
      */
 
     static Predicate<PairOfDoubleAndVectorOfDoubles> getFilterForEnsemblePairs( Threshold input )
-    {        
+    {
         ThresholdConstants.ThresholdDataType type = input.getDataType();
-        
+
+        Predicate<PairOfDoubleAndVectorOfDoubles> returnMe = null;
+
         switch ( type )
         {
             case LEFT:
-                return Slicer.leftVector( input::test );
+                returnMe = Slicer.leftVector( input::test );
+                break;
             case RIGHT:
-                return Slicer.allOfRight( input::test );
+                returnMe = Slicer.allOfRight( input::test );
+                break;
             case LEFT_AND_RIGHT:
-                return Slicer.leftAndAllOfRight( input::test );
+                returnMe = Slicer.leftAndAllOfRight( input::test );
+                break;
             case ANY_RIGHT:
-                return Slicer.anyOfRight( input::test );
+                returnMe = Slicer.anyOfRight( input::test );
+                break;
             case LEFT_AND_ANY_RIGHT:
-                return Slicer.leftAndAnyOfRight( input::test );
+                returnMe = Slicer.leftAndAnyOfRight( input::test );
+                break;
             case RIGHT_MEAN:
-                return Slicer.right( input::test, AVERAGE );
+                returnMe = Slicer.right( input::test, AVERAGE );
+                break;
             case LEFT_AND_RIGHT_MEAN:
-                return Slicer.leftAndRight( input::test, AVERAGE );
-            default:
-                throw new UnsupportedOperationException( "Cannot map the threshold data type '" + type
-                                                         + "'." );
+                returnMe = Slicer.leftAndRight( input::test, AVERAGE );
+                break;
         }
+
+        return returnMe;
     }
 
     @Override

@@ -61,7 +61,7 @@ public class SumOfSquareError<S extends SingleValuedPairs> extends DecomposableS
         double returnMe = MissingValues.MISSING_DOUBLE;
 
         // Data available
-        if ( input.getRawData().size() > 0 )
+        if ( ! input.getRawData().isEmpty() )
         {
             returnMe = input.getRawData().stream().mapToDouble( FunctionFactory.squareError() ).sum();
         }
