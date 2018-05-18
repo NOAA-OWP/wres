@@ -1,19 +1,24 @@
 package wres.engine.statistics.metric.singlevalued;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Arrays;
 
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
+import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
@@ -28,135 +33,180 @@ import wres.engine.statistics.metric.singlevalued.KlingGuptaEfficiency.KlingGupt
  * Tests the {@link KlingGuptaEfficiency}.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 public final class KlingGuptaEfficiencyTest
 {
 
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
+
     /**
-     * Constructs a {@link KlingGuptaEfficiency} and compares the actual result to the expected result. Also, checks 
-     * the parameters. Uses data from {@link MetricTestDataFactory#getSingleValuedPairsFive()}.
-     * @throws MetricParameterException if the metric construction fails 
+     * Default instance of a {@link KlingGuptaEfficiency}.
+     */
+
+    private KlingGuptaEfficiency kge;
+
+    /**
+     * Instance of a data factory.
+     */
+
+    private DataFactory outF;
+
+    @Before
+    public void setupBeforeEachTest() throws MetricParameterException
+    {
+        KlingGuptaEfficiencyBuilder b = new KlingGuptaEfficiency.KlingGuptaEfficiencyBuilder();
+        this.outF = DefaultDataFactory.getInstance();
+        b.setOutputFactory( outF );
+        this.kge = b.build();
+    }
+
+    /**
+     * Compares the output from {@link KlingGuptaEfficiency#apply(SingleValuedPairs)} against expected output.
+     * @throws IOException if the input data could not be read
      */
 
     @Test
-    public void test1KlingGuptaEfficiency() throws MetricParameterException
+    public void testApply() throws IOException
     {
-        //Obtain the factories
-        final DataFactory outF = DefaultDataFactory.getInstance();
-        final MetadataFactory metaFac = outF.getMetadataFactory();
+        SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsFive();
 
-        //Generate some data
-        SingleValuedPairs input = null;
-        try
-        {
-            input = MetricTestDataFactory.getSingleValuedPairsFive();
-        }
-        catch ( IOException e )
-        {
-            fail( "Unable to read the test data." );
-        }
+        MetadataFactory metaFac = outF.getMetadataFactory();
+
         //Metadata for the output
-        final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                 Instant.parse( "2010-12-31T11:59:59Z" ),
-                                                 ReferenceTime.VALID_TIME,
-                                                 Duration.ofHours( 24 ) );
-        final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getRawData().size(),
-                                                                   metaFac.getDimension(),
-                                                                   metaFac.getDimension( "MM/DAY" ),
-                                                                   MetricConstants.KLING_GUPTA_EFFICIENCY,
-                                                                   MetricConstants.MAIN,
-                                                                   metaFac.getDatasetIdentifier( "103.1",
-                                                                                                 "QME",
-                                                                                                 "NVE" ),
-                                                                   window );
+        TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                           Instant.parse( "2010-12-31T11:59:59Z" ),
+                                           ReferenceTime.VALID_TIME,
+                                           Duration.ofHours( 24 ) );
 
-        //Build the metric
-        final KlingGuptaEfficiencyBuilder b = new KlingGuptaEfficiencyBuilder();
-        b.setOutputFactory( outF );
-        final KlingGuptaEfficiency kge = b.build();
-
-        //Check the parameters
-        assertTrue( "Unexpected name for the Kling Gupta Efficiency.",
-                    kge.getName().equals( MetricConstants.KLING_GUPTA_EFFICIENCY.toString() ) );
-        assertTrue( "The Kling Gupta Efficiency is decomposable.", kge.isDecomposable() );
-        assertTrue( "The Kling Gupta Efficiency is a skill score.", kge.isSkillScore() );
-        assertTrue( "Expected no decomposition for the Kling Gupta Efficiency.",
-                    kge.getScoreOutputGroup() == ScoreOutputGroup.NONE );
+        MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getRawData().size(),
+                                                             metaFac.getDimension(),
+                                                             metaFac.getDimension( "MM/DAY" ),
+                                                             MetricConstants.KLING_GUPTA_EFFICIENCY,
+                                                             MetricConstants.MAIN,
+                                                             metaFac.getDatasetIdentifier( "103.1",
+                                                                                           "QME",
+                                                                                           "NVE" ),
+                                                             window );
 
         //Check the results
-        final DoubleScoreOutput actual = kge.apply( input );
+        DoubleScoreOutput actual = kge.apply( input );
 
-        final DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 0.8921704394462281, m1 );
+        DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 0.8921704394462281, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
                     + ".",
                     actual.equals( expected ) );
-    }    
+    }
 
     /**
-     * Constructs a {@link KlingGuptaEfficiency} with a no-skill baseline and compares the actual result to
-     * the expected result. Uses data from {@link MetricTestDataFactory#getSingleValuedPairsOne()}.
-     * @throws MetricParameterException if the metric could not be constructed
+     * Compares the output from {@link KlingGuptaEfficiency#apply(SingleValuedPairs)} against expected output.
      */
 
     @Test
-    public void test2KlingGuptaEfficiency() throws MetricParameterException
+    public void testApplyTwo()
     {
-        //Obtain the factories
-        final DataFactory outF = DefaultDataFactory.getInstance();
-        final MetadataFactory metaFac = outF.getMetadataFactory();
-
-        //Generate some data
         SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
-        //Metadata for the output
-        final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getRawData().size(),
-                                                                   metaFac.getDimension(),
-                                                                   metaFac.getDimension(),
-                                                                   MetricConstants.KLING_GUPTA_EFFICIENCY,
-                                                                   MetricConstants.MAIN );
 
-        //Build the metric
-        final KlingGuptaEfficiencyBuilder b = new KlingGuptaEfficiencyBuilder();
-        b.setOutputFactory( outF );
-        final KlingGuptaEfficiency kge = b.build();
+        MetadataFactory metaFac = outF.getMetadataFactory();
+
+        MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getRawData().size(),
+                                                             metaFac.getDimension(),
+                                                             metaFac.getDimension(),
+                                                             MetricConstants.KLING_GUPTA_EFFICIENCY,
+                                                             MetricConstants.MAIN );
 
         //Check the results
-        final DoubleScoreOutput actual = kge.apply( input );
+        DoubleScoreOutput actual = kge.apply( input );
 
-        final DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 0.9432025316651065, m1 );
+        DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 0.9432025316651065, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
                     + ".",
                     actual.equals( expected ) );
-    }    
-    
+    }
+
     /**
-     * Constructs a {@link KlingGuptaEfficiency} and checks for exceptional cases.
-     * @throws MetricParameterException if the metric construction fails
+     * Validates the output from {@link KlingGuptaEfficiency#apply(SingleValuedPairs)} when supplied with no data.
      */
 
     @Test
-    public void test3Exceptions() throws MetricParameterException
+    public void testApplyWithNoData()
     {
-        //Build the metric
-        final DataFactory outF = DefaultDataFactory.getInstance();
-        final KlingGuptaEfficiencyBuilder b = new KlingGuptaEfficiencyBuilder();
-        b.setOutputFactory( outF );
-        final KlingGuptaEfficiency kge = b.build();
+        // Generate empty data
+        DiscreteProbabilityPairs input =
+                outF.ofDiscreteProbabilityPairs( Arrays.asList(), outF.getMetadataFactory().getMetadata() );
 
-        //Check the exceptions
-        try
-        {
-            kge.apply( null );
-            fail( "Expected an exception on null input." );
-        }
-        catch ( MetricInputException e )
-        {
-        }
+        DoubleScoreOutput actual = kge.apply( input );
+
+        assertTrue( actual.getData().isNaN() );
+    }
+
+    /**
+     * Checks that the {@link KlingGuptaEfficiency#getName()} returns 
+     * {@link MetricConstants#KLING_GUPTA_EFFICIENCY.toString()}
+     */
+
+    @Test
+    public void testGetName()
+    {
+        assertTrue( kge.getName().equals( MetricConstants.KLING_GUPTA_EFFICIENCY.toString() ) );
+    }
+
+    /**
+     * Checks that the {@link KlingGuptaEfficiency#isDecomposable()} returns <code>true</code>.
+     */
+
+    @Test
+    public void testIsDecomposable()
+    {
+        assertTrue( kge.isDecomposable() );
+    }
+
+    /**
+     * Checks that the {@link KlingGuptaEfficiency#isSkillScore()} returns <code>true</code>.
+     */
+
+    @Test
+    public void testIsSkillScore()
+    {
+        assertTrue( kge.isSkillScore() );
+    }
+
+    /**
+     * Checks that the {@link KlingGuptaEfficiency#hasRealUnits()} returns <code>false</code>.
+     */
+
+    @Test
+    public void testhasRealUnits()
+    {
+        assertFalse( kge.hasRealUnits() );
+    }
+
+    /**
+     * Checks that the {@link KlingGuptaEfficiency#getScoreOutputGroup()} returns the result provided on construction.
+     */
+
+    @Test
+    public void testGetScoreOutputGroup()
+    {
+        assertTrue( kge.getScoreOutputGroup() == ScoreOutputGroup.NONE );
+    }
+
+    /**
+     * Tests for an expected exception on calling {@link KlingGuptaEfficiency#apply(SingleValuedPairs)} with null 
+     * input.
+     */
+
+    @Test
+    public void testApplyExceptionOnNullInput()
+    {
+        exception.expect( MetricInputException.class );
+        exception.expectMessage( "Specify non-null input to the 'KLING GUPTA EFFICIENCY'." );
+
+        kge.apply( null );
     }
 
 }

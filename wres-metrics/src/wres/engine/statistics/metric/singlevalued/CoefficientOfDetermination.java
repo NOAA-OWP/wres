@@ -14,8 +14,6 @@ import wres.engine.statistics.metric.MetricParameterException;
  * {SingleValuedPairs} input.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 public class CoefficientOfDetermination extends CorrelationPearsons
 {

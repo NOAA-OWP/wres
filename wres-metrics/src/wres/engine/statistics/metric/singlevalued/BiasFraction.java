@@ -17,8 +17,6 @@ import wres.engine.statistics.metric.MetricParameterException;
  * Computes the mean error of a single-valued prediction as a fraction of the mean observed value.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 public class BiasFraction extends DoubleErrorScore<SingleValuedPairs>
 {

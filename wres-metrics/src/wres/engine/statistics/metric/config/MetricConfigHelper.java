@@ -344,6 +344,45 @@ public final class MetricConfigHelper
 
         return hasSpecifiedType && hasThresholdLeadType;
     }
+    
+    /**
+     * Helper that interprets the input configuration and returns a list of {@link MetricOutputGroup} whose results 
+     * should be cached when computing metrics incrementally.
+     * 
+     * @param projectConfig the project configuration
+     * @return a list of output types that should be cached
+     * @throws MetricConfigException if the configuration is invalid
+     * @throws NullPointerException if the input is null
+     */
+
+    public static Set<MetricOutputGroup> getCacheListFromProjectConfig( ProjectConfig projectConfig )
+            throws MetricConfigException
+    {
+        // Always cache ordinary scores and paired output for timing error metrics 
+        Set<MetricOutputGroup> returnMe = new TreeSet<>();
+        returnMe.add( MetricOutputGroup.DOUBLE_SCORE );
+        returnMe.add( MetricOutputGroup.PAIRED );
+
+        // Cache other outputs as required
+        MetricOutputGroup[] options = MetricOutputGroup.values();
+        for ( MetricOutputGroup next : options )
+        {
+            if ( !returnMe.contains( next )
+                 && MetricConfigHelper.hasTheseOutputsByThresholdLead( projectConfig, next ) )
+            {
+                returnMe.add( next );
+            }
+        }
+
+        // Never cache box plot output, as it does not apply to thresholds
+        returnMe.remove( MetricOutputGroup.BOXPLOT );
+
+        // Never cache duration score output as timing error summary statistics are computed once all data 
+        // is available
+        returnMe.remove( MetricOutputGroup.DURATION_SCORE );
+
+        return Collections.unmodifiableSet( returnMe );
+    }    
 
     /**
      * Returns a list of {@link Threshold} from a comma-separated string. Specify the type of {@link Threshold}

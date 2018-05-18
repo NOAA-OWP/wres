@@ -4,6 +4,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
+import wres.config.MetricConfigException;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
@@ -14,6 +15,7 @@ import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
+import wres.engine.statistics.metric.config.MetricConfigHelper;
 
 /**
  * Helper class that collates concrete metric processors together.
@@ -54,12 +56,25 @@ public class MetricProcessorForProject
             throws MetricParameterException
     {
         DatasourceType type = projectConfig.getInputs().getRight().getType();
+
+        Set<MetricOutputGroup> mergeTheseResults = null;
+
+        try
+        {
+            mergeTheseResults = MetricConfigHelper.getCacheListFromProjectConfig( projectConfig );
+        }
+        catch ( MetricConfigException e )
+        {
+            throw new MetricProcessorException( "Could not determine the results to merge from the project "
+                                                + "configuration: ", e );
+        }
         if ( type.equals( DatasourceType.SINGLE_VALUED_FORECASTS ) || type.equals( DatasourceType.SIMULATIONS ) )
         {
             singleValuedProcessor = metricFactory.ofMetricProcessorByTimeSingleValuedPairs( projectConfig,
                                                                                             externalThresholds,
                                                                                             thresholdExecutor,
-                                                                                            metricExecutor );
+                                                                                            metricExecutor,
+                                                                                            mergeTheseResults );
             ensembleProcessor = null;
         }
         else
@@ -67,7 +82,8 @@ public class MetricProcessorForProject
             ensembleProcessor = metricFactory.ofMetricProcessorByTimeEnsemblePairs( projectConfig,
                                                                                     externalThresholds,
                                                                                     thresholdExecutor,
-                                                                                    metricExecutor );
+                                                                                    metricExecutor,
+                                                                                    mergeTheseResults );
             singleValuedProcessor = null;
         }
     }

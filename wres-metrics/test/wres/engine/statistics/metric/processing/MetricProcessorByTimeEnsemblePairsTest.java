@@ -39,6 +39,7 @@ import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
+import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.DoubleScoreOutput;
@@ -110,6 +111,13 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         assertNotNull( MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( dataFac.ofThreshold( doubles,
                                                                                                           condition,
                                                                                                           ThresholdDataType.RIGHT_MEAN ) ) );
+        // Check that average works        
+        PairOfDoubleAndVectorOfDoubles pair = dataFac.pairOf( 1.0, new double[] { 1.5, 2.0 } );
+
+        assertTrue( MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( dataFac.ofThreshold( doubles,
+                                                                                                       condition,
+                                                                                                       ThresholdDataType.RIGHT_MEAN ) )
+                                                      .test( pair ) );
     }
 
     /**
@@ -417,11 +425,11 @@ public final class MetricProcessorByTimeEnsemblePairsTest
 
         // Check for equality
         BiPredicate<Double, Double> testEqual = FunctionFactory.doubleEquals();
-        
+
         assertTrue( testEqual.test( actual.get( MetricConstants.THREAT_SCORE ).getValue( 0 ).getData(),
                                     0.9160756501182034 ) );
         assertTrue( testEqual.test( actual.get( MetricConstants.PEIRCE_SKILL_SCORE ).getValue( 0 ).getData(),
-                                    -0.0012886597938144284 ) );       
+                                    -0.0012886597938144284 ) );
     }
 
     /**

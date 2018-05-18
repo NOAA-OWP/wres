@@ -1,16 +1,21 @@
 package wres.engine.statistics.metric.singlevalued;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
-import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
+import java.util.Arrays;
+
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
+import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
@@ -23,31 +28,44 @@ import wres.engine.statistics.metric.singlevalued.CorrelationPearsons.Correlatio
  * Tests the {@link CorrelationPearsons}.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 public final class CorrelationPearsonsTest
 {
 
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
+    
     /**
-     * Constructs a {@link CorrelationPearsons}. Minimal test that focuses on the wrapper, and not the underlying
-     * {@link PearsonsCorrelation}.
-     * @throws MetricParameterException if the metric could not be constructed 
+     * Default instance of a {@link CorrelationPearsons}.
+     */
+
+    private CorrelationPearsons rho;
+
+    /**
+     * Instance of a data factory.
+     */
+
+    private DataFactory outF;
+
+    @Before
+    public void setupBeforeEachTest() throws MetricParameterException
+    {
+        CorrelationPearsonsBuilder b = new CorrelationPearsons.CorrelationPearsonsBuilder();
+        this.outF = DefaultDataFactory.getInstance();
+        b.setOutputFactory( outF );
+        this.rho = b.build();
+    }
+
+    /**
+     * Compares the output from {@link CorrelationPearsons#apply(SingleValuedPairs)} against expected output.
      */
 
     @Test
-    public void test1Correlation() throws MetricParameterException
+    public void testApply()
     {
-        //Obtain the factories
-        final DataFactory dataF = DefaultDataFactory.getInstance();
-        final MetadataFactory metaFac = dataF.getMetadataFactory();
-
         SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
-
-        //Build the metric
-        final CorrelationPearsonsBuilder b = new CorrelationPearsons.CorrelationPearsonsBuilder();
-        b.setOutputFactory( dataF );
-        final CorrelationPearsons rho = b.build();
+        
+        MetadataFactory metaFac = outF.getMetadataFactory();
 
         final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getRawData().size(),
                                                                    metaFac.getDimension(),
@@ -57,46 +75,130 @@ public final class CorrelationPearsonsTest
 
         //Compute normally
         final DoubleScoreOutput actual = rho.apply( input );
-        final DoubleScoreOutput expected = dataF.ofDoubleScoreOutput( 0.9999999910148981, m1 );
+        final DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 0.9999999910148981, m1 );
         assertTrue( "Actual: " + actual.getData().doubleValue()
                     + ". Expected: "
                     + expected.getData().doubleValue()
                     + ".",
                     actual.equals( expected ) );
-
-        //Check the parameters
-        assertTrue( "Unexpected name for Pearson's correlation coefficient.",
-                    rho.getName().equals( MetricConstants.PEARSON_CORRELATION_COEFFICIENT.toString() ) );
-        assertTrue( "Pearson's correlation is not decomposable.", !rho.isDecomposable() );
-        assertTrue( "Pearson's correlation is not a skill score.", !rho.isSkillScore() );
-        assertTrue( "Pearson's correlation cannot be decomposed.",
-                    rho.getScoreOutputGroup() == ScoreOutputGroup.NONE );
-        assertTrue( "Pearson's correlation does not have real units", !rho.hasRealUnits() );
     }
-
+    
     /**
-     * Constructs a {@link CorrelationPearsons} and checks for exceptional cases.
-     * @throws MetricParameterException if the metric could not be constructed 
+     * Compares the output from {@link CorrelationPearsons#aggregate(DoubleScoreOutput)} against expected output.
      */
 
     @Test
-    public void test2Exceptions() throws MetricParameterException
+    public void testAggregate()
     {
-        //Build the metric
-        final DataFactory outF = DefaultDataFactory.getInstance();
-        final CorrelationPearsonsBuilder b = new CorrelationPearsons.CorrelationPearsonsBuilder();
-        b.setOutputFactory( outF );
-        final CorrelationPearsons rho = b.build();
+        SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
-        //Check the exceptions
-        try
-        {
-            rho.apply( (SingleValuedPairs) null );
-            fail( "Expected an exception on null input." );
-        }
-        catch ( MetricInputException e )
-        {
-        }
+        assertTrue( rho.apply( input ).equals( rho.aggregate( rho.getInputForAggregation( input ) ) ) );
+    }    
+
+    /**
+     * Validates the output from {@link CorrelationPearsons#apply(SingleValuedPairs)} when supplied with no data.
+     */
+
+    @Test
+    public void testApplyWithNoData()
+    {
+        // Generate empty data
+        DiscreteProbabilityPairs input =
+                outF.ofDiscreteProbabilityPairs( Arrays.asList(), outF.getMetadataFactory().getMetadata() );
+ 
+        DoubleScoreOutput actual = rho.apply( input );
+
+        assertTrue( actual.getData().isNaN() );
     }
+
+    /**
+     * Checks that the {@link CorrelationPearsons#getName()} returns 
+     * {@link MetricConstants#PEARSON_CORRELATION_COEFFICIENT.toString()}
+     */
+
+    @Test
+    public void testGetName()
+    {
+        assertTrue( rho.getName().equals( MetricConstants.PEARSON_CORRELATION_COEFFICIENT.toString() ) );
+    }
+
+    /**
+     * Checks that the {@link CorrelationPearsons#isDecomposable()} returns <code>false</code>.
+     */
+
+    @Test
+    public void testIsDecomposable()
+    {
+        assertFalse( rho.isDecomposable() );
+    }
+
+    /**
+     * Checks that the {@link CorrelationPearsons#isSkillScore()} returns <code>false</code>.
+     */
+
+    @Test
+    public void testIsSkillScore()
+    {
+        assertFalse( rho.isSkillScore() );
+    }
+    
+    /**
+     * Checks that the {@link CorrelationPearsons#hasRealUnits()} returns <code>false</code>.
+     */
+
+    @Test
+    public void testhasRealUnits()
+    {
+        assertFalse( rho.hasRealUnits() );
+    }   
+
+    /**
+     * Checks that the {@link CorrelationPearsons#getScoreOutputGroup()} returns the result provided on construction.
+     */
+
+    @Test
+    public void testGetScoreOutputGroup()
+    {
+        assertTrue( rho.getScoreOutputGroup() == ScoreOutputGroup.NONE );
+    }
+
+    /**
+     * Checks that the {@link CorrelationPearsons#getCollectionOf()} returns 
+     * {@link MetricConstants#PEARSON_CORRELATION_COEFFICIENT}.
+     */
+
+    @Test
+    public void testGetCollectionOf()
+    {
+        assertTrue( rho.getCollectionOf().equals( MetricConstants.PEARSON_CORRELATION_COEFFICIENT ) );
+    }    
+    
+    /**
+     * Tests for an expected exception on calling {@link CorrelationPearsons#apply(SingleValuedPairs)} with null 
+     * input.
+     */
+
+    @Test
+    public void testApplyExceptionOnNullInput()
+    {
+        exception.expect( MetricInputException.class );
+        exception.expectMessage( "Specify non-null input to the 'PEARSON CORRELATION COEFFICIENT'." );
+        
+        rho.apply( null );
+    }    
+    
+    /**
+     * Tests for an expected exception on calling {@link CorrelationPearsons#aggregate(DoubleScoreOutput)} with 
+     * null input.
+     */
+
+    @Test
+    public void testAggregateExceptionOnNullInput()
+    {
+        exception.expect( MetricInputException.class );
+        exception.expectMessage( "Specify non-null input to the 'PEARSON CORRELATION COEFFICIENT'." );
+        
+        rho.aggregate( null );
+    }    
 
 }

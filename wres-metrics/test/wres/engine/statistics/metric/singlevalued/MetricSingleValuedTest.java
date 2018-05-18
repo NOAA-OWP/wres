@@ -1,9 +1,10 @@
 package wres.engine.statistics.metric.singlevalued;
 
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
@@ -17,19 +18,20 @@ import wres.engine.statistics.metric.singlevalued.MeanError.MeanErrorBuilder;
  * Tests the {@link Metric} using single-valued metrics.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 public final class MetricSingleValuedTest
 {
 
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
+    
     /**
      * Constructs a {@link Metric} and tests the {@link Metric#nameEquals(Object)}.
      * @throws MetricParameterException if the metric could not be constructed 
      */
 
     @Test
-    public void test1NameEquals() throws MetricParameterException
+    public void testNameEquals() throws MetricParameterException
     {
 
         //Build a metric
@@ -57,7 +59,7 @@ public final class MetricSingleValuedTest
      */
 
     @Test
-    public void test2ToString() throws MetricParameterException
+    public void testToString() throws MetricParameterException
     {
 
         //Build a metric
@@ -72,23 +74,19 @@ public final class MetricSingleValuedTest
     }
 
     /**
-     * Constructs a {@link Metric} and tests for checked exceptions.
-     * @throws MetricParameterException if the metric could not be constructed
+     * Checks for an exception on attempting to build a metric with a missing output factory.
+     * @throws MetricPatameterException if an unexpected exception occurs
      */
 
     @Test
-    public void test3Exceptions() throws MetricParameterException
+    public void testExceptionOnMissingOutputFactory() throws MetricParameterException
     {
-        //No data factory
-        final MeanErrorBuilder b = new MeanError.MeanErrorBuilder();
-        try
-        {
-            b.build();
-            fail( "Expected a checked exception on building a metric without an output factory." );
-        }
-        catch ( MetricParameterException e )
-        {
-        }
+        exception.expect( MetricParameterException.class );
+        exception.expectMessage( "Specify a data factory with which to build the metric." );
+        
+        MeanErrorBuilder b = new MeanError.MeanErrorBuilder();
+        b.build();
+
     }
 
 }
