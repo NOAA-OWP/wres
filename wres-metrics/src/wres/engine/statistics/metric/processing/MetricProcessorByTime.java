@@ -45,13 +45,13 @@ import wres.engine.statistics.metric.MetricParameterException;
 public abstract class MetricProcessorByTime<S extends MetricInput<?>>
         extends MetricProcessor<S, MetricOutputForProjectByTimeAndThreshold>
 {
-    
+
     /**
      * Message that indicates processing is complete.
      */
-    
+
     static final String PROCESSING_COMPLETE_MESSAGE = "Completed processing of metrics for feature '{}' "
-            + "at time window '{}'.";
+                                                      + "at time window '{}'.";
 
     /**
      * The metric futures from previous calls, indexed by {@link TimeWindow}.
@@ -169,28 +169,30 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
      * 
      * @param threshold the threshold
      * @return the predicate for filtering pairs
-     * @throws UnsupportedOperationException if the threshold data type is unrecognized
      */
 
     static Predicate<PairOfDoubles> getFilterForSingleValuedPairs( Threshold input )
     {
+        Predicate<PairOfDoubles> returnMe = null;
+
         switch ( input.getDataType() )
         {
             case LEFT:
-                return Slicer.left( input::test );
+                returnMe = Slicer.left( input::test );
+                break;
             case LEFT_AND_RIGHT:
             case LEFT_AND_ANY_RIGHT:
             case LEFT_AND_RIGHT_MEAN:
-                return Slicer.leftAndRight( input::test );
+                returnMe = Slicer.leftAndRight( input::test );
+                break;
             case RIGHT:
             case ANY_RIGHT:
             case RIGHT_MEAN:
-                return Slicer.right( input::test );
-            default:
-                throw new UnsupportedOperationException( "Cannot map the threshold data type '"
-                                                         + input.getDataType()
-                                                         + "'." );
+                returnMe = Slicer.right( input::test );
+                break;
         }
+
+        return returnMe;
     }
 
     /**
@@ -199,28 +201,30 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
      * 
      * @param threshold the threshold
      * @return the predicate for filtering pairs
-     * @throws UnsupportedOperationException if the threshold data type is unrecognized
      */
 
     static Predicate<TimeSeries<PairOfDoubles>> getFilterForTimeSeriesOfSingleValuedPairs( Threshold input )
     {
+        Predicate<TimeSeries<PairOfDoubles>> returnMe = null;
+
         switch ( input.getDataType() )
         {
             case LEFT:
-                return Slicer.anyOfLeftInTimeSeriesOfSingleValuedPairs( input::test );
+                returnMe = Slicer.anyOfLeftInTimeSeriesOfSingleValuedPairs( input::test );
+                break;
             case LEFT_AND_RIGHT:
             case LEFT_AND_ANY_RIGHT:
             case LEFT_AND_RIGHT_MEAN:
-                return Slicer.anyOfLeftAndAnyOfRightInTimeSeriesOfSingleValuedPairs( input::test );
+                returnMe = Slicer.anyOfLeftAndAnyOfRightInTimeSeriesOfSingleValuedPairs( input::test );
+                break;
             case RIGHT:
             case ANY_RIGHT:
             case RIGHT_MEAN:
-                return Slicer.anyOfRightInTimeSeriesOfSingleValuedPairs( input::test );
-            default:
-                throw new UnsupportedOperationException( "Cannot map the threshold data type '"
-                                                         + input.getDataType()
-                                                         + "'." );
+                returnMe = Slicer.anyOfRightInTimeSeriesOfSingleValuedPairs( input::test );
+                break;
         }
+
+        return returnMe;
     }
 
     /**
