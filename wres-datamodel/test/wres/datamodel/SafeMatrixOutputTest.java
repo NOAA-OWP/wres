@@ -34,24 +34,27 @@ public final class SafeMatrixOutputTest
     {
         final DataFactory d = DefaultDataFactory.getInstance();
         final MetadataFactory metaFac = d.getMetadataFactory();
+        final Location l1 = metaFac.getLocation( "A" );
         final MetricOutputMetadata m1 = metaFac.getOutputMetadata( 10,
                                                                    metaFac.getDimension(),
                                                                    metaFac.getDimension( "CMS" ),
                                                                    MetricConstants.CONTINGENCY_TABLE,
                                                                    MetricConstants.MAIN,
-                                                                   metaFac.getDatasetIdentifier( "A", "B", "C" ) );
+                                                                   metaFac.getDatasetIdentifier( l1, "B", "C" ) );
+        final Location l2 = metaFac.getLocation( "A" );
         final MetricOutputMetadata m2 = metaFac.getOutputMetadata( 11,
                                                                    metaFac.getDimension(),
                                                                    metaFac.getDimension( "CMS" ),
                                                                    MetricConstants.CONTINGENCY_TABLE,
                                                                    MetricConstants.MAIN,
-                                                                   metaFac.getDatasetIdentifier( "A", "B", "C" ) );
+                                                                   metaFac.getDatasetIdentifier( l2, "B", "C" ) );
+        final Location l3 = metaFac.getLocation( "B" );
         final MetricOutputMetadata m3 = metaFac.getOutputMetadata( 10,
                                                                    metaFac.getDimension(),
                                                                    metaFac.getDimension( "CMS" ),
                                                                    MetricConstants.CONTINGENCY_TABLE,
                                                                    MetricConstants.MAIN,
-                                                                   metaFac.getDatasetIdentifier( "B", "B", "C" ) );
+                                                                   metaFac.getDatasetIdentifier( l3, "B", "C" ) );
         final MatrixOutput s = d.ofMatrixOutput( new double[][] { { 1.0 }, { 1.0 } }, m1 );
         final MatrixOutput t = d.ofMatrixOutput( new double[][] { { 1.0 }, { 1.0 } }, m1 );
         assertTrue( "Expected equal outputs.", s.equals( t ) );
@@ -95,12 +98,13 @@ public final class SafeMatrixOutputTest
     {
         final DataFactory d = DefaultDataFactory.getInstance();
         final MetadataFactory metaFac = d.getMetadataFactory();
+        final Location l1 = metaFac.getLocation( "A" );
         final MetricOutputMetadata m1 = metaFac.getOutputMetadata(10,
                                                                   metaFac.getDimension(),
                                                                   metaFac.getDimension("CMS"),
                                                                   MetricConstants.CONTINGENCY_TABLE,
                                                                   MetricConstants.MAIN,
-                                                                  metaFac.getDatasetIdentifier("A", "B", "C"));
+                                                                  metaFac.getDatasetIdentifier(l1, "B", "C"));
         final MatrixOutput s = d.ofMatrixOutput(new double[][]{{1.0}, {1.0}}, m1);
         final MatrixOutput t = d.ofMatrixOutput(new double[][]{{1.0}, {1.0}}, m1);
         assertTrue("Expected equal string representations.", s.toString().equals(t.toString()));
@@ -115,20 +119,22 @@ public final class SafeMatrixOutputTest
     {
         final DataFactory d = DefaultDataFactory.getInstance();
         final MetadataFactory metaFac = d.getMetadataFactory();
+        final Location l1 = metaFac.getLocation( "A" );
         final MetricOutputMetadata m1 = d.getMetadataFactory().getOutputMetadata( 10,
                                                                                   metaFac.getDimension(),
                                                                                   metaFac.getDimension( "CMS" ),
                                                                                   MetricConstants.CONTINGENCY_TABLE,
                                                                                   MetricConstants.MAIN,
-                                                                                  metaFac.getDatasetIdentifier( "A",
+                                                                                  metaFac.getDatasetIdentifier( l1,
                                                                                                                 "B",
                                                                                                                 "C" ) );
+        final Location l2 = metaFac.getLocation( "B" );
         final MetricOutputMetadata m2 = d.getMetadataFactory().getOutputMetadata( 10,
                                                                                   metaFac.getDimension(),
                                                                                   metaFac.getDimension( "CMS" ),
                                                                                   MetricConstants.CONTINGENCY_TABLE,
                                                                                   MetricConstants.MAIN,
-                                                                                  metaFac.getDatasetIdentifier( "B",
+                                                                                  metaFac.getDatasetIdentifier( l2,
                                                                                                                 "B",
                                                                                                                 "C" ) );
         final MatrixOutput q = d.ofMatrixOutput( new double[][] { { 1.0 }, { 1.0 } }, m1 );
@@ -145,12 +151,13 @@ public final class SafeMatrixOutputTest
     public void test4HashCode()
     {
         final MetadataFactory metaFac = DefaultMetadataFactory.getInstance();
+        final Location l1 = metaFac.getLocation( "A" );
         final MetricOutputMetadata m1 = metaFac.getOutputMetadata( 10,
                                                                    metaFac.getDimension(),
                                                                    metaFac.getDimension( "CMS" ),
                                                                    MetricConstants.CONTINGENCY_TABLE,
                                                                    MetricConstants.MAIN,
-                                                                   metaFac.getDatasetIdentifier( "A", "B", "C" ) );
+                                                                   metaFac.getDatasetIdentifier( l1, "B", "C" ) );
 
         final DataFactory d = DefaultDataFactory.getInstance();
         final MatrixOutput q = d.ofMatrixOutput( new double[][] { { 1.0 }, { 1.0 } }, m1 );
@@ -181,12 +188,13 @@ public final class SafeMatrixOutputTest
     {
         final DataFactory d = DefaultDataFactory.getInstance();
         final MetadataFactory metaFac = d.getMetadataFactory();
+        final Location l1 = metaFac.getLocation( "A" );
         final MetricOutputMetadata m1 = metaFac.getOutputMetadata( 10,
                                                                    metaFac.getDimension(),
                                                                    metaFac.getDimension( "CMS" ),
                                                                    MetricConstants.CONTINGENCY_TABLE,
                                                                    MetricConstants.MAIN,
-                                                                   metaFac.getDatasetIdentifier( "A", "B", "C" ) );
+                                                                   metaFac.getDatasetIdentifier( l1, "B", "C" ) );
         final MatrixOutput s =
                 d.ofMatrixOutput( new double[][] { { 1.0, 2.0, 3.0 }, { 4.0, 5.0, 6.0 }, { 7.0, 8.0, 9.0 } }, m1 );
         assertTrue( "Unexpected number of elements in the maxtrix.", s.size() == 9 );
@@ -213,12 +221,13 @@ public final class SafeMatrixOutputTest
     {
         final DataFactory d = DefaultDataFactory.getInstance();
         final MetadataFactory metaFac = d.getMetadataFactory();
+        final Location l1 = metaFac.getLocation( "A" );
         final MetricOutputMetadata m1 = metaFac.getOutputMetadata(10,
                                                                   metaFac.getDimension(),
                                                                   metaFac.getDimension("CMS"),
                                                                   MetricConstants.CONTINGENCY_TABLE,
                                                                   MetricConstants.MAIN,
-                                                                  metaFac.getDatasetIdentifier("A", "B", "C"));
+                                                                  metaFac.getDatasetIdentifier(l1, "B", "C"));
         // Null raw data
         try 
         {

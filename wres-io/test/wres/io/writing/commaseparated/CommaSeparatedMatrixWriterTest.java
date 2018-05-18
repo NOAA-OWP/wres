@@ -24,6 +24,7 @@ import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.DefaultDataFactory;
+import wres.datamodel.Location;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.metadata.MetadataFactory;
@@ -80,10 +81,13 @@ public class CommaSeparatedMatrixWriterTest extends CommaSeparatedWriterTest
                                Duration.ofHours( 24 ) );
 
         // Output requires a future... which requires a metadata...
-        // which requires a datasetidentifier..
+        // which requires a datasetidentifier...
+        // which requires a location...
+
+        Location fakeLocation = metaFac.getLocation( LID );
 
         DatasetIdentifier datasetIdentifier =
-                metaFac.getDatasetIdentifier( LID,
+                metaFac.getDatasetIdentifier( fakeLocation,
                                               "SQIN",
                                               "HEFS",
                                               "ESP" );

@@ -37,7 +37,7 @@ public class Chart2DTestInput extends TestCase
         }
         final MetadataFactory metFac = metIn.getMetadataFactory();
         final Metadata meta = metFac.getMetadata(metFac.getDimension("CMS"),
-                                                 metFac.getDatasetIdentifier("DRRC2", "SQIN", "HEFS"));
+                                                 metFac.getDatasetIdentifier(metFac.getLocation("DRRC2"), "SQIN", "HEFS"));
         final SingleValuedPairs pairs = metIn.ofSingleValuedPairs(values, meta);
 
         //Construct the source from the pairs assigning it a data source order index of 0.
@@ -84,7 +84,7 @@ public class Chart2DTestInput extends TestCase
         values.add(metIn.pairOf(93, 94));
         final MetadataFactory metFac = metIn.getMetadataFactory();
         final Metadata meta = metFac.getMetadata(metFac.getDimension("CMS"),
-                                                 metFac.getDatasetIdentifier("DRRC2", "SQIN", "HEFS"));
+                                                 metFac.getDatasetIdentifier(metFac.getLocation("DRRC2"), "SQIN", "HEFS"));
         final SingleValuedPairs pairs = metIn.ofSingleValuedPairs(values, meta);
 
         ChartEngine engine = ChartEngineFactory.buildSingleValuedPairsChartEngine( pairs, null, null );

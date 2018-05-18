@@ -146,7 +146,7 @@ public final class ContingencyTableScoreTest
                                            metaFac.getDimension(),
                                            MetricConstants.CONTINGENCY_TABLE,
                                            MetricConstants.MAIN,
-                                           metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ) );
+                                           metaFac.getDatasetIdentifier( metaFac.getLocation("DRRC2"), "SQIN", "HEFS" ) );
         
         
         final double[][] benchmark = new double[][] { { 82.0, 38.0 }, { 23.0, 222.0 } };
@@ -197,7 +197,7 @@ public final class ContingencyTableScoreTest
                                            metaFac.getDimension(),
                                            MetricConstants.THREAT_SCORE,
                                            MetricConstants.MAIN,
-                                           metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ) );
+                                           metaFac.getDatasetIdentifier( metaFac.getLocation("DRRC2"), "SQIN", "HEFS" ) );
         
         assertTrue( cs.getMetadata( cs.getInputForAggregation( input ) ).equals( expected ) );       
     }    

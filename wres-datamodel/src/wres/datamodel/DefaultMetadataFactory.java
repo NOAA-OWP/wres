@@ -178,12 +178,22 @@ public enum DefaultMetadataFactory implements MetadataFactory
     
 
     @Override
-    public DatasetIdentifier getDatasetIdentifier(final String geospatialID,
+    public DatasetIdentifier getDatasetIdentifier(final Location geospatialID,
                                                   final String variableID,
                                                   final String scenarioID,
                                                   final String baselineScenarioID)
     {
         return new DatasetIdentifierImpl(geospatialID, variableID, scenarioID, baselineScenarioID);
+    }
+
+    @Override
+    public Location getLocation( Long vectorIdentifier,
+                                 String locationName,
+                                 Float longitude,
+                                 Float latitude,
+                                 String gageId )
+    {
+        return new LocationImpl( vectorIdentifier, locationName, longitude, latitude, gageId );
     }
 
     @Override
@@ -345,12 +355,12 @@ public enum DefaultMetadataFactory implements MetadataFactory
     private class DatasetIdentifierImpl implements DatasetIdentifier
     {
 
-        final String geospatialID;
+        final Location geospatialID;
         final String variableID;
         final String scenarioID;
         final String baselineScenarioID;
 
-        private DatasetIdentifierImpl(final String geospatialID,
+        private DatasetIdentifierImpl(final Location geospatialID,
                                       final String variableID,
                                       final String scenarioID,
                                       final String baselineScenarioID)
@@ -362,7 +372,7 @@ public enum DefaultMetadataFactory implements MetadataFactory
         }
 
         @Override
-        public String getGeospatialID()
+        public Location getGeospatialID()
         {
             return geospatialID;
         }
@@ -391,7 +401,7 @@ public enum DefaultMetadataFactory implements MetadataFactory
             final StringJoiner b = new StringJoiner(",", "[", "]");
             if(hasGeospatialID())
             {
-                b.add(getGeospatialID());
+                b.add(getGeospatialID().toString());
             }
             if(hasVariableID())
             {
@@ -443,6 +453,153 @@ public enum DefaultMetadataFactory implements MetadataFactory
         public int hashCode()
         {
             return Objects.hash( getGeospatialID(), getVariableID(), getScenarioID(), getScenarioIDForBaseline() );
+        }
+    }
+
+    /**
+     * Default implementation of {@link Location}
+     */
+
+    private class LocationImpl implements Location
+    {
+        private final Long vectorIdentifier;
+        private final String locationName;
+        private final Float longitude;
+        private final Float latitude;
+        private final String gageId;
+
+        private LocationImpl(final Long vectorIdentifier,
+                             final String locationName,
+                             final Float longitude,
+                             final Float latitude,
+                             final String gageId)
+        {
+            this.vectorIdentifier = vectorIdentifier;
+            this.locationName = locationName;
+            this.longitude = longitude;
+            this.latitude = latitude;
+            this.gageId = gageId;
+        }
+
+        @Override
+        public Long getVectorIdentifier()
+        {
+            return this.vectorIdentifier;
+        }
+
+        @Override
+        public String getLocationName()
+        {
+            return this.locationName;
+        }
+
+        @Override
+        public Float getLongitude()
+        {
+            return this.longitude;
+        }
+
+        @Override
+        public Float getLatitude()
+        {
+            return this.latitude;
+        }
+
+        @Override
+        public String getGageId()
+        {
+            return this.gageId;
+        }
+
+        @Override
+        public String toString()
+        {
+            if (this.hasLocationName())
+            {
+                return this.locationName;
+            }
+
+            if (this.hasGageId())
+            {
+                return this.gageId;
+            }
+
+            if (this.hasVectorIdentifier())
+            {
+                return this.vectorIdentifier.toString();
+            }
+
+            if (this.hasCoordinates())
+            {
+                return this.getLongitude() + " " + this.getLatitude();
+            }
+
+            return "Unknown";
+        }
+
+        @Override
+        public boolean equals( Object obj )
+        {
+            if (obj instanceof Location)
+            {
+                Location other = (Location)obj;
+
+                boolean locationsEqual = true;
+                boolean vectorIDsEqual = true;
+                boolean gageIDsEqual = true;
+                boolean coordinatesEqual = true;
+
+                if (this.hasLocationName() && other.hasLocationName())
+                {
+                    locationsEqual = this.getLocationName().equalsIgnoreCase( other.getLocationName() );
+                }
+                else if (this.hasLocationName() || other.hasLocationName())
+                {
+                    return false;
+                }
+
+                if (this.hasVectorIdentifier() && other.hasVectorIdentifier())
+                {
+                    vectorIDsEqual = this.getVectorIdentifier().equals( other.getVectorIdentifier() );
+                }
+                else if (this.hasVectorIdentifier() || other.hasVectorIdentifier())
+                {
+                    return false;
+                }
+
+                if (this.hasGageId() && other.hasGageId())
+                {
+                    gageIDsEqual = this.getGageId().equalsIgnoreCase( other.getGageId() );
+                }
+                else if (this.hasGageId() || other.hasGageId())
+                {
+                    return false;
+                }
+
+                if (this.hasCoordinates() && other.hasCoordinates())
+                {
+                    coordinatesEqual = this.getLatitude().equals( other.getLatitude() ) &&
+                                       this.getLongitude().equals(other.getLongitude());
+                }
+                else if (this.hasCoordinates() || other.hasCoordinates())
+                {
+                    return false;
+                }
+
+                return locationsEqual && vectorIDsEqual && gageIDsEqual && coordinatesEqual;
+            }
+
+            return false;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return Objects.hash( this.locationName,
+                                 this.gageId,
+                                 this.vectorIdentifier,
+                                 this.longitude,
+                                 this.latitude );
         }
     }
 

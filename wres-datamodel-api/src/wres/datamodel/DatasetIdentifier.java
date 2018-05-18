@@ -22,7 +22,7 @@ public interface DatasetIdentifier
      * @return the geospatial identifier associated with the metric data or null
      */
 
-    String getGeospatialID();
+    Location getGeospatialID();
 
     /**
      * Optional variable identifier for the metric data.

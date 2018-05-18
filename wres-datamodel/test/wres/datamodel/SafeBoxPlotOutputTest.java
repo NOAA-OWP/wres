@@ -36,24 +36,27 @@ public final class SafeBoxPlotOutputTest
         final DataFactory d = DefaultDataFactory.getInstance();
         final MetadataFactory metaFac = d.getMetadataFactory();
         //Build datasets
+        final Location l1 = metaFac.getLocation( "A" );
         final MetricOutputMetadata m1 = metaFac.getOutputMetadata( 10,
                                                                    metaFac.getDimension(),
                                                                    metaFac.getDimension( "CMS" ),
                                                                    MetricConstants.CONTINGENCY_TABLE,
                                                                    MetricConstants.MAIN,
-                                                                   metaFac.getDatasetIdentifier( "A", "B", "C" ) );
+                                                                   metaFac.getDatasetIdentifier( l1, "B", "C" ) );
+        final Location l2 = metaFac.getLocation( "A" );
         final MetricOutputMetadata m2 = metaFac.getOutputMetadata( 11,
                                                                    metaFac.getDimension(),
                                                                    metaFac.getDimension( "CMS" ),
                                                                    MetricConstants.CONTINGENCY_TABLE,
                                                                    MetricConstants.MAIN,
-                                                                   metaFac.getDatasetIdentifier( "A", "B", "C" ) );
+                                                                   metaFac.getDatasetIdentifier( l2, "B", "C" ) );
+        final Location l3 = metaFac.getLocation( "B" );
         final MetricOutputMetadata m3 = metaFac.getOutputMetadata( 10,
                                                                    metaFac.getDimension(),
                                                                    metaFac.getDimension( "CMS" ),
                                                                    MetricConstants.CONTINGENCY_TABLE,
                                                                    MetricConstants.MAIN,
-                                                                   metaFac.getDatasetIdentifier( "B", "B", "C" ) );
+                                                                   metaFac.getDatasetIdentifier( l3, "B", "C" ) );
         List<PairOfDoubleAndVectorOfDoubles> mva = new ArrayList<>();
         List<PairOfDoubleAndVectorOfDoubles> mvb = new ArrayList<>();
         VectorOfDoubles pa = d.vectorOf( new double[] { 0.0, 0.5, 1.0 } );
@@ -125,24 +128,27 @@ public final class SafeBoxPlotOutputTest
         final DataFactory d = DefaultDataFactory.getInstance();
         final MetadataFactory metaFac = d.getMetadataFactory();
         //Build datasets
+        final Location l1 = metaFac.getLocation( "A" );
         final MetricOutputMetadata m1 = metaFac.getOutputMetadata( 10,
                                                                    metaFac.getDimension(),
                                                                    metaFac.getDimension( "CMS" ),
                                                                    MetricConstants.CONTINGENCY_TABLE,
                                                                    MetricConstants.MAIN,
-                                                                   metaFac.getDatasetIdentifier( "A", "B", "C" ) );
+                                                                   metaFac.getDatasetIdentifier( l1, "B", "C" ) );
+        final Location l2 = metaFac.getLocation( "A" );
         final MetricOutputMetadata m2 = metaFac.getOutputMetadata( 11,
                                                                    metaFac.getDimension(),
                                                                    metaFac.getDimension( "CMS" ),
                                                                    MetricConstants.CONTINGENCY_TABLE,
                                                                    MetricConstants.MAIN,
-                                                                   metaFac.getDatasetIdentifier( "A", "B", "C" ) );
+                                                                   metaFac.getDatasetIdentifier( l2, "B", "C" ) );
+        final Location l3 = metaFac.getLocation( "B" );
         final MetricOutputMetadata m3 = metaFac.getOutputMetadata( 10,
                                                                    metaFac.getDimension(),
                                                                    metaFac.getDimension( "CMS" ),
                                                                    MetricConstants.CONTINGENCY_TABLE,
                                                                    MetricConstants.MAIN,
-                                                                   metaFac.getDatasetIdentifier( "B", "B", "C" ) );
+                                                                   metaFac.getDatasetIdentifier( l3, "B", "C" ) );
         List<PairOfDoubleAndVectorOfDoubles> mva = new ArrayList<>();
         List<PairOfDoubleAndVectorOfDoubles> mvb = new ArrayList<>();
         VectorOfDoubles pa = d.vectorOf( new double[] { 0.0, 0.5, 1.0 } );
@@ -213,18 +219,20 @@ public final class SafeBoxPlotOutputTest
     {
         final DataFactory d = DefaultDataFactory.getInstance();
         final MetadataFactory metaFac = d.getMetadataFactory();
+        final Location l1 = metaFac.getLocation( "A" );
         final MetricOutputMetadata m1 = metaFac.getOutputMetadata( 10,
                                                                    metaFac.getDimension(),
                                                                    metaFac.getDimension( "CMS" ),
                                                                    MetricConstants.CONTINGENCY_TABLE,
                                                                    MetricConstants.MAIN,
-                                                                   metaFac.getDatasetIdentifier( "A", "B", "C" ) );
+                                                                   metaFac.getDatasetIdentifier( l1, "B", "C" ) );
+        final Location l2 = metaFac.getLocation( "B" );
         final MetricOutputMetadata m2 = metaFac.getOutputMetadata( 10,
                                                                    metaFac.getDimension(),
                                                                    metaFac.getDimension( "CMS" ),
                                                                    MetricConstants.CONTINGENCY_TABLE,
                                                                    MetricConstants.MAIN,
-                                                                   metaFac.getDatasetIdentifier( "B", "B", "C" ) );
+                                                                   metaFac.getDatasetIdentifier( l2, "B", "C" ) );
         final List<PairOfDoubleAndVectorOfDoubles> values = new ArrayList<>();
         for ( int i = 0; i < 10; i++ )
         {
@@ -254,12 +262,13 @@ public final class SafeBoxPlotOutputTest
     {
         final DataFactory d = DefaultDataFactory.getInstance();
         final MetadataFactory metaFac = d.getMetadataFactory();
+        final Location l1 = metaFac.getLocation( "A" );
         final MetricOutputMetadata m1 = metaFac.getOutputMetadata( 10,
                                                                    metaFac.getDimension(),
                                                                    metaFac.getDimension( "CMS" ),
                                                                    MetricConstants.CONTINGENCY_TABLE,
                                                                    MetricConstants.MAIN,
-                                                                   metaFac.getDatasetIdentifier( "A", "B", "C" ) );
+                                                                   metaFac.getDatasetIdentifier( l1, "B", "C" ) );
         final List<PairOfDoubleAndVectorOfDoubles> values = new ArrayList<>();
         for ( int i = 0; i < 10; i++ )
         {
@@ -292,12 +301,13 @@ public final class SafeBoxPlotOutputTest
     {
         final DataFactory d = DefaultDataFactory.getInstance();
         final MetadataFactory metaFac = d.getMetadataFactory();
+        final Location l1 = metaFac.getLocation( "A" );
         final MetricOutputMetadata m1 = metaFac.getOutputMetadata( 10,
                                                                    metaFac.getDimension(),
                                                                    metaFac.getDimension( "CMS" ),
                                                                    MetricConstants.CONTINGENCY_TABLE,
                                                                    MetricConstants.MAIN,
-                                                                   metaFac.getDatasetIdentifier( "A", "B", "C" ) );
+                                                                   metaFac.getDatasetIdentifier( l1, "B", "C" ) );
         final List<PairOfDoubleAndVectorOfDoubles> values = new ArrayList<>();
         for ( int i = 0; i < 10; i++ )
         {

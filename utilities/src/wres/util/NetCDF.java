@@ -13,6 +13,7 @@ import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Objects;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.nio.file.Paths;
 
@@ -429,5 +430,69 @@ public final class NetCDF {
         }
 
         return value;
+    }
+
+    /**
+     *
+     * @param variable The coordinate variable holding the value
+     * @param value The value whose index to find
+     * @return The index at which the value may be found in the variable
+     * @throws IOException Thrown if values could not be read from the variable
+     * @throws IOException Thrown if the variable is not a coordinate variable
+     * @throws InvalidRangeException Thrown if the dimensions that are read
+     * from the variable are out of range
+     */
+    public static Integer getCoordinateIndex(final Variable variable, Object value)
+            throws IOException, InvalidRangeException
+    {
+        if (!variable.isCoordinateVariable())
+        {
+            throw new IOException( "A coordinate index cannot be read from a non-coordinate variable." );
+        }
+
+        // This will be the number of indices we traverse and return
+        int indexCount = 0;
+        Array values;
+        try
+        {
+            try
+            {
+                values = variable.read();
+            }
+            catch (ArrayIndexOutOfBoundsException e)
+            {
+                LOGGER.error("Reading array indexes failed.");
+                throw e;
+            }
+
+            while ( values.hasNext() )
+            {
+                Object readValue;
+                try
+                {
+                    readValue = values.next();
+                }
+                catch (ArrayIndexOutOfBoundsException e)
+                {
+                    LOGGER.error("Reading next array value failed.");
+                    throw e;
+                }
+
+                if ( readValue == value || readValue.equals( value ) )
+                {
+                    LOGGER.info( "Coordinate value for {} found at {}.",
+                                 value,
+                                 indexCount );
+                    return indexCount;
+                }
+                indexCount++;
+            }
+        }
+        catch (ArrayIndexOutOfBoundsException e)
+        {
+            LOGGER.error("Reading array indexes failed.");
+            throw e;
+        }
+        return null;
     }
 }

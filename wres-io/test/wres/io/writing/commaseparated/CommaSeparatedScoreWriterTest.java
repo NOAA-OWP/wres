@@ -26,6 +26,7 @@ import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.DefaultDataFactory;
+import wres.datamodel.Location;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
@@ -83,7 +84,7 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTest
     {
 
         // location id
-        final String LID = "DRRC2";
+        final Location LID = metaFac.getLocation( "DRRC2" );
 
         MetricOutputForProjectByTimeAndThreshold.MetricOutputForProjectByTimeAndThresholdBuilder outputBuilder =
                 outputFactory.ofMetricOutputForProjectByTimeAndThreshold();
@@ -147,7 +148,7 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTest
         MetricOutputForProjectByTimeAndThreshold output = outputBuilder.build();
 
         // Construct a fake configuration file.
-        Feature feature = getMockedFeature( LID );
+        Feature feature = getMockedFeature( "DRRC2" );
         ProjectConfig projectConfig = this.getMockedProjectConfig( feature );
 
         // Begin the actual test now that we have constructed dependencies.
@@ -227,7 +228,7 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTest
         // which requires a datasetidentifier..
 
         DatasetIdentifier datasetIdentifier =
-                metaFac.getDatasetIdentifier( LID,
+                metaFac.getDatasetIdentifier( metaFac.getLocation( LID ),
                                               "SQIN",
                                               "HEFS",
                                               "ESP" );
@@ -323,7 +324,7 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTest
         // which requires a datasetidentifier..
 
         DatasetIdentifier datasetIdentifier =
-                metaFac.getDatasetIdentifier( LID,
+                metaFac.getDatasetIdentifier( metaFac.getLocation( LID ),
                                               "SQIN",
                                               "HEFS",
                                               "ESP" );

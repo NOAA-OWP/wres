@@ -74,7 +74,7 @@ public final class BrierScoreTest
                                            metaFac.getDimension(),
                                            MetricConstants.BRIER_SCORE,
                                            MetricConstants.MAIN,
-                                           metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ) );
+                                           metaFac.getDatasetIdentifier( metaFac.getLocation("DRRC2"), "SQIN", "HEFS" ) );
 
         // Check the results       
         DoubleScoreOutput actual = brierScore.apply( input );

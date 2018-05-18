@@ -81,7 +81,11 @@ public final class PeirceSkillScoreTest
                                           metaFac.getDimension(),
                                           MetricConstants.PEIRCE_SKILL_SCORE,
                                           MetricConstants.MAIN,
-                                          metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ) );
+                                          metaFac.getDatasetIdentifier(
+                                                  metaFac.getLocation( "DRRC2" ),
+                                                  "SQIN",
+                                                  "HEFS" )
+        );
     }
 
     /**
@@ -164,7 +168,7 @@ public final class PeirceSkillScoreTest
     }
 
     /**
-     * Verifies that {@link Score#getScoreOutputGroup()} returns {@link OutputScoreGroup#NONE}.
+     * Verifies that {@link Score#getScoreOutputGroup()} returns {@link ScoreOutputGroup#NONE}.
      */
 
     @Test

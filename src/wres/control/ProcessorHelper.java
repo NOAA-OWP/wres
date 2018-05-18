@@ -118,7 +118,7 @@ class ProcessorHelper
         final Set<MetricConstants> metricsForSharedWriting = resolvedProject.getDoubleScoreMetrics();
         final int thresholdCountForSharedWriting = resolvedProject.getThresholdCount( MetricOutputGroup.DOUBLE_SCORE );
         SharedWritersBuilder sharedWritersBuilder = new SharedWritersBuilder();
-        if ( ConfigHelper.getIncrementalFormats( projectConfig )
+        /*if ( ConfigHelper.getIncrementalFormats( projectConfig )
                          .contains( DestinationType.NETCDF ) )
         {
             sharedWritersBuilder.setNetcdfDoublescoreWriter( ConfigHelper.getNetcdfWriter( projectIdentifier,
@@ -126,7 +126,7 @@ class ProcessorHelper
                                                                                            resolvedProject.getFeatureCount(),
                                                                                            thresholdCountForSharedWriting,
                                                                                            metricsForSharedWriting ) );
-        }
+        }*/
          
         // Iterate the features, closing any shared writers on completion
         try ( SharedWriters sharedWriters = sharedWritersBuilder.build() )

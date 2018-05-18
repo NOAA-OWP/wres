@@ -10,10 +10,18 @@ public abstract class WRESCallable<V> extends WRESTask implements Callable<V>
     @Override
     public final V call () throws Exception
     {
-        this.executeOnRun();
-        V result = this.execute();
-        this.executeOnComplete();
-        return result;
+        try
+        {
+            this.executeOnRun();
+            V result = this.execute();
+            this.executeOnComplete();
+            return result;
+        }
+        catch (RuntimeException e)
+        {
+            this.getLogger().error( "Callable task failed: {}", e);
+            throw new WRESRunnableException( "Callable task failed", e );
+        }
     }
 
     protected abstract V execute() throws Exception;

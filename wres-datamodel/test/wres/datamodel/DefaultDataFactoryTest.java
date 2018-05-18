@@ -47,8 +47,9 @@ public final class DefaultDataFactoryTest
     public void constructionOfPairsTest()
     {
         final MetadataFactory metaFac = DefaultMetadataFactory.getInstance();
+        final Location l = metaFac.getLocation( "DRRC2" );
         final Metadata m1 = metaFac.getMetadata( metaFac.getDimension(),
-                                                 metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ) );
+                                                 metaFac.getDatasetIdentifier( l, "SQIN", "HEFS" ) );
         final List<VectorOfBooleans> input = new ArrayList<>();
         input.add( metIn.vectorOf( new boolean[] { true, false } ) );
         assertNotNull( metIn.ofDichotomousPairs( input, m1 ) );
@@ -56,10 +57,12 @@ public final class DefaultDataFactoryTest
 
         final List<PairOfDoubles> dInput = new ArrayList<>();
         dInput.add( metIn.pairOf( 0.0, 1.0 ) );
+        final Location l2 = metaFac.getLocation( "DRRC2" );
         final Metadata m2 = metaFac.getMetadata( metaFac.getDimension(),
-                                                 metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ) );
+                                                 metaFac.getDatasetIdentifier( l2, "SQIN", "HEFS" ) );
+        final Location l3 = metaFac.getLocation( "DRRC2" );
         final Metadata m3 = metaFac.getMetadata( metaFac.getDimension(),
-                                                 metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "ESP" ) );
+                                                 metaFac.getDatasetIdentifier( l3, "SQIN", "ESP" ) );
         assertNotNull( metIn.ofDiscreteProbabilityPairs( dInput, m2 ) );
         assertNotNull( metIn.ofDiscreteProbabilityPairs( dInput, dInput, m2, m3, null ) );
         assertNotNull( metIn.ofSingleValuedPairs( dInput, m3 ) );

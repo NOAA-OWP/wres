@@ -35,24 +35,27 @@ public final class SafePairedOutputTest
     {
         final DataFactory d = DefaultDataFactory.getInstance();
         final MetadataFactory metaFac = d.getMetadataFactory();
+        final Location l1 = metaFac.getLocation( "A" );
         final MetricOutputMetadata m1 = metaFac.getOutputMetadata( 10,
                                                                    metaFac.getDimension(),
                                                                    metaFac.getDimension( "CMS" ),
                                                                    MetricConstants.TIME_TO_PEAK_ERROR,
                                                                    MetricConstants.MAIN,
-                                                                   metaFac.getDatasetIdentifier( "A", "B", "C" ) );
+                                                                   metaFac.getDatasetIdentifier( l1, "B", "C" ) );
+        final Location l2 = metaFac.getLocation( "A" );
         final MetricOutputMetadata m2 = metaFac.getOutputMetadata( 11,
                                                                    metaFac.getDimension(),
                                                                    metaFac.getDimension( "CMS" ),
                                                                    MetricConstants.TIME_TO_PEAK_ERROR,
                                                                    MetricConstants.MAIN,
-                                                                   metaFac.getDatasetIdentifier( "A", "B", "C" ) );
+                                                                   metaFac.getDatasetIdentifier( l2, "B", "C" ) );
+        final Location l3 = metaFac.getLocation( "B" );
         final MetricOutputMetadata m3 = metaFac.getOutputMetadata( 10,
                                                                    metaFac.getDimension(),
                                                                    metaFac.getDimension( "CMS" ),
                                                                    MetricConstants.TIME_TO_PEAK_ERROR,
                                                                    MetricConstants.MAIN,
-                                                                   metaFac.getDatasetIdentifier( "B", "B", "C" ) );
+                                                                   metaFac.getDatasetIdentifier( l3, "B", "C" ) );
         List<Pair<Instant, Duration>> input = new ArrayList<>();
         input.add( Pair.of( Instant.parse( "1985-01-01T00:00:00Z" ), Duration.ofHours( 1 ) ) );
         final PairedOutput<Instant, Duration> s = d.ofPairedOutput( input, m1 );
@@ -89,12 +92,13 @@ public final class SafePairedOutputTest
     {
         final DataFactory d = DefaultDataFactory.getInstance();
         final MetadataFactory metaFac = d.getMetadataFactory();
+        final Location l1 = metaFac.getLocation( "A" );
         final MetricOutputMetadata m1 = metaFac.getOutputMetadata( 10,
                                                                    metaFac.getDimension(),
                                                                    metaFac.getDimension( "CMS" ),
                                                                    MetricConstants.TIME_TO_PEAK_ERROR,
                                                                    MetricConstants.MAIN,
-                                                                   metaFac.getDatasetIdentifier( "A", "B", "C" ) );
+                                                                   metaFac.getDatasetIdentifier( l1, "B", "C" ) );
         List<Pair<Instant, Duration>> input = new ArrayList<>();
         input.add( Pair.of( Instant.parse( "1985-01-01T00:00:00Z" ), Duration.ofHours( 1 ) ) );
         input.add( Pair.of( Instant.parse( "1985-01-01T00:00:00Z" ), Duration.ofHours( 1 ) ) );
@@ -112,18 +116,20 @@ public final class SafePairedOutputTest
     {
         final DataFactory d = DefaultDataFactory.getInstance();
         final MetadataFactory metaFac = d.getMetadataFactory();
+        final Location l1 = metaFac.getLocation( "A" );
         final MetricOutputMetadata m1 = metaFac.getOutputMetadata( 10,
                                                                    metaFac.getDimension(),
                                                                    metaFac.getDimension( "CMS" ),
                                                                    MetricConstants.TIME_TO_PEAK_ERROR,
                                                                    MetricConstants.MAIN,
-                                                                   metaFac.getDatasetIdentifier( "A", "B", "C" ) );
+                                                                   metaFac.getDatasetIdentifier( l1, "B", "C" ) );
+        final Location l2 = metaFac.getLocation( "B" );
         final MetricOutputMetadata m2 = metaFac.getOutputMetadata( 10,
                                                                    metaFac.getDimension(),
                                                                    metaFac.getDimension( "CMS" ),
                                                                    MetricConstants.TIME_TO_PEAK_ERROR,
                                                                    MetricConstants.MAIN,
-                                                                   metaFac.getDatasetIdentifier( "B", "B", "C" ) );
+                                                                   metaFac.getDatasetIdentifier( l2, "B", "C" ) );
         List<Pair<Instant, Duration>> inputThird = new ArrayList<>();
         inputThird.add( Pair.of( Instant.parse( "1985-01-01T00:00:00Z" ), Duration.ofHours( 1 ) ) );
         final PairedOutput<Instant, Duration> q = d.ofPairedOutput( inputThird, m1 );
@@ -140,24 +146,27 @@ public final class SafePairedOutputTest
     {
         final DataFactory d = DefaultDataFactory.getInstance();
         final MetadataFactory metaFac = d.getMetadataFactory();
+        final Location l1 = metaFac.getLocation( "A" );
         final MetricOutputMetadata m1 = metaFac.getOutputMetadata( 10,
                                                                    metaFac.getDimension(),
                                                                    metaFac.getDimension( "CMS" ),
                                                                    MetricConstants.CONTINGENCY_TABLE,
                                                                    MetricConstants.MAIN,
-                                                                   metaFac.getDatasetIdentifier( "A", "B", "C" ) );
+                                                                   metaFac.getDatasetIdentifier( l1, "B", "C" ) );
+        final Location l2 = metaFac.getLocation( "A" );
         final MetricOutputMetadata m2 = metaFac.getOutputMetadata( 10,
                                                                    metaFac.getDimension(),
                                                                    metaFac.getDimension( "CMS" ),
                                                                    MetricConstants.CONTINGENCY_TABLE,
                                                                    MetricConstants.MAIN,
-                                                                   metaFac.getDatasetIdentifier( "A", "B", "C" ) );
+                                                                   metaFac.getDatasetIdentifier( l2, "B", "C" ) );
+        final Location l3 = metaFac.getLocation( "B" );
         final MetricOutputMetadata m3 = metaFac.getOutputMetadata( 10,
                                                                    metaFac.getDimension(),
                                                                    metaFac.getDimension( "CMS" ),
                                                                    MetricConstants.CONTINGENCY_TABLE,
                                                                    MetricConstants.MAIN,
-                                                                   metaFac.getDatasetIdentifier( "B", "B", "C" ) );
+                                                                   metaFac.getDatasetIdentifier( l3, "B", "C" ) );
         List<Pair<Instant, Duration>> inputThird = new ArrayList<>();
         inputThird.add( Pair.of( Instant.parse( "1985-01-01T00:00:00Z" ), Duration.ofHours( 1 ) ) );
         final PairedOutput<Instant, Duration> q = d.ofPairedOutput( inputThird, m1 );
@@ -176,12 +185,13 @@ public final class SafePairedOutputTest
     {
         final DataFactory d = DefaultDataFactory.getInstance();
         final MetadataFactory metaFac = d.getMetadataFactory();
+        final Location l1 = metaFac.getLocation( "A" );
         final MetricOutputMetadata m1 = metaFac.getOutputMetadata( 10,
                                                                    metaFac.getDimension(),
                                                                    metaFac.getDimension( "CMS" ),
                                                                    MetricConstants.CONTINGENCY_TABLE,
                                                                    MetricConstants.MAIN,
-                                                                   metaFac.getDatasetIdentifier( "A", "B", "C" ) );
+                                                                   metaFac.getDatasetIdentifier( l1, "B", "C" ) );
         List<Pair<Instant, Duration>> input = new ArrayList<>();
         input.add( Pair.of( Instant.parse( "1985-01-01T00:00:00Z" ), Duration.ofHours( 1 ) ) );
         // Null output

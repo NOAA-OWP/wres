@@ -64,7 +64,7 @@ public final class TimeToPeakRelativeErrorTest
                                                                    metaFac.getDimension( "CMS" ),
                                                                    MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR,
                                                                    MetricConstants.MAIN,
-                                                                   metaFac.getDatasetIdentifier( "A",
+                                                                   metaFac.getDatasetIdentifier( metaFac.getLocation("A"),
                                                                                                  "Streamflow" ),
                                                                    window );
         // Build the metric

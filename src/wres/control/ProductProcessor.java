@@ -44,6 +44,7 @@ import wres.io.writing.commaseparated.CommaSeparatedMatrixWriter;
 import wres.io.writing.commaseparated.CommaSeparatedPairedWriter;
 import wres.io.writing.commaseparated.CommaSeparatedScoreWriter;
 import wres.io.writing.netcdf.NetcdfDoubleScoreWriter;
+import wres.io.writing.netcdf.NetcdfOutputWriter;
 import wres.io.writing.png.PNGBoxPlotWriter;
 import wres.io.writing.png.PNGDiagramWriter;
 import wres.io.writing.png.PNGDoubleScoreWriter;
@@ -288,7 +289,8 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
         if ( configNeedsThisTypeOfOutput( DestinationType.NETCDF ) )
         {
             // implicitly passing resolvedProject via shared state
-            buildNetCDFConsumers( sharedWriters );
+            //buildNetCDFConsumers( sharedWriters );
+            buildNetCDFConsumers();
         }
 
         // Register consumers for the CSV output type
@@ -434,6 +436,18 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
                 doubleScoreConsumers.put( DestinationType.NETCDF,
                                           netcdfWriter );
             }
+        }
+    }
+
+    private void buildNetCDFConsumers() throws IOException, MetricConfigException
+    {
+        ProjectConfigPlus projectConfigPlus = this.getProjectConfigPlus();
+
+        // Build the consumers conditionally
+        if ( writeWhenTrue.test( MetricOutputGroup.DOUBLE_SCORE, DestinationType.NETCDF ) )
+        {
+            doubleScoreConsumers.put( DestinationType.NETCDF,
+                                      NetcdfOutputWriter.of( projectConfigPlus ) );
         }
     }
 

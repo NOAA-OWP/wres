@@ -78,7 +78,7 @@ public final class FrequencyBiasTest
                                           metaFac.getDimension(),
                                           MetricConstants.FREQUENCY_BIAS,
                                           MetricConstants.MAIN,
-                                          metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ) );
+                                          metaFac.getDatasetIdentifier( metaFac.getLocation("DRRC2"), "SQIN", "HEFS" ) );
     }    
     
     /**

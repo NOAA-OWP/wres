@@ -420,12 +420,13 @@ public final class SafeMetricOutputMapByTimeAndThresholdTest
         SafeMetricOutputMapByTimeAndThresholdBuilder<DoubleScoreOutput> benchmarkOne = new SafeMetricOutputMapByTimeAndThreshold.SafeMetricOutputMapByTimeAndThresholdBuilder<>();
 
         //Metadata
+        Location location = metaF.getLocation( "DRRC2" );
         MetricOutputMetadata meta = metaF.getOutputMetadata( 1000,
                                                              metaF.getDimension(),
                                                              metaF.getDimension( "CMS" ),
                                                              MetricConstants.MEAN_ABSOLUTE_ERROR,
                                                              MetricConstants.MAIN,
-                                                             metaF.getDatasetIdentifier( "DRRC2",
+                                                             metaF.getDatasetIdentifier( location,
                                                                                          "SQIN",
                                                                                          "HEFS",
                                                                                          "ESP" ) );
