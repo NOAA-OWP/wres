@@ -10,8 +10,6 @@ import wres.io.config.ConfigHelper;
  * Utility methods to help with writing metric outputs to file.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 1.0
  */
 public class WriterHelper
 {
