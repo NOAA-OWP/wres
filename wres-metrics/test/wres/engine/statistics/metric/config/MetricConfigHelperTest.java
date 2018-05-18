@@ -74,7 +74,6 @@ public final class MetricConfigHelperTest
 
     private ProjectConfig defaultMockedConfig;
 
-
     /**
      * Set-up.
      */
@@ -633,8 +632,40 @@ public final class MetricConfigHelperTest
         assertFalse( MetricConfigHelper.hasTheseOutputsByThresholdLead( mockedConfig,
                                                                         MetricOutputGroup.MULTIVECTOR ) );
 
-
     }
 
+    /**
+     * Tests the {@link MetricConfigHelper#getCacheListFromProjectConfig(ProjectConfig)}.
+     * @throws MetricConfigException if the metric configuration is invalid
+     */
+
+    @Test
+    public void testGetCachedListFromProjectConfig() throws MetricConfigException
+    {
+        // No outputs configuration defined
+        List<MetricConfig> metrics = new ArrayList<>();
+        metrics.add( new MetricConfig( null, null, MetricConfigName.RELIABILITY_DIAGRAM ) );
+
+        // Output configuration defined, but is not by threshold then lead
+        ProjectConfig mockedConfigWithOutput =
+                new ProjectConfig( null,
+                                   null,
+                                   Arrays.asList( new MetricsConfig( null, metrics, null ) ),
+                                   new Outputs( Arrays.asList( new DestinationConfig( null,
+                                                                                      OutputTypeSelection.THRESHOLD_LEAD,
+                                                                                      null,
+                                                                                      null,
+                                                                                      null ) ) ),
+                                   null,
+                                   null );
+
+        Set<MetricOutputGroup> expected = new HashSet<>();
+        expected.add( MetricOutputGroup.MULTIVECTOR );
+        expected.add( MetricOutputGroup.PAIRED );
+        expected.add( MetricOutputGroup.DOUBLE_SCORE );
+
+        assertTrue( MetricConfigHelper.getCacheListFromProjectConfig( mockedConfigWithOutput ).equals( expected ) );
+
+    }
 
 }

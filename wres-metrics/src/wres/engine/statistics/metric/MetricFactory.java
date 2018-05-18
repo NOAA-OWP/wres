@@ -2,10 +2,8 @@ package wres.engine.statistics.metric;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 
@@ -38,7 +36,6 @@ import wres.engine.statistics.metric.categorical.PeirceSkillScore;
 import wres.engine.statistics.metric.categorical.ProbabilityOfDetection;
 import wres.engine.statistics.metric.categorical.ProbabilityOfFalseDetection;
 import wres.engine.statistics.metric.categorical.ThreatScore;
-import wres.engine.statistics.metric.config.MetricConfigHelper;
 import wres.engine.statistics.metric.discreteprobability.BrierScore;
 import wres.engine.statistics.metric.discreteprobability.BrierSkillScore;
 import wres.engine.statistics.metric.discreteprobability.RelativeOperatingCharacteristicDiagram;
@@ -281,81 +278,6 @@ public class MetricFactory
                                                           ForkJoinPool.commonPool(),
                                                           ForkJoinPool.commonPool(),
                                                           mergeSet );
-    }
-
-    /**
-     * Returns an instance of a {@link MetricProcessor} for processing {@link SingleValuedPairs}. Uses the input 
-     * project configuration to determine which results should be merged and cached across successive calls to
-     * {@link MetricProcessor#apply(Object)}. If results are retained and merged across calls, the
-     * {@link MetricProcessor#apply(Object)} will return the merged results from all prior calls.
-     * 
-     * @param config the project configuration
-     * @param externalThresholds an optional set of external thresholds, may be null
-     * @param thresholdExecutor an optional {@link ExecutorService} for executing thresholds. Defaults to the 
-     *            {@link ForkJoinPool#commonPool()}
-     * @param metricExecutor an optional {@link ExecutorService} for executing metrics. Defaults to the 
-     *            {@link ForkJoinPool#commonPool()} 
-     * @return the {@link MetricProcessorByTime}
-     * @throws MetricProcessorException if the metrics are configured incorrectly
-     * @throws MetricParameterException if one or more metric parameters is set incorrectly
-     */
-
-    public MetricProcessorByTime<SingleValuedPairs>
-            ofMetricProcessorByTimeSingleValuedPairs( final ProjectConfig config,
-                                                      final ThresholdsByMetric externalThresholds,
-                                                      final ExecutorService thresholdExecutor,
-                                                      final ExecutorService metricExecutor )
-                    throws MetricParameterException
-    {
-        try
-        {
-            return this.ofMetricProcessorByTimeSingleValuedPairs( config,
-                                                                  externalThresholds,
-                                                                  thresholdExecutor,
-                                                                  metricExecutor,
-                                                                  MetricFactory.getCacheListFromProjectConfig( config ) );
-        }
-        catch ( MetricConfigException e )
-        {
-            throw new MetricProcessorException( CONFIGURATION_ERROR, e );
-        }
-    }
-
-    /**
-     * Returns an instance of a {@link MetricProcessor} for processing {@link EnsemblePairs}. Uses the input 
-     * project configuration to determine which results should be merged and cached across successive calls to
-     * {@link MetricProcessor#apply(Object)}. If results are retained and merged across calls, the
-     * {@link MetricProcessor#apply(Object)} will return the merged results from all prior calls.
-     * 
-     * @param config the project configuration
-     * @param externalThresholds an optional set of external thresholds, may be null
-     * @param thresholdExecutor an optional {@link ExecutorService} for executing thresholds. Defaults to the 
-     *            {@link ForkJoinPool#commonPool()}
-     * @param metricExecutor an optional {@link ExecutorService} for executing metrics. Defaults to the 
-     *            {@link ForkJoinPool#commonPool()} 
-     * @return the {@link MetricProcessorByTime}
-     * @throws MetricProcessorException if the metrics are configured incorrectly
-     * @throws MetricParameterException if one or more metric parameters is set incorrectly
-     */
-
-    public MetricProcessorByTime<EnsemblePairs> ofMetricProcessorByTimeEnsemblePairs( final ProjectConfig config,
-                                                                                      final ThresholdsByMetric externalThresholds,
-                                                                                      final ExecutorService thresholdExecutor,
-                                                                                      final ExecutorService metricExecutor )
-            throws MetricParameterException
-    {
-        try
-        {
-            return this.ofMetricProcessorByTimeEnsemblePairs( config,
-                                                              externalThresholds,
-                                                              thresholdExecutor,
-                                                              metricExecutor,
-                                                              MetricFactory.getCacheListFromProjectConfig( config ) );
-        }
-        catch ( MetricConfigException e )
-        {
-            throw new MetricProcessorException( CONFIGURATION_ERROR, e );
-        }
     }
 
     /**
@@ -1669,45 +1591,6 @@ public class MetricFactory
         }
 
         return null;
-    }
-
-    /**
-     * Helper that interprets the input configuration and returns a list of {@link MetricOutputGroup} whose results 
-     * should be cached across successive calls to a {@link MetricProcessor}.
-     * 
-     * @param projectConfig the project configuration
-     * @return a list of output types that should be cached
-     * @throws MetricConfigException if the configuration is invalid
-     * @throws NullPointerException if the input is null
-     */
-
-    private static Set<MetricOutputGroup> getCacheListFromProjectConfig( ProjectConfig projectConfig )
-            throws MetricConfigException
-    {
-        // Always cache ordinary scores and paired output for timing error metrics 
-        Set<MetricOutputGroup> returnMe = new TreeSet<>();
-        returnMe.add( MetricOutputGroup.DOUBLE_SCORE );
-        returnMe.add( MetricOutputGroup.PAIRED );
-
-        // Cache other outputs as required
-        MetricOutputGroup[] options = MetricOutputGroup.values();
-        for ( MetricOutputGroup next : options )
-        {
-            if ( !returnMe.contains( next )
-                 && MetricConfigHelper.hasTheseOutputsByThresholdLead( projectConfig, next ) )
-            {
-                returnMe.add( next );
-            }
-        }
-
-        // Never cache box plot output, as it does not apply to thresholds
-        returnMe.remove( MetricOutputGroup.BOXPLOT );
-
-        // Never cache duration score output as timing error summary statistics are computed once all data 
-        // is available
-        returnMe.remove( MetricOutputGroup.DURATION_SCORE );
-
-        return Collections.unmodifiableSet( returnMe );
     }
 
     /**
