@@ -21,7 +21,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.ProjectConfigException;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.DestinationConfig;
@@ -53,11 +52,11 @@ import wres.io.data.caching.UnitConversions;
 import wres.io.data.details.ProjectDetails;
 import wres.io.retrieval.scripting.Scripter;
 import wres.io.utilities.Database;
-import wres.util.functional.ExceptionalTriFunction;
 import wres.io.utilities.NoDataException;
 import wres.io.writing.PairWriter;
 import wres.util.NotImplementedException;
 import wres.util.TimeHelper;
+import wres.util.functional.ExceptionalTriFunction;
 
 /**
  * Created by ctubbs on 7/17/17.
@@ -545,19 +544,12 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
 
         if ( this.projectDetails.getRight().equals(dataSourceConfig))
         {
-            try
-            {
-                loadScript = Scripter.getLoadScript( this.projectDetails,
-                                                     dataSourceConfig,
-                                                     feature,
-                                                     leadIteration,
-                                                     this.issueDatesPool );
-            }
-            catch ( ProjectConfigException e )
-            {
-                throw new IOException( "Illegal configuration is preventing "
-                                       + "data from being loaded for pairing.", e );
-            }
+            loadScript = Scripter.getLoadScript( this.projectDetails,
+                                                 dataSourceConfig,
+                                                 feature,
+                                                 leadIteration,
+                                                 this.issueDatesPool );
+
             // We save the script for debugging purposes
             this.rightScript = loadScript;
         }
@@ -577,20 +569,12 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             }
             else
             {
-                try
-                {
-                    loadScript =
-                            Scripter.getLoadScript( this.projectDetails,
-                                                    dataSourceConfig,
-                                                    this.feature,
-                                                    this.leadIteration,
-                                                    this.issueDatesPool );
-                }
-                catch ( ProjectConfigException e )
-                {
-                    throw new IOException( "Illegal configuration is preventing "
-                                           + "data from being loaded for pairing.", e );
-                }
+                loadScript =
+                        Scripter.getLoadScript( this.projectDetails,
+                                                dataSourceConfig,
+                                                this.feature,
+                                                this.leadIteration,
+                                                this.issueDatesPool );
             }
         }
         return loadScript;

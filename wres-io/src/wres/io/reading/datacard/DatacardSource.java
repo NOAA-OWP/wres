@@ -8,12 +8,12 @@ import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.sql.SQLException;
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.time.LocalDateTime;
 
 import org.apache.commons.math3.util.Precision;
 import org.slf4j.Logger;
@@ -331,11 +331,6 @@ public class DatacardSource extends BasicSource
 
 			sendToDatabase();
 		}
-        catch ( ProjectConfigException pce )
-        {
-            throw new IngestException( "Failed to add datacard data from "
-                                       + this.getFilename(), pce );
-        }
 		finally
 		{
             LOGGER.debug( "{} values of datacardsource saved to database.",
