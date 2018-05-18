@@ -46,6 +46,7 @@ public class MetricProcessorForProject
      * @param thresholdExecutor an executor service for processing thresholds
      * @param metricExecutor an executor service for processing metrics
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
+     * @throws MetricConfigException if the metric configuration is incorrect
      */
 
     public MetricProcessorForProject( final MetricFactory metricFactory,
@@ -57,17 +58,8 @@ public class MetricProcessorForProject
     {
         DatasourceType type = projectConfig.getInputs().getRight().getType();
 
-        Set<MetricOutputGroup> mergeTheseResults = null;
+        Set<MetricOutputGroup> mergeTheseResults = MetricConfigHelper.getCacheListFromProjectConfig( projectConfig );
 
-        try
-        {
-            mergeTheseResults = MetricConfigHelper.getCacheListFromProjectConfig( projectConfig );
-        }
-        catch ( MetricConfigException e )
-        {
-            throw new MetricProcessorException( "Could not determine the results to merge from the project "
-                                                + "configuration: ", e );
-        }
         if ( type.equals( DatasourceType.SINGLE_VALUED_FORECASTS ) || type.equals( DatasourceType.SIMULATIONS ) )
         {
             singleValuedProcessor = metricFactory.ofMetricProcessorByTimeSingleValuedPairs( projectConfig,

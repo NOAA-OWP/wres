@@ -51,7 +51,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
      * @throws ProjectConfigException if the project configuration is not valid for writing
      */
 
-    public static CommaSeparatedDiagramWriter of( final ProjectConfig projectConfig ) throws ProjectConfigException
+    public static CommaSeparatedDiagramWriter of( final ProjectConfig projectConfig )
     {
         return new CommaSeparatedDiagramWriter( projectConfig );
     }
@@ -355,7 +355,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
      * @throws ProjectConfigException if the project configuration is not valid for writing 
      */
 
-    private CommaSeparatedDiagramWriter( ProjectConfig projectConfig ) throws ProjectConfigException
+    private CommaSeparatedDiagramWriter( ProjectConfig projectConfig )
     {
         super( projectConfig );
     }

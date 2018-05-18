@@ -46,7 +46,7 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
      * @throws ProjectConfigException if the project configuration is not valid for writing
      */
 
-    public static CommaSeparatedMatrixWriter of( final ProjectConfig projectConfig ) throws ProjectConfigException
+    public static CommaSeparatedMatrixWriter of( final ProjectConfig projectConfig )
     {
         return new CommaSeparatedMatrixWriter( projectConfig );
     }
@@ -301,7 +301,7 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
      * @throws ProjectConfigException if the project configuration is not valid for writing 
      */
 
-    private CommaSeparatedMatrixWriter( ProjectConfig projectConfig ) throws ProjectConfigException
+    private CommaSeparatedMatrixWriter( ProjectConfig projectConfig )
     {
         super( projectConfig );
     }

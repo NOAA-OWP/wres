@@ -307,7 +307,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
      * @throws MetricConfigException if the configuration is invalid
      */
 
-    abstract void validate( ProjectConfig config ) throws MetricConfigException;
+    abstract void validate( ProjectConfig config );
 
     /**
      * Completes any processing of cached output at the end of a processing pipeline. This may be required when 
@@ -350,7 +350,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
                      final ExecutorService thresholdExecutor,
                      final ExecutorService metricExecutor,
                      final Set<MetricOutputGroup> mergeSet )
-            throws MetricConfigException, MetricParameterException
+            throws MetricParameterException
     {
 
         Objects.requireNonNull( config, MetricConfigHelper.NULL_CONFIGURATION_ERROR );

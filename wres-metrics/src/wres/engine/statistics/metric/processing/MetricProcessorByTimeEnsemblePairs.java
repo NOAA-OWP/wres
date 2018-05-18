@@ -193,7 +193,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                                                final ExecutorService thresholdExecutor,
                                                final ExecutorService metricExecutor,
                                                final Set<MetricOutputGroup> mergeSet )
-            throws MetricConfigException, MetricParameterException
+            throws MetricParameterException
     {
         super( dataFactory, config, externalThresholds, thresholdExecutor, metricExecutor, mergeSet );
 
@@ -313,7 +313,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
     }
 
     @Override
-    void validate( ProjectConfig config ) throws MetricConfigException
+    void validate( ProjectConfig config )
     {
         Objects.requireNonNull( config, MetricConfigHelper.NULL_CONFIGURATION_ERROR );
 
@@ -731,7 +731,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
      * @throws MetricConfigException
      */
 
-    private void validateCategoricalState() throws MetricConfigException
+    private void validateCategoricalState()
     {
 
         // All groups that contain dichotomous and multicategory metrics must 

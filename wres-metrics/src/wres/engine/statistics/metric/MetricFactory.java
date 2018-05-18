@@ -58,7 +58,6 @@ import wres.engine.statistics.metric.processing.MetricProcessor;
 import wres.engine.statistics.metric.processing.MetricProcessorByTime;
 import wres.engine.statistics.metric.processing.MetricProcessorByTimeEnsemblePairs;
 import wres.engine.statistics.metric.processing.MetricProcessorByTimeSingleValuedPairs;
-import wres.engine.statistics.metric.processing.MetricProcessorException;
 import wres.engine.statistics.metric.processing.MetricProcessorForProject;
 import wres.engine.statistics.metric.singlevalued.BiasFraction;
 import wres.engine.statistics.metric.singlevalued.BiasFraction.BiasFractionBuilder;
@@ -114,13 +113,6 @@ public class MetricFactory
     private static final String UNRECOGNIZED_METRIC_ERROR = "Unrecognized metric for identifier.";
 
     /**
-     * String used in several error messages to denote a configuration error.
-     */
-
-    private static final String CONFIGURATION_ERROR =
-            "While building the metric processor, a configuration exception occurred: ";
-
-    /**
      * Instance of an {@link DataFactory} for building metric outputs.
      */
 
@@ -137,9 +129,9 @@ public class MetricFactory
     public static MetricFactory getInstance( final DataFactory outputFactory )
     {
         Objects.requireNonNull( outputFactory, "Specify a non-null metric output factory to construct the "
-                                                + "metric factory." );
+                                               + "metric factory." );
         INSTANCE.outputFactory = outputFactory;
-        
+
         return INSTANCE;
     }
 
@@ -151,7 +143,7 @@ public class MetricFactory
      * @param thresholdExecutor an executor service for processing thresholds
      * @param metricExecutor an executor service for processing metrics
      * @return a metric processor
-     * @throws MetricProcessorException if the metrics are configured incorrectly
+     * @throws MetricConfigException if the metrics are configured incorrectly
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
@@ -179,7 +171,7 @@ public class MetricFactory
      * @param config the project configuration
      * @param mergeSet an optional list of {@link MetricOutputGroup} for which results should be retained and merged
      * @return the {@link MetricProcessorByTime}
-     * @throws MetricProcessorException if the metrics are configured incorrectly
+     * @throws MetricConfigException if the metrics are configured incorrectly
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
@@ -206,7 +198,7 @@ public class MetricFactory
      * @param config the project configuration
      * @param mergeSet an optional list of {@link MetricOutputGroup} for which results should be retained and merged
      * @return the {@link MetricProcessorByTime}
-     * @throws MetricProcessorException if the metrics are configured incorrectly
+     * @throws MetricConfigException if the metrics are configured incorrectly
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
@@ -234,7 +226,7 @@ public class MetricFactory
      * @param externalThresholds an optional set of external thresholds, may be null
      * @param mergeSet an optional list of {@link MetricOutputGroup} for which results should be retained and merged
      * @return the {@link MetricProcessorByTime}
-     * @throws MetricProcessorException if the metrics are configured incorrectly
+     * @throws MetricConfigException if the metrics are configured incorrectly
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
@@ -263,7 +255,7 @@ public class MetricFactory
      * @param externalThresholds an optional set of external thresholds (one per metric), may be null
      * @param mergeSet an optional list of {@link MetricOutputGroup} for which results should be retained and merged
      * @return the {@link MetricProcessorByTime}
-     * @throws MetricProcessorException if the metrics are configured incorrectly
+     * @throws MetricConfigException if the metrics are configured incorrectly
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
@@ -294,7 +286,7 @@ public class MetricFactory
      *            {@link ForkJoinPool#commonPool()} 
      * @param mergeSet an optional list of {@link MetricOutputGroup} for which results should be retained and merged
      * @return the {@link MetricProcessorByTime}
-     * @throws MetricProcessorException if the metrics are configured incorrectly
+     * @throws MetricConfigException if the metrics are configured incorrectly
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
@@ -306,19 +298,12 @@ public class MetricFactory
                                                       final Set<MetricOutputGroup> mergeSet )
                     throws MetricParameterException
     {
-        try
-        {
-            return new MetricProcessorByTimeSingleValuedPairs( outputFactory,
-                                                               config,
-                                                               externalThresholds,
-                                                               thresholdExecutor,
-                                                               metricExecutor,
-                                                               mergeSet );
-        }
-        catch ( MetricConfigException e )
-        {
-            throw new MetricProcessorException( CONFIGURATION_ERROR, e );
-        }
+        return new MetricProcessorByTimeSingleValuedPairs( outputFactory,
+                                                           config,
+                                                           externalThresholds,
+                                                           thresholdExecutor,
+                                                           metricExecutor,
+                                                           mergeSet );
     }
 
     /**
@@ -335,7 +320,7 @@ public class MetricFactory
      *            {@link ForkJoinPool#commonPool()} 
      * @param mergeSet an optional set of {@link MetricOutputGroup} for which results should be retained and merged
      * @return the {@link MetricProcessorByTime}
-     * @throws MetricProcessorException if the metrics are configured incorrectly
+     * @throws MetricConfigException if the metrics are configured incorrectly
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
@@ -346,19 +331,12 @@ public class MetricFactory
                                                                                       final Set<MetricOutputGroup> mergeSet )
             throws MetricParameterException
     {
-        try
-        {
-            return new MetricProcessorByTimeEnsemblePairs( outputFactory,
-                                                           config,
-                                                           externalThresholds,
-                                                           thresholdExecutor,
-                                                           metricExecutor,
-                                                           mergeSet );
-        }
-        catch ( MetricConfigException e )
-        {
-            throw new MetricProcessorException( CONFIGURATION_ERROR, e );
-        }
+        return new MetricProcessorByTimeEnsemblePairs( outputFactory,
+                                                       config,
+                                                       externalThresholds,
+                                                       thresholdExecutor,
+                                                       metricExecutor,
+                                                       mergeSet );
     }
 
     /**
@@ -1307,7 +1285,8 @@ public class MetricFactory
 
     public <S extends MulticategoryPairs> PeirceSkillScore<S> ofPeirceSkillScore() throws MetricParameterException
     {
-        return (PeirceSkillScore<S>) new PeirceSkillScore.PeirceSkillScoreBuilder<S>().setOutputFactory( outputFactory ).build();
+        return (PeirceSkillScore<S>) new PeirceSkillScore.PeirceSkillScoreBuilder<S>().setOutputFactory( outputFactory )
+                                                                                      .build();
     }
 
     /**
@@ -1608,7 +1587,7 @@ public class MetricFactory
         boolean singleValued = metric == MetricConstants.COEFFICIENT_OF_DETERMINATION
                                || metric == MetricConstants.PEARSON_CORRELATION_COEFFICIENT
                                || metric == MetricConstants.SUM_OF_SQUARE_ERROR;
-        
+
         singleValued = singleValued
                        || metric == MetricConstants.MEAN_SQUARE_ERROR
                        || metric == MetricConstants.ROOT_MEAN_SQUARE_ERROR;

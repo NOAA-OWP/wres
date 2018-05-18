@@ -17,7 +17,6 @@ import java.util.Set;
 import java.util.concurrent.Executors;
 
 import org.apache.commons.lang3.tuple.Pair;
-import org.hamcrest.CoreMatchers;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -739,13 +738,13 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
      * @throws IOException if the input data could not be read
      * @throws InterruptedException if the outputs were interrupted
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
-     * @throws MetricConfigException 
+     * @throws MetricConfigException if the metric configuration is incorrect
      * @throws MetricOutputException if the results could not be generated 
      */
 
     @Test
     public void testApplyTimeSeriesSummaryStatsWithNoData()
-            throws IOException, MetricParameterException, InterruptedException, MetricConfigException
+            throws IOException, MetricParameterException, InterruptedException
     {
         MetadataFactory metaFac = dataFac.getMetadataFactory();
         String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/testApplyTimeSeriesSummaryStats.xml";
@@ -837,8 +836,9 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
     public void testApplyThrowsExceptionWhenThresholdMetricIsConfiguredWithoutThresholds()
             throws MetricParameterException, IOException
     {
-        exception.expect( MetricProcessorException.class );
-        exception.expectCause( CoreMatchers.isA( MetricConfigException.class ) );
+        exception.expect( MetricConfigException.class );
+        exception.expectMessage( "Cannot configure 'FREQUENCY BIAS' without thresholds to define the events: correct "
+                + "the configuration labelled 'null'." );
 
         MetricsConfig metrics =
                 new MetricsConfig( null,
@@ -944,8 +944,9 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
     public void testExceptionOnConstructionWithEnsembleMetric()
             throws MetricParameterException, IOException
     {
-        exception.expect( MetricProcessorException.class );
-        exception.expectCause( CoreMatchers.isA( MetricConfigException.class ) );
+        exception.expect( MetricConfigException.class );
+        exception.expectMessage( "Cannot configure 'CONTINUOUS RANKED PROBABILITY SCORE' for single-valued inputs: "
+                + "correct the configuration labelled 'null'." );
 
         // Mock some metrics
         List<MetricConfig> metrics = new ArrayList<>();
@@ -981,8 +982,9 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
     public void testExceptionOnConstructionWhenMixingTimeSeriesMetricsWithOtherMetrics()
             throws MetricParameterException, IOException
     {
-        exception.expect( MetricProcessorException.class );
-        exception.expectCause( CoreMatchers.isA( MetricConfigException.class ) );
+        exception.expect( MetricConfigException.class );
+        exception.expectMessage( "Cannot configure time-series metrics together with non-time-series metrics: correct "
+                + "the configuration labelled 'null'." );
 
         // Mock some metrics
         List<MetricConfig> metrics = new ArrayList<>();

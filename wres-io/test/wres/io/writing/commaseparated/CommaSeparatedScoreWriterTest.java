@@ -78,7 +78,7 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTest
 
     @Test
     public void writeDoubleScores()
-            throws ProjectConfigException, IOException, InterruptedException,
+            throws IOException, InterruptedException,
             ExecutionException, MetricOutputAccessException
     {
 
@@ -201,7 +201,7 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTest
 
     @Test
     public void writeDurationScores()
-            throws ProjectConfigException, IOException, InterruptedException,
+            throws IOException, InterruptedException,
             ExecutionException, MetricOutputAccessException
     {
 
@@ -302,7 +302,7 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTest
 
     @Test
     public void writeDoubleScoresWithMissingData()
-            throws ProjectConfigException, IOException, InterruptedException,
+            throws IOException, InterruptedException,
             ExecutionException, MetricOutputAccessException
     {
 

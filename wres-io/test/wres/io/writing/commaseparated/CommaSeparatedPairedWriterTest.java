@@ -57,7 +57,7 @@ public class CommaSeparatedPairedWriterTest extends CommaSeparatedWriterTest
 
     @Test
     public void writePairedOutputForTimeSeriesMetrics()
-            throws ProjectConfigException, IOException, InterruptedException,
+            throws IOException, InterruptedException,
             ExecutionException, MetricOutputAccessException
     {
 

@@ -3,7 +3,7 @@ package wres.config;
 import com.sun.xml.bind.Locatable;
 
 /**
- * A checked exception associated with metric configuration.
+ * An unchecked exception associated with metric configuration.
  * 
  * @author james.brown@hydrosolved.com
  */

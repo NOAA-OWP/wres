@@ -24,7 +24,7 @@ public class WriterHelper
      * @throws ProjectConfigException if the project is not correctly configured for writing numerical output
      */
 
-    public static void validateProjectForWriting( ProjectConfig projectConfig ) throws ProjectConfigException
+    public static void validateProjectForWriting( ProjectConfig projectConfig )
     {
         Objects.requireNonNull( projectConfig, "Specify non-null project configuration when writing outputs." );
 
