@@ -3,7 +3,7 @@ services:
     tasker:
         ports:
          - "443:8443"
-        image: "89cb1cc65eb0"
+        image: "4b49b55c35dd"
         restart: always
         depends_on:
          - "broker"
