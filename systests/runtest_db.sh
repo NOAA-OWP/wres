@@ -33,8 +33,12 @@ shift $((OPTIND -1))
 
 echo "latest = $latest, WRES_DB_NAME = $WRES_DB_NAME"
 echo "systestDir = $systestsDir"
-echo "scenarios = $*"
-#exit 0
+if [ -z $systestsDir ]
+then
+        systestsDir=$(pwd)
+fi
+cd $systestsDir
+scenarios=`ls -d $*`
 
 # Handle a latest run request by clearing out the working rls
 if [[ "$latest" == 1 ]]; then
@@ -43,7 +47,7 @@ if [[ "$latest" == 1 ]]; then
 fi
 
 # Always cd to the directory containing this script to execute!
-if [ ! -f runtest.sh ]; then
+if [ ! -f runtest_db.sh ]; then
     echo "You are not in the directory that contains this run script.  Aborting..."
     exit 1;
 fi
@@ -51,10 +55,10 @@ fi
 # ============================================================
 # Arguments
 # ============================================================
-if [ -z $systestsDir ]
-then
-	systestsDir=$(pwd)
-fi
+#if [ -z $systestsDir ]
+#then
+#	systestsDir=$(pwd)
+#fi
 configName=project_config.xml
 outputDirName=output
 benchDirName=benchmarks
@@ -79,10 +83,12 @@ if [ ! -f $systestsDir/data ] && [ ! -d $systestsDir/data ]; then
 fi
 
 
+echo "scenarios = $scenarios"
 # ============================================================
 # Loop over provided scenarios
 # ============================================================
-for scenarioName in $*; do
+#for scenarioName in $*; do
+for scenarioName in $scenarios; do
 
     echo    
     echo "##########################################################################"
@@ -92,7 +98,6 @@ for scenarioName in $*; do
 
     startsec=$(date +%s) 
     executeDir=$systestsDir/$scenarioName
-
     # ============================================================
     # Preconditions
     # ============================================================
