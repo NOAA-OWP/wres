@@ -183,7 +183,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                      ReferenceTime.VALID_TIME,
                                                      Duration.ofHours( i ) );
             final Metadata meta = metFac.getMetadata( metFac.getDimension( "CMS" ),
-                                                      metFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ),
+                                                      metFac.getDatasetIdentifier( metFac.getLocation("DRRC2"), "SQIN", "HEFS" ),
                                                       window );
             processor.apply( dataFac.ofSingleValuedPairs( pairs.getRawData(), meta ) );
         }
@@ -318,7 +318,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                              metaFac.getDimension( "CMS" ),
                                                              MetricConstants.TIME_TO_PEAK_ERROR,
                                                              MetricConstants.MAIN,
-                                                             metaFac.getDatasetIdentifier( "A",
+                                                             metaFac.getDatasetIdentifier( metaFac.getLocation("A"),
                                                                                            "Streamflow" ),
                                                              firstWindow );
 
@@ -423,7 +423,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                              metaFac.getDimension( "CMS" ),
                                                              MetricConstants.TIME_TO_PEAK_ERROR,
                                                              MetricConstants.MAIN,
-                                                             metaFac.getDatasetIdentifier( "A",
+                                                             metaFac.getDatasetIdentifier( metaFac.getLocation("A"),
                                                                                            "Streamflow" ),
                                                              firstWindow );
 
@@ -527,7 +527,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                     metaFac.getDimension( "CMS" ),
                                                                     MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
                                                                     null,
-                                                                    metaFac.getDatasetIdentifier( "A",
+                                                                    metaFac.getDatasetIdentifier( metaFac.getLocation("A"),
                                                                                                   "Streamflow" ),
                                                                     combinedWindow );
         DurationScoreOutput expectedScoresSource = dataFac.ofDurationScoreOutput( expectedSource, scoreMeta );
@@ -609,7 +609,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                      ReferenceTime.VALID_TIME,
                                                      Duration.ofHours( i ) );
             final Metadata meta = metFac.getMetadata( metFac.getDimension( "CMS" ),
-                                                      metFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ),
+                                                      metFac.getDatasetIdentifier( metFac.getLocation("DRRC2"), "SQIN", "HEFS" ),
                                                       window );
             processor.apply( dataFac.ofSingleValuedPairs( pairs.getRawData(), meta ) );
         }
@@ -683,7 +683,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                      ReferenceTime.VALID_TIME,
                                                      Duration.ofHours( i ) );
             final Metadata meta = metFac.getMetadata( metFac.getDimension( "CMS" ),
-                                                      metFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ),
+                                                      metFac.getDatasetIdentifier( metFac.getLocation("DRRC2"), "SQIN", "HEFS" ),
                                                       window );
             processor.apply( dataFac.ofSingleValuedPairs( pairs.getRawData(), meta ) );
         }
@@ -777,7 +777,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                     metaFac.getDimension( "CMS" ),
                                                                     MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
                                                                     null,
-                                                                    metaFac.getDatasetIdentifier( "A",
+                                                                    metaFac.getDatasetIdentifier( metaFac.getLocation("A"),
                                                                                                   "Streamflow" ),
                                                                     combinedWindow );
         DurationScoreOutput expectedScoresSource = dataFac.ofDurationScoreOutput( expectedSource, scoreMeta );
@@ -930,7 +930,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
     }
 
     /**
-     * Tests that the construction of a {@link MetricProcessorByTimeSingleValuedPair} fails when the configuration
+     * Tests that the construction of a {@link MetricProcessorByTime} fails when the configuration
      * contains an ensemble metric. 
      * @throws MetricProcessorException if the exceptional behavior could not be tested for unexpected reasons
      */
@@ -967,7 +967,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
     }
 
     /**
-     * Tests that the construction of a {@link MetricProcessorByTimeSingleValuedPair} fails when time-series metrics
+     * Tests that the construction of a {@link MetricProcessorByTime} fails when time-series metrics
      * are configured alongside non-time-series metrics.
      * @throws MetricProcessorException if the exceptional behavior could not be tested for unexpected reasons
      */

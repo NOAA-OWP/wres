@@ -33,24 +33,27 @@ public final class SafeMultiVectorOutputTest
     {
         final DataFactory d = DefaultDataFactory.getInstance();
         final MetadataFactory metaFac = d.getMetadataFactory();
+        final Location l1 = metaFac.getLocation( "A" );
         final MetricOutputMetadata m1 = metaFac.getOutputMetadata( 10,
                                                                    metaFac.getDimension(),
                                                                    metaFac.getDimension( "CMS" ),
                                                                    MetricConstants.CONTINGENCY_TABLE,
                                                                    MetricConstants.MAIN,
-                                                                   metaFac.getDatasetIdentifier( "A", "B", "C" ) );
+                                                                   metaFac.getDatasetIdentifier( l1, "B", "C" ) );
+        final Location l2 = metaFac.getLocation( "A" );
         final MetricOutputMetadata m2 = metaFac.getOutputMetadata( 11,
                                                                    metaFac.getDimension(),
                                                                    metaFac.getDimension( "CMS" ),
                                                                    MetricConstants.CONTINGENCY_TABLE,
                                                                    MetricConstants.MAIN,
-                                                                   metaFac.getDatasetIdentifier( "A", "B", "C" ) );
+                                                                   metaFac.getDatasetIdentifier( l2, "B", "C" ) );
+        final Location l3 = metaFac.getLocation( "B" );
         final MetricOutputMetadata m3 = metaFac.getOutputMetadata( 10,
                                                                    metaFac.getDimension(),
                                                                    metaFac.getDimension( "CMS" ),
                                                                    MetricConstants.CONTINGENCY_TABLE,
                                                                    MetricConstants.MAIN,
-                                                                   metaFac.getDatasetIdentifier( "B", "B", "C" ) );
+                                                                   metaFac.getDatasetIdentifier( l3, "B", "C" ) );
         Map<MetricDimension, double[]> mva = new HashMap<>();
         Map<MetricDimension, double[]> mvb = new HashMap<>();
         Map<MetricDimension, double[]> mvc = new HashMap<>();
@@ -84,18 +87,20 @@ public final class SafeMultiVectorOutputTest
     {
         final DataFactory d = DefaultDataFactory.getInstance();
         final MetadataFactory metaFac = d.getMetadataFactory();
+        final Location l1 = metaFac.getLocation( "A" );
         final MetricOutputMetadata m1 = metaFac.getOutputMetadata( 10,
                                                                    metaFac.getDimension(),
                                                                    metaFac.getDimension( "CMS" ),
                                                                    MetricConstants.CONTINGENCY_TABLE,
                                                                    MetricConstants.MAIN,
-                                                                   metaFac.getDatasetIdentifier( "A", "B", "C" ) );
+                                                                   metaFac.getDatasetIdentifier( l1, "B", "C" ) );
+        final Location l2 = metaFac.getLocation( "B" );
         final MetricOutputMetadata m2 = metaFac.getOutputMetadata( 10,
                                                                    metaFac.getDimension(),
                                                                    metaFac.getDimension( "CMS" ),
                                                                    MetricConstants.CONTINGENCY_TABLE,
                                                                    MetricConstants.MAIN,
-                                                                   metaFac.getDatasetIdentifier( "B", "B", "C" ) );
+                                                                   metaFac.getDatasetIdentifier( l2, "B", "C" ) );
         Map<MetricDimension, double[]> mva = new HashMap<>();
         mva.put( MetricDimension.PROBABILITY_OF_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4 } );
         mva.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4 } );
@@ -113,24 +118,27 @@ public final class SafeMultiVectorOutputTest
     {
         final DataFactory d = DefaultDataFactory.getInstance();
         final MetadataFactory metaFac = d.getMetadataFactory();
+        final Location l1 = metaFac.getLocation( "A" );
         final MetricOutputMetadata m1 = metaFac.getOutputMetadata( 10,
                                                                    metaFac.getDimension(),
                                                                    metaFac.getDimension( "CMS" ),
                                                                    MetricConstants.CONTINGENCY_TABLE,
                                                                    MetricConstants.MAIN,
-                                                                   metaFac.getDatasetIdentifier( "A", "B", "C" ) );
+                                                                   metaFac.getDatasetIdentifier( l1, "B", "C" ) );
+        final Location l2 = metaFac.getLocation( "A" );
         final MetricOutputMetadata m2 = metaFac.getOutputMetadata( 10,
                                                                    metaFac.getDimension(),
                                                                    metaFac.getDimension( "CMS" ),
                                                                    MetricConstants.CONTINGENCY_TABLE,
                                                                    MetricConstants.MAIN,
-                                                                   metaFac.getDatasetIdentifier( "A", "B", "C" ) );
+                                                                   metaFac.getDatasetIdentifier( l2, "B", "C" ) );
+        final Location l3 = metaFac.getLocation( "B" );
         final MetricOutputMetadata m3 = metaFac.getOutputMetadata( 10,
                                                                    metaFac.getDimension(),
                                                                    metaFac.getDimension( "CMS" ),
                                                                    MetricConstants.CONTINGENCY_TABLE,
                                                                    MetricConstants.MAIN,
-                                                                   metaFac.getDatasetIdentifier( "B", "B", "C" ) );
+                                                                   metaFac.getDatasetIdentifier( l3, "B", "C" ) );
         Map<MetricDimension, double[]> mva = new HashMap<>();
         Map<MetricDimension, double[]> mvb = new HashMap<>();
         Map<MetricDimension, double[]> mvc = new HashMap<>();
@@ -156,12 +164,13 @@ public final class SafeMultiVectorOutputTest
     {
         final DataFactory d = DefaultDataFactory.getInstance();
         final MetadataFactory metaFac = d.getMetadataFactory();
+        final Location l1 = metaFac.getLocation( "A" );
         final MetricOutputMetadata m1 = metaFac.getOutputMetadata( 10,
                                                                    metaFac.getDimension(),
                                                                    metaFac.getDimension( "CMS" ),
                                                                    MetricConstants.CONTINGENCY_TABLE,
                                                                    MetricConstants.MAIN,
-                                                                   metaFac.getDatasetIdentifier( "A", "B", "C" ) );
+                                                                   metaFac.getDatasetIdentifier( l1, "B", "C" ) );
         Map<MetricDimension, double[]> mva = new HashMap<>();
         mva.put( MetricDimension.PROBABILITY_OF_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4 } );
         mva.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4 } );
@@ -184,12 +193,13 @@ public final class SafeMultiVectorOutputTest
     {
         final DataFactory d = DefaultDataFactory.getInstance();
         final MetadataFactory metaFac = d.getMetadataFactory();
+        final Location l1 = metaFac.getLocation( "A" );
         final MetricOutputMetadata m1 = metaFac.getOutputMetadata( 10,
                                                                    metaFac.getDimension(),
                                                                    metaFac.getDimension( "CMS" ),
                                                                    MetricConstants.CONTINGENCY_TABLE,
                                                                    MetricConstants.MAIN,
-                                                                   metaFac.getDatasetIdentifier( "A", "B", "C" ) );
+                                                                   metaFac.getDatasetIdentifier( l1, "B", "C" ) );
         Map<MetricDimension, VectorOfDoubles> mva = new HashMap<>();
         mva.put( MetricDimension.PROBABILITY_OF_DETECTION, d.vectorOf( new double[] { 0.1, 0.2, 0.3, 0.4 } ) );
         mva.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, d.vectorOf( new double[] { 0.1, 0.2, 0.3, 0.4 } ) );

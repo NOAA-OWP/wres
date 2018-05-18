@@ -105,6 +105,7 @@ public final class MetricConfigHelperTest
                                                                                       OutputTypeSelection.THRESHOLD_LEAD,
                                                                                       null,
                                                                                       null,
+                                                                                      null,
                                                                                       null ) ) ),
                                    null,
                                    null );
@@ -620,6 +621,7 @@ public final class MetricConfigHelperTest
                                    Arrays.asList( new MetricsConfig( null, metrics, null ) ),
                                    new Outputs( Arrays.asList( new DestinationConfig( null,
                                                                                       OutputTypeSelection.LEAD_THRESHOLD,
+                                                                                      null,
                                                                                       null,
                                                                                       null,
                                                                                       null ) ) ),

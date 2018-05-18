@@ -77,7 +77,7 @@ public final class ContingencyTableTest
                                            metaFac.getDimension(),
                                            MetricConstants.CONTINGENCY_TABLE,
                                            MetricConstants.MAIN,
-                                           metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ) );
+                                           metaFac.getDatasetIdentifier( metaFac.getLocation("DRRC2"), "SQIN", "HEFS" ) );
 
         final double[][] benchmark = new double[][] { { 82.0, 38.0 }, { 23.0, 222.0 } };
         final MatrixOutput actual = table.apply( input );

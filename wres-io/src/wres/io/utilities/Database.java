@@ -1533,10 +1533,15 @@ public final class Database {
                 query.get();
                 analyzeFailed = false;
             }
-            catch ( ExecutionException | InterruptedException e )
+            catch ( ExecutionException e )
             {
                 LOGGER.error("A data optimization statement could not be completed.", e);
             }
+            catch (InterruptedException e)
+			{
+				LOGGER.error("A data optimization statement could not be completed.", e);
+				Thread.currentThread().interrupt();
+			}
         }
 
         if (analyzeFailed)

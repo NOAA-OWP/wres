@@ -47,29 +47,35 @@ public final class DefaultMetadataFactoryTest
     {
         assertTrue( "Unexpected inequality between two metadata instances.",
                     metaFac.getMetadata().equals( metaFac.getMetadata() ) );
+        Location l1 = metaFac.getLocation( "DRRC2" );
         Metadata m1 = metaFac.getMetadata( metaFac.getDimension(),
-                                           metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ) );
+                                           metaFac.getDatasetIdentifier( l1, "SQIN", "HEFS" ) );
         // Reflexive
         assertTrue( "Unexpected inequality between two metadata instances.", m1.equals( m1 ) );
+        Location l2 = metaFac.getLocation( "DRRC2" );
         Metadata m2 = metaFac.getMetadata( metaFac.getDimension(),
-                                           metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ) );
+                                           metaFac.getDatasetIdentifier( l2, "SQIN", "HEFS" ) );
         // Symmetric
         assertTrue( "Unexpected inequality between two metadata instances.", m1.equals( m2 ) );
         assertTrue( "Unexpected inequality between two metadata instances.", m2.equals( m1 ) );
+        Location l3 = metaFac.getLocation( "DRRC2" );
         Metadata m3 = metaFac.getMetadata( metaFac.getDimension( "SOME_DIM" ),
-                                           metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ) );
+                                           metaFac.getDatasetIdentifier( l3, "SQIN", "HEFS" ) );
+        Location l4 = metaFac.getLocation( "DRRC2" );
         Metadata m4 = metaFac.getMetadata( metaFac.getDimension( "SOME_DIM" ),
-                                           metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ) );
+                                           metaFac.getDatasetIdentifier( l4, "SQIN", "HEFS" ) );
         assertTrue( "Unexpected inequality between two metadata instances.", m3.equals( m4 ) );
         assertFalse( "Unexpected equality between two metadata instances.", m1.equals( m3 ) );
         // Transitive
+        Location l4t = metaFac.getLocation( "DRRC2" );
         Metadata m4t = metaFac.getMetadata( metaFac.getDimension( "SOME_DIM" ),
-                                            metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ) );
+                                            metaFac.getDatasetIdentifier( l4t, "SQIN", "HEFS" ) );
         assertTrue( "Unexpected inequality between two metadata instances.", m4.equals( m4t ) );
         assertTrue( "Unexpected inequality between two metadata instances.", m3.equals( m4t ) );
         // Unequal
+        Location l5 = metaFac.getLocation( "DRRC3" );
         Metadata m5 = metaFac.getMetadata( metaFac.getDimension( "SOME_DIM" ),
-                                           metaFac.getDatasetIdentifier( "DRRC3", "SQIN", "HEFS" ) );
+                                           metaFac.getDatasetIdentifier( l5, "SQIN", "HEFS" ) );
         assertFalse( "Unexpected equality between two metadata instances.", m4.equals( m5 ) );
         Metadata m5NoDim = metaFac.getMetadata( metaFac.getDimension( "SOME_DIM" ), null );
         assertFalse( "Unexpected equality between two metadata instances.", m5.equals( m5NoDim ) );
@@ -85,11 +91,13 @@ public final class DefaultMetadataFactoryTest
         TimeWindow secondWindow = dataFac.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                         Instant.parse( "1986-01-01T00:00:00Z" ),
                                                         ReferenceTime.VALID_TIME );
+        Location l6 = metaFac.getLocation( "DRRC3" );
         Metadata m6 = metaFac.getMetadata( metaFac.getDimension( "SOME_DIM" ),
-                                           metaFac.getDatasetIdentifier( "DRRC3", "SQIN", "HEFS" ),
+                                           metaFac.getDatasetIdentifier( l6, "SQIN", "HEFS" ),
                                            firstWindow );
+        Location l7 = metaFac.getLocation( "DRRC3" );
         Metadata m7 = metaFac.getMetadata( metaFac.getDimension( "SOME_DIM" ),
-                                           metaFac.getDatasetIdentifier( "DRRC3", "SQIN", "HEFS" ),
+                                           metaFac.getDatasetIdentifier( l7, "SQIN", "HEFS" ),
                                            secondWindow );
         assertTrue( "Unexpected inequality between two metadata instances.", m6.equals( m7 ) );
         assertTrue( "Unexpected inequality between two metadata instances.", m7.equals( m6 ) );
@@ -97,8 +105,9 @@ public final class DefaultMetadataFactoryTest
         TimeWindow thirdWindow = dataFac.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                        Instant.parse( "1986-01-01T00:00:00Z" ),
                                                        ReferenceTime.ISSUE_TIME );
+        Location l8 = metaFac.getLocation( "DRRC3" );
         Metadata m8 = metaFac.getMetadata( metaFac.getDimension( "SOME_DIM" ),
-                                           metaFac.getDatasetIdentifier( "DRRC3", "SQIN", "HEFS" ),
+                                           metaFac.getDatasetIdentifier( l8, "SQIN", "HEFS" ),
                                            thirdWindow );
         assertFalse( "Unexpected equality between two metadata instances.", m6.equals( m8 ) );
         // Null check
@@ -117,25 +126,31 @@ public final class DefaultMetadataFactoryTest
         // Equal
         assertTrue( "Unexpected inequality between two metadata hashcodes.",
                     metaFac.getMetadata().hashCode() == metaFac.getMetadata().hashCode() );
+        Location l1 = metaFac.getLocation( "DRRC2" );
         Metadata m1 = metaFac.getMetadata( metaFac.getDimension(),
-                                           metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ) );
+                                           metaFac.getDatasetIdentifier( l1, "SQIN", "HEFS" ) );
         assertTrue( "Unexpected inequality between two metadata instances.", m1.hashCode() == m1.hashCode() );
+        Location l2 = metaFac.getLocation( "DRRC2" );
         Metadata m2 = metaFac.getMetadata( metaFac.getDimension(),
-                                           metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ) );
+                                           metaFac.getDatasetIdentifier( l2, "SQIN", "HEFS" ) );
         assertTrue( "Unexpected inequality between two metadata hashcodes.", m1.hashCode() == m2.hashCode() );
+        Location l3 = metaFac.getLocation( "DRRC2" );
         Metadata m3 = metaFac.getMetadata( metaFac.getDimension( "SOME_DIM" ),
-                                           metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ) );
+                                           metaFac.getDatasetIdentifier( l3, "SQIN", "HEFS" ) );
+        Location l4 = metaFac.getLocation( "DRRC2" );
         Metadata m4 = metaFac.getMetadata( metaFac.getDimension( "SOME_DIM" ),
-                                           metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ) );
+                                           metaFac.getDatasetIdentifier( l4, "SQIN", "HEFS" ) );
         assertTrue( "Unexpected inequality between two metadata hashcodes.", m3.hashCode() == m4.hashCode() );
+        Location l4t = metaFac.getLocation( "DRRC2" );
         Metadata m4t = metaFac.getMetadata( metaFac.getDimension( "SOME_DIM" ),
-                                            metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ) );
+                                            metaFac.getDatasetIdentifier( l4t, "SQIN", "HEFS" ) );
         assertTrue( "Unexpected inequality between two metadata instances.", m4.hashCode() == m4t.hashCode() );
         assertTrue( "Unexpected inequality between two metadata instances.", m3.hashCode() == m4t.hashCode() );
-        // Unequal        
+        // Unequal
         assertFalse( "Unexpected equality between two metadata hashcodes.", m1.hashCode() == m3.hashCode() );
+        Location l5 = metaFac.getLocation( "DRRC3" );
         Metadata m5 = metaFac.getMetadata( metaFac.getDimension( "SOME_DIM" ),
-                                           metaFac.getDatasetIdentifier( "DRRC3", "SQIN", "HEFS" ) );
+                                           metaFac.getDatasetIdentifier( l5, "SQIN", "HEFS" ) );
         assertFalse( "Unexpected equality between two metadata hashcodes.", m4.hashCode() == m5.hashCode() );
         Metadata m5NoDim = metaFac.getMetadata( metaFac.getDimension( "SOME_DIM" ), null );
         assertFalse( "Unexpected equality between two metadata instances.", m5.hashCode() == m5NoDim.hashCode() );
@@ -152,11 +167,13 @@ public final class DefaultMetadataFactoryTest
         TimeWindow secondWindow = dataFac.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                         Instant.parse( "1986-01-01T00:00:00Z" ),
                                                         ReferenceTime.VALID_TIME );
+        Location l6 = metaFac.getLocation( "DRRC3" );
         Metadata m6 = metaFac.getMetadata( metaFac.getDimension( "SOME_DIM" ),
-                                           metaFac.getDatasetIdentifier( "DRRC3", "SQIN", "HEFS" ),
+                                           metaFac.getDatasetIdentifier( l6, "SQIN", "HEFS" ),
                                            firstWindow );
+        Location l7 = metaFac.getLocation( "DRRC3" );
         Metadata m7 = metaFac.getMetadata( metaFac.getDimension( "SOME_DIM" ),
-                                           metaFac.getDatasetIdentifier( "DRRC3", "SQIN", "HEFS" ),
+                                           metaFac.getDatasetIdentifier( l7, "SQIN", "HEFS" ),
                                            secondWindow );
         assertTrue( "Unexpected inequality between two metadata hashcodes.", m6.hashCode() == m7.hashCode() );
         assertTrue( "Unexpected inequality between two metadata hashcodes.", m7.hashCode() == m6.hashCode() );
@@ -164,8 +181,9 @@ public final class DefaultMetadataFactoryTest
         TimeWindow thirdWindow = dataFac.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                        Instant.parse( "1986-01-01T00:00:00Z" ),
                                                        ReferenceTime.ISSUE_TIME );
+        Location l8 = metaFac.getLocation( "DRRC3" );
         Metadata m8 = metaFac.getMetadata( metaFac.getDimension( "SOME_DIM" ),
-                                           metaFac.getDatasetIdentifier( "DRRC3", "SQIN", "HEFS" ),
+                                           metaFac.getDatasetIdentifier( l8, "SQIN", "HEFS" ),
                                            thirdWindow );
         assertFalse( "Unexpected equality between two metadata hashcodes.", m6.hashCode() == m8.hashCode() );
         // Other type check
@@ -183,8 +201,9 @@ public final class DefaultMetadataFactoryTest
         TimeWindow firstWindow = dataFac.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                        Instant.parse( "1986-01-01T00:00:00Z" ),
                                                        ReferenceTime.ISSUE_TIME );
+        Location locationBase = metaFac.getLocation( "DRRC3" );
         Metadata base = metaFac.getMetadata( metaFac.getDimension( "SOME_DIM" ),
-                                             metaFac.getDatasetIdentifier( "DRRC3", "SQIN", "HEFS" ),
+                                             metaFac.getDatasetIdentifier( locationBase, "SQIN", "HEFS" ),
                                              firstWindow );
         MetricOutputMetadata first = metaFac.getOutputMetadata( 1,
                                                                 metaFac.getDimension( "CMS" ),
@@ -241,10 +260,11 @@ public final class DefaultMetadataFactoryTest
                                                                 MetricConstants.NONE );
         assertFalse( "Unexpected equality between two metadata instances.", first.equals( sixth ) );
         // Unequal input dimensions
+        Location seventhLocation = metaFac.getLocation( "DRRC3" );
         MetricOutputMetadata seventh = metaFac.getOutputMetadata( 2,
                                                                   metaFac.getDimension( "CMS" ),
                                                                   metaFac.getMetadata( metaFac.getDimension( "OTHER_DIM" ),
-                                                                                       metaFac.getDatasetIdentifier( "DRRC3",
+                                                                                       metaFac.getDatasetIdentifier( seventhLocation,
                                                                                                                      "SQIN",
                                                                                                                      "HEFS" ),
                                                                                        firstWindow ),
@@ -264,8 +284,9 @@ public final class DefaultMetadataFactoryTest
     @Test
     public void outputMetadataMinimumEquals()
     {
+        Location locationBase = metaFac.getLocation( "DRRC3" );
         Metadata base = metaFac.getMetadata( metaFac.getDimension( "SOME_DIM" ),
-                                             metaFac.getDatasetIdentifier( "DRRC3", "SQIN", "HEFS" ) );
+                                             metaFac.getDatasetIdentifier( locationBase, "SQIN", "HEFS" ) );
         MetricOutputMetadata first = metaFac.getOutputMetadata( 1,
                                                                 metaFac.getDimension( "CMS" ),
                                                                 base,
@@ -311,8 +332,9 @@ public final class DefaultMetadataFactoryTest
                                                                 MetricConstants.COEFFICIENT_OF_DETERMINATION,
                                                                 MetricConstants.NONE );
         assertFalse( "Unexpected equality between two metadata instances.", fourth.minimumEquals( fifth ) );
+        Location secondLocation = metaFac.getLocation( "DRRC3" );
         Metadata baseSecond = metaFac.getMetadata( metaFac.getDimension( "OTHER_DIM" ),
-                                                   metaFac.getDatasetIdentifier( "DRRC3", "SQIN", "HEFS" ) );
+                                                   metaFac.getDatasetIdentifier( secondLocation, "SQIN", "HEFS" ) );
 
         MetricOutputMetadata sixth = metaFac.getOutputMetadata( 1,
                                                                 metaFac.getDimension( "CMS" ),
@@ -335,8 +357,9 @@ public final class DefaultMetadataFactoryTest
         TimeWindow firstWindow = dataFac.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                        Instant.parse( "1986-01-01T00:00:00Z" ),
                                                        ReferenceTime.ISSUE_TIME );
+        Location baseLocation = metaFac.getLocation( "DRRC3" );
         Metadata base = metaFac.getMetadata( metaFac.getDimension( "SOME_DIM" ),
-                                             metaFac.getDatasetIdentifier( "DRRC3", "SQIN", "HEFS" ),
+                                             metaFac.getDatasetIdentifier( baseLocation, "SQIN", "HEFS" ),
                                              firstWindow );
         MetricOutputMetadata first = metaFac.getOutputMetadata( 1,
                                                                 metaFac.getDimension( "CMS" ),
@@ -389,10 +412,11 @@ public final class DefaultMetadataFactoryTest
                                                                 MetricConstants.NONE );
         assertFalse( "Unexpected equality between two metadata hashcodes.", first.hashCode() == sixth.hashCode() );
         // Unequal input dimensions
+        Location seventhLocation = metaFac.getLocation( "DRRC3" );
         MetricOutputMetadata seventh = metaFac.getOutputMetadata( 2,
                                                                   metaFac.getDimension( "CMS" ),
                                                                   metaFac.getMetadata( metaFac.getDimension( "OTHER_DIM" ),
-                                                                                       metaFac.getDatasetIdentifier( "DRRC3",
+                                                                                       metaFac.getDatasetIdentifier( seventhLocation,
                                                                                                                      "SQIN",
                                                                                                                      "HEFS" ),
                                                                                        firstWindow ),
@@ -477,57 +501,107 @@ public final class DefaultMetadataFactoryTest
     public void datasetIdentifierEquals()
     {
         // Reflexive
-        DatasetIdentifier m1 = metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" );
+        Location l1 = metaFac.getLocation( "DRRC2" );
+        DatasetIdentifier m1 = metaFac.getDatasetIdentifier( l1, "SQIN", "HEFS" );
+
         assertTrue( "Unexpected inequality between two dataset identifier instances.", m1.equals( m1 ) );
-        DatasetIdentifier m2 = metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" );
+
+        Location l2 = metaFac.getLocation( "DRRC2" );
+        DatasetIdentifier m2 = metaFac.getDatasetIdentifier( l2, "SQIN", "HEFS" );
+
         // Symmetric
         assertTrue( "Unexpected inequality between two dataset identifier instances.", m1.equals( m2 ) );
         assertTrue( "Unexpected inequality between two dataset identifier instances.", m2.equals( m1 ) );
+
         // Transitive
-        DatasetIdentifier m3 = metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" );
+        Location l3 = metaFac.getLocation( "DRRC2" );
+        DatasetIdentifier m3 = metaFac.getDatasetIdentifier( l3, "SQIN", "HEFS" );
+
         assertTrue( "Unexpected inequality between two dataset identifier instances.", m2.equals( m3 ) );
         assertTrue( "Unexpected inequality between two dataset identifier instances.", m1.equals( m3 ) );
+
         // Consistent
         for ( int i = 0; i < 20; i++ )
         {
             assertTrue( "Unexpected inequality between two dataset identifier instances.", m1.equals( m2 ) );
         }
+
         // Equal with some identifiers missing
-        DatasetIdentifier p1 = metaFac.getDatasetIdentifier( "DRRC2", "SQIN", null );
-        DatasetIdentifier p2 = metaFac.getDatasetIdentifier( "DRRC2", "SQIN", null );
+        Location lp1 = metaFac.getLocation( "DRRC2" );
+        DatasetIdentifier p1 = metaFac.getDatasetIdentifier( lp1, "SQIN", null );
+
+        Location lp2 = metaFac.getLocation( "DRRC2" );
+        DatasetIdentifier p2 = metaFac.getDatasetIdentifier( lp2, "SQIN", null );
+
         assertTrue( "Unexpected inequality between two dataset identifier instances.", p1.equals( p2 ) );
-        DatasetIdentifier p3 = metaFac.getDatasetIdentifier( "DRRC2", null, null );
-        DatasetIdentifier p4 = metaFac.getDatasetIdentifier( "DRRC2", null, null );
+
+        Location lp3 = metaFac.getLocation( "DRRC2" );
+        DatasetIdentifier p3 = metaFac.getDatasetIdentifier( lp3, null, null );
+
+        Location lp4 = metaFac.getLocation( "DRRC2" );
+        DatasetIdentifier p4 = metaFac.getDatasetIdentifier( lp4, null, null );
+
         assertTrue( "Unexpected inequality between two dataset identifier instances.", p3.equals( p4 ) );
+
         DatasetIdentifier p5 = metaFac.getDatasetIdentifier( null, "SQIN", null );
         DatasetIdentifier p6 = metaFac.getDatasetIdentifier( null, "SQIN", null );
+
         assertTrue( "Unexpected inequality between two dataset identifier instances.", p5.equals( p6 ) );
+
         // Equal with scenario identifier for baseline
-        DatasetIdentifier b1 = metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS", "ESP" );
-        DatasetIdentifier b2 = metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS", "ESP" );
+        Location lb1 = metaFac.getLocation( "DRRC2" );
+        DatasetIdentifier b1 = metaFac.getDatasetIdentifier( lb1, "SQIN", "HEFS", "ESP" );
+
+        Location lb2 = metaFac.getLocation( "DRRC2" );
+        DatasetIdentifier b2 = metaFac.getDatasetIdentifier( lb2, "SQIN", "HEFS", "ESP" );
+
         assertTrue( "Unexpected inequality between two dataset identifier instances.", b1.equals( b2 ) );
+
         // Unequal
-        DatasetIdentifier m4 = metaFac.getDatasetIdentifier( "DRRC3", "SQIN", "HEFS" );
-        DatasetIdentifier m5 = metaFac.getDatasetIdentifier( "DRRC2", "SQIN2", "HEFS" );
-        DatasetIdentifier m6 = metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS4" );
+        Location l4 = metaFac.getLocation( "DRRC3" );
+        DatasetIdentifier m4 = metaFac.getDatasetIdentifier( l4, "SQIN", "HEFS" );
+
+        Location l5 = metaFac.getLocation( "DRRC2" );
+        DatasetIdentifier m5 = metaFac.getDatasetIdentifier( l5, "SQIN2", "HEFS" );
+
+        Location l6 = metaFac.getLocation( "DRRC2" );
+        DatasetIdentifier m6 = metaFac.getDatasetIdentifier( l6, "SQIN", "HEFS4" );
+
         assertFalse( "Unexpected equality between two dataset identifier instances.", m1.equals( m4 ) );
         assertFalse( "Unexpected equality between two dataset identifier instances.", m1.equals( m5 ) );
         assertFalse( "Unexpected equality between two dataset identifier instances.", m1.equals( m6 ) );
+
         // Unequal with some identifiers missing
-        DatasetIdentifier p7 = metaFac.getDatasetIdentifier( "DRRC2", "SQIN", null );
-        DatasetIdentifier p8 = metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" );
+        Location lp7 = metaFac.getLocation( "DRRC2" );
+        DatasetIdentifier p7 = metaFac.getDatasetIdentifier( lp7, "SQIN", null );
+
+        Location lp8 = metaFac.getLocation( "DRRC2" );
+        DatasetIdentifier p8 = metaFac.getDatasetIdentifier( lp8, "SQIN", "HEFS" );
+
         assertFalse( "Unexpected equality between two dataset identifier instances.", p7.equals( p8 ) );
-        DatasetIdentifier p9 = metaFac.getDatasetIdentifier( "DRRC2", null, null );
+
+        Location lp9 = metaFac.getLocation( "DRRC2" );
+        DatasetIdentifier p9 = metaFac.getDatasetIdentifier( lp9, null, null );
+
         DatasetIdentifier p10 = metaFac.getDatasetIdentifier( null, null, null );
+
         assertFalse( "Unexpected equality between two dataset identifier instances.", p9.equals( p10 ) );
+
         DatasetIdentifier p11 = metaFac.getDatasetIdentifier( null, "SQIN", null );
         DatasetIdentifier p12 = metaFac.getDatasetIdentifier( null, null, null );
+
         assertFalse( "Unexpected equality between two dataset identifier instances.", p11.equals( p12 ) );
 
         // Unequal scenario identifiers for baseline
-        DatasetIdentifier b3 = metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS", "ESP" );
-        DatasetIdentifier b4 = metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS", "ESP2" );
-        DatasetIdentifier b5 = metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS", null );
+        Location lb3 = metaFac.getLocation("DRRC2");
+        DatasetIdentifier b3 = metaFac.getDatasetIdentifier( lb3, "SQIN", "HEFS", "ESP" );
+
+        Location lb4 = metaFac.getLocation("DRRC2");
+        DatasetIdentifier b4 = metaFac.getDatasetIdentifier( lb4, "SQIN", "HEFS", "ESP2" );
+
+        Location lb5 = metaFac.getLocation("DRRC2");
+        DatasetIdentifier b5 = metaFac.getDatasetIdentifier( lb5, "SQIN", "HEFS", null );
+
         assertFalse( "Unexpected inequality between two dataset identifier instances.", b3.equals( b4 ) );
         assertFalse( "Unexpected inequality between two dataset identifier instances.", p1.equals( b3 ) );
         assertFalse( "Unexpected inequality between two dataset identifier instances.", b5.equals( b3 ) );
@@ -535,6 +609,7 @@ public final class DefaultMetadataFactoryTest
 
         // Null check
         assertFalse( "Unexpected equality between two dataset identifier instances.", m1.equals( null ) );
+
         // Other type check
         assertFalse( "Unexpected equality between two dataset identifier instances.",
                      m1.equals( Double.valueOf( 2 ) ) );
@@ -548,10 +623,13 @@ public final class DefaultMetadataFactoryTest
     public void datasetIdentifierHashCode()
     {
         // Equal
-        DatasetIdentifier m1 = metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" );
+        Location l1 = metaFac.getLocation("DRRC2");
+        DatasetIdentifier m1 = metaFac.getDatasetIdentifier( l1, "SQIN", "HEFS" );
         assertTrue( "Unexpected inequality between two dataset identifier hashcodes.", m1.hashCode() == m1.hashCode() );
-        DatasetIdentifier m2 = metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" );
-        DatasetIdentifier m3 = metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" );
+        Location l2 = metaFac.getLocation("DRRC2");
+        DatasetIdentifier m2 = metaFac.getDatasetIdentifier( l2, "SQIN", "HEFS" );
+        Location l3 = metaFac.getLocation("DRRC2");
+        DatasetIdentifier m3 = metaFac.getDatasetIdentifier( l3, "SQIN", "HEFS" );
         assertTrue( "Unexpected inequality between two dataset identifier hashcodes.", m1.hashCode() == m2.hashCode() );
         assertTrue( "Unexpected inequality between two dataset identifier hashcodes.", m2.hashCode() == m3.hashCode() );
         assertTrue( "Unexpected inequality between two dataset identifier hashcodes.", m1.hashCode() == m3.hashCode() );
@@ -562,32 +640,44 @@ public final class DefaultMetadataFactoryTest
                         m1.hashCode() == m2.hashCode() );
         }
         // Unequal
-        DatasetIdentifier m4 = metaFac.getDatasetIdentifier( "DRRC3", "SQIN", "HEFS" );
-        DatasetIdentifier m5 = metaFac.getDatasetIdentifier( "DRRC2", "SQIN2", "HEFS" );
-        DatasetIdentifier m6 = metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS4" );
+        Location l4 = metaFac.getLocation("DRRC3");
+        DatasetIdentifier m4 = metaFac.getDatasetIdentifier( l4, "SQIN", "HEFS" );
+        Location l5 = metaFac.getLocation("DRRC2");
+        DatasetIdentifier m5 = metaFac.getDatasetIdentifier( l5, "SQIN2", "HEFS" );
+        Location l6 = metaFac.getLocation("DRRC2");
+        DatasetIdentifier m6 = metaFac.getDatasetIdentifier( l6, "SQIN", "HEFS4" );
         assertFalse( "Unexpected equality between two dataset identifier hashcodes.", m1.hashCode() == m4.hashCode() );
         assertFalse( "Unexpected equality between two dataset identifier hashcodes.", m1.hashCode() == m5.hashCode() );
         assertFalse( "Unexpected equality between two dataset identifier hashcodes.", m1.hashCode() == m6.hashCode() );
 
         // Equal with some identifiers missing
-        DatasetIdentifier p1 = metaFac.getDatasetIdentifier( "DRRC2", "SQIN", null );
-        DatasetIdentifier p2 = metaFac.getDatasetIdentifier( "DRRC2", "SQIN", null );
+        Location lp1 = metaFac.getLocation("DRRC2");
+        DatasetIdentifier p1 = metaFac.getDatasetIdentifier( lp1, "SQIN", null );
+        Location lp2 = metaFac.getLocation("DRRC2");
+        DatasetIdentifier p2 = metaFac.getDatasetIdentifier( lp2, "SQIN", null );
         assertTrue( "Unexpected inequality between two dataset identifier hashcodes.", p1.hashCode() == p2.hashCode() );
-        DatasetIdentifier p3 = metaFac.getDatasetIdentifier( "DRRC2", null, null );
-        DatasetIdentifier p4 = metaFac.getDatasetIdentifier( "DRRC2", null, null );
+        Location lp3 = metaFac.getLocation("DRRC2");
+        DatasetIdentifier p3 = metaFac.getDatasetIdentifier( lp3, null, null );
+        Location lp4 = metaFac.getLocation("DRRC2");
+        DatasetIdentifier p4 = metaFac.getDatasetIdentifier( lp4, null, null );
         assertTrue( "Unexpected inequality between two dataset identifier hashcodes.", p3.hashCode() == p4.hashCode() );
         DatasetIdentifier p5 = metaFac.getDatasetIdentifier( null, "SQIN", null );
         DatasetIdentifier p6 = metaFac.getDatasetIdentifier( null, "SQIN", null );
         assertTrue( "Unexpected inequality between two dataset identifier hashcodes.", p5.hashCode() == p6.hashCode() );
         // Equal with scenario identifier for baseline
-        DatasetIdentifier b1 = metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS", "ESP" );
-        DatasetIdentifier b2 = metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS", "ESP" );
+        Location lb1 = metaFac.getLocation("DRRC2");
+        DatasetIdentifier b1 = metaFac.getDatasetIdentifier( lb1, "SQIN", "HEFS", "ESP" );
+        Location lb2 = metaFac.getLocation("DRRC2");
+        DatasetIdentifier b2 = metaFac.getDatasetIdentifier( lb2, "SQIN", "HEFS", "ESP" );
         assertTrue( "Unexpected inequality between two dataset identifier hashcodes.", b1.hashCode() == b2.hashCode() );
         // Unequal with some identifiers missing
-        DatasetIdentifier p7 = metaFac.getDatasetIdentifier( "DRRC2", "SQIN", null );
-        DatasetIdentifier p8 = metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" );
+        Location lp7 = metaFac.getLocation("DRRC2");
+        DatasetIdentifier p7 = metaFac.getDatasetIdentifier( lp7, "SQIN", null );
+        Location lp8 = metaFac.getLocation("DRRC2");
+        DatasetIdentifier p8 = metaFac.getDatasetIdentifier( lp8, "SQIN", "HEFS" );
         assertFalse( "Unexpected equality between two dataset identifier hashcodes.", p7.hashCode() == p8.hashCode() );
-        DatasetIdentifier p9 = metaFac.getDatasetIdentifier( "DRRC2", null, null );
+        Location lp9 = metaFac.getLocation("DRRC2");
+        DatasetIdentifier p9 = metaFac.getDatasetIdentifier( lp9, null, null );
         DatasetIdentifier p10 = metaFac.getDatasetIdentifier( null, null, null );
         assertFalse( "Unexpected equality between two dataset identifier hashcodes.", p9.hashCode() == p10.hashCode() );
         DatasetIdentifier p11 = metaFac.getDatasetIdentifier( null, "SQIN", null );
@@ -595,9 +685,12 @@ public final class DefaultMetadataFactoryTest
         assertFalse( "Unexpected equality between two dataset identifier hashcodes.",
                      p11.hashCode() == p12.hashCode() );
         // Unequal scenario identifiers for baseline
-        DatasetIdentifier b3 = metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS", "ESP" );
-        DatasetIdentifier b4 = metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS", "ESP2" );
-        DatasetIdentifier b5 = metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS", null );
+        Location lb3 = metaFac.getLocation("DRRC2");
+        DatasetIdentifier b3 = metaFac.getDatasetIdentifier( lb3, "SQIN", "HEFS", "ESP" );
+        Location lb4 = metaFac.getLocation("DRRC2");
+        DatasetIdentifier b4 = metaFac.getDatasetIdentifier( lb4, "SQIN", "HEFS", "ESP2" );
+        Location lb5 = metaFac.getLocation("DRRC2");
+        DatasetIdentifier b5 = metaFac.getDatasetIdentifier( lb5, "SQIN", "HEFS", null );
         assertFalse( "Unexpected inequality between two dataset identifier hashcodes.",
                      b3.hashCode() == b4.hashCode() );
         assertFalse( "Unexpected inequality between two dataset identifier hashcodes.",
@@ -611,28 +704,326 @@ public final class DefaultMetadataFactoryTest
     }
 
     /**
+     * Tests {@link Location#equals(Object)}
+     */
+    @Test
+    public void locationEquals()
+    {
+        Location all = metaFac.getLocation( 18384141L,
+                                            "DRRC2",
+                                            -108.06F,
+                                            37.6389F,
+                                            "09165000" );
+        Location all2 = metaFac.getLocation( 18384141L,
+                                             "DRRC2",
+                                             -108.06F,
+                                             37.6389F,
+                                             "09165000" );
+        Location all3 = metaFac.getLocation( 18384141L,
+                                             "DRRC2",
+                                             -108.06F,
+                                             37.6389F,
+                                             "09165000" );
+        Location allDiffVectorID = metaFac.getLocation( 1838141L,
+                                                        "DRRC2",
+                                                        -108.06F,
+                                                        37.6389F,
+                                                        "09165000" );
+        Location allDiffName = metaFac.getLocation( 18384141L,
+                                                    "DRRC3",
+                                                    -108.06F,
+                                                    37.6389F,
+                                                    "09165000" );
+        Location allDiffCoordinates = metaFac.getLocation( 18384141L,
+                                                           "DRRC2",
+                                                           -108.106F,
+                                                           37.63829F,
+                                                           "09165000" );
+        Location allDiffGage = metaFac.getLocation( 18384141L,
+                                                    "DRRC2",
+                                                    -108.06F,
+                                                    37.6389F,
+                                                    "0916500" );
+        Location allDiff = metaFac.getLocation( 1838425141L,
+                                                "DRRC3",
+                                                -108.061F,
+                                                37.63859F,
+                                                "0916500" );
+
+        Location name = metaFac.getLocation( "DRRC2" );
+        Location name2 = metaFac.getLocation( "DRRC2" );
+        Location name3 = metaFac.getLocation( "DRRC2" );
+        Location diffName = metaFac.getLocation( "DRRC5" );
+
+        Location vID = metaFac.getLocation(18384141L);
+        Location vID2 = metaFac.getLocation(18384141L);
+        Location vID3 = metaFac.getLocation(18384141L);
+        Location diffVID = metaFac.getLocation(1834584141L);
+
+        Location latLon = metaFac.getLocation( -108.06F, 37.6389F );
+        Location latLon2 = metaFac.getLocation( -108.06F, 37.6389F );
+        Location latLon3 = metaFac.getLocation( -108.06F, 37.6389F );
+        Location diffLatLon = metaFac.getLocation( -101.06F, 37.6389F );
+
+        Location gage = metaFac.getLocation( null, null, null, null, "09165000" );
+        Location gage2 = metaFac.getLocation( null, null, null, null, "09165000" );
+        Location gage3 = metaFac.getLocation( null, null, null, null, "09165000" );
+        Location diffGage = metaFac.getLocation( null, null, null, null, "0916455000" );
+
+        // Reflexive
+        assertTrue( "Unexpected inequality between two location identifier instances",
+                    all.equals( all ));
+        assertTrue( "Unexpected inequality between two location identifier instances",
+                    name.equals( name ));
+        assertTrue( "Unexpected inequality between two location identifier instances",
+                    vID.equals( vID ));
+        assertTrue( "Unexpected inequality between two location identifier instances",
+                    gage.equals( gage ));
+        assertTrue( "Unexpected inequality between two location identifier instances",
+                    latLon.equals( latLon ));
+
+        // Symmetric
+        assertTrue( "Unexpected inequality between two location identifier instances",
+                    all.equals( all2 ));
+        assertTrue( "Unexpected inequality between two location identifier instances",
+                    all2.equals( all ));
+        assertTrue( "Unexpected inequality between two location identifier instances",
+                    name.equals( name2 ));
+        assertTrue( "Unexpected inequality between two location identifier instances",
+                    name2.equals( name ));
+        assertTrue( "Unexpected inequality between two location identifier instances",
+                    vID.equals( vID2 ));
+        assertTrue( "Unexpected inequality between two location identifier instances",
+                    vID2.equals( vID ));
+        assertTrue( "Unexpected inequality between two location identifier instances",
+                    gage2.equals( gage ));
+        assertTrue( "Unexpected inequality between two location identifier instances",
+                    latLon.equals( latLon2 ));
+        assertTrue( "Unexpected inequality between two location identifier instances",
+                    latLon2.equals( latLon ));
+
+        // Transitive
+        assertTrue( "Unexpected inequality between two dataset identifier instances.",
+                    all.equals( all3 ) );
+        assertTrue( "Unexpected inequality between two dataset identifier instances.",
+                    all2.equals( all3 ) );
+
+        assertTrue( "Unexpected inequality between two dataset identifier instances.",
+                    name.equals( name3 ) );
+        assertTrue( "Unexpected inequality between two dataset identifier instances.",
+                    name2.equals( name3 ) );
+
+        assertTrue( "Unexpected inequality between two dataset identifier instances.",
+                    vID.equals( vID3 ) );
+        assertTrue( "Unexpected inequality between two dataset identifier instances.",
+                    vID2.equals( vID3 ) );
+
+        assertTrue( "Unexpected inequality between two dataset identifier instances.",
+                    gage.equals( gage3 ) );
+        assertTrue( "Unexpected inequality between two dataset identifier instances.",
+                    gage2.equals( gage3 ) );
+
+        assertTrue( "Unexpected inequality between two dataset identifier instances.",
+                    latLon.equals( latLon3 ) );
+        assertTrue( "Unexpected inequality between two dataset identifier instances.",
+                    latLon2.equals( latLon3 ) );
+
+        // Consistent
+        for ( int i = 0; i < 20; i++ )
+        {
+            assertTrue( "Unexpected inequality between two dataset identifier instances.",
+                        all.equals( all2 ) );
+        }
+
+        // Unequal
+        assertFalse( "Unexpected equality between two dataset identifier instances.",
+                     all.equals( allDiff ) );
+        assertFalse( "Unexpected equality between two dataset identifier instances.",
+                     all.equals( allDiffName ) );
+        assertFalse( "Unexpected equality between two dataset identifier instances.",
+                     all.equals( allDiffVectorID ) );
+        assertFalse( "Unexpected equality between two dataset identifier instances.",
+                     all.equals( allDiffCoordinates ) );
+        assertFalse( "Unexpected equality between two dataset identifier instances.",
+                     all.equals( allDiffGage ) );
+
+        assertFalse( "Unexpected equality between two dataset identifier instances.",
+                     all.equals( name ) );
+
+        assertFalse( "Unexpected equality between two dataset identifier instances.",
+                     all.equals( vID ) );
+
+        assertFalse( "Unexpected equality between two dataset identifier instances.",
+                     all.equals( latLon ) );
+
+        assertFalse( "Unexpected equality between two dataset identifier instances.",
+                     all.equals( gage ) );
+
+        assertFalse( "Unexpected equality between two dataset identifier instances.",
+                     name.equals( diffName ) );
+
+        assertFalse( "Unexpected equality between two dataset identifier instances.",
+                     vID.equals( diffVID ) );
+
+        assertFalse( "Unexpected equality between two dataset identifier instances.",
+                     latLon.equals( diffLatLon ) );
+
+        assertFalse( "Unexpected equality between two dataset identifier instances.",
+                     gage.equals( diffGage ) );
+
+        // Null check
+        assertFalse( "Unexpected equality between two dataset identifier instances.",
+                     all.equals( null ) );
+
+        // Other type check
+        assertFalse( "Unexpected equality between two dataset identifier instances.",
+                     all.equals(Double.valueOf( 2 )) );
+    }
+
+    /**
+     * Tests {@link Location#hashCode()}
+     */
+    @Test
+    public void locationHashCode()
+    {
+        // Equal
+        Location all = metaFac.getLocation( 18384141L,
+                                           "DRRC2",
+                                           -108.06F,
+                                           37.6389F,
+                                           "09165000" );
+        Location all2 = metaFac.getLocation( 18384141L,
+                                           "DRRC2",
+                                           -108.06F,
+                                           37.6389F,
+                                           "09165000" );
+        assertTrue( "Unexpected inequality between two location hashcodes.", all.hashCode() == all2.hashCode() );
+
+        // Consistent
+        for (int i = 0; i < 20; i++)
+        {
+            assertTrue( "Unexpected inequality between two location hashcodes.", all.hashCode() == all2.hashCode() );
+        }
+
+        // Equal with Identifiers missing
+        Location name = metaFac.getLocation( "DRRC2" );
+        Location name2 = metaFac.getLocation( "DRRC2" );
+        assertTrue( "Unexpected inequality between two location hashcodes.", name.hashCode() == name2.hashCode() );
+
+        Location vID = metaFac.getLocation(18384141L);
+        Location vID2 = metaFac.getLocation(18384141L);
+        assertTrue( "Unexpected inequality between two location hashcodes.", vID.hashCode() == vID2.hashCode() );
+
+        Location latLon = metaFac.getLocation( -108.06F, 37.6389F );
+        Location latLon2 = metaFac.getLocation( -108.06F, 37.6389F );
+        assertTrue( "Unexpected inequality between two location hashcodes.", latLon.hashCode() == latLon2.hashCode() );
+
+        Location gage = metaFac.getLocation( null, null, null, null, "09165000" );
+        Location gage2 = metaFac.getLocation( null, null, null, null, "09165000" );
+        assertTrue( "Unexpected inequality between two location hashcodes.",
+                    gage.hashCode() == gage2.hashCode() );
+
+        // Unequal
+        Location allDiffVectorID = metaFac.getLocation( 1838141L,
+                                             "DRRC2",
+                                             -108.06F,
+                                             37.6389F,
+                                             "09165000" );
+        assertFalse( "Unexpected equality between two location hashcodes.",
+                     all.hashCode() == allDiffVectorID.hashCode() );
+
+        Location allDiffName = metaFac.getLocation( 18384141L,
+                                             "DRRC3",
+                                             -108.06F,
+                                             37.6389F,
+                                             "09165000" );
+        assertFalse( "Unexpected equality between two location hashcodes.",
+                     all.hashCode() == allDiffName.hashCode() );
+
+        Location allDiffCoordinates = metaFac.getLocation( 18384141L,
+                                             "DRRC2",
+                                             -108.106F,
+                                             37.63829F,
+                                             "09165000" );
+        assertFalse( "Unexpected equality between two location hashcodes.",
+                     all.hashCode() == allDiffCoordinates.hashCode() );
+
+        Location allDiffGage = metaFac.getLocation( 18384141L,
+                                             "DRRC2",
+                                             -108.06F,
+                                             37.6389F,
+                                             "0916500" );
+        assertFalse( "Unexpected equality between two location hashcodes.",
+                     all.hashCode() == allDiffGage.hashCode() );
+
+        Location allDiff = metaFac.getLocation( 1838425141L,
+                                             "DRRC3",
+                                             -108.061F,
+                                             37.63859F,
+                                             "0916500" );
+        assertFalse( "Unexpected equality between two location hashcodes.",
+                     all.hashCode() == allDiff.hashCode() );
+
+
+        // Unequal with some identifiers missing
+        Location diffName = metaFac.getLocation( "DRRC5" );
+        assertFalse( "Unexpected equality between two location hashcodes.",
+                    name.hashCode() == diffName.hashCode() );
+
+        Location diffVID = metaFac.getLocation(1834584141L);
+        assertFalse( "Unexpected equality between two location hashcodes.",
+                    vID.hashCode() == diffVID.hashCode() );
+
+        Location diffLatLon = metaFac.getLocation( -101.06F, 37.6389F );
+        assertFalse( "Unexpected equality between two location hashcodes.",
+                    latLon.hashCode() == diffLatLon.hashCode() );
+
+        Location diffGage = metaFac.getLocation( null, null, null, null, "0916455000" );
+        assertFalse("Unexpected equality between two location hashcodes.",
+                    gage.hashCode() == diffGage.hashCode());
+
+        // Unequal between partial and full objects
+        assertFalse("Unexpected equality between two location hashcodes.",
+                    all.hashCode() == gage.hashCode());
+        assertFalse("Unexpected equality between two location hashcodes.",
+                    all.hashCode() == vID.hashCode());
+        assertFalse("Unexpected equality between two location hashcodes.",
+                    all.hashCode() == name.hashCode());
+        assertFalse("Unexpected equality between two location hashcodes.",
+                    all.hashCode() == latLon.hashCode());
+
+        // Other type check
+        assertFalse( "Unexpected equality between two location hashcodes",
+                     all.hashCode() == Double.valueOf( 2 ).hashCode() );
+    }
+
+    /**
      * Tests the {@link MetadataFactory#unionOf(java.util.List)} against a benchmark.
      */
     @Test
     public void unionOf()
     {
+        Location l1 = metaFac.getLocation( "DRRC2" );
         Metadata m1 = metaFac.getMetadata( metaFac.getDimension(),
-                                           metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ),
+                                           metaFac.getDatasetIdentifier( l1, "SQIN", "HEFS" ),
                                            dataFac.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                                  Instant.parse( "1985-12-31T23:59:59Z" ),
                                                                  ReferenceTime.ISSUE_TIME ) );
+        Location l2 = metaFac.getLocation( "DRRC2" );
         Metadata m2 = metaFac.getMetadata( metaFac.getDimension(),
-                                           metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ),
+                                           metaFac.getDatasetIdentifier( l2, "SQIN", "HEFS" ),
                                            dataFac.ofTimeWindow( Instant.parse( "1986-01-01T00:00:00Z" ),
                                                                  Instant.parse( "1986-12-31T23:59:59Z" ),
                                                                  ReferenceTime.ISSUE_TIME ) );
+        Location l3 = metaFac.getLocation( "DRRC2" );
         Metadata m3 = metaFac.getMetadata( metaFac.getDimension(),
-                                           metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ),
+                                           metaFac.getDatasetIdentifier( l3, "SQIN", "HEFS" ),
                                            dataFac.ofTimeWindow( Instant.parse( "1987-01-01T00:00:00Z" ),
                                                                  Instant.parse( "1988-01-01T00:00:00Z" ),
                                                                  ReferenceTime.ISSUE_TIME ) );
+        Location benchmarkLocation = metaFac.getLocation( "DRRC2" );
         Metadata benchmark = metaFac.getMetadata( metaFac.getDimension(),
-                                                  metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ),
+                                                  metaFac.getDatasetIdentifier( benchmarkLocation, "SQIN", "HEFS" ),
                                                   dataFac.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                                         Instant.parse( "1988-01-01T00:00:00Z" ),
                                                                         ReferenceTime.ISSUE_TIME ) );
@@ -641,8 +1032,9 @@ public final class DefaultMetadataFactoryTest
         //Checked exception
         try
         {
+            Location failLocation = metaFac.getLocation( "DRRC3" );
             Metadata fail = metaFac.getMetadata( metaFac.getDimension(),
-                                                 metaFac.getDatasetIdentifier( "DRRC3", "SQIN", "HEFS" ) );
+                                                 metaFac.getDatasetIdentifier( failLocation, "SQIN", "HEFS" ) );
             metaFac.unionOf( Arrays.asList( m1, m2, m3, fail ) );
             fail( "Expected a checked exception on building the union of metadata for unequal inputs." );
         }

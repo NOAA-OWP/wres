@@ -78,7 +78,7 @@ public final class ThreatScoreTest
                                           metaFac.getDimension(),
                                           MetricConstants.THREAT_SCORE,
                                           MetricConstants.MAIN,
-                                          metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ) );
+                                          metaFac.getDatasetIdentifier( metaFac.getLocation("DRRC2"), "SQIN", "HEFS" ) );
     }    
     
     /**

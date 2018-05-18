@@ -513,7 +513,7 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
                            feature.getCircle().getLatitude(),
                            "), ",
                            feature.getCircle().getDiameter(),
-                           ") )");
+                           ")' )");
         }
 
         if (feature.getPolygon() != null)

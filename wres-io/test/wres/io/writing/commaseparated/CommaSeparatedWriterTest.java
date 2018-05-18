@@ -67,6 +67,7 @@ public class CommaSeparatedWriterTest
                 new DestinationConfig( System.getProperty( "java.io.tmpdir" ),
                                        null,
                                        null,
+                                       null,
                                        DestinationType.NUMERIC,
                                        null );
 

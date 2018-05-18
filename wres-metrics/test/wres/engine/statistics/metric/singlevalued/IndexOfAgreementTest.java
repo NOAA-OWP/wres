@@ -67,7 +67,7 @@ public final class IndexOfAgreementTest
                                                                    metaFac.getDimension( "MM/DAY" ),
                                                                    MetricConstants.INDEX_OF_AGREEMENT,
                                                                    MetricConstants.MAIN,
-                                                                   metaFac.getDatasetIdentifier( "103.1",
+                                                                   metaFac.getDatasetIdentifier( metaFac.getLocation("103.1"),
                                                                                                  "QME",
                                                                                                  "NVE" ),
                                                                    window );

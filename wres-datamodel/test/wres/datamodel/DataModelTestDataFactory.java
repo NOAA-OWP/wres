@@ -66,7 +66,7 @@ public final class DataModelTestDataFactory
                                                                              metaFactory.getDimension( "CMS" ),
                                                                              MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
                                                                              MetricConstants.MAIN,
-                                                                             metaFactory.getDatasetIdentifier( "DRRC2",
+                                                                             metaFactory.getDatasetIdentifier( metaFactory.getLocation( "DRRC2" ),
                                                                                                                "SQIN",
                                                                                                                "HEFS",
                                                                                                                "ESP" ) );
@@ -135,7 +135,7 @@ public final class DataModelTestDataFactory
                                                                    metaFactory.getDimension( "CMS" ),
                                                                    MetricConstants.MEAN_ABSOLUTE_ERROR,
                                                                    MetricConstants.MAIN,
-                                                                   metaFactory.getDatasetIdentifier( "DRRC2",
+                                                                   metaFactory.getDatasetIdentifier( metaFactory.getLocation( "DRRC2" ),
                                                                                                      "SQIN",
                                                                                                      "HEFS",
                                                                                                      "ESP" ) );
@@ -228,7 +228,7 @@ public final class DataModelTestDataFactory
                                                                              metaFactory.getDimension( "CFS" ),
                                                                              MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
                                                                              MetricConstants.CR_POT,
-                                                                             metaFactory.getDatasetIdentifier( "NPTP1",
+                                                                             metaFactory.getDatasetIdentifier( metaFactory.getLocation( "NPTP1" ),
                                                                                                                "SQIN",
                                                                                                                "HEFS",
                                                                                                                "ESP" ) );

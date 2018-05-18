@@ -78,7 +78,7 @@ public final class EquitableThreatScoreTest
                                           metaFac.getDimension(),
                                           MetricConstants.EQUITABLE_THREAT_SCORE,
                                           MetricConstants.MAIN,
-                                          metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ) );
+                                          metaFac.getDatasetIdentifier( metaFac.getLocation("DRRC2"), "SQIN", "HEFS" ) );
     }    
     
     /**

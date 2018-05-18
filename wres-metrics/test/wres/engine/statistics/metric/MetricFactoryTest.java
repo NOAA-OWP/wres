@@ -473,7 +473,7 @@ public final class MetricFactoryTest
     }
 
     /**
-     * Tests the {@link MetricFactory#ofMetricProcessorForProject(ProjectConfig, 
+     * Tests the {@link MetricFactory#ofMetricProcessorForProject(ProjectConfig,
      * wres.datamodel.ThresholdsByMetric, java.util.concurrent.ExecutorService, java.util.concurrent.ExecutorService)}. 
      * @throws IOException if the input configuration could not be read
      * @throws MetricProcessorException if the metric processor could not be constructed
@@ -684,6 +684,7 @@ public final class MetricFactoryTest
                                    Arrays.asList( new MetricsConfig( thresholds, metrics, null ) ),
                                    new Outputs( Arrays.asList( new DestinationConfig( null,
                                                                                       OutputTypeSelection.THRESHOLD_LEAD,
+                                                                                      null,
                                                                                       null,
                                                                                       null,
                                                                                       null ) ) ),

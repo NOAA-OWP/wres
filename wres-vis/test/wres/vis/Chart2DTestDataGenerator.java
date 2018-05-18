@@ -129,7 +129,7 @@ public abstract class Chart2DTestDataGenerator
                                                                          metaFactory.getDimension( "CMS" ),
                                                                          MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
                                                                          MetricConstants.MAIN,
-                                                                         metaFactory.getDatasetIdentifier( "NPTP1",
+                                                                         metaFactory.getDatasetIdentifier( metaFactory.getLocation("NPTP1"),
                                                                                                            "STREAMFLOW",
                                                                                                            "HEFS",
                                                                                                            "ESP" ) );
@@ -197,7 +197,7 @@ public abstract class Chart2DTestDataGenerator
                                                                          metaFactory.getDimension( "CMS" ),
                                                                          MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
                                                                          MetricConstants.MAIN,
-                                                                         metaFactory.getDatasetIdentifier( "NPTP1",
+                                                                         metaFactory.getDatasetIdentifier( metaFactory.getLocation("NPTP1"),
                                                                                                            "STREAMFLOW",
                                                                                                            "HEFS",
                                                                                                            "ESP" ) );
@@ -275,7 +275,7 @@ public abstract class Chart2DTestDataGenerator
                                                                          metaFactory.getDimension( "CMS" ),
                                                                          MetricConstants.RELIABILITY_DIAGRAM,
                                                                          MetricConstants.MAIN,
-                                                                         metaFactory.getDatasetIdentifier( "NPTP1",
+                                                                         metaFactory.getDatasetIdentifier( metaFactory.getLocation("NPTP1"),
                                                                                                            "STREAMFLOW",
                                                                                                            "HEFS" ) );
 
@@ -393,7 +393,7 @@ public abstract class Chart2DTestDataGenerator
                                                                          metaFactory.getDimension( "CMS" ),
                                                                          MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
                                                                          MetricConstants.MAIN,
-                                                                         metaFactory.getDatasetIdentifier( "NPTP1",
+                                                                         metaFactory.getDatasetIdentifier( metaFactory.getLocation("NPTP1"),
                                                                                                            "STREAMFLOW",
                                                                                                            "HEFS" ) );
 
@@ -483,7 +483,7 @@ public abstract class Chart2DTestDataGenerator
                                                                          metaFactory.getDimension( "CMS" ),
                                                                          MetricConstants.RANK_HISTOGRAM,
                                                                          MetricConstants.MAIN,
-                                                                         metaFactory.getDatasetIdentifier( "NPTP1",
+                                                                         metaFactory.getDatasetIdentifier( metaFactory.getLocation("NPTP1"),
                                                                                                            "STREAMFLOW",
                                                                                                            "HEFS" ) );
 
@@ -580,7 +580,7 @@ public abstract class Chart2DTestDataGenerator
                                                                          metaFactory.getDimension( "MILLIMETER" ),
                                                                          MetricConstants.QUANTILE_QUANTILE_DIAGRAM,
                                                                          MetricConstants.MAIN,
-                                                                         metaFactory.getDatasetIdentifier( "WGCM8",
+                                                                         metaFactory.getDatasetIdentifier( metaFactory.getLocation("WGCM8"),
                                                                                                            "PRECIPITATION",
                                                                                                            "HEFS" ),
                                                                          windowMeta );
@@ -645,7 +645,7 @@ public abstract class Chart2DTestDataGenerator
                                                                          metaFactory.getDimension( "INCH" ),
                                                                          MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
                                                                          MetricConstants.MAIN,
-                                                                         metaFactory.getDatasetIdentifier( "NBBC1",
+                                                                         metaFactory.getDatasetIdentifier( metaFactory.getLocation("NBBC1"),
                                                                                                            "PRECIPITATION",
                                                                                                            "HEFS" ) );
         //Single threshold
@@ -717,7 +717,7 @@ public abstract class Chart2DTestDataGenerator
                                                                          metaFactory.getDimension( "INCH" ),
                                                                          MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE,
                                                                          MetricConstants.MAIN,
-                                                                         metaFactory.getDatasetIdentifier( "NBBC1",
+                                                                         metaFactory.getDatasetIdentifier( metaFactory.getLocation("NBBC1"),
                                                                                                            "PRECIPITATION",
                                                                                                            "HEFS" ) );
         //Single threshold
@@ -781,7 +781,7 @@ public abstract class Chart2DTestDataGenerator
                                                                          metaFactory.getDimension( "CMS" ),
                                                                          MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
                                                                          MetricConstants.MAIN,
-                                                                         metaFactory.getDatasetIdentifier( "DOSC1",
+                                                                         metaFactory.getDatasetIdentifier( metaFactory.getLocation("DOSC1"),
                                                                                                            "STREAMFLOW",
                                                                                                            "HEFS",
                                                                                                            "ESP" ) );
@@ -866,7 +866,7 @@ public abstract class Chart2DTestDataGenerator
                                                                          metaFactory.getDimension( "CMS" ),
                                                                          MetricConstants.BIAS_FRACTION,
                                                                          MetricConstants.MAIN,
-                                                                         metaFactory.getDatasetIdentifier( "ABEC2",
+                                                                         metaFactory.getDatasetIdentifier( metaFactory.getLocation("ABEC2"),
                                                                                                            "STREAMFLOW",
                                                                                                            "NWM" ) );
         double[] scores = new double[] {
@@ -949,7 +949,7 @@ public abstract class Chart2DTestDataGenerator
                                                                metaFac.getDimension( "CMS" ),
                                                                MetricConstants.TIME_TO_PEAK_ERROR,
                                                                MetricConstants.MAIN,
-                                                               metaFac.getDatasetIdentifier( "DRRC2",
+                                                               metaFac.getDatasetIdentifier( metaFac.getLocation("DRRC2"),
                                                                                              "Streamflow",
                                                                                              "HEFS" ),
                                                                window );
@@ -1001,7 +1001,7 @@ public abstract class Chart2DTestDataGenerator
                                                                metaFac.getDimension( "CMS" ),
                                                                MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
                                                                MetricConstants.MAIN,
-                                                               metaFac.getDatasetIdentifier( "DRRC2",
+                                                               metaFac.getDatasetIdentifier( metaFac.getLocation("DRRC2"),
                                                                                              "Streamflow",
                                                                                              "HEFS" ),
                                                                window );

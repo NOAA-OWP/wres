@@ -5,6 +5,7 @@ import java.util.Objects;
 
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.Dimension;
+import wres.datamodel.Location;
 import wres.datamodel.MetricConstants;
 
 /**
@@ -88,7 +89,7 @@ public interface MetadataFactory
      * @return a dataset identifier
      */
 
-    default DatasetIdentifier getDatasetIdentifier( final String geospatialID, final String variableID )
+    default DatasetIdentifier getDatasetIdentifier( final Location geospatialID, final String variableID )
     {
         return getDatasetIdentifier( geospatialID, variableID, null, null );
     }
@@ -102,7 +103,7 @@ public interface MetadataFactory
      * @return a dataset identifier
      */
 
-    default DatasetIdentifier getDatasetIdentifier( final String geospatialID,
+    default DatasetIdentifier getDatasetIdentifier( final Location geospatialID,
                                                     final String variableID,
                                                     final String scenarioID )
     {
@@ -323,10 +324,57 @@ public interface MetadataFactory
      * @return a dataset identifier
      */
 
-    DatasetIdentifier getDatasetIdentifier( final String geospatialID,
+    DatasetIdentifier getDatasetIdentifier( final Location geospatialID,
                                             final String variableID,
                                             final String scenarioID,
                                             final String baselineScenarioID );
+
+    /**
+     * Returns a location
+     *
+     * @param vectorIdentifier An optional identifier for vector locations (may be null)
+     * @param locationName An optional name for a location (may be null)
+     * @param longitude An optional longitudinal coordinate for a location (may be null)
+     * @param latitude An optional latitudinal coordinate for a location (may be null)
+     * @param gageId And optional identifier for a gage (may be null)
+     * @return A location
+     */
+    Location getLocation(final Long vectorIdentifier,
+                         final String locationName,
+                         final Float longitude,
+                         final Float latitude,
+                         final String gageId);
+
+    /**
+     * Returns a location
+     * @param longitude An optional longitudinal coordinate for a location (may be null)
+     * @param latitude An optional latitudinal coordinate for a location (may be null)
+     * @return A location
+     */
+    default Location getLocation(final Float longitude, final Float latitude)
+    {
+        return this.getLocation( null, null, longitude, latitude, null );
+    }
+
+    /**
+     * Returns a location
+     * @param locationName An optional name for a location (may be null)
+     * @return A location
+     */
+    default Location getLocation(final String locationName)
+    {
+        return this.getLocation( null, locationName, null, null, null );
+    }
+
+    /**
+     * Returns a location
+     * @param vectorIdentifier An optional vector identifier for a location (may be null)
+     * @return A location
+     */
+    default Location getLocation(final Long vectorIdentifier)
+    {
+        return this.getLocation( vectorIdentifier, null, null, null, null );
+    }
 
     /**
      * Returns a {@link Dimension} that is nominally dimensionless.

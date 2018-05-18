@@ -84,7 +84,7 @@ public class CommaSeparatedDiagramOutputTest extends CommaSeparatedWriterTest
         // which requires a datasetidentifier..
 
         DatasetIdentifier datasetIdentifier =
-                metaFac.getDatasetIdentifier( LID,
+                metaFac.getDatasetIdentifier( metaFac.getLocation( LID ),
                                               "SQIN",
                                               "HEFS",
                                               "ESP" );

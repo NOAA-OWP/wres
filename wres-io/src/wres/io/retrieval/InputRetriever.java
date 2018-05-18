@@ -32,6 +32,7 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.Dimension;
+import wres.datamodel.Location;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.inputs.MetricInputException;
@@ -1193,8 +1194,23 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
 
         MetadataFactory metadataFactory = dataFactory.getMetadataFactory();
         Dimension dim = metadataFactory.getDimension( this.projectDetails.getDesiredMeasurementUnit());
+        Float longitude = null;
+        Float latitude = null;
 
-        String geospatialIdentifier = ConfigHelper.getFeatureDescription(this.feature);
+        if (this.feature.getCoordinate() != null)
+        {
+            longitude = this.feature.getCoordinate().getLongitude();
+            latitude = this.feature.getCoordinate().getLatitude();
+        }
+
+        Location geospatialIdentifier = metadataFactory.getLocation(
+                this.feature.getComid(),
+                this.feature.getLocationId(),
+                longitude,
+                latitude,
+                this.feature.getGageId()
+        );
+
         // Get the variable identifier
         String variableIdentifier = ConfigHelper.getVariableIdFromProjectConfig( projectConfig, isBaseline );
 

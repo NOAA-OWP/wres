@@ -76,7 +76,7 @@ public final class ReliabilityDiagramTest
                                            metaFac.getDimension(),
                                            MetricConstants.RELIABILITY_DIAGRAM,
                                            MetricConstants.MAIN,
-                                           metaFac.getDatasetIdentifier( "Tampere", "MAP", "FMI" ) );
+                                           metaFac.getDatasetIdentifier( metaFac.getLocation("Tampere"), "MAP", "FMI" ) );
 
         //Check the results       
         final MultiVectorOutput actual = rel.apply( input );

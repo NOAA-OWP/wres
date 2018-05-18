@@ -61,7 +61,7 @@ public final class VolumetricEfficiencyTest
                                                                    metaFac.getDimension( "MM/DAY" ),
                                                                    MetricConstants.VOLUMETRIC_EFFICIENCY,
                                                                    MetricConstants.MAIN,
-                                                                   metaFac.getDatasetIdentifier( "103.1",
+                                                                   metaFac.getDatasetIdentifier( metaFac.getLocation("103.1"),
                                                                                                  "QME",
                                                                                                  "NVE" ),
                                                                    window );

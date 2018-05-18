@@ -78,7 +78,7 @@ public final class ProbabilityOfDetectionTest
                                           metaFac.getDimension(),
                                           MetricConstants.PROBABILITY_OF_DETECTION,
                                           MetricConstants.MAIN,
-                                          metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ) );
+                                          metaFac.getDatasetIdentifier( metaFac.getLocation("DRRC2"), "SQIN", "HEFS" ) );
     }    
     
     /**

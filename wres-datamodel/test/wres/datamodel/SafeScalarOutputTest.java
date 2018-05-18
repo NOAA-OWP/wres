@@ -27,24 +27,27 @@ public final class SafeScalarOutputTest
     {
         final DataFactory d = DefaultDataFactory.getInstance();
         final MetadataFactory metaFac = d.getMetadataFactory();
+        final Location l1 = metaFac.getLocation( "A" );
         final MetricOutputMetadata m1 = metaFac.getOutputMetadata(10,
                                                                   metaFac.getDimension(),
                                                                   metaFac.getDimension("CMS"),
                                                                   MetricConstants.CONTINGENCY_TABLE,
                                                                   MetricConstants.MAIN,
-                                                                  metaFac.getDatasetIdentifier("A", "B", "C"));
+                                                                  metaFac.getDatasetIdentifier(l1, "B", "C"));
+        final Location l2 = metaFac.getLocation( "A" );
         final MetricOutputMetadata m2 = metaFac.getOutputMetadata(11,
                                                                   metaFac.getDimension(),
                                                                   metaFac.getDimension("CMS"),
                                                                   MetricConstants.CONTINGENCY_TABLE,
                                                                   MetricConstants.MAIN,
-                                                                  metaFac.getDatasetIdentifier("A", "B", "C"));
+                                                                  metaFac.getDatasetIdentifier(l2, "B", "C"));
+        final Location l3 = metaFac.getLocation( "B" );
         final MetricOutputMetadata m3 = metaFac.getOutputMetadata(10,
                                                                   metaFac.getDimension(),
                                                                   metaFac.getDimension("CMS"),
                                                                   MetricConstants.CONTINGENCY_TABLE,
                                                                   MetricConstants.MAIN,
-                                                                  metaFac.getDatasetIdentifier("B", "B", "C"));
+                                                                  metaFac.getDatasetIdentifier(l3, "B", "C"));
         final ScoreOutput s = d.ofDoubleScoreOutput(1.0, m1);
         final ScoreOutput t = d.ofDoubleScoreOutput(1.0, m1);
         assertTrue("Expected equal outputs.", s.equals(t));
@@ -69,12 +72,13 @@ public final class SafeScalarOutputTest
     {
         final DataFactory d = DefaultDataFactory.getInstance();
         final MetadataFactory metaFac = d.getMetadataFactory();
+        final Location l1 = metaFac.getLocation( "A" );
         final MetricOutputMetadata m1 = metaFac.getOutputMetadata(10,
                                                                   metaFac.getDimension(),
                                                                   metaFac.getDimension("CMS"),
                                                                   MetricConstants.CONTINGENCY_TABLE,
                                                                   MetricConstants.MAIN,
-                                                                  metaFac.getDatasetIdentifier("A", "B", "C"));
+                                                                  metaFac.getDatasetIdentifier(l1, "B", "C"));
         final ScoreOutput s = d.ofDoubleScoreOutput(1.0, m1);
         final ScoreOutput t = d.ofDoubleScoreOutput(1.0, m1);
         assertTrue("Expected equal string representations.", s.toString().equals(t.toString()));
@@ -89,18 +93,20 @@ public final class SafeScalarOutputTest
     {
         final DataFactory d = DefaultDataFactory.getInstance();
         final MetadataFactory metaFac = d.getMetadataFactory();
+        final Location l1 = metaFac.getLocation( "A" );
         final MetricOutputMetadata m1 = metaFac.getOutputMetadata(10,
                                                                   metaFac.getDimension(),
                                                                   metaFac.getDimension("CMS"),
                                                                   MetricConstants.CONTINGENCY_TABLE,
                                                                   MetricConstants.MAIN,
-                                                                  metaFac.getDatasetIdentifier("A", "B", "C"));
+                                                                  metaFac.getDatasetIdentifier(l1, "B", "C"));
+        final Location l2 = metaFac.getLocation( "B" );
         final MetricOutputMetadata m2 = metaFac.getOutputMetadata(10,
                                                                   metaFac.getDimension(),
                                                                   metaFac.getDimension("CMS"),
                                                                   MetricConstants.CONTINGENCY_TABLE,
                                                                   MetricConstants.MAIN,
-                                                                  metaFac.getDatasetIdentifier("B", "B", "C"));
+                                                                  metaFac.getDatasetIdentifier(l2, "B", "C"));
         final ScoreOutput q = d.ofDoubleScoreOutput(1.0, m1);
         final ScoreOutput r = d.ofDoubleScoreOutput(1.0, m2);
         assertTrue("Unequal metadata.", !q.getMetadata().equals(r.getMetadata()));
@@ -115,24 +121,27 @@ public final class SafeScalarOutputTest
     {
         final DataFactory d = DefaultDataFactory.getInstance();
         final MetadataFactory metaFac = d.getMetadataFactory();
+        final Location l1 = metaFac.getLocation( "A" );
         final MetricOutputMetadata m1 = metaFac.getOutputMetadata(10,
                                                                   metaFac.getDimension(),
                                                                   metaFac.getDimension("CMS"),
                                                                   MetricConstants.CONTINGENCY_TABLE,
                                                                   MetricConstants.MAIN,
-                                                                  metaFac.getDatasetIdentifier("A", "B", "C"));
+                                                                  metaFac.getDatasetIdentifier(l1, "B", "C"));
+        final Location l2 = metaFac.getLocation( "A" );
         final MetricOutputMetadata m2 = metaFac.getOutputMetadata(10,
                                                                   metaFac.getDimension(),
                                                                   metaFac.getDimension("CMS"),
                                                                   MetricConstants.CONTINGENCY_TABLE,
                                                                   MetricConstants.MAIN,
-                                                                  metaFac.getDatasetIdentifier("A", "B", "C"));
+                                                                  metaFac.getDatasetIdentifier(l2, "B", "C"));
+        final Location l3 = metaFac.getLocation( "B" );
         final MetricOutputMetadata m3 = metaFac.getOutputMetadata(10,
                                                                   metaFac.getDimension(),
                                                                   metaFac.getDimension("CMS"),
                                                                   MetricConstants.CONTINGENCY_TABLE,
                                                                   MetricConstants.MAIN,
-                                                                  metaFac.getDatasetIdentifier("B", "B", "C"));
+                                                                  metaFac.getDatasetIdentifier(l3, "B", "C"));
         final ScoreOutput q = d.ofDoubleScoreOutput(1.0, m1);
         final ScoreOutput r = d.ofDoubleScoreOutput(1.0, m2);
         assertTrue("Expected equal hash codes.", q.hashCode() == r.hashCode());

@@ -1473,7 +1473,7 @@ public class ConfigHelper
 
         // Build the path 
         StringJoiner joinElements = new StringJoiner( "_" );
-        joinElements.add( meta.getIdentifier().getGeospatialID() )
+        joinElements.add( meta.getIdentifier().getGeospatialID().toString() )
                     .add( meta.getIdentifier().getVariableID() );
 
         // Add optional scenario identifier

@@ -15,6 +15,7 @@ import java.util.Objects;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
+import wres.datamodel.Location;
 import wres.datamodel.VectorOfBooleans;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
@@ -98,10 +99,17 @@ public final class MetricTestDataFactory
         baseline.add( metIn.pairOf( 93.2, 94.8 ) );
         final MetadataFactory metFac = metIn.getMetadataFactory();
         final Metadata main = metFac.getMetadata( metFac.getDimension( "CMS" ),
-                                                  metFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ) );
+                                                  metFac.getDatasetIdentifier( getLocation( "DRRC2" ), "SQIN", "HEFS" ) );
         final Metadata base = metFac.getMetadata( metFac.getDimension( "CMS" ),
-                                                  metFac.getDatasetIdentifier( "DRRC2", "SQIN", "ESP" ) );
+                                                  metFac.getDatasetIdentifier( getLocation( "DRRC2" ), "SQIN", "ESP" ) );
         return metIn.ofSingleValuedPairs( values, baseline, main, base );
+    }
+
+    public static Location getLocation(final String locationId)
+    {
+        return DefaultDataFactory.getInstance()
+                                 .getMetadataFactory()
+                                 .getLocation( locationId );
     }
 
     /**
@@ -121,7 +129,7 @@ public final class MetricTestDataFactory
         }
         final MetadataFactory metFac = metIn.getMetadataFactory();
         final Metadata meta = metFac.getMetadata( metFac.getDimension( "CMS" ),
-                                                  metFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ) );
+                                                  metFac.getDatasetIdentifier( getLocation( "DRRC2" ), "SQIN", "HEFS" ) );
         return metIn.ofSingleValuedPairs( values, meta );
     }
 
@@ -151,7 +159,7 @@ public final class MetricTestDataFactory
                                                  ReferenceTime.VALID_TIME,
                                                  Duration.ofHours( 1 ) );
         final Metadata meta = metFac.getMetadata( metFac.getDimension( "CMS" ),
-                                                  metFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ),
+                                                  metFac.getDatasetIdentifier( getLocation( "DRRC2" ), "SQIN", "HEFS" ),
                                                   window );
         return metIn.ofSingleValuedPairs( values, meta );
     }
@@ -196,7 +204,7 @@ public final class MetricTestDataFactory
                                                  ReferenceTime.VALID_TIME,
                                                  Duration.ofHours( 24 ) );
         final Metadata meta = metFac.getMetadata( metFac.getDimension( "MM/DAY" ),
-                                                  metFac.getDatasetIdentifier( "103.1", "QME", "NVE" ),
+                                                  metFac.getDatasetIdentifier( getLocation( "103.1" ), "QME", "NVE" ),
                                                   window );
         return metIn.ofSingleValuedPairs( values, meta );
     }
@@ -220,7 +228,7 @@ public final class MetricTestDataFactory
                                                  ReferenceTime.VALID_TIME,
                                                  Duration.ofHours( 24 ) );
         final Metadata meta = metFac.getMetadata( metFac.getDimension( "MM/DAY" ),
-                                                  metFac.getDatasetIdentifier( "A", "MAP" ),
+                                                  metFac.getDatasetIdentifier( getLocation( "A" ), "MAP" ),
                                                   window );
         return metIn.ofSingleValuedPairs( values, meta );
     }
@@ -237,9 +245,9 @@ public final class MetricTestDataFactory
         final DataFactory metIn = DefaultDataFactory.getInstance();
         final MetadataFactory metFac = metIn.getMetadataFactory();
         final Metadata main = metFac.getMetadata( metFac.getDimension( "CMS" ),
-                                                  metFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ) );
+                                                  metFac.getDatasetIdentifier( getLocation( "DRRC2" ), "SQIN", "HEFS" ) );
         final Metadata base = metFac.getMetadata( metFac.getDimension( "CMS" ),
-                                                  metFac.getDatasetIdentifier( "DRRC2", "SQIN", "ESP" ) );
+                                                  metFac.getDatasetIdentifier( getLocation( "DRRC2" ), "SQIN", "ESP" ) );
         return metIn.ofSingleValuedPairs( Collections.emptyList(), Collections.emptyList(), main, base );
     }
 
@@ -276,10 +284,10 @@ public final class MetricTestDataFactory
                                                  ReferenceTime.VALID_TIME,
                                                  Duration.ofHours( 24 ) );
         final Metadata meta = metFac.getMetadata( metFac.getDimension( "CMS" ),
-                                                  metFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ),
+                                                  metFac.getDatasetIdentifier( getLocation( "DRRC2" ), "SQIN", "HEFS" ),
                                                   window );
         final Metadata baseMeta = metFac.getMetadata( metFac.getDimension( "CMS" ),
-                                                      metFac.getDatasetIdentifier( "DRRC2", "SQIN", "ESP" ),
+                                                      metFac.getDatasetIdentifier( getLocation( "DRRC2" ), "SQIN", "ESP" ),
                                                       window );
         return metIn.ofEnsemblePairs( values,
                                       values,
@@ -326,7 +334,7 @@ public final class MetricTestDataFactory
                                                  ReferenceTime.VALID_TIME,
                                                  Duration.ofHours( 24 ) );
         final Metadata meta = metFac.getMetadata( metFac.getDimension( "CMS" ),
-                                                  metFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ),
+                                                  metFac.getDatasetIdentifier( getLocation( "DRRC2" ), "SQIN", "HEFS" ),
                                                   window );
         return metIn.ofEnsemblePairs( values,
                                       meta,
@@ -366,7 +374,7 @@ public final class MetricTestDataFactory
                                                  ReferenceTime.VALID_TIME,
                                                  Duration.ofHours( 24 ) );
         final Metadata meta = metFac.getMetadata( metFac.getDimension( "CMS" ),
-                                                  metFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ),
+                                                  metFac.getDatasetIdentifier( getLocation( "DRRC2" ), "SQIN", "HEFS" ),
                                                   window );
         return metIn.ofEnsemblePairs( values,
                                       meta,
@@ -391,7 +399,7 @@ public final class MetricTestDataFactory
                                                  ReferenceTime.VALID_TIME,
                                                  Duration.ofHours( 24 ) );
         final Metadata meta = metFac.getMetadata( metFac.getDimension( "MM/DAY" ),
-                                                  metFac.getDatasetIdentifier( "A", "MAP" ),
+                                                  metFac.getDatasetIdentifier( getLocation( "DRRC2" ), "MAP" ),
                                                   window );
         return metIn.ofEnsemblePairs( values, meta );
     }
@@ -412,7 +420,7 @@ public final class MetricTestDataFactory
                                                  ReferenceTime.VALID_TIME,
                                                  Duration.ofHours( 24 ) );
         final Metadata meta = metFac.getMetadata( metFac.getDimension( "MM/DAY" ),
-                                                  metFac.getDatasetIdentifier( "A", "MAP" ),
+                                                  metFac.getDatasetIdentifier( getLocation( "DRRC2" ), "MAP" ),
                                                   window );
         return metIn.ofEnsemblePairs( Collections.emptyList(), Collections.emptyList(), meta, meta );
     }
@@ -451,7 +459,7 @@ public final class MetricTestDataFactory
         }
         final MetadataFactory metFac = metIn.getMetadataFactory();
         final Metadata meta = metFac.getMetadata( metFac.getDimension(),
-                                                  metFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ) );
+                                                  metFac.getDatasetIdentifier( getLocation( "DRRC2" ), "SQIN", "HEFS" ) );
         return metIn.ofDichotomousPairs( values, meta ); //Construct the pairs
     }
 
@@ -514,7 +522,7 @@ public final class MetricTestDataFactory
         }
         final MetadataFactory metFac = metIn.getMetadataFactory();
         final Metadata meta = metFac.getMetadata( metFac.getDimension(),
-                                                  metFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ) );
+                                                  metFac.getDatasetIdentifier( getLocation( "DRRC2" ), "SQIN", "HEFS" ) );
         return metIn.ofMulticategoryPairs( values, meta ); //Construct the pairs
     }
 
@@ -537,7 +545,7 @@ public final class MetricTestDataFactory
         values.add( metIn.pairOf( 1, 1.0 / 5.0 ) );
         final MetadataFactory metFac = metIn.getMetadataFactory();
         final Metadata meta = metFac.getMetadata( metFac.getDimension(),
-                                                  metFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ) );
+                                                  metFac.getDatasetIdentifier( getLocation( "DRRC2" ), "SQIN", "HEFS" ) );
         return metIn.ofDiscreteProbabilityPairs( values, meta );
     }
 
@@ -567,9 +575,9 @@ public final class MetricTestDataFactory
         baseline.add( metIn.pairOf( 1, 1.0 / 5.0 ) );
         final MetadataFactory metFac = metIn.getMetadataFactory();
         final Metadata main = metFac.getMetadata( metFac.getDimension(),
-                                                  metFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ) );
+                                                  metFac.getDatasetIdentifier( getLocation( "DRRC2" ), "SQIN", "HEFS" ) );
         final Metadata base = metFac.getMetadata( metFac.getDimension(),
-                                                  metFac.getDatasetIdentifier( "DRRC2", "SQIN", "ESP" ) );
+                                                  metFac.getDatasetIdentifier( getLocation( "DRRC2" ), "SQIN", "ESP" ) );
         return metIn.ofDiscreteProbabilityPairs( values, baseline, main, base );
     }
 
@@ -939,7 +947,7 @@ public final class MetricTestDataFactory
         values.add( metIn.pairOf( 0, 0.1 ) );
         final MetadataFactory metFac = metIn.getMetadataFactory();
         final Metadata main = metFac.getMetadata( metFac.getDimension(),
-                                                  metFac.getDatasetIdentifier( "Tampere", "MAP", "FMI" ) );
+                                                  metFac.getDatasetIdentifier( getLocation( "Tampere" ), "MAP", "FMI" ) );
         return metIn.ofDiscreteProbabilityPairs( values, main );
     }
 
@@ -961,7 +969,7 @@ public final class MetricTestDataFactory
         values.add( metIn.pairOf( 0, 1.0 / 5.0 ) );
         final MetadataFactory metFac = metIn.getMetadataFactory();
         final Metadata meta = metFac.getMetadata( metFac.getDimension(),
-                                                  metFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ) );
+                                                  metFac.getDatasetIdentifier( getLocation( "DRRC2"), "SQIN", "HEFS" ) );
         return metIn.ofDiscreteProbabilityPairs( values, meta );
     }
 
@@ -1001,7 +1009,7 @@ public final class MetricTestDataFactory
                                                  Duration.ofHours( 6 ),
                                                  Duration.ofHours( 18 ) );
         final Metadata metaData = metaFac.getMetadata( metaFac.getDimension( "CMS" ),
-                                                       metaFac.getDatasetIdentifier( "A",
+                                                       metaFac.getDatasetIdentifier( getLocation( "A"),
                                                                                      "Streamflow" ),
                                                        window );
         // Build the time-series
@@ -1039,7 +1047,7 @@ public final class MetricTestDataFactory
                                                  Duration.ofHours( 6 ),
                                                  Duration.ofHours( 18 ) );
         final Metadata metaData = metaFac.getMetadata( metaFac.getDimension( "CMS" ),
-                                                       metaFac.getDatasetIdentifier( "A",
+                                                       metaFac.getDatasetIdentifier( getLocation( "A"),
                                                                                      "Streamflow" ),
                                                        window );
         // Build the time-series
@@ -1078,7 +1086,7 @@ public final class MetricTestDataFactory
                                                  Duration.ofHours( 6 ),
                                                  Duration.ofHours( 18 ) );
         final Metadata metaData = metaFac.getMetadata( metaFac.getDimension( "CMS" ),
-                                                       metaFac.getDatasetIdentifier( "A",
+                                                       metaFac.getDatasetIdentifier( getLocation( "A"),
                                                                                      "Streamflow" ),
                                                        window );
         // Build the time-series
@@ -1106,7 +1114,7 @@ public final class MetricTestDataFactory
         final TimeWindow window = TimeWindow.of( Instant.MIN,
                                                  Instant.MAX );
         final Metadata metaData = metaFac.getMetadata( metaFac.getDimension( "CMS" ),
-                                                       metaFac.getDatasetIdentifier( "A",
+                                                       metaFac.getDatasetIdentifier( getLocation( "A"),
                                                                                      "Streamflow" ),
                                                        window );
         // Build the time-series
@@ -1148,7 +1156,7 @@ public final class MetricTestDataFactory
                                                  Duration.ofHours( 6 ),
                                                  Duration.ofHours( 30 ) );
         final Metadata metaData = metaFac.getMetadata( metaFac.getDimension( "CMS" ),
-                                                       metaFac.getDatasetIdentifier( "A",
+                                                       metaFac.getDatasetIdentifier( getLocation( "A"),
                                                                                      "Streamflow" ),
                                                        window );
         // Build the time-series

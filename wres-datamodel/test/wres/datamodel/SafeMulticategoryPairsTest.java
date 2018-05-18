@@ -40,8 +40,9 @@ public final class SafeMulticategoryPairsTest
         {
             values.add(metIn.vectorOf(new boolean[]{true, true}));
         }
+        final Location l1 = metaFac.getLocation( "DRRC2" );
         final Metadata meta = metaFac.getMetadata(metaFac.getDimension(),
-                                                  metaFac.getDatasetIdentifier("DRRC2", "SQIN", "HEFS"));
+                                                  metaFac.getDatasetIdentifier(l1, "SQIN", "HEFS"));
         MulticategoryPairs p = (MulticategoryPairs)b.addData(values).setMetadata(meta).build();
 
         //Check category count

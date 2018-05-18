@@ -81,7 +81,7 @@ public final class BoxPlotErrorByObservedTest
                                            ReferenceTime.VALID_TIME,
                                            Duration.ofHours( 24 ) );
         Metadata meta = metFac.getMetadata( metFac.getDimension( "MM/DAY" ),
-                                            metFac.getDatasetIdentifier( "A", "MAP" ),
+                                            metFac.getDatasetIdentifier( metaFac.getLocation("A"), "MAP" ),
                                             window );
 
         EnsemblePairs input = outF.ofEnsemblePairs( values, meta );
@@ -91,7 +91,7 @@ public final class BoxPlotErrorByObservedTest
                                                                    metFac.getDimension( "MM/DAY" ),
                                                                    MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
                                                                    MetricConstants.MAIN,
-                                                                   metFac.getDatasetIdentifier( "A", "MAP" ),
+                                                                   metFac.getDatasetIdentifier( metaFac.getLocation("A"), "MAP" ),
                                                                    window );
 
         //Compute normally

@@ -2,6 +2,7 @@ package wres.io.concurrency;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -40,13 +41,18 @@ public final class Executor {
 	 */
 	private static ThreadPoolExecutor createService()
 	{
-		if (SERVICE != null)
-		{
-			SERVICE.shutdown();
-		}
-
 		ThreadFactory factory = runnable -> new Thread(runnable, "Executor Thread");
-		return (ThreadPoolExecutor)Executors.newFixedThreadPool(SystemSettings.maximumThreadCount(), factory);
+		ThreadPoolExecutor executor = new ThreadPoolExecutor(
+				SystemSettings.maximumThreadCount(),
+				SystemSettings.maximumThreadCount(),
+				SystemSettings.poolObjectLifespan(),
+				TimeUnit.MILLISECONDS,
+				new ArrayBlockingQueue<>( SystemSettings.maximumThreadCount() * 5 ),
+				factory
+		);
+
+		executor.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
+		return executor;
 	}
 
 	private static ThreadPoolExecutor createHighPriorityService()

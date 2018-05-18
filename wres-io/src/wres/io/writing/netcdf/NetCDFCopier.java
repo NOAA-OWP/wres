@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -67,27 +68,29 @@ public class NetCDFCopier implements Closeable
     private NetcdfFileWriter writer;
 
     public NetCDFCopier( final String fromFilename, final String targetFileName )
+            throws IOException
     {
         this.fromFileName = fromFilename;
         this.targetFileName = targetFileName;
+        this.copyGlobalAttributes();
+        this.copyDimensions();
+        this.copyVariables();
     }
 
-    public NetcdfFile write() throws IOException
+    public NetcdfFileWriter write() throws IOException
     {
+        this.getWriter().create();
         try
         {
-            this.copyGlobalAttributes();
-            this.copyDimensions();
-            this.copyVariables();
             this.copyOriginalData();
         }
-        catch ( InvalidRangeException e )
+        catch (  InvalidRangeException e )
         {
             throw new IOException( "Data from the original file could not be "
                                    + "copied into the new version.", e );
         }
 
-        return this.getWriter().getNetcdfFile();
+        return this.getWriter();
     }
 
     private NetcdfFile getSource() throws IOException
@@ -106,6 +109,8 @@ public class NetCDFCopier implements Closeable
             Files.deleteIfExists( Paths.get(this.targetFileName ));
             this.writer = NetcdfFileWriter.createNew( NETCDF_VERSION,
                                                       this.targetFileName );
+            this.writer.setFill( true );
+            this.writer.setLargeFile( true );
         }
         return this.writer;
     }
@@ -294,7 +299,7 @@ public class NetCDFCopier implements Closeable
        this.addGlobalAttribute( newAttribute );
     }
 
-    public void addVariable( String name,
+    void addVariable( String name,
                              DataType dataType,
                              List<String> dimensionNames,
                              Map<String, Object> attributes )
@@ -319,7 +324,18 @@ public class NetCDFCopier implements Closeable
             }
         }
 
-        this.getWriter().addVariable( name, dataType, dimensions );
+        Variable var = this.getWriter().addVariable( name, dataType, dimensions );
+
+        this.getWriter().addVariableAttribute( name, "_FillValue", -999 );
+        this.getWriter().addVariableAttribute( name, "missing_value", -999 );
+
+        Attribute validRange = new Attribute( "valid_range", Arrays.asList(-100000, 100000) );
+
+        this.getWriter().addVariableAttribute( name, validRange );
+
+        Attribute chunkSizes = new Attribute( "_ChunkSizes", 905633 );
+
+        this.getWriter().addVariableAttribute( name, chunkSizes );
 
         for (Map.Entry<String, Object> keyValue : attributes.entrySet())
         {
@@ -334,6 +350,41 @@ public class NetCDFCopier implements Closeable
                                                        String.valueOf(keyValue.getValue()) );
             }
         }
+    }
+
+    public boolean isGridded() throws IOException
+    {
+        boolean hasX = Collections.exists(
+                this.dimensionsToCopy,
+                dimension -> dimension.getShortName().equalsIgnoreCase( "x" )
+        );
+        hasX = hasX || this.getWriter().findVariable( "x" ) != null;
+
+        boolean hasY = Collections.exists(
+                this.dimensionsToCopy,
+                dimension -> dimension.getShortName().equalsIgnoreCase( "y" )
+        );
+        hasY = hasY || this.getWriter().findVariable( "y" ) != null;
+
+        return hasX && hasY;
+    }
+
+    public List<String> getMetricDimensionNames() throws IOException
+    {
+        List<String> dimensionList = new ArrayList<>(  );
+
+        if (this.isGridded())
+        {
+            dimensionList.add( "y" );
+            dimensionList.add("x");
+        }
+        else
+        {
+            // TODO: find a way to make the vector dimension name programatic and not hard coded
+            dimensionList.add("feature_id");
+        }
+
+        return dimensionList;
     }
 
     @Override

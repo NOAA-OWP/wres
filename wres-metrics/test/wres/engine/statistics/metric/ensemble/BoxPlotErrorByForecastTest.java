@@ -82,7 +82,7 @@ public final class BoxPlotErrorByForecastTest
                                            ReferenceTime.VALID_TIME,
                                            Duration.ofHours( 24 ) );
         final Metadata meta = metFac.getMetadata( metFac.getDimension( "MM/DAY" ),
-                                                  metFac.getDatasetIdentifier( "A", "MAP" ),
+                                                  metFac.getDatasetIdentifier( metaFac.getLocation("A"), "MAP" ),
                                                   window );
         EnsemblePairs input = outF.ofEnsemblePairs( values, meta );
 
@@ -91,7 +91,7 @@ public final class BoxPlotErrorByForecastTest
                                                                    metFac.getDimension( "MM/DAY" ),
                                                                    MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE,
                                                                    MetricConstants.MAIN,
-                                                                   metFac.getDatasetIdentifier( "A", "MAP" ),
+                                                                   metFac.getDatasetIdentifier( metaFac.getLocation("A"), "MAP" ),
                                                                    window );
 
         //Compute normally
@@ -130,7 +130,7 @@ public final class BoxPlotErrorByForecastTest
                                            ReferenceTime.VALID_TIME,
                                            Duration.ofHours( 24 ) );
         final Metadata meta = metFac.getMetadata( metFac.getDimension( "MM/DAY" ),
-                                                  metFac.getDatasetIdentifier( "A", "MAP" ),
+                                                  metFac.getDatasetIdentifier( metaFac.getLocation("A"), "MAP" ),
                                                   window );
         EnsemblePairs input = outF.ofEnsemblePairs( values, meta );
 
@@ -139,7 +139,7 @@ public final class BoxPlotErrorByForecastTest
                                                                    metFac.getDimension( "MM/DAY" ),
                                                                    MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE,
                                                                    MetricConstants.MAIN,
-                                                                   metFac.getDatasetIdentifier( "A", "MAP" ),
+                                                                   metFac.getDatasetIdentifier( metaFac.getLocation("A"), "MAP" ),
                                                                    window );
 
         //Build the metric

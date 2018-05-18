@@ -76,7 +76,7 @@ public final class RelativeOperatingCharacteristicDiagramTest
                                            metaFac.getDimension(),
                                            MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
                                            MetricConstants.MAIN,
-                                           metaFac.getDatasetIdentifier( "Tampere", "MAP", "FMI" ) );
+                                           metaFac.getDatasetIdentifier( metaFac.getLocation("Tampere"), "MAP", "FMI" ) );
 
         //Check the results       
         final MultiVectorOutput actual = roc.apply( input );
