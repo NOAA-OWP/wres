@@ -14,12 +14,9 @@ import java.util.HashMap;
 import java.util.Map.Entry;
 import java.util.StringJoiner;
 
-import javax.print.attribute.standard.Destination;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.ProjectConfigException;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.Feature;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
@@ -307,7 +304,7 @@ public class PairWriter extends WRESCallable<Boolean>
     }
 
     @Override
-    protected Boolean execute() throws IOException, ProjectConfigException
+    protected Boolean execute() throws IOException
     {
         File directoryFromDestinationConfig =
                 ConfigHelper.getDirectoryFromDestinationConfig( this.getDestinationConfig() );
@@ -402,14 +399,7 @@ public class PairWriter extends WRESCallable<Boolean>
                     "No date was specified for when the paired data occurred." );
         }
 
-        try
-        {
-            ConfigHelper.getDirectoryFromDestinationConfig( this.getDestinationConfig() );
-        }
-        catch ( ProjectConfigException pce )
-        {
-            throw new IllegalArgumentException( "The PairWriter needs a valid destination", pce );
-        }
+        ConfigHelper.getDirectoryFromDestinationConfig( this.getDestinationConfig() );
     }
 
     @Override

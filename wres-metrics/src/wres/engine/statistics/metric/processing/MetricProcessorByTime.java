@@ -248,7 +248,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
                            final ExecutorService thresholdExecutor,
                            final ExecutorService metricExecutor,
                            final Set<MetricOutputGroup> mergeSet )
-            throws MetricConfigException, MetricParameterException
+            throws MetricParameterException
     {
         super( dataFactory, config, externalThresholds, thresholdExecutor, metricExecutor, mergeSet );
     }

@@ -21,7 +21,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.config.MetricConfigException;
-import wres.config.ProjectConfigException;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
@@ -115,7 +114,7 @@ public final class MetricConfigHelperTest
      */
 
     @Test
-    public void testFromMetricName() throws MetricConfigException
+    public void testFromMetricName()
     {
         //Check for mapping without exception
         for ( MetricConfigName nextConfig : MetricConfigName.values() )
@@ -140,7 +139,7 @@ public final class MetricConfigHelperTest
      */
 
     @Test
-    public void testExceptionFromMetricNameWithNullInput() throws MetricConfigException
+    public void testExceptionFromMetricNameWithNullInput()
     {
         exception.expect( NullPointerException.class );
         exception.expectMessage( "Specify input configuration with a non-null name to map" );
@@ -153,7 +152,7 @@ public final class MetricConfigHelperTest
      */
 
     @Test
-    public void testFromSummaryStatisticsName() throws MetricConfigException
+    public void testFromSummaryStatisticsName()
     {
         //Check for mapping without exception
         for ( SummaryStatisticsName nextStat : SummaryStatisticsName.values() )
@@ -178,7 +177,7 @@ public final class MetricConfigHelperTest
      */
 
     @Test
-    public void testExceptionFromSummaryStatisticsNameWithNullInput() throws MetricConfigException
+    public void testExceptionFromSummaryStatisticsNameWithNullInput()
     {
         exception.expect( NullPointerException.class );
         exception.expectMessage( "Specify input configuration with a non-null name to map" );
@@ -192,7 +191,7 @@ public final class MetricConfigHelperTest
      */
 
     @Test
-    public void testGetMetricsFromConfig() throws MetricConfigException
+    public void testGetMetricsFromConfig()
     {
         assertTrue( MetricConfigHelper.getMetricsFromConfig( defaultMockedConfig )
                                       .equals( new HashSet<>( Arrays.asList( MetricConstants.BIAS_FRACTION,
@@ -208,7 +207,7 @@ public final class MetricConfigHelperTest
      */
 
     @Test
-    public void testGetThresholdsFromConfigWithoutExternalThresholdsOrDimension() throws MetricConfigException
+    public void testGetThresholdsFromConfigWithoutExternalThresholdsOrDimension()
     {
 
         // Compute combined thresholds
@@ -294,7 +293,7 @@ public final class MetricConfigHelperTest
      */
 
     @Test
-    public void testGetThresholdsFromConfigWithExternalThresholdsAndDimension() throws MetricConfigException
+    public void testGetThresholdsFromConfigWithExternalThresholdsAndDimension()
     {
 
         // Obtain the threshold dimension
@@ -379,7 +378,7 @@ public final class MetricConfigHelperTest
      * Tests a method with private scope in {@link MetricConfigHelper} using thresholds with a 
      * {@link Operator#BETWEEN} condition. TODO: expose this and test via 
      * {@link MetricConfigHelper#getThresholdsFromConfig(ProjectConfig, DataFactory, java.util.Collection)} once 
-     * the {@link ProjectConfigException} supports thresholds with a {@link Operator#BETWEEN} condition.
+     * the {@link ProjectConfig} supports thresholds with a {@link Operator#BETWEEN} condition.
      * @throws MetricConfigException if an unexpected exception is encountered
      * @throws SecurityException if the reflection fails via a security manager
      * @throws NoSuchMethodException if a matching method is not found
@@ -390,7 +389,7 @@ public final class MetricConfigHelperTest
      */
 
     @Test
-    public void testGetThresholdsFromConfigWithBetweenCondition() throws MetricConfigException, NoSuchMethodException,
+    public void testGetThresholdsFromConfigWithBetweenCondition() throws NoSuchMethodException,
             SecurityException, IllegalAccessException, IllegalArgumentException, InvocationTargetException
     {
 
@@ -456,7 +455,7 @@ public final class MetricConfigHelperTest
      */
 
     @Test
-    public void testHasSummaryStatisticsForNamedMetric() throws MetricConfigException
+    public void testHasSummaryStatisticsForNamedMetric()
     {
         // Mock some metrics
         List<TimeSeriesMetricConfig> timeSeriesMetrics = new ArrayList<>();
@@ -509,7 +508,7 @@ public final class MetricConfigHelperTest
      */
 
     @Test
-    public void testHasSummaryStatisticsForAllValid() throws MetricConfigException
+    public void testHasSummaryStatisticsForAllValid()
     {
         // Mock some metrics
         List<TimeSeriesMetricConfig> timeSeriesMetrics = new ArrayList<>();
@@ -573,7 +572,7 @@ public final class MetricConfigHelperTest
      */
 
     @Test
-    public void testHasSummaryStatisticsThrowsExceptionOnAllValid() throws MetricConfigException
+    public void testHasSummaryStatisticsThrowsExceptionOnAllValid()
     {
         exception.expect( IllegalArgumentException.class );
         exception.expectMessage( "Cannot obtain summary statistics for the general type 'all valid' "
@@ -591,7 +590,7 @@ public final class MetricConfigHelperTest
      */
 
     @Test
-    public void testHasTheseOutputsByThresholdLead() throws MetricConfigException
+    public void testHasTheseOutputsByThresholdLead()
     {
         // Outputs by threshold and lead time required
         assertTrue( MetricConfigHelper.hasTheseOutputsByThresholdLead( defaultMockedConfig,
@@ -640,7 +639,7 @@ public final class MetricConfigHelperTest
      */
 
     @Test
-    public void testGetCachedListFromProjectConfig() throws MetricConfigException
+    public void testGetCachedListFromProjectConfig()
     {
         // No outputs configuration defined
         List<MetricConfig> metrics = new ArrayList<>();

@@ -24,8 +24,8 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.thresholds.ThresholdConstants;
-import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
+import wres.datamodel.thresholds.ThresholdsByMetric;
 
 /**
  * Provides static methods that help with ProjectConfig and its children.
@@ -89,7 +89,6 @@ public class ProjectConfigs
 
     public static Set<MetricConstants> getMetricsFromMetricsConfig( MetricsConfig metricsConfig,
                                                                     ProjectConfig projectConfig )
-            throws MetricConfigException
     {
         Objects.requireNonNull( projectConfig, NULL_CONFIGURATION_ERROR );
 
@@ -125,7 +124,6 @@ public class ProjectConfigs
 
     public static Set<MetricConstants> getTimeSeriesMetricsFromConfig( MetricsConfig metricsConfig,
                                                                        ProjectConfig projectConfig )
-            throws MetricConfigException
     {
         Objects.requireNonNull( projectConfig, NULL_CONFIGURATION_ERROR );
 
@@ -181,7 +179,6 @@ public class ProjectConfigs
 
     public static Set<MetricConstants> getOrdinaryMetricsFromConfig( MetricsConfig metricsConfig,
                                                                       ProjectConfig projectConfig )
-            throws MetricConfigException
     {
         Objects.requireNonNull( projectConfig, NULL_CONFIGURATION_ERROR );
 
@@ -237,7 +234,7 @@ public class ProjectConfigs
      * @throws NullPointerException if the input is null or the input name is null
      */
 
-    public static MetricConstants getMetricName( MetricConfig metricConfig ) throws MetricConfigException
+    public static MetricConstants getMetricName( MetricConfig metricConfig )
     {
         Objects.requireNonNull( metricConfig, NULL_CONFIGURATION_ERROR );
 
@@ -272,7 +269,6 @@ public class ProjectConfigs
      */
 
     public static MetricConstants getMetricName( TimeSeriesMetricConfig timeSeriesMetricConfig )
-            throws MetricConfigException
     {
         Objects.requireNonNull( timeSeriesMetricConfig, NULL_CONFIGURATION_ERROR );
 
@@ -309,7 +305,6 @@ public class ProjectConfigs
      */
 
     public static ThresholdConstants.ThresholdDataType getThresholdDataType( ThresholdsConfig thresholdsConfig )
-            throws MetricConfigException
     {
         Objects.requireNonNull( thresholdsConfig, NULL_CONFIGURATION_ERROR );
 
@@ -339,7 +334,6 @@ public class ProjectConfigs
      */
 
     public static ThresholdConstants.ThresholdGroup getThresholdGroup( ThresholdsConfig thresholdsConfig )
-            throws MetricConfigException
     {
         Objects.requireNonNull( thresholdsConfig, NULL_CONFIGURATION_ERROR );
 
@@ -365,7 +359,7 @@ public class ProjectConfigs
      * @throws NullPointerException if the input is null or the {@link ThresholdsConfig#getOperator()} returns null
      */
 
-    public static Operator getThresholdOperator( ThresholdsConfig thresholdsConfig ) throws MetricConfigException
+    public static Operator getThresholdOperator( ThresholdsConfig thresholdsConfig )
     {
         Objects.requireNonNull( thresholdsConfig, NULL_CONFIGURATION_ERROR );
 
@@ -400,7 +394,6 @@ public class ProjectConfigs
      */
 
     public static MetricInputGroup getMetricInputGroup( DataSourceConfig dataSourceConfig )
-            throws MetricConfigException
     {
         Objects.requireNonNull( dataSourceConfig, NULL_CONFIGURATION_ERROR );
 

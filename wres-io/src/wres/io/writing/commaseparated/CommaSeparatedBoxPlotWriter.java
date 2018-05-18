@@ -50,7 +50,7 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedWriter
      * @throws ProjectConfigException if the project configuration is not valid for writing
      */
 
-    public static CommaSeparatedBoxPlotWriter of( final ProjectConfig projectConfig ) throws ProjectConfigException
+    public static CommaSeparatedBoxPlotWriter of( final ProjectConfig projectConfig )
     {
         return new CommaSeparatedBoxPlotWriter( projectConfig );
     }
@@ -231,7 +231,7 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedWriter
      * @throws ProjectConfigException if the project configuration is not valid for writing 
      */
 
-    private CommaSeparatedBoxPlotWriter( ProjectConfig projectConfig ) throws ProjectConfigException
+    private CommaSeparatedBoxPlotWriter( ProjectConfig projectConfig )
     {
         super( projectConfig );
     }

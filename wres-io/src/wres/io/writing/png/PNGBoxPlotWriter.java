@@ -12,7 +12,6 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartEngineException;
-
 import wres.config.ProjectConfigException;
 import wres.config.ProjectConfigPlus;
 import wres.config.generated.DestinationConfig;
@@ -48,7 +47,7 @@ public class PNGBoxPlotWriter extends PNGWriter
      * @throws ProjectConfigException if the project configuration is not valid for writing
      */
 
-    public static PNGBoxPlotWriter of( final ProjectConfigPlus projectConfigPlus ) throws ProjectConfigException
+    public static PNGBoxPlotWriter of( final ProjectConfigPlus projectConfigPlus )
     {
         return new PNGBoxPlotWriter( projectConfigPlus );
     }
@@ -135,7 +134,7 @@ public class PNGBoxPlotWriter extends PNGWriter
      * @throws ProjectConfigException if the project configuration is not valid for writing 
      */
 
-    private PNGBoxPlotWriter( ProjectConfigPlus projectConfigPlus ) throws ProjectConfigException
+    private PNGBoxPlotWriter( ProjectConfigPlus projectConfigPlus )
     {
         super( projectConfigPlus );
     }

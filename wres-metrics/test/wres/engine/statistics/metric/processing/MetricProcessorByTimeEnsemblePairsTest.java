@@ -15,7 +15,6 @@ import java.util.Map.Entry;
 import java.util.function.BiPredicate;
 
 import org.apache.commons.lang3.tuple.Pair;
-import org.hamcrest.CoreMatchers;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -670,8 +669,9 @@ public final class MetricProcessorByTimeEnsemblePairsTest
     public void testApplyThrowsExceptionWhenThresholdMetricIsConfiguredWithoutThresholds()
             throws MetricParameterException, IOException
     {
-        exception.expect( MetricProcessorException.class );
-        exception.expectCause( CoreMatchers.isA( MetricConfigException.class ) );
+        exception.expect( MetricConfigException.class );
+        exception.expectMessage( "Cannot configure 'BRIER SCORE' without thresholds to define the events: correct the "
+                + "configuration labelled 'null'." );
 
         MetricsConfig metrics =
                 new MetricsConfig( null,
@@ -741,9 +741,9 @@ public final class MetricProcessorByTimeEnsemblePairsTest
     public void testApplyThrowsExceptionWhenBaselineIsMissing()
             throws MetricParameterException, IOException
     {
-        exception.expect( MetricProcessorException.class );
-        exception.expectMessage( "While building the metric processor, a configuration exception occurred:" );
-        exception.expectCause( CoreMatchers.isA( MetricConfigException.class ) );
+        exception.expect( MetricConfigException.class );
+        exception.expectMessage( "Specify a non-null baseline from which to generate the 'CONTINUOUS RANKED "
+                + "PROBABILITY SKILL SCORE'." );
 
         // Mock configuration
         List<MetricConfig> metrics = new ArrayList<>();
@@ -774,9 +774,10 @@ public final class MetricProcessorByTimeEnsemblePairsTest
     public void testApplyThrowsExceptionForDichotomousMetricWhenClassifierThresholdsAreMissing()
             throws MetricParameterException, IOException
     {
-        exception.expect( MetricProcessorException.class );
-        exception.expectMessage( "While building the metric processor, a configuration exception occurred:" );
-        exception.expectCause( CoreMatchers.isA( MetricConfigException.class ) );
+        exception.expect( MetricConfigException.class );
+        exception.expectMessage( "In order to configure dichotomous metrics for ensemble inputs, every metric group "
+                + "that contains dichotomous metrics must also contain thresholds for classifying the forecast "
+                + "probabilities into occurrences and non-occurrences." );
 
         // Mock configuration
         List<MetricConfig> metrics = new ArrayList<>();
@@ -812,9 +813,10 @@ public final class MetricProcessorByTimeEnsemblePairsTest
     public void testApplyThrowsExceptionForMulticategoryMetricWhenClassifierThresholdsAreMissing()
             throws MetricParameterException, IOException
     {
-        exception.expect( MetricProcessorException.class );
-        exception.expectMessage( "While building the metric processor, a configuration exception occurred:" );
-        exception.expectCause( CoreMatchers.isA( MetricConfigException.class ) );
+        exception.expect( MetricConfigException.class );
+        exception.expectMessage( "In order to configure multicategory metrics for ensemble inputs, every metric "
+                + "group that contains multicategory metrics must also contain thresholds for classifying the "
+                + "forecast probabilities into occurrences and non-occurrences." );
 
         // Mock configuration
         List<MetricConfig> metrics = new ArrayList<>();

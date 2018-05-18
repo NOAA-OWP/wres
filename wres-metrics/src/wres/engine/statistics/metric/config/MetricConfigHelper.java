@@ -86,7 +86,7 @@ public final class MetricConfigHelper
      * @throws NullPointerException if the input is null
      */
 
-    public static MetricConstants from( MetricConfigName metricConfigName ) throws MetricConfigException
+    public static MetricConstants from( MetricConfigName metricConfigName )
     {
 
         Objects.requireNonNull( metricConfigName, NULL_CONFIGURATION_NAME_ERROR );
@@ -114,7 +114,6 @@ public final class MetricConfigHelper
      */
 
     public static MetricConstants from( SummaryStatisticsName statsName )
-            throws MetricConfigException
     {
 
         Objects.requireNonNull( statsName, NULL_CONFIGURATION_NAME_ERROR );
@@ -141,7 +140,7 @@ public final class MetricConfigHelper
      * @throws MetricConfigException if the metrics are configured incorrectly
      */
 
-    public static Set<MetricConstants> getMetricsFromConfig( ProjectConfig config ) throws MetricConfigException
+    public static Set<MetricConstants> getMetricsFromConfig( ProjectConfig config )
     {
         Objects.requireNonNull( config, NULL_CONFIGURATION_ERROR );
 
@@ -169,7 +168,6 @@ public final class MetricConfigHelper
     public static ThresholdsByMetric getThresholdsFromConfig( ProjectConfig projectConfig,
                                                               DataFactory dataFactory,
                                                               ThresholdsByMetric external )
-            throws MetricConfigException
     {
         if ( Objects.nonNull( external ) )
         {
@@ -196,7 +194,6 @@ public final class MetricConfigHelper
     public static ThresholdsByMetric getThresholdsFromConfig( ProjectConfig projectConfig,
                                                               DataFactory dataFactory,
                                                               Collection<ThresholdsByMetric> externalThresholds )
-            throws MetricConfigException
     {
 
         Objects.requireNonNull( projectConfig, NULL_CONFIGURATION_ERROR );
@@ -251,7 +248,6 @@ public final class MetricConfigHelper
      */
 
     public static boolean hasSummaryStatisticsFor( ProjectConfig config, Predicate<TimeSeriesMetricConfigName> metric )
-            throws MetricConfigException
     {
         return !MetricConfigHelper.getSummaryStatisticsFor( config, metric ).isEmpty();
     }
@@ -271,7 +267,6 @@ public final class MetricConfigHelper
 
     public static Set<MetricConstants> getSummaryStatisticsFor( ProjectConfig config,
                                                                 Predicate<TimeSeriesMetricConfigName> metric )
-            throws MetricConfigException
     {
         Objects.requireNonNull( config, "Specify a non-null project configuration to check for summary statistics" );
 
@@ -321,7 +316,6 @@ public final class MetricConfigHelper
      */
 
     public static boolean hasTheseOutputsByThresholdLead( ProjectConfig projectConfig, MetricOutputGroup outGroup )
-            throws MetricConfigException
     {
         Objects.requireNonNull( projectConfig, NULL_CONFIGURATION_ERROR );
 
@@ -356,7 +350,6 @@ public final class MetricConfigHelper
      */
 
     public static Set<MetricOutputGroup> getCacheListFromProjectConfig( ProjectConfig projectConfig )
-            throws MetricConfigException
     {
         // Always cache ordinary scores and paired output for timing error metrics 
         Set<MetricOutputGroup> returnMe = new TreeSet<>();
@@ -405,7 +398,6 @@ public final class MetricConfigHelper
                                                                          ThresholdConstants.ThresholdDataType dataType,
                                                                          boolean areProbs,
                                                                          Dimension units )
-            throws MetricConfigException
     {
         Objects.requireNonNull( dataFactory, NULL_DATA_FACTORY_ERROR );
 
@@ -541,7 +533,6 @@ public final class MetricConfigHelper
      */
 
     private static Set<MetricConstants> getOrdinaryMetricsFromConfig( ProjectConfig projectConfig )
-            throws MetricConfigException
     {
         Objects.requireNonNull( projectConfig, NULL_CONFIGURATION_ERROR );
 
@@ -568,7 +559,6 @@ public final class MetricConfigHelper
      */
 
     private static Set<MetricConstants> getTimeSeriesMetricsFromConfig( ProjectConfig projectConfig )
-            throws MetricConfigException
     {
         Objects.requireNonNull( projectConfig, NULL_CONFIGURATION_ERROR );
 
@@ -594,7 +584,6 @@ public final class MetricConfigHelper
      */
 
     private static Set<MetricConstants> getSummaryStatisticsFor( SummaryStatisticsName name )
-            throws MetricConfigException
     {
         Objects.requireNonNull( name, "Specify a non-null summary statistic name." );
 
@@ -631,7 +620,6 @@ public final class MetricConfigHelper
                                                                  ThresholdsByMetricBuilder builder,
                                                                  Dimension units,
                                                                  DataFactory dataFactory )
-            throws MetricConfigException
     {
 
         // Find the metrics
@@ -700,7 +688,6 @@ public final class MetricConfigHelper
     private static Set<Threshold> getInternalThresholdsFromThresholdsConfig( ThresholdsConfig thresholds,
                                                                              Dimension units,
                                                                              DataFactory dataFactory )
-            throws MetricConfigException
     {
         Objects.requireNonNull( thresholds, NULL_CONFIGURATION_ERROR );
 
