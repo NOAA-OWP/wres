@@ -2,7 +2,6 @@ package wres.io.writing.netcdf;
 
 import java.io.Closeable;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -13,7 +12,6 @@ import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -52,27 +50,6 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
     private static final Object WINDOW_LOCK = new Object();
     private static final Map<TimeWindow, TimeWindowWriter> WRITERS = new ConcurrentHashMap<>(  );
     private static final Map<Object, Integer> vectorCoordinates = new ConcurrentHashMap<>(  );
-
-    private static Integer getVectorCoordinate( Integer value, String vectorVariableName, NetcdfFileWriter writer)
-            throws IOException
-    {
-        synchronized ( vectorCoordinates )
-        {
-            if (vectorCoordinates.size() == 0)
-            {
-                Variable coordinate = writer.findVariable( vectorVariableName );
-
-                Array values = coordinate.read();
-
-                for (int index = 0; index < values.getSize(); ++index)
-                {
-                    vectorCoordinates.put(values.getObject( index ), index);
-                }
-            }
-
-            return vectorCoordinates.get( value );
-        }
-    }
 
     private static List<DestinationConfig> destinationConfig;
 
@@ -113,7 +90,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
         Objects.requireNonNull(NetcdfOutputWriter.destinationConfig,
                                "The NetcdfOutputWriter was never initialized.");
 
-        if (NetcdfOutputWriter.destinationConfig.size() > 0)
+        if (!NetcdfOutputWriter.destinationConfig.isEmpty())
         {
             return NetcdfOutputWriter.destinationConfig.get( 0 );
         }
@@ -126,7 +103,6 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
     }
 
     public static void write(final TimeWindow window, final MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput> output)
-            throws IOException, InvalidRangeException
     {
         synchronized ( NetcdfOutputWriter.WINDOW_LOCK )
         {
@@ -135,7 +111,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
                 NetcdfOutputWriter.WRITERS.put(window, new TimeWindowWriter(window));
             }
 
-            Callable<?> writerTask = new Callable<Object>() {
+            Callable<Object> writerTask = new Callable<Object>() {
                 @Override
                 public Object call() throws Exception
                 {
@@ -143,7 +119,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
                     return null;
                 }
 
-                Callable<?> initialize(final TimeWindow window, final MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput> output)
+                Callable<Object> initialize(final TimeWindow window, final MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput> output)
                 {
                     this.window = window;
                     this.output = output;
@@ -158,11 +134,6 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
         }
     }
 
-    private static String getTemplatePath() throws IOException
-    {
-        return NetcdfOutputWriter.getDestinationConfig().getNetcdf().getTemplatePath();
-    }
-
     @Override
     public void accept( MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput> output )
     {
@@ -170,14 +141,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
         {
             for ( TimeWindow window : m.getValue().setOfTimeWindowKeyByLeadTime() )
             {
-                try
-                {
-                    NetcdfOutputWriter.write( window, output );
-                }
-                catch ( IOException | InvalidRangeException e )
-                {
-                    throw new WriteException( "While writing Netcdf output:", e );
-                }
+                NetcdfOutputWriter.write( window, output );
             }
         }
     }
@@ -272,6 +236,11 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
             {
                 this.creationLock.unlock();
             }
+        }
+
+        private static String getTemplatePath() throws IOException
+        {
+            return NetcdfOutputWriter.getDestinationConfig().getNetcdf().getTemplatePath();
         }
 
 
@@ -375,9 +344,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
                 // Only contains the vector id
                 origin = new int[1];
 
-                //Variable vectorVariable = this.outputWriter.findVariable( getNetcdfConfig().getVectorVariable() );
-                //Integer vectorIndex = NetCDF.getCoordinateIndex( vectorVariable, location.getVectorIdentifier() );
-                Integer vectorIndex = NetcdfOutputWriter.getVectorCoordinate(
+                Integer vectorIndex = this.getVectorCoordinate(
                         location.getVectorIdentifier().intValue(),
                         getNetcdfConfig().getVectorVariable(),
                         this.outputWriter
@@ -392,6 +359,27 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
             }
 
             return origin;
+        }
+
+        private Integer getVectorCoordinate( Integer value, String vectorVariableName, NetcdfFileWriter writer)
+                throws IOException
+        {
+            synchronized ( vectorCoordinates )
+            {
+                if (vectorCoordinates.size() == 0)
+                {
+                    Variable coordinate = writer.findVariable( vectorVariableName );
+
+                    Array values = coordinate.read();
+
+                    for (int index = 0; index < values.getSize(); ++index)
+                    {
+                        vectorCoordinates.put(values.getObject( index ), index);
+                    }
+                }
+
+                return vectorCoordinates.get( value );
+            }
         }
 
         @Override
@@ -410,38 +398,31 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
         @Override
         public void close() throws IOException
         {
-            try
+            if ( this.outputWriter != null )
             {
-                if ( this.outputWriter != null )
+                try
                 {
-                    try
-                    {
-                        this.writeMetricResults();
-                    }
-                    catch ( InvalidRangeException e )
-                    {
-                        throw new IOException(
-                                "Lingering NetCDF results could not be written to disk.",
-                                e );
-                    }
-
-                    // Compressing the output results in around a 95.33%
-                    // decrease in file size. Early tests had files dropping
-                    // from 135MB to 6.3MB
-
-                    //String uncompressedFilename = this.outputWriter.getNetcdfFile().getLocation();
-                    this.outputWriter.close();
-                    //this.compressOutput( uncompressedFilename );
+                    this.writeMetricResults();
                 }
-            }
-            catch( RuntimeException e)
-            {
-                LOGGER.error( "Error encountered when closing the Netcdf Output writer", e );
-                throw e;
+                catch ( InvalidRangeException e )
+                {
+                    throw new IOException(
+                            "Lingering NetCDF results could not be written to disk.",
+                            e );
+                }
+
+                // Compressing the output results in around a 95.33%
+                // decrease in file size. Early tests had files dropping
+                // from 135MB to 6.3MB
+
+                //String uncompressedFilename = this.outputWriter.getNetcdfFile().getLocation();
+                this.outputWriter.close();
+                //this.compressOutput( uncompressedFilename );
             }
         }
 
-        private void compressOutput(String uncompressedFileName)
+        // TODO: Evaluate compression options
+        /*private void compressOutput(String uncompressedFileName)
                 throws IOException
         {
             String compressedFilename = uncompressedFileName + ".gz";
@@ -469,6 +450,6 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
 
             LOGGER.debug("Finished compressing {}", compressedFilename);
 
-        }
+        }*/
     }
 }

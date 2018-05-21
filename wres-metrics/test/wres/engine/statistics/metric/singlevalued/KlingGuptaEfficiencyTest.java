@@ -84,7 +84,7 @@ public final class KlingGuptaEfficiencyTest
                                                              metaFac.getDimension( "MM/DAY" ),
                                                              MetricConstants.KLING_GUPTA_EFFICIENCY,
                                                              MetricConstants.MAIN,
-                                                             metaFac.getDatasetIdentifier( "103.1",
+                                                             metaFac.getDatasetIdentifier( metaFac.getLocation("103.1"),
                                                                                            "QME",
                                                                                            "NVE" ),
                                                              window );

@@ -338,7 +338,7 @@ public final class MetricTestDataFactory
                                                   window );
         
         final Metadata baseMeta = metFac.getMetadata( metFac.getDimension( "CMS" ),
-                                                      metFac.getDatasetIdentifier( "DRRC2", "SQIN", "ESP" ),
+                                                      metFac.getDatasetIdentifier( getLocation("DRRC2"), "SQIN", "ESP" ),
                                                       window );
         
         return metIn.ofEnsemblePairs( values,

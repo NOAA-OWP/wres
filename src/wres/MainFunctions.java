@@ -26,7 +26,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import ucar.ma2.Array;
-import ucar.ma2.InvalidRangeException;
 import ucar.nc2.Attribute;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
@@ -777,8 +776,8 @@ final class MainFunctions
             }
             catch ( IOException ioe )
             {
-                System.err.println("Failed to unmarshal the project configuration at '" + fullPath + "'");
-                System.err.println(Strings.getStackTrace( ioe ));
+                LOGGER.error("Failed to unmarshal the project configuration at '" + fullPath + "'");
+                LOGGER.error(Strings.getStackTrace( ioe ));
                 return result; // Or return 400 - Bad Request (see #41467)
             }
 
@@ -788,7 +787,7 @@ final class MainFunctions
 
             if ( validated )
             {
-                System.out.println("'" + fullPath + "' is a valid project config.");
+                LOGGER.info("'" + fullPath + "' is a valid project config.");
                 result = SUCCESS;
             }
             else
@@ -796,14 +795,14 @@ final class MainFunctions
                 // Even though the application performed its job, we still want
                 // to return a failure so that the return code may be used to
                 // determine the validity
-                System.out.println("'" + fullPath + "' is not a valid config.");
+                LOGGER.info("'" + fullPath + "' is not a valid config.");
             }
 
         }
         else
         {
-            System.err.println( "A project path was not passed in" );
-            System.err.println("usage: validate <path to project>");
+            LOGGER.error( "A project path was not passed in" );
+            LOGGER.error("usage: validate <path to project>");
         }
 
         return result;

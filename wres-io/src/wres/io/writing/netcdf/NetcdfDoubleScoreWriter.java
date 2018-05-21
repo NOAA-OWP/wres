@@ -192,7 +192,8 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
             String myGeospatialIndexToWrite = e.getValue()
                                                .getMetadata()
                                                .getIdentifier()
-                                               .getGeospatialID();
+                                               .getGeospatialID()
+                                               .getLocationName();
 
             // There are M metrics in the input. For each metric, the output is stored by TimeWindow (N) 
             // and Threshold (O). In principle, a DoubleScoreOutput  may contain several score components (P), 
@@ -705,7 +706,8 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
                                                                       "station_id" );
         String featureName = output.getMetadata()
                                    .getIdentifier()
-                                   .getGeospatialID();
+                                   .getGeospatialID()
+                                   .getLocationName();
         if ( LOGGER.isDebugEnabled() )
         {
             LOGGER.debug( "Map before: {}, this: {}", this.getStations(), this );
@@ -964,7 +966,8 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
 
         String stationName = output.getMetadata()
                                    .getIdentifier()
-                                   .getGeospatialID();
+                                   .getGeospatialID()
+                                   .getLocationName();
 
         // Behold the most horrifying nested loop!
         for ( int featureIndex = 0; featureIndex < shape[STATION_INDEX]; featureIndex++ )

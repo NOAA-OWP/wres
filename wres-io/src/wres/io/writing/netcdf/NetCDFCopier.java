@@ -307,7 +307,7 @@ public class NetCDFCopier implements Closeable
     {
         List<Dimension> dimensions = null;
 
-        if (dimensionNames != null && dimensionNames.size() > 0)
+        if (dimensionNames != null && !dimensionNames.isEmpty())
         {
             dimensions = new ArrayList<>(  );
 
@@ -324,7 +324,7 @@ public class NetCDFCopier implements Closeable
             }
         }
 
-        Variable var = this.getWriter().addVariable( name, dataType, dimensions );
+        this.getWriter().addVariable( name, dataType, dimensions );
 
         this.getWriter().addVariableAttribute( name, "_FillValue", -999 );
         this.getWriter().addVariableAttribute( name, "missing_value", -999 );

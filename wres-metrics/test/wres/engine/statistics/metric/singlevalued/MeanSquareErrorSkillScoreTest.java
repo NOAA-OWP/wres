@@ -119,7 +119,7 @@ public final class MeanSquareErrorSkillScoreTest
                                                              metaFac.getDimension( "MM/DAY" ),
                                                              MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE,
                                                              MetricConstants.MAIN,
-                                                             metaFac.getDatasetIdentifier( "103.1",
+                                                             metaFac.getDatasetIdentifier( metaFac.getLocation("103.1"),
                                                                                            "QME",
                                                                                            "NVE" ),
                                                              window );

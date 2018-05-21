@@ -656,6 +656,7 @@ public final class MetricConfigHelperTest
                                                                                       OutputTypeSelection.THRESHOLD_LEAD,
                                                                                       null,
                                                                                       null,
+                                                                                      null,
                                                                                       null ) ) ),
                                    null,
                                    null );

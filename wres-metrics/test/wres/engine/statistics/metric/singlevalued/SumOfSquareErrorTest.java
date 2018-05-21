@@ -73,7 +73,7 @@ public final class SumOfSquareErrorTest
                                                                    metaFac.getDimension( "CMS" ),
                                                                    MetricConstants.SUM_OF_SQUARE_ERROR,
                                                                    MetricConstants.MAIN,
-                                                                   metaFac.getDatasetIdentifier( "DRRC2",
+                                                                   metaFac.getDatasetIdentifier( metaFac.getLocation("DRRC2"),
                                                                                                  "SQIN",
                                                                                                  "HEFS",
                                                                                                  "ESP" ) );

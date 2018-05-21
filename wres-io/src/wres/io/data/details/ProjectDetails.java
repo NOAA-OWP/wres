@@ -419,18 +419,6 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
 
     public void prepareForExecution() throws SQLException, IOException
     {
-        //this.populateFeatures();
-
-        /*if( !this.shouldCalculateLeads() )
-        {
-            this.populateDiscreteLeads();
-        }
-
-        if (ProjectConfigs.hasTimeSeriesMetrics( this.getProjectConfig() ))
-        {
-            this.getNumberOfSeriesToRetrieve();
-        }*/
-
         if (!ConfigHelper.isSimulation( this.getRight() ) &&
             !ProjectConfigs.hasTimeSeriesMetrics( this.getProjectConfig() ) &&
             !this.usesGriddedData( this.getRight() ))
