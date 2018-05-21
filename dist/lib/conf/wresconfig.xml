@@ -3,19 +3,18 @@
 	<database>
         <url>localhost</url>
         <username>wres_user</username>
-        <password>EvalWaterRes</password>
         <name>wres</name>
         <port>5432</port>
 		<database_type>postgresql</database_type>
         <max_idle_time>80</max_idle_time>
         <!-- Warning: Default max connections is 100; approaching
              that will cause deadlocks-->
-        <max_pool_size>30</max_pool_size>
+        <max_pool_size>20</max_pool_size>
 	</database>
-	<maximum_thread_count>10</maximum_thread_count>
-	<fetch_size>5000</fetch_size>
+	<maximum_thread_count>25</maximum_thread_count>
+	<fetch_size>50000</fetch_size>
     <maximum_inserts>900</maximum_inserts>
-    <maximum_copies>700</maximum_copies>
+    <maximum_copies>7000</maximum_copies>
     <update_frequency>1</update_frequency>
     <update_progress_monitor>true</update_progress_monitor>
     <!--IOEP Username: pguser-->
