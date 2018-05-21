@@ -369,12 +369,6 @@ class SafeMetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>> implement
         private MetricOutputMetadata overrideMeta;
 
         /**
-         * The reference metadata.
-         */
-
-        private MetricOutputMetadata referenceMetadata;
-
-        /**
          * Adds a mapping to the store.
          * 
          * @param key the key
@@ -385,11 +379,7 @@ class SafeMetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>> implement
         protected SafeMetricOutputMapByTimeAndThresholdBuilder<T> put( final Pair<TimeWindow, OneOrTwoThresholds> key,
                                                                        final T value )
         {
-            if ( Objects.isNull( referenceMetadata ) )
-            {
-                referenceMetadata = value.getMetadata();
-            }
-            store.put( key, value );
+            this.store.put( key, value );
             return this;
         }
 
@@ -430,14 +420,14 @@ class SafeMetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>> implement
     private SafeMetricOutputMapByTimeAndThreshold( final SafeMetricOutputMapByTimeAndThresholdBuilder<T> builder )
     {
         //Set then check
-        store = new TreeMap<>();
-        store.putAll( builder.store );
-        internal = new ArrayList<>( store.keySet() );
+        this.store = new TreeMap<>();
+        this.store.putAll( builder.store );
+        this.internal = new ArrayList<>( this.store.keySet() );
 
         //Set the metadata, updating the time window to find the union of the inputs, if available
-        final MetricOutputMetadata checkAgainst = builder.referenceMetadata;
+        final MetricOutputMetadata checkAgainst = this.store.firstEntry().getValue().getMetadata();
         MetricOutputMetadata builderLocalMeta;
-        if ( !Objects.isNull( builder.overrideMeta ) )
+        if ( Objects.nonNull( builder.overrideMeta ) )
         {
             builderLocalMeta = builder.overrideMeta;
             if ( !builderLocalMeta.minimumEquals( checkAgainst ) )
@@ -455,7 +445,7 @@ class SafeMetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>> implement
         if ( builderLocalMeta.hasTimeWindow() )
         {
             List<TimeWindow> windows = new ArrayList<>();
-            store.keySet().forEach( a -> windows.add( a.getLeft() ) );
+            this.store.keySet().forEach( a -> windows.add( a.getLeft() ) );
             if ( !windows.isEmpty() )
             {
                 builderLocalMeta =
@@ -463,15 +453,15 @@ class SafeMetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>> implement
                                                                                 TimeWindow.unionOf( windows ) );
             }
         }
-        metadata = builderLocalMeta;
+        this.metadata = builderLocalMeta;
 
         //Bounds checks
-        if ( store.isEmpty() )
+        if ( this.store.isEmpty() )
         {
             throw new MetricOutputException( "Specify one or more <key,value> mappings to build the map." );
         }
 
-        store.forEach( ( key, value ) -> {
+        this.store.forEach( ( key, value ) -> {
             if ( Objects.isNull( key ) )
             {
                 throw new MetricOutputException( "Cannot prescribe a null key for the input map." );

@@ -42,7 +42,7 @@ public class PNGDurationScoreWriter extends PNGWriter
      * @throws ProjectConfigException if the project configuration is not valid for writing
      */
 
-    public static PNGDurationScoreWriter of( final ProjectConfigPlus projectConfigPlus ) throws ProjectConfigException
+    public static PNGDurationScoreWriter of( final ProjectConfigPlus projectConfigPlus )
     {
         return new PNGDurationScoreWriter( projectConfigPlus );
     }
@@ -124,7 +124,7 @@ public class PNGDurationScoreWriter extends PNGWriter
      * @throws ProjectConfigException if the project configuration is not valid for writing 
      */
 
-    private PNGDurationScoreWriter( ProjectConfigPlus projectConfigPlus ) throws ProjectConfigException
+    private PNGDurationScoreWriter( ProjectConfigPlus projectConfigPlus )
     {
         super( projectConfigPlus );
     }

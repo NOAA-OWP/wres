@@ -59,7 +59,7 @@ public class CommaSeparatedBoxPlotWriterTest extends CommaSeparatedWriterTest
 
     @Test
     public void writeBoxPlotOutput()
-            throws ProjectConfigException, IOException, InterruptedException,
+            throws IOException, InterruptedException,
             ExecutionException, MetricOutputAccessException
     {
 

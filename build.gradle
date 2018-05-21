@@ -430,7 +430,6 @@ project(':wres-messages')
     {
         compile 'org.slf4j:slf4j-api:1.7.25'
         compile 'com.google.protobuf:protobuf-java:3.5.1'
-        runtime 'ch.qos.logback:logback-classic:1.2.3'
     }
 }
 
@@ -449,6 +448,30 @@ project(':wres-worker')
 
     mainClassName = 'wres.worker.Worker'
     applicationDefaultJvmArgs = ['-Xms32m','-Xmx32m']
+
+
+    // Add logging configuration to the classpath when running via script
+    startScripts
+    {
+        // Note: see lengthy note in main application below
+        classpath += files('conf')
+    }
+
+    // Make available logging configuration to the classpath
+    distributions
+    {
+        main
+        {
+            contents
+            {
+                from
+                {
+                    // Note: see lengthy note in main application below
+                    ['dist']
+                }
+            }
+        }
+    }
 }
 
 project(':wres-tasker')
@@ -493,9 +516,10 @@ project(':wres-tasker')
     {
         // Note: see lengthy note in main application below
         classpath += files('static')
+        classpath += files('conf')
     }
 
-    // Make available static html files to classpath
+    // Make available static html files to classpath, also logging configuration
     distributions
     {
         main

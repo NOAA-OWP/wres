@@ -21,7 +21,7 @@ import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.engine.statistics.metric.MetricFactory;
-import wres.engine.statistics.metric.processing.MetricProcessorException;
+import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.processing.MetricProcessorForProject;
 import wres.io.Operations;
 import wres.io.config.ConfigHelper;
@@ -144,7 +144,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                                                                    this.executors.getThresholdExecutor(),
                                                                    this.executors.getMetricExecutor() );
         }
-        catch ( final MetricProcessorException e )
+        catch ( final MetricParameterException e )
         {
             throw new WresProcessingException( this.errorMessage, e );
         }

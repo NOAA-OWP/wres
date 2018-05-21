@@ -1,0 +1,14 @@
+<configuration>
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+
+            <!-- %exception{full}: full stacktrace in log file. -->
+            <pattern>%d{yyyy-MM-dd'T'HH:mm:ss.SSSZ} [%thread] %level %logger - %msg%n%exception{full}</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Allow -Dwres.logLevel to set logging level, otherwise info. -->
+    <root level="${wres.logLevel:-info}">
+        <appender-ref ref="STDOUT" />
+    </root>
+</configuration>

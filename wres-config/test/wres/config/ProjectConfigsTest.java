@@ -21,7 +21,7 @@ public class ProjectConfigsTest
      */
 
     @Test
-    public void testGetThresholdOperator() throws MetricConfigException
+    public void testGetThresholdOperator()
     {
         ThresholdsConfig first = new ThresholdsConfig( null,
                                                        null,

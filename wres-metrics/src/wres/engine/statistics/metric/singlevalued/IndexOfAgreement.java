@@ -20,8 +20,6 @@ import wres.engine.statistics.metric.MetricParameterException;
  * <p>Willmott, C. J. 1981. On the validation of models. <i>Physical Geography</i>, <b>2</b>, 184-194</p>
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 public class IndexOfAgreement extends DoubleErrorScore<SingleValuedPairs>
 {
@@ -68,7 +66,7 @@ public class IndexOfAgreement extends DoubleErrorScore<SingleValuedPairs>
     @Override
     public boolean isSkillScore()
     {
-        return true;
+        return false;
     }
 
     @Override

@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.StringJoiner;
 
-
 import wres.config.ProjectConfigException;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.EnsembleCondition;
@@ -37,7 +36,7 @@ public abstract class Scripter extends ScriptBuilder
                                         Feature feature,
                                         int progress,
                                         int sequenceStep)
-            throws SQLException, IOException, ProjectConfigException
+            throws SQLException, IOException
     {
         Scripter loadScripter;
 

@@ -91,7 +91,7 @@ public final class MetricProcessorTest
 
     @Test
     public void testGetMetricOutputTypesToCache()
-            throws IOException, MetricConfigException, MetricParameterException, MetricProcessorException,
+            throws IOException, MetricParameterException, MetricProcessorException,
             InterruptedException
     {
         String configPath = "testinput/metricProcessorTest/testAllValid.xml";
@@ -122,7 +122,7 @@ public final class MetricProcessorTest
 
     @Test
     public void testGetCachedMetricOutputTypes()
-            throws IOException, MetricConfigException, MetricParameterException, MetricProcessorException,
+            throws IOException, MetricParameterException, MetricProcessorException,
             InterruptedException
     {
         // Check empty config
@@ -165,7 +165,7 @@ public final class MetricProcessorTest
      */
 
     @Test
-    public void testHasMetricsForMetricInputGroup() throws MetricProcessorException, IOException
+    public void testHasMetricsForMetricInputGroup() throws MetricParameterException, IOException
     {
         String configPath = "testinput/metricProcessorTest/testAllValid.xml";
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
@@ -188,7 +188,7 @@ public final class MetricProcessorTest
      */
 
     @Test
-    public void testHasMetricsForMetricOutputGroup() throws MetricProcessorException, IOException
+    public void testHasMetricsForMetricOutputGroup() throws MetricParameterException, IOException
     {
         String configPath = "testinput/metricProcessorTest/testAllValid.xml";
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
@@ -210,7 +210,7 @@ public final class MetricProcessorTest
      */
 
     @Test
-    public void testHasMetricsForMetricInputGroupAndMetricOutputGroup() throws MetricProcessorException, IOException
+    public void testHasMetricsForMetricInputGroupAndMetricOutputGroup() throws MetricParameterException, IOException
     {
         String configPath = "testinput/metricProcessorTest/testAllValid.xml";
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
@@ -234,7 +234,7 @@ public final class MetricProcessorTest
 
     @Test
     public void testHasThresholdMetrics()
-            throws IOException, MetricProcessorException
+            throws IOException, MetricParameterException
     {
 
         // Mock some metrics
@@ -340,7 +340,7 @@ public final class MetricProcessorTest
 
     @Test
     public void testDisallowNonScoresWithSingleValuedInput()
-            throws IOException, MetricConfigException, MetricParameterException, MetricProcessorException
+            throws IOException, MetricParameterException, MetricProcessorException
     {
         //Single-valued case
         String configPathSingleValued = "testinput/metricProcessorTest/testSingleValued.xml";
@@ -381,7 +381,7 @@ public final class MetricProcessorTest
 
     @Test
     public void testDisallowNonScoresForEnsembleInput()
-            throws IOException, MetricConfigException, MetricParameterException, MetricProcessorException
+            throws IOException, MetricParameterException, MetricProcessorException
     {
         //Ensemble case
         String configPathEnsemble = "testinput/metricProcessorTest/testDisallowNonScores.xml";
@@ -419,7 +419,7 @@ public final class MetricProcessorTest
 
     @Test
     public void testDoNotComputeTheseMetricsForThisThresholdWithSingleValuedInput()
-            throws IOException, MetricConfigException, MetricParameterException, MetricProcessorException
+            throws IOException, MetricParameterException, MetricProcessorException
     {
         MetadataFactory metFac = metIn.getMetadataFactory();
 
@@ -495,7 +495,7 @@ public final class MetricProcessorTest
 
     @Test
     public void testDoNotComputeTheseMetricsForThisThresholdWithEnsembleInput()
-            throws IOException, MetricConfigException, MetricParameterException, MetricProcessorException
+            throws IOException, MetricParameterException, MetricProcessorException
     {
         //Single-valued case
         String configPathSingleValued = "testinput/metricProcessorTest/testEnsemble.xml";
@@ -561,7 +561,7 @@ public final class MetricProcessorTest
 
     @Test
     public void testGetAllDataThreshold()
-            throws MetricConfigException, MetricParameterException, MetricProcessorException
+            throws MetricParameterException, MetricProcessorException
     {
         ProjectConfig config = new ProjectConfig( null, null, null, null, null, null );
         MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =

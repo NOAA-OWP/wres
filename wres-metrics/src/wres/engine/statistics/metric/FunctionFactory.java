@@ -231,7 +231,7 @@ public class FunctionFactory
 
     public static ToDoubleFunction<VectorOfDoubles> sampleSize()
     {
-        return a -> a.size();
+        return VectorOfDoubles::size;
     }
 
     /**

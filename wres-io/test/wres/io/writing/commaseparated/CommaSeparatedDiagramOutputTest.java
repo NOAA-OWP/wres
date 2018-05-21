@@ -58,7 +58,7 @@ public class CommaSeparatedDiagramOutputTest extends CommaSeparatedWriterTest
 
     @Test
     public void writeDiagramOutput()
-            throws ProjectConfigException, IOException, InterruptedException,
+            throws IOException, InterruptedException,
             ExecutionException, MetricOutputAccessException
     {
 

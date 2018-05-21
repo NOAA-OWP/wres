@@ -27,8 +27,7 @@ public class Tasker
      */
     private static final int MAX_SERVER_THREADS = 100;
 
-    private static final String ENV_PROPERTY_NAME = "wres.env";
-    private static final String DEFAULT_ENV = ""; // Production is blank
+    private static final String ENV_VAR_FOR_WRES_ENVIRONMENT = "WRES_ENV_SUFFIX";
 
     /**
      * Tasker receives requests for wres runs and passes them along to queue.
@@ -59,7 +58,7 @@ public class Tasker
 
         // Static handler:
         ResourceHandler resourceHandler = new ResourceHandler();
-        resourceHandler.setBaseResource( Resource.newClassPathResource( "job_tester.html" ) );
+        resourceHandler.setBaseResource( Resource.newClassPathResource( "index.html" ) );
 
         // Have to chain/wrap the handler this way to get both static/dynamic:
         resourceHandler.setHandler( context );
@@ -74,14 +73,13 @@ public class Tasker
 
         // Use TLS
         SslContextFactory contextFactory = Tasker.getSslContextFactory();
-        ServerConnector serverConnector = new ServerConnector( jettyServer, contextFactory );
-        serverConnector.setPort( Tasker.SERVER_PORT );
-        ServerConnector[] serverConnectors = { serverConnector };
 
-        jettyServer.setConnectors( serverConnectors );
-
-        try
+        try ( ServerConnector serverConnector = new ServerConnector( jettyServer, contextFactory ) )
         {
+            serverConnector.setPort( Tasker.SERVER_PORT );
+            ServerConnector[] serverConnectors = { serverConnector };
+            jettyServer.setConnectors( serverConnectors );
+
             // Stinks that start() throws blanket Exception, oh well: propagate.
             jettyServer.start();
             jettyServer.dump( System.err );
@@ -113,44 +111,25 @@ public class Tasker
 
 
     /**
-     * Returns an environment descriptor if one has been specified by
-     * ENV_PROPERTY_NAME
-     * @return ITSG-created descriptor such as "ti" or "dev", non-null.
-     */
-    private static String getEnvironmentDescriptor()
-    {
-        String envFromDashD = System.getProperty( ENV_PROPERTY_NAME );
-
-        if ( envFromDashD != null )
-        {
-            return envFromDashD;
-        }
-        else
-        {
-            return DEFAULT_ENV;
-        }
-    }
-
-
-    /**
      * Returns a string that can be appended to a base hostname in order to
      * vary the hostname used per-environent. If there is a production string
-     * it will be blank. If there is a "ti" or "dev" string it will be "-ti"
-     * or "-dev" respectively
-     * @return an always-appendable-to-hostname, non-null string
+     * it will be blank. Uses the $WRES_ENV_SUFFIX environment variable which
+     * contains the dash in it already.
+     * @return an always-appendable-to-hostname, non-null string for use in
+     * reading a server private key file or server x509 certificate file.
      */
 
     private static String getEnvironmentSuffix()
     {
-        String descriptor = Tasker.getEnvironmentDescriptor();
+        String descriptor = System.getenv( ENV_VAR_FOR_WRES_ENVIRONMENT );
 
-        if ( descriptor.isEmpty() )
+        if ( descriptor == null || descriptor.isEmpty() )
         {
             return "";
         }
         else
         {
-            return "-" + descriptor;
+            return descriptor;
         }
     }
 }

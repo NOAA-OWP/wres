@@ -15,7 +15,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import wres.config.MetricConfigException;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.DestinationConfig;
@@ -51,7 +50,6 @@ import wres.engine.statistics.metric.ensemble.ContinuousRankedProbabilitySkillSc
 import wres.engine.statistics.metric.ensemble.RankHistogram;
 import wres.engine.statistics.metric.processing.MetricProcessorByTimeEnsemblePairs;
 import wres.engine.statistics.metric.processing.MetricProcessorByTimeSingleValuedPairs;
-import wres.engine.statistics.metric.processing.MetricProcessorException;
 import wres.engine.statistics.metric.processing.MetricProcessorForProject;
 import wres.engine.statistics.metric.singlevalued.BiasFraction;
 import wres.engine.statistics.metric.singlevalued.CoefficientOfDetermination;
@@ -101,12 +99,6 @@ public final class MetricFactoryTest
 
     private ProjectConfig mockEnsemble;
 
-    /**
-     * Mock of a configuration that throws a {@link MetricConfigException}
-     */
-
-    private ProjectConfig mockInvalid;
-
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
@@ -127,16 +119,16 @@ public final class MetricFactoryTest
      */
 
     @Test
-    public void testGetInstance() 
+    public void testGetInstance()
     {
         assertTrue( Objects.nonNull( MetricFactory.getInstance( outF ) ) );
 
         exception.expect( NullPointerException.class );
         exception.expectMessage( "Specify a non-null metric output factory to construct the metric factory." );
-        
+
         MetricFactory.getInstance( null );
     }
-    
+
     /**
      * Tests {@link MetricFactory#ofSingleValuedScore(MetricConstants)}. 
      * @throws MetricParameterException if the metric construction fails
@@ -475,12 +467,11 @@ public final class MetricFactoryTest
     /**
      * Tests the {@link MetricFactory#ofMetricProcessorForProject(ProjectConfig,
      * wres.datamodel.ThresholdsByMetric, java.util.concurrent.ExecutorService, java.util.concurrent.ExecutorService)}. 
-     * @throws IOException if the input configuration could not be read
-     * @throws MetricProcessorException if the metric processor could not be constructed
+     * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
     @Test
-    public void testOfMetricProcessorByProject() throws IOException, MetricProcessorException
+    public void testOfMetricProcessorByProject() throws MetricParameterException
     {
         assertTrue( metF.ofMetricProcessorForProject( mockSingleValued,
                                                       null,
@@ -490,12 +481,11 @@ public final class MetricFactoryTest
 
     /**
      * Tests the {@link MetricFactory#ofMetricProcessorByTimeSingleValuedPairs(ProjectConfig, java.util.Set)}. 
-     * @throws IOException if the input configuration could not be read
-     * @throws MetricProcessorException if the metric processor could not be constructed
+     * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
     @Test
-    public void testOfMetricProcessorByTimeSingleValuedPairs() throws IOException, MetricProcessorException
+    public void testOfMetricProcessorByTimeSingleValuedPairs() throws MetricParameterException
     {
         assertTrue( metF.ofMetricProcessorByTimeSingleValuedPairs( mockSingleValued,
                                                                    null ) instanceof MetricProcessorByTimeSingleValuedPairs );
@@ -504,12 +494,11 @@ public final class MetricFactoryTest
     /**
      * Tests the {@link MetricFactory#ofMetricProcessorByTimeEnsemblePairs(ProjectConfig, 
      * wres.datamodel.ThresholdsByMetric, java.util.Set)}. 
-     * @throws IOException if the input configuration could not be read
-     * @throws MetricProcessorException if the metric processor could not be constructed
+     * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
     @Test
-    public void testOfMetricProcessorByTimeEnsemblePairs() throws IOException, MetricProcessorException
+    public void testOfMetricProcessorByTimeEnsemblePairs() throws MetricParameterException
     {
         assertTrue( metF.ofMetricProcessorByTimeEnsemblePairs( mockEnsemble,
                                                                null ) instanceof MetricProcessorByTimeEnsemblePairs );
@@ -519,12 +508,12 @@ public final class MetricFactoryTest
      * Tests the {@link MetricFactory#ofMetricProcessorByTimeSingleValuedPairs(ProjectConfig, 
      * wres.datamodel.ThresholdsByMetric, java.util.Set)}. 
      * @throws IOException if the input configuration could not be read
-     * @throws MetricProcessorException if the metric processor could not be constructed
+     * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
     @Test
     public void testOfMetricProcessorByTimeSingleValuedPairsWithExternalThresholds()
-            throws IOException, MetricProcessorException
+            throws IOException, MetricParameterException
     {
         assertTrue( metF.ofMetricProcessorByTimeSingleValuedPairs( mockSingleValued,
                                                                    null,
@@ -534,94 +523,16 @@ public final class MetricFactoryTest
     /**
      * Tests the {@link MetricFactory#ofMetricProcessorByTimeEnsemblePairs(ProjectConfig, 
      * wres.datamodel.ThresholdsByMetric, java.util.Set)}. 
-     * @throws IOException if the input configuration could not be read
-     * @throws MetricProcessorException if the metric processor could not be constructed
+     * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
     @Test
     public void testOfMetricProcessorByTimeEnsemblePairsWithExternalThresholds()
-            throws IOException, MetricProcessorException
+            throws MetricParameterException
     {
         assertTrue( metF.ofMetricProcessorByTimeEnsemblePairs( mockEnsemble,
                                                                null,
                                                                null ) instanceof MetricProcessorByTimeEnsemblePairs );
-    }
-
-
-    /**
-     * Tests the {@link MetricFactory#ofMetricProcessorByTimeSingleValuedPairs(ProjectConfig, 
-     * wres.datamodel.ThresholdsByMetric, java.util.concurrent.ExecutorService, java.util.concurrent.ExecutorService)}. 
-     * @throws IOException if the input configuration could not be read
-     * @throws MetricProcessorException if the metric processor could not be constructed
-     */
-
-    @Test
-    public void testOfMetricProcessorByTimeSingleValuedPairsWithExternalThresholdsAndExecutors()
-            throws IOException, MetricProcessorException
-    {
-        assertTrue( metF.ofMetricProcessorByTimeSingleValuedPairs( mockSingleValued,
-                                                                   null,
-                                                                   ForkJoinPool.commonPool(),
-                                                                   ForkJoinPool.commonPool() ) instanceof MetricProcessorByTimeSingleValuedPairs );
-    }
-
-    /**
-     * Tests the {@link MetricFactory#ofMetricProcessorByTimeSingleValuedPairs(ProjectConfig, 
-     * wres.datamodel.ThresholdsByMetric, java.util.concurrent.ExecutorService, 
-     * java.util.concurrent.ExecutorService, java.util.Set)} when an expected configuration exception occurs. 
-     * @throws IOException if the input configuration could not be read
-     * @throws MetricProcessorException if the metric processor could not be constructed
-     */
-
-    @Test
-    public void testOfMetricProcessorByTimeSingleValuedPairsWithExternalThresholdsAndExecutorsThrowsException()
-            throws IOException, MetricProcessorException
-    {
-        exception.expect( MetricProcessorException.class );
-        exception.expectMessage( "While building the metric processor, a configuration exception occurred:" );
-
-        metF.ofMetricProcessorByTimeSingleValuedPairs( mockInvalid,
-                                                       null,
-                                                       ForkJoinPool.commonPool(),
-                                                       ForkJoinPool.commonPool() );
-    }
-
-    /**
-     * Tests the {@link MetricFactory#ofMetricProcessorByTimeEnsemblePairs(ProjectConfig, 
-     * wres.datamodel.ThresholdsByMetric, java.util.concurrent.ExecutorService, java.util.concurrent.ExecutorService)}. 
-     * @throws IOException if the input configuration could not be read
-     * @throws MetricProcessorException if the metric processor could not be constructed
-     */
-
-    @Test
-    public void testOfMetricProcessorByTimeEnsemblePairsWithExternalThresholdsAndExecutors()
-            throws IOException, MetricProcessorException
-    {
-        assertTrue( metF.ofMetricProcessorByTimeEnsemblePairs( mockEnsemble,
-                                                               null,
-                                                               ForkJoinPool.commonPool(),
-                                                               ForkJoinPool.commonPool() ) instanceof MetricProcessorByTimeEnsemblePairs );
-    }
-
-    /**
-     * Tests the {@link MetricFactory#ofMetricProcessorByTimeEnsemblePairs(ProjectConfig, 
-     * wres.datamodel.ThresholdsByMetric, java.util.concurrent.ExecutorService, java.util.concurrent.ExecutorService, 
-     * java.util.Set) when an expected configuration exception occurs. 
-     * @throws IOException if the input configuration could not be read
-     * @throws MetricProcessorException if the metric processor could not be constructed
-     */
-
-    @Test
-    public void testOfMetricProcessorByTimeEnsemblePairsWithExternalThresholdsAndExecutorsThrowsExternalException()
-            throws IOException, MetricProcessorException
-    {
-        exception.expect( MetricProcessorException.class );
-        exception.expectMessage( "While building the metric processor, a configuration exception occurred:" );
-
-        metF.ofMetricProcessorByTimeEnsemblePairs( mockInvalid,
-                                                   null,
-                                                   ForkJoinPool.commonPool(),
-                                                   ForkJoinPool.commonPool() );
     }
 
     /**
@@ -688,29 +599,6 @@ public final class MetricFactoryTest
                                                                                       null,
                                                                                       null,
                                                                                       null ) ) ),
-                                   null,
-                                   null );
-
-        // Configuration that requires thresholds and has none
-        mockInvalid =
-                new ProjectConfig( new Inputs( null,
-                                               new DataSourceConfig( DatasourceType.SINGLE_VALUED_FORECASTS,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null ),
-                                               null ),
-                                   null,
-                                   Arrays.asList( new MetricsConfig( null,
-                                                                     Arrays.asList( new MetricConfig( null,
-                                                                                                      null,
-                                                                                                      MetricConfigName.FREQUENCY_BIAS ) ),
-                                                                     null ) ),
-                                   null,
                                    null,
                                    null );
     }

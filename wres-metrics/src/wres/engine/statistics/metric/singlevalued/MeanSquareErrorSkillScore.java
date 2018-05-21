@@ -5,6 +5,7 @@ import java.util.Objects;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
@@ -12,6 +13,7 @@ import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.DecomposableScore;
 import wres.engine.statistics.metric.FunctionFactory;
+import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 
@@ -37,6 +39,13 @@ public class MeanSquareErrorSkillScore<S extends SingleValuedPairs> extends Deco
         {
             throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
         }
+
+        if ( this.getScoreOutputGroup() != ScoreOutputGroup.NONE )
+        {
+            throw new MetricCalculationException( "Decomposition is not currently implemented for the '" + this
+                                                  + "'." );
+        }
+
         //TODO: implement any required decompositions, based on the instance parameters and return the decomposition
         //template as the componentID in the metadata
 

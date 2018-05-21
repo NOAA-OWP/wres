@@ -159,7 +159,7 @@ class ResolvedProject
      *            thresholds is incorrect
      */
     
-    int getThresholdCount( MetricOutputGroup outGroup ) throws MetricConfigException
+    int getThresholdCount( MetricOutputGroup outGroup )
     {
         // Obtain the union of internal and external thresholds
         DataFactory thresholdFactory = DefaultDataFactory.getInstance();
@@ -186,7 +186,6 @@ class ResolvedProject
      * @return set of double score metrics used by this project
      */
     Set<MetricConstants> getDoubleScoreMetrics()
-            throws MetricConfigException
     {
         Set<MetricConstants> result = new HashSet<>();
         Set<MetricConstants> doubleScoreMetricOutputs = MetricConstants.getMetrics(

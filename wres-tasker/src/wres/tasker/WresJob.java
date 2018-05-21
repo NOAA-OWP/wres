@@ -70,10 +70,27 @@ public class WresJob
     @Consumes( "application/x-www-form-urlencoded")
     @Produces( "text/html")
     public Response postWresJob( @FormParam( "projectPath" ) String projectPath,
-                                 @FormParam( "databaseUrl" ) String databaseUrl,
-                                 @FormParam( "databaseName" ) String databaseName,
-                                 @FormParam( "databaseUser" ) String databaseUser )
+                                 @FormParam( "userName" ) String wresUser )
     {
+        String databaseUrl = Users.getDatabaseHost( wresUser );
+        String databaseName = Users.getDatabaseName( wresUser );
+        String databaseUser = Users.getDatabaseUser( wresUser );
+
+        // If all three are missing, call it a 404 not found
+        if ( databaseUrl == null && databaseName == null && databaseUser == null )
+        {
+            return WresJob.notFound( "Could not find any record of user '"
+                                     + wresUser
+                                     + "' in the system. Please correct the user name or contact WRES team." );
+        }
+        // If only one of the three is missing, mistake on our end 500
+        else if ( databaseUrl == null || databaseName == null || databaseUser == null )
+        {
+            return WresJob.internalServerError( "Not your fault. Found incomplete information on user '"
+                                                + wresUser
+                                                + "' in the system. Please let WRES team know." );
+        }
+
         Job.job jobMessage = Job.job.newBuilder()
                                     .setDatabaseHostname( databaseUrl )
                                     .setDatabaseName( databaseName )
@@ -89,7 +106,7 @@ public class WresJob
         catch ( IOException | TimeoutException e )
         {
             LOGGER.error( "Attempt to send message failed.", e );
-            return this.internalServerError();
+            return WresJob.internalServerError();
         }
 
         String statusUrl = "/job/" + jobId + "/status";
@@ -153,10 +170,26 @@ public class WresJob
         }
     }
 
-    private Response internalServerError()
+    private static Response internalServerError()
+    {
+        return WresJob.internalServerError( "An issue occurred that is not your fault." );
+    }
+
+    private static Response internalServerError( String message )
     {
         return Response.serverError()
-                       .entity("<!DOCTYPE html><html><head><title>Our mistake</title></head><body><h1>Internal Server Error</h1><p>An issue occurred that is not your fault.</p></body></html>")
+                       .entity("<!DOCTYPE html><html><head><title>Our mistake</title></head><body><h1>Internal Server Error</h1><p>"
+                               + message
+                               + "</p></body></html>")
+                       .build();
+    }
+
+    private static Response notFound( String message )
+    {
+        return Response.status( Response.Status.NOT_FOUND )
+                       .entity( "<!DOCTYPE html><html><head><title>Not found</title></head><body><h1>Not Found</h1><p>"
+                                + message
+                                + "</p></body></html>" )
                        .build();
     }
 
