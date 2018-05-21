@@ -3,8 +3,6 @@ package wres.io.concurrency;
 import java.io.IOException;
 import java.sql.SQLException;
 
-import org.omg.SendingContext.RunTime;
-
 /**
  * Created by ctubbs on 7/19/17.
  */

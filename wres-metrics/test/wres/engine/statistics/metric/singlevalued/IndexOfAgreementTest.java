@@ -87,20 +87,6 @@ public final class IndexOfAgreementTest
                                                                                                  "QME",
                                                                                                  "NVE" ),
                                                                    window );
-        TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                           Instant.parse( "2010-12-31T11:59:59Z" ),
-                                           ReferenceTime.VALID_TIME,
-                                           Duration.ofHours( 24 ) );
-
-        MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getRawData().size(),
-                                                             metaFac.getDimension(),
-                                                             metaFac.getDimension( "MM/DAY" ),
-                                                             MetricConstants.INDEX_OF_AGREEMENT,
-                                                             MetricConstants.MAIN,
-                                                             metaFac.getDatasetIdentifier( "103.1",
-                                                                                           "QME",
-                                                                                           "NVE" ),
-                                                             window );
 
         //Check the results
         DoubleScoreOutput actual = ioa.apply( input );

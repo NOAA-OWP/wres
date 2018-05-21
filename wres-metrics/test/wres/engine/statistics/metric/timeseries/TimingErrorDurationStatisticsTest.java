@@ -67,7 +67,7 @@ public final class TimingErrorDurationStatisticsTest
                                                              metaFac.getDimension( "CMS" ),
                                                              MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
                                                              MetricConstants.MEAN,
-                                                             metaFac.getDatasetIdentifier( "A",
+                                                             metaFac.getDatasetIdentifier( metaFac.getLocation("A"),
                                                                                            "Streamflow" ),
                                                              window );
         // Build a metric
@@ -150,7 +150,7 @@ public final class TimingErrorDurationStatisticsTest
                                                              metaFac.getDimension( "CMS" ),
                                                              MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
                                                              null,
-                                                             metaFac.getDatasetIdentifier( "A",
+                                                             metaFac.getDatasetIdentifier( metaFac.getLocation("A"),
                                                                                            "Streamflow" ),
                                                              window );
 
@@ -210,7 +210,7 @@ public final class TimingErrorDurationStatisticsTest
                                                              metaFac.getDimension( "CMS" ),
                                                              MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
                                                              MetricConstants.MEAN,
-                                                             metaFac.getDatasetIdentifier( "A",
+                                                             metaFac.getDatasetIdentifier( metaFac.getLocation("A"),
                                                                                            "Streamflow" ),
                                                              window );
 

@@ -439,7 +439,7 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
         }
     }
 
-    private void buildNetCDFConsumers() throws IOException, MetricConfigException
+    private void buildNetCDFConsumers() throws IOException
     {
         ProjectConfigPlus projectConfigPlus = this.getProjectConfigPlus();
 

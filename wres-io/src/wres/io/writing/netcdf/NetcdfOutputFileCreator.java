@@ -27,6 +27,8 @@ import wres.io.utilities.NoDataException;
 
 class NetcdfOutputFileCreator
 {
+    private NetcdfOutputFileCreator(){}
+
     private static final Logger
             LOGGER = LoggerFactory.getLogger( NetcdfOutputFileCreator.class);
     private static final Object CREATION_LOCK = new Object();
@@ -40,7 +42,7 @@ class NetcdfOutputFileCreator
         synchronized ( NetcdfOutputFileCreator.CREATION_LOCK )
         {
             Path targetPath = getFileName( destinationConfig, window, output );
-            if ( Files.exists(targetPath))
+            if ( targetPath.toFile().exists())
             {
                 LOGGER.warn("The file '{}' will be overwritten.", targetPath);
                 Files.deleteIfExists( targetPath );

@@ -887,9 +887,9 @@ class VectorNWMValueSaver extends WRESRunnable
                     Map<Integer, Integer> currentVariableIndices =
                             new ConcurrentHashMap<>();
 
-                    script.consume( ( ResultSet results ) -> {
-                        currentVariableIndices.put(results.getInt( keyLabel), results.getInt(valueLabel));
-                    } );
+                    script.consume( ( ResultSet results ) ->
+                        currentVariableIndices.put(results.getInt( keyLabel), results.getInt(valueLabel))
+                    );
 
                     // Add the populated map to the overal collection
                     VectorNWMValueSaver.indexMapping.put( key,
