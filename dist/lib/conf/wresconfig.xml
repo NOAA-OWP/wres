@@ -1,14 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <wresconfig>
 	<database>
-        <!--<url>***REMOVED***rdb.***REMOVED***.***REMOVED***</url>
-        <username>christopher.tubbs</username>
-        <password>changeme</password>
-        <name>wres</name>-->
         <url>localhost</url>
-        <username>tubbs</username>
-        <password>Lawrence!6474</password>
-        <name>tubbs</name>
+        <username>wres_user</username>
+        <password>EvalWaterRes</password>
+        <name>wres</name>
         <port>5432</port>
 		<database_type>postgresql</database_type>
         <max_idle_time>80</max_idle_time>
