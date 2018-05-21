@@ -1,13 +1,14 @@
 version: '2.2'
 services:
     worker:
-        image: "5fe385192ea6"
+        image: "ce26c7971766"
         restart: always
         volumes:
-         - /mnt/wres_share:/wres_data,z
-         - /mnt/wres_secrets:/wres_secrets:ro,z
+         - /mnt/wres_share:/mnt/wres_share
+         - /mnt/wres_secrets:/wres_secrets:ro
         network_mode: "host"
         environment:
-         - JAVA_OPTS=-Dwres.broker=***REMOVED***wres-broker-ti
+         - JAVA_OPTS=-Dwres.broker=***REMOVED***wres-broker${WRES_ENV_SUFFIX}
+         - PGPASSFILE=/wres_secrets/.pgpass
         # Worker JVM should have 32m max heap, WRES should have 1628m max heap
         mem_limit: 2048m

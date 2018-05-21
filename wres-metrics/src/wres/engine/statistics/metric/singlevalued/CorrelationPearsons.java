@@ -26,8 +26,6 @@ import wres.engine.statistics.metric.OrdinaryScore;
  * {@link CoefficientOfDetermination} when both appear in a {@link MetricCollection}.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 public class CorrelationPearsons extends OrdinaryScore<SingleValuedPairs, DoubleScoreOutput>
 implements Collectable<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput>
@@ -102,6 +100,10 @@ implements Collectable<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput>
     @Override
     public DoubleScoreOutput aggregate(DoubleScoreOutput output)
     {
+        if ( Objects.isNull( output ) )
+        {
+            throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
+        }
         return output;
     }
 

@@ -207,8 +207,7 @@ public final class PIXMLReader extends XMLReader
 	 * @param reader The XML reader, positioned at a "series" tag
 	 */
 	private void parseSeries(XMLStreamReader reader)
-            throws XMLStreamException, SQLException, IOException,
-            ProjectConfigException
+            throws XMLStreamException, SQLException, IOException
     {
         // If we get to this point without a zone offset, something is wrong.
         // See #38801 discussion.
@@ -290,7 +289,7 @@ public final class PIXMLReader extends XMLReader
      * @throws ProjectConfigException when a forecast is missing a forecast date
 	 */
 	private void parseEvent(XMLStreamReader reader)
-			throws SQLException, ProjectConfigException
+			throws SQLException
 	{
 		this.incrementLead();
 		String value = null;

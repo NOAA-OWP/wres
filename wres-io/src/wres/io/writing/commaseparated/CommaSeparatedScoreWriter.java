@@ -35,8 +35,6 @@ import wres.io.config.ConfigHelper;
  * 
  * @param <T> the score component type
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 1.0
  */
 
 public class CommaSeparatedScoreWriter<T extends ScoreOutput<?, T>> extends CommaSeparatedWriter
@@ -54,7 +52,6 @@ public class CommaSeparatedScoreWriter<T extends ScoreOutput<?, T>> extends Comm
      */
 
     public static <T extends ScoreOutput<?, T>> CommaSeparatedScoreWriter<T> of( final ProjectConfig projectConfig )
-            throws ProjectConfigException
     {
         return new CommaSeparatedScoreWriter<>( projectConfig );
     }
@@ -264,7 +261,7 @@ public class CommaSeparatedScoreWriter<T extends ScoreOutput<?, T>> extends Comm
      * @throws ProjectConfigException if the project configuration is not valid for writing 
      */
 
-    private CommaSeparatedScoreWriter( ProjectConfig projectConfig ) throws ProjectConfigException
+    private CommaSeparatedScoreWriter( ProjectConfig projectConfig )
     {
         super( projectConfig );
     }

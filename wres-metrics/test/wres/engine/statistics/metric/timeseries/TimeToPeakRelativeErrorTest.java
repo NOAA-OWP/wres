@@ -90,12 +90,13 @@ public final class TimeToPeakRelativeErrorTest
     }
 
     /**
-     * Constructs a {@link TimeToPeakError} and checks for exceptional cases.
+     * Checks that {@link TimeToPeakRelativeError#apply(TimeSeriesOfSingleValuedPairs)} throws an exception when 
+     * provided with null input.
      * @throws MetricParameterException if the metric could not be constructed
      */
 
     @Test
-    public void testExceptions() throws MetricParameterException
+    public void testApplyThrowsExceptionOnNullInput() throws MetricParameterException
     {
         //Build the metric
         final DataFactory outF = DefaultDataFactory.getInstance();

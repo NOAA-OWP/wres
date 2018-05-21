@@ -10,8 +10,6 @@ import wres.datamodel.outputs.MetricOutput;
  * A class that stores the metadata associated with a {@link MetricOutput}.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 public interface MetricOutputMetadata extends Metadata
 {
@@ -55,7 +53,7 @@ public interface MetricOutputMetadata extends Metadata
     Dimension getInputDimension();
     
     /**
-     * Returns the sample size from which the {@link MetricOutput} was produced.
+     * Returns the sample size associated with the {@link MetricOutput}.
      * 
      * @return the sample size
      */

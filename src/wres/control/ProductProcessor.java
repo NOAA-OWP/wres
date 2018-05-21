@@ -18,7 +18,6 @@ import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.MetricConfigException;
 import wres.config.ProjectConfigException;
 import wres.config.ProjectConfigPlus;
 import wres.config.generated.DestinationConfig;
@@ -280,7 +279,7 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
      */
 
     private void buildConsumers( SharedWriters sharedWriters )
-            throws ProjectConfigException, IOException, MetricConfigException
+            throws IOException
     {
         // There is one consumer per project for each type, because consumers are built
         // with projects, not destinations. The consumers must iterate destinations.
@@ -313,7 +312,7 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
      * @throws ProjectConfigException if the project configuration is invalid for writing
      */
 
-    private void buildCommaSeparatedConsumers() throws ProjectConfigException
+    private void buildCommaSeparatedConsumers()
     {
         ProjectConfig projectConfig = this.getProjectConfig();
 
@@ -361,7 +360,7 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
      * @throws ProjectConfigException if the project configuration is invalid for writing
      */
 
-    private void buildPortableNetworkGraphicsConsumers() throws ProjectConfigException
+    private void buildPortableNetworkGraphicsConsumers()
     {
         ProjectConfigPlus projectConfigPlus = this.getProjectConfigPlus();
 
@@ -403,10 +402,11 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
      * 
      * @param sharedWriters an optional set of shared writers to use when consuming NetCDF
      * @throws IOException when creation or mutation of netcdf files fails
+     * @throws ProjectConfigException if the project configuration is invalid
      */
 
     private void buildNetCDFConsumers( SharedWriters sharedWriters )
-            throws IOException, MetricConfigException
+            throws IOException
     {
         // Register consumers for the NetCDF output type
         if ( writeWhenTrue.test( MetricOutputGroup.DOUBLE_SCORE, DestinationType.NETCDF ) )

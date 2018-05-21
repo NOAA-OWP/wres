@@ -1,12 +1,12 @@
 package wres.engine.statistics.metric.processing;
 
 /**
- * A checked exception associated with a {@link MetricProcessor}.
+ * An unchecked exception associated with a {@link MetricProcessor}.
  * 
  * @author james.brown@hydrosolved.com
  */
 
-public final class MetricProcessorException extends Exception
+public final class MetricProcessorException extends RuntimeException
 {
 
     /**

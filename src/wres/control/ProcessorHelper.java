@@ -69,7 +69,7 @@ class ProcessorHelper
 
     static void processProjectConfig( final ProjectConfigPlus projectConfigPlus,
                                       final ExecutorServices executors )
-            throws IOException, ProjectConfigException
+            throws IOException
     {
 
         final ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();

@@ -11,7 +11,6 @@ import java.util.function.Consumer;
 
 import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartEngineException;
-
 import wres.config.ProjectConfigException;
 import wres.config.ProjectConfigPlus;
 import wres.config.generated.DestinationConfig;
@@ -45,7 +44,7 @@ public class PNGPairedWriter extends PNGWriter
      * @throws ProjectConfigException if the project configuration is not valid for writing
      */
 
-    public static PNGPairedWriter of( final ProjectConfigPlus projectConfigPlus ) throws ProjectConfigException
+    public static PNGPairedWriter of( final ProjectConfigPlus projectConfigPlus )
     {
         return new PNGPairedWriter( projectConfigPlus );
     }
@@ -127,7 +126,7 @@ public class PNGPairedWriter extends PNGWriter
      * @throws ProjectConfigException if the project configuration is not valid for writing 
      */
 
-    private PNGPairedWriter( ProjectConfigPlus projectConfigPlus ) throws ProjectConfigException
+    private PNGPairedWriter( ProjectConfigPlus projectConfigPlus )
     {
         super( projectConfigPlus );
     }

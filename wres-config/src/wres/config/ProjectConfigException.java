@@ -21,7 +21,7 @@ import com.sun.xml.bind.Locatable;
  * inserted automatically at the beginning of the exception message.
  */
 
-public class ProjectConfigException extends Exception
+public class ProjectConfigException extends RuntimeException
 {
 
     public ProjectConfigException(final Locatable problemElement,

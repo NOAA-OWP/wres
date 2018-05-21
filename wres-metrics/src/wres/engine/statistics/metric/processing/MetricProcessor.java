@@ -6,7 +6,6 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ForkJoinPool;
 import java.util.function.DoublePredicate;
 import java.util.function.Function;
 
@@ -200,14 +199,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
 
     public Set<MetricOutputGroup> getCachedMetricOutputTypes() throws InterruptedException
     {
-        T output = this.getCachedMetricOutput();
-
-        if ( Objects.isNull( output ) )
-        {
-            return Collections.emptySet();
-        }
-
-        return output.getOutputTypes();
+        return this.getCachedMetricOutput().getOutputTypes();
     }
 
     /**
@@ -315,7 +307,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
      * @throws MetricConfigException if the configuration is invalid
      */
 
-    abstract void validate( ProjectConfig config ) throws MetricConfigException;
+    abstract void validate( ProjectConfig config );
 
     /**
      * Completes any processing of cached output at the end of a processing pipeline. This may be required when 
@@ -329,8 +321,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
     abstract void completeCachedOutput() throws InterruptedException;
 
     /**
-     * Returns a {@link MetricOutputForProject} for the last available results or null if
-     * {@link #hasCachedMetricOutput()} returns false.
+     * Returns a {@link MetricOutputForProject} for the last available results.
      * 
      * @return a {@link MetricOutputForProject} or null
      * @throws MetricOutputMergeException if the outputs cannot be merged across calls
@@ -344,14 +335,13 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
      * @param dataFactory the data factory
      * @param config the project configuration
      * @param externalThresholds an optional set of external thresholds, may be null
-     * @param thresholdExecutor an optional {@link ExecutorService} for executing thresholds. Defaults to the 
-     *            {@link ForkJoinPool#commonPool()}
-     * @param metricExecutor an optional {@link ExecutorService} for executing metrics. Defaults to the 
-     *            {@link ForkJoinPool#commonPool()}                    
+     * @param thresholdExecutor an {@link ExecutorService} for executing thresholds, cannot be null 
+     * @param metricExecutor an {@link ExecutorService} for executing metrics, cannot be null
      * @param mergeSet a list of {@link MetricOutputGroup} whose outputs should be retained and merged across calls to
      *            {@link #apply(Object)}
      * @throws MetricConfigException if the metrics are configured incorrectly
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
+     * @throws NullPointerException if a required input is null
      */
 
     MetricProcessor( final DataFactory dataFactory,
@@ -360,7 +350,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
                      final ExecutorService thresholdExecutor,
                      final ExecutorService metricExecutor,
                      final Set<MetricOutputGroup> mergeSet )
-            throws MetricConfigException, MetricParameterException
+            throws MetricParameterException
     {
 
         Objects.requireNonNull( config, MetricConfigHelper.NULL_CONFIGURATION_ERROR );
@@ -369,7 +359,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
         
         Objects.requireNonNull( thresholdExecutor, "Specify a non-null threshold executor service." );
         
-        Objects.requireNonNull( thresholdExecutor, "Specify a non-null metric executor service." );
+        Objects.requireNonNull( metricExecutor, "Specify a non-null metric executor service." );
         
         this.dataFactory = dataFactory;
         this.metrics = MetricConfigHelper.getMetricsFromConfig( config );

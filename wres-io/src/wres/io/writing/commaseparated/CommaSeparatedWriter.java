@@ -77,7 +77,7 @@ abstract class CommaSeparatedWriter
      * @throws ProjectConfigException if the project is not correctly configured for writing numerical output
      */
 
-    static void validateProjectForWriting( ProjectConfig projectConfig ) throws ProjectConfigException
+    static void validateProjectForWriting( ProjectConfig projectConfig )
     {
         Objects.requireNonNull( projectConfig, "Specify non-null project configuration when writing outputs." );
 
@@ -338,7 +338,7 @@ abstract class CommaSeparatedWriter
      * @throws ProjectConfigException if the project configuration is not valid for writing
      */
 
-    CommaSeparatedWriter( ProjectConfig projectConfig ) throws ProjectConfigException
+    CommaSeparatedWriter( ProjectConfig projectConfig )
     {
         // Validate project for writing
         CommaSeparatedWriter.validateProjectForWriting( projectConfig );

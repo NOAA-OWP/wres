@@ -32,8 +32,6 @@ import wres.io.config.ConfigHelper;
  * @param <S> the left side of the paired output type
  * @param <T> the right side if the paired output type
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 1.0
  */
 
 public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedWriter
@@ -52,7 +50,6 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedWriter
      */
 
     public static <S, T> CommaSeparatedPairedWriter<S, T> of( final ProjectConfig projectConfig )
-            throws ProjectConfigException
     {
         return new CommaSeparatedPairedWriter<>( projectConfig );
     }
@@ -191,7 +188,7 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedWriter
      * @throws ProjectConfigException if the project configuration is not valid for writing 
      */
 
-    private CommaSeparatedPairedWriter( ProjectConfig projectConfig ) throws ProjectConfigException
+    private CommaSeparatedPairedWriter( ProjectConfig projectConfig )
     {
         super( projectConfig );
     }

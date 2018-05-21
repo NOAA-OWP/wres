@@ -1,13 +1,21 @@
 package wres.engine.statistics.metric.singlevalued;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import java.util.Arrays;
+
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
+import wres.datamodel.inputs.MetricInputException;
+import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
@@ -20,40 +28,51 @@ import wres.engine.statistics.metric.singlevalued.MeanAbsoluteError.MeanAbsolute
  * Tests the {@link MeanAbsoluteError}.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 public final class MeanAbsoluteErrorTest
 {
+    
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
+    
+    /**
+     * Default instance of a {@link MeanAbsoluteError}.
+     */
+
+    private MeanAbsoluteError mae;
 
     /**
-     * Constructs a {@link MeanAbsoluteError} and compares the actual result to the expected result. Also, checks the
-     * parameters of the metric.
-     * @throws MetricParameterException if the metric could not be constructed 
+     * Instance of a data factory.
+     */
+
+    private DataFactory outF;
+
+    @Before
+    public void setupBeforeEachTest() throws MetricParameterException
+    {
+        MeanAbsoluteErrorBuilder b = new MeanAbsoluteError.MeanAbsoluteErrorBuilder();
+        this.outF = DefaultDataFactory.getInstance();
+        b.setOutputFactory( outF );
+        this.mae = b.build();
+    }
+
+    /**
+     * Compares the output from {@link MeanAbsoluteError#apply(SingleValuedPairs)} against expected output.
      */
 
     @Test
-    public void test1MeanAbsoluteError() throws MetricParameterException
+    public void testApply()
     {
-        //Obtain the factories
-        final DataFactory outF = DefaultDataFactory.getInstance();
-        final MetadataFactory metaFac = outF.getMetadataFactory();
-
         //Generate some data
-        final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
+        SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Metadata for the output
-        final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getRawData().size(),
+        MetadataFactory metaFac = outF.getMetadataFactory();
+        MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getRawData().size(),
                                                                    metaFac.getDimension(),
                                                                    metaFac.getDimension(),
                                                                    MetricConstants.MEAN_ABSOLUTE_ERROR,
                                                                    MetricConstants.MAIN );
-
-        //Build the metric
-        final MeanAbsoluteErrorBuilder b = new MeanAbsoluteError.MeanAbsoluteErrorBuilder();
-        b.setOutputFactory( outF );
-        final MeanAbsoluteError mae = b.build();
-
         //Check the results
         final DoubleScoreOutput actual = mae.apply( input );
         final DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 201.37, m1 );
@@ -62,13 +81,77 @@ public final class MeanAbsoluteErrorTest
                     + expected.getData().doubleValue()
                     + ".",
                     actual.equals( expected ) );
-        //Check the parameters
-        assertTrue( "Unexpected name for the Mean Absolute Error.",
-                    mae.getName().equals( MetricConstants.MEAN_ABSOLUTE_ERROR.toString() ) );
-        assertTrue( "The Mean Absolute Error is not decomposable.", !mae.isDecomposable() );
-        assertTrue( "The Mean Absolute Error is not a skill score.", !mae.isSkillScore() );
-        assertTrue( "The Mean Absolute Error cannot be decomposed.",
-                    mae.getScoreOutputGroup() == ScoreOutputGroup.NONE );
     }
+
+    /**
+     * Validates the output from {@link MeanAbsoluteError#apply(SingleValuedPairs)} when supplied with no data.
+     */
+
+    @Test
+    public void testApplyWithNoData()
+    {
+        // Generate empty data
+        DiscreteProbabilityPairs input =
+                outF.ofDiscreteProbabilityPairs( Arrays.asList(), outF.getMetadataFactory().getMetadata() );
+ 
+        DoubleScoreOutput actual = mae.apply( input );
+
+        assertTrue( actual.getData().isNaN() );
+    }
+
+    /**
+     * Checks that the {@link MeanAbsoluteError#getName()} returns 
+     * {@link MetricConstants#MEAN_ABSOLUTE_ERROR.toString()}
+     */
+
+    @Test
+    public void testGetName()
+    {
+        assertTrue( mae.getName().equals( MetricConstants.MEAN_ABSOLUTE_ERROR.toString() ) );
+    }
+
+    /**
+     * Checks that the {@link MeanAbsoluteError#isDecomposable()} returns <code>false</code>.
+     */
+
+    @Test
+    public void testIsDecomposable()
+    {
+        assertFalse( mae.isDecomposable() );
+    }
+
+    /**
+     * Checks that the {@link MeanAbsoluteError#isSkillScore()} returns <code>false</code>.
+     */
+
+    @Test
+    public void testIsSkillScore()
+    {
+        assertFalse( mae.isSkillScore() );
+    }
+
+    /**
+     * Checks that the {@link MeanAbsoluteError#getScoreOutputGroup()} returns the result provided on construction.
+     */
+
+    @Test
+    public void testGetScoreOutputGroup()
+    {
+        assertTrue( mae.getScoreOutputGroup() == ScoreOutputGroup.NONE );
+    }
+
+    /**
+     * Tests for an expected exception on calling {@link MeanAbsoluteError#apply(SingleValuedPairs)} with null 
+     * input.
+     */
+
+    @Test
+    public void testApplyExceptionOnNullInput()
+    {
+        exception.expect( MetricInputException.class );
+        exception.expectMessage( "Specify non-null input to the 'MEAN ABSOLUTE ERROR'." );
+        
+        mae.apply( null );
+    }    
 
 }

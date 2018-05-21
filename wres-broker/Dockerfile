@@ -19,6 +19,8 @@ RUN chown wres_docker:wres . && chown wres_docker:wres *
 
 WORKDIR /etc/rabbitmq
 COPY nonsrc/rabbitmq.conf .
+COPY nonsrc/rabbitmq-ti.conf .
+COPY nonsrc/rabbitmq-dev.conf .
 COPY nonsrc/definitions.json .
 
 USER wres_docker

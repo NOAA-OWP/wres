@@ -10,8 +10,6 @@ import wres.io.config.ConfigHelper;
  * Utility methods to help with writing metric outputs to file.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 1.0
  */
 public class WriterHelper
 {
@@ -24,7 +22,7 @@ public class WriterHelper
      * @throws ProjectConfigException if the project is not correctly configured for writing numerical output
      */
 
-    public static void validateProjectForWriting( ProjectConfig projectConfig ) throws ProjectConfigException
+    public static void validateProjectForWriting( ProjectConfig projectConfig )
     {
         Objects.requireNonNull( projectConfig, "Specify non-null project configuration when writing outputs." );
 

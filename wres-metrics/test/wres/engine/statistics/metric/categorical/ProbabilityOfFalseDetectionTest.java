@@ -3,6 +3,8 @@ package wres.engine.statistics.metric.categorical;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import java.util.Arrays;
+
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -100,6 +102,22 @@ public final class ProbabilityOfFalseDetectionTest
                     + ".",
                     actual.equals( expected ) );
     }
+    
+    /**
+     * Validates the output from {@link Metric#apply(DichotomousPairs)} when supplied with no data.
+     */
+
+    @Test
+    public void testApplyWithNoData()
+    {
+        // Generate empty data
+        DichotomousPairs input =
+                outF.ofDichotomousPairs( Arrays.asList(), outF.getMetadataFactory().getMetadata() );
+ 
+        DoubleScoreOutput actual = pofd.apply( input );
+
+        assertTrue( actual.getData().isNaN() );
+    } 
     
     /**
      * Verifies that {@link Metric#getName()} returns the expected result.

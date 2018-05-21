@@ -17,7 +17,6 @@ import java.util.Set;
 import java.util.concurrent.Executors;
 
 import org.apache.commons.lang3.tuple.Pair;
-import org.hamcrest.CoreMatchers;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -66,6 +65,7 @@ import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.datamodel.thresholds.ThresholdsByMetric.ThresholdsByMetricBuilder;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricFactory;
+import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 
 /**
@@ -99,12 +99,12 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
      * 
      * @throws IOException if the input data could not be read
      * @throws InterruptedException if the outputs were interrupted
-     * @throws MetricProcessorException if the metric processor could not be built
+     * @throws MetricParameterException if one or more metric parameters is set incorrectly
      * @throws MetricOutputException if the results could not be generated 
      */
 
     @Test
-    public void testApplyWithoutThresholds() throws IOException, MetricProcessorException, InterruptedException
+    public void testApplyWithoutThresholds() throws IOException, MetricParameterException, InterruptedException
     {
         String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/testApplyWithoutThresholds.xml";
 
@@ -160,12 +160,12 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
      * 
      * @throws IOException if the input data could not be read
      * @throws InterruptedException if the outputs were interrupted
-     * @throws MetricProcessorException if the metric processor could not be built
+     * @throws MetricParameterException if one or more metric parameters is set incorrectly
      * @throws MetricOutputException if the results could not be generated 
      */
 
     @Test
-    public void testApplyWithThresholds() throws IOException, MetricProcessorException, InterruptedException
+    public void testApplyWithThresholds() throws IOException, MetricParameterException, InterruptedException
     {
         String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/testApplyWithThresholds.xml";
 
@@ -231,11 +231,11 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
      * with single-valued inputs.
      * 
      * @throws IOException if the input data could not be read
-     * @throws MetricProcessorException if the metric processor could not be built
+     * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
     @Test
-    public void testForExpectedMetricsWhenAllValidConfigured() throws IOException, MetricProcessorException
+    public void testForExpectedMetricsWhenAllValidConfigured() throws IOException, MetricParameterException
     {
         String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/testAllValid.xml";
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
@@ -257,12 +257,12 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
      * multiple calls with subsets of data, caching the results across calls.
      * 
      * @throws InterruptedException if the outputs were interrupted
-     * @throws MetricProcessorException if the metric processor could not be built
+     * @throws MetricParameterException if one or more metric parameters is set incorrectly
      * @throws MetricOutputException if the results could not be generated 
      */
 
     @Test
-    public void testApplyTimeSeriesMetrics() throws MetricProcessorException, InterruptedException
+    public void testApplyTimeSeriesMetrics() throws MetricParameterException, InterruptedException
     {
         MetadataFactory metaFac = DefaultMetadataFactory.getInstance();
 
@@ -354,12 +354,12 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
      * thershold constraint on the paired data.
      * 
      * @throws InterruptedException if the outputs were interrupted
-     * @throws MetricProcessorException if the metric processor could not be built
+     * @throws MetricParameterException if one or more metric parameters is set incorrectly
      * @throws MetricOutputException if the results could not be generated 
      */
 
     @Test
-    public void testApplyTimeSeriesMetricsWithThresholds() throws MetricProcessorException, InterruptedException
+    public void testApplyTimeSeriesMetricsWithThresholds() throws MetricParameterException, InterruptedException
     {
         MetadataFactory metaFac = DefaultMetadataFactory.getInstance();
 
@@ -463,7 +463,8 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         MetricOutputMultiMapByTimeAndThreshold<PairedOutput<Instant, Duration>> expected =
                 (MetricOutputMultiMapByTimeAndThreshold<PairedOutput<Instant, Duration>>) builder.build();
 
-        assertTrue( "Actual output differs from expected output for time-series metrics. ", actual.equals( expected ) );
+        assertTrue( "Actual output differs from expected output for time-series metrics. ",
+                    actual.equals( expected ) );
     }
 
     /**
@@ -476,13 +477,13 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
      * 
      * @throws IOException if the input data could not be read
      * @throws InterruptedException if the outputs were interrupted
-     * @throws MetricProcessorException if the metric processor could not be built
+     * @throws MetricParameterException if one or more metric parameters is set incorrectly
      * @throws MetricOutputException if the results could not be generated 
      */
 
     @Test
     public void testApplyTimeSeriesSummaryStats()
-            throws IOException, MetricProcessorException, InterruptedException
+            throws IOException, MetricParameterException, InterruptedException
     {
         MetadataFactory metaFac = DefaultMetadataFactory.getInstance();
         String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/testApplyTimeSeriesSummaryStats.xml";
@@ -557,13 +558,13 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
      * 
      * @throws IOException if the input data could not be read
      * @throws InterruptedException if the outputs were interrupted
-     * @throws MetricProcessorException if the metric processor could not be built
+     * @throws MetricParameterException if one or more metric parameters is set incorrectly
      * @throws MetricOutputException if the results could not be generated 
      */
 
     @Test
     public void testApplyWithThresholdsFromSource()
-            throws IOException, MetricOutputAccessException, MetricProcessorException, InterruptedException
+            throws IOException, MetricOutputAccessException, MetricParameterException, InterruptedException
     {
         String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/testApplyWithThresholds.xml";
 
@@ -660,12 +661,12 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
      * 
      * @throws IOException if the input data could not be read
      * @throws InterruptedException if the outputs were interrupted
-     * @throws MetricProcessorException if the metric processor could not be built
+     * @throws MetricParameterException if one or more metric parameters is set incorrectly
      * @throws MetricOutputException if the results could not be generated 
      */
 
     @Test
-    public void testApplyWithThresholdsAndNoData() throws IOException, MetricProcessorException, InterruptedException
+    public void testApplyWithThresholdsAndNoData() throws IOException, MetricParameterException, InterruptedException
     {
         String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/testApplyWithThresholds.xml";
 
@@ -736,22 +737,25 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
      * 
      * @throws IOException if the input data could not be read
      * @throws InterruptedException if the outputs were interrupted
-     * @throws MetricProcessorException if the metric processor could not be built
+     * @throws MetricParameterException if one or more metric parameters is set incorrectly
+     * @throws MetricConfigException if the metric configuration is incorrect
      * @throws MetricOutputException if the results could not be generated 
      */
 
     @Test
     public void testApplyTimeSeriesSummaryStatsWithNoData()
-            throws IOException, MetricProcessorException, InterruptedException
+            throws IOException, MetricParameterException, InterruptedException
     {
-        MetadataFactory metaFac = DefaultMetadataFactory.getInstance();
+        MetadataFactory metaFac = dataFac.getMetadataFactory();
         String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/testApplyTimeSeriesSummaryStats.xml";
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
+
         MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
                 MetricFactory.getInstance( dataFac )
                              .ofMetricProcessorByTimeSingleValuedPairs( config,
                                                                         MetricOutputGroup.set() );
+
         TimeSeriesOfSingleValuedPairs pairs = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsFour();
 
         //Compute the metrics
@@ -802,11 +806,11 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
     /**
      * Tests that the {@link MetricProcessorByTimeSingleValuedPairs#apply(SingleValuedPairs)} throws an expected
      * exception on receiving null input.
-     * @throws MetricProcessorException if the exceptional behavior could not be tested for unexpected reasons
+     * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
     @Test
-    public void testApplyThrowsExceptionOnNullInput() throws MetricProcessorException
+    public void testApplyThrowsExceptionOnNullInput() throws MetricParameterException
     {
         exception.expect( NullPointerException.class );
         exception.expectMessage( "Expected non-null input to the metric processor." );
@@ -825,15 +829,16 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
     /**
      * Tests that the {@link MetricProcessorByTimeSingleValuedPairs#apply(SingleValuedPairs)} throws an expected
      * exception when attempting to compute metrics that require thresholds and no thresholds are configured.
-     * @throws MetricProcessorException if the exceptional behavior could not be tested for unexpected reasons
+     * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
     @Test
     public void testApplyThrowsExceptionWhenThresholdMetricIsConfiguredWithoutThresholds()
-            throws MetricProcessorException, IOException
+            throws MetricParameterException, IOException
     {
-        exception.expect( MetricProcessorException.class );
-        exception.expectCause( CoreMatchers.isA( MetricConfigException.class ) );
+        exception.expect( MetricConfigException.class );
+        exception.expectMessage( "Cannot configure 'FREQUENCY BIAS' without thresholds to define the events: correct "
+                + "the configuration labelled 'null'." );
 
         MetricsConfig metrics =
                 new MetricsConfig( null,
@@ -855,12 +860,12 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
     /**
      * Tests that the {@link MetricProcessorByTimeSingleValuedPairs#apply(SingleValuedPairs)} throws an expected
      * exception when climatological observations are required but missing.
-     * @throws MetricProcessorException if the exceptional behavior could not be tested for unexpected reasons
+     * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
     @Test
     public void testApplyThrowsExceptionWhenClimatologicalObservationsAreMissing()
-            throws MetricProcessorException, IOException
+            throws MetricParameterException, IOException
     {
         exception.expect( MetricCalculationException.class );
         exception.expectMessage( "Unable to determine quantile threshold from probability threshold: no climatological "
@@ -898,12 +903,12 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
      * Tests that the {@link MetricProcessorByTimeSingleValuedPairs#apply(SingleValuedPairs)} throws an expected
      * exception when time-series metrics are configured and the input pairs are not 
      * {@link TimeSeriesOfSingleValuedPairs}.
-     * @throws MetricProcessorException if the exceptional behavior could not be tested for unexpected reasons
+     * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
     @Test
     public void testApplyThrowsExceptionWhenOrdinaryPairsSuppliedForTimeSeriesMetrics()
-            throws MetricProcessorException, IOException
+            throws MetricParameterException, IOException
     {
         exception.expect( MetricCalculationException.class );
         exception.expectMessage( "The project configuration includes time-series metrics. "
@@ -932,15 +937,16 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
     /**
      * Tests that the construction of a {@link MetricProcessorByTime} fails when the configuration
      * contains an ensemble metric. 
-     * @throws MetricProcessorException if the exceptional behavior could not be tested for unexpected reasons
+     * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
     @Test
     public void testExceptionOnConstructionWithEnsembleMetric()
-            throws MetricProcessorException, IOException
+            throws MetricParameterException, IOException
     {
-        exception.expect( MetricProcessorException.class );
-        exception.expectCause( CoreMatchers.isA( MetricConfigException.class ) );
+        exception.expect( MetricConfigException.class );
+        exception.expectMessage( "Cannot configure 'CONTINUOUS RANKED PROBABILITY SCORE' for single-valued inputs: "
+                + "correct the configuration labelled 'null'." );
 
         // Mock some metrics
         List<MetricConfig> metrics = new ArrayList<>();
@@ -969,15 +975,16 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
     /**
      * Tests that the construction of a {@link MetricProcessorByTime} fails when time-series metrics
      * are configured alongside non-time-series metrics.
-     * @throws MetricProcessorException if the exceptional behavior could not be tested for unexpected reasons
+     * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
     @Test
     public void testExceptionOnConstructionWhenMixingTimeSeriesMetricsWithOtherMetrics()
-            throws MetricProcessorException, IOException
+            throws MetricParameterException, IOException
     {
-        exception.expect( MetricProcessorException.class );
-        exception.expectCause( CoreMatchers.isA( MetricConfigException.class ) );
+        exception.expect( MetricConfigException.class );
+        exception.expectMessage( "Cannot configure time-series metrics together with non-time-series metrics: correct "
+                + "the configuration labelled 'null'." );
 
         // Mock some metrics
         List<MetricConfig> metrics = new ArrayList<>();

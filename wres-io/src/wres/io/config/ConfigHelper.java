@@ -13,7 +13,6 @@ import java.text.DecimalFormat;
 import java.time.DateTimeException;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.time.MonthDay;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeParseException;
@@ -71,22 +70,15 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
+import wres.datamodel.thresholds.OneOrTwoThresholds;
+import wres.datamodel.thresholds.Threshold;
+import wres.datamodel.thresholds.ThresholdConstants;
+import wres.datamodel.thresholds.ThresholdsByMetric;
+import wres.datamodel.thresholds.ThresholdsByMetric.ThresholdsByMetricBuilder;
 import wres.grid.client.Fetcher;
 import wres.grid.client.Request;
-import wres.grid.client.Response;
+import wres.io.Operations;
 import wres.io.data.caching.DataSources;
-import wres.datamodel.thresholds.OneOrTwoThresholds;
-import wres.datamodel.thresholds.Threshold;
-import wres.datamodel.thresholds.ThresholdConstants;
-import wres.datamodel.thresholds.ThresholdsByMetric;
-import wres.datamodel.thresholds.ThresholdsByMetric.ThresholdsByMetricBuilder;
-import wres.io.Operations;
-import wres.datamodel.thresholds.OneOrTwoThresholds;
-import wres.datamodel.thresholds.Threshold;
-import wres.datamodel.thresholds.ThresholdConstants;
-import wres.datamodel.thresholds.ThresholdsByMetric;
-import wres.datamodel.thresholds.ThresholdsByMetric.ThresholdsByMetricBuilder;
-import wres.io.Operations;
 import wres.io.data.caching.Features;
 import wres.io.data.details.ProjectDetails;
 import wres.io.reading.commaseparated.CommaSeparatedReader;
@@ -713,7 +705,6 @@ public class ConfigHelper
      * @throws NullPointerException when d is null
      */
     public static File getDirectoryFromDestinationConfig( DestinationConfig d )
-            throws ProjectConfigException
     {
         Path outputDirectory = Paths.get( d.getPath() );
 
@@ -934,7 +925,6 @@ public class ConfigHelper
      */
 
     public static ZoneOffset getZoneOffset( DataSourceConfig.Source sourceConfig )
-            throws ProjectConfigException
     {
         ZoneOffset result = null;
 
@@ -1445,6 +1435,7 @@ public class ConfigHelper
      * @throws NullPointerException if any required input is null, including the identifier associated 
      *            with the metadata
      * @throws IOException if the path cannot be produced
+     * @throws ProjectConfigException when the destination configuration is invalid
      */
 
     public static Path getOutputPathToWrite( DestinationConfig destinationConfig,
@@ -1461,15 +1452,7 @@ public class ConfigHelper
                                                       + "a path for writing." );
 
         // Determine the directory
-        File outputDirectory = null;
-        try
-        {
-            outputDirectory = getDirectoryFromDestinationConfig( destinationConfig );
-        }
-        catch ( ProjectConfigException pce )
-        {
-            throw new IOException( ConfigHelper.OUTPUT_CLAUSE_BOILERPLATE, pce );
-        }
+        File outputDirectory = getDirectoryFromDestinationConfig( destinationConfig );
 
         // Build the path 
         StringJoiner joinElements = new StringJoiner( "_" );
@@ -1526,7 +1509,6 @@ public class ConfigHelper
 
     public static Map<FeaturePlus, ThresholdsByMetric>
             readExternalThresholdsFromProjectConfig( ProjectConfig projectConfig )
-                    throws MetricConfigException
     {
         Objects.requireNonNull( projectConfig, NULL_CONFIGURATION_ERROR );
 
@@ -1585,7 +1567,6 @@ public class ConfigHelper
                                                           MetricsConfig group,
                                                           ThresholdsConfig thresholdsConfig,
                                                           Dimension units )
-                    throws MetricConfigException
     {
 
         Objects.requireNonNull( mutate, "Specify a non-null map of thresholds to mutate." );
@@ -1634,7 +1615,6 @@ public class ConfigHelper
             readOneExternalThresholdFromProjectConfig( ThresholdsConfig threshold,
                                                        Set<MetricConstants> metrics,
                                                        Dimension units )
-                    throws MetricConfigException
     {
 
         Objects.requireNonNull( threshold, "Specify non-null threshold configuration." );
@@ -1766,6 +1746,7 @@ public class ConfigHelper
      * @param metrics the resolved DoubleScore metrics to write
      * @return a writer
      * @throws IOException if the project could not be validated or the writer could not be created
+     * @throws ProjectConfigException if project configuration is invalid
      */
 
     public static NetcdfDoubleScoreWriter getNetcdfWriter( String projectIdentifier,
@@ -1778,15 +1759,7 @@ public class ConfigHelper
         Objects.requireNonNull( projectConfig, NULL_CONFIGURATION_ERROR );
 
         // Validate configuration
-        try
-        {
-            WriterHelper.validateProjectForWriting( projectConfig );
-        }
-        // Wrap: public methods should throw one checked exception type
-        catch ( ProjectConfigException e )
-        {
-            throw new IOException( "While validating project configuration for writing: ", e );
-        }
+        WriterHelper.validateProjectForWriting( projectConfig );
 
         int basisTimes;
         int leadCount;

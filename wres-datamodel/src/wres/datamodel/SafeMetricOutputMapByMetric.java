@@ -20,8 +20,6 @@ import wres.datamodel.outputs.MetricOutputMapByMetric;
  * Immutable map of {@link MetricOutput} stored by unique metric identifier.
  *
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 class SafeMetricOutputMapByMetric<T extends MetricOutput<?>> implements MetricOutputMapByMetric<T>
 {

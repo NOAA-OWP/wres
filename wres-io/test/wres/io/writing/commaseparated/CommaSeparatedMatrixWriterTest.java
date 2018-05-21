@@ -58,7 +58,7 @@ public class CommaSeparatedMatrixWriterTest extends CommaSeparatedWriterTest
 
     @Test
     public void writeMatrixOutput()
-            throws ProjectConfigException, IOException, InterruptedException,
+            throws IOException, InterruptedException,
             ExecutionException, MetricOutputAccessException
     {
 

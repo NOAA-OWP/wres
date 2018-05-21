@@ -31,8 +31,6 @@ import wres.io.config.ConfigHelper;
  * Helps write contingency tables comprising {@link MatrixOutput} to a file of Comma Separated Values (CSV).
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 1.0
  */
 
 public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
@@ -48,7 +46,7 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
      * @throws ProjectConfigException if the project configuration is not valid for writing
      */
 
-    public static CommaSeparatedMatrixWriter of( final ProjectConfig projectConfig ) throws ProjectConfigException
+    public static CommaSeparatedMatrixWriter of( final ProjectConfig projectConfig )
     {
         return new CommaSeparatedMatrixWriter( projectConfig );
     }
@@ -303,7 +301,7 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
      * @throws ProjectConfigException if the project configuration is not valid for writing 
      */
 
-    private CommaSeparatedMatrixWriter( ProjectConfig projectConfig ) throws ProjectConfigException
+    private CommaSeparatedMatrixWriter( ProjectConfig projectConfig )
     {
         super( projectConfig );
     }
