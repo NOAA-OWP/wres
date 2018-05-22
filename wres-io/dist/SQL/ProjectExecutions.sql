@@ -7,7 +7,7 @@ SELECT CASE
             WHEN failed = true THEN 'FAILED'
             ELSE 'SUCCEEDED'
     END AS status,
-    substring(project, '(?<=<project label=".+" name=")[^"]+') AS project_name,
+    substring(executionlog.project, '(?<=<project (label=".+" )?name=")[^"]+'::text) AS project_name,
     arguments,
     start_time,
     run_time,
