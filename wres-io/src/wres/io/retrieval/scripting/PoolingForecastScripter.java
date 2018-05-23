@@ -97,7 +97,7 @@ class PoolingForecastScripter extends Scripter
         if (this.getProjectDetails().getLatestDate() != null)
         {
             this.addTab().addLine("AND TS.initialization_date + ",
-                                  "INTERVAL '1 HOUR' * FV.lead >= '",
+                                  "INTERVAL '1 HOUR' * FV.lead <= '",
                                   this.getProjectDetails().getLatestDate(),
                                   "'");
         }
