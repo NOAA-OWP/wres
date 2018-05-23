@@ -708,7 +708,7 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
     {
         if (this.variableID == null)
         {
-            this.variableID = Variables.getVariableID( this.parameter.getName() );
+            this.variableID = Variables.getVariableID( this.dataSourceConfig.getVariable().getValue() );
         }
 
         return this.variableID;
