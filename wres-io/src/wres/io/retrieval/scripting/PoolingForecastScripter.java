@@ -32,7 +32,15 @@ class PoolingForecastScripter extends Scripter
             this.add(" + ", this.getTimeShift() * 3600);
         }
 
-        this.addLine(")::bigint AS basis_epoch_time,");
+        this.addLine("))::bigint AS basis_epoch_time,");
+        this.addTab().add("(EXTRACT(epoch FROM TS.initialization_date + INTERVAL '1 HOUR' * FV.lead");
+
+        if (this.getTimeShift() != null)
+        {
+            this.add(" + ", this.getTimeShift() * 3600);
+        }
+
+        this.addLine("))::bigint AS value_date,");
         this.addTab().addLine("FV.lead,");
         this.addTab().addLine("ARRAY_AGG(FV.forecasted_value ORDER BY TS.ensemble_id) AS measurements,");
         this.addTab().addLine("TS.measurementunit_id");
@@ -48,7 +56,7 @@ class PoolingForecastScripter extends Scripter
         this.addTab(  2  ).addLine("AND PS.member = ", this.getMember());
         this.addLine(") AS PS");
         this.addTab().addLine("ON PS.source_id = FS.source_id");
-        this.addLine("WHERE TS", this.getVariablePositionClause());
+        this.addLine("WHERE TS.", this.getVariablePositionClause());
         this.addTab().addLine("AND ", this.getProjectDetails().getLeadQualifier( this.getFeature(), this.getProgress(), "FV" ));
 
         this.applyEnsembleConstraint();
@@ -63,10 +71,10 @@ class PoolingForecastScripter extends Scripter
                 this.getProjectDetails().getIssuePoolingWindowPeriod()
         );
 
-        this.add( "        AND TS.initialization_date >= ('", this.getProjectDetails().getEarliestIssueDate(), "'::timestamp without time zone + (INTERVAL '1 HOUR' * ");
+        this.addTab().add( "AND TS.initialization_date >= ('", this.getProjectDetails().getEarliestIssueDate(), "'::timestamp without time zone + (INTERVAL '1 HOUR' * ");
         this.add( frequency );
         this.addLine(" ) * ", this.getSequenceStep(), ")");
-        this.add( "        AND TS.initialization_date <= ('", this.getProjectDetails().getEarliestIssueDate() );
+        this.addTab().add( "AND TS.initialization_date <= ('", this.getProjectDetails().getEarliestIssueDate() );
         this.add("'::timestamp without time zone + (INTERVAL '1 HOUR' * ", frequency, ") * ", this.getSequenceStep(), ")");
 
         if (span > 0)
