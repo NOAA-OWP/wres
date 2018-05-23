@@ -677,13 +677,14 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             throws SQLException, IOException
     {
         List<ForecastedPair> pairs = new ArrayList<>();
-        String loadScript = getLoadScript( dataSourceConfig );
+        String loadScript = this.getLoadScript( dataSourceConfig );
 
         Connection connection = null;
         ResultSet resultSet = null;
 
         IngestedValueCollection ingestedValues = new IngestedValueCollection(  );
         long reference = -1;
+        int currentLead = Integer.MIN_VALUE;
 
         /*
          * Maps returned values to their position in their returned array.
@@ -735,7 +736,16 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
 
             while(resultSet.next())
             {
-                if (ingestedValues.size() > 0 && resultSet.getLong( "basis_epoch_time" ) != reference )
+                // Results need to be ordered by the ascending basis times
+                // first, then ascending lead times. If we have already
+                // gathered at least one value and either encounter a issue
+                // time that differs from the one we just gathered or we
+                // encounter a value for the same issue time but a
+                // non-incremented lead, we want to condense our gathered
+                // values for processing and continue
+                if (ingestedValues.size() > 0 &&
+                    (resultSet.getLong( "basis_epoch_time" ) != reference ||
+                     resultSet.getInt( "lead" ) <= currentLead))
                 {
                     Integer aggregationStep = ingestedValues.getFirstCondensingStep(
                             period,
@@ -766,6 +776,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                 }
 
                 reference = resultSet.getLong("basis_epoch_time");
+                currentLead = resultSet.getInt( "lead" );
 
                 ingestedValues.add( resultSet, this.projectDetails);
             }
