@@ -3,6 +3,9 @@ FROM openjdk:8u171-jre-slim-stretch
 RUN addgroup --gid 1370800073 wres \
     && adduser --system --uid 499 --gid 1370800073 wres_tasker_docker
 
+# Disable assistive technologies in headless JRE
+RUN sed -i 's/^assistive_technologies=/#assistive_technologies=/' /etc/java-8-openjdk/accessibility.properties
+
 ARG version
 WORKDIR /opt
 COPY ./build/distributions/wres-tasker-${version}.zip .
