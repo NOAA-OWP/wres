@@ -2,15 +2,10 @@ package wres.io.retrieval.scripting;
 
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.StringJoiner;
 
 import wres.config.generated.DataSourceConfig;
-import wres.config.generated.EnsembleCondition;
 import wres.config.generated.Feature;
 import wres.io.config.ConfigHelper;
-import wres.io.data.caching.Ensembles;
 import wres.io.data.details.ProjectDetails;
 
 class BackToBackForecastScripter extends Scripter
@@ -123,12 +118,12 @@ class BackToBackForecastScripter extends Scripter
 
     private void applyGrouping()
     {
-        this.addLine( "GROUP BY ", this.getBaseDateName(), ", FV.lead, TS.measurementunit_id" );
+        this.addLine( "GROUP BY ", this.getBaseDateName(), ", FV.lead, TS.measurementunit_id, FS.source_id" );
     }
 
     private void applyOrdering()
     {
-        this.addLine("ORDER BY ", this.getBaseDateName(), ", lead");
+        this.addLine("ORDER BY ", this.getBaseDateName(), ", FS.source_id, lead");
     }
 
     private String validTimeCalculation;

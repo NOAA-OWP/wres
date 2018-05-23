@@ -11,6 +11,8 @@ import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import java.beans.PropertyVetoException;
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -84,7 +86,7 @@ final class DatabaseSettings
 			testConnection();
 			cleanPriorRuns();
 		}
-		catch ( XMLStreamException | SQLException e )
+		catch ( XMLStreamException | SQLException | IOException e )
 		{
 			throw new ExceptionInInitializerError( e );
 		}
@@ -144,10 +146,36 @@ final class DatabaseSettings
 		this.applySystemPropertyOverrides();
 	}
 
-	private void testConnection() throws SQLException
-    {
+	private boolean urlIsValid() throws IOException
+	{
+		if (this.url.equalsIgnoreCase( "localhost" ))
+		{
+			return true;
+		}
+
+        try (Socket socket = new Socket())
+        {
+            socket.connect( new InetSocketAddress( this.url, Integer.parseInt(this.port) ), 2000 );
+            return true;
+        }
+        catch (IOException ioe)
+        {
+            LOGGER.error( "The intended URL ({}) is not accessible due to {}", this.url, ioe.toString() );
+            return false;
+        }
+	}
+
+	private void testConnection() throws SQLException, IOException
+	{
         Connection connection = null;
         Statement test = null;
+
+        boolean validURL = this.urlIsValid();
+
+        if (!validURL)
+		{
+			throw new IOException( "The given database URL ('" + this.url + "') is not accessible." );
+		}
 
         try {
             Class.forName(DRIVER_MAPPING.get(getDatabaseType()));

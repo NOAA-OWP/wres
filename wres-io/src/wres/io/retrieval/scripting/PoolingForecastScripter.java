@@ -2,12 +2,9 @@ package wres.io.retrieval.scripting;
 
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.StringJoiner;
 
 import wres.config.generated.DataSourceConfig;
-import wres.config.generated.EnsembleCondition;
 import wres.config.generated.Feature;
-import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.details.ProjectDetails;
 import wres.util.TimeHelper;
@@ -26,40 +23,35 @@ class PoolingForecastScripter extends Scripter
     @Override
     String formScript() throws SQLException, IOException
     {
-        this.applyCommonTableExpression();
-        this.addLine("SELECT ");
-        this.applyValueDate();
-        this.addLine("    F.lead,");
-        this.addTab().add("(EXTRACT(epoch FROM F.basis_time)");
+
+        // TODO: Split out into other functions
+        this.add("SELECT (EXTRACT(epoch FROM TS.initialization_date");
 
         if (this.getTimeShift() != null)
         {
             this.add(" + ", this.getTimeShift() * 3600);
         }
 
-        this.addLine(")::bigint as basis_epoch_time,");
-        this.applyMeasurementArray();
-        this.addLine("    F.measurementunit_id");
-        this.addLine( "FROM forecasts F" );
-        this.applyGroupAndOrderBy();
+        this.addLine(")::bigint AS basis_epoch_time,");
+        this.addTab().addLine("FV.lead,");
+        this.addTab().addLine("ARRAY_AGG(FV.forecasted_value ORDER BY TS.ensemble_id) AS measurements,");
+        this.addTab().addLine("TS.measurementunit_id");
+        this.addLine("FROM wres.TimeSeries TS");
+        this.addLine("INNER JOIN wres.ForecastValue FV");
+        this.addTab().addLine("ON FV.timeseries_id = TS.timeseries_id");
+        this.addLine("INNER JOIN wres.ForecastSource FS");
+        this.addTab().addLine("ON FS.forecast_id = TS.timeseries_id");
+        this.addLine("INNER JOIN (");
+        this.addTab().addLine("SELECT PS.source_id");
+        this.addTab().addLine("FROM wres.ProjectSource PS");
+        this.addTab().addLine("WHERE PS.project_id = ", this.getProjectDetails().getId());
+        this.addTab(  2  ).addLine("AND PS.member = ", this.getMember());
+        this.addLine(") AS PS");
+        this.addTab().addLine("ON PS.source_id = FS.source_id");
+        this.addLine("WHERE TS", this.getVariablePositionClause());
+        this.addTab().addLine("AND ", this.getProjectDetails().getLeadQualifier( this.getFeature(), this.getProgress(), "FV" ));
 
-        return this.getScript();
-    }
-
-    private void applyCommonTableExpression()
-            throws SQLException, IOException
-    {
-        // TODO: Break out into separate functions
-        this.addLine("WITH forecasts AS");
-        this.addLine("(");
-        this.addLine("    SELECT F.basis_time,");
-        this.addLine( "       F.valid_time,");
-        this.addLine("        F.lead,");
-        this.addLine("        F.forecasted_value,");
-        this.addLine("        F.ensemble_id,");
-        this.addLine("        F.measurementunit_id");
-        this.addLine("    FROM wres.Forecasts F");
-        this.addLine("    WHERE F.variable_id = ", this.getVariableID());
+        this.applyEnsembleConstraint();
 
         long frequency = TimeHelper.unitsToLeadUnits(
                 this.getProjectDetails().getIssuePoolingWindowUnit(),
@@ -71,17 +63,11 @@ class PoolingForecastScripter extends Scripter
                 this.getProjectDetails().getIssuePoolingWindowPeriod()
         );
 
-        this.addLine( "        AND F.feature_id = ", Features.getFeatureID(this.getFeature()));
-        this.addTab(2).addLine("AND ", this.getProjectDetails().getLeadQualifier( this.getFeature(), this.getProgress(), "F" ));
-
-        // TODO: Should time shift adjustments be added here?
-        this.add( "        AND F.basis_time >= ('", this.getProjectDetails().getEarliestIssueDate(), "'::timestamp without time zone + (INTERVAL '1 HOUR' * ");
+        this.add( "        AND TS.initialization_date >= ('", this.getProjectDetails().getEarliestIssueDate(), "'::timestamp without time zone + (INTERVAL '1 HOUR' * ");
         this.add( frequency );
         this.addLine(" ) * ", this.getSequenceStep(), ")");
-        this.add( "        AND F.basis_time <= ('", this.getProjectDetails().getEarliestIssueDate() );
+        this.add( "        AND TS.initialization_date <= ('", this.getProjectDetails().getEarliestIssueDate() );
         this.add("'::timestamp without time zone + (INTERVAL '1 HOUR' * ", frequency, ") * ", this.getSequenceStep(), ")");
-
-        // TODO: Is there a reason why valid times aren't being considered?
 
         if (span > 0)
         {
@@ -92,29 +78,33 @@ class PoolingForecastScripter extends Scripter
             this.addLine();
         }
 
-        this.applyEnsembleConstraint();
+        if (this.getProjectDetails().getEarliestDate() != null)
+        {
+            this.addLine().addLine("AND TS.initialization_date + ",
+                                   "INTERVAL '1 HOUR' * FV.lead >= '",
+                                   this.getProjectDetails().getEarliestDate(),
+                                   "'");
+        }
 
-        this.addLine( "        AND EXISTS (" );
-        this.addLine( "            SELECT 1");
-        this.addLine( "            FROM wres.ForecastSource FS");
-        this.addLine( "            INNER JOIN wres.ProjectSource PS" );
-        this.addLine( "                ON PS.source_id = FS.source_id" );
-        this.addLine( "            WHERE PS.project_id = ", this.getProjectDetails().getId() );
-        this.addLine( "                AND PS.member = ", this.getMember() );
-        this.addLine( "                AND FS.forecast_id = F.timeseries_id" );
-        this.addLine( "        )" );
-        this.addLine(")");
-    }
+        if (this.getProjectDetails().getLatestDate() != null)
+        {
+            this.addTab().addLine("AND TS.initialization_date + ",
+                                  "INTERVAL '1 HOUR' * FV.lead >= '",
+                                  this.getProjectDetails().getLatestDate(),
+                                  "'");
+        }
 
-    private void applyMeasurementArray()
-    {
-        this.addLine("    ARRAY_AGG(F.forecasted_value ORDER BY F.ensemble_id) AS measurements,");
-    }
+        this.addTab().addLine("AND EXISTS (");
+        this.addTab(  2  ).addLine("SELECT 1");
+        this.addTab(  2  ).addLine("FROM wres.ProjectSource PS");
+        this.addTab(  2  ).addLine("WHERE PS.project_id = ", this.getProjectDetails().getId());
+        this.addTab(   3   ).addLine("AND PS.member = ", this.getMember());
+        this.addTab(   3   ).addLine("AND PS.source_id = FS.source_id");
+        this.addTab().addLine(")");
+        this.addLine("GROUP BY TS.initialization_date, FV.lead, FS.source_id, TS.measurementunit_id");
+        this.addLine("ORDER BY TS.initialization_date, FS.source_id, FV.lead;");
 
-    private void applyGroupAndOrderBy()
-    {
-        this.addLine( "GROUP BY F.basis_time, F.valid_time, F.lead, F.measurementunit_id" );
-        this.addLine( "ORDER BY F.basis_time, F.valid_time, F.lead;" );
+        return this.getScript();
     }
 
     @Override

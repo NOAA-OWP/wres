@@ -43,6 +43,7 @@ import wres.io.reading.waterml.Response;
 import wres.io.reading.waterml.timeseries.TimeSeries;
 import wres.io.reading.waterml.timeseries.TimeSeriesValue;
 import wres.io.reading.waterml.timeseries.TimeSeriesValues;
+import wres.io.reading.waterml.variable.Variable;
 import wres.io.utilities.Database;
 import wres.util.functional.ExceptionalConsumer;
 import wres.io.utilities.NoDataException;
@@ -474,11 +475,17 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
             // If the user uses the explicit USGS code, use that and bypass everything else
             if (this.dataSourceConfig.getVariable().getValue().matches( "\\d{5}" ))
             {
+                // If this is new, parameter will be set to null, but we still
+                // get the parameter code
+                this.parameter = USGSParameters.getParameterByCode(
+                        this.dataSourceConfig.getVariable().getValue()
+                );
                 this.parameterCode = this.dataSourceConfig.getVariable().getValue();
             }
             else
             {
-                this.parameterCode = this.getParameter().getParameterCode();
+                this.parameter = this.getParameter();
+                this.parameterCode = this.parameter.getParameterCode();
             }
         }
         return this.parameterCode;
@@ -701,30 +708,7 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
     {
         if (this.variableID == null)
         {
-            DataSourceConfig.Variable variable;
-
-            if (this.projectConfig.getInputs().getLeft().equals( this.dataSourceConfig ))
-            {
-                variable = this.projectConfig
-                               .getInputs()
-                               .getLeft()
-                               .getVariable();
-            }
-            else if (this.projectConfig.getInputs().getRight().equals( this.dataSourceConfig ))
-            {
-                variable = this.projectConfig
-                               .getInputs()
-                               .getRight()
-                               .getVariable();
-            }
-            else
-            {
-                variable = this.projectConfig
-                               .getInputs()
-                               .getBaseline()
-                               .getVariable();
-            }
-            this.variableID = Variables.getVariableID( variable.getValue() );
+            this.variableID = Variables.getVariableID( this.parameter.getName() );
         }
 
         return this.variableID;
@@ -771,6 +755,27 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
 
         for ( TimeSeries series : usgsResponse.getValue().getTimeSeries() )
         {
+            if (this.parameter == null)
+            {
+                // If this is a new variable gotten via a parameter code, we
+                // won't have variable information yet. As a result, we need
+                // to get it from the response.
+                Variable responseVariable = series.getVariable();
+
+                try
+                {
+                    this.parameter = USGSParameters.addRequestedParameter(
+                            responseVariable.getVariableName(),
+                            responseVariable.getVariableCode()[0].getValue(),
+                            responseVariable.getVariableDescription(),
+                            responseVariable.getUnit().getUnitCode() );
+                }
+                catch ( SQLException e )
+                {
+                    throw new IOException( "New variable metadata could not be saved.", e );
+                }
+            }
+
             boolean validSeries = this.readSeries( series, sourceID );
 
             this.update( series );

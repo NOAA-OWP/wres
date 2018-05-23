@@ -2,6 +2,7 @@ package wres.io.data.caching;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -85,6 +86,23 @@ public class USGSParameters
             this.measurementUnit = results.getString("measurement_unit");
             this.aggregation = results.getString("aggregation");
             this.measurementUnitID = results.getInt( "measurementunit_id" );
+        }
+
+        private USGSParameter (
+                final String name,
+                final String description,
+                final String parameterCode,
+                final String aggregation,
+                final String measurementUnit,
+                final Integer measurementUnitID
+        )
+        {
+            this.name = name;
+            this.description = description;
+            this.parameterCode = parameterCode;
+            this.aggregation = aggregation;
+            this.measurementUnit = measurementUnit;
+            this.measurementUnitID = measurementUnitID;
         }
 
         @Override
@@ -259,5 +277,51 @@ public class USGSParameters
         }
 
         return matchingParameter;
+    }
+
+    public static USGSParameter addRequestedParameter(
+            final String name,
+            final String code,
+            final String description,
+            final String measurementUnit)
+            throws SQLException
+    {
+        synchronized ( USGSParameters.PARAMETER_LOCK )
+        {
+            String usgsName = name.split( "," )[0];
+            int measurementUnitId =
+                    MeasurementUnits.getMeasurementUnitID( measurementUnit );
+
+            ScriptBuilder script = new ScriptBuilder();
+            script.addLine( "INSERT INTO wres.USGSParameter(" );
+            script.addTab().addLine( "name," );
+            script.addTab().addLine( "description," );
+            script.addTab().addLine( "parameter_code," );
+            script.addTab().addLine( "measurement_unit," );
+            script.addTab().addLine( "measurementunit_id" );
+            script.addLine( ")" );
+            script.addLine( "VALUES (" );
+            script.addTab().addLine( "'", usgsName, "'," );
+            script.addTab().addLine( "'", description, "'," );
+            script.addTab().addLine( "'", code, "'," );
+            script.addTab().addLine( "'", measurementUnitId, "'," );
+            script.addTab().addLine( "'None'" );
+            script.addLine( ")" );
+            script.add( "RETURNING *;" );
+
+            List<USGSParameter> newParameter =
+                    script.interpret( USGSParameter::new );
+
+            USGSParameter parameter = null;
+
+            if ( !newParameter.isEmpty() )
+            {
+                parameter = newParameter.get( 0 );
+                USGSParameters.getParameterStore()
+                              .putIfAbsent( parameter.getKey(), parameter );
+            }
+
+            return parameter;
+        }
     }
 }
