@@ -5,11 +5,11 @@
 # Read the options, which is currently only one: -l to indicate a run of latest. 
 if [ $# -lt 1 ]
 then
-	echo "Usage: $0 [-l 0|1] [-d WRES_DB_NAME] [-t systestsDir] scenarios"
+	echo "Usage: $0 [-l 0|1] [-d WRES_DB_NAME] [-t systestsDir] [-r revision] scenarios"
 	exit 2
 fi
 latest=0
-while getopts "l:d:t:" option; do
+while getopts "l:d:t:r:" option; do
      case "${option}"
      in
          l)
@@ -22,9 +22,12 @@ while getopts "l:d:t:" option; do
 	t)
 		systestsDir=$OPTARG
 		;;	
+	r)
+		latest_noZip=$OPTARG
+		;;
 	?)
 		echo "Unknown option -$OPTARG" >&2
-		echo "Usage: $0 [-l 0|1] [-d WRES_DB_NAME] [-t systestsDir] scenarios"
+		echo "Usage: $0 [-l 0|1] [-d WRES_DB_NAME] [-t systestsDir] [-r revision] scenarios"
 		exit 2
 		;;
      esac
@@ -84,6 +87,8 @@ fi
 
 
 echo "scenarios = $scenarios"
+echo "latest_noZip = $latest_noZip"
+
 # ============================================================
 # Loop over provided scenarios
 # ============================================================
@@ -124,6 +129,12 @@ for scenarioName in $scenarios; do
     echo "$echoPrefix Moving (cd) to execution directory..."
     cd $executeDir
 
+    if [ -f running ]
+    then # go to next if this one is running
+	continue
+    else
+	touch running
+    fi
     # ============================================================
     # Process 0-length files, such as CLEAN
     # ============================================================
@@ -135,7 +146,7 @@ for scenarioName in $scenarios; do
     fi
     if [ -f CLEAN ]; then
         echo "$echoPrefix Cleaning the database: ../wres.sh cleandatabase ..."
-        ../wres.sh cleandatabase
+        ../wres_override.sh cleandatabase
         if [[ $? != 0 ]]; then
             echo "$echoPrefix WRES clean failed; see above.  Something is wrong with the database $WRES_DB_NAME.  Aborting all tests..." | tee /dev/stderr
             exit 1
@@ -160,7 +171,7 @@ for scenarioName in $scenarios; do
     # If it fails then the file FAILS must exist in the scenario directory or its treated
     # as a test failure.  the file FAILS tells this script that failure is expected.
     echo "$echoPrefix Executing the project: ../wres.sh execute $configName ..."
-    ../wres.sh execute $configName
+    ../wres_override.sh execute $configName
     if [[ $? != 0 ]]; then
         if [ -f FAILS ]; then
             echo "$echoPrefix Expected failure occurred.  Test passes."
@@ -226,4 +237,16 @@ for scenarioName in $scenarios; do
     endsec=$(date +%s)
     echo "$echoPrefix Test completed in $(($endsec - $startsec)) seconds" | tee /dev/stderr
 
+    if [ -f running ]
+    then
+	rm -v running
+    fi
 done
+
+egrep -C 3 '(diff|FAIL|Aborting)' systests_900screenCatch_$latest_noZip.txt > systests_900Results_$latest_noZip.txt
+if [ -s systests_900Results_$latest_noZip.txt ]
+then
+	/usr/bin/mailx -S smtp=140.90.91.135 -s "systests 900 results from $latest_noZip" Raymond.Chui@***REMOVED***,Hank.Herr@***REMOVED***,james.d.brown@***REMOVED***,jesse.bickel@***REMOVED***,christopher.tubbs@***REMOVED***,Alexander.Maestre@***REMOVED***,sanian.gaffar@***REMOVED*** < systests_900screenCatch_$latest_noZip.txt
+else
+	rm -v systests_900Results_$latest_noZip.txt
+fi
