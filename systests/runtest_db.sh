@@ -1,3 +1,5 @@
+#!/usr/bin/sh
+
 # This script is designed for execution on the WRES test VM within the Git cloned directory .../wres/systests.
 # Arguments specify scenario subdirectories of systests and can be more than one.  It will look through the 
 #   arguments provided in order.
@@ -146,7 +148,9 @@ for scenarioName in $scenarios; do
     if [ -f CLEAN ]; then
         echo "$echoPrefix Cleaning the database: ../wres_override.sh cleandatabase ..."
         ../wres_override.sh cleandatabase
-        if [[ $? != 0 ]]; then
+        if [ $? != 0 ]
+	then
+        #if [[ $? != 0 ]]; then
             echo "$echoPrefix WRES clean failed at $?; see above.  Something is wrong with the database $WRES_DB_NAME.  Aborting all tests..." | tee /dev/stderr
 	    #tail -100 /home/wres-cron/wres_logs/wres_900.log
 	    if [ -f running ]
