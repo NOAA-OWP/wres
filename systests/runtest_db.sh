@@ -85,9 +85,8 @@ if [ ! -f $systestsDir/data ] && [ ! -d $systestsDir/data ]; then
     ln -s /wres_share/testing/data $systestsDir/data
 fi
 
-
-echo "scenarios = $scenarios"
 echo "latest_noZip = $latest_noZip"
+echo "scenarios = $scenarios"
 
 # ============================================================
 # Loop over provided scenarios
@@ -149,6 +148,10 @@ for scenarioName in $scenarios; do
         ../wres_override.sh cleandatabase
         if [[ $? != 0 ]]; then
             echo "$echoPrefix WRES clean failed; see above.  Something is wrong with the database $WRES_DB_NAME.  Aborting all tests..." | tee /dev/stderr
+	    if [ -f running ]
+	    then
+	    	rm -v running
+	    fi
             exit 1
         fi
     fi
@@ -246,7 +249,7 @@ done
 egrep -C 3 '(diff|FAIL|Aborting)' systests_900screenCatch_$latest_noZip.txt > systests_900Results_$latest_noZip.txt
 if [ -s systests_900Results_$latest_noZip.txt ]
 then
-	/usr/bin/mailx -S smtp=140.90.91.135 -s "systests 900 results from $latest_noZip" Raymond.Chui@***REMOVED***,Hank.Herr@***REMOVED***,james.d.brown@***REMOVED***,jesse.bickel@***REMOVED***,christopher.tubbs@***REMOVED***,Alexander.Maestre@***REMOVED***,sanian.gaffar@***REMOVED*** < systests_900screenCatch_$latest_noZip.txt
+	/usr/bin/mailx -S smtp=140.90.91.135 -s "systests 900 results from $latest_noZip" -a systests_900screenCatch_$latest_noZip.txt Raymond.Chui@***REMOVED***,Hank.Herr@***REMOVED***,james.d.brown@***REMOVED***,jesse.bickel@***REMOVED***,christopher.tubbs@***REMOVED***,Alexander.Maestre@***REMOVED***,sanian.gaffar@***REMOVED*** < systests_900Results_$latest_noZip.txt 
 else
 	rm -v systests_900Results_$latest_noZip.txt
 fi
