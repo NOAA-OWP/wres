@@ -77,7 +77,8 @@ echoPrefix="===================="
 if [ ! -f $systestsDir/wres.sh ]; then
     echo "$echoPrefix Creating link $systestsDir/wres.sh, ln -s /wres_share/releases/wres.sh $systestsDir/wres.sh ..."
     echo "(If this is not executed on the WRES test VM, then this link will most likely not work.)"
-    ln -s /wres_share/releases/wres.sh $systestsDir/wres.sh
+    ln -sv /wres_share/releases/wres_override.sh $systestsDir/wres_override.sh
+    #ln -s /wres_share/releases/wres.sh $systestsDir/wres.sh
 fi
 
 # Put a link to the testing data directory in place if it does not exist.
