@@ -148,12 +148,14 @@ for scenarioName in $scenarios; do
         ../wres_override.sh cleandatabase
         if [[ $? != 0 ]]; then
             echo "$echoPrefix WRES clean failed at $?; see above.  Something is wrong with the database $WRES_DB_NAME.  Aborting all tests..." | tee /dev/stderr
-	    tail -100 /home/wres-cron/wres_logs/wres_900.log
+	    #tail -100 /home/wres-cron/wres_logs/wres_900.log
 	    if [ -f running ]
 	    then
 	    	rm -v running
 	    fi
             exit 1
+	else
+		echo "Finished clean database $WRES_DB_NAME"
         fi
     fi
 
@@ -174,7 +176,8 @@ for scenarioName in $scenarios; do
 
     # If it fails then the file FAILS must exist in the scenario directory or its treated
     # as a test failure.  the file FAILS tells this script that failure is expected.
-    echo "$echoPrefix Executing the project: ../wres.sh execute $configName ..."
+    pwd
+    echo "$echoPrefix Executing the project: ../wres_override.sh execute $configName ..."
     ../wres_override.sh execute $configName
     if [[ $? != 0 ]]; then
         if [ -f FAILS ]; then
@@ -240,17 +243,18 @@ for scenarioName in $scenarios; do
 
     endsec=$(date +%s)
     echo "$echoPrefix Test completed in $(($endsec - $startsec)) seconds" | tee /dev/stderr
-
+    pwd
     if [ -f running ]
     then
 	rm -v running
     fi
 done
 
-egrep -C 3 '(diff|FAIL|Aborting)' systests_900screenCatch_$latest_noZip.txt > systests_900Results_$latest_noZip.txt
-if [ -s systests_900Results_$latest_noZip.txt ]
+egrep -C 3 '(diff|FAIL|Aborting)' systests_900screenCatch_"$latest_noZip".txt > systests_900Results_"$latest_noZip".txt
+if [ -s systests_900Results_"$latest_noZip".txt ]
 then
-	/usr/bin/mailx -S smtp=140.90.91.135 -s "systests 900 results from $latest_noZip" -a systests_900screenCatch_$latest_noZip.txt Raymond.Chui@***REMOVED***,Hank.Herr@***REMOVED***,james.d.brown@***REMOVED***,jesse.bickel@***REMOVED***,christopher.tubbs@***REMOVED***,Alexander.Maestre@***REMOVED***,sanian.gaffar@***REMOVED*** < systests_900Results_$latest_noZip.txt 
+	/usr/bin/zip systests_900screenCatch_"$latest_noZip".txt
+	/usr/bin/mailx -S smtp=140.90.91.135 -s "systests 900 results from $latest_noZip" -a systests_900screenCatch_"$latest_noZip".txt.zip Raymond.Chui@***REMOVED***,Hank.Herr@***REMOVED***,james.d.brown@***REMOVED***,jesse.bickel@***REMOVED***,christopher.tubbs@***REMOVED***,Alexander.Maestre@***REMOVED***,sanian.gaffar@***REMOVED*** < systests_900Results_"$latest_noZip".txt 
 else
-	rm -v systests_900Results_$latest_noZip.txt
+	rm -v systests_900Results_"$latest_noZip".txt
 fi
