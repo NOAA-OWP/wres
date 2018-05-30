@@ -118,12 +118,32 @@ class BackToBackForecastScripter extends Scripter
 
     private void applyGrouping()
     {
-        this.addLine( "GROUP BY ", this.getBaseDateName(), ", FV.lead, TS.measurementunit_id, FS.source_id" );
+        this.add( "GROUP BY ", this.getBaseDateName(), ", FV.lead, TS.measurementunit_id" );
+
+        if (ConfigHelper.usesNetCDFData( this.getProjectDetails().getProjectConfig() ))
+        {
+            this.addLine();
+        }
+        else
+        {
+            this.addLine(", FS.source_id");
+        }
     }
 
     private void applyOrdering()
     {
-        this.addLine("ORDER BY ", this.getBaseDateName(), ", FS.source_id, lead");
+        this.add("ORDER BY ", this.getBaseDateName());
+
+        // We generally need to keep similar data from other files separate, so
+        // we do so by grouping by source id. All ensembles for NetCDF data
+        // will always be in separate files, however, so we need to exclude
+        // this logic for NetCDF data
+        if (!ConfigHelper.usesNetCDFData( this.getProjectDetails().getProjectConfig() ))
+        {
+            this.add(", FS.source_id");
+        }
+
+        this.addLine(", lead");
     }
 
     private String validTimeCalculation;
