@@ -50,6 +50,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
     private static final Object WINDOW_LOCK = new Object();
     private static final Map<TimeWindow, TimeWindowWriter> WRITERS = new ConcurrentHashMap<>(  );
     private static final Map<Object, Integer> vectorCoordinates = new ConcurrentHashMap<>(  );
+    private static final int VALUE_SAVE_LIMIT = 500;
 
     private static List<DestinationConfig> destinationConfig;
 
@@ -130,6 +131,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
                 private MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput> output;
             }.initialize( window, output );
 
+            LOGGER.debug("Submitting a task to write to a netcdf file.");
             Executor.submit( writerTask );
         }
     }
@@ -251,6 +253,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
 
             try
             {
+                // TODO: This should be responsible for opening and closing the writer; it shouldn't be left open
                 for (NetcdfValueKey key : this.valuesToSave)
                 {
                     ArrayDouble.D1 netcdfValue = new ArrayDouble.D1( 1 );
@@ -285,10 +288,10 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
             {
                 this.valuesToSave.add( new NetcdfValueKey( name, origin, value ) );
 
-                // TODO: Make the upper bound a constant or setting
-                if ( this.valuesToSave.size() > 500)
+                if ( this.valuesToSave.size() > VALUE_SAVE_LIMIT)
                 {
                     this.writeMetricResults();
+                    LOGGER.debug("Output {} values to {}", VALUE_SAVE_LIMIT, this.outputWriter.getNetcdfFile().getLocation());
                 }
             }
             finally
@@ -310,6 +313,10 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
         {
             int[] origin;
 
+            LOGGER.debug("Looking for the origin of {}", location);
+
+            // There must be a more coordinated way to do this without having to keep the file open
+            // What if we got the info through the template?
             if (isGridded())
             {
                 if (!location.hasCoordinates())
@@ -358,6 +365,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
                 origin[0] = vectorIndex;
             }
 
+            LOGGER.debug("The origin of {} was at {}", location, origin);
             return origin;
         }
 
@@ -372,6 +380,9 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
 
                     Array values = coordinate.read();
 
+                    // It's probably not necessary to load in everything
+                    // We're loading everything in at the moment because we
+                    // don't really know what to expect
                     for (int index = 0; index < values.getSize(); ++index)
                     {
                         vectorCoordinates.put(values.getObject( index ), index);
@@ -385,7 +396,18 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
         @Override
         public String toString()
         {
-            return this.outputWriter.getNetcdfFile().getLocation();
+            String representation = "TimeWindowWriter";
+
+            if (this.outputWriter != null && this.outputWriter.getNetcdfFile() != null)
+            {
+                representation = this.outputWriter.getNetcdfFile().getLocation();
+            }
+            else if (this.window != null)
+            {
+                representation = this.window.toString();
+            }
+
+            return representation;
         }
 
         private final List<NetcdfValueKey> valuesToSave = new ArrayList<>(  );
@@ -398,6 +420,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
         @Override
         public void close() throws IOException
         {
+            LOGGER.debug("Closing {}", this);
             if ( this.outputWriter != null )
             {
                 try

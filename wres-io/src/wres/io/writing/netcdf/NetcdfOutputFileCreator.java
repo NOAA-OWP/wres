@@ -39,6 +39,9 @@ class NetcdfOutputFileCreator
                                     final MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput> output)
             throws IOException
     {
+        // We're locking because each created output will be using the same
+        // template. We're only reading from the template, though, so it may be
+        // worth experimenting with no locking
         synchronized ( NetcdfOutputFileCreator.CREATION_LOCK )
         {
             Path targetPath = getFileName( destinationConfig, window, output );
@@ -48,14 +51,23 @@ class NetcdfOutputFileCreator
                 Files.deleteIfExists( targetPath );
             }
 
+            LOGGER.debug("Opening a copier to create a new file at {} based off of {}.", targetPath.toString(), templatePath);
+            // This is essentially leaving the underlying copier open. We need
+            // to close it, but we can't currently do so without closing the
+            // writer. We need the copier to return the name of the target,
+            // not the actual writer. We can then open a new one later.
             NetCDFCopier copier = new NetCDFCopier( templatePath, targetPath.toString() );
 
-            for ( Map.Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>> metrics : output.entrySet() )
+            // Iterate through each metric
+            for ( Map.Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>> metrics : output
+                    .entrySet() )
             {
                 MetricConstants metricConstants = metrics.getKey().getKey();
 
-                MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> values = metrics.getValue();
+                MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>
+                        values = metrics.getValue();
 
+                // Now iterate through each threshold for said metric
                 for ( Map.Entry<Pair<TimeWindow, OneOrTwoThresholds>, DoubleScoreOutput> outputWindow : values.entrySet() )
                 {
                     // TODO: Use getOutputDimension(), not getInputDimension()
@@ -63,13 +75,16 @@ class NetcdfOutputFileCreator
                     NetcdfOutputFileCreator.addVariable(
                             copier,
                             metricConstants,
-                            values.getMetadata().getDimension().getDimension(),
+                            values.getMetadata()
+                                  .getDimension()
+                                  .getDimension(),
                             outputWindow
                     );
                 }
             }
 
             return copier.write();
+
         }
     }
 
@@ -143,7 +158,6 @@ class NetcdfOutputFileCreator
         String name = NetcdfOutputFileCreator.getMetricVariableName( metric.toString(), output.getKey().getRight() );
 
         String longName = metric.toString() + " " + output.getKey().getValue().toString();
-        String unit = measurementUnit;
         String firstCondition = output.getKey().getValue().first().getCondition().name();
         String secondCondition = "None";
 
@@ -194,7 +208,7 @@ class NetcdfOutputFileCreator
         attributes.put("second_data_type", secondDataType);
         attributes.put("first_bound", firstBound);
         attributes.put("second_bound", secondBound);
-        attributes.put("unit", unit);
+        attributes.put("unit", measurementUnit);
         attributes.put("long_name", longName);
         attributes.put("first_condition", firstCondition);
         attributes.put("second_condition", secondCondition);
