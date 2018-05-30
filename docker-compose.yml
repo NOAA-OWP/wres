@@ -19,7 +19,7 @@ services:
         ports:
          - "5671:5671"
          - "15671:15671"
-        image: "134e0d68f034"
+        image: "65aa792a3d16"
         restart: always
         volumes:
          - /mnt/wres_secrets:/wres_secrets:ro
