@@ -40,10 +40,14 @@ public abstract class SystestBenchmarkChecker
     public static void main( String[] args ) throws IOException,
             InterruptedException, TimeSeriesAggregationException
     {
+        //=================================================================
+        // List XML files.
+        //=================================================================
+        
         //Get a listing of the directory and sort alphabetically the found file names.
         //The sorting should result in files sorted by issue time.  The sorting is important
         //since it will dictate the ordering of the output.
-        File baseDir = new File( "../systests/data/drrc2ForecastsOneMonth/" );
+        File baseDir = new File( "../systests/data/tmp801/" );
         List<File> allFiles = new ArrayList<File>();
         allFiles.addAll(
                          FileTools.listFilesWithSuffix( baseDir,
@@ -68,6 +72,18 @@ public abstract class SystestBenchmarkChecker
         }
         Collections.sort( fileNames );
 
+        //=================================================================
+        //Read the observations... a single time series.
+        //=================================================================
+        
+        //Read and store the observations.
+        TimeSeriesArrays obsTSS = TimeSeriesArraysTools.readFromFile( FileTools.newFile( baseDir, "../CKLN6_STG.xml" ) );
+        TimeSeriesArray obsTS = obsTSS.get( 0 );
+        
+
+        //=================================================================
+        //Read and aggregated forecast time series and compute corresponding observations.
+        //=================================================================
         //Store list of all output.
         List<String> listOfAllOutput = new ArrayList<>();
 
@@ -75,7 +91,7 @@ public abstract class SystestBenchmarkChecker
         SimpleDateFormat dateFormatter = new SimpleDateFormat( "yyyy-MM-dd HH:mm:ss" );
         dateFormatter.setTimeZone( TimeZone.getTimeZone( "GMT" ) );
 
-        //Map of results
+        //Map of results, which are stored as strings to be output to pairs file.
         Map<Pair<Date, Integer>, List<String>> resultsMap = new LinkedHashMap<>();
 
         //Loop through each file name...
@@ -85,30 +101,45 @@ public abstract class SystestBenchmarkChecker
             TimeSeriesArrays tss = TimeSeriesArraysTools.readFromFile( FileTools.newFile( baseDir, fileName ) );
             List<TimeSeriesArray> aggTSS = new ArrayList<>();
 
-            //Aggregate each time series to desired aggregation and add to a list.
+            //Aggregate each time series to desired aggregation and add to a list.  The aggregation below
+            //assumes all members read in from file have the same time parameters.
             for ( int i = 0; i < tss.size(); i++ )
             {
                 TimeSeriesArray ts = tss.get( i );
                 ( (DefaultTimeSeriesHeader) ts.getHeader() ).setParameterType( ParameterType.ACCUMULATIVE ); //Ensure a 4-point mean.
                 TimeSeriesArray newArray =
-                        AggregationTools.aggregateToMean( ts,
-                                                          ts.getForecastTime(),
-                                                          ts.getEndTime(),
-                                                          "3 hour",
+                        AggregationTools.aggregateToMaximum( ts,                                             //This is set to 801 desired time scale: Max from Day 3 - 6.
+                                                          ts.getForecastTime() + 48 * 1000 * 60 * 60,  
+                                                          ts.getForecastTime() + (48 + 96) * 1000 * 60 * 60, //OLD - ts.getEndTime(),
+                                                          "96 hour",
                                                           null,
                                                           null,
                                                           false,
                                                           false );
                 aggTSS.add( newArray );
-            }
 
+            }
+            
+            //Aggregate the observation time series over the same time span as the above. 
+            //XXX: I COULD NOT GET THE OBSERVATIONS TO ALWAYS COME OUT RIGHT WHEN CHECKING 801.  For some reason, some are NaN
+            //and I don't have time to debug, so for 801 I just used Excel.
+            TimeSeriesArray aggregatedObservedArray =
+                    AggregationTools.aggregateToMaximum( obsTS,                                               
+                                                      tss.get(0).getForecastTime() + 48 * 1000 * 60 * 60,  
+                                                      tss.get(0).getForecastTime() + (48 + 96) * 1000 * 60 * 60, //OLD - ts.getEndTime(),
+                                                      "96 hour",
+                                                      null,
+                                                      null,
+                                                      false,
+                                                      false );
+            
             //NOTE THE LEAD TIME RESTRICTION!  I'm essentially defining the lead time window within the for loop.
             //With the files sorted alphabetically, that should imply sorting by issue time, which should (?) lead to
             //identical ordering with the sorted_pairs.csv.
             DecimalFormat df = new DecimalFormat( "0.00000" );
 
-            //The for loop controls which aggregation lead times are included in the results map.
-            for ( int leadTimeIndex = 0; leadTimeIndex <= 6; leadTimeIndex += 2 )
+            //The for loop controls which aggregation lead times are included in the results map.  
+            for ( int leadTimeIndex = 0; leadTimeIndex <= 0; leadTimeIndex += 1 ) //For 801, only one lead time is paired.
             {
                 //Get the value for the lead time across all members.
                 List<Double> valuesForLeadTime = new ArrayList<>();
@@ -117,16 +148,21 @@ public abstract class SystestBenchmarkChecker
                     TimeSeriesArray ts = aggTSS.get( i );
                     valuesForLeadTime.add( (double) ts.getValue( leadTimeIndex ) );
                 }
+                
+                //Observe value is pulled from the aggregated observations.
+                double obsValue = aggregatedObservedArray.getValue( leadTimeIndex );
 
                 //Sort by value.
                 Collections.sort( valuesForLeadTime );
 
                 //Convert to formatted string and then put the strings together using a tool I wrote years ago since
                 //I'm not familiar with the newer Java tools.  The number format defined above is used.
+                //The observed value is inserted into the list before putting in the map.
                 List<String> strings =
                         valuesForLeadTime.stream().map( op -> df.format( op ) ).collect( Collectors.toList() );
+                strings.add( 0, df.format( obsValue ) );
                 resultsMap.put( new Pair<Date, Integer>( new Date( aggTSS.get( 0 ).getTime( leadTimeIndex ) ),
-                                                         (leadTimeIndex + 1) * 3 ),
+                                                         1 ), //There is only one lead time, so the pairs file will always use 1!  Here is the old value: (leadTimeIndex + 1) * 3 ),
                                 strings );
             }
         }
@@ -134,17 +170,18 @@ public abstract class SystestBenchmarkChecker
         //=================================================================
         //Pool the results!
         //=================================================================
-        //Result map is ready.  Output while loop will be for the issuedDatesPoolingWindow
+        //Result map is ready with pairs for each time series that could be pooled.  
+        //Output while loop will be for the issuedDatesPoolingWindow
         //Inner loop for the leadTimesPoolingWindow.
 
         //Prep the outer loop.  Initial settings dictated by issuedDatesPoolingWindow period and issuedDates start.
         //This is the first window:
-        Calendar windowStartDate = HCalendar.processDate( "1985-06-01 12:00:00" );
-        Calendar windowEndDate = HCalendar.processDate( "1985-06-01 12:00:00" );
+        Calendar windowStartDate = HCalendar.processDate( "1900-06-01 12:00:00" ); //For 801, set for all ts included. OLD - HCalendar.processDate( "1985-06-01 12:00:00" );
+        Calendar windowEndDate = HCalendar.processDate( "2100-06-01 12:00:00" ); //Set for all ts included. OLD - HCalendar.processDate( "1985-06-01 12:00:00" );
         windowEndDate.add( Calendar.DAY_OF_YEAR, 21 );
 
         //Overall end is dictated by the issuedDates end.
-        Calendar overallEndDate = HCalendar.processDate( "1985-06-30 12:00:00" );
+        Calendar overallEndDate = HCalendar.processDate( "2100-06-30 12:00:00" ); //Set for all ts included.  OLD - HCalendar.processDate( "1985-06-30 12:00:00" );
 
         //Overall window index to output to pairs results.
         int windowIndex = 1;
@@ -154,16 +191,16 @@ public abstract class SystestBenchmarkChecker
         {
             //Prep the inner loop.  Dictated by the leadTimePoolingWidnows period, (start, end], and leadHours start.
             int leadStartTime = 0;
-            int leadEndTime = 6;
+            int leadEndTime = 600; //OLD = 6;  For scenario801, just make it big!
 
             //Loop it.  End of loop is dictated by leadHours in project config.
-            while ( leadStartTime < 24 )
+            while ( leadStartTime < 24 ) //801 - I'm looping only once so loop control does not matter.  See how its incremented below.
             {
                 boolean somethingAdded = false;
 
                 System.err.println( "WINDOW (" + dateFormatter.format( windowStartDate.getTime() ) + " - " + dateFormatter.format( windowEndDate.getTime() ) + "] ... (" + leadStartTime + ", " + leadEndTime + "]" );
 
-                //Innermost loop: Go through all pairs, identify which are in the window, and incluce an output line for those that are.
+                //Innermost loop: Go through all pairs, identify which are in the window, and include an output line for those that are.
                 //This will result in duplications, but that's allowed in the pairs when pairs are in multiple windows.
                 for ( Pair<Date, Integer> pair : resultsMap.keySet() )
                 {
@@ -186,8 +223,8 @@ public abstract class SystestBenchmarkChecker
                 }
 
                 //Incrememnt lead time window according to leadTimesPoolingWindow frequency.
-                leadStartTime += 12;
-                leadEndTime += 12;
+                leadStartTime += 1000; // 801 - Stop after one window.  So making this huge. OLD -  12;  
+                leadEndTime += 1000; // 801 - Stop after one window.  So making this huge. OLD - 12;
                 if (somethingAdded)
                 {
                     windowIndex++;
@@ -199,8 +236,8 @@ public abstract class SystestBenchmarkChecker
             }
 
             //Increment issued date widnow according to issedDatesPoolingWidnow frequency.
-            windowStartDate.add( Calendar.DAY_OF_YEAR, 14 );
-            windowEndDate.add( Calendar.DAY_OF_YEAR, 14 );
+            windowStartDate.add( Calendar.DAY_OF_YEAR, 1000000 ); //801 - Stop after one window.  So making this huge. OLD - Calendar.DAY_OF_YEAR, 14 );
+            windowEndDate.add( Calendar.DAY_OF_YEAR, 1000000 ); //801 - Stop after one window.  So making this huge. OLD - Calendar.DAY_OF_YEAR, 14 );
         }
 
         //Dump the lines.
