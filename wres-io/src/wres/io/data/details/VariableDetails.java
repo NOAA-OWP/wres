@@ -85,7 +85,8 @@ public final class VariableDetails extends CachedDetail<VariableDetails, String>
 		partition += "	CHECK (variable_id = ";
 		partition += this.getId().toString();
 		partition += ")" + NEWLINE;
-		partition += ") INHERITS (wres.VariablePosition);";
+		partition += ") INHERITS (wres.VariablePosition);" + NEWLINE;
+		partition += "ALTER TABLE " + this.getVariablePositionPartitionName() + " OWNER TO wres;";
 
 		Database.execute(partition);
 	}
