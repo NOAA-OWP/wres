@@ -97,6 +97,7 @@ public class NetCDFCopier implements Closeable
     {
         if (this.source == null)
         {
+            LOGGER.debug( "Opening the template at {} to copy", this.fromFileName );
             this.source = NetcdfFile.open( this.fromFileName );
         }
         return this.source;
@@ -106,7 +107,10 @@ public class NetCDFCopier implements Closeable
     {
         if (this.writer == null)
         {
+            LOGGER.debug( "Removing a previous version of {} if it already exists.", this.targetFileName );
             Files.deleteIfExists( Paths.get(this.targetFileName ));
+
+            LOGGER.debug( "Created {}", this.targetFileName );
             this.writer = NetcdfFileWriter.createNew( NETCDF_VERSION,
                                                       this.targetFileName );
             this.writer.setFill( true );
@@ -243,10 +247,12 @@ public class NetCDFCopier implements Closeable
 
         for (Variable originalVariable : this.getVariablesToCopy())
         {
+            LOGGER.debug("Copying over all {} data from {} to {}", originalVariable.getShortName(), this.fromFileName, this.targetFileName);
             Array values = originalVariable.read();
 
             this.getWriter().write( originalVariable.getShortName(), values );
         }
+        LOGGER.debug( "Done copying all variable data from the template." );
     }
 
     public void addDimension(String name, int length, boolean isUnlimited, boolean isVariableLength) throws IOException
