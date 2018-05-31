@@ -959,7 +959,7 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
     public int getIssuePoolingWindowPeriod()
     {
         // Indicates one basis per period
-        int period = 1;
+        int period = 0;
 
         if (this.getIssuePoolingWindow().getPeriod() != null)
         {

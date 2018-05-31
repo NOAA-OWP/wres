@@ -120,30 +120,36 @@ class IngestedValueCollection
                 ingestedValue -> ingestedValue.getLead() == lastBlockLead &&
                                  (ingestedValue.getLead() - period >= earliestLead || scalingNotNecessary));
 
-        if (canCondense)
+        List<IngestedValue> subset;
+
+        if ( canCondense )
         {
-            List<IngestedValue> subset = Collections.where(
+            subset = Collections.where(
                     this.values,
-                    value -> value.getLead() >= firstBlockLead && value.getLead() <= lastBlockLead
+                    value -> value.getLead() >= firstBlockLead
+                             && value.getLead() <= lastBlockLead
             );
 
-            for (IngestedValue value : subset)
+            for ( IngestedValue value : subset )
             {
                 lastValidTime = value.getValidTime();
                 lastLead = value.getLead();
 
-                for (int index = 0; index < value.length(); ++index)
+                for ( int index = 0; index < value.length(); ++index )
                 {
-                    if (!valueMapping.containsKey( index ))
+                    if ( !valueMapping.containsKey( index ) )
                     {
-                        valueMapping.put( index, new ArrayList<>(  ) );
+                        valueMapping.put( index, new ArrayList<>() );
                     }
 
-                    valueMapping.get(index).add( value.get( index ) );
+                    valueMapping.get( index ).add( value.get( index ) );
                 }
             }
-            result = new CondensedIngestedValue( lastValidTime, lastLead, valueMapping );
+            result = new CondensedIngestedValue( lastValidTime,
+                                                 lastLead,
+                                                 valueMapping );
         }
+
         return result;
     }
 
@@ -166,8 +172,7 @@ class IngestedValueCollection
             for ( int index = 1; index < this.size(); ++index )
             {
                 int difference =
-                        this.values.get( index ).getLead() - this.values.get(
-                                index - 1 ).getLead();
+                        this.values.get( index ).getLead() - this.values.get(index - 1 ).getLead();
 
                 if ( !scaleCount.containsKey( difference ) )
                 {
