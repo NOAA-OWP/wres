@@ -5,6 +5,7 @@ import java.sql.SQLException;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
+import wres.io.config.ConfigHelper;
 import wres.io.data.caching.Features;
 import wres.io.data.details.ProjectDetails;
 import wres.util.TimeHelper;
@@ -23,6 +24,7 @@ class PoolingForecastScripter extends Scripter
     @Override
     String formScript() throws SQLException, IOException
     {
+        boolean usesNetcdf = ConfigHelper.usesNetCDFData( this.getProjectDetails().getProjectConfig() );
 
         // TODO: Split out into other functions
         this.add("SELECT (EXTRACT(epoch FROM TS.initialization_date");
@@ -51,11 +53,30 @@ class PoolingForecastScripter extends Scripter
         this.addTab().addLine("ON FS.forecast_id = TS.timeseries_id");
         this.addLine("INNER JOIN (");
         this.addTab().addLine("SELECT PS.source_id");
+
+        if (usesNetcdf)
+        {
+            this.addTab( 2 ).addLine( ", S.lead" );
+        }
+
         this.addTab().addLine("FROM wres.ProjectSource PS");
+
+        if (usesNetcdf)
+        {
+            this.addTab().addLine( "INNER JOIN wres.Source S" );
+            this.addTab( 2 ).addLine( "ON S.source_id = PS.source_id" );
+        }
+
         this.addTab().addLine("WHERE PS.project_id = ", this.getProjectDetails().getId());
         this.addTab(  2  ).addLine("AND PS.member = ", this.getMember());
         this.addLine(") AS PS");
         this.addTab().addLine("ON PS.source_id = FS.source_id");
+
+        if ( usesNetcdf )
+        {
+            this.addTab( 2 ).addLine( "AND PS.lead = FV.lead" );
+        }
+
         this.addLine("WHERE TS.", this.getVariablePositionClause());
         this.addTab().addLine("AND ", this.getProjectDetails().getLeadQualifier( this.getFeature(), this.getProgress(), "FV" ));
 
@@ -88,7 +109,7 @@ class PoolingForecastScripter extends Scripter
 
         if (this.getProjectDetails().getEarliestDate() != null)
         {
-            this.addLine().addLine("AND TS.initialization_date + ",
+            this.addTab().addLine("AND TS.initialization_date + ",
                                    "INTERVAL '1 HOUR' * FV.lead >= '",
                                    this.getProjectDetails().getEarliestDate(),
                                    "'");
@@ -109,8 +130,23 @@ class PoolingForecastScripter extends Scripter
         this.addTab(   3   ).addLine("AND PS.member = ", this.getMember());
         this.addTab(   3   ).addLine("AND PS.source_id = FS.source_id");
         this.addTab().addLine(")");
-        this.addLine("GROUP BY TS.initialization_date, FV.lead, FS.source_id, TS.measurementunit_id");
-        this.addLine("ORDER BY TS.initialization_date, FS.source_id, FV.lead;");
+        this.add("GROUP BY TS.initialization_date, FV.lead, ");
+
+        if (!usesNetcdf)
+        {
+            this.add( "FS.source_id, " );
+        }
+
+        this.addLine("TS.measurementunit_id");
+
+        this.add("ORDER BY TS.initialization_date, ");
+
+        if (!usesNetcdf)
+        {
+            this.add( "FS.source_id, " );
+        }
+
+        this.add("FV.lead;");
 
         return this.getScript();
     }

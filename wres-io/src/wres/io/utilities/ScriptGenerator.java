@@ -312,6 +312,10 @@ public final class ScriptGenerator
         {
             distanceBetween = period;
         }
+        else if (period == 0)
+        {
+            distanceBetween = frequency;
+        }
         else
         {
             distanceBetween = period - frequency;
