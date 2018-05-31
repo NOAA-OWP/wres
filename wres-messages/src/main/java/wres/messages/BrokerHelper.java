@@ -29,16 +29,16 @@ import javax.net.ssl.X509TrustManager;
 
 public class BrokerHelper
 {
-    private static final String BROKER_HOST_PROPERTY_NAME = "wres.broker";
-    private static final String DEFAULT_BROKER_HOST = "localhost";
+    static final String BROKER_HOST_PROPERTY_NAME = "wres.broker";
+    static final String DEFAULT_BROKER_HOST = "localhost";
 
-    private static final String BROKER_VHOST_PROPERTY_NAME = "wres.broker.vhost";
-    private static final String DEFAULT_BROKER_VHOST = "wres";
+    static final String BROKER_VHOST_PROPERTY_NAME = "wres.broker.vhost";
+    static final String DEFAULT_BROKER_VHOST = "wres";
 
-    private static final int BROKER_PORT = 5671;
+    static final int BROKER_PORT = 5671;
 
-    private static final String SECRETS_DIR_PROPERTY_NAME = "wres.secrets_dir";
-    private static final String DEFAULT_SECRETS_DIR = "/wres_secrets";
+    static final String SECRETS_DIR_PROPERTY_NAME = "wres.secrets_dir";
+    static final String DEFAULT_SECRETS_DIR = "/wres_secrets";
 
     public enum Role
     {

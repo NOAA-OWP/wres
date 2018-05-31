@@ -255,11 +255,14 @@ for scenarioName in $scenarios; do
     fi
 done
 
-egrep -C 3 '(diff|FAIL|Aborting)' systests_900screenCatch_"$latest_noZip".txt > systests_900Results_"$latest_noZip".txt
+cd $systestsDir
+egrep -A 5 '(differ|FAIL|Aborting|Not enough data found for feature)' systests_900screenCatch_"$latest_noZip".txt > systests_900Results_"$latest_noZip".txt
+#egrep -C 3 '(differ|FAIL|Aborting|Not enough data found for feature)' systests_900screenCatch_"$latest_noZip".txt > systests_900Results_"$latest_noZip".txt
 if [ -s systests_900Results_"$latest_noZip".txt ]
 then
-	/usr/bin/zip systests_900screenCatch_"$latest_noZip".txt
+	/usr/bin/zip systests_900screenCatch_"$latest_noZip".txt.zip systests_900screenCatch_"$latest_noZip".txt
 	/usr/bin/mailx -S smtp=140.90.91.135 -s "systests 900 results from $latest_noZip" -a systests_900screenCatch_"$latest_noZip".txt.zip Raymond.Chui@***REMOVED***,Hank.Herr@***REMOVED***,james.d.brown@***REMOVED***,jesse.bickel@***REMOVED***,christopher.tubbs@***REMOVED***,Alexander.Maestre@***REMOVED***,sanian.gaffar@***REMOVED*** < systests_900Results_"$latest_noZip".txt 
 else
+	ls -l systests_900Results_"$latest_noZip".txt
 	rm -v systests_900Results_"$latest_noZip".txt
 fi
