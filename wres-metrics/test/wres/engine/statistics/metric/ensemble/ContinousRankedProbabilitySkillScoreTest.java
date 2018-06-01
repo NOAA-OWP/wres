@@ -3,6 +3,7 @@ package wres.engine.statistics.metric.ensemble;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -23,6 +24,7 @@ import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.MetricParameterException;
+import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.engine.statistics.metric.ensemble.ContinuousRankedProbabilitySkillScore.CRPSSBuilder;
 
 /**
@@ -94,6 +96,7 @@ public final class ContinousRankedProbabilitySkillScoreTest
         //Check the results       
         DoubleScoreOutput actual = crpss.apply( input );
         DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 0.0779168348809044, m1 );
+        
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -182,6 +185,19 @@ public final class ContinousRankedProbabilitySkillScoreTest
     {
         assertFalse( crpss.isStrictlyProper() );
     }
+    
+    /**
+     * Checks that the baseline identifier is correctly propagated to the metric output metadata.
+     * @throws IOException if the input pairs could not be read
+     */
+
+    @Test
+    public void testMetadataContainsBaselineIdentifier() throws IOException
+    {
+        EnsemblePairs pairs = MetricTestDataFactory.getEnsemblePairsOne();
+
+        assertTrue( crpss.apply( pairs  ).getMetadata().getIdentifier().getScenarioIDForBaseline().equals( "ESP" ) );
+    }
 
     /**
      * Tests for an expected exception on calling {@link ContinuousRankedProbabilitySkillScore#apply(EnsemblePairs)} 
@@ -213,14 +229,13 @@ public final class ContinousRankedProbabilitySkillScoreTest
         b.setDecompositionID( ScoreOutputGroup.LBR );
         b.build();
     }
-
-
+    
     /**
      * Checks for an expected exception when the input data does not contain an explicit baseline.
      */
 
     @Test
-    public void test2Exceptions()
+    public void testExceptionOnInputWithMissingBaseline()
     {
         exception.expect( MetricInputException.class );
         exception.expectMessage( "Specify a non-null baseline for the 'CONTINUOUS RANKED PROBABILITY SKILL SCORE'." );
@@ -229,5 +244,6 @@ public final class ContinousRankedProbabilitySkillScoreTest
         EnsemblePairs input = outF.ofEnsemblePairs( pairs, outF.getMetadataFactory().getMetadata() );
         crpss.apply( input );
     }
+
 
 }
