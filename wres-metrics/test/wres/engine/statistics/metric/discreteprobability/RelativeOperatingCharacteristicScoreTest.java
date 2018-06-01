@@ -3,9 +3,11 @@ package wres.engine.statistics.metric.discreteprobability;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.BiFunction;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -18,12 +20,18 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
+import wres.datamodel.inputs.pairs.EnsemblePairs;
+import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
+import wres.datamodel.thresholds.Threshold;
+import wres.datamodel.thresholds.ThresholdConstants.Operator;
+import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.engine.statistics.metric.MetricParameterException;
+import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.engine.statistics.metric.discreteprobability.RelativeOperatingCharacteristicScore.RelativeOperatingCharacteristicScoreBuilder;
 
 /**
@@ -288,6 +296,31 @@ public final class RelativeOperatingCharacteristicScoreTest
     public void testIsStrictlyProper()
     {
         assertFalse( rocScore.isStrictlyProper() );
+    }
+
+    /**
+     * Checks that the baseline identifier is correctly propagated to the metric output metadata.
+     * @throws IOException if the input pairs could not be read
+     */
+
+    @Test
+    public void testMetadataContainsBaselineIdentifier() throws IOException
+    {
+        EnsemblePairs pairs = MetricTestDataFactory.getEnsemblePairsOne();
+
+        Threshold threshold = outF.ofThreshold( outF.ofOneOrTwoDoubles( 3.0 ),
+                                                Operator.GREATER,
+                                                ThresholdDataType.LEFT );
+
+        BiFunction<PairOfDoubleAndVectorOfDoubles, Threshold, PairOfDoubles> mapper = outF.getSlicer()::transform;
+
+        DiscreteProbabilityPairs transPairs = outF.getSlicer().transform( pairs, threshold, mapper );
+
+        assertTrue( rocScore.apply( transPairs )
+                            .getMetadata()
+                            .getIdentifier()
+                            .getScenarioIDForBaseline()
+                            .equals( "ESP" ) );
     }
 
     /**

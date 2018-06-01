@@ -7,6 +7,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import wres.datamodel.DataFactory;
+import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
@@ -42,7 +43,7 @@ import wres.engine.statistics.metric.ProbabilityScore;
  */
 
 public class RelativeOperatingCharacteristicScore extends OrdinaryScore<DiscreteProbabilityPairs, DoubleScoreOutput>
-        implements ProbabilityScore<DiscreteProbabilityPairs,DoubleScoreOutput>
+        implements ProbabilityScore<DiscreteProbabilityPairs, DoubleScoreOutput>
 {
 
     @Override
@@ -54,17 +55,20 @@ public class RelativeOperatingCharacteristicScore extends OrdinaryScore<Discrete
         }
         //Obtain the AUC for the main prediction and, if available, the baseline.
         double rocScore;
+        DatasetIdentifier baselineIdentifier = null;
         if ( s.hasBaseline() )
         {
             double rocMain = getAUCMasonGraham( s );
             double rocBase = getAUCMasonGraham( s.getBaselineData() );
             rocScore = ( rocMain - rocBase ) / ( 1.0 - rocBase );
+            baselineIdentifier = s.getMetadataForBaseline().getIdentifier();
         }
         else
         {
             rocScore = 2.0 * getAUCMasonGraham( s ) - 1.0;
         }
-        final MetricOutputMetadata metOut = getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, null );
+        final MetricOutputMetadata metOut =
+                getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, baselineIdentifier );
         return getDataFactory().ofDoubleScoreOutput( rocScore, metOut );
     }
 
