@@ -512,6 +512,11 @@ project(':wres-tasker')
         // Thanks, https://luohuahuang.org/2017/11/13/jersey-illegalstateexception-injectionmanagerfactory/
         runtime 'org.glassfish.jersey.inject:jersey-hk2:2.26'
 
+        testCompile 'junit:junit:4.12'
+
+        // To generate fake certificates and keys for testing
+        testCompile 'org.bouncycastle:bcpkix-jdk15on:1.59'
+        testCompile 'org.bouncycastle:bcprov-jdk15on:1.59'
     }
 
     apply plugin: 'application'
