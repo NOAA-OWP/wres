@@ -13,7 +13,7 @@ import java.util.TreeMap;
 
 import wres.config.FeaturePlus;
 
-class TimeSeriesResponse implements Response
+public class TimeSeriesResponse implements Response
 {
     @Override
     public String getMeasurementUnit()

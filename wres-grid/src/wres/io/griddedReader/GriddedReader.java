@@ -31,7 +31,7 @@ public class GriddedReader
     private List<String> paths = new ArrayList<>();
     private List<Feature> features = new ArrayList<>();
 
-    protected TimeSeriesResponse timeSeriesResponse;
+    private TimeSeriesResponse timeSeriesResponse;
 
 
 
