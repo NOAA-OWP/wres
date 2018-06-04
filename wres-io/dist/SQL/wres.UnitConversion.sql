@@ -65,6 +65,37 @@ WHERE F.unit_name = ANY('{CFS, ft3/s}'::text[])
             AND UC.to_unit = T.measurementunit_id
     );
 
+INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+SELECT F.measurementunit_id,
+    T.measurementunit_id,
+    1
+FROM wres.MeasurementUnit F
+CROSS JOIN wres.MeasurementUnit T
+WHERE F.unit_name = ANY('{CMS, m3 s-1, m3/s}')
+    AND T.unit_name = ANY('{CMS, m3 s-1, m3/s}')
+    AND NOT EXISTS (
+        SELECT 1
+        FROM wres.UnitConversion UC
+        WHERE UC.from_unit = F.measurementunit_id
+            AND UC.to_unit = T.measurementunit_id
+    );
+
+INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+SELECT F.measurementunit_id,
+    T.measurementunit_id,
+    1
+FROM wres.MeasurementUnit F
+CROSS JOIN wres.MeasurementUnit T
+WHERE F.unit_name = ANY('{CFS, ft3/s}')
+    AND T.unit_name = ANY('{CFS, ft3/s}')
+    AND NOT EXISTS (
+        SELECT 1
+        FROM wres.UnitConversion UC
+        WHERE UC.from_unit = F.measurementunit_id
+            AND UC.to_unit = T.measurementunit_id
+    );
+
+
 -- DISTANCE
 INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
 SELECT	F.measurementunit_id,
