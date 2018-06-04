@@ -230,7 +230,7 @@ public class TimeSeriesResponse implements Response
         this.variableName = variableName;
     }
 
-    void add(final FeaturePlus feature,
+    public void add(final FeaturePlus feature,
              final Instant issuedDate,
              final Instant validDate,
              final double value)

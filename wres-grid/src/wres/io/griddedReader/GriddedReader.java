@@ -8,6 +8,7 @@ import wres.grid.client.*;
 import wres.config.FeaturePlus;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.*;
 
 import org.slf4j.Logger;
@@ -37,7 +38,7 @@ public class GriddedReader
 
     private static final Logger LOGGER = LoggerFactory.getLogger (GriddedReader.class);
 
-    public GriddedReader ( int x_index, int y_index, GriddedCoordinate coordinate, String variable_name, String fileName)
+    public GriddedReader (Request request)
     {
 
         this.x_index = x_index;
@@ -108,6 +109,21 @@ public class GriddedReader
             timeAtt2 = ncfile.findGlobalAttribute("model_output_valid_time");
             validTime = timeAtt2.getStringValue();
             //timeSeriesResponse.lastLead.add (validTime);
+
+            Double value = 0.0;
+
+            for (Feature feature : this.getFeatures())
+            {
+
+                FeaturePlus plus = FeaturePlus.of( feature );
+
+                // value = the value from the feature in the grid
+
+                timeSeriesResponse.add( plus,
+                                        Instant.parse( issuenceTime ),
+                                        Instant.parse( validTime ),
+                                        value );
+            }
 
             try {
                 ncfile.close();
