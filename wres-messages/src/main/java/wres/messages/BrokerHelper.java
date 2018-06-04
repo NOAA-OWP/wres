@@ -93,7 +93,10 @@ public class BrokerHelper
     }
 
 
-    /** Helper to get the broker port number. */
+    /**
+     * Return the port of the broker.
+     * @return the broker port number to use.
+     */
     public static int getBrokerPort()
     {
         return BROKER_PORT;
