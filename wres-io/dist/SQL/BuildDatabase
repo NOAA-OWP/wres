@@ -103,6 +103,10 @@ else
     psql -U $1 -d $3 -h $2 -f wres.forecasts.sql >/dev/null
 
     echo ''
+    echo 'Adding the wres.Conversions view...'
+    psql -U $1 -d $3 -h $2 -f wres.Conversions.sql >/dev/null
+
+    echo ''
     echo 'Adding the public.ProjectExecutions view...'
     psql -U $1 -d $3 -h $2 -f ProjectExecutions.sql >/dev/null
 
