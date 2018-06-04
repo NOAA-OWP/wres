@@ -426,6 +426,12 @@ project(':wres-messages')
         }
     }
 
+    javadoc
+    {
+        // Protobuf does not appear to generate javadoc, so neither will we.
+        excludes = ['**/generated/*.java']
+    }
+
     dependencies
     {
         compile 'org.slf4j:slf4j-api:1.7.25'
