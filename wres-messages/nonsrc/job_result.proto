@@ -5,4 +5,5 @@ package wres.messages.generated;
 message job_result
 {
     int32 result = 1;
+    string detail = 2;
 }
