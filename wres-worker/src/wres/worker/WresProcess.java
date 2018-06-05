@@ -150,7 +150,7 @@ class WresProcess implements Callable<Integer>
             int exitValue = process.exitValue();
             LOGGER.info( "Subprocess {} exited {}", process, exitValue );
             byte[] response;
-            response = WresProcess.prepareResponse( exitValue );
+            response = WresProcess.prepareResponse( exitValue, null );
             this.sendResponse( response );
             WresProcess.shutdownExecutor( executorService );
             return exitValue;
@@ -170,13 +170,24 @@ class WresProcess implements Callable<Integer>
     /**
      * Helper to prepare a completed job response
      * @param exitCode the actual exitCode of the wres process
+     * @param detail a message with some details about the job completion, for
+     *               example the exception that happened, or null if no message.
      * @return raw message indicating job exit code
      */
-    private static byte[] prepareResponse( int exitCode )
+
+    private static byte[] prepareResponse( int exitCode, String detail )
     {
+        String resolvedDetail = "";
+
+        if ( detail != null )
+        {
+            resolvedDetail = detail;
+        }
+
         JobResult.job_result jobResult = JobResult.job_result
                 .newBuilder()
                 .setResult( exitCode )
+                .setDetail( resolvedDetail )
                 .build();
         return jobResult.toByteArray();
     }
@@ -190,11 +201,7 @@ class WresProcess implements Callable<Integer>
 
     private static byte[] prepareMetaFailureResponse( Exception e )
     {
-        JobResult.job_result jobResult = JobResult.job_result
-                .newBuilder()
-                .setResult( META_FAILURE_CODE )
-                .build();
-        return jobResult.toByteArray();
+        return WresProcess.prepareResponse( META_FAILURE_CODE, e.toString() );
     }
 
     /**
@@ -211,18 +218,18 @@ class WresProcess implements Callable<Integer>
 
         try ( Channel channel = this.getConnection().createChannel() )
         {
-            String exchangeName = this.getExchangeName();
+            String theExchangeName = this.getExchangeName();
             String exchangeType = "topic";
             String routingKey = "job." + this.getJobId() + ".exitCode";
 
-            channel.exchangeDeclare( exchangeName, exchangeType );
+            channel.exchangeDeclare( theExchangeName, exchangeType );
 
-            channel.basicPublish( exchangeName,
+            channel.basicPublish( theExchangeName,
                                   routingKey,
                                   resultProperties,
                                   message );
             LOGGER.info( "Seems like I published to exchange {}, key {}",
-                         exchangeName, routingKey );
+                         theExchangeName, routingKey );
         }
         catch ( IOException ioe )
         {
@@ -259,7 +266,7 @@ class WresProcess implements Callable<Integer>
         }
         catch ( InterruptedException ie )
         {
-            LOGGER.warn( "Interrupted while waiting for executor shutdown" );
+            LOGGER.warn( "Interrupted while waiting for executor shutdown", ie );
             executorService.shutdownNow();
             Thread.currentThread().interrupt();
         }
@@ -271,5 +278,4 @@ class WresProcess implements Callable<Integer>
             executorService.shutdownNow();
         }
     }
-
 }
