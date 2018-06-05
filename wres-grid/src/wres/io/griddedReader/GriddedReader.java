@@ -22,15 +22,12 @@ import ucar.nc2.dt.GridCoordSystem;
 public class GriddedReader
 {
 
-    private int x_index;
-    private int y_index;
-    private GriddedCoordinate coordinate;
     private String variable_name;
     private String fileName;
 
     private List<Pair<Integer, Integer>> indices = new ArrayList<>();
-    private List<String> paths = new ArrayList<>();
-    private List<Feature> features = new ArrayList<>();
+    private List<String> paths;
+    private List<Feature> features;
 
     private TimeSeriesResponse timeSeriesResponse;
 
@@ -41,10 +38,9 @@ public class GriddedReader
     public GriddedReader (Request request)
     {
 
-        this.x_index = x_index;
-        this.y_index= y_index;
-        this.coordinate= coordinate;
-        this.variable_name= variable_name;
+        this.paths = request.getPaths();
+        this.features = request.getFeatures();
+        this.variable_name = request.getVariableName();
 
         if (fileName == null || fileName.isEmpty())
         {
@@ -56,24 +52,10 @@ public class GriddedReader
 
     public List<String> getPaths () {return paths;}
 
-    public List<Pair<Integer, Integer>> getIndices() {
-        return indices;
-    }
-
     public List<Feature> getFeatures() {
         return features;
     }
 
-    public int getX_index()
-    {
-        return x_index;
-    }
-
-    public int getY_index() { return y_index; }
-
-    public GriddedCoordinate getCoordinate() {
-        return coordinate;
-    }
 
     public String getFileName()
     {
@@ -84,15 +66,17 @@ public class GriddedReader
         return variable_name;
     }
 
-    NetcdfFile ncfile = null;
-    Attribute timeAtt1, timeAtt2;
-    String issuenceTime, validTime;
 
-    public TimeSeriesResponse getData( List<String> paths )
+    public TimeSeriesResponse getData( )
     {
+        NetcdfFile ncfile = null;
+        Attribute timeAtt1, timeAtt2;
+        String issuenceTime, validTime;
+        Double val;
+        Array data = null;
+
         for (String filePath:paths)
         {
-
             try
             {
                 ncfile = NetcdfFile.open(filePath);
@@ -110,30 +94,16 @@ public class GriddedReader
             validTime = timeAtt2.getStringValue();
             //timeSeriesResponse.lastLead.add (validTime);
 
-            Double value = 0.0;
-
-            for (Feature feature : this.getFeatures())
+            try
             {
-
-                FeaturePlus plus = FeaturePlus.of( feature );
-
-                // value = the value from the feature in the grid
-
-                timeSeriesResponse.add( plus,
-                                        Instant.parse( issuenceTime ),
-                                        Instant.parse( validTime ),
-                                        value );
-            }
-
-            try {
                 ncfile.close();
             }
-
             catch (IOException ioe)
             {
                 LOGGER.info(ioe.toString());
             }
 
+            // open the dataset, find the variable and its coordinate system
             GridDataset gds = null;
             try
             {
@@ -144,34 +114,43 @@ public class GriddedReader
                 LOGGER.info(ioe.toString());
             }
 
-            // -----------------------------------------------------------------------
-// GridCoordSystem to find the value of a grid a a specific lat, lon point
+            // GridCoordSystem to find the value of a grid a a specific lat, lon point
 
             GridDatatype grid = gds.findGridDatatype(variable_name);
             GridCoordSystem gcs = null;
             gcs = grid.getCoordinateSystem();
 
-            // find the x,y index for a specific lat/lon position
-
-            Array data = null;
-
-            int[] xy = gcs.findXYindexFromLatLon(x_index, y_index, null); // xy[0] = x, xy[1] = y
-
-
-// read the data at that lat, lon and the first time and z level (if any)
-
-            try
+            for (Feature feature : this.getFeatures())
             {
-                data = grid.readDataSlice(0, 0, xy[1], xy[0]); // note order is t, z, y, x
-            }
-            catch (IOException ioe)
-            {
-                LOGGER.info(ioe.toString());
-            }
 
-            double val = data.getDouble(0); // we know its a scalar
-            //timeSeriesResponse.value.add ( val );
+                FeaturePlus plus = FeaturePlus.of(feature);
 
+                // find the x,y index for a specific lat/lon position
+
+                int[] xy = gcs.findXYindexFromLatLon( feature.getCoordinate().getLatitude(),
+                                        feature.getCoordinate().getLongitude(), null); // xy[0] = x, xy[1] = y
+
+
+                // read the data at that lat, lon and the first time and z level (if any)
+
+                try
+                {
+                    data = grid.readDataSlice(0, 0, xy[1], xy[0]); // note order is t, z, y, x
+                }
+                catch (IOException ioe)
+                {
+                    LOGGER.info(ioe.toString());
+                }
+
+                val = data.getDouble(0); // we know its a scalar
+
+                // timeSeriesResponse.value.add ( val );
+
+                timeSeriesResponse.add(plus,
+                        Instant.parse(issuenceTime),
+                        Instant.parse(validTime),
+                        val);
+            }
             //LOGGER.info("Value at %f %f == %f%n", x_index, y_index, val);
         }
 
