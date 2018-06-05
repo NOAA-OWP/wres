@@ -330,66 +330,11 @@ class JobResults
                         new JobOutputReceiver( channel,
                                                oneLineOfOutput );
 
-                boolean timedOut = false;
-
                 channel.basicConsume( queueName,
                                       true,
                                       jobOutputReceiver );
 
-                while ( !timedOut )
-                {
-                    LOGGER.debug( "Consuming from {}, waiting for result.", queueName );
-
-                    // One call to .basicConsume can result in many messages
-                    // being received by our jobOutputReceiver. Look for them.
-                    // This still seems uncertain and finnicky, but works?
-                    boolean mayBeMoreMessages = true;
-
-                    while ( mayBeMoreMessages )
-                    {
-                        JobStandardStream.job_standard_stream oneMoreLine
-                                = oneLineOfOutput.poll( MESSAGE_WAIT_SECONDS, TimeUnit.SECONDS );
-
-                        if ( oneMoreLine != null )
-                        {
-                            sharedList.put( oneMoreLine.getIndex(),
-                                            oneMoreLine.getText() );
-                        }
-                        else
-                        {
-                            mayBeMoreMessages = false;
-                        }
-                    }
-
-                    // Give up waiting if we don't get any output for some time
-                    // after the job has completed.
-                    JobStandardStream.job_standard_stream oneLastLine =
-                            oneLineOfOutput.poll( JOB_WAIT_MINUTES, TimeUnit.MINUTES );
-
-                    if ( oneLastLine != null )
-                    {
-                        sharedList.put( oneLastLine.getIndex(),
-                                        oneLastLine.getText() );
-                    }
-                    else
-                    {
-                        // Has the job actually finished?
-                        Integer jobStatus = JobResults.getJobResultRaw( this.getJobId() );
-
-                        if ( jobStatus != null && !jobStatus.equals( JOB_NOT_DONE_YET ) )
-                        {
-                            timedOut = true;
-                            LOGGER.info( "Finished waiting for job {} {}",
-                                         jobId, whichOutput );
-                        }
-                        else
-                        {
-                            timedOut = false;
-                            LOGGER.info( "Still waiting for job {} {}",
-                                         jobId, whichOutput );
-                        }
-                    }
-                }
+                waitForAllMessages( queueName, oneLineOfOutput, sharedList );
             }
             catch ( InterruptedException ie )
             {
@@ -406,6 +351,79 @@ class JobResults
 
             return sharedList;
         }
+
+
+        /**
+         * Wait for messages from rabbitmq client
+         * @param queueName the queue name to look in
+         * @param oneLineOfOutput the synchronizer to use to talk to q client
+         * @param sharedList shared list to save to, MUTATED! Output to this!
+         * @throws InterruptedException when talking to q client is interrupted
+         */
+
+        private void waitForAllMessages( String queueName,
+                                         BlockingQueue<JobStandardStream.job_standard_stream> oneLineOfOutput,
+                                         ConcurrentNavigableMap<Integer,String> sharedList )
+                throws InterruptedException
+        {
+            boolean timedOut = false;
+
+            while ( !timedOut )
+            {
+                LOGGER.debug( "Consuming from {}, waiting for result.", queueName );
+
+                // One call to .basicConsume can result in many messages
+                // being received by our jobOutputReceiver. Look for them.
+                // This still seems uncertain and finnicky, but works?
+                boolean mayBeMoreMessages = true;
+
+                while ( mayBeMoreMessages )
+                {
+                    JobStandardStream.job_standard_stream oneMoreLine
+                            = oneLineOfOutput.poll( MESSAGE_WAIT_SECONDS, TimeUnit.SECONDS );
+
+                    if ( oneMoreLine != null )
+                    {
+                        sharedList.put( oneMoreLine.getIndex(),
+                                        oneMoreLine.getText() );
+                    }
+                    else
+                    {
+                        mayBeMoreMessages = false;
+                    }
+                }
+
+                // Give up waiting if we don't get any output for some time
+                // after the job has completed.
+                JobStandardStream.job_standard_stream oneLastLine =
+                        oneLineOfOutput.poll( JOB_WAIT_MINUTES, TimeUnit.MINUTES );
+
+                if ( oneLastLine != null )
+                {
+                    sharedList.put( oneLastLine.getIndex(),
+                                    oneLastLine.getText() );
+                }
+                else
+                {
+                    // Has the job actually finished?
+                    Integer jobStatus = JobResults.getJobResultRaw( this.getJobId() );
+
+                    if ( jobStatus != null && !jobStatus.equals( JOB_NOT_DONE_YET ) )
+                    {
+                        timedOut = true;
+                        LOGGER.info( "Finished waiting for job {} {}",
+                                     jobId, whichOutput );
+                    }
+                    else
+                    {
+                        timedOut = false;
+                        LOGGER.info( "Still waiting for job {} {}",
+                                     jobId, whichOutput );
+                    }
+                }
+            }
+        }
+
 
         @Override
         public String toString()
