@@ -149,6 +149,16 @@ public class WresJobTest
         assertEquals( "Expected a 404 not found.", 404, response.getStatus() );
     }
 
+    @Test
+    public void testInternalServerError()
+    {
+        System.setProperty( "wres.secrets_dir", WresJobTest.tempDir.toString() );
+        WresJob wresJob = new WresJob();
+        // This line could be brittle due to looking up a particular user:
+        Response response = wresJob.postWresJob( "fake", "hank" );
+        assertEquals( "Expected a 500 Internal Server Error.", 500, response.getStatus() );
+    }
+
     @AfterClass
     public static void cleanUp() throws IOException
     {
