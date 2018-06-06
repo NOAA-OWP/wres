@@ -67,43 +67,18 @@ public class GriddedReader
     }
 
 
-    public TimeSeriesResponse getData( )
+    public TimeSeriesResponse getData() throws IOException
     {
-        NetcdfFile ncfile = null;
+
         Attribute timeAtt1, timeAtt2;
         String issuenceTime, validTime;
         Double val;
         Array data = null;
 
-        for (String filePath:paths)
+        for ( String filePath:paths )
         {
-            try
-            {
-                ncfile = NetcdfFile.open(filePath);
-            }
-            catch (IOException ioe)
-            {
-                LOGGER.info(ioe.toString());
-            }
 
-            timeAtt1 = ncfile.findGlobalAttribute("model_initialization_time");
-            issuenceTime = timeAtt1.getStringValue();
-            //timeSeriesResponse.issuedDate.add (issuenceTime);
-
-            timeAtt2 = ncfile.findGlobalAttribute("model_output_valid_time");
-            validTime = timeAtt2.getStringValue();
-            //timeSeriesResponse.lastLead.add (validTime);
-
-            try
-            {
-                ncfile.close();
-            }
-            catch (IOException ioe)
-            {
-                LOGGER.info(ioe.toString());
-            }
-
-            // open the dataset, find the variable and its coordinate system
+            // open the dataset
             GridDataset gds = null;
             try
             {
@@ -115,12 +90,23 @@ public class GriddedReader
             }
 
             // GridCoordSystem to find the value of a grid a a specific lat, lon point
+            //find the variable and its coordinate system
 
             GridDatatype grid = gds.findGridDatatype(variable_name);
             GridCoordSystem gcs = null;
             gcs = grid.getCoordinateSystem();
 
-            for (Feature feature : this.getFeatures())
+            //reading global attributes
+
+            timeAtt1 = gds.findGlobalAttributeIgnoreCase("model_initialization_time");
+            issuenceTime = timeAtt1.getStringValue();
+            //timeSeriesResponse.issuedDate.add (issuenceTime);
+
+            timeAtt2 = gds.findGlobalAttributeIgnoreCase("model_output_valid_time");
+            validTime = timeAtt2.getStringValue();
+            //timeSeriesResponse.lastLead.add (validTime);
+
+            for ( Feature feature : this.getFeatures() )
             {
 
                 FeaturePlus plus = FeaturePlus.of(feature);
@@ -151,7 +137,16 @@ public class GriddedReader
                         Instant.parse(validTime),
                         val);
             }
-            //LOGGER.info("Value at %f %f == %f%n", x_index, y_index, val);
+
+            //close the dataset
+            try
+            {
+                gds.close();
+            }
+            catch (IOException ioe)
+            {
+                LOGGER.info(ioe.toString());
+            }
         }
 
         return timeSeriesResponse;
