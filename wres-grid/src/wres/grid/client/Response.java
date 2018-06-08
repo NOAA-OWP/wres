@@ -23,9 +23,9 @@ public interface Response extends Iterable<List<Response.Series>>
         Duration getLead();
         Instant getValidDate();
         Double[] getMeasurements();
+        String getMeasurementUnit();
     }
 
-    String getMeasurementUnit();
     String getVariableName();
     Integer getValueCount();
     Duration getLastLead();

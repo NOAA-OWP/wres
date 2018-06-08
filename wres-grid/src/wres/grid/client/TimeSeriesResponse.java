@@ -16,12 +16,6 @@ import wres.config.FeaturePlus;
 public class TimeSeriesResponse implements Response
 {
     @Override
-    public String getMeasurementUnit()
-    {
-        return this.measurementUnit;
-    }
-
-    @Override
     public String getVariableName()
     {
         return this.variableName;
@@ -64,7 +58,7 @@ public class TimeSeriesResponse implements Response
             this.entries = new TreeMap<>();
         }
 
-        void add(final Instant validDate, final double value)
+        void add(final Instant validDate, final double value, final String measurementUnit)
         {
             Objects.requireNonNull( validDate, "A valid date must be supplied in order to add a value" );
             Duration leadDuration = Duration.ofSeconds( validDate.getEpochSecond() - this.issuedDate.getEpochSecond() );
@@ -72,11 +66,11 @@ public class TimeSeriesResponse implements Response
 
             if (this.entries.containsKey( leadDuration ))
             {
-                updatedEntry = ((TimeSeriesEntry)this.entries.get(leadDuration)).add( value );
+                updatedEntry = ((TimeSeriesEntry)this.entries.get(leadDuration)).add( value, measurementUnit );
             }
             else
             {
-                updatedEntry = new TimeSeriesEntry( validDate, leadDuration, value );
+                updatedEntry = new TimeSeriesEntry( validDate, leadDuration, value, measurementUnit );
             }
 
             this.entries.put(leadDuration, updatedEntry);
@@ -149,27 +143,29 @@ public class TimeSeriesResponse implements Response
 
     static class TimeSeriesEntry implements Response.Entry
     {
-        TimeSeriesEntry( final Instant validDate, final Duration lead, final Double value)
+        TimeSeriesEntry( final Instant validDate, final Duration lead, final Double value, final String measurementUnit)
         {
             this.validDate = validDate;
             this.lead = lead;
             List<Double> newValues = new ArrayList<>();
+            this.measurementUnit = measurementUnit;
             newValues.add( value );
             this.values = Collections.unmodifiableList( newValues );
         }
 
-        TimeSeriesEntry(final Instant validDate, final Duration lead, final List<Double> values)
+        TimeSeriesEntry(final Instant validDate, final Duration lead, final List<Double> values, final String measurementUnit)
         {
             this.validDate = validDate;
             this.lead = lead;
+            this.measurementUnit = measurementUnit;
             this.values = Collections.unmodifiableList( values );
         }
 
-        TimeSeriesEntry add(Double value)
+        TimeSeriesEntry add(Double value, final String measurementUnit)
         {
             List<Double> newValues = new ArrayList<>(this.values);
             newValues.add(value);
-            return new TimeSeriesEntry( this.validDate, this.lead, newValues );
+            return new TimeSeriesEntry( this.validDate, this.lead, newValues, measurementUnit );
         }
 
         public Instant getValidDate()
@@ -182,6 +178,11 @@ public class TimeSeriesResponse implements Response
             return lead;
         }
 
+        public String getMeasurementUnit()
+        {
+            return this.measurementUnit;
+        }
+
         public Double[] getMeasurements()
         {
             return values.toArray( new Double[this.values.size()] );
@@ -190,6 +191,7 @@ public class TimeSeriesResponse implements Response
         private final Instant validDate;
         private final Duration lead;
         private final List<Double> values;
+        private final String measurementUnit;
 
         @Override
         public Iterator<Double> iterator()
@@ -215,25 +217,23 @@ public class TimeSeriesResponse implements Response
         }
     }
 
-    TimeSeriesResponse()
+    public TimeSeriesResponse()
     {
         this.timeSeriesPerFeature = new TreeMap<>(  );
     }
 
-    void setMeasurementUnit(String measurementUnit)
-    {
-        this.measurementUnit = measurementUnit;
-    }
-
-    void setVariableName(String variableName)
+    public void setVariableName(String variableName)
     {
         this.variableName = variableName;
     }
 
-    public void add(final FeaturePlus feature,
-             final Instant issuedDate,
-             final Instant validDate,
-             final double value)
+    public void add(
+            final FeaturePlus feature,
+            final Instant issuedDate,
+            final Instant validDate,
+            final double value,
+            final String measurementUnit
+    )
     {
         if (!this.timeSeriesPerFeature.containsKey( feature ))
         {
@@ -252,12 +252,11 @@ public class TimeSeriesResponse implements Response
             this.timeSeriesPerFeature.get(feature).add( series );
         }
 
-        ((TimeSeries)series).add( validDate, value );
+        ((TimeSeries)series).add( validDate, value, measurementUnit );
         this.valueCount++;
     }
 
     private final Map<FeaturePlus, List<Series>> timeSeriesPerFeature;
-    private String measurementUnit;
     private String variableName;
     private Integer valueCount = 0;
 

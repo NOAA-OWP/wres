@@ -4,7 +4,9 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
 
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -16,14 +18,7 @@ class GridDataRequest implements Request
     public GridDataRequest()
     {
         this.features = new ArrayList<>(  );
-        this.paths = new ArrayList<>(  );
-        this.indices = new ArrayList<>(  );
-    }
-
-    @Override
-    public void addIndex(final Integer xIndex, final Integer yIndex)
-    {
-        this.indices.add(Pair.of(xIndex, yIndex));
+        this.paths = new LinkedList<>(  );
     }
 
     @Override
@@ -87,15 +82,9 @@ class GridDataRequest implements Request
     }
 
     @Override
-    public List<Pair<Integer, Integer>> getIndices()
+    public Queue<String> getPaths()
     {
-        return Collections.unmodifiableList(this.indices);
-    }
-
-    @Override
-    public List<String> getPaths()
-    {
-        return Collections.unmodifiableList( this.paths );
+        return this.paths;
     }
 
     @Override
@@ -152,8 +141,7 @@ class GridDataRequest implements Request
         return this.isForecast;
     }
 
-    private final List<Pair<Integer, Integer>> indices;
-    private final List<String> paths;
+    private final Queue<String> paths;
     private final List<Feature> features;
     private String variableName;
     private Instant earliestIssueTime;

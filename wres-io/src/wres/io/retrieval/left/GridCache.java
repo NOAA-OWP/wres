@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 
@@ -35,6 +36,7 @@ class GridCache implements LeftHandCache
     {
         this.projectDetails = projectDetails;
         this.cachedSources = new TreeMap<>(  );
+        this.values = new TreeMap<>();
         this.loadSourceCache();
     }
 
@@ -78,39 +80,59 @@ class GridCache implements LeftHandCache
         paths.forEach( gridRequest::addPath );
 
         Response gridResponse = Fetcher.getData(gridRequest);
-        Integer fromMeasurementUnitId;
 
-        try
+        for (List<Response.Series> seriesPerFeature : gridResponse)
         {
-            fromMeasurementUnitId = MeasurementUnits.getMeasurementUnitID( gridResponse.getMeasurementUnit() );
-        }
-        catch ( SQLException e )
-        {
-            throw new IOException("The measurement unit of '" +
-                                  gridResponse.getMeasurementUnit() +
-                                  "' could not be identified.");
+            leftValues.addAll( this.addFeatureValues( seriesPerFeature ) );
         }
 
-        UnitConversions.Conversion conversion = UnitConversions.getConversion(
-                fromMeasurementUnitId,
-                this.projectDetails.getDesiredMeasurementUnit()
-        );
+        return leftValues;
+    }
 
-        // For every feature in the response...
-        gridResponse.forEach(
-                // For every time series for said feature...
-                listOfSeries -> listOfSeries.forEach(
-                        // For every entry for said series...
-                        series -> series.forEach(
-                                // Convert each value to the correct unit and
-                                // add it to the collection
-                                entry -> entry.forEach(
-                                        value -> leftValues.add(conversion.convert( value ))
-                                )
-                        )
-                )
-        );
+    private List<Double> addFeatureValues(List<Response.Series> featureSeries)
+            throws IOException
+    {
+        List<Double> leftValues = new ArrayList<>();
 
+        for (Response.Series series : featureSeries )
+        {
+            leftValues.addAll( this.addTimeSeriesValues( series ) );
+        }
+
+        return leftValues;
+    }
+
+    private List<Double> addTimeSeriesValues(Response.Series series)
+            throws IOException
+    {
+        List<Double> leftValues = new ArrayList<>();
+        for (Response.Entry entry : series)
+        {
+            for (double value : entry)
+            {
+                try
+                {
+                    leftValues.add(
+                            UnitConversions.convert(
+                                    value,
+                                    entry.getMeasurementUnit(),
+                                    this.projectDetails.getDesiredMeasurementUnit()
+                            )
+                    );
+                }
+                catch ( SQLException e )
+                {
+                    throw new IOException( "Could not convert control value '" +
+                                           String.valueOf( value ) +
+                                           "' because a valid conversion from '" +
+                                           entry.getMeasurementUnit() +
+                                           "' to '" +
+                                           this.projectDetails.getDesiredMeasurementUnit() +
+                                           "' could not be determined.",
+                                           e);
+                }
+            }
+        }
         return leftValues;
     }
 
@@ -155,5 +177,6 @@ class GridCache implements LeftHandCache
     }
 
     private final NavigableMap<LocalDateTime, String> cachedSources;
+    private final NavigableMap<LocalDateTime, Double> values;
     private final ProjectDetails projectDetails;
 }

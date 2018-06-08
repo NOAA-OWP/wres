@@ -1,8 +1,6 @@
 package wres.io.writing.netcdf;
 
 import java.io.Closeable;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -12,7 +10,6 @@ import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.zip.GZIPOutputStream;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -49,7 +46,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
 
     private static final Object WINDOW_LOCK = new Object();
     private static final Map<TimeWindow, TimeWindowWriter> WRITERS = new ConcurrentHashMap<>(  );
-    private static final Map<Object, Integer> vectorCoordinates = new ConcurrentHashMap<>(  );
+    private static final Map<Object, Integer> VECTOR_COORDINATES = new ConcurrentHashMap<>(  );
     private static final int VALUE_SAVE_LIMIT = 500;
 
     private static List<DestinationConfig> destinationConfig;
@@ -372,9 +369,9 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
         private Integer getVectorCoordinate( Integer value, String vectorVariableName, NetcdfFileWriter writer)
                 throws IOException
         {
-            synchronized ( vectorCoordinates )
+            synchronized ( VECTOR_COORDINATES )
             {
-                if (vectorCoordinates.size() == 0)
+                if ( VECTOR_COORDINATES.size() == 0)
                 {
                     Variable coordinate = writer.findVariable( vectorVariableName );
 
@@ -385,11 +382,11 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
                     // don't really know what to expect
                     for (int index = 0; index < values.getSize(); ++index)
                     {
-                        vectorCoordinates.put(values.getObject( index ), index);
+                        VECTOR_COORDINATES.put( values.getObject( index ), index);
                     }
                 }
 
-                return vectorCoordinates.get( value );
+                return VECTOR_COORDINATES.get( value );
             }
         }
 

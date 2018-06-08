@@ -48,6 +48,7 @@ import wres.grid.client.Response;
 import wres.io.concurrency.Executor;
 import wres.io.concurrency.WRESCallable;
 import wres.io.config.ConfigHelper;
+import wres.io.data.caching.DataSources;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.UnitConversions;
 import wres.io.data.details.ProjectDetails;
@@ -585,21 +586,31 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             throws IOException, SQLException
     {
         List<ForecastedPair> pairs = new ArrayList<>(  );
-
-        Request griddedRequest = ConfigHelper.getGridDataRequest( this.projectDetails, dataSourceConfig, this.feature );
         Pair<Integer, Integer>
                 leadRange = this.projectDetails.getLeadRange( this.feature, this.leadIteration );
 
+        Request griddedRequest = ConfigHelper.getGridDataRequest(
+                this.projectDetails,
+                dataSourceConfig,
+                this.feature );
+
         griddedRequest.setEarliestLead( Duration.of(leadRange.getLeft(), TimeHelper.LEAD_RESOLUTION) );
         griddedRequest.setLatestLead( Duration.of(leadRange.getRight(), TimeHelper.LEAD_RESOLUTION) );
+
+        DataSources.getSourcePaths(
+                this.projectDetails,
+                dataSourceConfig,
+                null,
+                null,
+                leadRange.getLeft(),
+                leadRange.getRight()
+        ).forEach(griddedRequest::addPath);
 
         /*
          * TODO: Add code to pull indexes from the index table that fit within the wkt in the feature
          */
 
         Response response = Fetcher.getData( griddedRequest );
-
-        int measurementUnitId = MeasurementUnits.getMeasurementUnitID(response.getMeasurementUnit());
 
         int minimumLead = this.projectDetails.getLeadRange( this.feature, this.leadIteration ).getLeft();
         int period = this.projectDetails.getScale().getPeriod();
@@ -627,7 +638,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                     IngestedValue value = new IngestedValue(
                             entry.getValidDate(),
                             entry.getMeasurements(),
-                            measurementUnitId,
+                            MeasurementUnits.getMeasurementUnitID(entry.getMeasurementUnit()),
                             ( int ) TimeHelper.durationToLeadUnits( entry.getLead() ),
                             series.getIssuedDate().getEpochSecond(),
                             this.projectDetails

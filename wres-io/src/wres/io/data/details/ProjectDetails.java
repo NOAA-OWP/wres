@@ -2759,12 +2759,100 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
 
         if (leadIsMissing && this.usesGriddedData( this.getRight() ))
         {
-            Request request = ConfigHelper.getGridDataRequest( this, this.getRight(), feature );
+            ScriptBuilder script = new ScriptBuilder(  );
 
-            // TODO: Implement actual, non-nonsense code
-            request.setEarliestLead( Duration.ofHours(0) );
-            request.setLatestLead( Duration.ofHours( 6 ) );
-            this.lastLeads.put( feature, (int)TimeHelper.durationToLeadUnits( Fetcher.getLastLead( request ) ) );
+            script.addLine("SELECT MAX(S.lead) AS last_lead");
+            script.addLine("FROM (");
+            script.addTab().addLine("SELECT PS.source_id");
+            script.addTab().addLine("FROM wres.ProjectSource PS");
+            script.addTab().addLine("WHERE PS.project_id = ", this.getId());
+            script.addTab(  2  ).addLine("AND PS.member = ", ProjectDetails.RIGHT_MEMBER);
+            script.addLine(") AS PS");
+            script.addLine("INNER JOIN wres.Source S");
+            script.addTab().addLine("ON S.source_id = PS.source_id");
+
+            boolean whereAdded = false;
+
+            if (this.getMinimumLeadHour() != Integer.MAX_VALUE)
+            {
+                whereAdded = true;
+                script.addLine("WHERE S.lead >= ", this.getMinimumLeadHour());
+            }
+
+            if (this.getMaximumLeadHour() != Integer.MIN_VALUE)
+            {
+                if (whereAdded)
+                {
+                    script.addTab().add("AND ");
+                }
+                else
+                {
+                    whereAdded = true;
+                    script.add("WHERE ");
+                }
+
+                script.addLine("S.lead <= ", this.getMaximumLeadHour());
+            }
+
+            if (Strings.hasValue(this.getEarliestIssueDate()))
+            {
+                if (whereAdded)
+                {
+                    script.addTab().add("AND ");
+                }
+                else
+                {
+                    whereAdded = true;
+                    script.add("WHERE ");
+                }
+
+                script.addLine("S.output_time >= '", this.getEarliestIssueDate(), "'");
+            }
+
+            if (Strings.hasValue( this.getLatestIssueDate() ))
+            {
+                if (whereAdded)
+                {
+                    script.addTab().add("AND ");
+                }
+                else
+                {
+                    whereAdded = true;
+                    script.add("WHERE ");
+                }
+
+                script.addLine("S.output_time <= '", this.getLatestIssueDate(), "'");
+            }
+
+            if (Strings.hasValue( this.getEarliestDate() ))
+            {
+                if (whereAdded)
+                {
+                    script.addTab().add("AND ");
+                }
+                else
+                {
+                    whereAdded = true;
+                    script.add("WHERE ");
+                }
+
+                script.addLine("S.output_time + INTERVAL '1 HOUR' * S.lead >= '", this.getEarliestDate(), "'");
+            }
+
+            if (Strings.hasValue( this.getLatestDate() ))
+            {
+                if (whereAdded)
+                {
+                    script.addTab().add("AND ");
+                }
+                else
+                {
+                    script.add("WHERE ");
+                }
+
+                script.addLine("S.output_time + INTERVAL '1 HOUR' * S.lead <= '", this.getLatestDate(), "'");
+            }
+            this.lastLeads.put( feature, script.retrieve ("last_lead" ));
         }
         else if (leadIsMissing)
         {
