@@ -184,8 +184,6 @@ public class ConfigHelper
             griddedRequest.setLatestIssueTime( Instant.parse(projectDetails.getLatestIssueDate()) );
         }
 
-        DataSources.getSourcePaths( projectDetails, dataSourceConfig ).forEach( griddedRequest::addPath );
-
         return griddedRequest;
     }
 

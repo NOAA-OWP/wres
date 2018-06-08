@@ -113,6 +113,21 @@ public final class UnitConversions
         }
     }
 
+    public static double convert(final double value, final String fromMeasurementUnit, final String toMeasurementUnit)
+            throws SQLException
+    {
+        if (Double.isNaN(value) || fromMeasurementUnit.equalsIgnoreCase( toMeasurementUnit ))
+        {
+            return value;
+        }
+
+        return UnitConversions.convert(
+                value,
+                MeasurementUnits.getMeasurementUnitID( fromMeasurementUnit ),
+                toMeasurementUnit
+        );
+    }
+
     public static double convert(double value, int fromMeasurementUnitID, String toMeasurementUnit)
     {
         Conversion conversion = getConversion( fromMeasurementUnitID, toMeasurementUnit );

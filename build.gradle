@@ -380,6 +380,7 @@ project(':wres-grid')
     dependencies
     {
         compile project(':wres-config')
+        compile project(':utilities')
         compile 'org.slf4j:slf4j-api:1.7.25'
         compile 'edu.ucar:cdm:5.0.0-alpha3'
         runtime 'ch.qos.logback:logback-classic:1.2.3'

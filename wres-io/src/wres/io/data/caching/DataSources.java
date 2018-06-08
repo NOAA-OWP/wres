@@ -208,7 +208,11 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
 	}
 
 	public static List<String> getSourcePaths( final ProjectDetails projectDetails,
-                                               final DataSourceConfig dataSourceConfig)
+                                               final DataSourceConfig dataSourceConfig,
+                                               final String firstIssueDate,
+                                               final String lastIssueDate,
+                                               final Integer firstLead,
+                                               final Integer lastLead)
             throws SQLException
     {
         List<String> paths = new ArrayList<>();
@@ -219,6 +223,16 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
         script.addLine("SELECT path");
         script.addLine("FROM wres.Source S");
         script.addLine("WHERE S.is_point_data = FALSE");
+
+        if (isForecast && firstLead != null)
+        {
+            script.addTab().addLine("AND S.lead > ", firstLead);
+        }
+
+        if (isForecast && lastLead != null)
+        {
+            script.addTab().addLine("AND S.lead <= ", lastLead);
+        }
 
         if (isForecast && projectDetails.getMinimumLeadHour() > Integer.MIN_VALUE)
         {
@@ -254,12 +268,21 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
             script.addLine("<= '", projectDetails.getLatestDate(), "'");
         }
 
-        if (isForecast && projectDetails.getEarliestIssueDate() != null)
+        // TODO: This is just the first sweep for issue time pooling support
+        if (firstIssueDate != null)
+        {
+            script.addTab().addLine("AND S.output_time >= '", firstIssueDate, "'");
+        }
+        else if (isForecast && projectDetails.getEarliestIssueDate() != null)
         {
             script.addTab().addLine("AND S.output_time >= '", projectDetails.getEarliestIssueDate(), "'");
         }
 
-        if (isForecast && projectDetails.getLatestIssueDate() != null)
+        if (lastIssueDate != null)
+        {
+            script.addTab().addLine("AND S.output_time <= '", lastIssueDate, "'");
+        }
+        else if (isForecast && projectDetails.getLatestIssueDate() != null)
         {
             script.addTab().addLine("AND S.output_time <= '", projectDetails.getLatestIssueDate(), "'");
         }

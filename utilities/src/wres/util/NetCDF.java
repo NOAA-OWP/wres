@@ -10,6 +10,7 @@ import ucar.nc2.Variable;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Objects;
@@ -197,6 +198,24 @@ public final class NetCDF {
             validTime = validTimeAttribute.getStringValue().replace("_", "T").trim();
         }
         return validTime;
+    }
+
+    public static Instant getTime( NetcdfFile file)
+            throws IOException, InvalidRangeException
+    {
+        Variable time = NetCDF.getVariable( file, "time" );
+        Array timeValues = time.read( new int[]{0}, new int[]{1} );
+        int minutes = timeValues.getInt( 0 );
+        return Instant.ofEpochSecond( minutes * 60 );
+    }
+
+    public static Instant getReferenceTime(NetcdfFile file)
+            throws IOException, InvalidRangeException
+    {
+        Variable time = NetCDF.getVariable( file, "reference_time" );
+        Array timeValues = time.read( new int[]{0}, new int[]{1} );
+        int minutes = timeValues.getInt( 0 );
+        return Instant.ofEpochSecond( minutes * 60 );
     }
 
     public static Attribute getVariableAttribute(final Variable variable, final String attributeName)

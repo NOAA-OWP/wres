@@ -3,6 +3,7 @@ package wres.grid.client;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Queue;
 
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -13,7 +14,6 @@ import wres.config.generated.Feature;
  */
 public interface Request
 {
-    void addIndex(final Integer xIndex, final Integer yIndex);
     void addPath(String path);
     void addFeature(Feature feature);
     void setEarliestIssueTime( Instant earliestIssueTime );
@@ -25,8 +25,7 @@ public interface Request
     void setVariableName( String variableName );
     void setIsForecast(Boolean isForecast);
 
-    List<Pair<Integer, Integer>> getIndices();
-    List<String> getPaths();
+    Queue<String> getPaths();
     List<Feature> getFeatures();
     Instant getEarliestIssueTime();
     Instant getLatestIssueTime();

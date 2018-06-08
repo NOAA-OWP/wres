@@ -9,8 +9,11 @@ import java.time.temporal.ChronoUnit;
 import java.util.Random;
 import java.util.stream.DoubleStream;
 
+import ucar.ma2.InvalidRangeException;
+
 import wres.config.FeaturePlus;
 import wres.config.generated.Feature;
+import wres.io.griddedReader.GriddedReader;
 
 /**
  * Stand in module for integration development between IO and the Grid module
@@ -19,10 +22,18 @@ public class Fetcher
 {
     public static Response getData(Request request) throws IOException
     {
-        TimeSeriesResponse response = Fetcher.fakeOutResponseData(request);
+        //TimeSeriesResponse response = Fetcher.fakeOutResponseData(request);
 
-
-        return response;
+        GriddedReader griddedReader = new GriddedReader( request );
+        try
+        {
+            return griddedReader.getData();
+        }
+        catch ( InvalidRangeException e )
+        {
+            throw new IOException( "Data could not be retrieved from one or more NetCDF files", e );
+        }
+        //return response;
     }
 
     /**
@@ -33,6 +44,7 @@ public class Fetcher
     private static TimeSeriesResponse fakeOutResponseData(Request request)
     {
         TimeSeriesResponse response = new TimeSeriesResponse();
+        final String measurementUnit = "MM";
 
         // We want 1 feature, 5 time series
 
@@ -44,7 +56,6 @@ public class Fetcher
         // their issue time, their path, and their lead
 
         response.setVariableName( request.getVariableName() );
-        response.setMeasurementUnit( "MM" );
 
         for (Feature feature : request.getFeatures())
         {
@@ -159,7 +170,7 @@ public class Fetcher
                          ++leadIndex)
                     {
                         currentDateTime = currentDateTime.plus( Duration.of(leadIndex, ChronoUnit.HOURS) );
-                        response.add( featurePlus, earliestDate, currentDateTime, generator.nextDouble() * 2.5 );
+                        response.add( featurePlus, earliestDate, currentDateTime, generator.nextDouble() * 2.5, measurementUnit );
                     }
 
                     earliestDate = earliestDate.plus( offset );
@@ -171,7 +182,7 @@ public class Fetcher
 
                 while ( currentDateTime.isBefore( latestDate ) || currentDateTime.equals( latestDate ) )
                 {
-                    response.add( featurePlus, earliestDate, currentDateTime, generator.nextDouble() * 2.5 );
+                    response.add( featurePlus, earliestDate, currentDateTime, generator.nextDouble() * 2.5, measurementUnit );
 
                     currentDateTime = currentDateTime.plus( Duration.of( 1,
                                                                          ChronoUnit.HOURS ) );
@@ -181,18 +192,6 @@ public class Fetcher
         }
 
         return response;
-    }
-
-    public static Integer getValueCount(Request request) throws IOException
-    {
-        Response timeSeriesSet = Fetcher.getData( request );
-        return timeSeriesSet.getValueCount();
-    }
-
-    public static Duration getLastLead(Request request) throws IOException
-    {
-        Response timeSeriesSet = Fetcher.getData( request );
-        return timeSeriesSet.getLastLead();
     }
 
     public static Request prepareRequest()
