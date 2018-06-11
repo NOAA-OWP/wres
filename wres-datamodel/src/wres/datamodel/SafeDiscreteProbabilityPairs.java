@@ -21,7 +21,7 @@ class SafeDiscreteProbabilityPairs extends SafeSingleValuedPairs implements Disc
             return null;
         }
         final DataFactory metIn = DefaultDataFactory.getInstance();
-        return metIn.ofDiscreteProbabilityPairs(getDataForBaseline(),getMetadataForBaseline());
+        return metIn.ofDiscreteProbabilityPairs(getRawDataForBaseline(),getMetadataForBaseline());
     }     
 
     /**

@@ -140,7 +140,7 @@ enum DefaultSlicer implements Slicer
         //Filter baseline as required
         if ( input.hasBaseline() )
         {
-            List<PairOfDoubles> basePairs = input.getDataForBaseline();
+            List<PairOfDoubles> basePairs = input.getRawDataForBaseline();
             List<PairOfDoubles> basePairsSubset = basePairs.stream().filter( condition ).collect( Collectors.toList() );
 
             return dataFac.ofSingleValuedPairs( mainPairsSubset,
@@ -177,7 +177,7 @@ enum DefaultSlicer implements Slicer
         //Filter baseline as required
         if ( input.hasBaseline() )
         {
-            List<PairOfDoubleAndVectorOfDoubles> basePairs = input.getDataForBaseline();
+            List<PairOfDoubleAndVectorOfDoubles> basePairs = input.getRawDataForBaseline();
             List<PairOfDoubleAndVectorOfDoubles> basePairsSubset =
                     basePairs.stream().filter( condition ).collect( Collectors.toList() );
 
@@ -222,7 +222,7 @@ enum DefaultSlicer implements Slicer
 
         if ( input.hasBaseline() )
         {
-            List<PairOfDoubleAndVectorOfDoubles> basePairs = input.getDataForBaseline();
+            List<PairOfDoubleAndVectorOfDoubles> basePairs = input.getRawDataForBaseline();
             List<PairOfDoubleAndVectorOfDoubles> basePairsSubset = new ArrayList<>();
 
             for ( PairOfDoubleAndVectorOfDoubles next : basePairs )
@@ -531,7 +531,7 @@ enum DefaultSlicer implements Slicer
         mainPairs.stream().map( mapper ).forEach( mainPairsTransformed::add );
         if ( input.hasBaseline() )
         {
-            List<PairOfDoubles> basePairs = input.getDataForBaseline();
+            List<PairOfDoubles> basePairs = input.getRawDataForBaseline();
             List<PairOfBooleans> basePairsTransformed = new ArrayList<>();
             basePairs.stream().map( mapper ).forEach( basePairsTransformed::add );
             return dataFac.ofDichotomousPairsFromAtomic( mainPairsTransformed,
@@ -556,7 +556,7 @@ enum DefaultSlicer implements Slicer
         List<PairOfDoubles> mainPairsTransformed = transform( input.getRawData(), mapper );
         if ( input.hasBaseline() )
         {
-            List<PairOfDoubles> basePairsTransformed = transform( input.getDataForBaseline(), mapper );
+            List<PairOfDoubles> basePairsTransformed = transform( input.getRawDataForBaseline(), mapper );
             return dataFac.ofSingleValuedPairs( mainPairsTransformed,
                                                 basePairsTransformed,
                                                 input.getMetadata(),
@@ -580,7 +580,7 @@ enum DefaultSlicer implements Slicer
         mainPairs.forEach( pair -> mainPairsTransformed.add( mapper.apply( pair, threshold ) ) );
         if ( input.hasBaseline() )
         {
-            List<PairOfDoubleAndVectorOfDoubles> basePairs = input.getDataForBaseline();
+            List<PairOfDoubleAndVectorOfDoubles> basePairs = input.getRawDataForBaseline();
             List<PairOfDoubles> basePairsTransformed = new ArrayList<>();
             basePairs.forEach( pair -> basePairsTransformed.add( mapper.apply( pair, threshold ) ) );
             return dataFac.ofDiscreteProbabilityPairs( mainPairsTransformed,

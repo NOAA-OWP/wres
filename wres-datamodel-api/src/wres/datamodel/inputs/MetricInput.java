@@ -28,7 +28,7 @@ public interface MetricInput<S> extends Iterable<S>
 
     default boolean hasBaseline()
     {
-        return Objects.nonNull( this.getDataForBaseline() );
+        return Objects.nonNull( this.getRawDataForBaseline() );
     }
 
     /**
@@ -73,7 +73,7 @@ public interface MetricInput<S> extends Iterable<S>
      * @return the raw input associated with a baseline
      */
 
-    List<S> getDataForBaseline();
+    List<S> getRawDataForBaseline();
 
     /**
      * Returns the metadata associated with the baseline input or null if no baseline is defined.
