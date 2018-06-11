@@ -54,6 +54,13 @@
       <level value="error" />
     </logger>
 
+    <!-- Quiet the logger used for ucar.nc2.util.cache; it will spit out a
+    warning for every acquire/release above the configured limit, resulting in
+    thousands of unneccessary messages -->
+    <logger name="cacheLogger">
+        <level value="error" />
+    </logger>
+
     <!-- Allow -Dwres.logLevel to set logging level, otherwise info. -->
     <root level="${wres.logLevel:-info}">
         <appender-ref ref="STDOUT" />
