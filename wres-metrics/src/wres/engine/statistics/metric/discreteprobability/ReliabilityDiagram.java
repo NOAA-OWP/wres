@@ -62,21 +62,35 @@ public class ReliabilityDiagram extends Diagram<DiscreteProbabilityPairs, MultiV
         // Some data available
         if ( !s.getRawData().isEmpty() )
         {
-            //Compute the average probabilities for samples > 0
+            // Compute the average probabilities for samples > 0
+            
+            // Increment the reliability 
             s.getRawData().forEach( this.getIncrementor( fProb, oProb, samples, constant ) );
+            
+            // Compute the average reliability
             List<Double> fProbFinal = new ArrayList<>(); //Forecast probs for samples > 0
             List<Double> oProbFinal = new ArrayList<>(); //Observed probs for samples > 0
             for ( int i = 0; i < bins; i++ )
             {
+                // Bin with > 0 samples
                 if ( samples[i] > 0 )
                 {
                     fProbFinal.add( fProb[i] / samples[i] );
                     oProbFinal.add( oProb[i] / samples[i] );
                 }
+                // Bin with no samples
+                else
+                {
+                    fProbFinal.add( MissingValues.MISSING_DOUBLE );
+                    oProbFinal.add( MissingValues.MISSING_DOUBLE );
+                }
             }
+            
+            // Stream to an array
             fProb = fProbFinal.stream().mapToDouble( Double::doubleValue ).toArray();
             oProb = oProbFinal.stream().mapToDouble( Double::doubleValue ).toArray();
         }
+        // No data available
         else
         {
             Arrays.fill( fProb, MissingValues.MISSING_DOUBLE );
@@ -88,7 +102,9 @@ public class ReliabilityDiagram extends Diagram<DiscreteProbabilityPairs, MultiV
         output.put( MetricDimension.FORECAST_PROBABILITY, fProb );
         output.put( MetricDimension.OBSERVED_RELATIVE_FREQUENCY, oProb );
         output.put( MetricDimension.SAMPLE_SIZE, samples );
-        final MetricOutputMetadata metOut = getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, null );
+        
+        MetricOutputMetadata metOut = getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, null );
+
         return getDataFactory().ofMultiVectorOutput( output, metOut );
     }
 
