@@ -4,9 +4,11 @@
 package wres.io.utilities;
 
 import java.sql.SQLException;
+import java.util.StringJoiner;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
+import wres.config.generated.Polygon;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.Variables;
 import wres.io.data.details.ProjectDetails;
@@ -117,8 +119,95 @@ public final class ScriptGenerator
                 {
                     script.add(" AND");
                 }
+                else
+                {
+                    addedParameter = true;
+                }
 
                 script.add(" gage_id = '", feature.getGageId());
+            }
+
+            if (feature.getPolygon() != null)
+            {
+                if (addedParameter)
+                {
+                    script.add(" ADD");
+                }
+                else
+                {
+                    addedParameter = true;
+                }
+
+                StringJoiner pointJoiner = new StringJoiner(
+                        "), (",
+                        " POINT(F.longitude, F.latitude) <@ POLYGON '((",
+                        ")) '"
+                );
+
+                for ( Polygon.Point point : feature.getPolygon().getPoint())
+                {
+                    pointJoiner.add( point.getLongitude() + ", " + point.getLatitude() );
+                }
+
+                script.add(pointJoiner.toString());
+            }
+
+            if (feature.getCoordinate() != null)
+            {
+                Double radianLatitude = Math.toRadians(feature.getCoordinate().getLatitude());
+
+                // This is the approximate distance between longitudinal degrees at
+                // the equator
+                final Double distanceAtEquator = 111321.0;
+
+                // This is an approximation
+                Double distanceOfOneDegree = Math.cos(radianLatitude) * distanceAtEquator;
+
+                // We take the max between the approximate distance and 0.00005 because
+                // 0.00005 serves as a decent epsilon for database distance comparison.
+                // If the distance is much smaller than that, float point error
+                // can exclude the requested location, even if the coordinates were
+                // spot on.
+                Double rangeInDegrees = Math.max( feature.getCoordinate().getRange() / distanceOfOneDegree, 0.00005);
+
+                if (addedParameter)
+                {
+                    script.add(" AND");
+                }
+                else
+                {
+                    addedParameter = true;
+                }
+
+                // The feature is within the number of degrees from given point
+                script.add(" longitude IS NOT NULL AND ",
+                           "latitude IS NOT NULL AND ",
+                           "SQRT(",
+                               "(",
+                                   feature.getCoordinate().getLongitude(),
+                                   " - F.longitude",
+                               ")^2 + ",
+                               "(",
+                                   feature.getCoordinate().getLatitude(),
+                                   " - F.latitude",
+                               ")^2",
+                           ") <= ", rangeInDegrees);
+            }
+
+            if (feature.getCircle() != null)
+            {
+                if (addedParameter)
+                {
+                    script.add(" AND");
+                }
+
+                // The feature is within the diameter of a circle centered at
+                // the given point
+                script.add(" F.longitude IS NOT NULL AND F.latitude IS NOT NULL AND ",
+                           "POINT(F.longitude, F.latitude) <@ CIRCLE '((",
+                           feature.getCircle().getLongitude(), ", ",
+                           feature.getCircle().getLatitude(), "), ",
+                           feature.getCircle().getDiameter(), ")'");
             }
 
             script.addLine(" )");
@@ -238,6 +327,89 @@ public final class ScriptGenerator
                     }
 
                     script.add( " gage_id = '", feature.getGageId() );
+                }
+
+                if (feature.getPolygon() != null)
+                {
+                    if (addedParameter)
+                    {
+                        script.add(" ADD");
+                    }
+                    else
+                    {
+                        addedParameter = true;
+                    }
+
+                    StringJoiner pointJoiner = new StringJoiner(
+                            "), (",
+                            " POINT(longitude, latitude) <@ POLYGON '((",
+                            ")) '"
+                    );
+
+                    for ( Polygon.Point point : feature.getPolygon().getPoint())
+                    {
+                        pointJoiner.add( point.getLongitude() + ", " + point.getLatitude() );
+                    }
+
+                    script.add(pointJoiner.toString());
+                }
+
+                if (feature.getCoordinate() != null)
+                {
+                    Double radianLatitude = Math.toRadians(feature.getCoordinate().getLatitude());
+
+                    // This is the approximate distance between longitudinal degrees at
+                    // the equator
+                    final Double distanceAtEquator = 111321.0;
+
+                    // This is an approximation
+                    Double distanceOfOneDegree = Math.cos(radianLatitude) * distanceAtEquator;
+
+                    // We take the max between the approximate distance and 0.00005 because
+                    // 0.00005 serves as a decent epsilon for database distance comparison.
+                    // If the distance is much smaller than that, float point error
+                    // can exclude the requested location, even if the coordinates were
+                    // spot on.
+                    Double rangeInDegrees = Math.max( feature.getCoordinate().getRange() / distanceOfOneDegree, 0.00005);
+
+                    if (addedParameter)
+                    {
+                        script.add(" AND");
+                    }
+                    else
+                    {
+                        addedParameter = true;
+                    }
+
+                    // The feature is within the number of degrees from given point
+                    script.add(" longitude IS NOT NULL AND ",
+                               "latitude IS NOT NULL AND ",
+                               "SQRT(",
+                               "(",
+                               feature.getCoordinate().getLongitude(),
+                               " - longitude",
+                               ")^2 + ",
+                               "(",
+                               feature.getCoordinate().getLatitude(),
+                               " - latitude",
+                               ")^2",
+                               ") <= ", rangeInDegrees);
+                }
+
+                if (feature.getCircle() != null)
+                {
+                    if (addedParameter)
+                    {
+                        script.add(" AND");
+                    }
+
+                    // The feature is within the diameter of a circle centered at
+                    // the given point
+                    script.add(" longitude IS NOT NULL AND latitude IS NOT NULL AND ",
+                               "POINT(longitude, latitude) <@ CIRCLE '((",
+                               feature.getCircle().getLongitude(), ", ",
+                               feature.getCircle().getLatitude(), "), ",
+                               feature.getCircle().getDiameter(), ")'");
                 }
 
                 script.addLine( " )" );
