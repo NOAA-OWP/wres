@@ -73,7 +73,7 @@ class SafeSingleValuedPairs implements SingleValuedPairs
     }
 
     @Override
-    public List<PairOfDoubles> getDataForBaseline()
+    public List<PairOfDoubles> getRawDataForBaseline()
     {
         return baselineInput;
     }

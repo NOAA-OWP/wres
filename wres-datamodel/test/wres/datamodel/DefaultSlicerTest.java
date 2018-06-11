@@ -264,7 +264,7 @@ public final class DefaultSlicerTest
                 slicer.transform( metIn.ofSingleValuedPairs( values, values, meta, meta, null ),
                                   mapper );
         assertTrue( "The transformed test data does not match the benchmark.",
-                    actualBase.getDataForBaseline().equals( expectedBase.getDataForBaseline() ) );
+                    actualBase.getRawDataForBaseline().equals( expectedBase.getRawDataForBaseline() ) );
     }
 
     /**
@@ -603,7 +603,7 @@ public final class DefaultSlicerTest
         //Test with baseline
         assertTrue( "The sliced data does not match the benchmark.", sliced.getRawData().equals( expectedValues ) );
         assertTrue( "The sliced baseline data does not match the benchmark.",
-                    sliced.getDataForBaseline().equals( expectedValues ) );
+                    sliced.getRawDataForBaseline().equals( expectedValues ) );
         assertTrue( "The sliced climatology data does not match the benchmark.",
                     Arrays.equals( sliced.getClimatology().getDoubles(), climatologyExpected.getDoubles() ) );
         assertTrue( "Unexpected equality of the sliced and unsliced climatology.",
@@ -653,7 +653,7 @@ public final class DefaultSlicerTest
         //Test with baseline
         assertTrue( "The sliced data does not match the benchmark.", sliced.getRawData().equals( expectedValues ) );
         assertTrue( "The sliced baseline data does not match the benchmark.",
-                    sliced.getDataForBaseline().equals( expectedValues ) );
+                    sliced.getRawDataForBaseline().equals( expectedValues ) );
         assertTrue( "The sliced climatology data does not match the benchmark.",
                     Arrays.equals( sliced.getClimatology().getDoubles(), climatologyExpected.getDoubles() ) );
         assertTrue( "Unexpected equality of the sliced and unsliced climatology.",

@@ -75,7 +75,7 @@ class SafeMulticategoryPairs implements MulticategoryPairs
     }
 
     @Override
-    public List<VectorOfBooleans> getDataForBaseline()
+    public List<VectorOfBooleans> getRawDataForBaseline()
     {
         return baselineInput;
     }

@@ -28,7 +28,7 @@ class SafeDichotomousPairs extends SafeMulticategoryPairs implements Dichotomous
             return null;
         }
         final DataFactory metIn = DefaultDataFactory.getInstance();
-        return metIn.ofDichotomousPairs( getDataForBaseline(), getMetadataForBaseline() );
+        return metIn.ofDichotomousPairs( getRawDataForBaseline(), getMetadataForBaseline() );
     }
 
     @Override
