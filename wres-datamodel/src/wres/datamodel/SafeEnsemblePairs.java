@@ -73,7 +73,7 @@ class SafeEnsemblePairs implements EnsemblePairs
     }
 
     @Override
-    public List<PairOfDoubleAndVectorOfDoubles> getDataForBaseline()
+    public List<PairOfDoubleAndVectorOfDoubles> getRawDataForBaseline()
     {
         return baselineInput;
     }
