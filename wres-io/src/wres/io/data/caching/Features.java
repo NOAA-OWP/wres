@@ -307,9 +307,14 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
             details.addAll(Features.getDetailsByRFC( feature.getRfc().toUpperCase()));
         }
 
+        if (Strings.hasValue( feature.getState() ))
+        {
+            details.addAll(Features.getDetailsByState( feature.getState().toUpperCase() ));
+        }
+
         if (Strings.hasValue( feature.getLocationId() ))
         {
-            details.add( Features.getDetailsByLID( feature.getLocationId() ) );
+            details.add( Features.getDetailsByLID( feature.getLocationId().toUpperCase() ) );
         }
 
         if (Strings.hasValue( feature.getGageId() ))
@@ -563,6 +568,18 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         script.addLine("SELECT *");
         script.addLine("FROM wres.Feature");
         script.addLine("WHERE rfc = '", rfc, "'");
+        script.addLine("ORDER BY feature_id;");
+
+        return Features.getDetailsFromDatabase( script );
+    }
+
+    private static List<FeatureDetails> getDetailsByState(String state)
+            throws SQLException
+    {
+        ScriptBuilder script = new ScriptBuilder(  );
+        script.addLine("SELECT *");
+        script.addLine("FROM wres.Feature");
+        script.addLine("WHERE st = '", state, "'");
         script.addLine("ORDER BY feature_id;");
 
         return Features.getDetailsFromDatabase( script );

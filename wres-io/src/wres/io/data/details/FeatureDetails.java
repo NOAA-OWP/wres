@@ -103,6 +103,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
                             this.getHuc(),
                             this.getFeatureName(),
                             this.getRfc(),
+                            this.getState(),
                             null );
     }
 

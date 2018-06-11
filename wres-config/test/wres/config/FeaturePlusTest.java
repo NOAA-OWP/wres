@@ -49,6 +49,7 @@ public class FeaturePlusTest
                              "E",
                              "F",
                              "G",
+                             "Q",
                              "H" );
         FeaturePlus first = FeaturePlus.of( one );
 
@@ -67,6 +68,7 @@ public class FeaturePlusTest
                              "E",
                              "F",
                              "G",
+                             "Q",
                              "H" );
         FeaturePlus second = FeaturePlus.of( two );
 
@@ -85,6 +87,7 @@ public class FeaturePlusTest
                              "E",
                              "F",
                              "G",
+                             "Q",
                              "H" );
         FeaturePlus third = FeaturePlus.of( three );
 
@@ -113,6 +116,7 @@ public class FeaturePlusTest
                              null,
                              null,
                              null,
+                             null,
                              null );
 
         FeaturePlus nullth = FeaturePlus.of( nullFeature );
@@ -120,6 +124,7 @@ public class FeaturePlusTest
         // Alias
         Feature four =
                 new Feature( Arrays.asList( "A", "B" ),
+                             null,
                              null,
                              null,
                              null,
@@ -149,6 +154,7 @@ public class FeaturePlusTest
                              null,
                              null,
                              null,
+                             null,
                              null );
 
         FeaturePlus fifth = FeaturePlus.of( five );
@@ -156,6 +162,7 @@ public class FeaturePlusTest
         Feature fiveLat =
                 new Feature( null,
                              new CoordinateSelection( 6.0f, 6.0f, 7.0f ),
+                             null,
                              null,
                              null,
                              null,
@@ -186,6 +193,7 @@ public class FeaturePlusTest
                              null,
                              null,
                              null,
+                             null,
                              null );
 
         FeaturePlus fifthLong = FeaturePlus.of( fiveLong );
@@ -195,6 +203,7 @@ public class FeaturePlusTest
         Feature fiveRange =
                 new Feature( null,
                              new CoordinateSelection( 5.0f, 6.0f, 8.0f ),
+                             null,
                              null,
                              null,
                              null,
@@ -223,6 +232,7 @@ public class FeaturePlusTest
                              null,
                              null,
                              null,
+                             null,
                              null );
 
         FeaturePlus seventh = FeaturePlus.of( seven );
@@ -235,6 +245,7 @@ public class FeaturePlusTest
                              null,
                              null,
                              "C",
+                             null,
                              null,
                              null,
                              null,
@@ -260,6 +271,7 @@ public class FeaturePlusTest
                              null,
                              null,
                              null,
+                             null,
                              null );
 
         FeaturePlus ninth = FeaturePlus.of( nine );
@@ -273,6 +285,7 @@ public class FeaturePlusTest
                              null,
                              null,
                              "C",
+                             null,
                              null,
                              null,
                              null,
@@ -297,6 +310,7 @@ public class FeaturePlusTest
                              null,
                              null,
                              null,
+                             null,
                              null );
 
         FeaturePlus eleventh = FeaturePlus.of( eleven );
@@ -311,6 +325,7 @@ public class FeaturePlusTest
                              null,
                              null,
                              234L,
+                             null,
                              null,
                              null,
                              null,
@@ -334,6 +349,7 @@ public class FeaturePlusTest
                              null,
                              null,
                              null,
+                             null,
                              null );
 
         FeaturePlus thirteenth = FeaturePlus.of( thirteen );
@@ -349,6 +365,7 @@ public class FeaturePlusTest
                              null,
                              null,
                              "C",
+                             null,
                              null,
                              null,
                              null,
@@ -371,6 +388,7 @@ public class FeaturePlusTest
                              "B",
                              null,
                              null,
+                             null,
                              null );
 
         FeaturePlus fifteenth = FeaturePlus.of( fifteen );
@@ -387,6 +405,7 @@ public class FeaturePlusTest
                              null,
                              null,
                              "C",
+                             null,
                              null,
                              null,
                              null );
@@ -408,6 +427,7 @@ public class FeaturePlusTest
                              null,
                              "B",
                              null,
+                             null,
                              null );
 
         FeaturePlus seventeenth = FeaturePlus.of( seventeen );
@@ -425,6 +445,7 @@ public class FeaturePlusTest
                              null,
                              null,
                              "C",
+                             null,
                              null,
                              null );
 
@@ -445,6 +466,7 @@ public class FeaturePlusTest
                              null,
                              null,
                              "B",
+                             null,
                              null );
 
         FeaturePlus nineteenth = FeaturePlus.of( nineteen );
@@ -463,6 +485,7 @@ public class FeaturePlusTest
                              null,
                              null,
                              "C",
+                             null,
                              null );
 
         FeaturePlus twentieth = FeaturePlus.of( twenty );
@@ -482,6 +505,7 @@ public class FeaturePlusTest
                              null,
                              null,
                              null,
+                             null,
                              "B" );
 
         FeaturePlus twentyFirst = FeaturePlus.of( twentyOne );
@@ -490,6 +514,7 @@ public class FeaturePlusTest
 
         Feature twentyTwo =
                 new Feature( null,
+                             null,
                              null,
                              null,
                              null,
@@ -522,6 +547,7 @@ public class FeaturePlusTest
                                             null,
                                             null,
                                             null,
+                                            null,
                                             null);
 
         FeaturePlus twentyThird = FeaturePlus.of(twentyThree);
@@ -534,6 +560,7 @@ public class FeaturePlusTest
                                                     Arrays.asList(new Polygon.Point( 3, 4 )),
                                                     BigInteger.valueOf(7)
                                             ),
+                                            null,
                                             null,
                                             null,
                                             null,
@@ -562,6 +589,7 @@ public class FeaturePlusTest
                                           null,
                                           null,
                                           null,
+                                          null,
                                           null);
 
         FeaturePlus twentyFifth = FeaturePlus.of( twentyFive );
@@ -572,6 +600,7 @@ public class FeaturePlusTest
                                           null,
                                           null,
                                           new Circle(7, 12, 103, BigInteger.valueOf( 4326 )),
+                                          null,
                                           null,
                                           null,
                                           null,
@@ -610,6 +639,7 @@ public class FeaturePlusTest
                              "E",
                              "F",
                              "G",
+                             "Q",
                              "H" );
         FeaturePlus first = FeaturePlus.of( one );
         int code = first.hashCode();
@@ -634,6 +664,7 @@ public class FeaturePlusTest
                              "E",
                              "F",
                              "G",
+                             "Q",
                              "H" );
         FeaturePlus second = FeaturePlus.of( two );
 
@@ -651,6 +682,7 @@ public class FeaturePlusTest
                              "E",
                              "F",
                              "G",
+                             "Q",
                              "H" );
         FeaturePlus third = FeaturePlus.of( three );
 
@@ -667,6 +699,7 @@ public class FeaturePlusTest
                              "E",
                              "F",
                              "G",
+                             "Q",
                              "H" );
         FeaturePlus fourth = FeaturePlus.of( four );
 
@@ -697,6 +730,7 @@ public class FeaturePlusTest
                              "E",
                              "F",
                              "G",
+                             "Q",
                              "H" );
         FeaturePlus first = FeaturePlus.of( one );
 
@@ -718,6 +752,7 @@ public class FeaturePlusTest
                              "E",
                              "R",
                              "G",
+                             "Q",
                              "H" );
         FeaturePlus second = FeaturePlus.of( two );
 
@@ -740,6 +775,7 @@ public class FeaturePlusTest
                              "E",
                              "R",
                              "G",
+                             "Q",
                              "H" );
         FeaturePlus third = FeaturePlus.of( three );
 
@@ -763,6 +799,7 @@ public class FeaturePlusTest
                              "E",
                              "R",
                              "G",
+                             "Q",
                              "H" );
         FeaturePlus thirdTrans = FeaturePlus.of( threeTrans );
 
@@ -783,6 +820,7 @@ public class FeaturePlusTest
                              null,
                              null,
                              null,
+                             null,
                              null );
 
         FeaturePlus nullth = FeaturePlus.of( nullFeature );
@@ -790,6 +828,7 @@ public class FeaturePlusTest
         // Alias
         Feature four =
                 new Feature( Arrays.asList( "A", "B" ),
+                             null,
                              null,
                              null,
                              null,
@@ -820,6 +859,7 @@ public class FeaturePlusTest
                              null,
                              null,
                              null,
+                             null,
                              null );
 
         FeaturePlus fifth = FeaturePlus.of( five );
@@ -827,6 +867,7 @@ public class FeaturePlusTest
         Feature fiveLat =
                 new Feature( null,
                              new CoordinateSelection( 6.0f, 6.0f, 7.0f ),
+                             null,
                              null,
                              null,
                              null,
@@ -857,6 +898,7 @@ public class FeaturePlusTest
                              null,
                              null,
                              null,
+                             null,
                              null );
 
         FeaturePlus fifthLong = FeaturePlus.of( fiveLong );
@@ -866,6 +908,7 @@ public class FeaturePlusTest
         Feature fiveRange =
                 new Feature( null,
                              new CoordinateSelection( 5.0f, 6.0f, 8.0f ),
+                             null,
                              null,
                              null,
                              null,
@@ -894,6 +937,7 @@ public class FeaturePlusTest
                              null,
                              null,
                              null,
+                             null,
                              null );
 
         FeaturePlus seventh = FeaturePlus.of( seven );
@@ -906,6 +950,7 @@ public class FeaturePlusTest
                              null,
                              null,
                              "C",
+                             null,
                              null,
                              null,
                              null,
@@ -931,6 +976,7 @@ public class FeaturePlusTest
                              null,
                              null,
                              null,
+                             null,
                              null );
 
         FeaturePlus ninth = FeaturePlus.of( nine );
@@ -944,6 +990,7 @@ public class FeaturePlusTest
                              null,
                              null,
                              "C",
+                             null,
                              null,
                              null,
                              null,
@@ -968,6 +1015,7 @@ public class FeaturePlusTest
                              null,
                              null,
                              null,
+                             null,
                              null );
 
         FeaturePlus eleventh = FeaturePlus.of( eleven );
@@ -982,6 +1030,7 @@ public class FeaturePlusTest
                              null,
                              null,
                              234L,
+                             null,
                              null,
                              null,
                              null,
@@ -1005,6 +1054,7 @@ public class FeaturePlusTest
                              null,
                              null,
                              null,
+                             null,
                              null );
 
         FeaturePlus thirteenth = FeaturePlus.of( thirteen );
@@ -1020,6 +1070,7 @@ public class FeaturePlusTest
                              null,
                              null,
                              "C",
+                             null,
                              null,
                              null,
                              null,
@@ -1042,6 +1093,7 @@ public class FeaturePlusTest
                              "B",
                              null,
                              null,
+                             null,
                              null );
 
         FeaturePlus fifteenth = FeaturePlus.of( fifteen );
@@ -1058,6 +1110,7 @@ public class FeaturePlusTest
                              null,
                              null,
                              "C",
+                             null,
                              null,
                              null,
                              null );
@@ -1079,6 +1132,7 @@ public class FeaturePlusTest
                              null,
                              "B",
                              null,
+                             null,
                              null );
 
         FeaturePlus seventeenth = FeaturePlus.of( seventeen );
@@ -1096,6 +1150,7 @@ public class FeaturePlusTest
                              null,
                              null,
                              "C",
+                             null,
                              null,
                              null );
 
@@ -1116,6 +1171,7 @@ public class FeaturePlusTest
                              null,
                              null,
                              "B",
+                             null,
                              null );
 
         FeaturePlus nineteenth = FeaturePlus.of( nineteen );
@@ -1134,6 +1190,7 @@ public class FeaturePlusTest
                              null,
                              null,
                              "C",
+                             null,
                              null );
 
         FeaturePlus twentieth = FeaturePlus.of( twenty );
@@ -1153,6 +1210,7 @@ public class FeaturePlusTest
                              null,
                              null,
                              null,
+                             null,
                              "B" );
 
         FeaturePlus twentyFirst = FeaturePlus.of( twentyOne );
@@ -1161,6 +1219,7 @@ public class FeaturePlusTest
 
         Feature twentyTwo =
                 new Feature( null,
+                             null,
                              null,
                              null,
                              null,
@@ -1191,6 +1250,7 @@ public class FeaturePlusTest
                              null,
                              null,
                              null,
+                             null,
                              null );
 
         FeaturePlus twentyThird = FeaturePlus.of(twentyThree);
@@ -1201,6 +1261,7 @@ public class FeaturePlusTest
                 new Feature( null,
                              null,
                              new Polygon(Arrays.asList(new Polygon.Point( 3, 4)), BigInteger.valueOf( 100 )),
+                             null,
                              null,
                              null,
                              null,
@@ -1229,6 +1290,7 @@ public class FeaturePlusTest
                              null,
                              null,
                              null,
+                             null,
                              null );
 
         FeaturePlus twentyFifth = FeaturePlus.of(twentyFive);
@@ -1240,6 +1302,7 @@ public class FeaturePlusTest
                              null,
                              null,
                              new Circle(4, 5, 6, BigInteger.valueOf(100)),
+                             null,
                              null,
                              null,
                              null,
@@ -1274,6 +1337,7 @@ public class FeaturePlusTest
                              null,
                              null,
                              null,
+                             null,
                              null );
 
         FeaturePlus first = FeaturePlus.of( one );
@@ -1285,6 +1349,7 @@ public class FeaturePlusTest
                              null,
                              null,
                              "A",
+                             null,
                              null,
                              null,
                              null,
@@ -1317,14 +1382,16 @@ public class FeaturePlusTest
                              "E",
                              "F",
                              "G",
+                             "Q",
                              "H" );
         FeaturePlus first = FeaturePlus.of( one );
         
         assertTrue( "Unexpected string representation of feature.",
-                    first.toString().equals( "{B,F,A,D,E,12345,G,H,2.0 1.0,'POLYGON (1.0 2.0)', SRID: 4326,CIRCLE '( (2.0, 1.0), 3.0) )', SRID: 4326,[A]}" ) );
+                    first.toString().equals( "{B,F,A,D,E,12345,G,Q,H,2.0 1.0,'POLYGON (1.0 2.0)', SRID: 4326,CIRCLE '( (2.0, 1.0), 3.0) )', SRID: 4326,[A]}" ) );
         
         Feature two =
                 new Feature( null,
+                             null,
                              null,
                              null,
                              null,
@@ -1340,7 +1407,7 @@ public class FeaturePlusTest
         FeaturePlus second = FeaturePlus.of( two );
 
         assertTrue( "Unexpected string representation of feature.",
-                    second.toString().equals( "{null,null,null,null,null,null,null,null,null,null,null,[]}" ) );
+                    second.toString().equals( "{null,null,null,null,null,null,null,null,null,null,null,null,[]}" ) );
         
     }
 

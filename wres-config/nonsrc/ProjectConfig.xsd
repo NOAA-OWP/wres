@@ -67,6 +67,7 @@
         <xs:attribute name="huc" type="xs:string" />
         <xs:attribute name="name" type="xs:string" />
         <xs:attribute name="rfc" type="xs:string" />
+        <xs:attribute name="state" type="xs:string" />
         <!-- WKT can specify a point or polygon. If not using WGS84 lon/lat,
              or if not using the same coordinate system in all sources,
              then it probably needs its own geographic coordinate system

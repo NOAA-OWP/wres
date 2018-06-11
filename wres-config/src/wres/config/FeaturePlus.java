@@ -86,7 +86,8 @@ public class FeaturePlus implements Comparable<FeaturePlus>
                         && Objects.equals( in.getLabel(), feature.getLabel() );
         boolean second = Objects.equals( in.getLocationId(), feature.getLocationId() )
                          && Objects.equals( in.getComid(), feature.getComid() )
-                         && Objects.equals( in.getGageId(), feature.getGageId() );
+                         && Objects.equals( in.getGageId(), feature.getGageId() )
+                         && Objects.equals( in.getState(), feature.getState());
         boolean third = Objects.equals( in.getHuc(), feature.getHuc() )
                         && Objects.equals( in.getName(), feature.getName() )
                         && Objects.equals( in.getRfc(), feature.getRfc() )
@@ -115,6 +116,7 @@ public class FeaturePlus implements Comparable<FeaturePlus>
                              feature.getLocationId(),
                              feature.getName(),
                              feature.getRfc(),
+                             feature.getState(),
                              feature.getWkt() );
     }
 
@@ -183,6 +185,12 @@ public class FeaturePlus implements Comparable<FeaturePlus>
         // Compare RFC
         returnMe = Objects.compare( input.getRfc(), feature.getRfc(), nullFriendly );
         if ( returnMe != 0 )
+        {
+            return returnMe;
+        }
+        // Compare State
+        returnMe = Objects.compare( input.getState(), feature.getState(), nullFriendly);
+        if ( returnMe != 0)
         {
             return returnMe;
         }
@@ -255,6 +263,7 @@ public class FeaturePlus implements Comparable<FeaturePlus>
               .add( feature.getHuc() )
               .add( Objects.toString( feature.getComid() ) )
               .add( feature.getRfc() )
+              .add( feature.getState() )
               .add( feature.getWkt() )
               .add( coordinate )
               .add( polygon )
