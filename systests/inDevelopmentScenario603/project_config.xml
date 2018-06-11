@@ -54,7 +54,7 @@
     </metrics>
     <outputs>
         <destination type="pairs" decimalFormat="0.000000">
-            <path>output/scenario603/</path>
+            <path>output/</path>
         </destination>
     </outputs>
 </project>
