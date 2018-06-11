@@ -152,7 +152,7 @@ public class CommaSeparatedReader
                                                     + "labels." );
             }
             // Feature maps on locationId only              
-            Feature feature = new Feature( null, null, null, null, null, next[0], null, null, null, null, null, null );
+            Feature feature = new Feature( null, null, null, null, null, next[0], null, null, null, null, null, null, null );
             FeaturePlus nextFeature = FeaturePlus.of( feature );
             mutate.put( nextFeature, CommaSeparatedReader.getThresholds( Arrays.copyOfRange( next, 1, next.length ),
                                                                          labels,

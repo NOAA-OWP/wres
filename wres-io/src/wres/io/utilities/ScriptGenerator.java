@@ -127,6 +127,20 @@ public final class ScriptGenerator
                 script.add(" gage_id = '", feature.getGageId());
             }
 
+            if (Strings.hasValue(feature.getState()))
+            {
+                if( addedParameter )
+                {
+                    script.add(" AND");
+                }
+                else
+                {
+                    addedParameter = true;
+                }
+
+                script.add(" st = '", feature.getState().toUpperCase(), "'");
+            }
+
             if (feature.getPolygon() != null)
             {
                 if (addedParameter)
@@ -287,6 +301,20 @@ public final class ScriptGenerator
                     script.add( " lid = '",
                                 feature.getLocationId().toUpperCase(),
                                 "'" );
+                }
+
+                if (Strings.hasValue(feature.getState()))
+                {
+                    if( addedParameter )
+                    {
+                        script.add(" AND");
+                    }
+                    else
+                    {
+                        addedParameter = true;
+                    }
+
+                    script.add(" st = '", feature.getState().toUpperCase(), "'");
                 }
 
                 if ( Strings.hasValue( feature.getHuc() ) )

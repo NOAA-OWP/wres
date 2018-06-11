@@ -121,6 +121,7 @@ public class CommaSeparatedWriterTest
                             null,
                             null,
                             null,
+                            null,
                             null );
     }
 
