@@ -1,0 +1,66 @@
+{
+    "name": "Embedded Broker",
+    "modelVersion": "7.0",
+    "authenticationproviders":
+    [
+        {
+            "name": "externalAuthProvider",
+            "type": "External",
+            "Use the full DN as the Username": "false"
+        }
+    ],
+    "ports":
+    [
+        {
+            "name": "AMQP",
+            "transport": "TLS",
+            "port": "5671",
+            "protocols":
+            [
+                "AMQP_0_9_1"
+            ],
+            "keystores":
+            [
+                {
+                    "name": "defaultKeys",
+                    "privateKey": "***REMOVED***wres-broker-ti_server_private_rsa_key.pem",
+                    "certificate": "***REMOVED***wres-broker-ti_server_x509_cert.pem",
+                    "password": "wres-broker-passphrase"
+                }
+            ],
+            "truststores":
+            [
+                {
+                    "name": "defaultTrust",
+                    "path": "trustedCertificateAuthorities.jks",
+                    "password": "changeit"
+                }
+            ],
+            "authenticationProvider": "externalAuthProvider",
+            "virtualhostaliases":
+            [
+                {
+                    "name": "nameAlias",
+                    "type": "nameAlias"
+                },
+                {
+                    "name": "defaultAlias",
+                    "type": "defaultAlias"
+                },
+                {
+                    "name": "hostnameAlias",
+                    "type": "hostnameAlias"
+                }
+            ]
+        }
+    ],
+    "virtualhostnodes":
+    [
+        {
+            "name": "default",
+            "type": "Memory",
+            "defaultVirtualHostNode": "true",
+            "virtualHostInitialConfiguration": "{\"type\": \"Memory\", \"nodeAutoCreationPolicies\": [{\"patterns\":\".*\",\"createdOnPublish\":\"true\",\"createdOnConsume\":\"true\",\"nodeType\":\"queue\",\"attributes\":{}}] }"
+        }
+    ]
+}

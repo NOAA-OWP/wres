@@ -104,6 +104,10 @@ subprojects
             {
                 srcDirs = ['test']
             }
+            resources
+            {
+                srcDirs = ['testNonsrc']
+            }
         }
     }
 
@@ -518,6 +522,12 @@ project(':wres-tasker')
         // To generate fake certificates and keys for testing
         testCompile 'org.bouncycastle:bcpkix-jdk15on:1.59'
         testCompile 'org.bouncycastle:bcprov-jdk15on:1.59'
+
+        // To test against an embedded AMQP broker
+        testCompile 'org.apache.qpid:qpid-broker-core:7.0.4'
+        // Provides support for both 0-8 and 0-9-1
+        testCompile 'org.apache.qpid:qpid-broker-plugins-amqp-0-8-protocol:7.0.4'
+        testCompile 'org.apache.qpid:qpid-broker-plugins-memory-store:7.0.4'
     }
 
     apply plugin: 'application'
@@ -710,6 +720,11 @@ sourceSets
         java
         {
             srcDirs = ['test']
+        }
+
+        resources
+        {
+            srcDirs = ['testNonsrc]']
         }
     }
 }
