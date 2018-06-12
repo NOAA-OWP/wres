@@ -149,10 +149,9 @@ public class BrokerHelper
             throw new IllegalStateException( "WRES expected JRE to have JKS KeyStore instance", kse );
         }
 
-        InputStream customTrustStoreFile = BrokerHelper.class.getClassLoader()
-                                                       .getResourceAsStream( ourCustomTrustFileName );
-
-        try
+        try ( InputStream customTrustStoreFile =
+                      BrokerHelper.class.getClassLoader()
+                                        .getResourceAsStream( ourCustomTrustFileName ) )
         {
             customTrustStore.load( customTrustStoreFile,
                                    "changeit".toCharArray() );
@@ -227,9 +226,9 @@ public class BrokerHelper
                                              kse );
         }
 
-        try
+        try ( InputStream clientCertificateInputStream =
+                      new FileInputStream( ourClientCertificateFilename ) )
         {
-            InputStream clientCertificateInputStream = new FileInputStream( ourClientCertificateFilename );
             keyStore.load( clientCertificateInputStream, keyPassphrase );
         }
         catch ( IOException | NoSuchAlgorithmException | CertificateException e )
