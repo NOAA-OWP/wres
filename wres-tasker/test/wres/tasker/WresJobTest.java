@@ -164,55 +164,12 @@ public class WresJobTest
         assertEquals( "Expected a 500 Internal Server Error.", 500, response.getStatus() );
     }
 
-    /**
-     * Could be as simple as two lines of Files.deleteIfExists but for antivirus
-     * (so instead do several retries)
-     * @throws IOException when deletion fails
-     * @throws InterruptedException when interrupted while waiting for antivirus
-     */
 
     @AfterClass
-    public static void cleanUp() throws IOException, InterruptedException
+    public static void cleanUp() throws IOException
     {
-        long startDatetimeMillis = System.currentTimeMillis();
-        long backoffMillis = 2000;
-        long maxBackoffMillis = 33000;
-
-        long now = startDatetimeMillis;
-
-        while ( startDatetimeMillis + maxBackoffMillis > now )
-        {
-            now = System.currentTimeMillis();
-
-            try
-            {
-                Files.deleteIfExists( Paths.get( WresJobTest.tempDir.toString(),
-                                                 P12_FILE_NAME ) );
-                Files.deleteIfExists( WresJobTest.tempDir );
-                // Successful deletion, break out, should be majority case.
-                break;
-            }
-            catch ( FileSystemException fse )
-            {
-                // Failure due to some other process holding file, retry.
-                // We are making the assumption that FileSystemException will be
-                // the same exception that James got in #51416
-                if ( startDatetimeMillis + maxBackoffMillis > now )
-                {
-                    LOGGER.warn( "Attempt to remove a temp file failed, trying again.", fse );
-                }
-                else
-                {
-                    // Timed out, so translate exception.
-                    throw new IOException( "Could not remove temp file after several attempts.", fse );
-                }
-            }
-
-            // Give other process (antivirus?) a chance to release the temp file
-            Thread.sleep( backoffMillis );
-
-            // Wait longer next time.
-            backoffMillis = backoffMillis * 2;
-        }
+        Files.deleteIfExists( Paths.get( WresJobTest.tempDir.toString(),
+                                         P12_FILE_NAME ) );
+        Files.deleteIfExists( WresJobTest.tempDir );
     }
 }
