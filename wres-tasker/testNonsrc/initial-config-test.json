@@ -12,10 +12,10 @@
     "keystores":
     [
         {
-            "name": "wres-keystore-ti",
+            "name": "wres-keystore-localhost",
             "type": "NonJavaKeyStore",
-            "privateKeyUrl": "${wres.secrets_dir}/***REMOVED***wres-broker-ti_server_private_rsa_key.pem",
-            "certificateUrl": "${wres.secrets_dir}/***REMOVED***wres-broker-ti_server_x509_cert.pem",
+            "privateKeyUrl": "${wres.secrets_dir}/***REMOVED***wres-broker-localhost_server_private_rsa_key.pem",
+            "certificateUrl": "${wres.secrets_dir}/***REMOVED***wres-broker-localhost_server_x509_cert.pem",
             "password": "wres-broker-passphrase"
         }
     ],
@@ -23,21 +23,20 @@
     [
         {
             "name": "wres-truststore",
-            "type": "FileTrustStore",
-            "storeUrl": "${wres.secrets_dir}/trustedCertificateAuthorities.jks",
-            "password": "changeit"
+            "type": "NonJavaTrustStore",
+            "certificatesUrl": "${wres.secrets_dir}/***REMOVED***wres-broker-localhost_server_x509_cert.pem"
         }
     ],
     "ports":
     [
         {
-            "name": "AMQP",
+            "name": "wres-AMQP",
             "port": "5671",
             "protocols":
             [
                 "AMQP_0_9_1"
             ],
-            "keyStore": "wres-keystore-ti",
+            "keyStore": "wres-keystore-localhost",
             "trustStores":
             [
                 "wres-truststore"
@@ -68,10 +67,10 @@
     "virtualhostnodes":
     [
         {
-            "name": "default",
+            "name": "wres-virtualhostnode",
             "type": "Memory",
             "defaultVirtualHostNode": "true",
-            "virtualHostInitialConfiguration": "{\"type\": \"Memory\", \"nodeAutoCreationPolicies\": [{\"patterns\":\".*\",\"createdOnPublish\":\"true\",\"createdOnConsume\":\"true\",\"nodeType\":\"queue\",\"attributes\":{}}] }"
+            "virtualHostInitialConfiguration": "{\"type\": \"Memory\", \"nodeAutoCreationPolicies\": [{\"pattern\":\".*\",\"createdOnPublish\":\"true\",\"createdOnConsume\":\"true\",\"nodeType\":\"queue\",\"attributes\":{}}] }"
         }
     ]
 }
