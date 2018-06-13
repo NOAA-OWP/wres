@@ -9,34 +9,45 @@
             "Use the full DN as the Username": "false"
         }
     ],
+    "keystores":
+    [
+        {
+            "name": "wres-keystore-ti",
+            "type": "NonJavaKeyStore",
+            "privateKeyUrl": "${wres.secrets_dir}/***REMOVED***wres-broker-ti_server_private_rsa_key.pem",
+            "certificateUrl": "${wres.secrets_dir}/***REMOVED***wres-broker-ti_server_x509_cert.pem",
+            "password": "wres-broker-passphrase"
+        }
+    ],
+    "truststores":
+    [
+        {
+            "name": "wres-truststore",
+            "type": "FileTrustStore",
+            "storeUrl": "${wres.secrets_dir}/trustedCertificateAuthorities.jks",
+            "password": "changeit"
+        }
+    ],
     "ports":
     [
         {
             "name": "AMQP",
-            "transport": "TLS",
             "port": "5671",
             "protocols":
             [
                 "AMQP_0_9_1"
             ],
-            "keystores":
+            "keyStore": "wres-keystore-ti",
+            "trustStores":
             [
-                {
-                    "name": "defaultKeys",
-                    "privateKey": "***REMOVED***wres-broker-ti_server_private_rsa_key.pem",
-                    "certificate": "***REMOVED***wres-broker-ti_server_x509_cert.pem",
-                    "password": "wres-broker-passphrase"
-                }
+                "wres-truststore"
             ],
-            "truststores":
+            "transports":
             [
-                {
-                    "name": "defaultTrust",
-                    "path": "trustedCertificateAuthorities.jks",
-                    "password": "changeit"
-                }
+                "SSL"
             ],
             "authenticationProvider": "externalAuthProvider",
+            "needClientAuth": "true",
             "virtualhostaliases":
             [
                 {
