@@ -256,8 +256,7 @@ for scenarioName in $scenarios; do
 done
 
 cd $systestsDir
-egrep -A 5 '(differ|FAIL|Aborting|Not enough data found for feature)' systests_900screenCatch_"$latest_noZip".txt > systests_900Results_"$latest_noZip".txt
-#egrep -C 3 '(differ|FAIL|Aborting|Not enough data found for feature)' systests_900screenCatch_"$latest_noZip".txt > systests_900Results_"$latest_noZip".txt
+egrep -A 5 '(differ|FAIL|Aborting)' systests_900screenCatch_"$latest_noZip".txt > systests_900Results_"$latest_noZip".txt
 if [ -s systests_900Results_"$latest_noZip".txt ]
 then
 	egrep -A 5 '(PROCESSING|differ|FAIL|Aborting)' systests_900screenCatch_"$latest_noZip".txt > systests_900Results_"$latest_noZip".txt
