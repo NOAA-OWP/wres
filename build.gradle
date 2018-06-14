@@ -164,6 +164,7 @@ project(':wres-system')
 {
     dependencies
             {
+                compile project(':utilities')
                 compile 'org.slf4j:slf4j-api:1.7.25'
 
                 compile 'com.google.guava:guava:22.0'
@@ -217,7 +218,7 @@ project(':wres-io')
     dependencies
     {
         compile project(':utilities')
-        compile project(':wres-settings')
+        compile project(':wres-system')
         compile project(':wres-datamodel-api')
         compile project(':wres-config')
         compile project(':wres-vis')
@@ -703,7 +704,7 @@ if (!gitIsClean)
 dependencies
 {
     compile project(':utilities')
-    compile project(':wres-settings')
+    compile project(':wres-system')
     compile project(':wres-datamodel-api')
     compile project(':wres-datamodel')
     compile project(':wres-io')

@@ -12,11 +12,10 @@ import com.mchange.v2.c3p0.ComboPooledDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.system.xml.XML;
+import wres.system.xml.XMLHelper;
 import wres.system.xml.XMLReader;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
-import wres.util.XML;
 
 /**
  * The cache for all configured system settings
@@ -114,7 +113,8 @@ public final class SystemSettings extends XMLReader
                         this.setFetchSize( reader );
                         break;
                     case "update_progress_monitor":
-                        ProgressMonitor.setShouldUpdate(Strings.isTrue( XML.getXMLText( reader)));
+                        ProgressMonitor.setShouldUpdate(Strings.isTrue( XMLHelper
+                                                                                .getXMLText( reader)));
                         break;
                     case "default_chart_width":
                         this.setDefaultChartWidth( reader );
@@ -148,7 +148,7 @@ public final class SystemSettings extends XMLReader
 	private void setMaximumThreadCount(XMLStreamReader reader)
             throws XMLStreamException
     {
-        String value = XML.getXMLText( reader );
+        String value = XMLHelper.getXMLText( reader );
         if (value != null && Strings.isNumeric( value ))
         {
             this.maximumThreadCount = Integer.parseInt( value );
@@ -158,7 +158,7 @@ public final class SystemSettings extends XMLReader
     private void setPoolObjectLifespan(XMLStreamReader reader)
             throws XMLStreamException
     {
-        String value = XML.getXMLText( reader );
+        String value = XMLHelper.getXMLText( reader );
         if (value != null && Strings.isNumeric( value ))
         {
             this.poolObjectLifespan = Integer.parseInt(value);
@@ -168,7 +168,7 @@ public final class SystemSettings extends XMLReader
     private void setMaximumInserts(XMLStreamReader reader)
             throws XMLStreamException
     {
-        String value = XML.getXMLText( reader );
+        String value = XMLHelper.getXMLText( reader );
         if (value != null && Strings.isNumeric( value ))
         {
             this.maximumInserts = Integer.parseInt(value);
@@ -178,7 +178,7 @@ public final class SystemSettings extends XMLReader
     private void setMaximumCopies(XMLStreamReader reader)
             throws XMLStreamException
     {
-        String value = XML.getXMLText( reader );
+        String value = XMLHelper.getXMLText( reader );
         if (value != null && Strings.isNumeric( value ))
         {
             this.maximumCopies = Integer.parseInt(value);
@@ -188,7 +188,7 @@ public final class SystemSettings extends XMLReader
     private void setUpdateFrequency(XMLStreamReader reader)
             throws XMLStreamException
     {
-        String value = XML.getXMLText( reader );
+        String value = XMLHelper.getXMLText( reader );
         if (value != null && Strings.isNumeric( value ))
         {
             ProgressMonitor.setUpdateFrequency(Long.parseLong( value ));
@@ -198,7 +198,7 @@ public final class SystemSettings extends XMLReader
     private void setFetchSize(XMLStreamReader reader)
             throws XMLStreamException
     {
-        String value = XML.getXMLText( reader );
+        String value = XMLHelper.getXMLText( reader );
         if (value != null && Strings.isNumeric( value ))
         {
             this.fetchSize = Integer.parseInt(value);
@@ -208,7 +208,7 @@ public final class SystemSettings extends XMLReader
     private void setDefaultChartWidth(XMLStreamReader reader)
             throws XMLStreamException
     {
-        String value = XML.getXMLText( reader );
+        String value = XMLHelper.getXMLText( reader );
         if (value != null && Strings.isNumeric( value ))
         {
             this.defaultChartWidth = Integer.parseInt(value);
@@ -218,7 +218,7 @@ public final class SystemSettings extends XMLReader
     private void setDefaultChartHeight(XMLStreamReader reader)
         throws XMLStreamException
     {
-        String value = XML.getXMLText( reader );
+        String value = XMLHelper.getXMLText( reader );
         if (value != null && Strings.isNumeric( value ))
         {
             this.defaultChartHeight = Integer.parseInt(value);
@@ -228,7 +228,7 @@ public final class SystemSettings extends XMLReader
     private void setRemoteNetCDFURL(XMLStreamReader reader)
         throws XMLStreamException
     {
-        String url = XML.getXMLText(reader);
+        String url = XMLHelper.getXMLText( reader);
         if (Strings.hasValue(url))
         {
             this.remoteNetCDFURL = url;
@@ -238,7 +238,7 @@ public final class SystemSettings extends XMLReader
     private void setNetcdfStorePath(XMLStreamReader reader)
         throws XMLStreamException
     {
-        String path = XML.getXMLText( reader );
+        String path = XMLHelper.getXMLText( reader );
         if ( Strings.hasValue( path ) && Strings.isValidPathFormat( path ))
         {
             this.netcdfStorePath = path;

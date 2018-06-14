@@ -5,6 +5,8 @@ import java.util.concurrent.TimeUnit;
 
 import com.google.common.base.Stopwatch;
 
+import wres.util.TimeHelper;
+
 /**
  * @author Christopher Tubbs
  * Basic structure used to evaluate time between two points
