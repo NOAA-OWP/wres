@@ -5,11 +5,14 @@ import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
+import wres.util.Collections;
+
 /**
  * @author Christopher Tubbs
  *
+ * A collection of XML helper functions
  */
-public final class XML
+public final class XMLHelper
 {
     
     /**
@@ -38,7 +41,7 @@ public final class XML
      * @return Returns true if the current tag is a closed tag with one of the possible names
      */
     public static boolean xmlTagClosed(XMLStreamReader reader, List<String> tagNames) {
-        return reader.isEndElement() && Collections.exists(tagNames, (String name) -> {
+        return reader.isEndElement() && Collections.exists( tagNames, ( String name) -> {
            return name.equalsIgnoreCase(reader.getLocalName()); 
         });
     }

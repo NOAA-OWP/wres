@@ -17,7 +17,6 @@ import com.mchange.v2.c3p0.ComboPooledDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.io.utilities.ScriptBuilder;
 import wres.util.Strings;
 
 /**
@@ -97,20 +96,18 @@ final class DatabaseSettings
 		Connection connection = null;
 		Statement clean = null;
 
-		ScriptBuilder script = new ScriptBuilder();
-
-		script.addLine( "SELECT pg_cancel_backend(PT.pid)" );
-		script.addLine( "FROM pg_locks L" );
-		script.addLine( "INNER JOIN pg_stat_all_tables T" );
-		script.addTab().addLine( "ON l.relation = t.relid" );
-		script.addLine( "INNER JOIN pg_stat_activity PT" );
-		script.addTab().addLine( "ON l.pid = PT.pid" );
-		script.addLine( "WHERE T.schemaname <> 'pg_toast'::name" );
-		script.addTab().addLine( "AND t.schemaname < 'pg_catalog'::name" );
-		script.addTab().addLine( "AND usename = '", this.getUsername(), "'" );
-		script.addTab()
-			  .addLine( "AND datname = '", this.getDatabaseName(), "'" );
-		script.addLine( "GROUP BY PT.pid;" );
+		String script = "";
+		script += "SELECT pg_cancel_backend(PT.pid)";
+		script += "FROM pg_locks L";
+		script += "INNER JOIN pg_stat_all_tables T";
+		script += "ON l.relation = t.relid";
+		script += "INNER JOIN pg_stat_activity PT";
+		script += "ON l.pid = PT.pid";
+		script += "WHERE T.schemaname <> 'pg_toast'::name";
+		script += "AND t.schemaname < 'pg_catalog'::name";
+		script += "AND usename = '" + this.getUsername() + "'";
+		script += "AND datname = '" + this.getDatabaseName() + "'";
+		script += "GROUP BY PT.pid;";
 
 		try
 		{
@@ -120,7 +117,7 @@ final class DatabaseSettings
 												 this.username,
 												 this.password );
 			clean = connection.createStatement();
-			clean.execute( script.toString() );
+			clean.execute( script );
 			if (clean.getResultSet().isBeforeFirst())
             {
                 LOGGER.debug( "Lock(s) from previous runs of this applications "
