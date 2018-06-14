@@ -160,6 +160,33 @@ project(':utilities')
     }
 }
 
+project(':wres-system')
+{
+    dependencies
+            {
+                compile 'org.slf4j:slf4j-api:1.7.25'
+
+                compile 'com.google.guava:guava:22.0'
+
+                // to use native postgres copy, need this on compile, otherwise runtime
+                compile 'org.postgresql:postgresql:42.2.1'
+
+                // connection pooling:
+                compile 'com.mchange:c3p0:0.9.5.2'
+
+                //JB @ 02/16/17
+                testCompile group: 'com.google.guava', name: 'guava-testlib', version: '21.0'
+
+                testCompile 'junit:junit:4.12'
+
+                // Mocking help
+                testCompile 'org.mockito:mockito-core:2.8.47'
+
+                // super-duper mocking help (mocking static, private methods)
+                testCompile 'org.powermock:powermock-api-mockito2:1.7.1'
+                testCompile 'org.powermock:powermock-module-junit4:1.7.1'
+            }
+}
 
 project(':wres-datamodel-api')
 {
@@ -190,6 +217,7 @@ project(':wres-io')
     dependencies
     {
         compile project(':utilities')
+        compile project(':wres-settings')
         compile project(':wres-datamodel-api')
         compile project(':wres-config')
         compile project(':wres-vis')
@@ -675,6 +703,7 @@ if (!gitIsClean)
 dependencies
 {
     compile project(':utilities')
+    compile project(':wres-settings')
     compile project(':wres-datamodel-api')
     compile project(':wres-datamodel')
     compile project(':wres-io')
