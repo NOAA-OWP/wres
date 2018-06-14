@@ -1,14 +1,5 @@
-package wres.io.config;
+package wres.system;
 
-import com.mchange.v2.c3p0.ComboPooledDataSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import wres.io.utilities.ScriptBuilder;
-import wres.util.Strings;
-
-import javax.xml.stream.XMLStreamException;
-import javax.xml.stream.XMLStreamReader;
 import java.beans.PropertyVetoException;
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -19,6 +10,15 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Map;
 import java.util.TreeMap;
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.XMLStreamReader;
+
+import com.mchange.v2.c3p0.ComboPooledDataSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import wres.io.utilities.ScriptBuilder;
+import wres.util.Strings;
 
 /**
  * Contains access to configured settings and objects for accessing the database

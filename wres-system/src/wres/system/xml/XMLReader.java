@@ -1,4 +1,4 @@
-package wres.io.reading;
+package wres.system.xml;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -6,7 +6,6 @@ import java.io.InputStream;
 import java.io.StringWriter;
 import java.util.Objects;
 import java.util.zip.GZIPInputStream;
-
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;

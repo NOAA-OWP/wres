@@ -1,20 +1,19 @@
-package wres.io.config;
+package wres.system;
 
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
-
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import javax.xml.transform.TransformerException;
 
+import com.mchange.v2.c3p0.ComboPooledDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.mchange.v2.c3p0.ComboPooledDataSource;
-
-import wres.io.reading.XMLReader;
+import wres.system.xml.XML;
+import wres.system.xml.XMLReader;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
 import wres.util.XML;
@@ -115,7 +114,7 @@ public final class SystemSettings extends XMLReader
                         this.setFetchSize( reader );
                         break;
                     case "update_progress_monitor":
-                        ProgressMonitor.setShouldUpdate(Strings.isTrue(XML.getXMLText(reader)));
+                        ProgressMonitor.setShouldUpdate(Strings.isTrue( XML.getXMLText( reader)));
                         break;
                     case "default_chart_width":
                         this.setDefaultChartWidth( reader );
