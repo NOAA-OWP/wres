@@ -67,7 +67,7 @@
     "virtualhostnodes":
     [
         {
-            "name": "wres-virtualhostnode",
+            "name": "wres",
             "type": "Memory",
             "defaultVirtualHostNode": "true",
             "virtualHostInitialConfiguration": "{\"type\": \"Memory\", \"nodeAutoCreationPolicies\": [{\"pattern\":\".*\",\"createdOnPublish\":\"true\",\"createdOnConsume\":\"true\",\"nodeType\":\"queue\",\"attributes\":{}}] }"
