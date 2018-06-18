@@ -92,6 +92,7 @@ public class Tasker
         }
         finally
         {
+            WresJob.shutdownNow();
             jettyServer.destroy();
         }
     }
