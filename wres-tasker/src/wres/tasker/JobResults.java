@@ -478,6 +478,14 @@ class JobResults
         return EXECUTOR.submit( resultWatcher );
     }
 
+    /**
+     * Abruptly stops listening for job results.
+     */
+
+    void shutdownNow()
+    {
+        EXECUTOR.shutdownNow();
+    }
 
     /**
      * Get a text description of the result of a wres job

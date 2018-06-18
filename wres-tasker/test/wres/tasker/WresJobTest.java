@@ -2,9 +2,9 @@ package wres.tasker;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.math.BigInteger;
-import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -40,23 +40,23 @@ import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.cert.jcajce.JcaX509ExtensionUtils;
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.openssl.jcajce.JcaPEMWriter;
 import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static junit.framework.TestCase.assertEquals;
 
 public class WresJobTest
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger( WresJobTest.class );
-
     private static Path tempDir;
     private static final String P12_FILE_NAME = "wres-tasker_client_private_key_and_x509_cert.p12";
+    private static final String SERVER_CERT_FILE_NAME = "***REMOVED***wres-broker-localhost_server_x509_cert.pem";
+    private static final String SERVER_KEY_FILE_NAME = "***REMOVED***wres-broker-localhost_server_private_rsa_key.pem";
+    private static final String TRUST_STORE_FILE_NAME = "trustedCertificates-localhost.jks";
 
     @BeforeClass
     public static void setup() throws IOException, NoSuchAlgorithmException,
@@ -77,7 +77,7 @@ public class WresJobTest
 
         // Create a certificate
         X500Name subject = new X500NameBuilder( BCStyle.INSTANCE )
-                .addRDN( BCStyle.CN, "dummydomain.com" )
+                .addRDN( BCStyle.CN, "localhost" )
                 .addRDN( BCStyle.O, "WRES" )
                 .build();
 
@@ -143,6 +143,50 @@ public class WresJobTest
         {
             p12KeyStore.store( outputStream, passphrase.toCharArray() );
         }
+
+        // Use exact same keypair and certificate for the testing broker server
+        // in order to save test execution time and simplify.
+        // Qpid broker server is configured for the typical .pem format rather
+        // than .p12 or .jks format (just to appear more like how rabbit is).
+        Path certPemPath = Paths.get( WresJobTest.tempDir.toString(),
+                                      SERVER_CERT_FILE_NAME );
+        File certPemFile = certPemPath.toFile();
+
+        try ( FileWriter fileWriter = new FileWriter( certPemFile );
+              JcaPEMWriter pemWriter = new JcaPEMWriter( fileWriter ) )
+        {
+            pemWriter.writeObject( wowACertificate );
+        }
+
+        Path serverKeyPemPath = Paths.get( WresJobTest.tempDir.toString(),
+                                           SERVER_KEY_FILE_NAME );
+        File serverKeyPemFile = serverKeyPemPath.toFile();
+
+        try ( FileWriter fileWriter = new FileWriter( serverKeyPemFile );
+              JcaPEMWriter pemWriter = new JcaPEMWriter( fileWriter ) )
+        {
+            pemWriter.writeObject( keyPair.getPrivate() );
+        }
+
+        // Use exact same certificate to create a trustfile for clients to trust
+        KeyStore trustStore = KeyStore.getInstance( "JKS" );
+        char[] trustStorePassphrase = "changeit".toCharArray();
+        trustStore.load( null, trustStorePassphrase );
+        trustStore.setCertificateEntry( "localhost_ca", wowACertificate );
+        Path trustStorePath = Paths.get( WresJobTest.tempDir.toString(),
+                                        TRUST_STORE_FILE_NAME );
+        File trustStoreFile = trustStorePath.toFile();
+
+        try ( FileOutputStream trustOutputStream = new FileOutputStream( trustStoreFile ) )
+        {
+            trustStore.store( trustOutputStream, trustStorePassphrase );
+        }
+
+        // Must at least set up the trustStore property before class because
+        // we statically load the trust files (maybe need to change that?)
+        System.setProperty( "wres.secrets_dir", WresJobTest.tempDir.toString() );
+        Path trustPath = Paths.get( WresJobTest.tempDir.toString(), TRUST_STORE_FILE_NAME );
+        System.setProperty( "wres.trustStore", trustPath.toString() );
     }
 
     @Test
@@ -165,11 +209,30 @@ public class WresJobTest
     }
 
 
+    @Test
+    public void testMessage() throws Exception
+    {
+        EmbeddedBroker embeddedBroker = new EmbeddedBroker();
+        embeddedBroker.start();
+        WresJob wresJob = new WresJob();
+        Response response = wresJob.postWresJob( "fake", "hank" );
+        assertEquals( "Expected a 200 OK.", 200, response.getStatus() );
+        WresJob.shutdownNow();
+        embeddedBroker.shutdown();
+    }
+
+
     @AfterClass
     public static void cleanUp() throws IOException
     {
         Files.deleteIfExists( Paths.get( WresJobTest.tempDir.toString(),
                                          P12_FILE_NAME ) );
+        Files.deleteIfExists( Paths.get( WresJobTest.tempDir.toString(),
+                                         SERVER_CERT_FILE_NAME ) );
+        Files.deleteIfExists( Paths.get( WresJobTest.tempDir.toString(),
+                                         SERVER_KEY_FILE_NAME ) );
+        Files.deleteIfExists( Paths.get( WresJobTest.tempDir.toString(),
+                                         TRUST_STORE_FILE_NAME ) );
         Files.deleteIfExists( WresJobTest.tempDir );
     }
 }
