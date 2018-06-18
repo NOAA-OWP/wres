@@ -26,4 +26,8 @@ for name in $(ls -d scenario*); do
 done
 echo "Done creating and populating $targetDir."
 
+# Remove old link and create new one.
+echo "Removing old link and creating new one."
+rm /wres_share/testing/systestsExpectedOutputs/systests_expected_outputs
+ln -s $targetDir /wres_share/testing/systestsExpectedOutputs/systests_expected_outputs
 

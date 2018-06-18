@@ -1,0 +1,76 @@
+{
+    "name": "Embedded Broker",
+    "modelVersion": "7.0",
+    "authenticationproviders":
+    [
+        {
+            "name": "externalAuthProvider",
+            "type": "External",
+            "Use the full DN as the Username": "false"
+        }
+    ],
+    "keystores":
+    [
+        {
+            "name": "wres-keystore-localhost",
+            "type": "NonJavaKeyStore",
+            "privateKeyUrl": "${wres.secrets_dir}/***REMOVED***wres-broker-localhost_server_private_rsa_key.pem",
+            "certificateUrl": "${wres.secrets_dir}/***REMOVED***wres-broker-localhost_server_x509_cert.pem",
+            "password": "wres-broker-passphrase"
+        }
+    ],
+    "truststores":
+    [
+        {
+            "name": "wres-truststore",
+            "type": "NonJavaTrustStore",
+            "certificatesUrl": "${wres.secrets_dir}/***REMOVED***wres-broker-localhost_server_x509_cert.pem"
+        }
+    ],
+    "ports":
+    [
+        {
+            "name": "wres-AMQP",
+            "port": "5671",
+            "protocols":
+            [
+                "AMQP_0_9_1"
+            ],
+            "keyStore": "wres-keystore-localhost",
+            "trustStores":
+            [
+                "wres-truststore"
+            ],
+            "transports":
+            [
+                "SSL"
+            ],
+            "authenticationProvider": "externalAuthProvider",
+            "needClientAuth": "true",
+            "virtualhostaliases":
+            [
+                {
+                    "name": "nameAlias",
+                    "type": "nameAlias"
+                },
+                {
+                    "name": "defaultAlias",
+                    "type": "defaultAlias"
+                },
+                {
+                    "name": "hostnameAlias",
+                    "type": "hostnameAlias"
+                }
+            ]
+        }
+    ],
+    "virtualhostnodes":
+    [
+        {
+            "name": "wres-virtualhostnode",
+            "type": "Memory",
+            "defaultVirtualHostNode": "true",
+            "virtualHostInitialConfiguration": "{\"type\": \"Memory\", \"nodeAutoCreationPolicies\": [{\"pattern\":\".*\",\"createdOnPublish\":\"true\",\"createdOnConsume\":\"true\",\"nodeType\":\"queue\",\"attributes\":{}}] }"
+        }
+    ]
+}
