@@ -395,7 +395,7 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
 
     private void logStartOfCalculation( Logger logger )
     {
-        if ( logger.isDebugEnabled() )
+        if ( logger.isTraceEnabled() )
         {
             // Determine the metrics to compute
             Set<MetricConstants> started = new TreeSet<>();
@@ -404,7 +404,7 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
             started.addAll( metrics.keySet() );
             started.addAll( collected );
 
-            logger.debug( "Attempting to compute metrics for a collection that contains {} ordinary metric(s) and {} "
+            logger.trace( "Attempting to compute metrics for a collection that contains {} ordinary metric(s) and {} "
                           + "collectable metric(s). The metrics include {}.",
                           metrics.size(),
                           collected.size(),
@@ -421,14 +421,14 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
 
     private void logEndOfCalculation( Logger logger, Map<MetricConstants, U> results )
     {
-        if ( logger.isDebugEnabled() )
+        if ( logger.isTraceEnabled() )
         {
             // Determine the metrics computed
             Set<MetricConstants> collected = new TreeSet<>();
             collectableMetrics.values().forEach( next -> collected.addAll( next.keySet() ) );
             Set<MetricConstants> completed = results.keySet();
 
-            logger.debug( "Finished computing metrics for a collection that contains {} ordinary metric(s) and {} "
+            logger.trace( "Finished computing metrics for a collection that contains {} ordinary metric(s) and {} "
                           + "collectable metric(s). Obtained {} result(s) of the {} result(s) expected. Results were "
                           + "obtained for these metrics {}.",
                           metrics.size(),
