@@ -428,8 +428,15 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
                     script.addTab().add("( ");
                 }
 
+                String shape = "POLYGON";
+
+                if (feature.getPolygon().getPoint().size() == 2)
+                {
+                    shape = "BOX";
+                }
+
                 StringJoiner pointJoiner = new StringJoiner( "), (",
-                                                             "geographic_coordinate <@ POLYGON '( (",
+                                                             "geographic_coordinate <@ " + shape + " '( (",
                                                              ") )'" );
 
                 for ( Polygon.Point point : feature.getPolygon().getPoint())
@@ -532,8 +539,15 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
                 script.addTab( 2 ).add( "(" );
             }
 
+            String shape = "POLYGON";
+
+            if (feature.getPolygon().getPoint().size() == 2)
+            {
+                shape = "BOX";
+            }
+
             StringJoiner pointJoiner = new StringJoiner( "), (",
-                                                         " POINT(F.longitude, F.latitude) <@ polygon '((",
+                                                         " POINT(F.longitude, F.latitude) <@ " + shape + " '((",
                                                          "))'" );
 
             for ( Polygon.Point point : feature.getPolygon().getPoint())

@@ -13,22 +13,31 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
+import java.util.Queue;
+import java.util.StringJoiner;
 import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import ucar.ma2.Array;
-import ucar.nc2.Attribute;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
+import ucar.nc2.dataset.NetcdfDataset;
+import ucar.nc2.dt.GridCoordSystem;
+import ucar.nc2.dt.grid.GridDataset;
+import ucar.unidata.geoloc.LatLonPoint;
 
 import wres.config.ProjectConfigPlus;
 import wres.config.Validation;
@@ -36,18 +45,18 @@ import wres.config.generated.Format;
 import wres.config.generated.ProjectConfig;
 import wres.control.Control;
 import wres.io.Operations;
+import wres.io.concurrency.CopyExecutor;
 import wres.io.concurrency.Downloader;
 import wres.io.concurrency.Executor;
-import wres.io.concurrency.SQLExecutor;
 import wres.io.concurrency.WRESRunnable;
 import wres.io.config.ConfigHelper;
-import wres.io.config.SystemSettings;
 import wres.io.reading.ReaderFactory;
 import wres.io.reading.usgs.USGSParameterReader;
 import wres.io.utilities.DataSet;
 import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
 import wres.io.utilities.ScriptBuilder;
+import wres.system.SystemSettings;
 import wres.util.NetCDF;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
@@ -882,68 +891,181 @@ final class MainFunctions
 						throw new IOException("The NetCDF file at: '" + args[0] + "' lacks the proper X and Y coodinates.");
 					}
 
-					ScriptBuilder script = new ScriptBuilder(  );
-					script.addLine("SELECT EXISTS (");
-					script.addTab().addLine("SELECT 1");
-					script.addTab().addLine("FROM INFORMATION_SCHEMA.Tables");
-					script.addTab().addLine("WHERE table_name = 'spatial_ref_sys'");
-					script.addLine(") AS postgis_installed;");
-
-					boolean postgisIsInstalled = script.retrieve( "postgis_installed" );
-
-					if (!postgisIsInstalled)
-                    {
-                        throw new IOException( "X and Y coordinates cannot be "
-                                               + "loaded; this database does "
-                                               + "not have PostGIS installed or "
-                                               + "enabled." );
-                    }
-
                     // Loop through a full join across all contained x and y values
                     Variable xCoordinates = NetCDF.getVariable(file, "x");
                     Variable yCoordinates = NetCDF.getVariable(file, "y");
                     Variable coordinateSystem = NetCDF.getVariable( file, "ProjectionCoordinateSystem" );
 
-                    Attribute sr = NetCDF.getVariableAttribute( coordinateSystem, "esri_pe_string" );
-                    Attribute proj4 = NetCDF.getVariableAttribute( coordinateSystem, "proj4" );
-                    String srtext = sr.getStringValue();
-                    String proj4Text = proj4.getStringValue();
+                    String srtext = coordinateSystem.findAttValueIgnoreCase( "esri_pe_string", "" );
+                    String proj4 = coordinateSystem.findAttValueIgnoreCase( "proj4", "" );
+                    String projectionMapping = coordinateSystem.findAttValueIgnoreCase( "grid_mapping_name", "lambert_conformal_conic" );
+
+
+                    Number xResolution = xCoordinates.findAttribute( "resolution" ).getNumericValue();
+                    Number yResolution = yCoordinates.findAttribute("resolution").getNumericValue();
+                    long xSize = xCoordinates.getSize();
+                    long ySize = yCoordinates.getSize();
+                    String xUnit = xCoordinates.findAttValueIgnoreCase( "units", "" );
+                    String yUnit = yCoordinates.findAttValueIgnoreCase( "units", "" );
+                    String xType = xCoordinates.findAttValueIgnoreCase( "_CoordinateAxisType", "GeoX" );
+                    String yType = yCoordinates.findAttValueIgnoreCase( "_CoordinateAxisType", "GeoY" );
+
+                    ScriptBuilder script = new ScriptBuilder(  );
+                    script.addLine("WITH new_projection AS");
+                    script.addLine("(");
+                    script.addTab().addLine("INSERT INTO wres.GridProjection (");
+                    script.addTab(  2  ).addLine("srtext,");
+                    script.addTab(  2  ).addLine("proj4,");
+                    script.addTab(  2  ).addLine("projection_mapping,");
+                    script.addTab(  2  ).addLine("x_resolution,");
+                    script.addTab(  2  ).addLine("y_resolution,");
+                    script.addTab(  2  ).addLine("x_unit,");
+                    script.addTab(  2  ).addLine("y_unit,");
+                    script.addTab(  2  ).addLine("x_type,");
+                    script.addTab(  2  ).addLine("y_type,");
+                    script.addTab(  2  ).addLine("x_size,");
+                    script.addTab(  2  ).addLine("y_size");
+                    script.addTab().addLine(")");
+                    script.addTab().addLine("SELECT '", srtext, "',");
+                    script.addTab(  2  ).addLine("'", proj4, "',");
+                    script.addTab(  2  ).addLine("'", projectionMapping, "',");
+                    script.addTab(  2  ).addLine(xResolution, ",");
+                    script.addTab(  2  ).addLine(yResolution, ",");
+                    script.addTab(  2  ).addLine("'", xUnit, "',");
+                    script.addTab(  2  ).addLine("'", yUnit, "',");
+                    script.addTab(  2  ).addLine("'", xType, "',");
+                    script.addTab(  2  ).addLine("'", yType, "',");
+                    script.addTab(  2  ).addLine(xSize, ",");
+                    script.addTab(  2  ).addLine(ySize);
+                    script.addTab().addLine("WHERE NOT EXISTS (");
+                    script.addTab(  2  ).addLine("SELECT 1");
+                    script.addTab(  2  ).addLine("FROM wres.GridProjection");
+                    script.addTab(  2  ).addLine("WHERE srtext = '", srtext, "'");
+                    script.addTab(   3   ).addLine("AND proj4 = '", proj4, "'");
+                    script.addTab(   3   ).addLine("AND x_resolution = ", xResolution);
+                    script.addTab(   3   ).addLine("AND y_resolution = ", yResolution);
+                    script.addTab(   3   ).addLine("AND x_unit = '", xUnit, "'");
+                    script.addTab(   3   ).addLine("AND y_unit = '", yUnit, "'");
+                    script.addTab(   3   ).addLine("AND x_type = '", xType, "'");
+                    script.addTab(   3   ).addLine("AND y_type = '", yType, "'");
+                    script.addTab(   3   ).addLine("AND x_size = ", xSize);
+                    script.addTab(   3   ).addLine("AND y_size = ", ySize);
+                    script.addTab().addLine(")");
+                    script.addTab().addLine("RETURNING gridprojection_id");
+                    script.addLine(")");
+                    script.addLine("SELECT gridprojection_id, false AS load_complete");
+                    script.addLine("FROM new_projection");
+                    script.addLine();
+                    script.addLine("UNION");
+                    script.addLine();
+                    script.addLine("SELECT gridprojection_id, load_complete");
+                    script.addLine("FROM wres.GridProjection");
+                    script.addLine("WHERE srtext = '", srtext, "'");
+                    script.addTab(  2  ).addLine("AND proj4 = '", proj4, "'");
+                    script.addTab(  2  ).addLine("AND x_resolution = ", xResolution);
+                    script.addTab(  2  ).addLine("AND y_resolution = ", yResolution);
+                    script.addTab(  2  ).addLine("AND x_unit = '", xUnit, "'");
+                    script.addTab(  2  ).addLine("AND y_unit = '", yUnit, "'");
+                    script.addTab(  2  ).addLine("AND x_type = '", xType, "'");
+                    script.addTab(  2  ).addLine("AND y_type = '", yType, "'");
+                    script.addTab(  2  ).addLine("AND x_size = ", xSize);
+                    script.addTab(  2  ).addLine("AND y_size = ", ySize, ";");
+
+                    List<Pair<Integer, Boolean>> projection = script.interpret(
+                            scriptResult -> Pair.of(
+                                    scriptResult.getInt( "gridprojection_id" ),
+                                    scriptResult.getBoolean( "load_complete" )
+                            )
+                    );
+
+                    Integer gridProjectionID = projection.get(0).getKey();
+                    Boolean projectionAlreadyLoaded = projection.get(0).getValue();
+
+                    if (projectionAlreadyLoaded)
+                    {
+                        LOGGER.info("The requested projection has already been loaded.");
+                        return SUCCESS;
+                    }
+
+                    LOGGER.info("Removing any preexisting data that may have been present for this projection.");
+                    script = new ScriptBuilder(  );
+                    script.addLine("DELETE FROM wres.NetCDFCoordinate");
+                    script.addLine("WHERE gridprojection_id = ", gridProjectionID, ";");
+                    script.execute();
+
+                    final String COPY_HEADER = "wres.NetCDFCoordinate (gridprojection_id, x_position, y_position, geographic_coordinate)";
+                    final String DELIMITER = "|";
+
+					GridDataset grid = new GridDataset( new NetcdfDataset( file ) );
+					GridCoordSystem coordSystem = grid.getGrids().get( 0 ).getCoordinateSystem();
+
+                    StringJoiner copyValues = new StringJoiner(System.lineSeparator());
+                    Queue<Future> copyTasks = new LinkedList<>(  );
+                    int copyCount = 0;
+
+                    ProgressMonitor.setShowStepDescription( true );
+
+					for (int xIndex = 0; xIndex < xSize; ++xIndex)
+                    {
+                        for (int yIndex = 0; yIndex < ySize; ++yIndex)
+                        {
+                            StringJoiner line = new StringJoiner(DELIMITER);
+                            LatLonPoint point = coordSystem.getLatLon( xIndex, yIndex);
+                            line.add( String.valueOf(gridProjectionID) );
+                            line.add(String.valueOf(xIndex));
+                            line.add(String.valueOf(yIndex));
+                            line.add("(" + point.getLongitude() + "," + point.getLatitude() + ")");
+                            copyValues.add( line.toString() );
+                            copyCount++;
+
+                            if (copyCount >= SystemSettings.getMaximumCopies())
+                            {
+                                WRESRunnable copier = new CopyExecutor( COPY_HEADER, copyValues.toString(), DELIMITER );
+                                copier.setOnRun( ProgressMonitor.onThreadStartHandler() );
+                                copier.setOnComplete( ProgressMonitor.onThreadCompleteHandler() );
+                                copyTasks.add( Database.execute( copier ) );
+                                copyValues = new StringJoiner( System.lineSeparator() );
+                                copyCount = 0;
+                            }
+
+                        }
+                    }
+
+                    if (copyCount > 0)
+                    {
+                        ProgressMonitor.increment();
+                        WRESRunnable copier = new CopyExecutor( COPY_HEADER, copyValues.toString(), DELIMITER );
+                        copier.setOnRun( ProgressMonitor.onThreadStartHandler() );
+                        copier.setOnComplete( ProgressMonitor.onThreadCompleteHandler() );
+                        copyTasks.add( Database.execute( copier ) );
+                    }
+
+                    Future<?> copyTask = copyTasks.poll();
+
+					while( Objects.nonNull(copyTask))
+                    {
+                        try
+                        {
+                            copyTask.get( 500, TimeUnit.MILLISECONDS );
+                        }
+                        catch(TimeoutException e)
+                        {
+                            LOGGER.trace("It took too long to copy a set of "
+                                         + "values; moving on to the next set "
+                                         + "of values.");
+                            copyTasks.add( copyTask );
+                        }
+
+                        copyTask = copyTasks.poll();
+                    }
 
                     script = new ScriptBuilder(  );
-					script.addLine("WITH new_datum AS");
-					script.addLine("(");
-					script.addTab().addLine("INSERT INTO public.spatial_ref_sys (srid, auth_name, auth_srid, srtext, proj4text)");
-					script.addTab().addLine("SELECT sr.new_srid, 'NWS', sr.new_srid, '", srtext, "', '", proj4Text, "'");
-					script.addTab().addLine("FROM (");
-					script.addTab(  2  ).addLine("SELECT MAX(srid) + 1 AS new_srid");
-					script.addTab(  2  ).addLine("FROM public.spatial_ref_sys");
-					script.addTab().addLine(") AS sr");
-					script.addTab().addLine("WHERE NOT EXISTS (");
-					script.addTab(  2  ).addLine("SELECT 1");
-					script.addTab(  2  ).addLine("FROM public.spatial_ref_sys");
-					script.addTab(  2  ).addLine("WHERE srtext = '", srtext, "'");
-					script.addTab(   3   ).addLine("AND proj4Text = '", proj4Text, "'");
-					script.addTab().addLine(")");
-					script.addTab().addLine("RETURNING srid");
-					script.addLine(")");
-					script.addLine("SELECT srid");
-					script.addLine("FROM new_datum");
-					script.addLine();
-					script.addLine("UNION");
-					script.addLine();
-					script.addLine("SELECT srid");
-					script.addLine("FROM public.spatial_ref_sys");
-                    script.addLine("WHERE srtext = '", srtext, "'");
-                    script.addTab().addLine("AND proj4Text = '", proj4Text, "';");
+					script.addLine("UPDATE wres.GridProjection");
+					script.addTab().addLine("SET load_complete = true");
+					script.addLine("WHERE gridprojection_id = ", gridProjectionID, ";");
+					script.execute();
 
-                    final int customSRID = script.retrieve( "srid" );
-
-					final String insertHeader = "INSERT INTO wres.NetCDFCoordinate (x_position, y_position, geographic_coordinate, resolution) VALUES ";
-					final short tempResolution = 1000;
-					StringBuilder builder = new StringBuilder(insertHeader);
-					int copyCount = 0;
-
-					List<Future> copyOperations = new ArrayList<>();
+					/*List<Future> copyOperations = new ArrayList<>();
 
 					int xLength = xCoordinates.getDimension(0).getLength();
 					int yLength = yCoordinates.getDimension(0).getLength();
@@ -1002,7 +1124,7 @@ final class MainFunctions
 
 					for (Future copy : copyOperations) {
 						copy.get();
-					}
+					}*/
 
                     // Execute a query inserting all coordinates by using PostGIS to convert coordinates from the indicated
                     //      projection to the one WGS84 (ESPG:4326)

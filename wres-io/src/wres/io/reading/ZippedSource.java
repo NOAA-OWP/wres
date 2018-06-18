@@ -35,8 +35,8 @@ import wres.io.concurrency.IngestSaver;
 import wres.io.concurrency.WRESCallable;
 import wres.io.concurrency.ZippedPIXMLIngest;
 import wres.io.config.ConfigHelper;
-import wres.io.config.SystemSettings;
 import wres.io.utilities.Database;
+import wres.system.SystemSettings;
 import wres.util.ProgressMonitor;
 
 /**
@@ -51,7 +51,8 @@ public class ZippedSource extends BasicSource {
 
     private ThreadPoolExecutor createReaderService()
     {
-        int threadCount = ((Double)Math.ceil(SystemSettings.maximumThreadCount() / 10F)).intValue();
+        int threadCount = ((Double)Math.ceil(
+                SystemSettings.maximumThreadCount() / 10F)).intValue();
         threadCount = Math.max(threadCount, 2);
 
         ThreadPoolExecutor executor = new ThreadPoolExecutor(threadCount,

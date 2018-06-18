@@ -24,7 +24,7 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.io.config.ConfigHelper;
-import wres.io.config.SystemSettings;
+import wres.system.SystemSettings;
 
 /**
  * Helps to write a {@link ChartEngine} to a graphical product file in Portable Network Graphics (PNG) format.

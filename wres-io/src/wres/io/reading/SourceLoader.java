@@ -28,10 +28,10 @@ import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.Executor;
 import wres.io.concurrency.IngestSaver;
 import wres.io.config.ConfigHelper;
-import wres.io.config.SystemSettings;
 import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Features;
 import wres.io.data.details.FeatureDetails;
+import wres.system.SystemSettings;
 import wres.util.Strings;
 
 /**

@@ -531,7 +531,29 @@ public enum DefaultMetadataFactory implements MetadataFactory
 
             if (this.hasCoordinates())
             {
-                return this.getLongitude() + " " + this.getLatitude();
+                String coordinates = "" + Math.abs( this.getLongitude() );
+
+                if (this.getLongitude() < 0)
+                {
+                    coordinates += "W";
+                }
+                else
+                {
+                    coordinates += "E";
+                }
+
+                coordinates += " " + Math.abs( this.getLatitude() );
+
+                if (this.getLatitude() < 0)
+                {
+                    coordinates += "S";
+                }
+                else
+                {
+                    coordinates += "N";
+                }
+
+                return coordinates;
             }
 
             return "Unknown";

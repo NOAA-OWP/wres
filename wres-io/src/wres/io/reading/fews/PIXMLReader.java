@@ -29,7 +29,6 @@ import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
 import wres.io.concurrency.CopyExecutor;
 import wres.io.config.ConfigHelper;
-import wres.io.config.SystemSettings;
 import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
@@ -39,13 +38,14 @@ import wres.io.data.details.SourceDetails;
 import wres.io.data.details.TimeSeries;
 import wres.io.reading.IngestException;
 import wres.io.reading.InvalidInputDataException;
-import wres.io.reading.XMLReader;
 import wres.io.utilities.Database;
+import wres.system.SystemSettings;
+import wres.system.xml.XMLHelper;
+import wres.system.xml.XMLReader;
 import wres.util.Collections;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
 import wres.util.TimeHelper;
-import wres.util.XML;
 
 /**
  * @author Christopher Tubbs
@@ -378,7 +378,7 @@ public final class PIXMLReader extends XMLReader
             this.addObservedEvent( formattedDate, this.getValueToSave( value ) );
         }
 
-		if (insertCount >= SystemSettings.getMaximumCopies()) {
+		if ( insertCount >= SystemSettings.getMaximumCopies()) {
             saveLeftoverObservations();
 		}
 	}
@@ -536,7 +536,7 @@ public final class PIXMLReader extends XMLReader
 				{
 				    // TODO: Set the LID on a FeatureDetails object; don't just store the LID
 					//	If we are at the tag for the location id, save it to the location metadata
-					this.currentLID = XML.getXMLText(reader);
+					this.currentLID = XMLHelper.getXMLText( reader);
 					this.currentVariablePositionID = null;
 					this.currentTimeSeriesID = null;
 					this.currentTimeSeries = null;
@@ -556,22 +556,22 @@ public final class PIXMLReader extends XMLReader
 				}
 				else if(localName.equalsIgnoreCase("units"))
 				{
-					currentMeasurementUnitID = MeasurementUnits.getMeasurementUnitID(XML.getXMLText(reader));
+					currentMeasurementUnitID = MeasurementUnits.getMeasurementUnitID(XMLHelper.getXMLText(reader));
 				}
 				else if(localName.equalsIgnoreCase("missVal"))
 				{
 					// If we are at the tag for the missing value definition, record it
-					missingValue = Double.parseDouble( XML.getXMLText( reader ) );
+					missingValue = Double.parseDouble( XMLHelper.getXMLText( reader ) );
 				}
 				else if (localName.equalsIgnoreCase("startDate"))
                 {
                     this.startDate = PIXMLReader.parseDateTime( reader );
 				}
-				else if (XML.tagIs(reader, "creationDate")) {
-					creationDate = XML.getXMLText(reader);
+				else if (XMLHelper.tagIs(reader, "creationDate")) {
+					creationDate = XMLHelper.getXMLText(reader);
 				}
-				else if (XML.tagIs(reader, "creationTime")) {
-					creationTime = XML.getXMLText(reader);
+				else if (XMLHelper.tagIs(reader, "creationTime")) {
+					creationTime = XMLHelper.getXMLText(reader);
 				}
 				else if(localName.equalsIgnoreCase("timeStep"))
 				{
@@ -595,7 +595,7 @@ public final class PIXMLReader extends XMLReader
 				}
 				else if (localName.equalsIgnoreCase("parameterId"))
 				{
-					currentVariableName = XML.getXMLText(reader);
+					currentVariableName = XMLHelper.getXMLText(reader);
 					currentVariableID = Variables.getVariableID(currentVariableName);
 				}
 				else if (localName.equalsIgnoreCase( "lat" ) || localName.equalsIgnoreCase( "y" ))
@@ -639,7 +639,7 @@ public final class PIXMLReader extends XMLReader
             currentTimeSeriesID = null;
             currentEnsembleID = null;
             //    If we are at the tag for the name of the ensemble, save it to the ensemble
-            currentEnsembleName = XML.getXMLText(reader);
+            currentEnsembleName = XMLHelper.getXMLText(reader);
         }
         else if ( localName.equalsIgnoreCase("qualifierId") )
         {
@@ -648,7 +648,7 @@ public final class PIXMLReader extends XMLReader
 
             //    If we are at the tag for the ensemble qualifier, save it to the ensemble
             //current_ensemble.qualifierID = tag_value(reader);
-            currentQualifierID = XML.getXMLText(reader);
+            currentQualifierID = XMLHelper.getXMLText(reader);
         }
         else if ( localName.equalsIgnoreCase("ensembleMemberIndex") )
         {
@@ -656,7 +656,7 @@ public final class PIXMLReader extends XMLReader
             currentEnsembleID = null;
 
             //    If we are at the tag for the ensemble member, save it to the ensemble
-            currentEnsembleMemberID = XML.getXMLText(reader);
+            currentEnsembleMemberID = XMLHelper.getXMLText(reader);
         }
         else if ( localName.equalsIgnoreCase("forecastDate") )
         {

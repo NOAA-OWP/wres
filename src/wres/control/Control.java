@@ -28,8 +28,8 @@ import wres.config.ProjectConfigPlus;
 import wres.config.Validation;
 import wres.control.ProcessorHelper.ExecutorServices;
 import wres.io.concurrency.Executor;
-import wres.io.config.SystemSettings;
 import wres.io.utilities.Database;
+import wres.system.SystemSettings;
 
 /**
  * A complete implementation of a processing pipeline originating from one or more {@link ProjectConfig}.
@@ -103,7 +103,8 @@ public class Control implements Function<String[], Integer>
         ThreadFactory productFactory = runnable -> new Thread( runnable, "Product Thread" );
 
         // Name our queues in order to easily monitor them
-        BlockingQueue<Runnable> featureQueue =new ArrayBlockingQueue<>( SystemSettings.maximumThreadCount() * 5 );
+        BlockingQueue<Runnable> featureQueue =new ArrayBlockingQueue<>( SystemSettings
+                                                                                .maximumThreadCount() * 5 );
         BlockingQueue<Runnable> pairQueue = new ArrayBlockingQueue<>( SystemSettings.maximumThreadCount() * 5 );
         BlockingQueue<Runnable> thresholdQueue = new LinkedBlockingQueue<>();
         BlockingQueue<Runnable> metricQueue = new ArrayBlockingQueue<>( SystemSettings.maximumThreadCount() * 5 );

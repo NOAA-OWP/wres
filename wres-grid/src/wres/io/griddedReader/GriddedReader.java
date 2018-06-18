@@ -7,9 +7,9 @@ import wres.config.FeaturePlus;
 import wres.config.generated.Feature;
 import wres.grid.client.Request;
 import wres.grid.client.TimeSeriesResponse;
+import wres.system.SystemSettings;
 import wres.util.NetCDF;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
@@ -34,13 +34,13 @@ public class GriddedReader
     private Queue<String> paths;
     private List<Feature> features;
 
-    private static final short MAX_READER_LIFESPAN = 2000;
-    private static final short KEEP_OPEN_MINIMUM = 65;
-    private static final short MAX_OPEN_FILES = 80;
-
-
     static {
-        NetcdfDataset.initNetcdfFileCache(KEEP_OPEN_MINIMUM, MAX_OPEN_FILES, MAX_OPEN_FILES, 90);
+        NetcdfDataset.initNetcdfFileCache(
+                SystemSettings.getMinimumCachedNetcdf(),
+                SystemSettings.getMaximumCachedNetcdf(),
+                SystemSettings.getHardNetcdfCacheLimit(),
+                SystemSettings.getNetcdfCachePeriod()
+        );
     }
 
     private static final Object READER_LOCK = new Object();
