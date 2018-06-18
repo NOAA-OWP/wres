@@ -67,6 +67,10 @@ else
     psql -U $1 -d $3 -h $2 -f get_variableposition_id.sql >/dev/null
 
     echo ''
+    echo 'Adding wres.GridProjection...'
+    psql -U $1 -d $3 -h $2 -f wres.GridProjection.sql >/dev/null
+
+    echo ''
     echo 'Adding wres.NetCDFCoordinate...'
     psql -U $1 -d $3 -h $2 -f wres.NetCDFCoordinate.sql >/dev/null
 
