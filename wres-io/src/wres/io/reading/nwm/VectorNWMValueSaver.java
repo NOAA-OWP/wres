@@ -28,7 +28,6 @@ import wres.io.concurrency.CopyExecutor;
 import wres.io.concurrency.WRESRunnable;
 import wres.io.concurrency.WRESRunnableException;
 import wres.io.config.ConfigHelper;
-import wres.io.config.SystemSettings;
 import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
@@ -38,6 +37,7 @@ import wres.io.data.details.SourceDetails;
 import wres.io.data.details.TimeSeries;
 import wres.io.utilities.Database;
 import wres.io.utilities.ScriptBuilder;
+import wres.system.SystemSettings;
 import wres.util.NetCDF;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
@@ -491,7 +491,7 @@ class VectorNWMValueSaver extends WRESRunnable
 
         // If the number of queued values reaches the maximum number, save
         // everything
-        if (this.copyCount >= SystemSettings.getMaximumCopies())
+        if ( this.copyCount >= SystemSettings.getMaximumCopies())
         {
             this.saveValues();
         }

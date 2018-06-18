@@ -7,9 +7,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import wres.io.concurrency.CopyExecutor;
-import wres.io.config.SystemSettings;
 import wres.io.data.details.TimeSeries;
 import wres.io.utilities.Database;
+import wres.system.SystemSettings;
 import wres.util.Strings;
 
 /**

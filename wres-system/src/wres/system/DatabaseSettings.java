@@ -95,18 +95,19 @@ final class DatabaseSettings
 	{
 		Connection connection = null;
 		Statement clean = null;
+		final String NEWLINE = System.lineSeparator();
 
 		String script = "";
-		script += "SELECT pg_cancel_backend(PT.pid)";
-		script += "FROM pg_locks L";
-		script += "INNER JOIN pg_stat_all_tables T";
-		script += "ON l.relation = t.relid";
-		script += "INNER JOIN pg_stat_activity PT";
-		script += "ON l.pid = PT.pid";
-		script += "WHERE T.schemaname <> 'pg_toast'::name";
-		script += "AND t.schemaname < 'pg_catalog'::name";
-		script += "AND usename = '" + this.getUsername() + "'";
-		script += "AND datname = '" + this.getDatabaseName() + "'";
+		script += "SELECT pg_cancel_backend(PT.pid)" + NEWLINE;
+		script += "FROM pg_locks L" + NEWLINE;
+		script += "INNER JOIN pg_stat_all_tables T" + NEWLINE;
+		script += "ON L.relation = t.relid" + NEWLINE;
+		script += "INNER JOIN pg_stat_activity PT" + NEWLINE;
+		script += "ON L.pid = PT.pid" + NEWLINE;
+		script += "WHERE T.schemaname <> 'pg_toast'::name" + NEWLINE;
+		script += "AND t.schemaname < 'pg_catalog'::name" + NEWLINE;
+		script += "AND usename = '" + this.getUsername() + "'" + NEWLINE;
+		script += "AND datname = '" + this.getDatabaseName() + "'" + NEWLINE;
 		script += "GROUP BY PT.pid;";
 
 		try

@@ -1,40 +1,18 @@
 package wres.io.reading.nwm;
 
 import java.io.IOException;
-import java.nio.file.Paths;
 import java.sql.SQLException;
-import java.time.OffsetDateTime;
-import java.util.Stack;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ucar.ma2.Array;
-import ucar.ma2.InvalidRangeException;
-import ucar.nc2.Attribute;
 import ucar.nc2.NetcdfFile;
-import ucar.nc2.Variable;
 
-import wres.config.generated.DataSourceConfig;
-import wres.io.concurrency.CopyExecutor;
-import wres.io.concurrency.SQLExecutor;
-import wres.io.concurrency.WRESCallable;
 import wres.io.concurrency.WRESRunnable;
-import wres.io.concurrency.WRESRunnableException;
-import wres.io.config.ConfigHelper;
-import wres.io.config.SystemSettings;
-import wres.io.data.caching.DataSources;
-import wres.io.data.caching.Variables;
 import wres.io.data.details.SourceDetails;
-import wres.io.reading.IngestResult;
-import wres.io.utilities.Database;
-import wres.util.Collections;
 import wres.util.NetCDF;
 import wres.util.NotImplementedException;
-import wres.util.ProgressMonitor;
-import wres.util.Strings;
-import wres.util.TimeHelper;
 
 /**
  * Executes the database copy operation for every value in the passed in string
@@ -89,6 +67,8 @@ class GriddedNWMValueSaver extends WRESRunnable
 
             SourceDetails griddedSource = new SourceDetails(  );
 			griddedSource.setSourcePath( this.fileName );
+
+			// TODO: WRONG! For observation data, this needs to be the valid time
 			griddedSource.setOutputTime( referenceTime );
 			griddedSource.setLead( lead );
 			griddedSource.setHash( hash );

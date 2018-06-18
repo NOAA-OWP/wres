@@ -19,6 +19,9 @@ import ucar.ma2.ArrayDouble;
 import ucar.ma2.InvalidRangeException;
 import ucar.nc2.NetcdfFileWriter;
 import ucar.nc2.Variable;
+import ucar.nc2.dataset.NetcdfDataset;
+import ucar.nc2.dt.GridDatatype;
+import ucar.nc2.dt.grid.GridDataset;
 
 import wres.config.ProjectConfigPlus;
 import wres.config.generated.DestinationConfig;
@@ -192,7 +195,6 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
 
                 // Figure out the location of all values and build the origin in each variable grid
                 Location location = metricOutputMap.getMetadata().getIdentifier().getGeospatialID();
-                int[] origin = this.getOrigin( location );
 
                 // Iterate through each threshold
                 for (Map.Entry<Pair<TimeWindow, OneOrTwoThresholds>, DoubleScoreOutput> score : metricOutputMap.entrySet())
@@ -200,6 +202,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
                     // Determine the name of the Netcdf Variable by combining
                     // the name of the metric and its threshold
                     String name = NetcdfOutputFileCreator.getMetricVariableName( metricName, score.getKey().getRight() );
+                    int[] origin = this.getOrigin( name, location );
                     Double actualValue = score.getValue().getData();
 
                     this.saveValues( name, origin, actualValue );
@@ -305,7 +308,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
          * @param location The location specification detailing where to place a value
          * @return
          */
-        private int[] getOrigin(Location location)
+        private int[] getOrigin(String name, Location location)
                 throws IOException, InvalidRangeException
         {
             int[] origin;
@@ -331,17 +334,24 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
                 origin = new int[3];
                 origin[0] = 0;
 
-                Variable yVariable = this.outputWriter.findVariable( getNetcdfConfig().getGridYVariable() );
-                Variable xVariable = this.outputWriter.findVariable( getNetcdfConfig().getGridXVariable() );
+                try (
+                    NetcdfDataset dataset = new NetcdfDataset( this.outputWriter.getNetcdfFile() );
+                    GridDataset gridDataset = new GridDataset( dataset ))
+                {
+                    GridDatatype variable =
+                            gridDataset.findGridDatatype( name );
+                    int[] xyIndex = variable.getCoordinateSystem()
+                                            .findXYindexFromLatLon( location.getLatitude(),
+                                                                    location.getLongitude(),
+                                                                    null );
+                    xyIndex = variable.getCoordinateSystem()
+                                            .findXYindexFromCoord( location.getLatitude(),
+                                                                    location.getLongitude(),
+                                                                    null );
 
-                Integer yIndex = NetCDF.getCoordinateIndex(yVariable, location.getLatitude());
-                Integer xIndex = NetCDF.getCoordinateIndex( xVariable, location.getLongitude() );
-
-                Objects.requireNonNull( yIndex, "An index for the Y coordinate could not be evaluated." );
-                Objects.requireNonNull( xIndex, "An index for the X coordinate could not be evaluated." );
-
-                origin[1] = yIndex;
-                origin[2] = xIndex;
+                    origin[1] = xyIndex[1];
+                    origin[2] = xyIndex[0];
+                }
             }
             else
             {

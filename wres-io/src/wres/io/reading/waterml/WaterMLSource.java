@@ -12,13 +12,13 @@ import org.slf4j.LoggerFactory;
 import static org.apache.commons.math3.util.Precision.EPSILON;
 
 import wres.io.concurrency.CopyExecutor;
-import wres.io.config.SystemSettings;
 import wres.io.data.caching.Features;
 import wres.io.data.details.FeatureDetails;
 import wres.io.reading.waterml.timeseries.TimeSeries;
 import wres.io.reading.waterml.timeseries.TimeSeriesValue;
 import wres.io.reading.waterml.timeseries.TimeSeriesValues;
 import wres.io.utilities.Database;
+import wres.system.SystemSettings;
 import wres.util.functional.ExceptionalConsumer;
 import wres.io.utilities.ScriptBuilder;
 import wres.util.NotImplementedException;

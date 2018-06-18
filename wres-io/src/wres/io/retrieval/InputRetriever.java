@@ -606,13 +606,9 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                 leadRange.getRight()
         ).forEach(griddedRequest::addPath);
 
-        /*
-         * TODO: Add code to pull indexes from the index table that fit within the wkt in the feature
-         */
-
         Response response = Fetcher.getData( griddedRequest );
 
-        int minimumLead = this.projectDetails.getLeadRange( this.feature, this.leadIteration ).getLeft();
+        int minimumLead = leadRange.getLeft();
         int period = this.projectDetails.getScale().getPeriod();
         int frequency = this.projectDetails.getScale().getFrequency();
 

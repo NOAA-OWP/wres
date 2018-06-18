@@ -32,8 +32,8 @@ import static org.junit.Assert.assertTrue;
 import static ru.yandex.qatools.embed.postgresql.EmbeddedPostgres.cachedRuntimeConfig;
 import static ru.yandex.qatools.embed.postgresql.distribution.Version.Main.V9_6;
 
-import wres.io.config.SystemSettings;
 import wres.io.utilities.Database;
+import wres.system.SystemSettings;
 
 @Ignore
 @RunWith(PowerMockRunner.class)

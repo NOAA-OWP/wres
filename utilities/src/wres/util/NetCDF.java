@@ -33,7 +33,7 @@ public final class NetCDF {
     private static final Pattern NWM_CATEGORY_PATTERN =
             Pattern.compile( "(?<=(assim|range)\\.)[a-zA-Z_\\d]+(?=\\.(tm\\d\\d|f\\d\\d\\d))" );
 
-    private static final Pattern NETCDF_FILENAME_PATTERN = Pattern.compile( ".+\\.nc(\\.gz)?" );
+    private static final Pattern NETCDF_FILENAME_PATTERN = Pattern.compile( ".+\\.nc(\\.gz)?$" );
 
     private static final Pattern SHORT_DATE_PATTERN = Pattern.compile(".*\\d{8}");
 

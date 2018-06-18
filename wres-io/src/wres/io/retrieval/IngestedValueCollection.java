@@ -49,14 +49,45 @@ class IngestedValueCollection
             for (int x = 0; x < this.size(); ++x)
             {
                 int scale = this.getScale();
+
+                // If the first lead of the data is 1, the lead of the first
+                // block to condense will be 1 + the xth iteration of the
+                // frequency. If the frequency is 3 and we're on our 4th pass,
+                // that means that we're looking at the first lead of our block
+                // being 1 + 12, or 13.
                 int firstBlockLead = this.first().getLead() + frequency * x;
+
+                // The leads are exclusive-inclusive. As a result, we either
+                // want the max of the caller overridden minimum lead or that
+                // first lead in the block at the beginning of its scale. If
+                // the scale is 1 value every 3 hours, that means that we'll want to
+                // get the first value within that scale that will land on the
+                // lead for our first block.  If the minimum lead was 4 (i.e.
+                // the caller doesn't want to start condensing anything prior
+                // to lead 4), that means we'll start condensing values upwards
+                // of lead 10.
                 int earliestLead = Math.max(minimumLead, firstBlockLead - scale);
-                int lastBlockLead = firstBlockLead + period - scale;
+
+                // In our block, we want to span the given period. If our period were 6 hours,
+                // We want to be 6 hours ahead of where we would naturally
+                // start the block (the size of the scale prior to the first
+                // value of the block). Our scale is 3 ours and our period is 6;
+                // that means that we should be able to get 2 values within our
+                // block. Our first value is at 13, so, starting at 10, adding
+                // the scale yields our first value (lead = 13), and adding the
+                // scale again yields our second value (lead = 16)
+                int lastBlockLead = firstBlockLead - scale + period;
 
                 // If the scale is equivalent to the period, no scale operation
                 // is needed and we can accept a value that doesn't have a full
                 // period within the window
                 boolean scalingNotNecessary = scale == period;
+
+                // We can condense values starting at this step if there is at
+                // least one lead in the entire collection that matches the end
+                // of our block and either we won't be scaling or scaling won't
+                // attempt to add values prior to the earliest possible lead
+                // for condensing
                 boolean canCondense = Collections.exists(
                         this.values,
                         ingestedValue -> ingestedValue.getLead() == lastBlockLead &&
@@ -64,6 +95,10 @@ class IngestedValueCollection
 
                 if (canCondense)
                 {
+                    // We have determined that our first step for condensing
+                    // iterations over our data will be at step x such that
+                    // the first lead to combine with others will be the first
+                    // lead of the data plus the xth iteration of the frequency
                     firstCondensingStep = x;
                     break;
                 }
@@ -98,6 +133,8 @@ class IngestedValueCollection
         }
         else if (this.size() == 1)
         {
+            // Since we've already condensed that first value down, we know
+            // we're done because there's no other values to combine
             return null;
         }
 
@@ -160,28 +197,44 @@ class IngestedValueCollection
             throw new NoDataException( "There is no data to interrogate for scale." );
         }
 
+        // There can be no scale if there's only one value
         if (this.scale == -1 && this.size() == 1)
         {
             this.scale = 0;
         }
 
+        // If there's no scale
         if (this.scale == -1)
         {
             Map<Integer, Integer> scaleCount = new HashMap<>();
 
+            // For every contained value after the first
             for ( int index = 1; index < this.size(); ++index )
             {
+                // Determine the difference in leads between this value and the previous
                 int difference =
                         this.values.get( index ).getLead() - this.values.get(index - 1 ).getLead();
 
+                // If there's no record for this degree of difference, add a new record for it
                 if ( !scaleCount.containsKey( difference ) )
                 {
                     scaleCount.put( difference, 0 );
                 }
 
+                // Increment the number of occurances for the difference
                 scaleCount.put( difference, scaleCount.get( difference ) + 1 );
             }
 
+            // Set the scale to the difference that occurred the most times
+            // Say you have a scaleCount map like:
+            //    1 -> 18
+            //    3 -> 2
+            //    7 -> 1
+            //
+            // Here, it looks like there were some erroneous gaps, because
+            // there was generally an hour difference between each lead. There
+            // was a 3 hour gap in there twice, and there was a 7 hour gap in
+            // there once. We want the most common distance, which is 18
             this.scale = Collections.getKeyByValueFunction(
                     scaleCount,
                     ( compare, to ) -> compare == Math.max( compare, to )

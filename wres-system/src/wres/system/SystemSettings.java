@@ -52,6 +52,10 @@ public final class SystemSettings extends XMLReader
     private int maximumCopies = 200;
     private int defaultChartWidth = 800;
     private int defaultChartHeight = 600;
+    private int netcdfCachePeriod = 90;
+    private int minimumCachedNetcdf = 100;
+    private int maximumCachedNetcdf = 200;
+    private int hardNetcdfCacheLimit = 0;
 	private String remoteNetCDFURL = "http://***REMOVED***dstore.***REMOVED***.***REMOVED***/nwm/";
 	private String netcdfStorePath = "systests/data/";
 
@@ -128,6 +132,18 @@ public final class SystemSettings extends XMLReader
                     case "netcdf_store_path":
                         this.setNetcdfStorePath( reader );
                         break;
+                    case "cached_netcdf_lifespan":
+                        this.setNetcdfCachePeriod( reader );
+                        break;
+                    case "minimum_cached_netcdf":
+                        this.setMinimumCachedNetcdf( reader );
+                        break;
+                    case "maximum_cached_netcdf":
+                        this.setMaximumCachedNetcdf( reader );
+                        break;
+                    case "hard_netcdf_cache_limit":
+                        this.setHardNetcdfCacheLimit( reader );
+                        break;
                     default:
                         LOGGER.debug( "The tag '{}' was skipped because it's "
                                       + "not used in configuration.", tagName );
@@ -144,6 +160,46 @@ public final class SystemSettings extends XMLReader
             throw new IOException( message, xse );
         }
 	}
+
+	private void setMinimumCachedNetcdf(XMLStreamReader reader)
+            throws XMLStreamException
+    {
+        String value = XMLHelper.getXMLText( reader );
+        if (value != null && Strings.isNumeric( value ))
+        {
+            this.minimumCachedNetcdf = Integer.parseInt( value );
+        }
+    }
+
+    private void setMaximumCachedNetcdf(XMLStreamReader reader)
+            throws XMLStreamException
+    {
+        String value = XMLHelper.getXMLText( reader );
+        if (value != null && Strings.isNumeric( value ))
+        {
+            this.maximumCachedNetcdf = Integer.parseInt( value );
+        }
+    }
+
+    private void setNetcdfCachePeriod( XMLStreamReader reader)
+            throws XMLStreamException
+    {
+        String value = XMLHelper.getXMLText( reader );
+        if (value != null && Strings.isNumeric( value ))
+        {
+            this.netcdfCachePeriod = Integer.parseInt( value );
+        }
+    }
+
+    private void setHardNetcdfCacheLimit(XMLStreamReader reader)
+            throws XMLStreamException
+    {
+        String value = XMLHelper.getXMLText( reader );
+        if (value != null && Strings.isNumeric( value ))
+        {
+            this.hardNetcdfCacheLimit = Integer.parseInt( value );
+        }
+    }
 
 	private void setMaximumThreadCount(XMLStreamReader reader)
             throws XMLStreamException
@@ -314,6 +370,41 @@ public final class SystemSettings extends XMLReader
 	public static int getDefaultChartHeight()
     {
         return instance.defaultChartHeight;
+    }
+
+    /**
+     * @return the amount of NetcdfDatasets that may be cached before the
+     * calling thread is responsible for closing datasets
+     */
+    public static int getHardNetcdfCacheLimit()
+    {
+        return instance.hardNetcdfCacheLimit;
+    }
+
+    /**
+     * @return The amount of seconds a NetcdfDataset cache should wait before
+     * looking for cached files to close
+     */
+    public static int getNetcdfCachePeriod()
+    {
+        return instance.netcdfCachePeriod;
+    }
+
+    /**
+     * @return The minimum number of cached NetCDFDatasets to persist
+     */
+    public static int getMinimumCachedNetcdf()
+    {
+        return instance.minimumCachedNetcdf;
+    }
+
+    /**
+     * @return The maximum number of cached NetCDFDatasets to persist before
+     * attempting to close files to make room
+     */
+    public static int getMaximumCachedNetcdf()
+    {
+        return instance.maximumCachedNetcdf;
     }
 
 	/**
