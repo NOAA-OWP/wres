@@ -206,4 +206,32 @@ public class WresJob
 
         return WresJob.connection;
     }
+
+
+    /**
+     * Abruptly stops all listening for job results that this class listens for,
+     * and closes open connections, and only warns on exceptions thrown on
+     * connection close.
+     */
+
+    static void shutdownNow()
+    {
+        JOB_RESULTS.shutdownNow();
+
+        synchronized ( CONNECTION_LOCK )
+        {
+            if ( WresJob.connection != null )
+            {
+                try
+                {
+                    WresJob.connection.close();
+                }
+                catch ( IOException ioe )
+                {
+                    LOGGER.warn( "Exception while closing broker connection.",
+                                 ioe );
+                }
+            }
+        }
+    }
 }
