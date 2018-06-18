@@ -54,6 +54,115 @@ public final class Variables extends Cache<VariableDetails, String>
 			return instance;
 		}
 	}
+
+	/**
+	 * Checks to see if there are any forecasted values for a named variable
+	 * tied to the project
+	 * @param projectID The ID of the project to check
+	 * @param projectMember The evaluation member of the project ("left", "right", or "baseline")
+	 * @param variableID The ID of the variable
+	 * @return Whether or not there is any forecast data for the variable within the project
+	 * @throws SQLException Thrown if a database operation fails
+	 */
+	public static boolean isForecastValid(final Integer projectID,
+                                          final String projectMember,
+                                          final Integer variableID)
+            throws SQLException
+	{
+		String member = projectMember;
+
+		if (!member.startsWith( "'" ))
+		{
+			member = "'" + member;
+		}
+
+		if (!member.endsWith( "'" ))
+		{
+			member += "'";
+		}
+
+		ScriptBuilder script = new ScriptBuilder(  );
+
+		script.addLine("SELECT EXISTS (");
+		script.addTab().addLine("SELECT 1");
+		script.addTab().addLine("FROM (");
+		script.addTab(  2  ).addLine("SELECT TS.timeseries_id");
+		script.addTab(  2  ).addLine("FROM wres.TimeSeries TS");
+		script.addTab(  2  ).addLine("WHERE EXISTS (");
+		script.addTab(   3   ).addLine("SELECT 1");
+		script.addTab(   3   ).addLine("FROM (");
+		script.addTab(    4    ).addLine("SELECT PS.source_id");
+		script.addTab(    4    ).addLine("FROM wres.ProjectSource PS");
+		script.addTab(    4    ).addLine("WHERE PS.project_id = ", projectID);
+		script.addTab(     5     ).addLine("AND PS.member = ", member);
+		script.addTab(   3   ).addLine(") AS PS");
+		script.addTab(   3   ).addLine("INNER JOIN wres.ForecastSource FS");
+		script.addTab(    4    ).addLine("ON FS.source_id = PS.source_id");
+		script.addTab(   3   ).addLine("WHERE FS.forecast_id = TS.timeseries_id");
+		script.addTab(  2  ).addLine(") AND EXISTS (");
+		script.addTab(   3   ).addLine("SELECT 1");
+		script.addTab(   3   ).addLine("FROM wres.VariablePosition VP");
+		script.addTab(   3   ).addLine("WHERE VP.variable_id = ", variableID);
+		script.addTab(    4    ).addLine("AND VP.variableposition_id = TS.variableposition_id");
+		script.addTab(  2  ).addLine(")");
+		script.addTab().addLine(") AS TS");
+		script.addTab().addLine("WHERE EXISTS (");
+		script.addTab(  2  ).addLine("SELECT 1");
+		script.addTab(  2  ).addLine("FROM wres.ForecastValue FV");
+		script.addTab(  2  ).addLine("WHERE FV.timeseries_id = TS.timeseries_id");
+		script.addTab().addLine(")");
+		script.add(");");
+
+		return script.retrieve( "exists" );
+	}
+
+	/**
+	 * Checks to see if there are any observed values for a named variable tied
+	 * to the project based on its project member
+	 * @param projectID The ID of the project to check
+	 * @param projectMember The evaluation member of the project ("left", "right", or "baseline")
+	 * @param variableID The ID of the variable
+	 * @return Whether or not there is any observed data for the variable within the project
+	 * @throws SQLException Thrown if a database operation fails
+	 */
+	public static boolean isObservationValid(final Integer projectID,
+											 final String projectMember,
+											 final Integer variableID)
+			throws SQLException
+	{
+		String member = projectMember;
+
+		if (!member.startsWith( "'" ))
+		{
+			member = "'" + member;
+		}
+
+		if (!member.endsWith( "'" ))
+		{
+			member += "'";
+		}
+
+		ScriptBuilder script = new ScriptBuilder();
+
+		script.addLine("SELECT EXISTS (");
+		script.addTab().addLine("SELECT 1");
+		script.addTab().addLine("FROM wres.Observation O");
+		script.addTab().addLine("WHERE EXISTS (");
+		script.addTab(  2  ).addLine("SELECT 1");
+		script.addTab(  2  ).addLine("FROM wres.ProjectSource PS");
+		script.addTab(  2  ).addLine("WHERE PS.project_id = ", projectID);
+		script.addTab(   3   ).addLine("AND PS.member = ", member);
+		script.addTab(   3   ).addLine("AND PS.source_id = O.source_id");
+		script.addTab().addLine(") AND EXISTS (");
+		script.addTab(  2  ).addLine("SELECT 1");
+		script.addTab(  2  ).addLine("FROM wres.VariablePosition VP");
+		script.addTab(  2  ).addLine("WHERE VP.variable_id = ", variableID);
+		script.addTab(   3   ).addLine("AND VP.variableposition_id = O.variableposition_id");
+		script.addTab().addLine(")");
+		script.add(");");
+
+		return script.retrieve( "exists" );
+	}
 	
 	/**
 	 * Returns the ID of a variable from the global cache
