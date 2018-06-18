@@ -20,6 +20,7 @@ import org.apache.commons.math3.util.Precision;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ucar.ma2.Array;
+import ucar.ma2.InvalidRangeException;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
 
@@ -282,11 +283,12 @@ class VectorNWMValueSaver extends WRESRunnable
         if (this.sourceID == null)
         {
             // TODO: Modify the cache to do this work
-            SourceDetails.SourceKey sourceKey =
-                    new SourceDetails.SourceKey( this.filePath.toAbsolutePath().toString(),
-                                                 NetCDF.getInitializedTime( this.getSource() ),
-                                                 this.getLead(),
-                                                 this.getHash() );
+            SourceDetails.SourceKey sourceKey = new SourceDetails.SourceKey(
+                    this.filePath.toAbsolutePath().toString(),
+                    NetCDF.getReferenceTime( this.getSource() ).toString(),
+                    this.getLead(),
+                    this.getHash()
+            );
 
             // Ask the cache "do you have this source?"
             boolean wasInCache = DataSources.isCached( sourceKey );
@@ -356,7 +358,7 @@ class VectorNWMValueSaver extends WRESRunnable
         forecastSourceInsert +=
                 "WHERE TS.ensemble_id = " + this.getEnsembleID() + NEWLINE;
         forecastSourceInsert += "   AND TS.initialization_date = '" +
-                                NetCDF.getInitializedTime( this.getSource() ) + "'" + NEWLINE;
+                                NetCDF.getReferenceTime( this.getSource() ) + "'" + NEWLINE;
         forecastSourceInsert += "   AND TS.measurementunit_id = "
                                 + this.getMeasurementUnitID() + NEWLINE;
         forecastSourceInsert +=
@@ -465,7 +467,7 @@ class VectorNWMValueSaver extends WRESRunnable
             // the unit it was measured in, and the id of the source file
             this.copyScript.append( spatioVariableID )
                            .append( DELIMITER )
-                           .append( NetCDF.getValidTime( this.getSource() ) )
+                           .append( NetCDF.getTime( this.getSource() ) )
                            .append( DELIMITER );
 
             // If the value is null, the value to copy should be '\N', which
@@ -704,7 +706,7 @@ class VectorNWMValueSaver extends WRESRunnable
               .append( NEWLINE);
 
         script.append("    '")
-              .append(NetCDF.getInitializedTime( this.getSource() ))
+              .append(NetCDF.getReferenceTime( this.getSource() ))
               .append("'")
               .append(NEWLINE);
 
@@ -723,7 +725,7 @@ class VectorNWMValueSaver extends WRESRunnable
               .append(NEWLINE);
 
         script.append("            AND TS.initialization_date = '")
-              .append(NetCDF.getInitializedTime( this.getSource() ))
+              .append(NetCDF.getReferenceTime( this.getSource() ))
               .append("'")
               .append(NEWLINE);
 
@@ -785,7 +787,7 @@ class VectorNWMValueSaver extends WRESRunnable
         // extra fields to only be populated uniquely if this is a forecast
         if (this.isForecast())
         {
-            initializationTime = NetCDF.getInitializedTime( this.getSource() );
+            initializationTime = NetCDF.getReferenceTime( this.getSource() ).toString();
             ensembleID = this.getEnsembleID();
             measurementUnitID = this.getMeasurementUnitID();
         }
@@ -850,7 +852,7 @@ class VectorNWMValueSaver extends WRESRunnable
                         script.addTab(  2  ).addLine("INNER JOIN (");
                         script.addTab(   3   ).addLine("SELECT S.source_id");
                         script.addTab(   3   ).addLine("FROM wres.Source S");
-                        script.addTab(   3   ).addLine("WHERE S.output_time = '", NetCDF.getInitializedTime( this.getSource() ), "'");
+                        script.addTab(   3   ).addLine("WHERE S.output_time = '", NetCDF.getReferenceTime( this.getSource() ), "'");
                         script.addTab(  2  ).addLine(") AS S");
                         script.addTab(   3   ).addLine("ON S.source_id = FS.source_id");
                         script.addTab(  2  ).addLine("LEFT OUTER JOIN wres.ProjectSource PS");

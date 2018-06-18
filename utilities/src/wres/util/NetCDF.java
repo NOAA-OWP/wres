@@ -11,7 +11,9 @@ import ucar.nc2.Variable;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Objects;
 import java.util.function.Predicate;
@@ -106,65 +108,19 @@ public final class NetCDF {
     }
 
 
-    public static Integer getLeadTime( NetcdfFile file)
+    public static Integer getLeadTime( NetcdfFile file) throws IOException
     {
         int lead = Integer.MAX_VALUE;
-        String initializedTime = NetCDF.getInitializedTime( file );
-        String validTime = NetCDF.getValidTime( file );
+        Instant initializedTime = NetCDF.getReferenceTime( file );
+        Instant validTime = NetCDF.getTime( file );
 
         if (initializedTime != null && validTime != null)
         {
-
-            LocalDateTime initialization = LocalDateTime.parse(initializedTime);
-            LocalDateTime valid = LocalDateTime.parse(validTime);
-            lead = ((Long)initialization.until(valid, TimeHelper.LEAD_RESOLUTION)).intValue();
-        }
-        else if (NetCDF.hasVariable( file, "time" ) && NetCDF.hasVariable( file, "reference_time" ))
-        {
-            Variable referenceTime = NetCDF.getVariable( file, "reference_time" );
-            Variable time = NetCDF.getVariable( file, "time" );
-            if (time.getDimensions().size() == 1 && referenceTime.getDimensions().size() == 1)
-            {
-                Integer reference = null;
-                Integer valid = null;
-
-                try
-                {
-                    Array referenceValues = referenceTime.read( new int[]{0}, new int[]{1} );
-                    reference = referenceValues.getInt( 0 );
-                }
-                catch ( IOException | InvalidRangeException e )
-                {
-                    LOGGER.debug( "The reference time variable in '" +
-                                  file.getLocation() +
-                                  "' cannot be used to determine the "
-                                  + "initialization time of the source data.",
-                                  e );
-                }
-
-                if (reference != null)
-                {
-                    try
-                    {
-                        int lastIndex = time.getDimension(0).getLength() - 1;
-                        Array validTimes = time.read(new int[]{lastIndex}, new int[]{1});
-                        valid = validTimes.getInt( 0 );
-                    }
-                    catch ( IOException | InvalidRangeException e )
-                    {
-                        LOGGER.debug( "The time variable in '" +
-                                      file.getLocation() +
-                                      "' cannot be used to determine the valid "
-                                      + "time of the source data.");
-                    }
-                }
-
-                if (reference != null && valid != null)
-                {
-                    lead = valid - reference;
-                    lead = ( int ) TimeHelper.unitsToLeadUnits( "MINUTES", lead );
-                }
-            }
+            Long timeBetween = LocalDateTime.ofInstant( initializedTime, ZoneId.of( "UTC" ) )
+                                            .until( LocalDateTime.ofInstant( validTime, ZoneId.of( "UTC" ) ),
+                                                    TimeHelper.LEAD_RESOLUTION
+                                            );
+            lead = timeBetween.intValue();
         }
 
         if (lead == Integer.MAX_VALUE)
@@ -176,44 +132,52 @@ public final class NetCDF {
         return lead;
     }
 
-    public static String getInitializedTime( NetcdfFile file)
-    {
-        String initializationTime = null;
-
-        Attribute initializationAttribute = file.findGlobalAttributeIgnoreCase("model_initialization_time");
-        if (initializationAttribute != null)
-        {
-            initializationTime = initializationAttribute.getStringValue().replace("_", "T").trim();
-        }
-
-        return initializationTime;
-    }
-
-    public static String getValidTime(NetcdfFile file)
-    {
-        String validTime = null;
-        Attribute validTimeAttribute = file.findGlobalAttributeIgnoreCase("model_output_valid_time");
-        if (validTimeAttribute != null)
-        {
-            validTime = validTimeAttribute.getStringValue().replace("_", "T").trim();
-        }
-        return validTime;
-    }
-
     public static Instant getTime( NetcdfFile file)
-            throws IOException, InvalidRangeException
+            throws IOException
     {
         Variable time = NetCDF.getVariable( file, "time" );
-        Array timeValues = time.read( new int[]{0}, new int[]{1} );
+        Array timeValues;
+
+        try
+        {
+            timeValues = time.read( new int[]{0}, new int[]{1} );
+        }
+        catch ( InvalidRangeException e )
+        {
+            throw new IOException( "A valid time value could not be retrieved from '" + file.getLocation() + "#time'", e );
+        }
+
         int minutes = timeValues.getInt( 0 );
         return Instant.ofEpochSecond( minutes * 60 );
     }
 
     public static Instant getReferenceTime(NetcdfFile file)
-            throws IOException, InvalidRangeException
+            throws IOException
     {
         Variable time = NetCDF.getVariable( file, "reference_time" );
-        Array timeValues = time.read( new int[]{0}, new int[]{1} );
+
+        if (time == null)
+        {
+            time = NetCDF.getVariable( file, "analysis_time" );
+        }
+
+        if (time == null)
+        {
+            return NetCDF.getTime(file);
+        }
+
+        Array timeValues;
+
+        try
+        {
+            timeValues = time.read( new int[]{0}, new int[]{1} );
+        }
+        catch ( InvalidRangeException e )
+        {
+            throw new IOException( "A valid time value could not be retrieved from '" +
+                                   file.getLocation() + "#" + time.getShortName() + "'", e );
+        }
+
         int minutes = timeValues.getInt( 0 );
         return Instant.ofEpochSecond( minutes * 60 );
     }

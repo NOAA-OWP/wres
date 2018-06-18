@@ -2,11 +2,13 @@ package wres.io.reading.nwm;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.time.Instant;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ucar.ma2.InvalidRangeException;
 import ucar.nc2.NetcdfFile;
 
 import wres.io.concurrency.WRESRunnable;
@@ -57,19 +59,13 @@ class GriddedNWMValueSaver extends WRESRunnable
                 Thread.currentThread().interrupt();
             }
 
-            String referenceTime = NetCDF.getInitializedTime( this.getFile() );
-			int lead = 0;
-
-			if ( this.isForecast )
-            {
-                lead = NetCDF.getLeadTime( this.getFile() );
-            }
+            Instant outputTime = NetCDF.getReferenceTime( this.getFile() );
+			Integer lead = NetCDF.getLeadTime( this.getFile() );
 
             SourceDetails griddedSource = new SourceDetails(  );
 			griddedSource.setSourcePath( this.fileName );
 
-			// TODO: WRONG! For observation data, this needs to be the valid time
-			griddedSource.setOutputTime( referenceTime );
+			griddedSource.setOutputTime( outputTime.toString() );
 			griddedSource.setLead( lead );
 			griddedSource.setHash( hash );
 			griddedSource.setIsPointData( false );
