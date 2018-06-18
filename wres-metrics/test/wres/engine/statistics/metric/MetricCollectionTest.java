@@ -511,11 +511,11 @@ public class MetricCollectionTest
         logStart.setAccessible( true );
 
         Logger logger = Mockito.mock( Logger.class );
-        Mockito.when( logger.isDebugEnabled() ).thenReturn( true );
+        Mockito.when( logger.isTraceEnabled() ).thenReturn( true );
 
         logStart.invoke( collection, logger );
 
-        Mockito.verify( logger ).debug( "Attempting to compute metrics for a collection that contains {} "
+        Mockito.verify( logger ).trace( "Attempting to compute metrics for a collection that contains {} "
                                         + "ordinary metric(s) and {} collectable metric(s). The metrics include {}.",
                                         0,
                                         1,
@@ -544,11 +544,11 @@ public class MetricCollectionTest
         logEnd.setAccessible( true );
 
         Logger logger = Mockito.mock( Logger.class );
-        Mockito.when( logger.isDebugEnabled() ).thenReturn( true );
+        Mockito.when( logger.isTraceEnabled() ).thenReturn( true );
 
         logEnd.invoke( collection, logger, Collections.emptyMap() );
 
-        Mockito.verify( logger ).debug( "Finished computing metrics for a collection that contains {} "
+        Mockito.verify( logger ).trace( "Finished computing metrics for a collection that contains {} "
                                         + "ordinary metric(s) and {} collectable metric(s). Obtained {} result(s) of "
                                         + "the {} result(s) expected. Results were obtained for these metrics {}.",
                                         0,
