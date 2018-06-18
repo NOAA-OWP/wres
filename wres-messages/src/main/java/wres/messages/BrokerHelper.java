@@ -1,8 +1,11 @@
 package wres.messages;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -14,6 +17,9 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Helper for worker and tasker to get information about the broker, e.g.
@@ -29,6 +35,8 @@ import javax.net.ssl.X509TrustManager;
 
 public class BrokerHelper
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger( BrokerHelper.class );
+
     static final String BROKER_HOST_PROPERTY_NAME = "wres.broker";
     static final String DEFAULT_BROKER_HOST = "localhost";
 
@@ -39,6 +47,8 @@ public class BrokerHelper
 
     static final String SECRETS_DIR_PROPERTY_NAME = "wres.secrets_dir";
     static final String DEFAULT_SECRETS_DIR = "/wres_secrets";
+
+    static final String TRUST_STORE_PROPERTY_NAME = "wres.trustStore";
 
     public enum Role
     {
@@ -131,7 +141,8 @@ public class BrokerHelper
     /**
      * Returns a TrustManager that trusts the certificates contained in a
      * trusted certificates file available on the classpath named
-     * trustedCertificateAuthorities.jks
+     * trustedCertificateAuthorities.jks unless -Dwres.trustStore is set and
+     * is a file that exists and has no exception when loading.
      * @return the TrustManager
      */
 
@@ -149,17 +160,54 @@ public class BrokerHelper
             throw new IllegalStateException( "WRES expected JRE to have JKS KeyStore instance", kse );
         }
 
-        InputStream customTrustStoreFile = BrokerHelper.class.getClassLoader()
-                                                       .getResourceAsStream( ourCustomTrustFileName );
+        boolean useClasspathTrustStore = true;
 
-        try
+        String alternativeTrustStore = System.getProperty( TRUST_STORE_PROPERTY_NAME );
+
+        if ( alternativeTrustStore != null )
         {
-            customTrustStore.load( customTrustStoreFile,
-                                   "changeit".toCharArray() );
+            Path alternativeTrustStorePath = Paths.get( alternativeTrustStore );
+            File alternativeTrustStoreFile = alternativeTrustStorePath.toFile();
+
+            if ( alternativeTrustStoreFile.isFile()
+                 && alternativeTrustStoreFile.canRead() )
+            {
+                try ( InputStream alternativeTrustStream =
+                              new FileInputStream( alternativeTrustStoreFile ) )
+                {
+                    customTrustStore.load( alternativeTrustStream,
+                                           "changeit".toCharArray() );
+
+                    // Only when the alternative exists, is read, is loaded do
+                    // we skip later step of using truststore from classpath.
+                    LOGGER.warn( "Trusting alternative Certificate Authority at '{}'",
+                                 alternativeTrustStore );
+                    useClasspathTrustStore = false;
+                }
+                catch ( IOException | NoSuchAlgorithmException | CertificateException e )
+                {
+                    LOGGER.warn( "Could not use alternative Certificate Authority at '{}'",
+                                 alternativeTrustStore, e );
+                    // Continue and use the default trust store.
+                }
+            }
         }
-        catch ( IOException | NoSuchAlgorithmException | CertificateException e )
+
+        if ( useClasspathTrustStore )
         {
-            throw new IllegalStateException( "WRES could not open TrustStoreFile " + ourCustomTrustFileName, e );
+            try ( InputStream customTrustStoreFile =
+                          BrokerHelper.class
+                                      .getClassLoader()
+                                      .getResourceAsStream( ourCustomTrustFileName ) )
+            {
+                customTrustStore.load( customTrustStoreFile,
+                                       "changeit".toCharArray() );
+            }
+            catch ( IOException | NoSuchAlgorithmException | CertificateException e )
+            {
+                throw new IllegalStateException( "WRES could not open TrustStoreFile "
+                                                 + ourCustomTrustFileName, e );
+            }
         }
 
         TrustManagerFactory trustManagerFactory;
@@ -227,9 +275,9 @@ public class BrokerHelper
                                              kse );
         }
 
-        try
+        try ( InputStream clientCertificateInputStream =
+                      new FileInputStream( ourClientCertificateFilename ) )
         {
-            InputStream clientCertificateInputStream = new FileInputStream( ourClientCertificateFilename );
             keyStore.load( clientCertificateInputStream, keyPassphrase );
         }
         catch ( IOException | NoSuchAlgorithmException | CertificateException e )

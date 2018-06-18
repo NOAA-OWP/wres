@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project label="IOEP Short Ranged Wide Area Example" name="scenario703">
+    <inputs>
+        <left label="USGS">
+            <type>simulations</type>
+            <source format="usgs"></source>
+            <variable unit="ft3/s">streamflow</variable>
+            <existingTimeScale>
+                <function>none</function>
+                <period>1</period>
+                <unit>hours</unit>
+            </existingTimeScale>
+        </left>
+        <right label="NWM Short Range">
+            <type>single valued forecasts</type>
+            <source format="netCDF">../data/channel_rt/short_range/</source>
+            <variable>streamflow</variable>
+        </right>
+    </inputs>
+    <pair label="Pairs by location and lead time"> <!-- required for unit -->
+        <unit>CMS</unit>
+        
+        <feature>
+            <polygon>
+                <point>
+                    <latitude>35.0</latitude>
+                    <longitude>-100.0</longitude>
+                </point>
+                <point>
+                    <latitude>36.0</latitude>
+                    <longitude>-100.0</longitude>
+                </point>
+                <point>
+                    <latitude>36.0</latitude>
+                    <longitude>-99.0</longitude>
+                </point>
+                <point>
+                    <latitude>35.0</latitude>
+                    <longitude>-99.0</longitude>
+                </point>
+            </polygon>
+        </feature>
+
+        <dates earliest="2017-08-08T00:00:00Z" latest="2017-08-09T17:00:00Z" />
+        <issuedDates earliest="2017-08-08T00:00:00Z" latest="2017-08-08T23:00:00Z" />
+        <issuedDatesPoolingWindow>
+            <frequency>1</frequency>
+            <unit>hours</unit>
+        </issuedDatesPoolingWindow>
+        <leadTimesPoolingWindow>
+            <period>18</period>
+            <unit>hours</unit>
+        </leadTimesPoolingWindow>
+    </pair>
+    <metrics>
+        <metric> <name>mean error</name> </metric>
+        <metric><name>pearson correlation coefficient</name></metric>
+        <metric><name>mean absolute error</name></metric>
+        <metric><name>bias fraction</name></metric>
+        <metric><name>coefficient of determination</name></metric>
+        <metric><name>root mean square error</name></metric>
+        <metric><name>mean square error</name></metric>
+        <metric> <name>sample size</name> </metric>
+    </metrics>
+    <outputs>
+        <destination type="pairs" decimalFormat="0.000000">
+            <path>output/</path>
+        </destination>
+        <destination type="numeric" decimalFormat="0.000000">
+            <path>output/</path>
+        </destination>
+    </outputs>
+</project>
+
