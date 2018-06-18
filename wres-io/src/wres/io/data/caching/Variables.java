@@ -3,6 +3,7 @@ package wres.io.data.caching;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,6 +55,95 @@ public final class Variables extends Cache<VariableDetails, String>
 			return instance;
 		}
 	}
+
+	public static List<String> getAvailableForecastVariables(final Integer projectID,
+                                                             final String projectMember)
+            throws SQLException
+    {
+        String member = projectMember;
+
+        if (!member.startsWith( "'" ))
+        {
+            member = "'" + member;
+        }
+
+        if (!member.endsWith( "'" ))
+        {
+            member += "'";
+        }
+
+        ScriptBuilder script = new ScriptBuilder(  );
+
+        script.addLine("SELECT variable_name");
+        script.addLine("FROM wres.Variable V");
+        script.addLine("WHERE EXISTS (");
+        script.addTab().addLine("SELECT 1");
+        script.addTab().addLine("FROM wres.VariablePosition_id");
+        script.addTab().addLine("WHERE V.variable_id = VP.variable_id");
+        script.addTab(  2  ).addLine("AND EXISTS (");
+        script.addTab(   3   ).addLine("SELECT 1");
+        script.addTab(   3   ).addLine("FROM wres.TimeSeries TS");
+        script.addTab(   3   ).addLine("WHERE TS.variableposition_id = VP.variableposition_id");
+        script.addTab(    4    ).addLine("AND EXISTS (");
+        script.addTab(     5     ).addLine("SELECT 1");
+        script.addTab(     5     ).addLine("FROM wres.ProjectSource PS");
+        script.addTab(     5     ).addLine("INNER JOIN wres.ForecastSource FS");
+        script.addTab(      6      ).addLine("ON FS.source_id = PS.source_id");
+        script.addTab(     5     ).addLine("WHERE PS.project_id = ", projectID);
+        script.addTab(      6      ).addLine("AND PS.member = ", member);
+        script.addTab(      6      ).addLine("AND FS.forecast_id = TS.timeseries_id");
+        script.addTab(    4    ).addLine(") AND EXISTS (");
+        script.addTab(     5     ).addLine("SELECT 1");
+        script.addTab(     5     ).addLine("FROM wres.ForecastValue FV");
+        script.addTab(     5     ).addLine("WHERE FV.timeseries_id = TS.timeseries_id");
+        script.addTab(    4    ).addLine(")");
+        script.addTab(  2  ).addLine(")");
+        script.add(");");
+
+        return script.interpret( resultSet -> resultSet.getString("variable_name") );
+    }
+
+    public static List<String> getAvailableObservationVariables(
+            final Integer projectID,
+            final String projectMember)
+            throws SQLException
+    {
+        String member = projectMember;
+
+        if (!member.startsWith( "'" ))
+        {
+            member = "'" + member;
+        }
+
+        if (!member.endsWith( "'" ))
+        {
+            member += "'";
+        }
+
+        ScriptBuilder script = new ScriptBuilder();
+
+        script.addLine("SELECT variable_name");
+        script.addLine("FROM wres.Variable V");
+        script.addLine("WHERE EXISTS (");
+        script.addTab().addLine("SELECT 1");
+        script.addTab().addLine("FROM wres.VariablePosition VP");
+        script.addTab().addLine("WHERE VP.variable_id = V.variable_id");
+        script.addTab(  2  ).addLine("AND EXISTS (");
+        script.addTab(   3   ).addLine("SELECT 1");
+        script.addTab(   3   ).addLine("FROM wres.Observation O");
+        script.addTab(   3   ).addLine("WHERE O.variableposition_id = VP.variableposition_id");
+        script.addTab(    4    ).addLine("AND EXISTS (");
+        script.addTab(     5     ).addLine("SELECT 1");
+        script.addTab(     5     ).addLine("FROM wres.ProjectSource PS");
+        script.addTab(     5     ).addLine("WHERE PS.project_id = ", projectID);
+        script.addTab(      6      ).addLine("AND PS.member = ", member);
+        script.addTab(      6      ).addLine("AND PS.source_id = O.source_id");
+        script.addTab(    4    ).addLine(")");
+        script.addTab(  2  ).addLine(")");
+        script.add(");");
+
+        return script.interpret( resultSet -> resultSet.getString("variable_name") );
+    }
 
 	/**
 	 * Checks to see if there are any forecasted values for a named variable

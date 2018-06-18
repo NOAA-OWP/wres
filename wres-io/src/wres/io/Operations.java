@@ -162,16 +162,38 @@ public final class Operations {
             return;
         }
 
+        // TODO: Split logic out into separate functions
         try
         {
             Boolean leftIsValid = leftValid.get();
 
             if (!leftIsValid)
             {
-                throw new NoDataException( "There is no '" +
-                                           projectDetails.getLeft().getVariable().getValue() +
-                                           "' data available for the left "
-                                           + "hand evaluation dataset." );
+
+                List<String> availableVariables = Variables.getAvailableObservationVariables(
+                        projectDetails.getId(),
+                        ProjectDetails.LEFT_MEMBER
+                );
+
+                String message = "There is no '"
+                                 + projectDetails.getLeft().getVariable().getValue()
+                                 + "' data available for the left hand data "
+                                 + "evaluation dataset.";
+
+                if (availableVariables.size() > 0)
+                {
+                    message += " Available variable(s):";
+                    for (String variable : availableVariables)
+                    {
+                        message += System.lineSeparator() + "    " + variable;
+                    }
+                }
+                else
+                {
+                    message += " There are no other available variables for use.";
+                }
+
+                throw new NoDataException( message );
             }
         }
         catch ( InterruptedException e )
@@ -188,6 +210,14 @@ public final class Operations {
                                    + "' is a valid variable for left side evaluation.",
                                    e );
         }
+        catch ( SQLException e )
+        {
+            throw new IOException("'"
+                                  + projectDetails.getLeft().getVariable().getValue()
+                                  + "' is not a valid variable for right hand "
+                                  + "evaluation. Possible alternatives could "
+                                  + "not be found.", e);
+        }
 
         try
         {
@@ -195,10 +225,42 @@ public final class Operations {
 
             if (!rightIsValid)
             {
-                throw new NoDataException( "There is no '" +
-                                           projectDetails.getRightVariableName() +
-                                           "' data available for the right "
-                                           + "hand evaluation dataset." );
+                List<String> availableVariables;
+
+                if (ConfigHelper.isForecast( projectDetails.getRight() ))
+                {
+                    availableVariables = Variables.getAvailableForecastVariables(
+                            projectDetails.getId(),
+                            ProjectDetails.RIGHT_MEMBER
+                    );
+                }
+                else
+                {
+                    availableVariables = Variables.getAvailableObservationVariables(
+                            projectDetails.getId(),
+                            ProjectDetails.RIGHT_MEMBER
+                    );
+                }
+
+                String message = "There is no '"
+                                 + projectDetails.getRightVariableName()
+                                 + "' data available for the right hand data "
+                                 + "evaluation dataset.";
+
+                if (availableVariables.size() > 0)
+                {
+                    message += " Available variable(s):";
+                    for (String variable : availableVariables)
+                    {
+                        message += System.lineSeparator() + "    " + variable;
+                    }
+                }
+                else
+                {
+                    message += " There are no other available variables for use.";
+                }
+
+                throw new NoDataException( message );
             }
         }
         catch ( InterruptedException e )
@@ -215,6 +277,14 @@ public final class Operations {
                                    + "' is a valid variable for right side evaluation.",
                                    e );
         }
+        catch ( SQLException e )
+        {
+            throw new IOException("'"
+                                  + projectDetails.getRightVariableName()
+                                  + "' is not a valid variable for right hand "
+                                  + "evaluation. Possible alternatives could "
+                                  + "not be found.", e);
+        }
 
         // If baselineValid is null, then we have no baseline variable to
         // evaluate; it is safe to exit.
@@ -229,10 +299,42 @@ public final class Operations {
 
             if (!baselineIsValid)
             {
-                throw new NoDataException( "There is no '" +
-                                           projectDetails.getBaseline().getVariable().getValue() +
-                                           "' data available for the baseline "
-                                           + "evaluation dataset." );
+                List<String> availableVariables;
+
+                if (ConfigHelper.isForecast( projectDetails.getRight() ))
+                {
+                    availableVariables = Variables.getAvailableForecastVariables(
+                            projectDetails.getId(),
+                            ProjectDetails.BASELINE_MEMBER
+                    );
+                }
+                else
+                {
+                    availableVariables = Variables.getAvailableObservationVariables(
+                            projectDetails.getId(),
+                            ProjectDetails.BASELINE_MEMBER
+                    );
+                }
+
+                String message = "There is no '"
+                                 + projectDetails.getBaseline().getVariable().getValue()
+                                 + "' data available for the right hand data "
+                                 + "evaluation dataset.";
+
+                if (availableVariables.size() > 0)
+                {
+                    message += " Available variable(s):";
+                    for (String variable : availableVariables)
+                    {
+                        message += System.lineSeparator() + "    " + variable;
+                    }
+                }
+                else
+                {
+                    message += " There are no other available variables for use.";
+                }
+
+                throw new NoDataException( message );
             }
         }
         catch ( InterruptedException e )
@@ -248,6 +350,14 @@ public final class Operations {
                                    + projectDetails.getBaseline().getVariable().getValue()
                                    + "' is a valid variable for baseline evaluation.",
                                    e );
+        }
+        catch ( SQLException e )
+        {
+            throw new IOException("'"
+                                  + projectDetails.getBaseline().getVariable().getValue()
+                                  + "' is not a valid variable for right hand "
+                                  + "evaluation. Possible alternatives could "
+                                  + "not be found.", e);
         }
     }
 
