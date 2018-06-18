@@ -28,6 +28,7 @@ import wres.io.concurrency.Executor;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.Projects;
 import wres.io.data.caching.UnitConversions;
+import wres.io.data.caching.Variables;
 import wres.io.data.details.FeatureDetails;
 import wres.io.data.details.ProjectDetails;
 import wres.io.griddedReader.GriddedReader;
@@ -38,6 +39,7 @@ import wres.io.reading.TimeSeriesValues;
 import wres.io.reading.fews.PIXMLReader;
 import wres.io.retrieval.InputGenerator;
 import wres.io.utilities.Database;
+import wres.io.utilities.NoDataException;
 import wres.io.utilities.ScriptBuilder;
 import wres.io.writing.PairWriter;
 import wres.io.writing.netcdf.NetCDFCopier;
@@ -51,10 +53,82 @@ public final class Operations {
     {
     }
 
+    /**
+     * Prepares IO operations for evaluation execution checks if evaluations
+     * are valid/possible
+     * @param projectDetails The project to evaluate
+     * @throws IOException Thrown if the project itself could not be prepared
+     * @throws IOException Thrown if the process for determining whether or not
+     * variables are valid fails
+     * @throws NoDataException Thrown if a variable to evaluate is not
+     * accessible to the evaluation
+     */
     public static void prepareForExecution( ProjectDetails projectDetails ) throws IOException
     {
         LOGGER.info("Loading preliminary metadata...");
         Future unitConversionLoad = Executor.execute( UnitConversions::initialize );
+
+        boolean isVector = true;
+        Future<Boolean> leftValid = null;
+        Future<Boolean> rightValid = null;
+        Future<Boolean> baselineValid = null;
+        try
+        {
+            isVector = !(projectDetails.usesGriddedData( projectDetails.getLeft() ) ||
+                        projectDetails.usesGriddedData( projectDetails.getRight() ));
+        }
+        catch ( SQLException e )
+        {
+            throw new IOException("Could not determine if this project uses "
+                                  + "gridded data or not.", e);
+        }
+
+        if (isVector)
+        {
+            leftValid = Executor.submit(
+                    () -> Variables.isObservationValid( projectDetails.getId(),
+                                                        ProjectDetails.LEFT_MEMBER,
+                                                        projectDetails.getLeftVariableID()
+                    ) );
+        }
+
+        if (isVector && ConfigHelper.isForecast( projectDetails.getRight() ))
+        {
+            rightValid = Executor.submit(
+                    () -> Variables.isForecastValid( projectDetails.getId(),
+                                                     ProjectDetails.RIGHT_MEMBER,
+                                                     projectDetails.getRightVariableID()
+                    )
+            );
+        }
+        else if (isVector)
+        {
+            rightValid = Executor.submit(
+                    () -> Variables.isObservationValid( projectDetails.getId(),
+                                                        ProjectDetails.RIGHT_MEMBER,
+                                                        projectDetails.getRightVariableID()
+                    )
+            );
+        }
+
+        if (isVector && projectDetails.getBaseline() != null && ConfigHelper.isForecast( projectDetails.getBaseline() ))
+        {
+            baselineValid = Executor.submit(
+                    () -> Variables.isForecastValid( projectDetails.getId(),
+                                                     ProjectDetails.BASELINE_MEMBER,
+                                                     projectDetails.getBaselineVariableID()
+                    )
+            );
+        }
+        else if (isVector && projectDetails.getBaseline() != null)
+        {
+            baselineValid = Executor.submit(
+                    () -> Variables.isObservationValid( projectDetails.getId(),
+                                                        ProjectDetails.BASELINE_MEMBER,
+                                                        projectDetails.getBaselineVariableID()
+                    )
+            );
+        }
 
         try
         {
@@ -79,6 +153,101 @@ public final class Operations {
         {
             // If loading failed, it will attempt to try again later.
             LOGGER.error("The process for loading unit conversions failed.", e);
+        }
+
+        // If we're performing gridded evaluation, we can't check if our
+        // variables are valid via normal means, so just return
+        if (!isVector)
+        {
+            return;
+        }
+
+        try
+        {
+            Boolean leftIsValid = leftValid.get();
+
+            if (!leftIsValid)
+            {
+                throw new NoDataException( "There is no '" +
+                                           projectDetails.getLeft().getVariable().getValue() +
+                                           "' data available for the left "
+                                           + "hand evaluation dataset." );
+            }
+        }
+        catch ( InterruptedException e )
+        {
+            LOGGER.error("The process for determining if '"
+                         + projectDetails.getLeft().getVariable().getValue()
+                         + "' is a valid variable was interrupted.");
+            Thread.currentThread().interrupt();
+        }
+        catch ( ExecutionException e )
+        {
+            throw new IOException( "An error occurred while determining whether '"
+                                   + projectDetails.getLeft().getVariable().getValue()
+                                   + "' is a valid variable for left side evaluation.",
+                                   e );
+        }
+
+        try
+        {
+            Boolean rightIsValid = rightValid.get();
+
+            if (!rightIsValid)
+            {
+                throw new NoDataException( "There is no '" +
+                                           projectDetails.getRightVariableName() +
+                                           "' data available for the right "
+                                           + "hand evaluation dataset." );
+            }
+        }
+        catch ( InterruptedException e )
+        {
+            LOGGER.error("The process for determining if '"
+                         + projectDetails.getRightVariableName()
+                         + "' is a valid variable was interrupted.");
+            Thread.currentThread().interrupt();
+        }
+        catch ( ExecutionException e )
+        {
+            throw new IOException( "An error occurred while determining whether '"
+                                   + projectDetails.getRightVariableName()
+                                   + "' is a valid variable for right side evaluation.",
+                                   e );
+        }
+
+        // If baselineValid is null, then we have no baseline variable to
+        // evaluate; it is safe to exit.
+        if (baselineValid == null)
+        {
+            return;
+        }
+
+        try
+        {
+            Boolean baselineIsValid = baselineValid.get();
+
+            if (!baselineIsValid)
+            {
+                throw new NoDataException( "There is no '" +
+                                           projectDetails.getBaseline().getVariable().getValue() +
+                                           "' data available for the baseline "
+                                           + "evaluation dataset." );
+            }
+        }
+        catch ( InterruptedException e )
+        {
+            LOGGER.error("The process for determining if '"
+                         + projectDetails.getBaseline().getVariable().getValue()
+                         + "' is a valid variable was interrupted.");
+            Thread.currentThread().interrupt();
+        }
+        catch ( ExecutionException e )
+        {
+            throw new IOException( "An error occurred while determining whether '"
+                                   + projectDetails.getBaseline().getVariable().getValue()
+                                   + "' is a valid variable for baseline evaluation.",
+                                   e );
         }
     }
 

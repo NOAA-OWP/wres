@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS wres.UnitConversion
 (
 	from_unit SMALLINT,
 	to_unit SMALLINT,
-	factor DOUBLE PRECISION,
+	factor DOUBLE PRECISION DEFAULT 1,
 	initial_offset DOUBLE PRECISION DEFAULT 0,
 	final_offset DOUBLE PRECISION DEFAULT 0,
 	CONSTRAINT from_measurementunit_fk FOREIGN KEY (from_unit)
@@ -42,7 +42,7 @@ SELECT F.measurementunit_id,
 FROM wres.MeasurementUnit F
 CROSS JOIN wres.MeasurementUnit T
 WHERE T.unit_name = ANY('{CFS, ft3/s}'::text[])
-    AND F.unit_name = ANY('{CMS, m3 s-1}'::text[])
+    AND F.unit_name = ANY('{CMS, m3 s-1, m3/s}'::text[])
     AND NOT EXISTS (
         SELECT 1
         FROM wres.UnitConversion UC
@@ -57,7 +57,7 @@ SELECT F.measurementunit_id,
 FROM wres.MeasurementUnit F
 CROSS JOIN wres.MeasurementUnit T
 WHERE F.unit_name = ANY('{CFS, ft3/s}'::text[])
-    AND T.unit_name = ANY('{CMS, m3 s-1}'::text[])
+    AND T.unit_name = ANY('{CMS, m3 s-1, m3/s}'::text[])
     AND NOT EXISTS (
         SELECT 1
         FROM wres.UnitConversion UC
@@ -88,6 +88,68 @@ FROM wres.MeasurementUnit F
 CROSS JOIN wres.MeasurementUnit T
 WHERE F.unit_name = ANY('{CFS, ft3/s}')
     AND T.unit_name = ANY('{CFS, ft3/s}')
+    AND NOT EXISTS (
+        SELECT 1
+        FROM wres.UnitConversion UC
+        WHERE UC.from_unit = F.measurementunit_id
+            AND UC.to_unit = T.measurementunit_id
+    );
+
+-- PRECIPITATION
+
+INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+SELECT F.measurementunit_id,
+    T.measurementunit_id,
+    1
+FROM wres.MeasurementUnit F
+CROSS JOIN wres.MeasurementUnit T
+WHERE F.unit_name = ANY('{mm/s, kg/m^2s, mm s^-1, kg/m^2}')
+    AND T.unit_name = ANY('{mm/s, kg/m^2s, mm s^-1, kg/m^2}')
+    AND NOT EXISTS (
+        SELECT 1
+        FROM wres.UnitConversion UC
+        WHERE UC.from_unit = F.measurementunit_id
+            AND UC.to_unit = T.measurementunit_id
+    );
+
+INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+SELECT F.measurementunit_id,
+    T.measurementunit_id,
+    1
+FROM wres.MeasurementUnit F
+CROSS JOIN wres.MeasurementUnit T
+WHERE F.unit_name = ANY('{mm/h, kg/m^2h, mm h^-1}')
+    AND T.unit_name = ANY('{mm/h, kg/m^2h, mm h^-1}')
+    AND NOT EXISTS (
+        SELECT 1
+        FROM wres.UnitConversion UC
+        WHERE UC.from_unit = F.measurementunit_id
+            AND UC.to_unit = T.measurementunit_id
+    );
+    
+INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+SELECT F.measurementunit_id,
+    T.measurementunit_id,
+    3600.0
+FROM wres.MeasurementUnit F
+CROSS JOIN wres.MeasurementUnit T
+WHERE F.unit_name = ANY('{mm/s, kg/m^2s,mm s^-1, kg/m^2}')
+    AND T.unit_name = ANY('{mm/h, kg/m^2h, mm h^-1}')
+    AND NOT EXISTS (
+        SELECT 1
+        FROM wres.UnitConversion UC
+        WHERE UC.from_unit = F.measurementunit_id
+            AND UC.to_unit = T.measurementunit_id
+    );
+    
+INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+SELECT F.measurementunit_id,
+    T.measurementunit_id,
+    1.0/3600.0
+FROM wres.MeasurementUnit F
+CROSS JOIN wres.MeasurementUnit T
+WHERE F.unit_name = ANY('{mm/h, kg/m^2h, mm h^-1}')
+    AND T.unit_name = ANY('{mm/s, kg/m^2s,mm s^-1, kg/m^2}')
     AND NOT EXISTS (
         SELECT 1
         FROM wres.UnitConversion UC
@@ -595,6 +657,22 @@ WHERE F.unit_name = 'F'
 		WHERE from_unit = F.measurementunit_id
 			AND to_unit = T.measurementunit_id
 	);
+	
+INSERT INTO wres.UnitConversion(from_unit, to_unit, factor, initial_offset)
+SELECT	F.measurementunit_id,
+	T.measurementunit_id,
+	(5.0 / 9.0),
+	459.67
+FROM wres.MeasurementUnit F
+INNER JOIN wres.MeasurementUnit T
+	ON T.unit_name = 'K'
+WHERE F.unit_name = 'F'
+	AND NOT EXISTS (
+		SELECT 1
+		FROM wres.UnitConversion
+		WHERE from_unit = F.measurementunit_id
+			AND to_unit = T.measurementunit_id
+	);
 
 INSERT INTO wres.UnitConversion(from_unit, to_unit, factor, final_offset)
 SELECT	F.measurementunit_id,
@@ -611,3 +689,112 @@ WHERE F.unit_name = 'C'
 		WHERE from_unit = F.measurementunit_id
 			AND to_unit = T.measurementunit_id
 	);
+
+INSERT INTO wres.UnitConversion(from_unit, to_unit, factor, final_offset)
+SELECT	F.measurementunit_id,
+	T.measurementunit_id,
+	(9.0 / 5.0),
+	-459.67
+FROM wres.MeasurementUnit F
+INNER JOIN wres.MeasurementUnit T
+	ON T.unit_name = 'F'
+WHERE F.unit_name = 'K'
+	AND NOT EXISTS (
+		SELECT 1
+		FROM wres.UnitConversion
+		WHERE from_unit = F.measurementunit_id
+			AND to_unit = T.measurementunit_id
+	);
+
+INSERT INTO wres.UnitConversion(from_unit, to_unit, factor, final_offset)
+SELECT F.measurementunit_id,
+    T.measurementunit_id,
+    1,
+    273.15
+FROM wres.MeasurementUnit F
+INNER JOIN wres.MeasurementUnit T
+    ON T.unit_name = 'K'
+WHERE F.unit_name = 'C'
+    AND NOT EXISTS (
+	SELECT 1
+	FROM wres.UnitConversion
+	WHERE from_unit = F.measurementunit_id
+	    AND to_unit = T.measurementunit_id
+    );
+
+INSERT INTO wres.UnitConversion(from_unit, to_unit, factor, final_offset)
+SELECT F.measurementunit_id,
+    T.measurementunit_id,
+    1,
+    -273.15
+FROM wres.MeasurementUnit F
+INNER JOIN wres.MeasurementUnit T
+    ON T.unit_name = 'C'
+WHERE F.unit_name = 'K'
+    AND NOT EXISTS (
+	SELECT 1
+	FROM wres.UnitConversion
+	WHERE from_unit = F.measurementunit_id
+	    AND to_unit = T.measurementunit_id
+    );
+
+-- MISC
+INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+SELECT F.measurementunit_id,
+    T.measurementunit_id,
+    1
+FROM wres.MeasurementUnit F
+CROSS JOIN wres.MeasurementUnit T
+WHERE F.unit_name = ANY('{kg kg-1, kg kg\{-1\}}')
+    AND T.unit_name = ANY('{kg kg-1, kg kg\{-1\}}')
+    AND NOT EXISTS (
+        SELECT 1
+        FROM wres.UnitConversion 
+        WHERE from_unit = F.measurementunit_id
+            AND to_unit = T.measurementunit_id
+    );
+    
+INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+SELECT F.measurementunit_id,
+    T.measurementunit_id,
+    1
+FROM wres.MeasurementUnit F
+CROSS JOIN wres.MeasurementUnit T
+WHERE F.unit_name = ANY('{m/s, m s\{-1\}}')
+    AND T.unit_name = ANY('{m/s, m s\{-1\}}')
+    AND NOT EXISTS (
+        SELECT 1
+        FROM wres.UnitConversion 
+        WHERE from_unit = F.measurementunit_id
+            AND to_unit = T.measurementunit_id
+    );
+    
+INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+SELECT F.measurementunit_id,
+    T.measurementunit_id,
+    1
+FROM wres.MeasurementUnit F
+CROSS JOIN wres.MeasurementUnit T
+WHERE F.unit_name = ANY('{W/m^2, W m\{-2\}, W m-2}')
+    AND T.unit_name = ANY('{W/m^2, W m\{-2\}, W m-2}')
+    AND NOT EXISTS (
+        SELECT 1
+        FROM wres.UnitConversion 
+        WHERE from_unit = F.measurementunit_id
+            AND to_unit = T.measurementunit_id
+    );
+    
+INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+SELECT F.measurementunit_id,
+    T.measurementunit_id,
+    1
+FROM wres.MeasurementUnit F
+CROSS JOIN wres.MeasurementUnit T
+WHERE F.unit_name = ANY('{W/m^2, W m\{-2\}, W m-2}')
+    AND T.unit_name = ANY('{W/m^2, W m\{-2\}, W m-2}')
+    AND NOT EXISTS (
+        SELECT 1
+        FROM wres.UnitConversion 
+        WHERE from_unit = F.measurementunit_id
+            AND to_unit = T.measurementunit_id
+    );
