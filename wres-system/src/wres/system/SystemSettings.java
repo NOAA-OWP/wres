@@ -117,8 +117,9 @@ public final class SystemSettings extends XMLReader
                         this.setFetchSize( reader );
                         break;
                     case "update_progress_monitor":
-                        ProgressMonitor.setShouldUpdate(Strings.isTrue( XMLHelper
-                                                                                .getXMLText( reader)));
+                        ProgressMonitor.setShouldUpdate(
+                                Strings.isTrue( XMLHelper.getXMLText( reader))
+                        );
                         break;
                     case "default_chart_width":
                         this.setDefaultChartWidth( reader );
@@ -163,6 +164,17 @@ public final class SystemSettings extends XMLReader
             throw new IOException( message, xse );
         }
 	}
+
+    @Override
+    protected void completeParsing() throws IOException
+    {
+        // Handle Overrides
+        String hashAll = System.getProperty( "wres.hashall" );
+        if (hashAll != null && !Boolean.parseBoolean( hashAll ))
+        {
+            Strings.setFullHash( false );
+        }
+    }
 
 	private void setMinimumCachedNetcdf(XMLStreamReader reader)
             throws XMLStreamException
