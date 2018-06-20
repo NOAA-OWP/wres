@@ -144,6 +144,9 @@ public final class SystemSettings extends XMLReader
                     case "hard_netcdf_cache_limit":
                         this.setHardNetcdfCacheLimit( reader );
                         break;
+                    case "hash_entire_file":
+                        this.setFullFileHash( reader );
+                        break;
                     default:
                         LOGGER.debug( "The tag '{}' was skipped because it's "
                                       + "not used in configuration.", tagName );
@@ -248,6 +251,16 @@ public final class SystemSettings extends XMLReader
         if (value != null && Strings.isNumeric( value ))
         {
             ProgressMonitor.setUpdateFrequency(Long.parseLong( value ));
+        }
+    }
+
+    private void setFullFileHash(XMLStreamReader reader)
+        throws XMLStreamException
+    {
+        String value = XMLHelper.getXMLText( reader );
+        if (!Boolean.parseBoolean( value ))
+        {
+            Strings.setFullHash( false );
         }
     }
 
