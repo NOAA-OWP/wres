@@ -26,7 +26,30 @@ public final class Strings
 
 	// This should always be true in a production environment. Set to false in
     // cases where the read time for full files prevents practical development
-	private static final boolean HASH_ENTIRE_FILE = true;
+	private static boolean HASH_ENTIRE_FILE = true;
+	private static final Object HASH_LOCK = new Object();
+
+	public static void setFullHash(final boolean hashAll)
+    {
+        if (!hashAll)
+        {
+            LOGGER.warn( "Full file hashing is being disabled. This should never be done on a production instance, "
+                         + "only on development systems." );
+        }
+
+        synchronized ( HASH_LOCK )
+        {
+            Strings.HASH_ENTIRE_FILE = hashAll;
+        }
+    }
+
+    private static boolean shouldHashEntireFile()
+    {
+        synchronized ( HASH_LOCK )
+        {
+            return Strings.HASH_ENTIRE_FILE;
+        }
+    }
 
 	private static final int LINE_LENGTH = 120;
 	private static final int TRUNCATE_SIZE = 2000;
@@ -251,7 +274,7 @@ public final class Strings
 
 		boolean continueBuffering = amountLastBuffered != -1;
 
-		if (continueBuffering && !Strings.HASH_ENTIRE_FILE)
+		if (continueBuffering && !Strings.shouldHashEntireFile())
 		{
 			continueBuffering = passCount < passLimit;
 
