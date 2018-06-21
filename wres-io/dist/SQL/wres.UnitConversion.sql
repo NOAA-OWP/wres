@@ -103,8 +103,8 @@ SELECT F.measurementunit_id,
     1
 FROM wres.MeasurementUnit F
 CROSS JOIN wres.MeasurementUnit T
-WHERE F.unit_name = ANY('{mm/s, kg/m^2s, mm s^-1, kg/m^2}')
-    AND T.unit_name = ANY('{mm/s, kg/m^2s, mm s^-1, kg/m^2}')
+WHERE F.unit_name = ANY('{mm/s, kg/m^2s,mm s^-1, kg/m^2, kg m-2, kg m\{-2\}, kg/m^2/s}')
+    AND T.unit_name = ANY('{mm/s, kg/m^2s,mm s^-1, kg/m^2, kg m-2, kg m\{-2\}, kg/m^2/s}')
     AND NOT EXISTS (
         SELECT 1
         FROM wres.UnitConversion UC
@@ -118,8 +118,8 @@ SELECT F.measurementunit_id,
     1
 FROM wres.MeasurementUnit F
 CROSS JOIN wres.MeasurementUnit T
-WHERE F.unit_name = ANY('{mm/h, kg/m^2h, mm h^-1}')
-    AND T.unit_name = ANY('{mm/h, kg/m^2h, mm h^-1}')
+WHERE F.unit_name = ANY('{mm/h, kg/m^2h, mm h^-1, mm h-1, mm h\{-1\}, kg/m^2/h}')
+    AND T.unit_name = ANY('{mm/h, kg/m^2h, mm h^-1, mm h-1, mm h\{-1\}, kg/m^2/h}')
     AND NOT EXISTS (
         SELECT 1
         FROM wres.UnitConversion UC
@@ -133,8 +133,8 @@ SELECT F.measurementunit_id,
     3600.0
 FROM wres.MeasurementUnit F
 CROSS JOIN wres.MeasurementUnit T
-WHERE F.unit_name = ANY('{mm/s, kg/m^2s,mm s^-1, kg/m^2}')
-    AND T.unit_name = ANY('{mm/h, kg/m^2h, mm h^-1}')
+WHERE F.unit_name = ANY('{mm/s, kg/m^2s,mm s^-1, kg/m^2, kg m-2, kg m\{-2\}, kg/m^2/s}')
+    AND T.unit_name = ANY('{mm/h, kg/m^2h, mm h^-1, mm h-1, mm h\{-1\}, kg/m^2/h}')
     AND NOT EXISTS (
         SELECT 1
         FROM wres.UnitConversion UC
@@ -148,15 +148,14 @@ SELECT F.measurementunit_id,
     1.0/3600.0
 FROM wres.MeasurementUnit F
 CROSS JOIN wres.MeasurementUnit T
-WHERE F.unit_name = ANY('{mm/h, kg/m^2h, mm h^-1}')
-    AND T.unit_name = ANY('{mm/s, kg/m^2s,mm s^-1, kg/m^2}')
+WHERE F.unit_name = ANY('{mm/h, kg/m^2h, mm h^-1, mm h-1, mm h\{-1\}, kg/m^2/h}')
+    AND T.unit_name = ANY('{mm/s, kg/m^2s, kg/m^2/s,mm s^-1, kg/m^2, kg m-2, kg m\{-2\}}')
     AND NOT EXISTS (
         SELECT 1
         FROM wres.UnitConversion UC
         WHERE UC.from_unit = F.measurementunit_id
             AND UC.to_unit = T.measurementunit_id
     );
-
 
 -- DISTANCE
 INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
