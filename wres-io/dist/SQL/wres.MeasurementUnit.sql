@@ -11,6 +11,8 @@ CREATE TABLE IF NOT EXISTS wres.MeasurementUnit
 WITH (
   OIDS=FALSE
 );
+ALTER TABLE wres.MeasurementUnit
+    OWNER TO wres;
 
 ALTER TABLE wres.MeasurementUnit DROP CONSTRAINT IF EXISTS measurementunit_name_uidx;
 ALTER TABLE wres.MeasurementUnit ADD CONSTRAINT measurementunit_name_uidx UNIQUE (unit_name);
@@ -46,11 +48,16 @@ ALTER TABLE wres.MeasurementUnit ADD CONSTRAINT measurementunit_name_uidx UNIQUE
 	('mm/s'),
 	('mm s^-1'),
 	('mm s{-1}'),
+	('mm s-1'),
 	('mm h^-1'),
 	('mm/h'),
+	('mm h-1'),
+	('mm h{-1}'),
 	('kg/m^2'),
 	('kg/m^2h'),
 	('kg/m^2s'),
+	('kg/m^2/s'),
+	('kg/m^2/h'),
 	('Pa'),
 	('W/m^2'),
 	('W m{-2}'),
@@ -60,5 +67,8 @@ ALTER TABLE wres.MeasurementUnit ADD CONSTRAINT measurementunit_name_uidx UNIQUE
 	('m s{-1}'),
 	('kg kg-1'),
 	('kg kg{-1}'),
+	('kg m-2'),
+	('kg m{-2}'),
+	('fraction'),
 	('K')
 ON CONFLICT DO NOTHING;
