@@ -2,6 +2,11 @@ package wres.io.writing.netcdf;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -16,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ucar.ma2.Array;
 import ucar.ma2.ArrayDouble;
+import ucar.ma2.ArrayInt;
 import ucar.ma2.InvalidRangeException;
 import ucar.nc2.NetcdfFileWriter;
 import ucar.nc2.Variable;
@@ -51,6 +57,8 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
     private static final Map<TimeWindow, TimeWindowWriter> WRITERS = new ConcurrentHashMap<>(  );
     private static final Map<Object, Integer> VECTOR_COORDINATES = new ConcurrentHashMap<>(  );
     private static final int VALUE_SAVE_LIMIT = 500;
+
+    private static ZonedDateTime ANALYSIS_TIME = ZonedDateTime.now( ZoneId.of("UTC") );
 
     private static List<DestinationConfig> destinationConfig;
 
@@ -223,6 +231,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
                             getTemplatePath(),
                             getDestinationConfig(),
                             this.window,
+                            NetcdfOutputWriter.ANALYSIS_TIME,
                             output
                     );
                 }

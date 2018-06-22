@@ -14,6 +14,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Objects;
 import java.util.function.Predicate;
@@ -38,6 +39,8 @@ public final class NetCDF {
     private static final Pattern NETCDF_FILENAME_PATTERN = Pattern.compile( ".+\\.nc(\\.gz)?$" );
 
     private static final Pattern SHORT_DATE_PATTERN = Pattern.compile(".*\\d{8}");
+
+    private static final DateTimeFormatter STANDARD_DATE_FORMAT = DateTimeFormatter.ofPattern( "yyyy-MM-dd HH:mm:ss z" );
 
     public static class Ensemble
     {
@@ -81,6 +84,11 @@ public final class NetCDF {
     }
 
     private NetCDF() {}
+
+    public static DateTimeFormatter getStandardDateFormat()
+    {
+        return STANDARD_DATE_FORMAT;
+    }
 
     /**
      * Determines if a variable with the indicated short name exists within the NetCDF file

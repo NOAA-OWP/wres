@@ -93,50 +93,47 @@ final class DatabaseSettings
 
 	private void cleanPriorRuns() throws SQLException
 	{
-		Connection connection = null;
-		Statement clean = null;
 		final String NEWLINE = System.lineSeparator();
 
 		String script = "";
 		script += "SELECT pg_cancel_backend(PT.pid)" + NEWLINE;
 		script += "FROM pg_locks L" + NEWLINE;
 		script += "INNER JOIN pg_stat_all_tables T" + NEWLINE;
-		script += "ON L.relation = t.relid" + NEWLINE;
+		script += "    ON L.relation = t.relid" + NEWLINE;
 		script += "INNER JOIN pg_stat_activity PT" + NEWLINE;
-		script += "ON L.pid = PT.pid" + NEWLINE;
+		script += "    ON L.pid = PT.pid" + NEWLINE;
 		script += "WHERE T.schemaname <> 'pg_toast'::name" + NEWLINE;
-		script += "AND t.schemaname < 'pg_catalog'::name" + NEWLINE;
-		script += "AND usename = '" + this.getUsername() + "'" + NEWLINE;
-		script += "AND datname = '" + this.getDatabaseName() + "'" + NEWLINE;
+		script += "    AND t.schemaname < 'pg_catalog'::name" + NEWLINE;
+		script += "    AND usename = '" + this.getUsername() + "'" + NEWLINE;
+		script += "    AND datname = '" + this.getDatabaseName() + "'" + NEWLINE;
 		script += "GROUP BY PT.pid;";
 
 		try
 		{
 			Class.forName( DRIVER_MAPPING.get( getDatabaseType() ) );
-			connection =
-					DriverManager.getConnection( this.getConnectionString(),
-												 this.username,
-												 this.password );
-			clean = connection.createStatement();
-			clean.execute( script );
-			if (clean.getResultSet().isBeforeFirst())
-            {
-                LOGGER.debug( "Lock(s) from previous runs of this applications "
-                              + "have been released." );
-            }
 		}
 		catch ( ClassNotFoundException e )
 		{
 			throw new SQLException( "The database driver could not be found.", e );
 		}
-		finally
-		{
-			clean.close();
-			connection.close();
+
+		try (Connection connection = DriverManager.getConnection(
+		        this.getConnectionString(),
+                this.username,
+                this.password );
+             Statement clean = connection.createStatement()
+        )
+        {
+            clean.execute( script );
+            if (clean.getResultSet().isBeforeFirst())
+            {
+                LOGGER.debug( "Lock(s) from previous runs of this applications "
+                              + "have been released." );
+            }
 		}
 	}
 
-		/**
+    /**
 	 * For when there is something wrong with the file with database settings.
 	 */
 	DatabaseSettings()

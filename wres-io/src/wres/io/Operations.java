@@ -6,6 +6,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -819,7 +820,7 @@ public final class Operations {
             throws IOException
     {
         try (NetCDFCopier
-                writer = new NetCDFCopier( sourceName, templateName ))
+                writer = new NetCDFCopier( sourceName, templateName, ZonedDateTime.now(  ) ))
         {
             writer.write();
         }
