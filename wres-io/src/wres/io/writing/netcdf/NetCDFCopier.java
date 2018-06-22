@@ -332,10 +332,10 @@ public class NetCDFCopier implements Closeable
 
         this.getWriter().addVariable( name, dataType, dimensions );
 
-        this.getWriter().addVariableAttribute( name, "_FillValue", -999 );
-        this.getWriter().addVariableAttribute( name, "missing_value", -999 );
+        this.getWriter().addVariableAttribute( name, "_FillValue", -999.0 );
+        this.getWriter().addVariableAttribute( name, "missing_value", -999.0 );
 
-        Attribute validRange = new Attribute( "valid_range", Arrays.asList(-100000, 100000) );
+        Attribute validRange = new Attribute( "valid_range", Arrays.asList(-900.0, 900.0) );
 
         this.getWriter().addVariableAttribute( name, validRange );
 

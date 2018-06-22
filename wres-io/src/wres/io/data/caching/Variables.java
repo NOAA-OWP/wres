@@ -78,7 +78,7 @@ public final class Variables extends Cache<VariableDetails, String>
         script.addLine("FROM wres.Variable V");
         script.addLine("WHERE EXISTS (");
         script.addTab().addLine("SELECT 1");
-        script.addTab().addLine("FROM wres.VariablePosition_id");
+        script.addTab().addLine("FROM wres.VariablePosition VP");
         script.addTab().addLine("WHERE V.variable_id = VP.variable_id");
         script.addTab(  2  ).addLine("AND EXISTS (");
         script.addTab(   3   ).addLine("SELECT 1");
