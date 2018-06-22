@@ -34,7 +34,6 @@ import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
 import wres.io.reading.InvalidInputDataException;
 import wres.io.utilities.Database;
-import wres.util.ProgressMonitor;
 import wres.util.Strings;
 
 /**

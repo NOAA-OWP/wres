@@ -17,7 +17,6 @@ import org.slf4j.LoggerFactory;
 import wres.config.FeaturePlus;
 import wres.config.ProjectConfigException;
 import wres.config.ProjectConfigPlus;
-import wres.config.generated.DestinationType;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
@@ -30,7 +29,6 @@ import wres.io.data.details.ProjectDetails;
 import wres.io.utilities.NoDataException;
 import wres.io.writing.SharedWriters;
 import wres.io.writing.SharedWriters.SharedWritersBuilder;
-import wres.util.ProgressMonitor;
 
 /**
  * Class with functions to help in generating metrics and processing metric products.

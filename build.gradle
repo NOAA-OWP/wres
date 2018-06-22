@@ -143,7 +143,7 @@ subprojects
     }
 }
 
-project(':utilities')
+project(':wres-util')
 {
     dependencies
     {
@@ -168,7 +168,7 @@ project(':wres-system')
 {
     dependencies
             {
-                compile project(':utilities')
+                compile project(':wres-util')
                 compile 'org.slf4j:slf4j-api:1.7.25'
 
                 compile 'com.google.guava:guava:22.0'
@@ -221,7 +221,7 @@ project(':wres-io')
 {
     dependencies
     {
-        compile project(':utilities')
+        compile project(':wres-util')
         compile project(':wres-system')
         compile project(':wres-datamodel-api')
         compile project(':wres-config')
@@ -413,7 +413,7 @@ project(':wres-grid')
     dependencies
     {
         compile project(':wres-config')
-        compile project(':utilities')
+        compile project(':wres-util')
         compile project(':wres-system')
         compile 'org.slf4j:slf4j-api:1.7.25'
         compile 'edu.ucar:cdm:5.0.0-alpha3'
@@ -714,7 +714,7 @@ if (!gitIsClean)
 
 dependencies
 {
-    compile project(':utilities')
+    compile project(':wres-util')
     compile project(':wres-system')
     compile project(':wres-datamodel-api')
     compile project(':wres-datamodel')

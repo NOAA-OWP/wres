@@ -14,7 +14,6 @@ import org.slf4j.LoggerFactory;
 
 import wres.system.xml.XMLHelper;
 import wres.system.xml.XMLReader;
-import wres.util.ProgressMonitor;
 import wres.util.Strings;
 
 /**

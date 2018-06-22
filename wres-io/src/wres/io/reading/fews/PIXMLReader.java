@@ -43,7 +43,6 @@ import wres.system.SystemSettings;
 import wres.system.xml.XMLHelper;
 import wres.system.xml.XMLReader;
 import wres.util.Collections;
-import wres.util.ProgressMonitor;
 import wres.util.Strings;
 import wres.util.TimeHelper;
 

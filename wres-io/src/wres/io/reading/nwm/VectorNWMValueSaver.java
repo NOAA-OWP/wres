@@ -20,7 +20,6 @@ import org.apache.commons.math3.util.Precision;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ucar.ma2.Array;
-import ucar.ma2.InvalidRangeException;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
 
@@ -40,7 +39,6 @@ import wres.io.utilities.Database;
 import wres.io.utilities.ScriptBuilder;
 import wres.system.SystemSettings;
 import wres.util.NetCDF;
-import wres.util.ProgressMonitor;
 import wres.util.Strings;
 
 class VectorNWMValueSaver extends WRESRunnable
@@ -667,10 +665,6 @@ class VectorNWMValueSaver extends WRESRunnable
             // once per variable.
             if ( !VectorNWMValueSaver.addedVariables.contains( this.getVariableID() ) )
             {
-                // TODO: The schema is currently set to handle vector NetCDF
-                // data set up through NHDPlus coordinate information. We need
-                // a way of handling non-NHDPlus coordinates (if that is thing
-                // that is used).
                 Features.addNHDPlusVariablePositions(this.getVariableID());
                 VectorNWMValueSaver.addedVariables.add( this.getVariableID() );
             }

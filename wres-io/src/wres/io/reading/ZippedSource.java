@@ -37,7 +37,6 @@ import wres.io.concurrency.ZippedPIXMLIngest;
 import wres.io.config.ConfigHelper;
 import wres.io.utilities.Database;
 import wres.system.SystemSettings;
-import wres.util.ProgressMonitor;
 
 /**
  * @author Christopher Tubbs

@@ -58,7 +58,6 @@ import wres.io.utilities.NoDataException;
 import wres.io.utilities.ScriptBuilder;
 import wres.system.SystemSettings;
 import wres.util.NetCDF;
-import wres.util.ProgressMonitor;
 import wres.util.Strings;
 
 /**

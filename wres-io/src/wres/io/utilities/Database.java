@@ -47,7 +47,6 @@ import wres.io.reading.IngestResult;
 import wres.system.SystemSettings;
 import wres.util.FormattedStopwatch;
 import wres.util.NotImplementedException;
-import wres.util.ProgressMonitor;
 import wres.util.Strings;
 import wres.util.functional.ExceptionalConsumer;
 import wres.util.functional.ExceptionalFunction;
