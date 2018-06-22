@@ -4,7 +4,13 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.SimpleDateFormat;
+import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.StringJoiner;
 import java.util.TreeMap;
@@ -12,7 +18,9 @@ import java.util.TreeMap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ucar.ma2.ArrayInt;
 import ucar.ma2.DataType;
+import ucar.ma2.InvalidRangeException;
 import ucar.nc2.NetcdfFileWriter;
 
 import wres.config.generated.DestinationConfig;
@@ -36,6 +44,7 @@ class NetcdfOutputFileCreator
     static NetcdfFileWriter create( final String templatePath,
                                     final DestinationConfig destinationConfig,
                                     final TimeWindow window,
+                                    final ZonedDateTime analysisTime,
                                     final MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput> output)
             throws IOException
     {
@@ -52,11 +61,12 @@ class NetcdfOutputFileCreator
             }
 
             LOGGER.debug("Opening a copier to create a new file at {} based off of {}.", targetPath.toString(), templatePath);
+
             // This is essentially leaving the underlying copier open. We need
             // to close it, but we can't currently do so without closing the
             // writer. We need the copier to return the name of the target,
             // not the actual writer. We can then open a new one later.
-            NetCDFCopier copier = new NetCDFCopier( templatePath, targetPath.toString() );
+            NetCDFCopier copier = new NetCDFCopier( templatePath, targetPath.toString(), analysisTime);
 
             // Iterate through each metric
             for ( Map.Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>> metrics : output
@@ -83,7 +93,33 @@ class NetcdfOutputFileCreator
                 }
             }
 
-            return copier.write();
+            NetcdfFileWriter writer = copier.write();
+
+            ArrayInt.D1 duration = new ArrayInt.D1( 1, false );
+            duration.set( 0, (int)window.getLatestLeadTime().toMinutes() );
+
+            try
+            {
+                writer.write( "time", duration );
+            }
+            catch ( InvalidRangeException e )
+            {
+                throw new IOException( "The lead time could not be written to the output." );
+            }
+
+            ArrayInt.D1 analysisMinutes = new ArrayInt.D1(1, false);
+            analysisMinutes.set( 0, (int)Duration.between( Instant.ofEpochSecond( 0 ), analysisTime.toInstant() ).toMinutes());
+
+            try
+            {
+                writer.write( "analysis_time", analysisMinutes );
+            }
+            catch ( InvalidRangeException e )
+            {
+                throw new IOException( "The analysis time could not be written to the output." );
+            }
+
+            return writer;
 
         }
     }
