@@ -22,7 +22,6 @@ import wres.system.SystemSettings;
 import wres.util.functional.ExceptionalConsumer;
 import wres.io.utilities.ScriptBuilder;
 import wres.util.NotImplementedException;
-import wres.util.ProgressMonitor;
 
 /**
  * Saves WaterML Response objects to the database

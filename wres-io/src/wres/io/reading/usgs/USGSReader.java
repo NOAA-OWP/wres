@@ -23,7 +23,6 @@ import wres.io.reading.BasicSource;
 import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
 import wres.io.reading.waterml.timeseries.TimeSeries;
-import wres.util.ProgressMonitor;
 import wres.util.Strings;
 import wres.util.TimeHelper;
 

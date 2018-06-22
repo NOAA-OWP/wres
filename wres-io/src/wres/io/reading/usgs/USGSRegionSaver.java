@@ -49,7 +49,6 @@ import wres.util.functional.ExceptionalConsumer;
 import wres.io.utilities.NoDataException;
 import wres.io.utilities.ScriptBuilder;
 import wres.util.FormattedStopwatch;
-import wres.util.ProgressMonitor;
 import wres.util.Strings;
 import wres.util.TimeHelper;
 

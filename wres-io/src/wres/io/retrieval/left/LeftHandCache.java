@@ -4,8 +4,6 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.NavigableMap;
-import java.util.TreeMap;
 
 import wres.config.generated.Feature;
 import wres.io.data.details.ProjectDetails;

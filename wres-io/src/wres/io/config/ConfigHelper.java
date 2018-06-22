@@ -78,7 +78,6 @@ import wres.datamodel.thresholds.ThresholdsByMetric.ThresholdsByMetricBuilder;
 import wres.grid.client.Fetcher;
 import wres.grid.client.Request;
 import wres.io.Operations;
-import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Features;
 import wres.io.data.details.ProjectDetails;
 import wres.io.reading.commaseparated.CommaSeparatedReader;

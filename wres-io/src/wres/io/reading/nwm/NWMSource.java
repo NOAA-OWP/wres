@@ -1,7 +1,6 @@
 package wres.io.reading.nwm;
 
 import java.io.IOException;
-import java.sql.SQLException;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -11,14 +10,10 @@ import ucar.nc2.Variable;
 
 import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.WRESRunnable;
-import wres.io.config.ConfigHelper;
-import wres.io.data.caching.Variables;
 import wres.io.reading.BasicSource;
 import wres.io.reading.IngestResult;
 import wres.io.utilities.Database;
 import wres.util.NetCDF;
-import wres.util.ProgressMonitor;
-import wres.util.Strings;
 
 /**
  * @author ctubbs
@@ -70,8 +65,7 @@ public class NWMSource extends BasicSource
 			if (NetCDF.isGridded(var))
 			{
 				saver = new GriddedNWMValueSaver( this.getFilename(),
-												  this.getFutureHash(),
-												  ConfigHelper.isForecast(this.dataSourceConfig));
+												  this.getFutureHash());
 			}
 			else
 			{

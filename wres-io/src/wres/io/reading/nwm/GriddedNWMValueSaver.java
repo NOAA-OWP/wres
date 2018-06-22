@@ -8,7 +8,6 @@ import java.util.concurrent.Future;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ucar.ma2.InvalidRangeException;
 import ucar.nc2.NetcdfFile;
 
 import wres.io.concurrency.WRESRunnable;
@@ -24,18 +23,15 @@ class GriddedNWMValueSaver extends WRESRunnable
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(GriddedNWMValueSaver.class);
 
-    private int sourceID = Integer.MIN_VALUE;
     private final String fileName;
     private NetcdfFile source;
     private String hash;
     private final Future<String> futureHash;
-    private final boolean isForecast;
 
-    GriddedNWMValueSaver( String fileName, Future<String> futureHash, boolean isForecast)
+    GriddedNWMValueSaver( String fileName, Future<String> futureHash)
 	{
 		this.fileName = fileName;
 		this.futureHash = futureHash;
-		this.isForecast = isForecast;
 	}
 
 	@Override

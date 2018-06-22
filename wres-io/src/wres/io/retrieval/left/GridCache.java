@@ -7,7 +7,6 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 
@@ -19,7 +18,6 @@ import wres.grid.client.Fetcher;
 import wres.grid.client.Request;
 import wres.grid.client.Response;
 import wres.io.config.ConfigHelper;
-import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.UnitConversions;
 import wres.io.data.details.ProjectDetails;
 import wres.io.utilities.Database;
@@ -36,7 +34,6 @@ class GridCache implements LeftHandCache
     {
         this.projectDetails = projectDetails;
         this.cachedSources = new TreeMap<>(  );
-        this.values = new TreeMap<>();
         this.loadSourceCache();
     }
 
@@ -177,6 +174,5 @@ class GridCache implements LeftHandCache
     }
 
     private final NavigableMap<LocalDateTime, String> cachedSources;
-    private final NavigableMap<LocalDateTime, Double> values;
     private final ProjectDetails projectDetails;
 }

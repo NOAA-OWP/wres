@@ -2,10 +2,7 @@ package wres.io.writing.netcdf;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.time.Instant;
-import java.time.OffsetDateTime;
 import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -21,7 +18,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ucar.ma2.Array;
 import ucar.ma2.ArrayDouble;
-import ucar.ma2.ArrayInt;
 import ucar.ma2.InvalidRangeException;
 import ucar.nc2.NetcdfFileWriter;
 import ucar.nc2.Variable;
@@ -45,7 +41,6 @@ import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.io.concurrency.Executor;
 import wres.io.config.ConfigHelper;
 import wres.io.writing.WriteException;
-import wres.util.NetCDF;
 import wres.util.Strings;
 
 public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>

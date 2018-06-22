@@ -24,7 +24,6 @@ import org.slf4j.LoggerFactory;
 import wres.config.FeaturePlus;
 import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
-import wres.grid.client.Fetcher;
 import wres.io.concurrency.Executor;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.Projects;
@@ -32,7 +31,6 @@ import wres.io.data.caching.UnitConversions;
 import wres.io.data.caching.Variables;
 import wres.io.data.details.FeatureDetails;
 import wres.io.data.details.ProjectDetails;
-import wres.io.griddedReader.GriddedReader;
 import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
 import wres.io.reading.SourceLoader;
@@ -45,7 +43,6 @@ import wres.io.utilities.ScriptBuilder;
 import wres.io.writing.PairWriter;
 import wres.io.writing.netcdf.NetCDFCopier;
 import wres.io.writing.netcdf.NetcdfOutputWriter;
-import wres.util.ProgressMonitor;
 
 public final class Operations {
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(Operations.class);
