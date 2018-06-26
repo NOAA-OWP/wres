@@ -4,7 +4,7 @@
         <left label="NWM Analysis">
             <type>simulations</type>
             <source format="netCDF">../data/griddedExamples/precip_ellicott_city/analysis_assim/</source>
-            <variable>ACCET</variable>
+            <variable>RAINRATE</variable>
             <existingTimeScale>
                 <function>avg</function>
                 <period>1</period>
@@ -14,7 +14,7 @@
         <right label="NWM Short Range">
             <type>single valued forecasts</type>
             <source format="netCDF">../data/griddedExamples/precip_ellicott_city/short_range/</source>
-            <variable>ACCET</variable>
+            <variable>RAINRATE</variable>
             <existingTimeScale>
                 <function>avg</function>
                 <period>1</period>
@@ -44,20 +44,18 @@
 		</point>
             </polygon>
         </feature>
-        <leadHours maximum="4" />
+        <leadHours maximum="18" />
     </pair>
     <metrics>
         <metric> <name>mean error</name> </metric>
         <metric><name>pearson correlation coefficient</name></metric>
-        <metric><name>mean absolute error</name></metric>
-        <metric><name>bias fraction</name></metric>
-        <metric><name>coefficient of determination</name></metric>
-        <metric><name>root mean square error</name></metric>
-        <metric><name>mean square error</name></metric>
         <metric> <name>sample size</name> </metric>
     </metrics>
     <outputs>
         <destination type="pairs" decimalFormat="0.000000">
+            <path>output/</path>
+        </destination>
+        <destination type="numeric" decimalFormat="0.000000">
             <path>output/</path>
         </destination>
     </outputs>
