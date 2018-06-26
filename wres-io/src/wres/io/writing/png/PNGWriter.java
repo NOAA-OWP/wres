@@ -67,11 +67,6 @@ abstract class PNGWriter
                             final DestinationConfig dest )
             throws PNGWriteException
     {
-        if ( LOGGER.isWarnEnabled() && outputImage.toFile().exists() )
-        {
-            LOGGER.warn( "File {} already exists and is being overwritten.", outputImage );
-        }
-
         final File outputImageFile = outputImage.toFile();
 
         int width = SystemSettings.getDefaultChartWidth();

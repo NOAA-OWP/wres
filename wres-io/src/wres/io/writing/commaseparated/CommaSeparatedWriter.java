@@ -26,8 +26,6 @@ import wres.io.config.ConfigHelper;
  * 
  * @author jesse
  * @author james.brown@hydrosolved.com
- * @version 0.3
- * @since 0.1
  */
 abstract class CommaSeparatedWriter
 {
