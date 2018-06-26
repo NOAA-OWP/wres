@@ -529,6 +529,26 @@ public class Validation
 
                 result = false;
             }
+            
+            // Empty directory? If not, overwrite potential, which is not allowed
+            if ( destinationFile.list().length != 0 )
+            {
+                if ( LOGGER.isWarnEnabled() )
+                {
+                    LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                                 + " The path {} contains one or more files or directories. "
+                                 + "Please empty the output directory before proceeding or specify an "
+                                 + "alternative, empty, directory.",
+                                 projectConfigPlus.getPath(),
+                                 d.sourceLocation().getLineNumber(),
+                                 d.sourceLocation().getColumnNumber(),
+                                 d.getPath() );
+                }
+
+                result = false;
+            }
+            
+            
         }
 
         return result;
