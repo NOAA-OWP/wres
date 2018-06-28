@@ -27,24 +27,24 @@
         <feature>
             <polygon>
                 <point>
-                    <latitude>38.5</latitude>
-                    <longitude>-75.5</longitude>
+                    <latitude>50.7</latitude>
+                    <longitude>-124.7</longitude>
                 </point>
                 <point>
-                    <latitude>40.5</latitude>
-                    <longitude>-75.5</longitude>
+                    <latitude>50.8</latitude>
+                    <longitude>-124.7</longitude>
                 </point>
                 <point>
-                    <latitude>40.5</latitude>
-                    <longitude>-77.5</longitude>
+                    <latitude>50.8</latitude>
+                    <longitude>-124.8</longitude>
                 </point>
 		<point>
-			<latitude>38.5</latitude>
-			<longitude>-77.5</longitude>
+                    <latitude>50.7</latitude>
+                    <longitude>-124.8</longitude>
 		</point>
             </polygon>
         </feature>
-        <leadHours maximum="4" />
+        <leadHours maximum="18" />
     </pair>
     <metrics>
         <metric> <name>mean error</name> </metric>
@@ -53,6 +53,9 @@
     </metrics>
     <outputs>
         <destination type="pairs" decimalFormat="0.000000">
+            <path>output/</path>
+        </destination>
+        <destination type="numeric" decimalFormat="0.000000">
             <path>output/</path>
         </destination>
     </outputs>
