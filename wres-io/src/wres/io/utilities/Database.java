@@ -44,6 +44,7 @@ import wres.io.concurrency.WRESCallable;
 import wres.io.concurrency.WRESRunnable;
 import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
+import wres.system.ProgressMonitor;
 import wres.system.SystemSettings;
 import wres.util.FormattedStopwatch;
 import wres.util.NotImplementedException;
@@ -261,7 +262,7 @@ public final class Database {
                 // that the index needs to be reinstated from the database
                 restore = new SQLExecutor( builder.toString());
                 restore.setOnRun(ProgressMonitor.onThreadStartHandler());
-                restore.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
+                restore.setOnComplete( ProgressMonitor.onThreadCompleteHandler());
                 indexTasks.add(Database.execute(restore));
             }
         }
@@ -310,30 +311,15 @@ public final class Database {
 	}
 
     /**
-     * Saves the definition of an index to the database, organized as a btree
-     * @param tableName The name of the table to index
-     * @param indexName The name of the index to instate
-     * @param indexDefinition The definition of the index to instate
-     * @throws SQLException when query fails
-     */
-	public static void saveIndex(String tableName, String indexName, String indexDefinition)
-            throws SQLException
-	{
-		saveIndex( tableName, indexName, indexDefinition, "btree" );
-	}
-
-    /**
      * Saves metadata about an index to instate into the database
      * @param tableName The name of the table that the index will belong to
      * @param indexName The name of the index to instate
      * @param indexDefinition The definition of the index
-     * @param indexType The organizational method for the index
      * @throws SQLException when query fails
      */
-	private static void saveIndex(String tableName,
+	public static void saveIndex(String tableName,
                                   String indexName,
-                                  String indexDefinition,
-                                  String indexType)
+                                  String indexDefinition)
             throws SQLException
     {
 		if (!indexDefinition.startsWith("("))
@@ -354,9 +340,7 @@ public final class Database {
 			  .append(indexName)
 			  .append("', '")
 			  .append(indexDefinition)
-			  .append("', '")
-			  .append(indexType)
-			  .append("');");
+			  .append("', 'btree');");
 
 		try
         {
@@ -378,12 +362,6 @@ public final class Database {
 	 */
 	private static ThreadPoolExecutor createService()
 	{
-		if (SQL_TASKS != null)
-		{
-			SQL_TASKS.shutdown();
-			while (!SQL_TASKS.isTerminated());
-		}
-
 		// Ensures that all created threads will be labeled "Database Thread"
 		ThreadFactory factory = runnable -> new Thread(runnable, "Database Thread");
 		ThreadPoolExecutor executor = new ThreadPoolExecutor(CONNECTION_POOL.getMaxPoolSize(),
@@ -841,7 +819,7 @@ public final class Database {
             throws SQLException
 	{
 	    Connection connection = null;
-	    T result = null;
+	    T result;
 
 	    try
         {
@@ -861,7 +839,7 @@ public final class Database {
 
 
 	@SuppressWarnings("unchecked")
-	public static <T> T getResult( final Connection connection,
+	private static <T> T getResult(final Connection connection,
 								   final String query,
 								   final String label) throws SQLException
 	{
@@ -889,7 +867,7 @@ public final class Database {
 
 			results = statement.executeQuery(query);
 
-			if (LOGGER.isDebugEnabled())
+			if (LOGGER.isDebugEnabled() && scriptTimer != null)
 			{
 				scriptTimer.cancel();
 			}
@@ -1035,7 +1013,7 @@ public final class Database {
      * @throws SQLException Thrown if the retrieval script fails
      * @throws SQLException Thrown if the consumer function fails
      */
-	public static void highPriorityConsume(String script, ExceptionalConsumer<ResultSet, SQLException> rowConsumer)
+	static void highPriorityConsume(String script, ExceptionalConsumer<ResultSet, SQLException> rowConsumer)
             throws SQLException
     {
         Connection connection = null;
@@ -1110,9 +1088,9 @@ public final class Database {
         }
     }
 
-    public static <U> List<U> interpret( String query,
-                                         ExceptionalFunction<ResultSet, U, SQLException> interpretor,
-                                         boolean priorityIsHigh)
+    static <U> List<U> interpret( String query,
+                                  ExceptionalFunction<ResultSet, U, SQLException> interpretor,
+                                  boolean priorityIsHigh)
             throws SQLException
     {
         List<U> result = new ArrayList<>();
@@ -1332,15 +1310,14 @@ public final class Database {
      * @param query The script that will retrieve the values
      * @param keyLabel The label for the column that will serve as the key
      * @param valueLabel The label for the column that will serve as the value
-     * @return The updated map
      * @throws SQLException Thrown if the given query fails
      * @throws SQLException Thrown if the expected columns don't exist
      */
     @SuppressWarnings( "unchecked" )
-	public static Map populateMap(final Map map,
-								  final String query,
-								  final String keyLabel,
-								  final String valueLabel)
+	public static void populateMap(final Map map,
+                                   final String query,
+                                   final String keyLabel,
+                                   final String valueLabel)
 		throws SQLException
 	{
         Objects.requireNonNull(map,"The map passed into 'populateMap' was null." );
@@ -1370,8 +1347,6 @@ public final class Database {
             // Decorate SQLException with additional information.
 			throw new SQLException( message, error );
 		}
-
-		return map;
 	}
 
     /**
@@ -1392,7 +1367,7 @@ public final class Database {
 	{
 		Connection connection = null;
 		ResultSet resultSet = null;
-		DataSet dataSet = null;
+		DataSet dataSet;
 		Timer scriptTimer = null;
 
 		try
@@ -1761,7 +1736,7 @@ public final class Database {
      * @param query The query to log
      * @return A timer that will log the given script after a short period of time
      */
-    public static Timer createScriptTimer(final String query)
+    private static Timer createScriptTimer(final String query)
 	{
 		TimerTask task = new TimerTask() {
 			@Override
@@ -1935,7 +1910,7 @@ public final class Database {
 
                     if ( shouldTryAgain )
                     {
-                        LOGGER.info( "Waiting for another wres process to finish modifying the database..." );
+                        LOGGER.info( "Waiting for another WRES process to finish modifying the database..." );
                         Thread.sleep( backoff );
                     }
                     else
@@ -1947,7 +1922,7 @@ public final class Database {
                     }
                 }
             }
-            while ( shouldTryAgain );
+            while ( true );
         }
         catch ( InterruptedException ie )
         {

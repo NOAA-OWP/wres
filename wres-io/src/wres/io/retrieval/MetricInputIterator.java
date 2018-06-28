@@ -18,6 +18,7 @@ import wres.io.data.details.ProjectDetails;
 import wres.io.retrieval.left.LeftHandCache;
 import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
+import wres.system.ProgressMonitor;
 
 abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
 {

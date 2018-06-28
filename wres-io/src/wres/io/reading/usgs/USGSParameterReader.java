@@ -56,7 +56,7 @@ public class USGSParameterReader
         {
             // We don't care about the header and want to skip it
             reader.readLine();
-            String line = "";
+            String line;
             while ((line = reader.readLine()) != null)
             {
                 this.getParameters().add( new USGSParameters.USGSParameter( line ) );

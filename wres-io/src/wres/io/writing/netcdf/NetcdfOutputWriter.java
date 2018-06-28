@@ -6,19 +6,29 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Queue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ucar.ma2.Array;
-import ucar.ma2.ArrayDouble;
+import ucar.ma2.ArrayFloat;
 import ucar.ma2.InvalidRangeException;
+import ucar.nc2.NetcdfFile;
 import ucar.nc2.NetcdfFileWriter;
 import ucar.nc2.Variable;
 import ucar.nc2.dataset.NetcdfDataset;
@@ -52,6 +62,8 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
     private static final Map<TimeWindow, TimeWindowWriter> WRITERS = new ConcurrentHashMap<>(  );
     private static final Map<Object, Integer> VECTOR_COORDINATES = new ConcurrentHashMap<>(  );
     private static final int VALUE_SAVE_LIMIT = 500;
+
+    private static final AtomicInteger WRITTEN_VALUES = new AtomicInteger( 0 );
 
     private static ZonedDateTime ANALYSIS_TIME = ZonedDateTime.now( ZoneId.of("UTC") );
 
@@ -119,7 +131,16 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
                 @Override
                 public Object call() throws Exception
                 {
-                    NetcdfOutputWriter.WRITERS.get( window ).write( output );
+                    try
+                    {
+                        NetcdfOutputWriter.WRITERS.get( window ).write( output );
+                    }
+                    catch (Exception e)
+                    {
+                        LOGGER.error("Writing to output failed.", e);
+                        LOGGER.error(Strings.getStackTrace( e ));
+                        throw e;
+                    }
                     return null;
                 }
 
@@ -153,17 +174,95 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
 
     public static void close()
     {
+        LOGGER.trace("Closing writers...");
         synchronized ( NetcdfOutputWriter.WINDOW_LOCK )
         {
-            for (TimeWindowWriter writer : NetcdfOutputWriter.WRITERS.values())
+            if (NetcdfOutputWriter.WRITERS.isEmpty())
             {
-                try
+                return;
+            }
+
+            ExecutorService closeExecutor = null;
+
+            try
+            {
+                closeExecutor = Executors.newFixedThreadPool( NetcdfOutputWriter.WRITERS.size() );
+
+                Queue<Future<?>> closeTasks = new LinkedList<>();
+
+                for ( TimeWindowWriter writer : NetcdfOutputWriter.WRITERS.values() )
                 {
-                    writer.close();
+                    Callable<?> closeTask = new Callable<Object>()
+                    {
+                        @Override
+                        public Object call() throws Exception
+                        {
+                            try
+                            {
+                                writer.close();
+                            }
+                            catch ( Exception e )
+                            {
+                                throw new Exception( "The writer for " + writer.toString() + " could not be closed.",
+                                                     e );
+                            }
+                            return null;
+                        }
+
+                        Callable<Object> initialize( TimeWindowWriter writer )
+                        {
+                            this.writer = writer;
+                            return this;
+                        }
+
+                        private TimeWindowWriter writer;
+                    }.initialize( writer );
+
+                    closeTasks.add( closeExecutor.submit( closeTask ) );
                 }
-                catch ( IOException e )
+
+                Future<?> task = closeTasks.poll();
+
+                while ( task != null )
                 {
-                    LOGGER.error( "The NetCDF writer for '{}' could not be closed.", writer );
+                    try
+                    {
+                        if ( closeTasks.isEmpty() )
+                        {
+                            task.get();
+                        }
+                        else
+                        {
+                            task.get( 3000, TimeUnit.MILLISECONDS );
+                        }
+                        LOGGER.trace( "Close Task Complete." );
+                    }
+                    catch ( InterruptedException e )
+                    {
+                        LOGGER.error( "Output writing has been interrupted." );
+                        Thread.currentThread().interrupt();
+                    }
+                    catch ( ExecutionException e )
+                    {
+                        // Not halting because other output needs to be written and some files may still be valid
+                        LOGGER.error( "Output could not be written.", e );
+                    }
+                    catch ( TimeoutException e )
+                    {
+                        // Since it took so long to close this writer, try to move on to the next one and try
+                        // to clear the queue
+                        LOGGER.trace( "Task took too long; moving on." );
+                        closeTasks.add( task );
+                    }
+
+                    task = closeTasks.poll();
+                }
+            }
+            finally
+            {
+                if (closeExecutor != null && !closeExecutor.isShutdown())
+                {
+                    closeExecutor.shutdown();
                 }
             }
         }
@@ -220,9 +319,9 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
 
             try
             {
-                if (this.outputWriter == null)
+                if ( !Strings.hasValue( this.outputPath ) )// this.outputWriter == null)
                 {
-                    this.outputWriter = NetcdfOutputFileCreator.create(
+                    this.outputPath = NetcdfOutputFileCreator.create(
                             getTemplatePath(),
                             getDestinationConfig(),
                             this.window,
@@ -250,21 +349,57 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
         }
 
 
-        private void writeMetricResults()
-                throws IOException, InvalidRangeException
+        private void writeMetricResults() throws IOException, InvalidRangeException
         {
             this.writeLock.lock();
 
-            try
+            try (NetcdfFileWriter writer = NetcdfFileWriter.openExisting( this.outputPath ))
             {
-                // TODO: This should be responsible for opening and closing the writer; it shouldn't be left open
                 for (NetcdfValueKey key : this.valuesToSave)
                 {
-                    ArrayDouble.D1 netcdfValue = new ArrayDouble.D1( 1 );
-                    netcdfValue.set( 0, key.getValue() );
+                    Array netcdfValue;
 
-                    this.outputWriter.write( key.getVariableName(), key.getOrigin(), netcdfValue );
+                    switch ( key.getOrigin().length )
+                    {
+                        case 1:
+                            ArrayFloat.D1 oneDimension = new ArrayFloat.D1( 1 );
+                            oneDimension.set( 0, (float)key.getValue() );
+                            netcdfValue = oneDimension;
+                            break;
+                        case 2:
+                            ArrayFloat.D2 twoDimension = new ArrayFloat.D2( 1, 1 );
+                            twoDimension.set( 0, 0, (float)key.getValue() );
+                            netcdfValue = twoDimension;
+                            break;
+                        case 3:
+                            ArrayFloat.D3 threeDimension = new ArrayFloat.D3(1, 1, 1);
+                            threeDimension.set(0, 0, 0, (float)key.getValue() );
+                            netcdfValue = threeDimension;
+                            break;
+                        default:
+                            throw new IllegalArgumentException( "WRES Netcdf Output does not support more than 3 dimensional output." );
+                    }
+
+                    try
+                    {
+                        writer.write( key.getVariableName(), key.getOrigin(), netcdfValue );
+                        LOGGER.trace("Wrote the value {} at ({},{}) for {} in {}.",
+                                    key.getValue(),
+                                    key.getOrigin()[0],
+                                    key.getOrigin()[1],
+                                    key.getVariableName(),
+                                    this.toString()
+                        );
+                        WRITTEN_VALUES.incrementAndGet();
+                    }
+                    catch(Exception e)
+                    {
+                        LOGGER.trace("Error encountered while writing Netcdf data");
+                        throw e;
+                    }
                 }
+
+                writer.flush();
 
                 this.valuesToSave.clear();
             }
@@ -291,11 +426,12 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
             try
             {
                 this.valuesToSave.add( new NetcdfValueKey( name, origin, value ) );
+                LOGGER.trace("Added the value {} at ({},{}) to save to {}", value, origin[0], origin[1], this.toString() );
 
                 if ( this.valuesToSave.size() > VALUE_SAVE_LIMIT)
                 {
                     this.writeMetricResults();
-                    LOGGER.debug("Output {} values to {}", VALUE_SAVE_LIMIT, this.outputWriter.getNetcdfFile().getLocation());
+                    LOGGER.trace("Output {} values to {}", VALUE_SAVE_LIMIT, this.outputPath);
                 }
             }
             finally
@@ -317,7 +453,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
         {
             int[] origin;
 
-            LOGGER.debug("Looking for the origin of {}", location);
+            LOGGER.trace("Looking for the origin of {}", location);
 
             // There must be a more coordinated way to do this without having to keep the file open
             // What if we got the info through the template?
@@ -334,27 +470,19 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
                                               + "support it." );
                 }
 
-                // contains the time index, the y index, and the x index
-                origin = new int[3];
-                origin[0] = 0;
+                // contains the the y index and the x index
+                origin = new int[2];
 
-                try (
-                    NetcdfDataset dataset = new NetcdfDataset( this.outputWriter.getNetcdfFile() );
-                    GridDataset gridDataset = new GridDataset( dataset ))
+                try (GridDataset gridDataset = GridDataset.open( this.outputPath ))
                 {
-                    GridDatatype variable =
-                            gridDataset.findGridDatatype( name );
+                    GridDatatype variable = gridDataset.findGridDatatype( name );
                     int[] xyIndex = variable.getCoordinateSystem()
                                             .findXYindexFromLatLon( location.getLatitude(),
                                                                     location.getLongitude(),
                                                                     null );
-                    xyIndex = variable.getCoordinateSystem()
-                                            .findXYindexFromCoord( location.getLatitude(),
-                                                                    location.getLongitude(),
-                                                                    null );
 
-                    origin[1] = xyIndex[1];
-                    origin[2] = xyIndex[0];
+                    origin[0] = xyIndex[1];
+                    origin[1] = xyIndex[0];
                 }
             }
             else
@@ -364,8 +492,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
 
                 Integer vectorIndex = this.getVectorCoordinate(
                         location.getVectorIdentifier().intValue(),
-                        getNetcdfConfig().getVectorVariable(),
-                        this.outputWriter
+                        getNetcdfConfig().getVectorVariable()
                 );
 
                 Objects.requireNonNull(
@@ -376,27 +503,30 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
                 origin[0] = vectorIndex;
             }
 
-            LOGGER.debug("The origin of {} was at {}", location, origin);
+            LOGGER.trace("The origin of {} was at {}", location, origin);
             return origin;
         }
 
-        private Integer getVectorCoordinate( Integer value, String vectorVariableName, NetcdfFileWriter writer)
+        private Integer getVectorCoordinate( Integer value, String vectorVariableName)
                 throws IOException
         {
             synchronized ( VECTOR_COORDINATES )
             {
                 if ( VECTOR_COORDINATES.size() == 0)
                 {
-                    Variable coordinate = writer.findVariable( vectorVariableName );
-
-                    Array values = coordinate.read();
-
-                    // It's probably not necessary to load in everything
-                    // We're loading everything in at the moment because we
-                    // don't really know what to expect
-                    for (int index = 0; index < values.getSize(); ++index)
+                    try (NetcdfFile outputFile = NetcdfFile.open( this.outputPath ))
                     {
-                        VECTOR_COORDINATES.put( values.getObject( index ), index);
+                        Variable coordinate = outputFile.findVariable( vectorVariableName );
+
+                        Array values = coordinate.read();
+
+                        // It's probably not necessary to load in everything
+                        // We're loading everything in at the moment because we
+                        // don't really know what to expect
+                        for (int index = 0; index < values.getSize(); ++index)
+                        {
+                            VECTOR_COORDINATES.put( values.getObject( index ), index);
+                        }
                     }
                 }
 
@@ -409,9 +539,9 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
         {
             String representation = "TimeWindowWriter";
 
-            if (this.outputWriter != null && this.outputWriter.getNetcdfFile() != null)
+            if ( Strings.hasValue( this.outputPath ))
             {
-                representation = this.outputWriter.getNetcdfFile().getLocation();
+                representation = this.outputPath;
             }
             else if (this.window != null)
             {
@@ -423,7 +553,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
 
         private final List<NetcdfValueKey> valuesToSave = new ArrayList<>(  );
 
-        private NetcdfFileWriter outputWriter = null;
+        private String outputPath = null;
         private final TimeWindow window;
         private final ReentrantLock creationLock;
         private final ReentrantLock writeLock;
@@ -431,8 +561,8 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
         @Override
         public void close() throws IOException
         {
-            LOGGER.debug("Closing {}", this);
-            if ( this.outputWriter != null )
+            LOGGER.trace("Closing {}", this);
+            if ( !this.valuesToSave.isEmpty() )// this.outputWriter != null )
             {
                 try
                 {
@@ -450,7 +580,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
                 // from 135MB to 6.3MB
 
                 //String uncompressedFilename = this.outputWriter.getNetcdfFile().getLocation();
-                this.outputWriter.close();
+                //this.outputWriter.close();
                 //this.compressOutput( uncompressedFilename );
             }
         }

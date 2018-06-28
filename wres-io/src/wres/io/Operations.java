@@ -43,6 +43,7 @@ import wres.io.utilities.ScriptBuilder;
 import wres.io.writing.PairWriter;
 import wres.io.writing.netcdf.NetCDFCopier;
 import wres.io.writing.netcdf.NetcdfOutputWriter;
+import wres.system.ProgressMonitor;
 
 public final class Operations {
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(Operations.class);
@@ -404,7 +405,7 @@ public final class Operations {
         SourceLoader loader = new SourceLoader(projectConfig);
         try {
             List<Future<List<IngestResult>>> ingestions = loader.load();
-            ProgressMonitor.setSteps((long)ingestions.size());
+            ProgressMonitor.setSteps( (long)ingestions.size());
 
             if ( LOGGER.isDebugEnabled() )
             {

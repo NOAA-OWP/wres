@@ -34,6 +34,7 @@ import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
 import wres.io.reading.InvalidInputDataException;
 import wres.io.utilities.Database;
+import wres.system.ProgressMonitor;
 import wres.util.Strings;
 
 /**
@@ -352,7 +353,7 @@ public class DatacardSource extends BasicSource
             CopyExecutor copier = new CopyExecutor( currentTableDefinition, currentScript.toString(),
                                                     COPY_DELIMITER );
             copier.setOnRun(ProgressMonitor.onThreadStartHandler());
-            copier.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
+            copier.setOnComplete( ProgressMonitor.onThreadCompleteHandler());
             Database.ingest(copier);
             currentScript = null;
         }
