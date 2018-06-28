@@ -7,6 +7,7 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZonedDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.StringJoiner;
 import java.util.TreeMap;
@@ -37,7 +38,7 @@ class NetcdfOutputFileCreator
             LOGGER = LoggerFactory.getLogger( NetcdfOutputFileCreator.class);
     private static final Object CREATION_LOCK = new Object();
 
-    static NetcdfFileWriter create( final String templatePath,
+    static String create( final String templatePath,
                                     final DestinationConfig destinationConfig,
                                     final TimeWindow window,
                                     final ZonedDateTime analysisTime,
@@ -115,7 +116,12 @@ class NetcdfOutputFileCreator
                 throw new IOException( "The analysis time could not be written to the output." );
             }
 
-            return writer;
+            writer.flush();
+
+            String location = writer.getNetcdfFile().getLocation();
+            writer.close();
+
+            return location;
 
         }
     }
@@ -245,7 +251,8 @@ class NetcdfOutputFileCreator
         attributes.put("first_condition", firstCondition);
         attributes.put("second_condition", secondCondition);
 
-        copier.addVariable( name, DataType.DOUBLE, copier.getMetricDimensionNames(), attributes );
+
+        copier.addVariable( name, DataType.FLOAT, copier.getMetricDimensionNames(), attributes );
 
     }
 }

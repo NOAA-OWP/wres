@@ -218,11 +218,13 @@ public class NetCDFCopier implements Closeable
                 }
                 else if (Collections.in(originalAttribute.getDataType(), NUMERIC_ATTRIBUTE_TYPES))
                 {
-                    newVariable.addAttribute( new Attribute( originalAttribute.getShortName(), originalAttribute.getNumericValue() ) );
+                    Attribute new_attribute = new Attribute( originalAttribute.getShortName(), originalAttribute );
+                    newVariable.addAttribute( new_attribute );
                 }
                 else
                 {
-                    newVariable.addAttribute( new Attribute( originalAttribute.getShortName(), originalAttribute.getStringValue() ) );
+                        Attribute new_attribute = new Attribute( originalAttribute.getShortName(), originalAttribute );
+                        newVariable.addAttribute( new_attribute );
                 }
             }
         }
@@ -317,6 +319,27 @@ public class NetCDFCopier implements Closeable
         Attribute chunkSizes = new Attribute( "_ChunkSizes", 905633 );
 
         this.getWriter().addVariableAttribute( name, chunkSizes );
+
+        Variable coordinateSystem = this.getWriter().findVariable( "ProjectionCoordinateSystem" );
+        if (coordinateSystem != null)
+        {
+            this.getWriter().addVariableAttribute( name, new Attribute("grid_mapping", "ProjectionCoordinateSystem") );
+
+            Attribute esriPEString = coordinateSystem.findAttribute( "esri_pe_string" );
+
+            if (esriPEString != null)
+            {
+                this.getWriter().addVariableAttribute( name, new Attribute("esri_pe_string", esriPEString.getStringValue()) );
+            }
+
+            Attribute proj4 = coordinateSystem.findAttribute( "proj4" );
+
+            if (esriPEString != null)
+            {
+                this.getWriter().addVariableAttribute( name, new Attribute("proj4", proj4.getStringValue()) );
+            }
+
+        }
 
         for (Map.Entry<String, Object> keyValue : attributes.entrySet())
         {

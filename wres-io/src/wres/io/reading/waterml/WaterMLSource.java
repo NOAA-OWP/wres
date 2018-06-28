@@ -18,6 +18,7 @@ import wres.io.reading.waterml.timeseries.TimeSeries;
 import wres.io.reading.waterml.timeseries.TimeSeriesValue;
 import wres.io.reading.waterml.timeseries.TimeSeriesValues;
 import wres.io.utilities.Database;
+import wres.system.ProgressMonitor;
 import wres.system.SystemSettings;
 import wres.util.functional.ExceptionalConsumer;
 import wres.io.utilities.ScriptBuilder;
@@ -39,7 +40,6 @@ public class WaterMLSource
                                                      + "observed_value, "
                                                      + "measurementunit_id, "
                                                      + "source_id)";
-    private static final String FORECAST_HEADER = "";
     private static final String DELIMITER = "|";
     private static final String COPY_NULL = "\\N";
 
@@ -92,11 +92,6 @@ public class WaterMLSource
         {
             this.seriesReadCompleteHandler.accept( series );
         }
-    }
-
-    public int readForecastResponse()
-    {
-        throw new NotImplementedException( "Saving WaterML Forecasts is not supported." );
     }
 
     public int readObservationResponse() throws IOException

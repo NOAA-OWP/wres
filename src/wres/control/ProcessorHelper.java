@@ -29,6 +29,7 @@ import wres.io.data.details.ProjectDetails;
 import wres.io.utilities.NoDataException;
 import wres.io.writing.SharedWriters;
 import wres.io.writing.SharedWriters.SharedWritersBuilder;
+import wres.system.ProgressMonitor;
 
 /**
  * Class with functions to help in generating metrics and processing metric products.

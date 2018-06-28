@@ -56,6 +56,7 @@ import wres.io.utilities.DataSet;
 import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
 import wres.io.utilities.ScriptBuilder;
+import wres.system.ProgressMonitor;
 import wres.system.SystemSettings;
 import wres.util.NetCDF;
 import wres.util.Strings;

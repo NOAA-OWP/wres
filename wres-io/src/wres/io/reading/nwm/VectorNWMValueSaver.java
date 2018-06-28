@@ -37,6 +37,7 @@ import wres.io.data.details.SourceDetails;
 import wres.io.data.details.TimeSeries;
 import wres.io.utilities.Database;
 import wres.io.utilities.ScriptBuilder;
+import wres.system.ProgressMonitor;
 import wres.system.SystemSettings;
 import wres.util.NetCDF;
 import wres.util.Strings;
@@ -679,54 +680,32 @@ class VectorNWMValueSaver extends WRESRunnable
      */
     private void addTimeSeries() throws IOException, SQLException
     {
-
         // Build a script that creates a new time series for each valid vector
         // position that doesn't already exist
-        StringBuilder script = new StringBuilder();
-
-        script.append("INSERT INTO wres.TimeSeries (")
-              .append("variableposition_id, ")
-              .append("ensemble_id, measurementunit_id, ")
-              .append("initialization_date)")
-              .append(NEWLINE);
-
-        script.append("SELECT VP.variableposition_id, ")
-              .append(NEWLINE);
-
-        script.append("    ").append(this.getEnsembleID()).append(", ")
-              .append(NEWLINE);
-
-        script.append("    ").append( this.getMeasurementUnitID() ).append(", ")
-              .append( NEWLINE);
-
-        script.append("    '")
-              .append(NetCDF.getReferenceTime( this.getSource() ))
-              .append("'")
-              .append(NEWLINE);
-
-        script.append("FROM wres.VariablePosition VP").append(NEWLINE);
-        script.append("INNER JOIN wres.Feature F").append(NEWLINE);
-        script.append("    ON F.feature_id = VP.x_position").append(NEWLINE);
-        script.append("WHERE variable_id = ").append(this.getVariableID()).append(NEWLINE);
-        script.append("    AND F.nwm_index IS NOT NULL").append(NEWLINE);
-        script.append("    AND NOT EXISTS (").append(NEWLINE);
-        script.append("        SELECT 1").append(NEWLINE);
-        script.append("        FROM wres.TimeSeries TS").append(NEWLINE);
-        script.append("        WHERE TS.variableposition_id = VP.variableposition_id")
-              .append(NEWLINE);
-
-        script.append("            AND TS.ensemble_id = " ).append(this.getEnsembleID())
-              .append(NEWLINE);
-
-        script.append("            AND TS.initialization_date = '")
-              .append(NetCDF.getReferenceTime( this.getSource() ))
-              .append("'")
-              .append(NEWLINE);
-
-        script.append("    );");
-
-        Database.execute( script.toString() );
-
+        ScriptBuilder script = new ScriptBuilder(  );
+        script.addLine("INSERT INTO wres.TimeSeries (");
+        script.addTab().addLine("variableposition_id,");
+        script.addTab().addLine("ensemble_id,");
+        script.addTab().addLine("measurementunit_id,");
+        script.addTab().addLine("initialization_date");
+        script.addLine(")");
+        script.addLine("SELECT VP.variableposition_id,");
+        script.addTab().addLine(this.getEnsembleID(), ",");
+        script.addTab().addLine(this.getMeasurementUnitID(), "," );
+        script.addTab().addLine("'", NetCDF.getReferenceTime( this.getSource() ), "'");
+        script.addLine("FROM wres.VariablePosition VP");
+        script.addLine("INNER JOIN wres.Feature F");
+        script.addTab().addLine("ON F.feature_id = VP.x_position");
+        script.addLine("WHERE variable_id = ", this.getVariableID());
+        script.addTab().addLine("AND F.nwm_index IS NOT NULL");
+        script.addTab().addLine("AND NOT EXISTS (");
+        script.addTab(  2  ).addLine("SELECT 1");
+        script.addTab(  2  ).addLine("FROM wres.TimeSeries TS");
+        script.addTab(  2  ).addLine("WHERE TS.variableposition_id = VP.variableposition_id");
+        script.addTab(   3   ).addLine("AND TS.ensemble_id = ", this.getEnsembleID());
+        script.addTab(   3   ).addLine("AND TS.initialization_date = '", NetCDF.getReferenceTime( this.getSource() ), "'");
+        script.addTab(  2  ).add(");");
+        script.execute();
         this.addSource();
     }
 

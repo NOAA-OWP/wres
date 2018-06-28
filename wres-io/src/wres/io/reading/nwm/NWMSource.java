@@ -13,6 +13,7 @@ import wres.io.concurrency.WRESRunnable;
 import wres.io.reading.BasicSource;
 import wres.io.reading.IngestResult;
 import wres.io.utilities.Database;
+import wres.system.ProgressMonitor;
 import wres.util.NetCDF;
 
 /**
@@ -75,7 +76,7 @@ public class NWMSource extends BasicSource
 			}
 
 			saver.setOnRun(ProgressMonitor.onThreadStartHandler());
-			saver.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
+			saver.setOnComplete( ProgressMonitor.onThreadCompleteHandler());
 			Database.ingest(saver);
         }
         else
