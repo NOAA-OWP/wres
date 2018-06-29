@@ -44,12 +44,12 @@ import wres.io.reading.waterml.timeseries.TimeSeriesValue;
 import wres.io.reading.waterml.timeseries.TimeSeriesValues;
 import wres.io.reading.waterml.variable.Variable;
 import wres.io.utilities.Database;
+import wres.system.ProgressMonitor;
 import wres.system.SystemSettings;
 import wres.util.functional.ExceptionalConsumer;
 import wres.io.utilities.NoDataException;
 import wres.io.utilities.ScriptBuilder;
 import wres.util.FormattedStopwatch;
-import wres.util.ProgressMonitor;
 import wres.util.Strings;
 import wres.util.TimeHelper;
 
@@ -84,12 +84,10 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
         private WebResponse(final Response usgsResponse,
                             final boolean alreadyRequested,
                             final int sourceId,
-                            final String URL,
                             final String hash)
         {
             this.usgsResponse = usgsResponse;
             this.alreadyRequested = alreadyRequested;
-            this.URL = URL;
             this.sourceId = sourceId;
             this.hash = hash;
         }
@@ -109,15 +107,9 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
             return this.sourceId;
         }
 
-        private String getURL()
-        {
-            return this.URL;
-        }
-
         private final Response usgsResponse;
         private final boolean alreadyRequested;
         private final int sourceId;
-        private final String URL;
         private final String hash;
     }
 
@@ -372,7 +364,6 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
                     return new USGSRegionSaver.WebResponse( null,
                                                                 true,
                                                                 usgsDetails.getId(),
-                                                                requestURL,
                                                                 hash );
                 }
             }
@@ -414,7 +405,6 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
                     response = new USGSRegionSaver.WebResponse( usgsResponse,
                                                                 false,
                                                                 usgsDetails.getId(),
-                                                                requestURL,
                                                                 hash );
                 }
                 catch (WebApplicationException exception)

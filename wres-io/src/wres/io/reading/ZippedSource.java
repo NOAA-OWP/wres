@@ -36,8 +36,8 @@ import wres.io.concurrency.WRESCallable;
 import wres.io.concurrency.ZippedPIXMLIngest;
 import wres.io.config.ConfigHelper;
 import wres.io.utilities.Database;
+import wres.system.ProgressMonitor;
 import wres.system.SystemSettings;
-import wres.util.ProgressMonitor;
 
 /**
  * @author Christopher Tubbs
@@ -299,7 +299,7 @@ public class ZippedSource extends BasicSource {
                                            this.getSpecifiedFeatures(),
                                            this.getProjectConfig() );
 
-            ingest.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
+            ingest.setOnComplete( ProgressMonitor.onThreadCompleteHandler());
             ProgressMonitor.increment();
             this.addIngestTask(ingest);
         }
@@ -324,24 +324,6 @@ public class ZippedSource extends BasicSource {
         }
 
         return bytesRead;
-    }
-
-
-    /**
-     * For system-level monitoring information, return the number of tasks in
-     * the reader queue.
-     * @return the count of tasks waiting to be performed.
-     */
-
-    public int getQueueCount()
-    {
-        if ( this.readerService != null
-             && this.readerService.getQueue() != null )
-        {
-            return this.readerService.getQueue().size();
-        }
-
-        return 0;
     }
 
     private final String directoryPath;

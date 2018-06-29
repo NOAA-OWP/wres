@@ -104,7 +104,7 @@
             </xs:appinfo>
         </xs:annotation>
         <xs:sequence>
-            <xs:element name="point" minOccurs="2" maxOccurs="unbounded" >
+            <xs:element name="point" minOccurs="3" maxOccurs="unbounded" >
                 <xs:complexType>
                     <xs:sequence>
                         <xs:element name="latitude" type="xs:float" />

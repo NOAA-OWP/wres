@@ -39,11 +39,11 @@ import wres.io.data.details.TimeSeries;
 import wres.io.reading.IngestException;
 import wres.io.reading.InvalidInputDataException;
 import wres.io.utilities.Database;
+import wres.system.ProgressMonitor;
 import wres.system.SystemSettings;
 import wres.system.xml.XMLHelper;
 import wres.system.xml.XMLReader;
 import wres.util.Collections;
-import wres.util.ProgressMonitor;
 import wres.util.Strings;
 import wres.util.TimeHelper;
 
@@ -411,7 +411,7 @@ public final class PIXMLReader extends XMLReader
                         getBuilder(lead).toString(),
                         delimiter);
                 copier.setOnRun(ProgressMonitor.onThreadStartHandler());
-                copier.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
+                copier.setOnComplete( ProgressMonitor.onThreadCompleteHandler());
                 Database.ingest(copier);
 
                 copyCount.put(lead, 0);

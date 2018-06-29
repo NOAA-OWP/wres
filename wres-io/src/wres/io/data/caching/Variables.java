@@ -1,7 +1,5 @@
 package wres.io.data.caching;
 
-import java.sql.Connection;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 
@@ -10,7 +8,6 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.generated.DataSourceConfig;
 import wres.io.data.details.VariableDetails;
-import wres.io.utilities.Database;
 import wres.io.utilities.ScriptBuilder;
 
 /**

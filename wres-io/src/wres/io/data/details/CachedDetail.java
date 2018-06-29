@@ -72,9 +72,9 @@ public abstract class CachedDetail<U, V extends Comparable<V>> implements Compar
 		this.update( resultSet );
 	}
 
-	public CachedDetail(){};
-	
-	/**
+	public CachedDetail(){}
+
+    /**
 	 * Saves the ID of the detail from the database based on the result of the of the insert/select statement
 	 * @throws SQLException if the save failed
 	 */

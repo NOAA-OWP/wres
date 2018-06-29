@@ -8,7 +8,6 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.TreeMap;
 
-import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.UnitConversions;
 import wres.io.data.details.ProjectDetails;
 import wres.io.utilities.Database;
