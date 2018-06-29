@@ -43,6 +43,7 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.engine.statistics.metric.config.MetricConfigHelper;
 import wres.io.config.ConfigHelper;
+import wres.system.SystemSettings;
 import wres.util.Strings;
 
 
@@ -529,9 +530,14 @@ public class Validation
 
                 result = false;
             }
-            
-            // Empty directory? If not, overwrite potential, which is not allowed
-            if ( destinationFile.list().length != 0 )
+
+            // If we want to protect previous results (the default behavior) and there is already data stored in the
+            // destination, fail validation
+            String[] destinationConents = destinationFile.list();
+            if ( SystemSettings.shouldProtectResults() &&
+                 !d.isOverwrite() &&
+                 destinationConents != null &&
+                 destinationConents.length != 0 )
             {
                 if ( LOGGER.isWarnEnabled() )
                 {
