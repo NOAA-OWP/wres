@@ -153,11 +153,6 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
 
                     id = results.getInt( "source_id" );
                 }
-                else
-                {
-                    throw new SQLException("No source could be found with the hash of '" + hash + "'");
-                }
-
             }
             finally
             {
