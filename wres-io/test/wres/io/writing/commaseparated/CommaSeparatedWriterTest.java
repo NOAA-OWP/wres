@@ -69,6 +69,7 @@ public class CommaSeparatedWriterTest
                                        null,
                                        null,
                                        DestinationType.NUMERIC,
+                                       null,
                                        null );
 
         List<DestinationConfig> destinations = new ArrayList<>();
