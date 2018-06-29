@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -19,7 +20,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -27,11 +27,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ucar.ma2.Array;
 import ucar.ma2.ArrayFloat;
+import ucar.ma2.DataType;
+import ucar.ma2.Index;
 import ucar.ma2.InvalidRangeException;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.NetcdfFileWriter;
 import ucar.nc2.Variable;
-import ucar.nc2.dataset.NetcdfDataset;
 import ucar.nc2.dt.GridDatatype;
 import ucar.nc2.dt.grid.GridDataset;
 
@@ -63,9 +64,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
     private static final Map<Object, Integer> VECTOR_COORDINATES = new ConcurrentHashMap<>(  );
     private static final int VALUE_SAVE_LIMIT = 500;
 
-    private static final AtomicInteger WRITTEN_VALUES = new AtomicInteger( 0 );
-
-    private static ZonedDateTime ANALYSIS_TIME = ZonedDateTime.now( ZoneId.of("UTC") );
+    private static final ZonedDateTime ANALYSIS_TIME = ZonedDateTime.now( ZoneId.of("UTC") );
 
     private static List<DestinationConfig> destinationConfig;
 
@@ -319,7 +318,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
 
             try
             {
-                if ( !Strings.hasValue( this.outputPath ) )// this.outputWriter == null)
+                if ( !Strings.hasValue( this.outputPath ) )
                 {
                     this.outputPath = NetcdfOutputFileCreator.create(
                             getTemplatePath(),
@@ -353,32 +352,19 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
         {
             this.writeLock.lock();
 
+            Array netcdfValue;
+            Index ima;
+
             try (NetcdfFileWriter writer = NetcdfFileWriter.openExisting( this.outputPath ))
             {
                 for (NetcdfValueKey key : this.valuesToSave)
                 {
-                    Array netcdfValue;
+                    int[] shape = new int[key.getOrigin().length];
+                    Arrays.fill(shape, 1);
+                    netcdfValue = Array.factory( DataType.FLOAT, shape );
 
-                    switch ( key.getOrigin().length )
-                    {
-                        case 1:
-                            ArrayFloat.D1 oneDimension = new ArrayFloat.D1( 1 );
-                            oneDimension.set( 0, (float)key.getValue() );
-                            netcdfValue = oneDimension;
-                            break;
-                        case 2:
-                            ArrayFloat.D2 twoDimension = new ArrayFloat.D2( 1, 1 );
-                            twoDimension.set( 0, 0, (float)key.getValue() );
-                            netcdfValue = twoDimension;
-                            break;
-                        case 3:
-                            ArrayFloat.D3 threeDimension = new ArrayFloat.D3(1, 1, 1);
-                            threeDimension.set(0, 0, 0, (float)key.getValue() );
-                            netcdfValue = threeDimension;
-                            break;
-                        default:
-                            throw new IllegalArgumentException( "WRES Netcdf Output does not support more than 3 dimensional output." );
-                    }
+                    ima = netcdfValue.getIndex();
+                    netcdfValue.setFloat( ima, (float)key.getValue() );
 
                     try
                     {
@@ -390,7 +376,6 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
                                     key.getVariableName(),
                                     this.toString()
                         );
-                        WRITTEN_VALUES.incrementAndGet();
                     }
                     catch(Exception e)
                     {
@@ -562,7 +547,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
         public void close() throws IOException
         {
             LOGGER.trace("Closing {}", this);
-            if ( !this.valuesToSave.isEmpty() )// this.outputWriter != null )
+            if ( !this.valuesToSave.isEmpty() )
             {
                 try
                 {
@@ -579,9 +564,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
                 // decrease in file size. Early tests had files dropping
                 // from 135MB to 6.3MB
 
-                //String uncompressedFilename = this.outputWriter.getNetcdfFile().getLocation();
-                //this.outputWriter.close();
-                //this.compressOutput( uncompressedFilename );
+                //this.compressOutput( this.outputPath );
             }
         }
 
