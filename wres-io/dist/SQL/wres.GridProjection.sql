@@ -1,8 +1,8 @@
 ﻿-- Table: wres.gridprojection
 
--- DROP TABLE wres.gridprojection;
+DROP TABLE IF EXISTS wres.gridprojection;
 
-CREATE TABLE wres.gridprojection
+CREATE TABLE IF NOT EXISTS wres.gridprojection
 (
   gridprojection_id serial NOT NULL,
   srtext text,
