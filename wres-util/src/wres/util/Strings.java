@@ -74,7 +74,7 @@ public final class Strings
 	
 	public static boolean isTrue(String possibleBoolean)
 	{
-	    return POSSIBLE_TRUE_VALUES.contains(possibleBoolean);
+	    return Strings.hasValue( possibleBoolean ) && POSSIBLE_TRUE_VALUES.contains(possibleBoolean);
 	}
 
 	public static boolean hasValue(String word)
