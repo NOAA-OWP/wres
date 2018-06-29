@@ -6,6 +6,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -23,7 +24,6 @@ import org.slf4j.LoggerFactory;
 import wres.config.FeaturePlus;
 import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
-import wres.grid.client.Fetcher;
 import wres.io.concurrency.Executor;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.Projects;
@@ -31,7 +31,6 @@ import wres.io.data.caching.UnitConversions;
 import wres.io.data.caching.Variables;
 import wres.io.data.details.FeatureDetails;
 import wres.io.data.details.ProjectDetails;
-import wres.io.griddedReader.GriddedReader;
 import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
 import wres.io.reading.SourceLoader;
@@ -44,7 +43,7 @@ import wres.io.utilities.ScriptBuilder;
 import wres.io.writing.PairWriter;
 import wres.io.writing.netcdf.NetCDFCopier;
 import wres.io.writing.netcdf.NetcdfOutputWriter;
-import wres.util.ProgressMonitor;
+import wres.system.ProgressMonitor;
 
 public final class Operations {
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(Operations.class);
@@ -406,7 +405,7 @@ public final class Operations {
         SourceLoader loader = new SourceLoader(projectConfig);
         try {
             List<Future<List<IngestResult>>> ingestions = loader.load();
-            ProgressMonitor.setSteps((long)ingestions.size());
+            ProgressMonitor.setSteps( (long)ingestions.size());
 
             if ( LOGGER.isDebugEnabled() )
             {
@@ -819,7 +818,7 @@ public final class Operations {
             throws IOException
     {
         try (NetCDFCopier
-                writer = new NetCDFCopier( sourceName, templateName ))
+                writer = new NetCDFCopier( sourceName, templateName, ZonedDateTime.now(  ) ))
         {
             writer.write();
         }

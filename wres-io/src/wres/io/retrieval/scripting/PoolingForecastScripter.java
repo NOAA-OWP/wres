@@ -6,7 +6,6 @@ import java.sql.SQLException;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
 import wres.io.config.ConfigHelper;
-import wres.io.data.caching.Features;
 import wres.io.data.details.ProjectDetails;
 import wres.util.TimeHelper;
 

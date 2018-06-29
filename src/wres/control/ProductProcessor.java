@@ -396,49 +396,6 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
         }
     }
 
-
-    /**
-     * Builds a set of consumers for writing NetCDF output.
-     * 
-     * @param sharedWriters an optional set of shared writers to use when consuming NetCDF
-     * @throws IOException when creation or mutation of netcdf files fails
-     * @throws ProjectConfigException if the project configuration is invalid
-     */
-
-    private void buildNetCDFConsumers( SharedWriters sharedWriters )
-            throws IOException
-    {
-        // Register consumers for the NetCDF output type
-        if ( writeWhenTrue.test( MetricOutputGroup.DOUBLE_SCORE, DestinationType.NETCDF ) )
-        {
-            // Use a shared writer
-            if ( Objects.nonNull( sharedWriters )
-                 && sharedWriters.contains( MetricOutputGroup.DOUBLE_SCORE, DestinationType.NETCDF ) )
-            {
-                doubleScoreConsumers.put( DestinationType.NETCDF,
-                                          sharedWriters.getNetcdfDoubleScoreWriter() );
-            }
-            // Build a writer
-            else
-            {
-                int featureCount = this.getResolvedProject().getFeatureCount();
-                int thresholdCount = this.getResolvedProject().getThresholdCount( MetricOutputGroup.DOUBLE_SCORE );
-                Set<MetricConstants> metricConstants = this.getResolvedProject()
-                                                           .getDoubleScoreMetrics();
-
-                NetcdfDoubleScoreWriter netcdfWriter =
-                        ConfigHelper.getNetcdfWriter( this.getResolvedProject().getProjectIdentifier(),
-                                                      this.getProjectConfig(),
-                                                      featureCount,
-                                                      thresholdCount,
-                                                      metricConstants );
-                this.resourcesToClose.add( netcdfWriter );
-                doubleScoreConsumers.put( DestinationType.NETCDF,
-                                          netcdfWriter );
-            }
-        }
-    }
-
     private void buildNetCDFConsumers() throws IOException
     {
         ProjectConfigPlus projectConfigPlus = this.getProjectConfigPlus();

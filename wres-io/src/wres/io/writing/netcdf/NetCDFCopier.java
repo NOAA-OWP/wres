@@ -4,13 +4,14 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ucar.ma2.Array;
@@ -23,6 +24,7 @@ import ucar.nc2.NetcdfFileWriter;
 import ucar.nc2.Variable;
 
 import wres.util.Collections;
+import wres.util.NetCDF;
 
 public class NetCDFCopier implements Closeable
 {
@@ -60,21 +62,40 @@ public class NetCDFCopier implements Closeable
 
     private final String fromFileName;
     private final String targetFileName;
-
-    private Collection<Variable> variablesToCopy;
-    private Collection<Dimension> dimensionsToCopy;
+    private final ZonedDateTime analysisTime;
 
     private NetcdfFile source;
     private NetcdfFileWriter writer;
+    private final List<Pair<String, String>> unitOverrides = new ArrayList<>();
 
-    public NetCDFCopier( final String fromFilename, final String targetFileName )
+    public NetCDFCopier( final String fromFilename, final String targetFileName, final ZonedDateTime analysisTime )
             throws IOException
     {
         this.fromFileName = fromFilename;
         this.targetFileName = targetFileName;
+        this.analysisTime = analysisTime;
         this.copyGlobalAttributes();
         this.copyDimensions();
         this.copyVariables();
+
+        // Make sure that there's an analysis time variable to tie everything together
+        if (this.getWriter().findVariable( "analysis_time" ) == null)
+        {
+            if (this.getWriter().findDimension( "analysis_time" ) == null)
+            {
+                this.getWriter().addDimension( "analysis_time", 1 );
+            }
+
+            Map<String, Object> attributes = new TreeMap<>();
+            attributes.put("units", "minutes since 1970-01-01 00:00:00 UTC");
+            attributes.put("standard_name", "analysis_time");
+            attributes.put("long_name", "lead hour");
+
+            List<String> dimensionNames = new ArrayList<>();
+            dimensionNames.add( "analysis_time" );
+
+            this.addVariable( "analysis_time", DataType.INT, dimensionNames, attributes );
+        }
     }
 
     public NetcdfFileWriter write() throws IOException
@@ -119,49 +140,10 @@ public class NetCDFCopier implements Closeable
         return this.writer;
     }
 
-    private Collection<Variable> getVariablesToCopy() throws IOException
-    {
-        if (this.variablesToCopy == null)
-        {
-            this.variablesToCopy = new ArrayList<>(  );
-            for (Variable variable : this.getSource().getVariables())
-            {
-                if (variable.isCoordinateVariable())
-                {
-                    LOGGER.debug( "Planning to copy '{}' since it is a coordinate variable.",
-                                 variable.getShortName() );
-                    this.variablesToCopy.add(variable);
-                }
-                else if (variable.getDimensions().isEmpty())
-                {
-                    LOGGER.debug("Planning to copy '{}' since it is a scalar variable.",
-                                variable.getShortName());
-                    this.variablesToCopy.add(variable);
-                }
-            }
-        }
-        return this.variablesToCopy;
-    }
-
-    private  Collection<Dimension> getDimensionsToCopy() throws IOException
-    {
-        if (this.dimensionsToCopy == null)
-        {
-            this.dimensionsToCopy = new HashSet<>();
-
-            this.getVariablesToCopy().forEach(
-                    variable -> this.dimensionsToCopy.addAll(variable.getDimensions())
-            );
-        }
-
-        return this.dimensionsToCopy;
-    }
-
     private void copyDimensions() throws IOException
     {
-        for (Dimension dimension : this.getDimensionsToCopy())
+        for (Dimension dimension : this.getSource().getDimensions())
         {
-            // TODO: What do we do when there are groups?
             this.getWriter().addDimension(null,
                                           dimension.getShortName(),
                                           dimension.getLength(),
@@ -198,7 +180,7 @@ public class NetCDFCopier implements Closeable
 
     private void copyVariables() throws IOException
     {
-        for (Variable originalVariable : this.getVariablesToCopy())
+        for (Variable originalVariable : this.getSource().getVariables())
         {
             List<Dimension> variableDimensions = new ArrayList<>(  );
 
@@ -226,13 +208,23 @@ public class NetCDFCopier implements Closeable
                     continue;
                 }
 
-                if (Collections.in(originalAttribute.getDataType(), NUMERIC_ATTRIBUTE_TYPES))
+                if (originalVariable.getShortName().equalsIgnoreCase( "time" ) && originalAttribute.getShortName().equals( "units" ))
                 {
-                    newVariable.addAttribute( new Attribute( originalAttribute.getShortName(), originalAttribute.getNumericValue() ) );
+                    newVariable.addAttribute(
+                            new Attribute( "time",
+                                           "minutes from " + NetCDF.getStandardDateFormat().format( this.analysisTime )
+                            )
+                    );
+                }
+                else if (Collections.in(originalAttribute.getDataType(), NUMERIC_ATTRIBUTE_TYPES))
+                {
+                    Attribute new_attribute = new Attribute( originalAttribute.getShortName(), originalAttribute );
+                    newVariable.addAttribute( new_attribute );
                 }
                 else
                 {
-                    newVariable.addAttribute( new Attribute( originalAttribute.getShortName(), originalAttribute.getStringValue() ) );
+                        Attribute new_attribute = new Attribute( originalAttribute.getShortName(), originalAttribute );
+                        newVariable.addAttribute( new_attribute );
                 }
             }
         }
@@ -245,7 +237,7 @@ public class NetCDFCopier implements Closeable
             this.getWriter().create();
         }
 
-        for (Variable originalVariable : this.getVariablesToCopy())
+        for (Variable originalVariable : this.getSource().getVariables())
         {
             LOGGER.debug("Copying over all {} data from {} to {}", originalVariable.getShortName(), this.fromFileName, this.targetFileName);
             Array values = originalVariable.read();
@@ -253,21 +245,6 @@ public class NetCDFCopier implements Closeable
             this.getWriter().write( originalVariable.getShortName(), values );
         }
         LOGGER.debug( "Done copying all variable data from the template." );
-    }
-
-    public void addDimension(String name, int length, boolean isUnlimited, boolean isVariableLength) throws IOException
-    {
-        Dimension preexistingDimension = this.getWriter().findDimension( name );
-        if(preexistingDimension != null)
-        {
-            preexistingDimension.setLength( length );
-            preexistingDimension.setUnlimited( isUnlimited );
-            preexistingDimension.setVariableLength( isVariableLength );
-        }
-        else
-        {
-            this.getWriter().addDimension( name, length, isUnlimited, isVariableLength );
-        }
     }
 
     private void addGlobalAttribute(Attribute attribute) throws IOException
@@ -332,16 +309,37 @@ public class NetCDFCopier implements Closeable
 
         this.getWriter().addVariable( name, dataType, dimensions );
 
-        this.getWriter().addVariableAttribute( name, "_FillValue", -999.0 );
-        this.getWriter().addVariableAttribute( name, "missing_value", -999.0 );
+        this.getWriter().addVariableAttribute( name, "_FillValue", -999.0F );
+        this.getWriter().addVariableAttribute( name, "missing_value", -999.0F );
 
-        Attribute validRange = new Attribute( "valid_range", Arrays.asList(-900.0, 900.0) );
+        Attribute validRange = new Attribute( "valid_range", Arrays.asList(-900.0F, 900.0F) );
 
         this.getWriter().addVariableAttribute( name, validRange );
 
         Attribute chunkSizes = new Attribute( "_ChunkSizes", 905633 );
 
         this.getWriter().addVariableAttribute( name, chunkSizes );
+
+        Variable coordinateSystem = this.getWriter().findVariable( "ProjectionCoordinateSystem" );
+        if (coordinateSystem != null)
+        {
+            this.getWriter().addVariableAttribute( name, new Attribute("grid_mapping", "ProjectionCoordinateSystem") );
+
+            Attribute esriPEString = coordinateSystem.findAttribute( "esri_pe_string" );
+
+            if (esriPEString != null)
+            {
+                this.getWriter().addVariableAttribute( name, new Attribute("esri_pe_string", esriPEString.getStringValue()) );
+            }
+
+            Attribute proj4 = coordinateSystem.findAttribute( "proj4" );
+
+            if (esriPEString != null)
+            {
+                this.getWriter().addVariableAttribute( name, new Attribute("proj4", proj4.getStringValue()) );
+            }
+
+        }
 
         for (Map.Entry<String, Object> keyValue : attributes.entrySet())
         {
@@ -361,13 +359,13 @@ public class NetCDFCopier implements Closeable
     public boolean isGridded() throws IOException
     {
         boolean hasX = Collections.exists(
-                this.dimensionsToCopy,
+                this.getSource().getDimensions(),
                 dimension -> dimension.getShortName().equalsIgnoreCase( "x" )
         );
         hasX = hasX || this.getWriter().findVariable( "x" ) != null;
 
         boolean hasY = Collections.exists(
-                this.dimensionsToCopy,
+                this.getSource().getDimensions(),
                 dimension -> dimension.getShortName().equalsIgnoreCase( "y" )
         );
         hasY = hasY || this.getWriter().findVariable( "y" ) != null;
@@ -375,6 +373,7 @@ public class NetCDFCopier implements Closeable
         return hasX && hasY;
     }
 
+    // TODO: We can probably define these in the template and just read from there
     public List<String> getMetricDimensionNames() throws IOException
     {
         List<String> dimensionList = new ArrayList<>(  );

@@ -222,8 +222,8 @@ public final class TimeSeries
             {
                 String partitionNumberWord = partitionNumber.toString();
 
-                String highCheck = null;
-                String lowCheck = null;
+                String highCheck;
+                String lowCheck;
 
                 // Sometimes the lead times are negative, but the dash is not a
                 // valid character in a name in sql, so we replace with a word.

@@ -5,6 +5,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -110,6 +111,8 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
     public static Integer getActiveSourceID(String hash)
             throws SQLException
     {
+        Objects.requireNonNull(hash, "A nonexistent hash was passed to DataSources#getActiveSourceID");
+
         Integer id = null;
 
         SourceKey key = new SourceKey( null, null, null, hash );
@@ -126,7 +129,7 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
 
             String script = "";
 
-            script += "SELECT source_id, path, output_time::text, lead" + NEWLINE;
+            script += "SELECT source_id, path, output_time::text, lead, hash" + NEWLINE;
             script += "FROM wres.Source" + NEWLINE;
             script += "WHERE hash = '" + hash + "';";
 
@@ -150,7 +153,6 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
 
                     id = results.getInt( "source_id" );
                 }
-
             }
             finally
             {

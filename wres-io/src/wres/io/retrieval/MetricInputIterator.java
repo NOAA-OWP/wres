@@ -1,13 +1,8 @@
 package wres.io.retrieval;
 
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.time.LocalDateTime;
 import java.util.Iterator;
-import java.util.NavigableMap;
-import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 
@@ -19,16 +14,11 @@ import wres.config.generated.Feature;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.inputs.MetricInput;
 import wres.io.config.ConfigHelper;
-import wres.io.data.caching.MeasurementUnits;
-import wres.io.data.caching.UnitConversions;
-import wres.io.data.caching.Variables;
 import wres.io.data.details.ProjectDetails;
 import wres.io.retrieval.left.LeftHandCache;
 import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
-import wres.util.Collections;
-import wres.util.ProgressMonitor;
-import wres.util.TimeHelper;
+import wres.system.ProgressMonitor;
 
 abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
 {
@@ -201,6 +191,7 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
                     }
                 }
             }
+            // TODO: We can probably just make this an else statement
             // If this is either a time series forecast evaluation or isn't a
             // forecast (i.e. simulation), we only want to run for one window number
             else if ((isForecast && generatesTimeSeriesInputs) || ConfigHelper.isSimulation( this.getRight() ))

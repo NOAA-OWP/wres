@@ -13,7 +13,6 @@ import wres.io.data.caching.DataSources;
 import wres.io.reading.BasicSource;
 import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
-import wres.util.Strings;
 
 /**
  * @author Christopher Tubbs

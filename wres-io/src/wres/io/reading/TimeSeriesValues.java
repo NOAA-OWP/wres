@@ -41,7 +41,7 @@ public final class TimeSeriesValues
     // if not millions of times
     private static final ConcurrentMap<String, String> TABLE_DEFINITIONS = new ConcurrentHashMap<>(  );
 
-    /** @Guards VALUES_TO_SAVE */
+    /** Guards VALUES_TO_SAVE */
     private static final Object VALUES_TO_SAVE_LOCK = new Object();
 
     // The definition of the columns that will have values copied to
@@ -136,7 +136,7 @@ public final class TimeSeriesValues
      */
     private static class TimeSeriesValue
     {
-        public TimeSeriesValue(int timeSeriesID, int lead, String value)
+        TimeSeriesValue(int timeSeriesID, int lead, String value)
         {
             this.timeSeriesID = timeSeriesID;
             this.lead = lead;

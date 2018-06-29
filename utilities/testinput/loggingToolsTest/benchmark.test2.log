@@ -1,4 +1,0 @@
-INFO  [utilities.logging.LoggingToolsTest] - First message.
-WARN  [utilities.logging.LoggingToolsTest] - Third message.
-ERROR [utilities.logging.LoggingToolsTest] - Fourth message.
-INFO  [utilities.logging.LoggingToolsTest] - There should be no debug message.

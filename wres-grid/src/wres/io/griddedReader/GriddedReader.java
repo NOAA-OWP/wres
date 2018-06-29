@@ -105,8 +105,7 @@ public class GriddedReader
     }
 
 
-    public TimeSeriesResponse getData( )
-            throws IOException, InvalidRangeException
+    public TimeSeriesResponse getData( ) throws IOException, InvalidRangeException
     {
         GridValue value;
 
@@ -198,7 +197,7 @@ public class GriddedReader
             this.readLock = new ReentrantLock(  );
         }
 
-        GridValue read(Integer time, final double x, final double y)
+        GridValue read(Integer time, final double latitude, final double longitude)
                 throws IOException, InvalidRangeException
         {
             if (time == null)
@@ -208,13 +207,18 @@ public class GriddedReader
 
             this.readLock.lock();
 
+            // This is underlying THREDDS code. It generally expects some semi-remote location for its data, but we're local, so we're using
             DatasetUrl url = new DatasetUrl( ServiceType.File, this.path );
             try (NetcdfDataset dataset = NetcdfDataset.acquireDataset( url, null ); GridDataset gridDataset = new GridDataset( dataset ))
             {
                 GridDatatype variable = gridDataset.findGridDatatype( this.variableName );
-                int[] xIndexYIndex = variable.getCoordinateSystem().findXYindexFromLatLon( x, y, null );
 
-                Array data = variable.readDataSlice( time, 0, xIndexYIndex[0], xIndexYIndex[1] );
+                // Returns XY from YX parameters
+                int[] xIndexYIndex = variable.getCoordinateSystem().findXYindexFromLatLon( latitude, longitude, null );
+
+                // readDataSlice takes (time, z, y, x) as parameters. Since the previous call was XY, we need to flip
+                // the two, yielding indexes 1 then 0
+                Array data = variable.readDataSlice( time, 0, xIndexYIndex[1], xIndexYIndex[0] );
 
                 double value = data.getDouble( 0 );
                 return new GridValue( value, variable.getUnitsString(), this.getIssueTime(), this.getValidTime() );

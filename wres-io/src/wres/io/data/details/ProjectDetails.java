@@ -6,7 +6,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.time.Duration;
 import java.time.MonthDay;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -43,8 +42,6 @@ import wres.config.generated.ProjectConfig;
 import wres.config.generated.ThresholdType;
 import wres.config.generated.TimeScaleConfig;
 import wres.config.generated.TimeScaleFunction;
-import wres.grid.client.Fetcher;
-import wres.grid.client.Request;
 import wres.io.concurrency.DataSetRetriever;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.Ensembles;
@@ -1110,7 +1107,7 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
         // We're assuming we'll be scaling, so we'll need a default function
         // used to aggregate our values. For the time being, we're going to
         // roll with the average
-        TimeScaleFunction scaleFunction = TimeScaleFunction.AVG;
+        TimeScaleFunction scaleFunction;
 
         try
         {
@@ -1540,7 +1537,7 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
     public boolean usesGriddedData(DataSourceConfig dataSourceConfig)
             throws SQLException
     {
-        Boolean usesGriddedData = null;
+        Boolean usesGriddedData;
 
         switch ( this.getInputName( dataSourceConfig ) )
         {

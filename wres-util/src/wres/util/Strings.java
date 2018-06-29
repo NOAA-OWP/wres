@@ -232,7 +232,6 @@ public final class Strings
         byte[] buffer = new byte[1024];
         MessageDigest complete = Strings.getMD5Algorithm();
         int bytesBuffered;
-        final int passLimit = 5000;
         int passCount = 0;
 
         try ( InputStream fileStream = new BufferedInputStream( new FileInputStream( filename ) ))
@@ -247,7 +246,7 @@ public final class Strings
                 }
                 passCount++;
 
-            } while ( Strings.continueBufferingForChecksum( passCount, bytesBuffered, filename ));
+            } while ( Strings.continueBufferingForChecksum( passCount, bytesBuffered ));
         }
 
         return getMD5Checksum( complete.digest() );
@@ -262,13 +261,10 @@ public final class Strings
 	 * </p>
 	 * @param passCount The amount of times that the stream has passed through the data
 	 * @param amountLastBuffered The amount of data that was last read through the stream
-	 * @param filename The name of the file being loaded for hashing
 	 * @return Whether or not the function that loads data to hash should
 	 * continue to attempt to read data
 	 */
-	private static boolean continueBufferingForChecksum(final int passCount,
-														final int amountLastBuffered,
-														final String filename)
+	private static boolean continueBufferingForChecksum(final int passCount, final int amountLastBuffered)
 	{
 		final int passLimit = 5000;
 
@@ -277,13 +273,6 @@ public final class Strings
 		if (continueBuffering && !Strings.shouldHashEntireFile())
 		{
 			continueBuffering = passCount < passLimit;
-
-			if (!continueBuffering)
-			{
-				LOGGER.warn("Short hashing is enabled and {} was not fully hashed! "
-							+ "This is not acceptable for a production environment.",
-							filename);
-			}
 		}
 
 
