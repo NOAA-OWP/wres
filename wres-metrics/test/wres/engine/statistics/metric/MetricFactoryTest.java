@@ -598,7 +598,8 @@ public final class MetricFactoryTest
                                                                                       null,
                                                                                       null,
                                                                                       null,
-                                                                                      null ) ) ),
+                                                                                      null,
+                                                                                      null) ) ),
                                    null,
                                    null );
     }

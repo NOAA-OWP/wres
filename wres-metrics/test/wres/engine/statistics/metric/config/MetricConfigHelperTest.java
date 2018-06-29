@@ -104,7 +104,8 @@ public final class MetricConfigHelperTest
                                                                                       null,
                                                                                       null,
                                                                                       null,
-                                                                                      null ) ) ),
+                                                                                      null,
+                                                                                      null) ) ),
                                    null,
                                    null );
     }
@@ -622,7 +623,8 @@ public final class MetricConfigHelperTest
                                                                                       null,
                                                                                       null,
                                                                                       null,
-                                                                                      null ) ) ),
+                                                                                      null,
+                                                                                      null) ) ),
                                    null,
                                    null );
 
@@ -657,7 +659,8 @@ public final class MetricConfigHelperTest
                                                                                       null,
                                                                                       null,
                                                                                       null,
-                                                                                      null ) ) ),
+                                                                                      null,
+                                                                                      null) ) ),
                                    null,
                                    null );
 
