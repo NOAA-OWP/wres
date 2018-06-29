@@ -4,7 +4,7 @@
         <left label="NWM Analysis">
             <type>simulations</type>
             <source format="netCDF">../data/griddedExamples/land_apr_snow/analysis_assim/</source>
-            <variable>SNOWH</variable>
+            <variable>SNEQV</variable>
             <existingTimeScale>
                 <function>avg</function>
                 <period>1</period>
@@ -14,7 +14,7 @@
         <right label="NWM Short Range">
             <type>single valued forecasts</type>
             <source format="netCDF">../data/griddedExamples/land_apr_snow/short_range/</source>
-            <variable>SNOWH</variable>
+            <variable>SNEQV</variable>
             <existingTimeScale>
                 <function>avg</function>
                 <period>1</period>
@@ -23,7 +23,7 @@
         </right>
     </inputs>
     <pair label="Pairs by location and lead time"> <!-- required for unit -->
-        <unit>m</unit>
+        <unit>kg m-2</unit>
         <feature>
             <polygon>
                 <point>
