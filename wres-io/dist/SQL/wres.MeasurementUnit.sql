@@ -70,5 +70,6 @@ ALTER TABLE wres.MeasurementUnit ADD CONSTRAINT measurementunit_name_uidx UNIQUE
 	('kg m-2'),
 	('kg m{-2}'),
 	('fraction'),
-	('K')
+	('K'),
+	('-')
 ON CONFLICT DO NOTHING;
