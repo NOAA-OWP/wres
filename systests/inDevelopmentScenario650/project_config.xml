@@ -38,10 +38,10 @@
                     <latitude>39.275</latitude>
                     <longitude>-76.775</longitude>
                 </point>
-		<point>
+                <point>
                     <latitude>39.225</latitude>
                     <longitude>-76.775</longitude>
-		</point>
+                </point>
             </polygon>
         </feature>
         <leadHours maximum="18" />
