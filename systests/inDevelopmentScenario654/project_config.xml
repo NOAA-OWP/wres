@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project label="ExampleProject" name="scenario650">
+    <inputs>
+        <left label="NWM Analysis">
+            <type>simulations</type>
+            <source format="netCDF">../data/griddedExamples/land_apr_snow/analysis_assim/</source>
+            <variable>SNOWH</variable>
+            <existingTimeScale>
+                <function>avg</function>
+                <period>1</period>
+                <unit>hours</unit>
+            </existingTimeScale>
+        </left>
+        <right label="NWM Short Range">
+            <type>single valued forecasts</type>
+            <source format="netCDF">../data/griddedExamples/land_apr_snow/short_range/</source>
+            <variable>SNOWH</variable>
+            <existingTimeScale>
+                <function>avg</function>
+                <period>1</period>
+                <unit>hours</unit>
+            </existingTimeScale>
+        </right>
+    </inputs>
+    <pair label="Pairs by location and lead time"> <!-- required for unit -->
+        <unit>m</unit>
+        <feature>
+            <polygon>
+                <point>
+                    <latitude>50.7</latitude>
+                    <longitude>-124.7</longitude>
+                </point>
+                <point>
+                    <latitude>50.8</latitude>
+                    <longitude>-124.7</longitude>
+                </point>
+                <point>
+                    <latitude>50.8</latitude>
+                    <longitude>-124.8</longitude>
+                </point>
+		<point>
+                    <latitude>50.7</latitude>
+                    <longitude>-124.8</longitude>
+		</point>
+            </polygon>
+        </feature>
+        <leadHours maximum="18" />
+    </pair>
+    <metrics>
+        <metric> <name>mean error</name> </metric>
+        <metric><name>pearson correlation coefficient</name></metric>
+        <metric> <name>sample size</name> </metric>
+    </metrics>
+    <outputs>
+        <destination type="pairs" decimalFormat="0.000000">
+            <path>output/</path>
+        </destination>
+        <destination type="numeric" decimalFormat="0.000000">
+            <path>output/</path>
+        </destination>
+    </outputs>
+</project>
+

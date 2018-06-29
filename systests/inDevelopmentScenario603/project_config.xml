@@ -3,7 +3,8 @@
     <inputs>
         <left label="NWM Analysis">
             <type>simulations</type>
-            <source format="netCDF">../data/land/analysis_assim/</source>
+            <!--<source format="netCDF">../data/griddedExamples/land_may18/analysis_assim/</source>-->
+            <source format="netCDF">../data/griddedExamples/land_ellicott_city/analysis_assim/</source>
             <variable>ACCET</variable>
             <existingTimeScale>
                 <function>avg</function>
@@ -13,7 +14,8 @@
         </left>
         <right label="NWM Short Range">
             <type>single valued forecasts</type>
-            <source format="netCDF">../data/land/short_range/</source>
+<!--            <source format="netCDF">../data/griddedExamples/land_may18/short_range/</source>-->
+            <source format="netCDF">../data/griddedExamples/land_ellicott_city/short_range/</source>
             <variable>ACCET</variable>
             <existingTimeScale>
                 <function>avg</function>
@@ -27,20 +29,28 @@
         <feature>
             <polygon>
                 <point>
-                    <latitude>35.01</latitude>
-                    <longitude>-123.2</longitude>
+                    <latitude>35.0</latitude>
+                    <longitude>-100.0</longitude>
                 </point>
                 <point>
-                    <latitude>35.08</latitude>
-                    <longitude>-123.32</longitude>
+                    <latitude>35.05</latitude>
+                    <longitude>-100.0</longitude>
                 </point>
                 <point>
-                    <latitude>35.08</latitude>
-                    <longitude>-123.4</longitude>
+                    <latitude>35.05</latitude>
+                    <longitude>-99.95</longitude>
+                </point>
+                <point>
+                    <latitude>35.0</latitude>
+                    <longitude>-99.95</longitude>
                 </point>
             </polygon>
         </feature>
-        <leadHours maximum="4" />
+        <desiredTimeScale>
+            <function>avg</function>
+            <period>6</period>
+            <unit>hours</unit>
+        </desiredTimeScale>
     </pair>
     <metrics>
         <metric> <name>mean error</name> </metric>
@@ -54,6 +64,9 @@
     </metrics>
     <outputs>
         <destination type="pairs" decimalFormat="0.000000">
+            <path>output/</path>
+        </destination>
+        <destination type="numeric" decimalFormat="0.000000">
             <path>output/</path>
         </destination>
     </outputs>
