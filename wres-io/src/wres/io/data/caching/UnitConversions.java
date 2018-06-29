@@ -34,7 +34,7 @@ public final class UnitConversions
             {
                 ConversionKey other = (ConversionKey)obj;
 
-                equal = this.toUnitName.equalsIgnoreCase( other.toUnitName );
+                equal = this.toUnitName.toLowerCase().equalsIgnoreCase( other.toUnitName.toLowerCase() );
 
                 equal = equal && this.fromUnitID == other.fromUnitID;
             }
@@ -42,19 +42,29 @@ public final class UnitConversions
             return equal;
         }
 
+        @Override
+        public String toString()
+        {
+            return this.fromUnitName + " -> " + this.toUnitName;
+        }
+
         private final String toUnitName;
         private final int fromUnitID;
+        private final String fromUnitName;
 
         private ConversionKey( String toUnitName, int fromUnitID )
         {
-            this.toUnitName = toUnitName;
+            this.toUnitName = toUnitName.toLowerCase();
             this.fromUnitID = fromUnitID;
+            this.fromUnitName = MeasurementUnits.getNameByID( this.fromUnitID );
         }
 
         private ConversionKey (ResultSet row) throws SQLException
         {
-            this.toUnitName = Database.getValue( row, "unit_name" );
+            String unitName = Database.getValue( row, "unit_name" );
+            this.toUnitName = unitName.toLowerCase();
             this.fromUnitID = Database.getValue( row, "from_unit" );
+            this.fromUnitName = MeasurementUnits.getNameByID( this.fromUnitID );
         }
     }
 
@@ -144,7 +154,11 @@ public final class UnitConversions
 
     public static Conversion getConversion(final int fromID, final String desiredName)
     {
-        return getCache().conversionMap.get(new ConversionKey( desiredName, fromID ));
+        Conversion conversion = getCache().conversionMap.get(new ConversionKey( desiredName, fromID ));
+        Objects.requireNonNull( conversion,
+                                "No valid conversion could be found between " +
+                                MeasurementUnits.getNameByID( fromID ) + " and " + desiredName);
+        return conversion;
     }
 
     /**
