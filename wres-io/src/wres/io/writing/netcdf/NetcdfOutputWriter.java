@@ -2,6 +2,7 @@ package wres.io.writing.netcdf;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.net.URL;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -51,6 +52,7 @@ import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.io.concurrency.Executor;
 import wres.io.config.ConfigHelper;
+import wres.io.reading.usgs.USGSRegionSaver;
 import wres.io.writing.WriteException;
 import wres.util.Strings;
 
@@ -58,6 +60,8 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
 {
     private static final Logger
             LOGGER = LoggerFactory.getLogger( NetcdfOutputWriter.class );
+
+    private static final String DEFAULT_VECTOR_TEMPLATE = "legend_and_nhdplusv2_template.nc";
 
     private static final Object WINDOW_LOCK = new Object();
     private static final Map<TimeWindow, TimeWindowWriter> WRITERS = new ConcurrentHashMap<>(  );
@@ -344,7 +348,19 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
 
         private static String getTemplatePath() throws IOException
         {
-            return NetcdfOutputWriter.getDestinationConfig().getNetcdf().getTemplatePath();
+            String templatePath;
+            if (!NetcdfOutputWriter.isGridded() && NetcdfOutputWriter.getDestinationConfig().getNetcdf().getTemplatePath() == null)
+            {
+                URL template = USGSRegionSaver.class.getClassLoader().getResource( DEFAULT_VECTOR_TEMPLATE );
+                Objects.requireNonNull( template, "A default template for vector netcdf output could not be "
+                                                  + "found on the class path." );
+                templatePath = template.getPath();
+            }
+            else
+            {
+                templatePath = NetcdfOutputWriter.getDestinationConfig().getNetcdf().getTemplatePath();
+            }
+            return templatePath;
         }
 
 

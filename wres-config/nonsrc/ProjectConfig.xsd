@@ -450,7 +450,7 @@
         <xs:sequence>
             <!-- Specifies the path to a template. Eventually, we'll want to
             create one from the input files if one isn't supplied -->
-            <xs:element type="xs:string" name="templatePath" />
+            <xs:element type="xs:string" name="templatePath" minOccurs="0" />
         </xs:sequence>
         <!-- Dictates the name of the variable to use for vector coordinates -->
         <xs:attribute type="xs:string" name="vectorVariable" />
