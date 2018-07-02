@@ -8,6 +8,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.MonthDay;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -164,7 +165,7 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
     /**
      * The set of all features pertaining to the project
      */
-    private Set<FeatureDetails> features;
+    private Collection<FeatureDetails> features;
 
     /**
      * The ID for the variable on the left side of the input
@@ -432,7 +433,7 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
      * @throws SQLException Thrown if details about the project's features
      * cannot be retrieved from the database
      */
-    public Set<FeatureDetails> getFeatures() throws SQLException
+    public Collection<FeatureDetails> getFeatures() throws SQLException
     {
         synchronized ( ProjectDetails.FEATURE_LOCK )
         {
@@ -450,8 +451,7 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
         {
             if ( this.usesGriddedData( this.getRight() ) )
             {
-                this.features = new HashSet<>();
-                this.features.addAll( Features.getGriddedDetails( this ) );
+                this.features = Features.getGriddedDetails( this );
             }
             // If there is no indication whatsoever of what to look for, we
             // want to query the database specifically for all locations

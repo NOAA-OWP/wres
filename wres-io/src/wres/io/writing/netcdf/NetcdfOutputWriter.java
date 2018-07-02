@@ -369,13 +369,6 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
                     try
                     {
                         writer.write( key.getVariableName(), key.getOrigin(), netcdfValue );
-                        LOGGER.trace("Wrote the value {} at ({},{}) for {} in {}.",
-                                    key.getValue(),
-                                    key.getOrigin()[0],
-                                    key.getOrigin()[1],
-                                    key.getVariableName(),
-                                    this.toString()
-                        );
                     }
                     catch(Exception e)
                     {
@@ -411,7 +404,6 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
             try
             {
                 this.valuesToSave.add( new NetcdfValueKey( name, origin, value ) );
-                LOGGER.trace("Added the value {} at ({},{}) to save to {}", value, origin[0], origin[1], this.toString() );
 
                 if ( this.valuesToSave.size() > VALUE_SAVE_LIMIT)
                 {
@@ -436,7 +428,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
         private int[] getOrigin(String name, Location location)
                 throws IOException, InvalidRangeException
         {
-            int[] origin;
+            int[] origin = null;
 
             LOGGER.trace("Looking for the origin of {}", location);
 
@@ -473,19 +465,16 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
             else
             {
                 // Only contains the vector id
-                origin = new int[1];
-
                 Integer vectorIndex = this.getVectorCoordinate(
                         location.getVectorIdentifier().intValue(),
                         getNetcdfConfig().getVectorVariable()
                 );
-
                 Objects.requireNonNull(
                         vectorIndex,
                         "An index for the vector coordinate could not "
                         + "be evaluated. [value = " + location.getVectorIdentifier() + "]");
 
-                origin[0] = vectorIndex;
+                origin = new int[]{vectorIndex};
             }
 
             LOGGER.trace("The origin of {} was at {}", location, origin);
