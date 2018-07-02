@@ -55,7 +55,6 @@ public final class SystemSettings extends XMLReader
     private int minimumCachedNetcdf = 100;
     private int maximumCachedNetcdf = 200;
     private int hardNetcdfCacheLimit = 0;
-    private boolean protectResults = true;
 	private String remoteNetCDFURL = "http://***REMOVED***dstore.***REMOVED***.***REMOVED***/nwm/";
 	private String netcdfStorePath = "systests/data/";
 
@@ -148,9 +147,6 @@ public final class SystemSettings extends XMLReader
                     case "hash_entire_file":
                         this.setFullFileHash( reader );
                         break;
-                    case "protect_results":
-                        this.setProtectResults( reader );
-                        break;
                     default:
                         LOGGER.debug( "The tag '{}' was skipped because it's "
                                       + "not used in configuration.", tagName );
@@ -176,17 +172,6 @@ public final class SystemSettings extends XMLReader
         if (hashAll != null && !Boolean.parseBoolean( hashAll ))
         {
             Strings.setFullHash( false );
-        }
-    }
-
-    private void setProtectResults(XMLStreamReader reader) throws XMLStreamException
-    {
-        String value = XMLHelper.getXMLText( reader );
-        this.protectResults = Strings.isTrue( value );
-        if (!this.protectResults)
-        {
-            LOGGER.warn("The WRES will not attempt to protect results and previous output will be overwritten "
-                        + "regardless of configuration. This should be be set on production systems.");
         }
     }
 
@@ -444,11 +429,6 @@ public final class SystemSettings extends XMLReader
     public static int getMaximumCachedNetcdf()
     {
         return instance.maximumCachedNetcdf;
-    }
-
-    public static boolean shouldProtectResults()
-    {
-        return instance.protectResults;
     }
 
 	/**
