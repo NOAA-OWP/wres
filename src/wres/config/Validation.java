@@ -534,8 +534,7 @@ public class Validation
             // If we want to protect previous results (the default behavior) and there is already data stored in the
             // destination, fail validation
             String[] destinationConents = destinationFile.list();
-            if ( SystemSettings.shouldProtectResults() &&
-                 !d.isOverwrite() &&
+            if ( !d.isOverwrite() &&
                  destinationConents != null &&
                  destinationConents.length != 0 )
             {
