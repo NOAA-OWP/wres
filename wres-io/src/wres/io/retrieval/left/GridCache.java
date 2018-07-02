@@ -4,19 +4,15 @@ import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.FeaturePlus;
 import wres.config.generated.Feature;
 import wres.grid.client.Fetcher;
 import wres.grid.client.Request;
@@ -37,8 +33,7 @@ class GridCache implements LeftHandCache
     GridCache(final ProjectDetails projectDetails) throws SQLException, NoDataException
     {
         this.projectDetails = projectDetails;
-        this.sources = new ArrayList<>();
-        this.values = new HashMap<>();
+        this.cachedSources = new TreeMap<>(  );
         this.loadSourceCache();
     }
 
@@ -48,17 +43,9 @@ class GridCache implements LeftHandCache
                                        LocalDateTime latestDateTime )
             throws IOException
     {
-        if (!this.values.containsKey( feature ))
-        {
-            this.generateLeftHandData( feature );
-        }
-
-        return Collections.getValuesInRange( this.values.get(feature), earliestDate, latestDateTime );
-    }
-
-    private void generateLeftHandData(final Feature feature) throws IOException
-    {
         Request gridRequest;
+
+        List<Double> leftValues = new ArrayList<>();
 
         try
         {
@@ -73,55 +60,83 @@ class GridCache implements LeftHandCache
             throw new IOException( "File paths to investigate could not be determined.", e );
         }
 
-        this.sources.forEach( gridRequest::addPath );
+        gridRequest.setEarliestValidTime( earliestDate.toInstant( ZoneOffset.UTC ) );
+        gridRequest.setLatestValidTime( latestDateTime.toInstant( ZoneOffset.UTC ) );
+
+        List<String> paths = Collections.getValuesInRange( this.cachedSources, earliestDate, latestDateTime );
+        if (paths.size() == 0)
+        {
+            LOGGER.debug("There are no gridded data files for left hand "
+                         + "comparison for this project between the dates of "
+                         + "'{}' and '{}'",
+                         TimeHelper.convertDateToString( earliestDate ),
+                         TimeHelper.convertDateToString( latestDateTime ));
+            return leftValues;
+        }
+
+        paths.forEach( gridRequest::addPath );
 
         Response gridResponse = Fetcher.getData(gridRequest);
-        NavigableMap<LocalDateTime, Double> featureValues = new TreeMap<>(  );
 
-        for (List<Response.Series> featureSeries : gridResponse)
+        for (List<Response.Series> seriesPerFeature : gridResponse)
         {
-            for (Response.Series series : featureSeries)
-            {
-                for (Response.Entry entry : series)
-                {
-                    if (entry.getMeasurements() != null && entry.getMeasurements().length > 0)
-                    {
-                        LocalDateTime key = LocalDateTime.ofInstant( entry.getValidDate(), ZoneId.of("UTC" ) );
-                        Double value = entry.getMeasurements()[0];
+            leftValues.addAll( this.addFeatureValues( seriesPerFeature ) );
+        }
 
-                        try
-                        {
-                            value = UnitConversions.convert(
+        return leftValues;
+    }
+
+    private List<Double> addFeatureValues(List<Response.Series> featureSeries)
+            throws IOException
+    {
+        List<Double> leftValues = new ArrayList<>();
+
+        for (Response.Series series : featureSeries )
+        {
+            leftValues.addAll( this.addTimeSeriesValues( series ) );
+        }
+
+        return leftValues;
+    }
+
+    private List<Double> addTimeSeriesValues(Response.Series series)
+            throws IOException
+    {
+        List<Double> leftValues = new ArrayList<>();
+        for (Response.Entry entry : series)
+        {
+            for (double value : entry)
+            {
+                try
+                {
+                    leftValues.add(
+                            UnitConversions.convert(
                                     value,
                                     entry.getMeasurementUnit(),
                                     this.projectDetails.getDesiredMeasurementUnit()
-                            );
-                        }
-                        catch ( SQLException e )
-                        {
-                            throw new IOException( "Could not convert control value '" +
-                                                   String.valueOf( value ) +
-                                                   "' because a valid conversion from '" +
-                                                   entry.getMeasurementUnit() +
-                                                   "' to '" +
-                                                   this.projectDetails.getDesiredMeasurementUnit() +
-                                                   "' could not be determined.",
-                                                   e);
-                        }
-
-                        featureValues.put(key, value);
-                    }
+                            )
+                    );
+                }
+                catch ( SQLException e )
+                {
+                    throw new IOException( "Could not convert control value '" +
+                                           String.valueOf( value ) +
+                                           "' because a valid conversion from '" +
+                                           entry.getMeasurementUnit() +
+                                           "' to '" +
+                                           this.projectDetails.getDesiredMeasurementUnit() +
+                                           "' could not be determined.",
+                                           e);
                 }
             }
         }
-
-        this.values.put( feature, featureValues );
+        return leftValues;
     }
 
     private void loadSourceCache() throws SQLException, NoDataException
     {
         ScriptBuilder script = new ScriptBuilder();
-        script.addLine("SELECT path");
+        script.addLine("SELECT path, output_time");
         script.addLine("FROM wres.Source S");
         script.addLine("WHERE S.is_point_data = FALSE");
 
@@ -143,16 +158,21 @@ class GridCache implements LeftHandCache
         script.addTab().addLine(")");
         script.addTab().addLine("AND is_point_data = FALSE;");
 
-        script.consume( sourceRow -> this.sources.add(sourceRow.getString( "path" )) );
+        script.consume( this::addSourceToCache );
 
-        if (this.sources.isEmpty())
+        if (this.cachedSources.size() == 0)
         {
             throw new NoDataException( "No gridded sources data could be found "
                                        + "to compare data against." );
         }
     }
 
-    private final List<String> sources;
+    private void addSourceToCache(ResultSet sourceRow) throws SQLException
+    {
+        LocalDateTime leftTime = Database.getLocalDateTime( sourceRow, "output_time" );
+        this.cachedSources.put( leftTime, sourceRow.getString( "path" ) );
+    }
+
+    private final NavigableMap<LocalDateTime, String> cachedSources;
     private final ProjectDetails projectDetails;
-    private final Map<Feature, NavigableMap<LocalDateTime, Double>> values;
 }
