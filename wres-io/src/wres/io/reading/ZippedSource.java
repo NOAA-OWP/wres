@@ -270,6 +270,7 @@ public class ZippedSource extends BasicSource {
             Future<List<IngestResult>> ingest =
                     IngestResult.fakeFutureSingleItemListFrom( projectConfig,
                                                                dataSourceConfig,
+                                                               archivedFileName,
                                                                checkIngest.getRight() );
             this.addIngestTask( ingest );
             return bytesRead;

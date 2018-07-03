@@ -24,24 +24,28 @@ public class IngestResult
 {
     private final LeftOrRightOrBaseline leftOrRightOrBaseline;
     private final String hash;
+    private final String name;
     private final boolean foundAlready;
 
     private IngestResult( LeftOrRightOrBaseline leftOrRightOrBaseline,
                           String hash,
+                          String name,
                           boolean foundAlready )
     {
         Objects.requireNonNull( hash, "Ingester must include a hash." );
         Objects.requireNonNull( leftOrRightOrBaseline, "Ingester must include left/right/baseline" );
         this.leftOrRightOrBaseline = leftOrRightOrBaseline;
         this.hash = hash;
+        this.name = name;
         this.foundAlready = foundAlready;
     }
 
     public static IngestResult of( LeftOrRightOrBaseline leftOrRightOrBaseline,
                                    String hash,
+                                   String name,
                                    boolean foundAlready )
     {
-        return new IngestResult( leftOrRightOrBaseline, hash, foundAlready );
+        return new IngestResult( leftOrRightOrBaseline, hash, name, foundAlready );
     }
 
     /**
@@ -55,6 +59,7 @@ public class IngestResult
     public static IngestResult from( ProjectConfig projectConfig,
                                      DataSourceConfig dataSourceConfig,
                                      String hash,
+                                     String name,
                                      boolean foundAlready )
     {
         LeftOrRightOrBaseline leftOrRightOrBaseline =
@@ -62,6 +67,7 @@ public class IngestResult
                                                        dataSourceConfig );
         return IngestResult.of( leftOrRightOrBaseline,
                                 hash,
+                                name,
                                 foundAlready );
     }
 
@@ -80,6 +86,7 @@ public class IngestResult
     public static List<IngestResult> singleItemListFrom( ProjectConfig projectConfig,
                                                          DataSourceConfig dataSourceConfig,
                                                          String hash,
+                                                         String name,
                                                          boolean foundAlready )
     {
         List<IngestResult> result = new ArrayList<>( 1 );
@@ -87,6 +94,7 @@ public class IngestResult
         IngestResult ingestResult = IngestResult.from( projectConfig,
                                                        dataSourceConfig,
                                                        hash,
+                                                       name,
                                                        foundAlready );
         result.add( ingestResult );
 
@@ -105,10 +113,12 @@ public class IngestResult
 
     public static Future<List<IngestResult>> fakeFutureSingleItemListFrom( ProjectConfig projectConfig,
                                                                            DataSourceConfig dataSourceConfig,
+                                                                           String name,
                                                                            String hash )
     {
         return FakeFutureListOfIngestResults.from( projectConfig,
                                                    dataSourceConfig,
+                                                   name,
                                                    hash );
     }
 
@@ -131,7 +141,7 @@ public class IngestResult
     @Override
     public String toString()
     {
-        return "hash: " + this.getHash() + ", "
+        return "Name:" + this.name + ", hash: " + this.getHash() + ", "
                + "db cache hit? " + this.wasFoundAlready() + ", "
                + "l/r/b: " + getLeftOrRightOrBaseline().value();
     }
@@ -155,11 +165,13 @@ public class IngestResult
 
         public static FakeFutureListOfIngestResults from( ProjectConfig projectConfig,
                                                           DataSourceConfig dataSourceConfig,
+                                                          String name,
                                                           String hash )
         {
             IngestResult results = IngestResult.from( projectConfig,
                                                       dataSourceConfig,
                                                       hash,
+                                                      name,
                                                       true );
             return new FakeFutureListOfIngestResults( results );
         }

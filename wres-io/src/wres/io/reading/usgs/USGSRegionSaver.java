@@ -209,6 +209,7 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
             result = IngestResult.from( this.projectConfig,
                                             this.dataSourceConfig,
                                             response.hash,
+                                            this.requestURL,
                                             true );
         }
         else
@@ -221,9 +222,7 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
             if (usgsResponse.getValue().getNumberOfPopulatedTimeSeries() == 0)
             {
                 LOGGER.debug( "No timeseries were returned from the query:" );
-                LOGGER.debug( usgsResponse.getValue()
-                                          .getQueryInfo()
-                                          .getQueryURL() );
+                LOGGER.debug( requestURL );
             }
             else
             {
@@ -242,6 +241,7 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
                     result = IngestResult.from( this.projectConfig,
                                                 this.dataSourceConfig,
                                                 response.hash,
+                                                this.requestURL,
                                                 false );
 
                     LOGGER.debug( "Data for {} different locations have been saved.",
@@ -273,7 +273,7 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
     
     private WebResponse load() throws IngestException
     {
-        String requestURL = USGS_URL;
+        this.requestURL = USGS_URL;
         Client client = null;
         WebTarget webTarget;
         
@@ -875,6 +875,7 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
     private final ProjectConfig projectConfig;
     private final DataSourceConfig dataSourceConfig;
     private String operationStartTime;
+    private String requestURL;
 
     private ExceptionalConsumer<TimeSeries, IOException> onUpdate;
 

@@ -82,6 +82,7 @@ public final class ZippedPIXMLIngest extends WRESCallable<List<IngestResult>>
             IngestResult ingestResult = IngestResult.from( this.projectConfig,
                                                            this.dataSourceConfig,
                                                            hash,
+                                                           this.fileName,
                                                            wasFoundInCache );
             result.add( ingestResult );
         }

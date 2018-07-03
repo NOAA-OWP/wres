@@ -82,6 +82,7 @@ public class FEWSSource extends BasicSource
         return IngestResult.singleItemListFrom( this.getProjectConfig(),
                                                 this.getDataSourceConfig(),
                                                 this.getHash(),
+                                                this.getFilename(),
                                                 wasFoundInCache );
     }
 

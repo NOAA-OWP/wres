@@ -158,6 +158,7 @@ public final class Operations {
         // variables are valid via normal means, so just return
         if (!isVector)
         {
+            LOGGER.info("Preliminary metadata loading is complete.");
             return;
         }
 
@@ -289,6 +290,7 @@ public final class Operations {
         // evaluate; it is safe to exit.
         if (baselineValid == null)
         {
+            LOGGER.info("Preliminary metadata loading is complete.");
             return;
         }
 
@@ -358,6 +360,7 @@ public final class Operations {
                                   + "evaluation. Possible alternatives could "
                                   + "not be found.", e);
         }
+        LOGGER.info("Preliminary metadata loading is complete.");
     }
 
     /**
