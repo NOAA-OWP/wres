@@ -121,6 +121,7 @@ public class DatacardSource extends BasicSource
             return IngestResult.singleItemListFrom( this.getProjectConfig(),
                                                     this.getDataSourceConfig(),
                                                     this.getHash(),
+                                                    this.getFilename(),
                                                     true );
         }
 
@@ -342,6 +343,7 @@ public class DatacardSource extends BasicSource
         return IngestResult.singleItemListFrom( this.getProjectConfig(),
                                                 this.getDataSourceConfig(),
                                                 this.getHash(),
+                                                this.getFilename(),
                                                 false );
 	}
 

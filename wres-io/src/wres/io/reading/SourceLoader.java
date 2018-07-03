@@ -348,6 +348,7 @@ public class SourceLoader
                 // Fake a future, return result immediately.
                 task = IngestResult.fakeFutureSingleItemListFrom( projectConfig,
                                                                   dataSourceConfig,
+                                                                  absolutePath,
                                                                   checkIngest.getHash() );
             }
             else

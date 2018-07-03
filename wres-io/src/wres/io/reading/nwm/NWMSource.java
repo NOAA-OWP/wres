@@ -47,6 +47,7 @@ public class NWMSource extends BasicSource
 		return IngestResult.singleItemListFrom( this.getProjectConfig(),
 												this.getDataSourceConfig(),
 												this.getHash(),
+												this.getAbsoluteFilename(),
 												false );
 	}
 

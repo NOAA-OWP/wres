@@ -136,7 +136,7 @@ class GridCache implements LeftHandCache
     private void loadSourceCache() throws SQLException, NoDataException
     {
         ScriptBuilder script = new ScriptBuilder();
-        script.addLine("SELECT path, output_time");
+        script.addLine("SELECT S.path, S.output_time + INTERVAL '1 HOUR' * S.lead AS output_time");
         script.addLine("FROM wres.Source S");
         script.addLine("WHERE S.is_point_data = FALSE");
 
@@ -155,8 +155,8 @@ class GridCache implements LeftHandCache
         script.addTab(  2  ).addLine("FROM wres.ProjectSource PS");
         script.addTab(  2  ).addLine("WHERE PS.project_id = ", projectDetails.getId());
         script.addTab(   3   ).addLine("AND PS.member = ", ProjectDetails.LEFT_MEMBER);
-        script.addTab().addLine(")");
-        script.addTab().addLine("AND is_point_data = FALSE;");
+        script.addTab(   3   ).addLine("AND PS.source_id = S.source_id");
+        script.addTab().addLine(");");
 
         script.consume( this::addSourceToCache );
 

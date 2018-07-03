@@ -79,6 +79,7 @@ public class WaterMLFileReader extends BasicSource
                 this.getProjectConfig(),
                 this.getDataSourceConfig(),
                 this.getHash(),
+                this.getAbsoluteFilename(),
                 wasFoundInCache
         );
     }
