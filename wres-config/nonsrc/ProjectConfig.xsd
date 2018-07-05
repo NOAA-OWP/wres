@@ -453,13 +453,15 @@
             <xs:element type="xs:string" name="templatePath" minOccurs="0" />
         </xs:sequence>
         <!-- Dictates the name of the variable to use for vector coordinates -->
-        <xs:attribute type="xs:string" name="vectorVariable" />
+        <xs:attribute type="xs:string" name="vectorVariable" default="feature_id" />
 
         <!-- Dictates the name of the variable that contains the y coordinates for gridded data -->
-        <xs:attribute type="xs:string" name="gridYVariable" />
+        <xs:attribute type="xs:string" name="gridYVariable" default="y" />
 
         <!-- Dictates the name of the variable that contains the x coordinates for the gridded data -->
-        <xs:attribute type="xs:string" name="gridXVariable" />
+        <xs:attribute type="xs:string" name="gridXVariable" default="x" />
+
+        <xs:attribute type="xs:boolean" name="gridded" default="false" />
     </xs:complexType>
 
     <xs:complexType name="destination">
