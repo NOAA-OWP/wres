@@ -3,7 +3,7 @@
     <inputs>
         <left label="NWM Analysis">
             <type>simulations</type>
-            <source format="netCDF">../data/griddedExamples/precip_ellicott_city/analysis_assim/</source>
+            <source format="netCDF" pattern="**/*tm02*">../data/griddedExamples/precip_ellicott_city/analysis_assim/</source>
             <variable>RAINRATE</variable>
             <existingTimeScale>
                 <function>avg</function>
