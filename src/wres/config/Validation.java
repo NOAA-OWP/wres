@@ -174,17 +174,21 @@ public class Validation
     {
         Objects.requireNonNull( projectConfigPlus, NON_NULL );
 
-        boolean valid = Validation.isNetcdfOutputConfigValid( projectConfigPlus );
+        boolean valid = Validation.isNetcdfOutputConfigValid(
+                projectConfigPlus.toString(),
+                projectConfigPlus.getProjectConfig().getOutputs().getDestination()
+
+        );
         // Validate that outputs are writeable directories
         return  Validation.areAllOutputPathsWriteableDirectories( projectConfigPlus ) && valid;
     }
 
-    private static boolean isNetcdfOutputConfigValid(ProjectConfigPlus projectConfigPlus)
+    private static boolean isNetcdfOutputConfigValid(String path, List<DestinationConfig> destinations)
     {
-        Objects.requireNonNull( projectConfigPlus, NON_NULL );
+        Objects.requireNonNull( destinations, NON_NULL );
 
         // Look for a Netcdf Destination config that has a template that doesn't exist
-        DestinationConfig templateMissing = Collections.find(projectConfigPlus.getProjectConfig().getOutputs().getDestination(),
+        DestinationConfig templateMissing = Collections.find(destinations,
                                             destinationConfig ->
                                                     destinationConfig.getNetcdf() != null &&
                                                     destinationConfig.getNetcdf().getTemplatePath() != null &&
@@ -193,19 +197,34 @@ public class Validation
                                                     )
         );
 
-        // If a missing template wasn't found, we're in the clear
-        boolean valid = templateMissing == null;
-
-        if (!valid)
+        if (templateMissing != null)
         {
             LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
                          + " The indicated Netcdf Output template does not exist.",
-                         projectConfigPlus,
+                         path,
                          templateMissing.sourceLocation().getLineNumber(),
                          templateMissing.sourceLocation().getColumnNumber() );
         }
 
-        return valid;
+        // Look for destinations that aren't for Netcdf but have netcdf specifications
+        List<DestinationConfig> incorrectDestinations = Collections.where(
+                destinations,
+                config -> config.getType() != DestinationType.NETCDF && config.getNetcdf() != null
+        );
+
+        if ( incorrectDestinations != null)
+        {
+            for (DestinationConfig destinationConfig : incorrectDestinations)
+            {
+                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                             + " Netcdf output configurations are only valid for Netcdf Output.",
+                             path,
+                             destinationConfig.sourceLocation().getLineNumber(),
+                             destinationConfig.sourceLocation().getColumnNumber() );
+            }
+        }
+
+        return templateMissing == null && incorrectDestinations == null;
     }
 
     /**
