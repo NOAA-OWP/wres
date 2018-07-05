@@ -27,7 +27,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ucar.ma2.Array;
-import ucar.ma2.ArrayFloat;
 import ucar.ma2.DataType;
 import ucar.ma2.Index;
 import ucar.ma2.InvalidRangeException;
@@ -52,7 +51,6 @@ import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.io.concurrency.Executor;
 import wres.io.config.ConfigHelper;
-import wres.io.reading.usgs.USGSRegionSaver;
 import wres.io.writing.WriteException;
 import wres.util.Strings;
 
@@ -62,6 +60,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
             LOGGER = LoggerFactory.getLogger( NetcdfOutputWriter.class );
 
     private static final String DEFAULT_VECTOR_TEMPLATE = "legend_and_nhdplusv2_template.nc";
+    private static final String DEFAULT_GRID_TEMPLATE = "lcc_grid_template.nc";
 
     private static final Object WINDOW_LOCK = new Object();
     private static final Map<TimeWindow, TimeWindowWriter> WRITERS = new ConcurrentHashMap<>(  );
@@ -70,7 +69,8 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
 
     private static final ZonedDateTime ANALYSIS_TIME = ZonedDateTime.now( ZoneId.of("UTC") );
 
-    private static List<DestinationConfig> destinationConfig;
+    private static DestinationConfig destinationConfig;
+    private static NetcdfType netcdfConfiguration;
 
     private NetcdfOutputWriter(){}
 
@@ -88,37 +88,40 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
                     Collections.unmodifiableList(
                             ConfigHelper.getDestinationsOfType( projectConfig,
                                                                 DestinationType.NETCDF )
-                    );
-        }
-    }
+                    ).get( 0 );
 
-    private static NetcdfType getNetcdfConfig() throws IOException
-    {
-        return NetcdfOutputWriter.getDestinationConfig().getNetcdf();
+            NetcdfOutputWriter.netcdfConfiguration = NetcdfOutputWriter.destinationConfig.getNetcdf();
+
+            if (NetcdfOutputWriter.netcdfConfiguration == null)
+            {
+                NetcdfOutputWriter.netcdfConfiguration = new NetcdfType(
+                        null,
+                        null,
+                        null,
+                        null,
+                        null
+                );
+            }
+        }
     }
 
     private static boolean isGridded() throws IOException
     {
-        return Strings.hasValue(NetcdfOutputWriter.getNetcdfConfig().getGridXVariable()) &&
-               Strings.hasValue( NetcdfOutputWriter.getNetcdfConfig().getGridYVariable() );
+        return NetcdfOutputWriter.getNetcdfConfiguration().isGridded();
     }
 
-    // TODO: We are currently only supporting one Netcdf destination tag
-    private static DestinationConfig getDestinationConfig() throws IOException
+    private static NetcdfType getNetcdfConfiguration()
     {
         Objects.requireNonNull(NetcdfOutputWriter.destinationConfig,
-                               "The NetcdfOutputWriter was never initialized.");
+                               "The NetcdfOutputWriter wasn't properly initialized.");
+        return NetcdfOutputWriter.netcdfConfiguration;
+    }
 
-        if (!NetcdfOutputWriter.destinationConfig.isEmpty())
-        {
-            return NetcdfOutputWriter.destinationConfig.get( 0 );
-        }
-        else
-        {
-            throw new IOException( "No Netcdf destination was configured, yet "
-                                   + "the application is still trying to output "
-                                   + "Netcdf data." );
-        }
+    private static DestinationConfig getDestinationConfig()
+    {
+        Objects.requireNonNull(NetcdfOutputWriter.destinationConfig,
+                               "The NetcdfOutputWriter wasn't properly initialized.");
+        return NetcdfOutputWriter.destinationConfig;
     }
 
     public static void write(final TimeWindow window, final MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput> output)
@@ -349,10 +352,22 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
         private static String getTemplatePath() throws IOException
         {
             String templatePath;
-            if (!NetcdfOutputWriter.isGridded() && NetcdfOutputWriter.getDestinationConfig().getNetcdf().getTemplatePath() == null)
+
+            if (NetcdfOutputWriter.getNetcdfConfiguration().getTemplatePath() == null)
             {
-                URL template = USGSRegionSaver.class.getClassLoader().getResource( DEFAULT_VECTOR_TEMPLATE );
-                Objects.requireNonNull( template, "A default template for vector netcdf output could not be "
+                String defaultTemplate;
+
+                if (NetcdfOutputWriter.isGridded())
+                {
+                    defaultTemplate = DEFAULT_GRID_TEMPLATE;
+                }
+                else
+                {
+                    defaultTemplate = DEFAULT_VECTOR_TEMPLATE;
+                }
+
+                URL template = NetcdfOutputWriter.class.getClassLoader().getResource( defaultTemplate );
+                Objects.requireNonNull( template, "A default template for netcdf output could not be "
                                                   + "found on the class path." );
                 templatePath = template.getPath();
             }
@@ -360,6 +375,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
             {
                 templatePath = NetcdfOutputWriter.getDestinationConfig().getNetcdf().getTemplatePath();
             }
+
             return templatePath;
         }
 
@@ -466,6 +482,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
                 // contains the the y index and the x index
                 origin = new int[2];
 
+                // TODO: Find a different approach to handle grids without a coordinate system
                 try (GridDataset gridDataset = GridDataset.open( this.outputPath ))
                 {
                     GridDatatype variable = gridDataset.findGridDatatype( name );
@@ -483,7 +500,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
                 // Only contains the vector id
                 Integer vectorIndex = this.getVectorCoordinate(
                         location.getVectorIdentifier().intValue(),
-                        getNetcdfConfig().getVectorVariable()
+                        NetcdfOutputWriter.getNetcdfConfiguration().getVectorVariable()
                 );
                 Objects.requireNonNull(
                         vectorIndex,
