@@ -6,6 +6,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.Instant;
 import java.time.MonthDay;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -621,7 +622,7 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
         return this.projectConfig.getInputs().getBaseline();
     }
 
-    public Integer getVariableId(DataSourceConfig dataSourceConfig)
+    private Integer getVariableId(DataSourceConfig dataSourceConfig)
             throws SQLException
     {
         final String side = this.getInputName( dataSourceConfig );
@@ -1597,6 +1598,39 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
         return ConfigHelper.getDestinationsOfType( this.getProjectConfig(), DestinationType.PAIRS );
     }
 
+    public Pair<Instant, Instant> getIssueDateRange(final int issueDatePoolStep)
+    {
+        if (this.projectConfig.getPair().getIssuedDatesPoolingWindow() == null)
+        {
+            return null;
+        }
+
+        long frequency = TimeHelper.unitsToLeadUnits( this.getIssuePoolingWindowUnit(), this.getIssuePoolingWindowFrequency() );
+        long span = TimeHelper.unitsToLeadUnits( this.getIssuePoolingWindowUnit(), this.getIssuePoolingWindowPeriod() );
+
+        Instant earliestIssue = Instant.parse( this.getEarliestIssueDate() );
+
+        Instant first = earliestIssue.plus( frequency * issueDatePoolStep, TimeHelper.LEAD_RESOLUTION );
+        Instant last = earliestIssue.plus( frequency * issueDatePoolStep + span, TimeHelper.LEAD_RESOLUTION );
+
+        return Pair.of( first, last );
+    }
+
+    public String getIssueDatesQualifier(final int issueDatePoolStep, String issueField)
+    {
+        Pair<Instant, Instant> issueRange = this.getIssueDateRange( issueDatePoolStep );
+
+        if (issueRange == null)
+        {
+            return null;
+        }
+
+        String qualifier = issueField + " >= '" + issueRange.getLeft() + "'::timestamp without time zone ";
+        qualifier += "AND " + issueField + " <= '" + issueRange.getRight() + "'::timestamp without time zone";
+
+        return qualifier;
+    }
+
     /**
      * Determines the overall range of leads to use in a given window
      * @param feature The feature who the range belongs to
@@ -2219,56 +2253,20 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
      */
     private void addIssuePoolCount( Feature feature) throws SQLException
     {
-        String rollingScript = ScriptGenerator.formIssuePoolCountScript( this, feature );
+        ScriptBuilder counter = ScriptGenerator.formIssuePoolCounter(this, feature);
 
-        Connection connection = null;
-        ResultSet resultSet = null;
+        Integer windowCount = counter.retrieve( "window_count" );
 
-        try
+        if (windowCount != null)
         {
-            connection = Database.getHighPriorityConnection();
-            resultSet = Database.getResults( connection, rollingScript );
-
-            if (resultSet.isBeforeFirst())
-            {
-                resultSet.next();
-
-                Integer windowCount = Database.getValue( resultSet, "window_count" );
-
-                if (windowCount != null)
-                {
-                    this.poolCounts.put( feature,
-                                         Database.getValue( resultSet,
-                                                            "window_count" ) );
-                }
-                else
-                {
-                    throw new SQLException( "There was no intersection between "
-                                            + "observation and forecast data for '"
-                                            + ConfigHelper.getFeatureDescription( feature )
-                                            + "'." );
-                }
-            }
+            this.poolCounts.put( feature, windowCount );
         }
-        finally
+        else
         {
-            if (resultSet != null)
-            {
-                try
-                {
-                    resultSet.close();
-                }
-                catch ( SQLException se )
-                {
-                    // Failure to close resource shouldn't affect primary output
-                    LOGGER.warn( "Failed to close result set {}.", resultSet, se );
-                }
-            }
-
-            if (connection != null)
-            {
-                Database.returnHighPriorityConnection( connection );
-            }
+            throw new SQLException( "There was no intersection between "
+                                    + "observation and forecast data for '"
+                                    + ConfigHelper.getFeatureDescription( feature )
+                                    + "'." );
         }
     }
 
