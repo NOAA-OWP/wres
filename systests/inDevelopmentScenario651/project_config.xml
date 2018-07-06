@@ -44,6 +44,12 @@
                 </point>
             </polygon>
         </feature>
+
+        <desiredTimeScale>
+            <function>avg</function>
+            <period>2</period>
+            <unit>hours</unit>
+        </desiredTimeScale>
     </pair>
     <metrics>
         <metric> <name>mean error</name> </metric>

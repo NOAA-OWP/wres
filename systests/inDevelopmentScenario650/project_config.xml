@@ -23,7 +23,7 @@
         </right>
     </inputs>
     <pair label="Pairs by location and lead time"> <!-- required for unit -->
-        <unit>mm s^-1</unit>
+        <unit>mm/h</unit>
         <feature>
             <polygon>
                 <point>
