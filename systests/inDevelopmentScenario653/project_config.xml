@@ -45,6 +45,10 @@
             </polygon>
         </feature>
         <leadHours maximum="4" />
+        <leadTimesPoolingWindow>
+            <period>4</period>
+            <unit>hours</unit>
+        </leadTimesPoolingWindow>
     </pair>
     <metrics>
         <metric> <name>mean error</name> </metric>
@@ -58,6 +62,11 @@
         <destination type="numeric" decimalFormat="0.000000">
             <path>output/</path>
         </destination>
+         <destination type="netcdf">
+            <path>output/</path>
+            <netcdf gridded="true" />
+        </destination>
+
     </outputs>
 </project>
 

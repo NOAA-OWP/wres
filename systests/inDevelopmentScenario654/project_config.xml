@@ -3,8 +3,8 @@
     <inputs>
         <left label="NWM Analysis">
             <type>simulations</type>
-            <source format="netCDF">../data/griddedExamples/land_apr_snow/analysis_assim/</source>
-            <variable>SNEQV</variable>
+            <source format="netCDF">../data/griddedExamples/precip_ellicott_city/analysis_assim/</source>
+            <variable>RAINRATE</variable>
             <existingTimeScale>
                 <function>avg</function>
                 <period>1</period>
@@ -12,39 +12,45 @@
             </existingTimeScale>
         </left>
         <right label="NWM Short Range">
-            <type>single valued forecasts</type>
-            <source format="netCDF">../data/griddedExamples/land_apr_snow/short_range/</source>
-            <variable>SNEQV</variable>
+            <type>ensemble forecasts</type>
+            <source format="netCDF">../data/griddedExamples/precip_ellicott_city/medium_range_ens/</source>
+            <variable>RAINRATE</variable>
             <existingTimeScale>
                 <function>avg</function>
-                <period>1</period>
+                <period>3</period>
                 <unit>hours</unit>
             </existingTimeScale>
         </right>
     </inputs>
     <pair label="Pairs by location and lead time"> <!-- required for unit -->
-        <unit>kg m-2</unit>
+        <unit>mm s^-1</unit>
         <feature>
             <polygon>
                 <point>
-                    <latitude>50.7</latitude>
-                    <longitude>-124.7</longitude>
+                    <latitude>39.225</latitude>
+                    <longitude>-76.825</longitude>
                 </point>
                 <point>
-                    <latitude>50.8</latitude>
-                    <longitude>-124.7</longitude>
+                    <latitude>39.275</latitude>
+                    <longitude>-76.825</longitude>
                 </point>
                 <point>
-                    <latitude>50.8</latitude>
-                    <longitude>-124.8</longitude>
+                    <latitude>39.275</latitude>
+                    <longitude>-76.775</longitude>
                 </point>
-		<point>
-                    <latitude>50.7</latitude>
-                    <longitude>-124.8</longitude>
-		</point>
+                <point>
+                    <latitude>39.225</latitude>
+                    <longitude>-76.775</longitude>
+                </point>
             </polygon>
         </feature>
         <leadHours maximum="18" />
+
+        <desiredTimeScale>
+            <function>avg</function>
+            <period>3</period>
+            <unit>hours</unit>
+        </desiredTimeScale>
     </pair>
     <metrics>
         <metric> <name>mean error</name> </metric>
@@ -57,6 +63,10 @@
         </destination>
         <destination type="numeric" decimalFormat="0.000000">
             <path>output/</path>
+        </destination>
+         <destination type="netcdf">
+            <path>output/</path>
+            <netcdf gridded="true" />
         </destination>
     </outputs>
 </project>
