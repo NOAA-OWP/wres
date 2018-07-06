@@ -3,7 +3,7 @@
     <inputs>
         <left label="NWM Analysis">
             <type>simulations</type>
-            <source format="netCDF">../data/griddedExamples/precip_ellicott_city/analysis_assim/</source>
+            <source format="netCDF" pattern="**/*tm02*">../data/griddedExamples/precip_ellicott_city/analysis_assim/</source>
             <variable>RAINRATE</variable>
             <existingTimeScale>
                 <function>avg</function>
@@ -23,7 +23,7 @@
         </right>
     </inputs>
     <pair label="Pairs by location and lead time"> <!-- required for unit -->
-        <unit>mm s^-1</unit>
+        <unit>mm/h</unit>
         <feature>
             <polygon>
                 <point>
@@ -57,6 +57,10 @@
         </destination>
         <destination type="numeric" decimalFormat="0.000000">
             <path>output/</path>
+        </destination>
+         <destination type="netcdf">
+            <path>output/</path>
+            <netcdf gridded="true" />
         </destination>
     </outputs>
 </project>

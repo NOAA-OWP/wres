@@ -44,6 +44,12 @@
                 </point>
             </polygon>
         </feature>
+
+        <desiredTimeScale>
+            <function>avg</function>
+            <period>2</period>
+            <unit>hours</unit>
+        </desiredTimeScale>
     </pair>
     <metrics>
         <metric> <name>mean error</name> </metric>
@@ -56,6 +62,10 @@
         </destination>
         <destination type="numeric" decimalFormat="0.000000">
             <path>output/</path>
+        </destination>
+         <destination type="netcdf">
+            <path>output/</path>
+            <netcdf gridded="true" />
         </destination>
     </outputs>
 </project>

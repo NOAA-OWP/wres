@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project label="ExampleProject" name="scenario650">
+    <inputs>
+        <left label="NWM Analysis">
+            <type>simulations</type>
+            <source format="netCDF">../data/griddedExamples/land_ellicott_city/analysis_assim/</source>
+            <variable>SOILSAT_TOP</variable>
+            <existingTimeScale>
+                <function>avg</function>
+                <period>1</period>
+                <unit>hours</unit>
+            </existingTimeScale>
+        </left>
+        <right label="NWM Short Range">
+            <type>single valued forecasts</type>
+            <source format="netCDF">../data/griddedExamples/land_ellicott_city/medium_range/</source>
+            <variable>SOILSAT_TOP</variable>
+            <existingTimeScale>
+                <function>avg</function>
+                <period>3</period>
+                <unit>hours</unit>
+            </existingTimeScale>
+        </right>
+    </inputs>
+    <pair label="Pairs by location and lead time"> <!-- required for unit -->
+        <unit>fraction</unit>
+        <feature>
+            <polygon>
+                <point>
+                    <latitude>39.225</latitude>
+                    <longitude>-76.825</longitude>
+                </point>
+                <point>
+                    <latitude>39.275</latitude>
+                    <longitude>-76.825</longitude>
+                </point>
+                <point>
+                    <latitude>39.275</latitude>
+                    <longitude>-76.775</longitude>
+                </point>
+                <point>
+                    <latitude>39.225</latitude>
+                    <longitude>-76.775</longitude>
+                </point>
+            </polygon>
+        </feature>
+        <leadHours maximum="48" />
+        <desiredTimeScale>
+            <function>none</function>
+            <period>3</period>
+            <unit>hours</unit>
+        </desiredTimeScale>
+    </pair>
+    <metrics>
+        <metric> <name>mean error</name> </metric>
+        <metric><name>pearson correlation coefficient</name></metric>
+        <metric> <name>sample size</name> </metric>
+    </metrics>
+    <outputs>
+        <destination type="pairs" decimalFormat="0.000000">
+            <path>output/</path>
+        </destination>
+        <destination type="numeric" decimalFormat="0.000000">
+            <path>output/</path>
+        </destination>
+         <destination type="netcdf">
+            <path>output/</path>
+            <netcdf gridded="true" />
+        </destination>
+    </outputs>
+</project>
+
