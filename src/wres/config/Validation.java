@@ -1,6 +1,7 @@
 package wres.config;
 
 import java.io.File;
+import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -25,6 +26,7 @@ import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.DateCondition;
 import wres.config.generated.DestinationConfig;
+import wres.config.generated.DestinationType;
 import wres.config.generated.DurationUnit;
 import wres.config.generated.Feature;
 import wres.config.generated.Format;
@@ -44,6 +46,7 @@ import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.engine.statistics.metric.config.MetricConfigHelper;
 import wres.io.config.ConfigHelper;
 import wres.system.SystemSettings;
+import wres.util.Collections;
 import wres.util.Strings;
 
 
@@ -171,8 +174,57 @@ public class Validation
     {
         Objects.requireNonNull( projectConfigPlus, NON_NULL );
 
+        boolean valid = Validation.isNetcdfOutputConfigValid(
+                projectConfigPlus.toString(),
+                projectConfigPlus.getProjectConfig().getOutputs().getDestination()
+
+        );
         // Validate that outputs are writeable directories
-        return  Validation.areAllOutputPathsWriteableDirectories( projectConfigPlus );
+        return  Validation.areAllOutputPathsWriteableDirectories( projectConfigPlus ) && valid;
+    }
+
+    private static boolean isNetcdfOutputConfigValid(String path, List<DestinationConfig> destinations)
+    {
+        Objects.requireNonNull( destinations, NON_NULL );
+
+        // Look for a Netcdf Destination config that has a template that doesn't exist
+        DestinationConfig templateMissing = Collections.find(destinations,
+                                            destinationConfig ->
+                                                    destinationConfig.getNetcdf() != null &&
+                                                    destinationConfig.getNetcdf().getTemplatePath() != null &&
+                                                    Files.notExists(
+                                                            Paths.get( destinationConfig.getNetcdf().getTemplatePath() )
+                                                    )
+        );
+
+        if (templateMissing != null)
+        {
+            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                         + " The indicated Netcdf Output template does not exist.",
+                         path,
+                         templateMissing.sourceLocation().getLineNumber(),
+                         templateMissing.sourceLocation().getColumnNumber() );
+        }
+
+        // Look for destinations that aren't for Netcdf but have netcdf specifications
+        List<DestinationConfig> incorrectDestinations = Collections.where(
+                destinations,
+                config -> config.getType() != DestinationType.NETCDF && config.getNetcdf() != null
+        );
+
+        if ( incorrectDestinations != null)
+        {
+            for (DestinationConfig destinationConfig : incorrectDestinations)
+            {
+                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                             + " Netcdf output configurations are only valid for Netcdf Output.",
+                             path,
+                             destinationConfig.sourceLocation().getLineNumber(),
+                             destinationConfig.sourceLocation().getColumnNumber() );
+            }
+        }
+
+        return templateMissing == null && incorrectDestinations == null;
     }
 
     /**

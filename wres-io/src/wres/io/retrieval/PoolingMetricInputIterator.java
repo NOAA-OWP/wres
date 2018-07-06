@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory;
 import wres.config.generated.Feature;
 import wres.io.data.details.ProjectDetails;
 
-public class PoolingMetricInputIterator extends MetricInputIterator
+class PoolingMetricInputIterator extends MetricInputIterator
 {
     private static final Logger LOGGER =
             LoggerFactory.getLogger(PoolingMetricInputIterator.class);
