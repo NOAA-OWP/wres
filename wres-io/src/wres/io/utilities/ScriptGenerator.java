@@ -489,19 +489,11 @@ public final class ScriptGenerator
         return script.toString();
     }
 
-    public static String formIssuePoolCountScript(
+    public static ScriptBuilder formIssuePoolCounter(
             ProjectDetails projectDetails,
             Feature feature)
             throws SQLException
     {
-        ScriptBuilder script = new ScriptBuilder();
-
-        String timeSeriesVariablePosition =
-                ConfigHelper.getVariablePositionClause(
-                        feature,
-                        Variables.getVariableID( projectDetails.getRight() ),
-                        "TS"
-                );
 
         long period = TimeHelper.unitsToLeadUnits(projectDetails.getIssuePoolingWindowUnit(), projectDetails.getIssuePoolingWindowPeriod());
         long frequency = TimeHelper.unitsToLeadUnits( projectDetails.getIssuePoolingWindowUnit(), projectDetails.getIssuePoolingWindowFrequency() );
@@ -521,28 +513,66 @@ public final class ScriptGenerator
             distanceBetween = period - frequency;
         }
 
-        script.addLine("SELECT FLOOR(((EXTRACT( epoch FROM AGE(LEAST(MAX(initialization_date), '",
-                       projectDetails.getLatestIssueDate(), "') - INTERVAL '",
-                       period - frequency,
-                       " HOURS', '",
-                       projectDetails.getEarliestIssueDate(),
-                       "')) / 3600) / (",
-                       distanceBetween,
-                       ")))::int AS window_count");
-        script.addLine("FROM wres.TimeSeries TS");
-        script.addLine("WHERE ", timeSeriesVariablePosition);
-        script.addLine("    AND EXISTS (");
-        script.addLine("        SELECT 1");
-        script.addLine("        FROM wres.ForecastSource FS");
-        script.addLine("        INNER JOIN wres.ProjectSource PS");
-        script.addLine("            ON PS.source_id = FS.source_id");
-        script.addLine("        WHERE PS.project_id = ", projectDetails.getId());
-        script.addLine("            AND PS.member = 'right'");
-        script.addLine("            AND FS.forecast_id = TS.timeseries_id");
-        script.addLine("    );");
+        ScriptBuilder script = new ScriptBuilder(  );
+        script.setHighPriority( true );
 
+        if (projectDetails.usesGriddedData( projectDetails.getRight() ))
+        {
+            script.addLine("SELECT FLOOR (");
+            script.addTab().addLine("(");
+            script.addTab(  2  ).addLine("(");
+            script.addTab(   3   ).addLine("EXTRACT (");
+            script.addTab(    4    ).addLine("epoch FROM AGE (");
+            script.addTab(     5     ).addLine("LEAST (");
+            script.addTab(      6      ).addLine("MAX(S.output_time),");
+            script.addTab(      6      ).addLine("'", projectDetails.getLatestIssueDate(), "'");
+            script.addTab(     5     ).addLine(") - INTERVAL '", period - frequency, " HOURS',");
+            script.addTab(     5     ).addLine("'", projectDetails.getEarliestIssueDate(), "'");
+            script.addTab(    4    ).addLine(")");
+            script.addTab(   3   ).addLine(")");
+            script.addTab(  2  ).addLine(") / 3600");
+            script.addTab().addLine(") / (", distanceBetween, ")");
+            script.addLine(")::int AS window_count");
+            script.addLine("FROM wres.Source S");
+            script.addLine("WHERE EXISTS (");
+            script.addTab().addLine("SELECT 1");
+            script.addTab().addLine("FROM wres.ProjectSource PS");
+            script.addTab().addLine("WHERE PS.project_id = ", projectDetails.getId());
+            script.addTab(  2  ).addLine("AND PS.member = ", ProjectDetails.RIGHT_MEMBER);
+            script.addTab(  2  ).addLine("AND PS.source_id = S.source_id");
+            script.addLine(");");
+        }
+        else
+        {
+            String timeSeriesVariablePosition =
+                ConfigHelper.getVariablePositionClause(
+                        feature,
+                        Variables.getVariableID( projectDetails.getRight() ),
+                        "TS"
+                );
 
-        return script.toString();
+            script.addLine("SELECT FLOOR(((EXTRACT( epoch FROM AGE(LEAST(MAX(initialization_date), '",
+                           projectDetails.getLatestIssueDate(), "') - INTERVAL '",
+                           period - frequency,
+                           " HOURS', '",
+                           projectDetails.getEarliestIssueDate(),
+                           "')) / 3600) / (",
+                           distanceBetween,
+                           ")))::int AS window_count");
+            script.addLine("FROM wres.TimeSeries TS");
+            script.addLine("WHERE ", timeSeriesVariablePosition);
+            script.addLine("    AND EXISTS (");
+            script.addLine("        SELECT 1");
+            script.addLine("        FROM wres.ForecastSource FS");
+            script.addLine("        INNER JOIN wres.ProjectSource PS");
+            script.addLine("            ON PS.source_id = FS.source_id");
+            script.addLine("        WHERE PS.project_id = ", projectDetails.getId());
+            script.addLine("            AND PS.member = 'right'");
+            script.addLine("            AND FS.forecast_id = TS.timeseries_id");
+            script.addLine("    );");
+        }
+
+        return script;
     }
 
     public static String generateInitialObservationDateScript( ProjectDetails projectDetails,

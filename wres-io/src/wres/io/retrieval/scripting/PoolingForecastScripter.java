@@ -80,31 +80,11 @@ class PoolingForecastScripter extends Scripter
         this.addTab().addLine("AND ", this.getProjectDetails().getLeadQualifier( this.getFeature(), this.getProgress(), "FV" ));
 
         this.applyEnsembleConstraint();
-
-        long frequency = TimeHelper.unitsToLeadUnits(
-                this.getProjectDetails().getIssuePoolingWindowUnit(),
-                this.getProjectDetails().getIssuePoolingWindowFrequency()
+        String issueQualifier = this.getProjectDetails().getIssueDatesQualifier(
+                this.getSequenceStep(),
+                "TS.initialization_date"
         );
-
-        long span = TimeHelper.unitsToLeadUnits(
-                this.getProjectDetails().getIssuePoolingWindowUnit(),
-                this.getProjectDetails().getIssuePoolingWindowPeriod()
-        );
-
-        this.addTab().add( "AND TS.initialization_date >= ('", this.getProjectDetails().getEarliestIssueDate(), "'::timestamp without time zone + (INTERVAL '1 HOUR' * ");
-        this.add( frequency );
-        this.addLine(" ) * ", this.getSequenceStep(), ")");
-        this.addTab().add( "AND TS.initialization_date <= ('", this.getProjectDetails().getEarliestIssueDate() );
-        this.add("'::timestamp without time zone + (INTERVAL '1 HOUR' * ", frequency, ") * ", this.getSequenceStep(), ")");
-
-        if (span > 0)
-        {
-            this.addLine( " + INTERVAL '", span, " HOUR'" );
-        }
-        else
-        {
-            this.addLine();
-        }
+        this.addTab().addLine("AND ", issueQualifier);
 
         if (this.getProjectDetails().getEarliestDate() != null)
         {

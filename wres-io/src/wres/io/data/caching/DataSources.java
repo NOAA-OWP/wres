@@ -211,8 +211,7 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
 
 	public static List<String> getSourcePaths( final ProjectDetails projectDetails,
                                                final DataSourceConfig dataSourceConfig,
-                                               final String firstIssueDate,
-                                               final String lastIssueDate,
+                                               final Integer issuePoolStep,
                                                final Integer firstLead,
                                                final Integer lastLead)
             throws SQLException
@@ -270,21 +269,19 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
             script.addLine("<= '", projectDetails.getLatestDate(), "'");
         }
 
-        // TODO: This is just the first sweep for issue time pooling support
-        if (firstIssueDate != null)
+        String issueClause = projectDetails.getIssueDatesQualifier( issuePoolStep, "S.output_time" );
+
+        if (issueClause != null)
         {
-            script.addTab().addLine("AND S.output_time >= '", firstIssueDate, "'");
+            script.addTab().addLine("AND ", issueClause);
         }
-        else if (isForecast && projectDetails.getEarliestIssueDate() != null)
+
+        if (issueClause == null && isForecast && projectDetails.getEarliestIssueDate() != null)
         {
             script.addTab().addLine("AND S.output_time >= '", projectDetails.getEarliestIssueDate(), "'");
         }
 
-        if (lastIssueDate != null)
-        {
-            script.addTab().addLine("AND S.output_time <= '", lastIssueDate, "'");
-        }
-        else if (isForecast && projectDetails.getLatestIssueDate() != null)
+        if (issueClause == null && isForecast && projectDetails.getLatestIssueDate() != null)
         {
             script.addTab().addLine("AND S.output_time <= '", projectDetails.getLatestIssueDate(), "'");
         }

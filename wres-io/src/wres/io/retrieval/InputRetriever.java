@@ -600,8 +600,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         DataSources.getSourcePaths(
                 this.projectDetails,
                 dataSourceConfig,
-                null,
-                null,
+                this.issueDatesPool,
                 leadRange.getLeft(),
                 leadRange.getRight()
         ).forEach(griddedRequest::addPath);
