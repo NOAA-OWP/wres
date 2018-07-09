@@ -1239,6 +1239,16 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                 firstLead = Duration.of( this.firstLead, TimeHelper.LEAD_RESOLUTION );
                 lastLead = Duration.of( this.lastLead, TimeHelper.LEAD_RESOLUTION );
             }
+            else if (this.projectDetails.getProjectConfig().getPair().getLeadTimesPoolingWindow() != null)
+            {
+                // If a lead times pooling window, the min and max lead are bound to the parameters of the window, not
+                // the values
+                Pair<Integer, Integer> range = this.projectDetails.getLeadRange( this.feature, this.leadIteration );
+                firstLead = Duration.of( range.getLeft(), TimeHelper.LEAD_RESOLUTION );
+                firstLead = firstLead.minus( this.projectDetails.getLeadOffset( this.feature), TimeHelper.LEAD_RESOLUTION );
+                lastLead = Duration.of(range.getRight(), TimeHelper.LEAD_RESOLUTION);
+                lastLead = lastLead.minus( this.projectDetails.getLeadOffset( this.feature), TimeHelper.LEAD_RESOLUTION );
+            }
             else
             {
                 Integer offset = this.projectDetails.getLeadOffset( this.feature );
