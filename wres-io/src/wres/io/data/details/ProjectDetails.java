@@ -1625,8 +1625,16 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
             return null;
         }
 
-        String qualifier = issueField + " > '" + issueRange.getLeft() + "'::timestamp without time zone ";
-        qualifier += "AND " + issueField + " <= '" + issueRange.getRight() + "'::timestamp without time zone";
+        String qualifier;
+        if (issueRange.getLeft().equals(issueRange.getRight()))
+        {
+            qualifier = issueField + " = '" + issueRange.getLeft() + "'::timestamp without time zone ";
+        }
+        else
+        {
+            qualifier = issueField + " > '" + issueRange.getLeft() + "'::timestamp without time zone ";
+            qualifier += "AND " + issueField + " <= '" + issueRange.getRight() + "'::timestamp without time zone";
+        }
 
         return qualifier;
     }
