@@ -69,9 +69,7 @@ def print_contents(path, is_gridded, output):
     with Dataset(path, 'r') as data:
         for variable_name in METRICS:
             if variable_name not in data.variables:
-                print "The variable '{}' is not in the given netcdf file".format(variable_name)
                 continue
-            print "Looking for values in {}...".format(variable_name)
             values = dict()
             variable = data.variables[variable_name]
             value_array = np.array(variable)
@@ -86,11 +84,7 @@ def print_contents(path, is_gridded, output):
                     if value_array[i] != -999.0:
                         values[(i)] = value_array[i]
                         printer.add(location="{}".format(get_value_at_index(data, "feature_id", i)), metric=variable_name, value=str(value_array[i]))
-    print "Printing values..."
-    print ''
     printer.close()
-    print ''
-    print 'Values printed!'
 
 
 if __name__ == "__main__":
