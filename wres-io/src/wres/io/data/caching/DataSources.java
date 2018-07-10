@@ -284,7 +284,9 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
         }
         else
         {
-            issueClause = "S.output_time > '" + issueRange.getLeft() + "'::timestamp without time zone ";
+            // TODO: Uncomment when it's time to go exclusive-inclusive
+            //issueClause = "S.output_time > '" + issueRange.getLeft() + "'::timestamp without time zone ";
+            issueClause = "S.output_time >= '" + issueRange.getLeft() + "'::timestamp without time zone ";
             issueClause += "AND S.output_time <= '" + issueRange.getRight() + "'::timestamp without time zone";
         }
 
