@@ -3,10 +3,12 @@ package wres.io.data.caching;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -269,7 +271,22 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
             script.addLine("<= '", projectDetails.getLatestDate(), "'");
         }
 
-        String issueClause = projectDetails.getIssueDatesQualifier( issuePoolStep, "S.output_time" );
+        Pair<Instant, Instant> issueRange = projectDetails.getIssueDateRange( issuePoolStep );
+
+        String issueClause;
+        if (issueRange == null)
+        {
+            issueClause =  null;
+        }
+        else if (issueRange.getLeft().equals(issueRange.getRight()))
+        {
+            issueClause = "S.output_time = '" + issueRange.getLeft() + "'::timestamp without time zone ";
+        }
+        else
+        {
+            issueClause = "S.output_time > '" + issueRange.getLeft() + "'::timestamp without time zone ";
+            issueClause += "AND S.output_time <= '" + issueRange.getRight() + "'::timestamp without time zone";
+        }
 
         if (issueClause != null)
         {

@@ -1611,6 +1611,7 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
         Instant earliestIssue = Instant.parse( this.getEarliestIssueDate() );
 
         Instant first = earliestIssue.plus( frequency * issueDatePoolStep, TimeHelper.LEAD_RESOLUTION );
+
         Instant last = earliestIssue.plus( frequency * issueDatePoolStep + span, TimeHelper.LEAD_RESOLUTION );
 
         return Pair.of( first, last );

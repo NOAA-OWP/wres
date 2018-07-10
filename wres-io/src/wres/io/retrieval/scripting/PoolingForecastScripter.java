@@ -2,6 +2,9 @@ package wres.io.retrieval.scripting;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.time.Instant;
+
+import org.apache.commons.lang3.tuple.Pair;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
@@ -80,10 +83,19 @@ class PoolingForecastScripter extends Scripter
         this.addTab().addLine("AND ", this.getProjectDetails().getLeadQualifier( this.getFeature(), this.getProgress(), "FV" ));
 
         this.applyEnsembleConstraint();
-        String issueQualifier = this.getProjectDetails().getIssueDatesQualifier(
-                this.getSequenceStep(),
-                "TS.initialization_date"
-        );
+
+        Pair<Instant, Instant> issueRange = this.getProjectDetails().getIssueDateRange( this.getSequenceStep() );
+
+        String issueQualifier;
+        if (issueRange.getLeft().equals(issueRange.getRight()))
+        {
+            issueQualifier = "TS.initialization_date = '" + issueRange.getLeft() + "'::timestamp without time zone ";
+        }
+        else
+        {
+            issueQualifier = "TS.initialization_date >= '" + issueRange.getLeft() + "'::timestamp without time zone ";
+            issueQualifier += "AND TS.initialization_date <= '" + issueRange.getRight() + "'::timestamp without time zone";
+        }
         this.addTab().addLine("AND ", issueQualifier);
 
         if (this.getProjectDetails().getEarliestDate() != null)
