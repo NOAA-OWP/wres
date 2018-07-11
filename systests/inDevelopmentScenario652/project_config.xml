@@ -47,7 +47,7 @@
         <leadHours maximum="4" />
         <issuedDates earliest="2018-05-26T00:00:00Z" latest="2018-05-28T00:00:00Z"/>
         <issuedDatesPoolingWindow>
-            <period>24</period>
+            <period>12</period>
             <unit>hours</unit>
         </issuedDatesPoolingWindow>
     </pair>
