@@ -1,7 +1,7 @@
 package wres.datamodel.thresholds;
 
 import java.util.Objects;
-import java.util.function.Predicate;
+import java.util.function.DoublePredicate;
 
 import wres.datamodel.Dimension;
 import wres.datamodel.OneOrTwoDoubles;
@@ -27,7 +27,7 @@ import wres.datamodel.thresholds.ThresholdConstants.ThresholdType;
  * @author james.brown@hydrosolved.com
  */
 
-public interface Threshold extends Comparable<Threshold>, Predicate<Double>
+public interface Threshold extends Comparable<Threshold>, DoublePredicate
 {
 
     /**

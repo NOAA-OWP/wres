@@ -488,27 +488,27 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
     {
 
         // Unconditional set
-        Set<MetricConstants> metrics = new HashSet<>( this.metrics );
+        Set<MetricConstants> unconditional = new HashSet<>( this.metrics );
 
         // Remove metrics not in the input group
         if ( Objects.nonNull( inGroup ) )
         {
-            metrics.removeIf( a -> !a.isInGroup( inGroup ) );
+            unconditional.removeIf( a -> !a.isInGroup( inGroup ) );
         }
 
         // Remove metrics not in the output group
         if ( Objects.nonNull( outGroup ) )
         {
-            metrics.removeIf( a -> !a.isInGroup( outGroup ) );
+            unconditional.removeIf( a -> !a.isInGroup( outGroup ) );
         }
 
         //Remove duplicate sample size
         if ( inGroup == MetricInputGroup.ENSEMBLE && hasMetrics( MetricInputGroup.SINGLE_VALUED ) )
         {
-            metrics.remove( MetricConstants.SAMPLE_SIZE );
+            unconditional.remove( MetricConstants.SAMPLE_SIZE );
         }
 
-        return metrics.toArray( new MetricConstants[metrics.size()] );
+        return unconditional.toArray( new MetricConstants[unconditional.size()] );
     }
 
     /**

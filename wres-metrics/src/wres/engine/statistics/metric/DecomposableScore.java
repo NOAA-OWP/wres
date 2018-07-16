@@ -37,7 +37,7 @@ public abstract class DecomposableScore<S extends MetricInput<?>> extends Ordina
      * A {@link MetricBuilder} to build the metric.
      */
 
-    public static abstract class DecomposableScoreBuilder<S extends MetricInput<?>>
+    public abstract static class DecomposableScoreBuilder<S extends MetricInput<?>>
             extends
             OrdinaryScoreBuilder<S, DoubleScoreOutput>
     {

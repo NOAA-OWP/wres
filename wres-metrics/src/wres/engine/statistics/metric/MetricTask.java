@@ -44,7 +44,7 @@ class MetricTask<S extends MetricInput<?>, T extends MetricOutput<?>> implements
     }
 
     @Override
-    public T call() throws MetricCalculationException, InterruptedException, ExecutionException
+    public T call() throws InterruptedException, ExecutionException
     {
         final S in = input.get();
         if(Objects.isNull(in))

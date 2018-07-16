@@ -392,6 +392,17 @@ public interface Slicer
     }
 
     /**
+     * A transformer that applies a predicate to the left and each of the right separately, returning a transformed
+     * pair or null if the left and none of the right meet the condition.
+     * 
+     * @param predicate the input predicate
+     * @return a composed function
+     */
+
+    Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubleAndVectorOfDoubles>
+            leftAndEachOfRight( DoublePredicate predicate );
+    
+    /**
      * Returns the left side of a {@link SingleValuedPairs} as a primitive array of doubles.
      * 
      * @param input the input pairs
@@ -584,7 +595,7 @@ public interface Slicer
      * @return the {@link SingleValuedPairs}
      */
 
-    List<PairOfDoubles> transform( List<PairOfDoubleAndVectorOfDoubles> input,
+    List<PairOfDoubles> toSingleValuedPairs( List<PairOfDoubleAndVectorOfDoubles> input,
                                    Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles> mapper );
 
     /**
@@ -595,7 +606,7 @@ public interface Slicer
      * @return the {@link DichotomousPairs}
      */
 
-    DichotomousPairs transform( SingleValuedPairs input, Function<PairOfDoubles, PairOfBooleans> mapper );
+    DichotomousPairs toDichotomousPairs( SingleValuedPairs input, Function<PairOfDoubles, PairOfBooleans> mapper );
 
     /**
      * Produces {@link SingleValuedPairs} from a {@link EnsemblePairs} by applying a mapper function to the input.
@@ -605,12 +616,13 @@ public interface Slicer
      * @return the {@link SingleValuedPairs}
      */
 
-    SingleValuedPairs transform( EnsemblePairs input,
+    SingleValuedPairs toSingleValuedPairs( EnsemblePairs input,
                                  Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles> mapper );
 
     /**
      * Produces {@link DiscreteProbabilityPairs} from a {@link EnsemblePairs} by applying a mapper function to the input
-     * using a prescribed {@link Threshold}.
+     * using a prescribed {@link Threshold}. See {@link #toDiscreteProbabilityPair(PairOfDoubleAndVectorOfDoubles, Threshold)}
+     * for the mapper.
      * 
      * @param input the {@link EnsemblePairs}
      * @param threshold the {@link Threshold} used to transform the pairs
@@ -618,7 +630,7 @@ public interface Slicer
      * @return the {@link DiscreteProbabilityPairs}
      */
 
-    DiscreteProbabilityPairs transform( EnsemblePairs input,
+    DiscreteProbabilityPairs toDiscreteProbabilityPairs( EnsemblePairs input,
                                         Threshold threshold,
                                         BiFunction<PairOfDoubleAndVectorOfDoubles, Threshold, PairOfDoubles> mapper );
 
@@ -632,7 +644,7 @@ public interface Slicer
      * @return the transformed pair
      */
 
-    PairOfDoubles transform( PairOfDoubleAndVectorOfDoubles pair, Threshold threshold );
+    PairOfDoubles toDiscreteProbabilityPair( PairOfDoubleAndVectorOfDoubles pair, Threshold threshold );
 
     /**
      * Returns a function that converts a {@link PairOfDoubleAndVectorOfDoubles} to a {@link PairOfDoubles} by 
@@ -642,18 +654,7 @@ public interface Slicer
      * @return a composed function
      */
 
-    Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles> transform( ToDoubleFunction<double[]> transformer );
-
-    /**
-     * A transformer that applies a predicate to the left and each of the right separately, returning a transformed
-     * pair or null if the left and none of the right meet the condition.
-     * 
-     * @param predicate the input predicate
-     * @return a composed function
-     */
-
-    Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubleAndVectorOfDoubles>
-            leftAndEachOfRight( DoublePredicate predicate );
+    Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles> ofSingleValuedPairMapper( ToDoubleFunction<double[]> transformer );
 
     /**
      * Returns a function to compute a value from the sorted array that corresponds to the input non-exceedence 
