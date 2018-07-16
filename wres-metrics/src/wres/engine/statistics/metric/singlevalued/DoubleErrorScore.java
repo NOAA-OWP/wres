@@ -34,7 +34,7 @@ public abstract class DoubleErrorScore<S extends SingleValuedPairs> extends Ordi
      * A {@link MetricBuilder} to build the metric.
      */
 
-    public static abstract class DoubleErrorScoreBuilder<S extends SingleValuedPairs>
+    public abstract static class DoubleErrorScoreBuilder<S extends SingleValuedPairs>
             extends
             OrdinaryScoreBuilder<S, DoubleScoreOutput>
     {

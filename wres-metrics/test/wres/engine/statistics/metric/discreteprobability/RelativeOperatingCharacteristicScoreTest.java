@@ -312,9 +312,9 @@ public final class RelativeOperatingCharacteristicScoreTest
                                                 Operator.GREATER,
                                                 ThresholdDataType.LEFT );
 
-        BiFunction<PairOfDoubleAndVectorOfDoubles, Threshold, PairOfDoubles> mapper = outF.getSlicer()::transform;
+        BiFunction<PairOfDoubleAndVectorOfDoubles, Threshold, PairOfDoubles> mapper = outF.getSlicer()::toDiscreteProbabilityPair;
 
-        DiscreteProbabilityPairs transPairs = outF.getSlicer().transform( pairs, threshold, mapper );
+        DiscreteProbabilityPairs transPairs = outF.getSlicer().toDiscreteProbabilityPairs( pairs, threshold, mapper );
 
         assertTrue( rocScore.apply( transPairs )
                             .getMetadata()

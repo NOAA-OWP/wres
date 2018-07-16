@@ -288,7 +288,7 @@ class SafeThreshold implements Threshold
     }
 
     @Override
-    public boolean test( Double t )
+    public boolean test( double t )
     {
         Double lowerBound;
         Double upperBound;

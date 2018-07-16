@@ -97,34 +97,6 @@ public class TimeToPeakError extends TimingError
     protected TimeToPeakError( final TimeToPeakErrorBuilder builder ) throws MetricParameterException
     {
         super( builder );
-    }
-
-// Example implementation of incremental
-//    @Override
-//    public PairedOutput<Instant, Duration> combine( TimeSeriesOfSingleValuedPairs input,
-//                                                    PairedOutput<Instant, Duration> output )
-//    {
-//        // Validate
-//        if ( Objects.isNull( input ) )
-//        {
-//            throw new MetricInputException( "Specify non-null input to combine with '" + this + "'." );
-//        }
-//        if ( Objects.isNull( output ) )
-//        {
-//            throw new MetricInputException( "Specify non-null output to combine with '" + this + "'." );
-//        }
-//        // Add the earlier output to a new list
-//        List<PairedOutput<Instant, Duration>> combined = new ArrayList<>();
-//        combined.add( output );
-//        combined.add( apply( input ) );
-//        return getDataFactory().unionOf( combined );
-//    }
-//
-//    @Override
-//    public PairedOutput<Instant, Duration> complete( PairedOutput<Instant, Duration> output )
-//    {
-//        return output;
-//    }    
-    
+    }    
 
 }
