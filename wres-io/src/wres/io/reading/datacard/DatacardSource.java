@@ -384,7 +384,7 @@ public class DatacardSource extends BasicSource
 
 		try
         {
-            currentScript.append( this.getVariablePositionID() );
+            currentScript.append( this.getVariableFeatureID() );
             currentScript.append( COPY_DELIMITER );
             currentScript.append( "'" ).append( observedTime ).append( "'" );
             currentScript.append( COPY_DELIMITER );
@@ -535,15 +535,15 @@ public class DatacardSource extends BasicSource
 		return fileDateTimeStr;
 	}
 
-    private Integer getVariablePositionID() throws SQLException
+    private Integer getVariableFeatureID() throws SQLException
 	{
-		if(variablePositionID  == null)
+		if(VariableFeatureID  == null)
 		{
-            variablePositionID = Features.getVariablePositionIDByLID( this.getCurrentLocationId(),
+            VariableFeatureID = Features.getVariableFeatureIDByLID( this.getCurrentLocationId(),
 																	  getVariableID() );
 		}
 		
-		return variablePositionID  ;
+		return VariableFeatureID  ;
 	}
 
     @Override
@@ -591,7 +591,7 @@ public class DatacardSource extends BasicSource
         this.currentLocationId = currentLocationId;
     }
 
-    private static final String INSERT_OBSERVATION_HEADER = "wres.Observation(variableposition_id, " +
+    private static final String INSERT_OBSERVATION_HEADER = "wres.Observation(VariableFeature_id, " +
                                                             "observation_time, " +
                                                             "observed_value, " +
                                                             "measurementunit_id, " +
@@ -652,7 +652,7 @@ public class DatacardSource extends BasicSource
 	*/
 	private int entryCount = 0;
 
-	private Integer variablePositionID = null;
+	private Integer VariableFeatureID = null;
 	
 	private static final Logger LOGGER = LoggerFactory.getLogger(DatacardSource.class);
 

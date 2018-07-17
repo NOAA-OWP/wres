@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="IndexQueue v1.0" author="Christopher Tubbs" dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="IndexQueue" schemaName="public" />
+            </not>
+        </preConditions>
+        <createTable tableName="IndexQueue" schemaName="public">
+            <column name="indexqueue_id" type="serial" autoIncrement="true">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="indexqueue_pk" />
+            </column>
+            <column name="table_name" type="text">
+                <constraints nullable="false" />
+            </column>
+            <column name="index_name" type="text" >
+                <constraints nullable="false" />
+            </column>
+            <column name="column_definition" type="text" >
+                <constraints nullable="false" />
+            </column>
+            <column name="method" type="text" defaultValue="btree" />
+        </createTable>
+        <sql>
+            ALTER TABLE public.IndexQueue OWNER TO wres;
+        </sql>
+        <comment>
+            The public.IndexQueue table has been created.
+        </comment>
+    </changeSet>
+</databaseChangeLog>

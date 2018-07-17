@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="VariableByFeature v1.0" author="Christopher Tubbs" dbms="PostgreSQL">
+        <createView viewName="VariableByFeature" schemaName="wres" replaceIfExists="true">
+            SELECT  VP.variablefeature_id,
+                F.feature_id,
+                variable_name,
+                comid,
+                lid,
+                gage_id,
+                region,
+                state,
+                huc,
+                feature_name,
+                latitude,
+                longitude,
+                V.variable_id
+            FROM wres.VariableFeature VP
+            INNER JOIN wres.Variable V
+                ON V.variable_id = VP.variable_id
+            INNER JOIN wres.Feature F
+                ON F.feature_id = VP.feature_id;
+        </createView>
+        <sql>
+            ALTER TABLE wres.VariableByFeature OWNER TO wres;
+        </sql>
+        <comment>
+            The wres.VariableByFeature view has been added to the database.
+        </comment>
+    </changeSet>
+</databaseChangeLog>

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="Feature v1.0" author="Christopher Tubbs" dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="f">
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM pg_catalog.pg_tables
+                    WHERE schemaname = 'wres'
+                        AND tablename = 'feature'
+                );
+            </sqlCheck>
+        </preConditions>
+        <createTable tableName="Feature" schemaName="wres">
+            <column name="feature_id" type="serial" autoIncrement="true">
+                <constraints nullable="false" primaryKeyName="feature_pk" primaryKey="true" />
+            </column>
+            <column name="comid" type="int"/>
+            <column name="lid" type="text" />
+            <column name="gage_id" type="text" />
+            <column name="region" type="text" />
+            <column name="state" type="text" />
+            <column name="huc" type="text" />
+            <column name="feature_name" type="text" />
+            <column name="latitude" type="real" />
+            <column name="longitude" type="real" />
+        </createTable>
+        <sql>
+            ALTER TABLE wres.Feature OWNER TO wres;
+        </sql>
+        <createIndex tableName="Feature" schemaName="wres" indexName="feature_lid_idx">
+            <column name="lid" />
+        </createIndex>
+        <comment>
+            The wres.Feature table has been created.
+        </comment>
+        <sqlFile relativeToChangelogFile="true" path="Features.sql" />
+    </changeSet>
+</databaseChangeLog>

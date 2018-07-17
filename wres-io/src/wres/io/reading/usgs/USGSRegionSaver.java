@@ -73,7 +73,7 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
     );
 
     private static final String COPY_HEADER = "wres.Observation ("
-                                              + "variableposition_id, "
+                                              + "variablefeature_id, "
                                               + "observation_time, "
                                               + "observed_value, "
                                               + "measurementunit_id, "
@@ -496,28 +496,7 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
             }
             else
             {
-                String unit;
-
-                if ( this.dataSourceConfig.getVariable().getUnit()
-                     != null )
-                {
-                    unit = this.dataSourceConfig.getVariable().getUnit();
-                }
-                else
-                {
-                    unit = this.projectConfig.getPair().getUnit();
-
-                    VariableDetails
-                            currentDetails =
-                            Variables.getByName( variableName );
-
-                    if ( currentDetails != null
-                         && currentDetails.getMeasurementunitId() != null )
-                    {
-                        unit =
-                                MeasurementUnits.getNameByID( currentDetails.getMeasurementunitId() );
-                    }
-                }
+                String unit = this.dataSourceConfig.getVariable().getUnit();
 
                 if (unit != null && this.dataSourceConfig.getExistingTimeScale() == null)
                 {
@@ -663,16 +642,16 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
         return valueType;
     }
 
-    private Integer getVariablePositionID(String gageID) throws SQLException
+    private Integer getVariableFeatureID(String gageID) throws SQLException
     {
-        if (this.variablePositionIDs == null)
+        if (this.variableFeatureIDs == null)
         {
-            this.variablePositionIDs = new TreeMap<>(  );
+            this.variableFeatureIDs = new TreeMap<>(  );
         }
 
         FeatureDetails details;
 
-        if (!this.variablePositionIDs.containsKey( gageID ))
+        if (!this.variableFeatureIDs.containsKey( gageID ))
         {
             details =
                     wres.util.Collections.find( this.region,
@@ -683,15 +662,15 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
                                                                .equalsIgnoreCase(
                                                                        gageID ) );
 
-            this.variablePositionIDs.put( gageID,
-                                          Features.getVariablePositionByFeature(
+            this.variableFeatureIDs.put( gageID,
+                                          Features.getVariableFeatureByFeature(
                                                   details,
                                                   this.getVariableID()
                                           )
             );
         }
 
-        return this.variablePositionIDs.get( gageID );
+        return this.variableFeatureIDs.get( gageID );
     }
 
     private Integer getVariableID() throws SQLException
@@ -716,7 +695,7 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
                                         .withOffsetSameInstant( ZoneOffset.UTC )
                                         .toString();
 
-        this.copyScript.add(this.getVariablePositionID( gageID )).add("|")
+        this.copyScript.add(this.getVariableFeatureID( gageID )).add("|")
                        .add("'" + observationTime + "'").add("|");
 
         if (value == null)
@@ -870,7 +849,7 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
     private String startDate;
     private String endDate;
     private Integer variableID;
-    private Map<String, Integer> variablePositionIDs;
+    private Map<String, Integer> variableFeatureIDs;
     private final Collection<FeatureDetails> region;
     private final ProjectConfig projectConfig;
     private final DataSourceConfig dataSourceConfig;

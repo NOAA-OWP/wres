@@ -55,7 +55,7 @@
             <column name="comid" type="INT4"/>
             <column name="lid" type="TEXT"/>
             <column name="gage_id" type="TEXT"/>
-            <column name="rfc" type="TEXT"/>
+            <column name="region" type="TEXT"/>
             <column name="st" type="TEXT"/>
             <column name="st_code" type="TEXT"/>
             <column name="huc" type="TEXT"/>
@@ -391,7 +391,7 @@
     f.comid,
     f.lid,
     f.gage_id,
-    f.rfc,
+    f.region,
     f.st,
     f.st_code,
     f.huc,

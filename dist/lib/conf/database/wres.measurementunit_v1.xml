@@ -3,26 +3,32 @@
         xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
-                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
     <changeSet id="MeasurementUnit1.0" author="Christopher Tubbs" dbms="PostgreSQL">
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="f">
                 SELECT EXISTS (
                     SELECT 1
-                    FROM information_schema.tables
-                    WHERE table_schema = 'wres'
-                        AND table_name = 'MeasurementUnit'
+                    FROM pg_catalog.pg_tables
+                    WHERE schemaname = 'wres'
+                        AND tablename = 'measurementunit'
                 );
             </sqlCheck>
         </preConditions>
         <createTable tableName="MeasurementUnit" schemaName="wres">
-            <column name="measurementunit_id" type="smallserial">
+            <column name="measurementunit_id" type="smallserial" autoIncrement="true">
                 <constraints nullable="false" primaryKey="true"/>
             </column>
             <column name="unit_name" type="text">
-                <constraints nullable="false"/>
+                <constraints nullable="false" unique="true"/>
             </column>
         </createTable>
+        <comment>
+            The wres.MeasurementUnit table has been created, along with all default entries.
+        </comment>
+    </changeSet>
+    <changeSet id="Set MeasurementUnit Owner v1.0" author="Christopher Tubbs">
         <sql>
             ALTER TABLE wres.MeasurementUnit OWNER TO wres;
         </sql>
@@ -74,8 +80,116 @@
         <insert tableName="MeasurementUnit" schemaName="wres">
             <column name="unit_name">kg m{-2}</column>
         </insert>
-        <comment>
-            The wres.MeasurementUnit table has been created, along with all default entries.
-        </comment>
+        <insert tableName="MeasurementUnit" schemaName="wres">
+            <column name="unit_name">%</column>
+        </insert>
+        <insert tableName="MeasurementUnit" schemaName="wres">
+            <column name="unit_name">ft/sec</column>
+        </insert>
+        <insert tableName="MeasurementUnit" schemaName="wres">
+            <column name="unit_name">gal/min</column>
+        </insert>
+        <insert tableName="MeasurementUnit" schemaName="wres">
+            <column name="unit_name">mgd</column>
+        </insert>
+        <insert tableName="MeasurementUnit" schemaName="wres">
+            <column name="unit_name">m/sec</column>
+        </insert>
+        <insert tableName="MeasurementUnit" schemaName="wres">
+            <column name="unit_name">ft3/day</column>
+        </insert>
+        <insert tableName="MeasurementUnit" schemaName="wres">
+            <column name="unit_name">ac-ft</column>
+        </insert>
+        <insert tableName="MeasurementUnit" schemaName="wres">
+            <column name="unit_name">mph</column>
+        </insert>
+        <insert tableName="MeasurementUnit" schemaName="wres">
+            <column name="unit_name">l/sec</column>
+        </insert>
+        <insert tableName="MeasurementUnit" schemaName="wres">
+            <column name="unit_name">ft3/s</column>
+        </insert>
+        <insert tableName="MeasurementUnit" schemaName="wres">
+            <column name="unit_name">m3/sec</column>
+        </insert>
+        <insert tableName="MeasurementUnit" schemaName="wres">
+            <column name="unit_name">mm/s</column>
+        </insert>
+        <insert tableName="MeasurementUnit" schemaName="wres">
+            <column name="unit_name">mm s^-1</column>
+        </insert>
+        <insert tableName="MeasurementUnit" schemaName="wres">
+            <column name="unit_name">mm s{-1}</column>
+        </insert>
+        <insert tableName="MeasurementUnit" schemaName="wres">
+            <column name="unit_name">mm s-1</column>
+        </insert>
+        <insert tableName="MeasurementUnit" schemaName="wres">
+            <column name="unit_name">mm h^-1</column>
+        </insert>
+        <insert tableName="MeasurementUnit" schemaName="wres">
+            <column name="unit_name">mm/h</column>
+        </insert>
+        <insert tableName="MeasurementUnit" schemaName="wres">
+            <column name="unit_name">mm h-1</column>
+        </insert>
+        <insert tableName="MeasurementUnit" schemaName="wres">
+            <column name="unit_name">mm h{-1}</column>
+        </insert>
+        <insert tableName="MeasurementUnit" schemaName="wres">
+            <column name="unit_name">kg/m^2</column>
+        </insert>
+        <insert tableName="MeasurementUnit" schemaName="wres">
+            <column name="unit_name">kg/m^2h</column>
+        </insert>
+        <insert tableName="MeasurementUnit" schemaName="wres">
+            <column name="unit_name">kg/m^2s</column>
+        </insert>
+        <insert tableName="MeasurementUnit" schemaName="wres">
+            <column name="unit_name">kg/m^2/s</column>
+        </insert>
+        <insert tableName="MeasurementUnit" schemaName="wres">
+            <column name="unit_name">kg/m^2/h</column>
+        </insert>
+        <insert tableName="MeasurementUnit" schemaName="wres">
+            <column name="unit_name">Pa</column>
+        </insert>
+        <insert tableName="MeasurementUnit" schemaName="wres">
+            <column name="unit_name">W/m^2</column>
+        </insert>
+        <insert tableName="MeasurementUnit" schemaName="wres">
+            <column name="unit_name">W m{-2}</column>
+        </insert>
+        <insert tableName="MeasurementUnit" schemaName="wres">
+            <column name="unit_name">W m-2</column>
+        </insert>
+        <insert tableName="MeasurementUnit" schemaName="wres">
+            <column name="unit_name">m s-1</column>
+        </insert>
+        <insert tableName="MeasurementUnit" schemaName="wres">
+            <column name="unit_name">m/s</column>
+        </insert>
+        <insert tableName="MeasurementUnit" schemaName="wres">
+            <column name="unit_name">m s{-1}</column>
+        </insert>
+        <insert tableName="MeasurementUnit" schemaName="wres">
+            <column name="unit_name">kg kg-1</column>
+        </insert>
+        <insert tableName="MeasurementUnit" schemaName="wres">
+            <column name="unit_name">kg kg{-1}</column>
+        </insert>
+        <insert tableName="MeasurementUnit" schemaName="wres">
+            <column name="unit_name">kg m-2</column>
+        </insert>
+        <insert tableName="MeasurementUnit" schemaName="wres">
+            <column name="unit_name">fraction</column>
+        </insert>
+        <insert tableName="MeasurementUnit" schemaName="wres">
+            <column name="unit_name">K</column>
+        </insert>
+        <insert tableName="MeasurementUnit" schemaName="wres">
+            <column name="unit_name">-</column>
+        </insert>
     </changeSet>
 </databaseChangeLog>

@@ -74,7 +74,7 @@ public final class TimeSeriesValues
     static void add(int timeSeriesID, int lead, String value)
             throws SQLException
     {
-        String partitionName = TimeSeries.getForecastValueParitionName( lead );
+        String partitionName = TimeSeries.getTimeSeriesValuePartition( lead );
 
         synchronized ( VALUES_TO_SAVE_LOCK )
         {

@@ -36,6 +36,7 @@ import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
 import ucar.nc2.dataset.NetcdfDataset;
 import ucar.nc2.dt.GridCoordSystem;
+import ucar.nc2.dt.GridDatatype;
 import ucar.nc2.dt.grid.GridDataset;
 import ucar.unidata.geoloc.LatLonPoint;
 
@@ -134,15 +135,15 @@ final class MainFunctions
 		functions.put("downloadtestdata", refreshTestData());
 		functions.put("refreshdatabase", refreshDatabase());
 		functions.put("loadcoordinates", loadCoordinates());
-		functions.put("install", install());
+		functions.put("install", MainFunctions::install);
 		functions.put("ingest", MainFunctions::ingest);
-		functions.put("loadfeatures", loadFeatures());
 		functions.put( "loadusgsparameters", loadUSGSParameters());
 		functions.put( "latestprojecterror", getLatestProjectError() );
 		functions.put( "getexecutions", getExecutions() );
 		functions.put("viewruns", viewRuns());
 		functions.put("createnetcdftemplate", MainFunctions::createNetCDFTemplate);
 		functions.put("validate", MainFunctions::validate);
+		functions.put("validategrid", MainFunctions::validateNetcdfGrid);
 
 		return functions;
 	}
@@ -237,6 +238,39 @@ final class MainFunctions
 		};
 	}
 
+	private static Integer validateNetcdfGrid(String[] args)
+    {
+        Integer result = FAILURE;
+
+        String path = args[0];
+        String variableName = args[1];
+
+        try (NetcdfDataset dataset = NetcdfDataset.openDataset( path ); GridDataset grid = new GridDataset( dataset ))
+        {
+            GridDatatype variable = grid.findGridDatatype( variableName );
+
+            if (variable == null)
+            {
+                LOGGER.error("The given variable is not a valid projected grid variable.");
+            }
+            else
+            {
+                GridCoordSystem coordSystem = variable.getCoordinateSystem();
+
+                if ( coordSystem != null )
+                {
+                    result = SUCCESS;
+                }
+            }
+        }
+        catch ( IOException e )
+        {
+            LOGGER.error("The file at {} is not a valid Netcdf Grid Dataset.", path);
+        }
+
+        return result;
+    }
+
     /**
      * Spawns threads to download NWM data and store them in easy to reach
      * locations.
@@ -253,7 +287,7 @@ final class MainFunctions
 			    final String date = args[0];
 
 			    // The range/forecast type, i.e. "long range", "short range", etc
-				final String range = args[1];
+				String range = args[1];
 
 				// The category of data like "land" or "channel_rt"
                 final String category = args[2];
@@ -552,7 +586,7 @@ final class MainFunctions
                             // Add forcing to the end of each filename
                             for (int i = 0; i < filenames.size(); ++i)
                             {
-                                filenames.set( i, filenames.get(i) + ".forcing");
+                                filenames.set( i, filenames.get(i).replace("forcing_", "") + ".forcing");
                             }
 
                             // Note: All categories for forcing data is
@@ -1163,149 +1197,20 @@ final class MainFunctions
 		};
 	}
 
-	private static Function<String[], Integer> loadFeatures() {
-	    return (final String[] args) ->
+	private static Integer install(String[] args) {
+        Integer status = FAILURE;
+        try
         {
-            Integer result = FAILURE;
+            Operations.install();
+            status = SUCCESS;
+        }
+        catch ( SQLException e )
+        {
+            LOGGER.error("The WRES install could not be updated.");
+            MainFunctions.addException( e );
+        }
 
-            if (args.length > 0)
-            {
-                String filePath = args[0];
-                try
-                {
-
-                    if ( Files.notExists( Paths.get( filePath ) )
-                         || ReaderFactory.getFiletype( filePath ) != Format.NET_CDF )
-                    {
-                        throw new IOException("There is not a NetCDFFile at the indicated path");
-                    }
-
-                    NetcdfFile file = NetcdfFile.open(filePath);
-
-                    if (!NetCDF.hasVariable(file, "feature_id"))
-                    {
-                        throw new IOException("The NetCDF file at: '" + filePath + "' lacks a proper feature variable (feature_id)");
-                    }
-
-                    String getComidScript = "SELECT comid FROM wres.Feature WHERE comid != -999;";
-                    Collection<Integer> comids = new HashSet<>();
-                    comids = Database.populateCollection(comids, getComidScript, "comid");
-
-                    Variable var = NetCDF.getVariable(file, "feature_id");
-                    List<int[]> parameters = new ArrayList<>();;
-                    Array features = var.read();
-
-                    Function<List<int[]>, WRESRunnable> createThread = (List<int[]> params) ->
-                    {
-                        WRESRunnable runnable = new WRESRunnable() {
-                            @Override
-                            protected void execute () {
-                                if (this.parameters == null || this.parameters.size() == 0)
-                                {
-                                    return;
-                                }
-
-                                Connection connection = null;
-                                PreparedStatement statement = null;
-
-                                final String script = "UPDATE wres.Feature SET nwm_index = ? WHERE comid = ?;";
-                                try
-                                {
-                                    connection = Database.getConnection();
-                                    statement = connection.prepareStatement(script);
-
-                                    for (int[] parameter : this.parameters)
-                                    {
-                                        statement.setInt(1, parameter[0]);
-                                        statement.setInt(2, parameter[1]);
-                                        statement.addBatch();
-                                    }
-
-                                    statement.executeBatch();
-                                }
-                                catch (SQLException e) {
-                                    MainFunctions.addException( e );
-                                    LOGGER.error(Strings.getStackTrace(e));
-                                }
-                                finally {
-                                    if (statement != null)
-                                    {
-                                        try {
-                                            statement.close();
-                                        }
-                                        catch (SQLException e) {
-                                            LOGGER.error(Strings.getStackTrace(e));
-                                        }
-                                    }
-
-                                    if (connection != null)
-                                    {
-                                        Database.returnConnection(connection);
-                                    }
-                                }
-                            }
-
-                            @Override
-                            protected Logger getLogger () {
-                                return MainFunctions.LOGGER;
-                            }
-
-                            WRESRunnable init(List<int[]> parameters)
-                            {
-                                this.parameters = parameters;
-                                return this;
-                            }
-
-                            private List<int[]> parameters;
-                        }.init(params);
-
-                        runnable.setOnRun(ProgressMonitor.onThreadStartHandler());
-                        runnable.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
-
-                        return runnable;
-                    };
-
-                    for (Integer featureIndex = 0; featureIndex < features.getSize(); ++featureIndex)
-                    {
-                        if (parameters.size() >= SystemSettings.maximumDatabaseInsertStatements())
-                        {
-                            Database.ingest( createThread.apply( parameters ) );
-                            parameters = new ArrayList<>();
-                        }
-
-                        if (comids.contains(features.getInt(featureIndex)))
-                        {
-                            parameters.add(new int[]{featureIndex, features.getInt(featureIndex)});
-                        }
-                    }
-
-                    Database.ingest( createThread.apply( parameters ) );
-
-                    Database.completeAllIngestTasks();
-
-                }
-                catch (IOException | SQLException e)
-                {
-                    MainFunctions.addException( e );
-                    LOGGER.error(Strings.getStackTrace(e));
-                }
-            }
-            else
-            {
-                LOGGER.error("There are not enough arguments to run 'loadFeatures'");
-                LOGGER.error("usage: loadCoordinates <Path to NetCDF file containing feature information>");
-            }
-
-            return result;
-        };
-    }
-
-	private static Function<String[], Integer> install() {
-		return (String[] args) -> {
-			Operations.install();
-
-			return FAILURE;
-		};
+        return status;
 	}
 
 	private static Function<String[], Integer> getLatestProjectError()

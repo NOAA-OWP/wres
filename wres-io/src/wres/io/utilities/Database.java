@@ -31,6 +31,14 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import liquibase.Contexts;
+import liquibase.LabelExpression;
+import liquibase.Liquibase;
+import liquibase.database.DatabaseFactory;
+import liquibase.database.jvm.JdbcConnection;
+import liquibase.exception.DatabaseException;
+import liquibase.exception.LiquibaseException;
+import liquibase.resource.ClassLoaderResourceAccessor;
 import org.postgresql.PGConnection;
 import org.postgresql.copy.CopyManager;
 import org.slf4j.Logger;
@@ -770,41 +778,6 @@ public final class Database {
 	}
 
     /**
-     * Executes the configured Liquibase scripts to keep the database up to date
-     */
-	public static synchronized void buildInstance()
-	{
-		throw new NotImplementedException("Database.buildInstance() is not ready for execution.");
-
-        /*Connection connection = null;
-		try {
-			connection = Database.getConnection();
-			liquibase.database.Database database = DatabaseFactory.getInstance().findCorrectDatabaseImplementation(new JdbcConnection(connection));
-			// TODO: MUEY BAD; there needs to be a better solution than accessing the file via a hardcoded path. Maybe a system setting?
-			Liquibase liquibase = new Liquibase("nonsrc/database/db.changelog-master.xml", new ClassLoaderResourceAccessor(), database);
-			liquibase.update(new Contexts(), new LabelExpression());
-			database.close();
-		}
-		catch (SQLException e) {
-            LOGGER.error(Strings.getStackTrace(e));
-		}
-		catch (DatabaseException e) {
-            LOGGER.error(Strings.getStackTrace(e));
-		}
-		catch (LiquibaseException e) {
-            LOGGER.error(Strings.getStackTrace(e));
-		}
-		finally
-		{
-			if (connection != null)
-			{
-				Database.returnConnection(connection);
-			}
-		}*/
-	}
-
-
-    /**
      * Returns the first value in the labeled column from the query
      * @param query The query used to select the value
      * @param label The name of the column containing the data to retrieve
@@ -1484,7 +1457,7 @@ public final class Database {
 
         sql.add(optionalVacuum + "ANALYZE wres.Observation;");
         sql.add(optionalVacuum + "ANALYZE wres.TimeSeries;");
-        sql.add(optionalVacuum + "ANALYZE wres.ForecastSource;");
+        sql.add(optionalVacuum + "ANALYZE wres.TimeSeriesSource;");
         sql.add(optionalVacuum + "ANALYZE wres.ProjectSource;");
         sql.add(optionalVacuum + "ANALYZE wres.Source;");
         sql.add(optionalVacuum + "ANALYZE wres.Ensemble;");
@@ -1553,7 +1526,7 @@ public final class Database {
                 script.addTab().addLine( "ON N.oid = C.relnamespace" );
                 script.addLine( "WHERE relchecks > 0" );
                 script.addTab().addLine( "AND N.nspname = 'partitions'" );
-                script.addTab().addLine( "AND C.relname LIKE 'forecastvalue_lead%'" );
+                script.addTab().addLine( "AND C.relname LIKE 'timeseriesvalue_lead%'" );
                 script.addTab().addLine( "AND relkind = 'r';" );
 
                 script.consume( tableRow -> partitionTables.add(tableRow.getString( "table_name" )) );
@@ -1574,7 +1547,7 @@ public final class Database {
             script.addLine( "LOCK TABLE wres.Source IN EXCLUSIVE MODE;" );
             script.addLine( "LOCK TABLE wres.ProjectSource IN EXCLUSIVE MODE;");
             script.addLine( "LOCK TABLE wres.Project IN EXCLUSIVE MODE;");
-            script.addLine( "LOCK TABLE wres.ForecastSource IN EXCLUSIVE MODE;");
+            script.addLine( "LOCK TABLE wres.TimeSeriesSource IN EXCLUSIVE MODE;");
             script.addLine( "LOCK TABLE wres.TimeSeries IN EXCLUSIVE MODE;");
             script.addLine( "LOCK TABLE wres.Observation IN EXCLUSIVE MODE;");
 
@@ -1597,11 +1570,11 @@ public final class Database {
             script.addTab().addLine("FROM wres.ProjectSource PS");
             script.addTab().addLine("WHERE PS.project_id = P.project_id");
             script.addLine(");");
-            script.addLine("DELETE FROM wres.ForecastSource FS");
+            script.addLine("DELETE FROM wres.TimeSeriesSource TSS");
             script.addLine("WHERE NOT EXISTS (");
             script.addTab().addLine("SELECT 1");
             script.addTab().addLine("FROM wres.ProjectSource S");
-            script.addTab().addLine("WHERE S.source_id = FS.source_id");
+            script.addTab().addLine("WHERE S.source_id = TSS.source_id");
             script.addLine(");");
             script.addLine("DELETE FROM wres.Observation O");
             script.addLine("WHERE NOT EXISTS (");
@@ -1612,10 +1585,10 @@ public final class Database {
             script.addLine("DELETE FROM wres.TimeSeries TS");
             script.addLine("WHERE NOT EXISTS (");
             script.addTab().addLine("SELECT 1");
-            script.addTab().addLine("FROM wres.ForecastSource FS");
+            script.addTab().addLine("FROM wres.TimeSeriesSource TSS");
             script.addTab().addLine("INNER JOIN wres.ProjectSource PS");
-            script.addTab(  2  ).addLine("ON PS.source_id = FS.source_id");
-            script.addTab().addLine("WHERE FS.forecast_id = TS.timeseries_id");
+            script.addTab(  2  ).addLine("ON PS.source_id = TSS.source_id");
+            script.addTab().addLine("WHERE TSS.timeseries_id = TS.timeseries_id");
             script.addLine(");");
 
             for (String partition : partitionTables)
@@ -1624,9 +1597,9 @@ public final class Database {
                 script.addLine("WHERE NOT EXISTS (");
                 script.addTab().addLine("SELECT 1");
                 script.addTab().addLine("FROM wres.ProjectSource PS");
-                script.addTab().addLine("INNER JOIN wres.ForecastSource FS");
-                script.addTab(  2  ).addLine("ON FS.source_id = PS.source_id");
-                script.addTab().addLine("WHERE FS.forecast_id = FV.timeseries_id");
+                script.addTab().addLine("INNER JOIN wres.TimeSeriesSource TSS");
+                script.addTab(  2  ).addLine("ON TSS.source_id = PS.source_id");
+                script.addTab().addLine("WHERE TSS.timeseries_id = FV.timeseries_id");
                 script.addLine(");");
             }
 
@@ -1767,21 +1740,20 @@ public final class Database {
 
 		builder.append("DROP SCHEMA partitions CASCADE;").append(NEWLINE);
 		builder.append("CREATE SCHEMA partitions AUTHORIZATION wres;").append(NEWLINE);
-		builder.append("TRUNCATE wres.ForecastSource;").append(NEWLINE);
-		builder.append("TRUNCATE wres.ForecastValue;").append(NEWLINE);
+		builder.append("TRUNCATE wres.TimeSeriesSource;").append(NEWLINE);
+		builder.append("TRUNCATE wres.TimeSeriesValue;").append(NEWLINE);
 		builder.append("TRUNCATE wres.Observation;").append(NEWLINE);
 		builder.append("TRUNCATE wres.Source RESTART IDENTITY CASCADE;").append(NEWLINE);
 		builder.append("TRUNCATE wres.TimeSeries RESTART IDENTITY CASCADE;").append(NEWLINE);
 		builder.append("TRUNCATE wres.Variable RESTART IDENTITY CASCADE;").append(NEWLINE);
-		builder.append("DELETE FROM wres.VariablePosition VP").append(NEWLINE);
+		builder.append("DELETE FROM wres.VariableFeature VF").append(NEWLINE);
 		builder.append("WHERE EXISTS(").append(NEWLINE);
 		builder.append("    SELECT 1").append(NEWLINE);
 		builder.append("    FROM wres.Feature F").append(NEWLINE);
-		builder.append("    WHERE F.feature_id = VP.x_position").append(NEWLINE);
+		builder.append("    WHERE F.feature_id = VF.feature_id").append(NEWLINE);
 		builder.append(");").append(NEWLINE);
 		builder.append("DELETE FROM wres.Ensemble E").append(NEWLINE);
 		builder.append("WHERE E.ensemble_id > 1;").append(NEWLINE);
-		builder.append("DELETE FROM wres.Feature WHERE parent_feature_id IS NOT NULL;").append(NEWLINE);
 		builder.append("TRUNCATE wres.Project RESTART IDENTITY CASCADE;").append(NEWLINE);
 		builder.append("TRUNCATE wres.ProjectSource RESTART IDENTITY CASCADE;").append(NEWLINE);
 

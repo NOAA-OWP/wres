@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="Source1.0" author="Christopher Tubbs" dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="source" schemaName="wres" />
+            </not>
+        </preConditions>
+        <createTable tableName="Source" schemaName="wres">
+            <column name="source_id" type="smallserial" autoIncrement="true">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="source_pk"/>
+            </column>
+            <column name="path" type="text">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="output_time" type="timestamp without time zone">
+                <constraints nullable="false" />
+            </column>
+            <column name="is_point_data" type="boolean" defaultValueBoolean="true" />
+            <column name="lead" type="smallint" />
+            <column name="hash" type="text" />
+        </createTable>
+        <sql>
+            ALTER TABLE wres.Source OWNER TO wres;
+        </sql>
+        <createIndex tableName="Source" schemaName="wres" indexName="source_hash_idx">
+            <column name="hash"/>
+        </createIndex>
+        <createIndex tableName="Source" schemaName="wres" indexName="source_output_time_idx">
+            <column name="output_time"/>
+        </createIndex>
+        <createIndex tableName="Source" schemaName="wres" indexName="source_path_idx">
+            <column name="path"/>
+        </createIndex>
+        <comment>
+            The wres.Source table has been created.
+        </comment>
+    </changeSet>
+</databaseChangeLog>

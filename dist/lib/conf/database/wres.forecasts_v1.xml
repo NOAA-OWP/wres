@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="Forecasts v1.0" author="Christopher Tubbs" dbms="PostgreSQL">
+        <createView viewName="Forecasts" schemaName="wres" replaceIfExists="true">
+            SELECT  VBF.feature_id,
+                VBF.variable_id,
+                TS.initialization_date AS basis_time,
+                TS.initialization_date + INTERVAL '1 HOUR' * TSV.lead AS valid_time,
+                TSV.lead,
+                TSV.series_value,
+                TS.ensemble_id,
+                TS.measurementunit_id,
+                TS.timeseries_id
+            FROM wres.TimeSeries TS
+            INNER JOIN wres.TimeSeriesValue TSV
+                ON TSV.timeseries_id = TS.timeseries_id
+            INNER JOIN wres.VariableByFeature VBF
+                ON VBF.variablefeature_id = TS.variablefeature_id;
+        </createView>
+        <sql>
+            ALTER TABLE wres.Forecasts OWNER TO wres;
+        </sql>
+        <comment>
+            The wres.Forecasts view has been added to the database.
+        </comment>
+    </changeSet>
+</databaseChangeLog>

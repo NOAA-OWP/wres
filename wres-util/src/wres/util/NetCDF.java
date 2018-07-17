@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import ucar.ma2.Array;
 import ucar.ma2.InvalidRangeException;
 import ucar.nc2.Attribute;
+import ucar.nc2.Dimension;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
 
@@ -16,6 +17,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
@@ -115,6 +117,26 @@ public final class NetCDF {
         return file.findVariable( variableName );
     }
 
+    /**
+     * Finds the coordinate variable within a Netcdf file that is used to index other single parametered variables
+     * @param file The source file
+     * @return The main coordinate variable
+     */
+    public static Variable getVectorCoordinateVariable(NetcdfFile file)
+    {
+        Variable nonCoordinate = Collections.find(
+                file.getVariables(),
+                variable -> variable.getDimensions().size() == 1 && !variable.isCoordinateVariable()
+        );
+
+        String coordinateName = nonCoordinate.getDimensions().get( 0 ).getShortName();
+
+        Variable vectorCoordinate = file.findVariable( coordinateName );
+
+        Objects.requireNonNull( vectorCoordinate, "A vector coordinate variable could not be found."  );
+
+        return vectorCoordinate;
+    }
 
     public static Integer getLeadTime( NetcdfFile file) throws IOException
     {

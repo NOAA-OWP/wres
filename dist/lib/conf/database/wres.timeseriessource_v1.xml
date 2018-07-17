@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="TimeSeriesSource v1.0" author="Christopher Tubbs" dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="f">
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM pg_catalog.pg_tables
+                    WHERE schemaname = 'wres'
+                        AND tablename = 'timeseriessource'
+                );
+            </sqlCheck>
+        </preConditions>
+        <createTable tableName="TimeSeriesSource" schemaName="wres">
+            <column name="timeseries_id" type="integer">
+                <constraints nullable="false" deferrable="true" initiallyDeferred="true"/>
+            </column>
+            <column name="source_id" type="integer">
+                <constraints nullable="false" deferrable="true" initiallyDeferred="true" />
+            </column>
+            <column name="lead" type="int" />
+        </createTable>
+        <sql>
+            ALTER TABLE wres.TimeSeriesSource OWNER TO wres;
+        </sql>
+        <addForeignKeyConstraint baseTableName="TimeSeriesSource" baseTableSchemaName="wres"
+                                 baseColumnNames="timeseries_id" constraintName="timeseriessource_timeseries_fk"
+                                 referencedTableSchemaName="wres" referencedTableName="TimeSeries"
+                                 referencedColumnNames="timeseries_id" onDelete="CASCADE"
+                                 deferrable="true" initiallyDeferred="true" />
+        <addForeignKeyConstraint baseTableName="TimeSeriesSource" referencedTableSchemaName="wres"
+                                 baseColumnNames="source_id" baseTableSchemaName="wres"
+                                 constraintName="timeseriessource_source_fk" referencedTableName="Source"
+                                 referencedColumnNames="source_id" onDelete="CASCADE"
+                                 deferrable="true" initiallyDeferred="true" />
+        <createIndex tableName="TimeSeriesSource" schemaName="wres" indexName="timeseries_source_idx" unique="true">
+            <column name="timeseries_id" />
+            <column name="source_id" />
+        </createIndex>
+        <comment>
+            The wres.TimeSeriesSource table has been added to the database.
+        </comment>
+    </changeSet>
+</databaseChangeLog>

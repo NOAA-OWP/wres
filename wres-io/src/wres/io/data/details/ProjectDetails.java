@@ -16,7 +16,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.StringJoiner;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -149,7 +148,7 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
 
     private final Map<Feature, String> initialForecastDates = new LRUMap<>( 100 );
 
-    private final Map<Feature, Integer> forecastLag = new LRUMap<>( 100 );
+    private final Map<Feature, Integer> timeSeriesLag = new LRUMap<>( 100 );
 
     /**
      * Stores the number of basis times pools for each feature
@@ -481,24 +480,21 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
                     // indicated by the left hand configuration
                     script.addTab().addLine( "SELECT 1" );
                     script.addTab().addLine( "FROM wres.TimeSeries TS" );
+                    script.addTab().addLine( "INNER JOIN wres.VariableFeature VF" );
+                    script.addTab(  2  ).addLine("ON VF.variablefeature_id = TS.variablefeature_id" );
                     script.addTab()
-                          .addLine( "INNER JOIN wres.VariablePosition VP" );
+                          .addLine( "INNER JOIN wres.TimeSeriesSource TSS" );
                     script.addTab( 2 )
-                          .addLine(
-                                  "ON VP.variableposition_id = TS.variableposition_id" );
-                    script.addTab()
-                          .addLine( "INNER JOIN wres.ForecastSource FS" );
-                    script.addTab( 2 )
-                          .addLine( "ON FS.forecast_id = TS.timeseries_id" );
+                          .addLine( "ON TSS.timeseries_id = TS.timeseries_id" );
                     script.addTab()
                           .addLine( "INNER JOIN wres.ProjectSource PS" );
                     script.addTab( 2 )
-                          .addLine( "ON PS.source_id = FS.source_id" );
+                          .addLine( "ON PS.source_id = TSS.source_id" );
                     script.addTab()
                           .addLine( "WHERE PS.project_id = ", this.getId() );
                     script.addTab( 2 ).addLine( "AND PS.member = 'left'" );
                     script.addTab( 2 )
-                          .addLine( "AND VP.x_position = F.feature_id" );
+                          .addLine( "AND VF.feature_id = F.feature_id" );
                 }
                 else
                 {
@@ -507,10 +503,10 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
                     script.addTab().addLine( "SELECT 1" );
                     script.addTab().addLine( "FROM wres.Observation O" );
                     script.addTab()
-                          .addLine( "INNER JOIN wres.VariablePosition VP" );
+                          .addLine( "INNER JOIN wres.VariableFeature VF" );
                     script.addTab( 2 )
                           .addLine(
-                                  "ON VP.variableposition_id = O.variableposition_id" );
+                                  "ON VF.variablefeature_id = O.variablefeature_id" );
                     script.addTab()
                           .addLine( "INNER JOIN wres.ProjectSource PS" );
                     script.addTab( 2 )
@@ -519,7 +515,7 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
                           .addLine( "WHERE PS.project_id = ", this.getId() );
                     script.addTab( 2 ).addLine( "AND PS.member = 'left'" );
                     script.addTab( 2 )
-                          .addLine( "AND VP.x_position = F.feature_id" );
+                          .addLine( "AND VF.feature_id = F.feature_id" );
                 }
 
                 script.addTab().addLine( ")" );
@@ -534,23 +530,23 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
                     script.addTab().addLine( "SELECT 1" );
                     script.addTab().addLine( "FROM wres.TimeSeries TS" );
                     script.addTab()
-                          .addLine( "INNER JOIN wres.VariablePosition VP" );
+                          .addLine( "INNER JOIN wres.VariableFeature VF" );
                     script.addTab( 2 )
                           .addLine(
-                                  "ON VP.variableposition_id = TS.variableposition_id" );
+                                  "ON VF.variablefeature_id = TS.variablefeature_id" );
                     script.addTab()
-                          .addLine( "INNER JOIN wres.ForecastSource FS" );
+                          .addLine( "INNER JOIN wres.TimeSeriesSource TSS" );
                     script.addTab( 2 )
-                          .addLine( "ON FS.forecast_id = TS.timeseries_id" );
+                          .addLine( "ON TSS.timeseries_id = TS.timeseries_id" );
                     script.addTab()
                           .addLine( "INNER JOIN wres.ProjectSource PS" );
                     script.addTab( 2 )
-                          .addLine( "ON PS.source_id = FS.source_id" );
+                          .addLine( "ON PS.source_id = TSS.source_id" );
                     script.addTab()
                           .addLine( "WHERE PS.project_id = ", this.getId() );
                     script.addTab( 2 ).addLine( "AND PS.member = 'right'" );
                     script.addTab( 2 )
-                          .addLine( "AND VP.x_position = F.feature_id" );
+                          .addLine( "AND VF.feature_id = F.feature_id" );
                 }
                 else
                 {
@@ -559,10 +555,10 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
                     script.addTab().addLine( "SELECT 1" );
                     script.addTab().addLine( "FROM wres.Observation O" );
                     script.addTab()
-                          .addLine( "INNER JOIN wres.VariablePosition VP" );
+                          .addLine( "INNER JOIN wres.VariableFeature VF" );
                     script.addTab( 2 )
                           .addLine(
-                                  "ON VP.variableposition_id = O.variableposition_id" );
+                                  "ON VF.variablefeature_id = O.variablefeature_id" );
                     script.addTab()
                           .addLine( "INNER JOIN wres.ProjectSource PS" );
                     script.addTab( 2 )
@@ -571,7 +567,7 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
                           .addLine( "WHERE PS.project_id = ", this.getId() );
                     script.addTab( 2 ).addLine( "AND PS.member = 'right'" );
                     script.addTab( 2 )
-                          .addLine( "AND VP.x_position = F.feature_id" );
+                          .addLine( "AND VF.feature_id = F.feature_id" );
                 }
 
                 script.addLine( ");" );
@@ -1333,39 +1329,29 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
 
                 script.addLine( "WITH unique_leads AS" );
                 script.addLine( "(" );
-                script.addTab()
-                      .addLine(
-                              "SELECT FV.lead, lag(FV.lead) OVER ( ORDER BY FV.lead)" );
-                script.addTab().addLine( "FROM wres.ForecastValue FV" );
-                script.addTab().addLine( "WHERE FV.lead > 0" );
+                script.addTab().addLine("SELECT TSV.lead, lag(TSV.lead) OVER ( ORDER BY TSV.lead)" );
+                script.addTab().addLine( "FROM wres.TimeSeriesValue TSV" );
+                script.addTab().addLine( "WHERE TSV.lead > 0" );
 
                 if ( this.getMaximumLeadHour() != Integer.MAX_VALUE )
                 {
-                    script.addTab( 2 )
-                          .addLine( "AND FV.lead <= ",
-                                    this.getMaximumLeadHour() );
+                    script.addTab(  2  ).addLine( "AND TSV.lead <= ", this.getMaximumLeadHour() );
                 }
 
-                script.addTab( 2 ).addLine( "AND EXISTS (" );
-                script.addTab( 3 ).addLine( "SELECT 1" );
-                script.addTab( 3 ).addLine( "FROM wres.ForecastSource FS" );
-                script.addTab( 3 )
-                      .addLine( "INNER JOIN wres.ProjectSource PS" );
-                script.addTab( 4 )
-                      .addLine( "ON PS.source_id = FS.source_id" );
-                script.addTab( 3 )
-                      .addLine( "WHERE FS.forecast_id = FV.timeseries_id" );
-                script.addTab( 4 )
-                      .addLine( "AND PS.project_id = ", this.getId() );
-                script.addTab( 4 ).addLine( "AND PS.member = 'right'" );
-                script.addTab( 2 ).addLine( ")" );
-                script.addTab().addLine( "GROUP BY FV.lead" );
+                script.addTab(  2  ).addLine( "AND EXISTS (" );
+                script.addTab(   3   ).addLine( "SELECT 1" );
+                script.addTab(   3   ).addLine( "FROM wres.TimeSeriesSource TSS" );
+                script.addTab(   3   ).addLine( "INNER JOIN wres.ProjectSource PS" );
+                script.addTab(    4    ).addLine( "ON PS.source_id = TSS.source_id" );
+                script.addTab(   3   ).addLine( "WHERE TSS.timeseries_id = TSV.timeseries_id" );
+                script.addTab(    4    ).addLine( "AND PS.project_id = ", this.getId() );
+                script.addTab(    4    ).addLine( "AND PS.member = 'right'" );
+                script.addTab(  2  ).addLine( ")" );
+                script.addTab().addLine( "GROUP BY TSV.lead" );
                 script.addLine( ")" );
                 script.addLine( "SELECT MAX(row_number) = 1 AS is_regular" );
                 script.addLine( "FROM (" );
-                script.addTab()
-                      .addLine(
-                              "SELECT lead - lag, row_number() OVER (ORDER BY lead - lag)" );
+                script.addTab().addLine("SELECT lead - lag, row_number() OVER (ORDER BY lead - lag)" );
                 script.addTab().addLine( "FROM unique_leads" );
                 script.addTab().addLine( "WHERE lag IS NOT NULL" );
                 script.addTab().addLine( "GROUP BY lead - lag" );
@@ -1410,57 +1396,37 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
                 ScriptBuilder script = new ScriptBuilder();
                 script.addLine( "SELECT (" );
                 script.addTab().addLine( "(" );
-                script.addTab( 2 )
-                      .addLine(
-                              "(COUNT(E.ensemble_id) * 8 + 24) * -- This determines the size of a single row" );
-                script.addTab( 3 )
-                      .addLine(
-                              "(  -- This determines the number of expected rows" );
-                script.addTab( 4 ).addLine( "SELECT COUNT(*)" );
-                script.addTab( 4 ).addLine( "FROM wres.ForecastValue FV" );
-                script.addTab( 4 ).addLine( "INNER JOIN (" );
-                script.addTab( 5 ).addLine( "SELECT TS.timeseries_id" );
-                script.addTab( 5 ).addLine( "FROM wres.TimeSeries TS" );
-                script.addTab( 5 )
-                      .addLine( "INNER JOIN wres.ForecastSource FS" );
-                script.addTab( 6 )
-                      .addLine( "ON FS.forecast_id = TS.timeseries_id" );
-                script.addTab( 5 )
-                      .addLine( "INNER JOIN wres.ProjectSource PS" );
-                script.addTab( 6 ).addLine( "ON PS.source_id = FS.source_id" );
-                script.addTab( 5 )
-                      .addLine( "WHERE PS.project_id = ", this.getId() );
-                script.addTab( 6 )
-                      .addLine( "AND PS.member = ",
-                                ProjectDetails.RIGHT_MEMBER );
-                script.addTab( 5 ).addLine( "LIMIT 1" );
-                script.addTab( 4 ).addLine( ") AS TS" );
-                script.addTab( 4 )
-                      .addLine( "ON TS.timeseries_id = FV.timeseries_id" );
-                script.addTab( 3 ).addLine( ")" );
-                script.addTab( 2 )
-                      .addLine(
-                              ") / 1000.0)::float AS size     -- We divide by 1000.0 to convert the number to kilobyte scale" );
-                script.addLine(
-                        "-- We Select from ensemble because the number of ensembles affects" );
-                script.addLine(
-                        "--   the number of values returned in the resultant array" );
+                script.addTab(  2  ).addLine("(COUNT(E.ensemble_id) * 8 + 24) * -- This determines the size of a single row" );
+                script.addTab(   3   ).addLine("(  -- This determines the number of expected rows" );
+                script.addTab(    4    ).addLine( "SELECT COUNT(*)" );
+                script.addTab(    4    ).addLine( "FROM wres.TimeSeriesValue TSV" );
+                script.addTab(    4    ).addLine( "INNER JOIN (" );
+                script.addTab(     5     ).addLine( "SELECT TS.timeseries_id" );
+                script.addTab(     5     ).addLine( "FROM wres.TimeSeries TS" );
+                script.addTab(     5     ).addLine( "INNER JOIN wres.TimeSeriesSource TSS" );
+                script.addTab(      6      ).addLine( "ON TSS.timeseries_id = TS.timeseries_id" );
+                script.addTab(     5     ).addLine( "INNER JOIN wres.ProjectSource PS" );
+                script.addTab(      6      ).addLine( "ON PS.source_id = TSS.source_id" );
+                script.addTab(     5     ).addLine( "WHERE PS.project_id = ", this.getId() );
+                script.addTab(      6      ).addLine( "AND PS.member = ", ProjectDetails.RIGHT_MEMBER );
+                script.addTab(     5     ).addLine( "LIMIT 1" );
+                script.addTab(    4    ).addLine( ") AS TS" );
+                script.addTab(    4    ).addLine( "ON TS.timeseries_id = TSV.timeseries_id" );
+                script.addTab(   3   ).addLine( ")" );
+                script.addTab(  2  ).addLine(") / 1000.0)::float AS size     -- We divide by 1000.0 to convert the number to kilobyte scale" );
+                script.addLine("-- We Select from ensemble because the number of ensembles affects" );
+                script.addLine("--   the number of values returned in the resultant array" );
                 script.addLine( "FROM wres.Ensemble E" );
                 script.addLine( "WHERE EXISTS (" );
                 script.addTab().addLine( "SELECT 1" );
                 script.addTab().addLine( "FROM wres.TimeSeries TS" );
-                script.addTab().addLine( "INNER JOIN wres.ForecastSource FS" );
-                script.addTab( 2 )
-                      .addLine( "ON FS.forecast_id = TS.timeseries_id" );
+                script.addTab().addLine( "INNER JOIN wres.TimeSeriesSource TSS" );
+                script.addTab(  2  ).addLine( "ON TSS.timeseries_id = TS.timeseries_id" );
                 script.addTab().addLine( "INNER JOIN wres.ProjectSource PS" );
-                script.addTab( 2 ).addLine( "ON PS.source_id = FS.source_id" );
-                script.addTab()
-                      .addLine( "WHERE PS.project_id = ", this.getId() );
-                script.addTab( 2 )
-                      .addLine( "AND PS.member = ",
-                                ProjectDetails.RIGHT_MEMBER );
-                script.addTab( 2 )
-                      .addLine( "AND TS.ensemble_id = E.ensemble_id" );
+                script.addTab(  2  ).addLine( "ON PS.source_id = TSS.source_id" );
+                script.addTab().addLine( "WHERE PS.project_id = ", this.getId() );
+                script.addTab(  2  ).addLine( "AND PS.member = ", ProjectDetails.RIGHT_MEMBER );
+                script.addTab(  2  ).addLine( "AND TS.ensemble_id = E.ensemble_id" );
                 script.addLine( ")" );
 
                 if ( !this.getRight().getEnsemble().isEmpty() )
@@ -1468,8 +1434,7 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
                     int includeCount = 0;
                     int excludeCount = 0;
 
-                    StringJoiner
-                            include = new StringJoiner( ",", "ANY('{", "}'::integer[])");
+                    StringJoiner include = new StringJoiner( ",", "ANY('{", "}'::integer[])");
                     StringJoiner exclude = new StringJoiner(",", "ANY('{", "}'::integer[])");
 
                     for ( EnsembleCondition condition : this.getRight().getEnsemble())
@@ -1489,12 +1454,12 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
 
                     if (includeCount > 0)
                     {
-                        script.addLine( "    AND ensemble_id = ", include.toString() );
+                        script.addTab().addLine( "AND ensemble_id = ", include.toString() );
                     }
 
                     if (excludeCount > 0)
                     {
-                        script.addLine( "    AND NOT ensemble_id = ", exclude.toString() );
+                        script.addTab().addLine( "AND NOT ensemble_id = ", exclude.toString() );
                     }
                 }
 
@@ -1758,33 +1723,33 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
 
         ScriptBuilder script = new ScriptBuilder(  );
 
-        script.addLine("SELECT FV.lead");
-        script.addLine("FROM wres.ForecastValue FV");
-        script.addLine("WHERE FV.lead >= ", width);
+        script.addLine("SELECT TSV.lead");
+        script.addLine("FROM wres.TimeSeriesValue TSV");
+        script.addLine("WHERE TSV.lead >= ", width);
 
         if (this.getMaximumLeadHour() != Integer.MAX_VALUE)
         {
-            script.addTab().addLine("AND FV.lead <= ", this.getMaximumLeadHour());
+            script.addTab().addLine("AND TSV.lead <= ", this.getMaximumLeadHour());
         }
 
         if (this.getMaximumValue() != Double.MAX_VALUE)
         {
-            script.addTab().addLine("AND FV.forecasted_value <= ", this.getMaximumValue());
+            script.addTab().addLine("AND TSV.series_value <= ", this.getMaximumValue());
         }
 
         if (this.getMinimumValue() != -Double.MAX_VALUE)
         {
-            script.addTab().addLine("AND FV.forecasted_value >= ", this.getMinimumValue());
+            script.addTab().addLine("AND TSV.series_value >= ", this.getMinimumValue());
         }
 
         script.addTab().addLine("AND EXISTS (");
         script.addTab( 2 ).addLine( "SELECT 1");
         script.addTab( 2 ).addLine( "FROM wres.TimeSeries TS");
-        script.addTab( 2 ).addLine( "INNER JOIN wres.ForecastSource FS");
-        script.addTab(  3  ).addLine(  "ON FS.forecast_id = TS.timeseries_id");
+        script.addTab( 2 ).addLine( "INNER JOIN wres.TimeSeriesSource TSS");
+        script.addTab(  3  ).addLine(  "ON TSS.timeseries_id = TS.timeseries_id");
         script.addTab( 2 ).addLine( "INNER JOIN wres.ProjectSource PS");
-        script.addTab(  3  ).addLine(  "ON PS.source_id = FS.source_id");
-        script.addTab( 2 ).addLine( "WHERE TS.timeseries_id = FV.timeseries_id");
+        script.addTab(  3  ).addLine(  "ON PS.source_id = TSS.source_id");
+        script.addTab( 2 ).addLine( "WHERE TS.timeseries_id = TSV.timeseries_id");
         script.addTab(  3  ).addLine(  "AND PS.project_id = ", this.getId());
         script.addTab(  3  ).addLine(  "AND PS.member = 'right'");
 
@@ -1800,12 +1765,12 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
 
         if (Strings.hasValue(this.getEarliestDate()))
         {
-            script.addTab(3).addLine("AND TS.initialization_date + INTERVAL '1 HOUR' * FV.lead' >= '", this.getEarliestDate(), "'");
+            script.addTab(3).addLine("AND TS.initialization_date + INTERVAL '1 HOUR' * TSV.lead' >= '", this.getEarliestDate(), "'");
         }
 
         if (Strings.hasValue( this.getLatestDate() ))
         {
-            script.addTab(3).addLine("AND TS.initialization_date + INTERVAL '1 HOUR' * FV.lead <= '", this.getLatestDate(), "'");
+            script.addTab(3).addLine("AND TS.initialization_date + INTERVAL '1 HOUR' * TSV.lead <= '", this.getLatestDate(), "'");
         }
 
         String beginning = script.toString();
@@ -1814,16 +1779,16 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
         {
             connection = Database.getConnection();
             resultSet = Database.getResults( connection,
-                                             ScriptGenerator.formVariablePositionLoadScript( this, false ) );
+                                             ScriptGenerator.formVariableFeatureLoadScript( this, false ) );
 
             while (resultSet.next())
             {
                 script = new ScriptBuilder( beginning );
 
-                script.addTab(  3  ).addLine(  "AND TS.variableposition_id = ", resultSet.getInt( "forecast_position" ));
+                script.addTab(  3  ).addLine(  "AND TS.variablefeature_id = ", resultSet.getInt( "forecast_feature" ));
                 script.addTab().addLine(")");
-                script.addLine("GROUP BY FV.lead");
-                script.addLine("ORDER BY FV.lead;");
+                script.addLine("GROUP BY TSV.lead");
+                script.addLine("ORDER BY TSV.lead;");
 
                 futureLeads.put( new FeatureDetails( resultSet ),
                                  Database.submit( new DataSetRetriever( script.toString() ) ) );
@@ -1980,12 +1945,12 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
         long width = TimeHelper.unitsToLeadUnits( this.getScale().getUnit().value(),
                                                      this.getScale().getPeriod());
 
-        String script = ScriptGenerator.formVariablePositionLoadScript( this, true );
+        String script = ScriptGenerator.formVariableFeatureLoadScript( this, true );
         ScriptBuilder part = new ScriptBuilder(  );
 
         part.addLine("SELECT TS.offset");
         part.addLine("FROM (");
-        part.addTab().add("SELECT TS.initialization_date + INTERVAL '1 HOUR' * (FV.lead + ", width, ")");
+        part.addTab().add("SELECT TS.initialization_date + INTERVAL '1 HOUR' * (TSV.lead + ", width, ")");
 
         if (this.getRight().getTimeShift() != null)
         {
@@ -1993,11 +1958,11 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
         }
 
         part.addLine(" AS valid_time,");
-        part.addTab(  2  ).addLine("FV.lead - ", width, " AS offset");
+        part.addTab(  2  ).addLine("TSV.lead - ", width, " AS offset");
         part.addTab().addLine("FROM wres.TimeSeries TS");
-        part.addTab().addLine("INNER JOIN wres.ForecastValue FV");
-        part.addTab(  2  ).addLine("ON FV.timeseries_id = TS.timeseries_id");
-        part.addTab().add("WHERE TS.variableposition_id = ");
+        part.addTab().addLine("INNER JOIN wres.TimeSeriesValue TSV");
+        part.addTab(  2  ).addLine("ON TSV.timeseries_id = TS.timeseries_id");
+        part.addTab().add("WHERE TS.variablefeature_id = ");
 
         String beginning = part.toString();
 
@@ -2005,22 +1970,22 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
 
         if (this.getMinimumLeadHour() != Integer.MIN_VALUE)
         {
-            part.addTab(  2  ).addLine( "AND FV.lead >= ", (this.getMinimumLeadHour() - 1) + width);
+            part.addTab(  2  ).addLine( "AND TSV.lead >= ", (this.getMinimumLeadHour() - 1) + width);
         }
         else
         {
-            part.addTab(  2  ).addLine( "AND FV.lead >= ", width);
+            part.addTab(  2  ).addLine( "AND TSV.lead >= ", width);
         }
 
         /*if (width > 1 || this.getMinimumLeadHour() != Integer.MIN_VALUE)
         {
-            part.addTab( 2 ).addLine( "AND FV.lead >= ", Math.max( width, this.getMinimumLeadHour() ) );
+            part.addTab( 2 ).addLine( "AND TSV.lead >= ", Math.max( width, this.getMinimumLeadHour() ) );
         }*/
 
 
         if (this.getMaximumLeadHour() != Integer.MAX_VALUE)
         {
-            part.addTab(  2  ).addLine( "AND FV.lead <= ", this.getMaximumLeadHour());
+            part.addTab(  2  ).addLine( "AND TSV.lead <= ", this.getMaximumLeadHour());
         }
 
         if (Strings.hasValue( this.getEarliestIssueDate() ))
@@ -2036,11 +2001,11 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
         part.addTab(  2  ).addLine("AND EXISTS (");
         part.addTab(   3   ).addLine("SELECT 1");
         part.addTab(   3   ).addLine("FROM wres.ProjectSource PS");
-        part.addTab(   3   ).addLine("INNER JOIN wres.ForecastSource FS");
-        part.addTab(    4    ).addLine("ON FS.source_id = PS.source_id");
+        part.addTab(   3   ).addLine("INNER JOIN wres.TimeSeriesSource TSS");
+        part.addTab(    4    ).addLine("ON TSS.source_id = PS.source_id");
         part.addTab(   3   ).addLine("WHERE PS.project_id = ", this.getId());
         part.addTab(    4    ).addLine("AND PS.member = 'right'");
-        part.addTab(    4    ).addLine("AND FS.forecast_id = TS.timeseries_id");
+        part.addTab(    4    ).addLine("AND TSS.timeseries_id = TS.timeseries_id");
         part.addTab(  2  ).addLine(")");
         part.addTab(  2  ).addLine("ORDER BY valid_time");
 
@@ -2064,7 +2029,7 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
 
         part.addLine(" AS observation_time");
         part.addTab(  2  ).addLine("FROM wres.Observation O");
-        part.addTab(  2  ).add("WHERE O.variableposition_id = ");
+        part.addTab(  2  ).add("WHERE O.variablefeature_id = ");
 
         String middle = part.toString();
 
@@ -2098,15 +2063,15 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
             connection = Database.getConnection();
             resultSet = Database.getResults( connection, script );
 
-            LOGGER.trace("Variable position metadata loaded...");
+            LOGGER.trace("Variable feature metadata loaded...");
 
             while (resultSet.next())
             {
                 ScriptBuilder finalScript = new ScriptBuilder( );
                 finalScript.add(beginning);
-                finalScript.addLine((Integer)Database.getValue( resultSet, "forecast_position" ));
+                finalScript.addLine((Integer)Database.getValue( resultSet, "forecast_feature" ));
                 finalScript.add(middle);
-                finalScript.addLine((Integer)Database.getValue( resultSet, "observation_position" ));
+                finalScript.addLine((Integer)Database.getValue( resultSet, "observation_feature" ));
                 finalScript.addLine(end);
 
                 FeatureDetails.FeatureKey key = new FeatureDetails.FeatureKey(
@@ -2464,10 +2429,10 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
 
         script.addLine("WITH differences AS");
         script.addLine("(");
-        script.addLine("    SELECT lead - lag(lead) OVER (ORDER BY FV.timeseries_id, lead) AS difference");
-        script.addLine("    FROM wres.ForecastValue FV");
+        script.addLine("    SELECT lead - lag(lead) OVER (ORDER BY TSV.timeseries_id, lead) AS difference");
+        script.addLine("    FROM wres.TimeSeriesValue TSV");
         script.addLine("    INNER JOIN wres.TimeSeries TS");
-        script.addLine("        ON TS.timeseries_id = FV.timeseries_id");
+        script.addLine("        ON TS.timeseries_id = TSV.timeseries_id");
 
         if (this.getMinimumLeadHour() != Integer.MIN_VALUE)
         {
@@ -2501,10 +2466,10 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
         {
             FeatureDetails feature = featureDetails.get();
             Integer variableId = this.getVariableId( dataSourceConfig );
-            Integer variablePositionId = Features.getVariablePositionByFeature( feature, variableId );
+            Integer variablePositionId = Features.getVariableFeatureByFeature( feature, variableId );
             Integer arbitraryEnsembleId = Ensembles.getSingleEnsembleID(this.getId(), variablePositionId);
 
-            String variablePositionClause = ConfigHelper.getVariablePositionClause(
+            String variablePositionClause = ConfigHelper.getVariableFeatureClause(
                     feature.toFeature(),
                     variableId,
                     "TS" );
@@ -2517,11 +2482,11 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
         script.addLine("        AND EXISTS (");
         script.addLine("            SELECT 1");
         script.addLine("            FROM wres.ProjectSource PS");
-        script.addLine("            INNER JOIN wres.ForecastSource FS");
-        script.addLine("                ON FS.source_id = PS.source_id");
+        script.addLine("            INNER JOIN wres.TimeSeriesSource TSS");
+        script.addLine("                ON TSS.source_id = PS.source_id");
         script.addLine("            WHERE PS.project_id = ", this.getId());
         script.addLine("                AND PS.member = ", this.getInputName( dataSourceConfig ));
-        script.addLine("                AND FV.timeseries_id = FS.forecast_id");
+        script.addLine("                AND TSV.timeseries_id = TSS.timeseries_id");
         script.addLine("        )");
         script.addLine(")");
         script.addLine("SELECT MIN(difference)::integer AS scale");
@@ -2554,7 +2519,7 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
 
         if (featureDetails.isPresent())
         {
-            String variablePositionClause = ConfigHelper.getVariablePositionClause(
+            String variablePositionClause = ConfigHelper.getVariableFeatureClause(
                     featureDetails.get().toFeature(),
                     this.getVariableId( dataSourceConfig ),
                     "O" );
@@ -2650,11 +2615,6 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
         args.add(this.getInputCode());
 
         return script.getPreparedStatement( connection, args );
-    }
-
-    protected Object getSaveLock()
-    {
-        return PROJECT_SAVE_LOCK;
     }
 
     public void save() throws SQLException
@@ -2860,98 +2820,85 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
         }
         else if (leadIsMissing)
         {
-            String script = "";
+            ScriptBuilder script = new ScriptBuilder();
 
             if ( ConfigHelper.isForecast( this.getRight() ) )
             {
-                script += "SELECT MAX(FV.lead) AS last_lead" + NEWLINE;
-                script += "FROM wres.TimeSeries TS" + NEWLINE;
-                script += "INNER JOIN wres.ForecastValue FV" + NEWLINE;
-                script += "    ON TS.timeseries_id = FV.timeseries_id" + NEWLINE;
-                script += "WHERE " +
-                          ConfigHelper.getVariablePositionClause( feature,
-                                                                  this.getRightVariableID(),
-                                                                  "TS" ) +
-                          NEWLINE;
+                script.addLine("SELECT MAX(TSV.lead) AS last_lead");
+                script.addLine("FROM wres.TimeSeries TS");
+                script.addLine("INNER JOIN wres.TimeSeriesValue TSV");
+                script.addTab().addLine("ON TS.timeseries_id = TSV.timeseries_id");
+                script.addLine("WHERE " +
+                          ConfigHelper.getVariableFeatureClause( feature,
+                                                                 this.getRightVariableID(),
+                                                                 "TS" ));
 
                 if ( this.getMaximumLeadHour() != Integer.MAX_VALUE )
                 {
-                    script += "    AND FV.lead <= "
+                    script.addTab().addLine("AND TSV.lead <= "
                               + this.getMaximumLeadHour( )
-                              + NEWLINE;
+                             );
                 }
 
                 if ( this.getMinimumLeadHour() != Integer.MIN_VALUE )
                 {
-                    script += "    AND FV.lead >= "
+                    script.addTab().addLine("AND TSV.lead >= "
                               + this.getMinimumLeadHour( )
-                              + NEWLINE;
+                             );
                 }
 
                 if ( Strings.hasValue( this.getEarliestIssueDate()))
                 {
-                    script += "    AND TS.initialization_date >= '" + this.getEarliestIssueDate() + "'" + NEWLINE;
+                    script.addTab().addLine("AND TS.initialization_date >= '" + this.getEarliestIssueDate() + "'");
                 }
 
                 if (Strings.hasValue( this.getLatestIssueDate()))
                 {
-                    script += "    AND TS.initialization_date <= '" + this.getLatestIssueDate() + "'" + NEWLINE;
+                    script.addTab().addLine("AND TS.initialization_date <= '" + this.getLatestIssueDate() + "'");
                 }
 
                 if ( Strings.hasValue( this.getEarliestDate() ))
                 {
-                    script += "    AND TS.initialization_date + INTERVAL '1 HOUR' * FV.lead >= '" + this.getEarliestDate() + "'" + NEWLINE;
+                    script.addTab().addLine("AND TS.initialization_date + INTERVAL '1 HOUR' * TSV.lead >= '" + this.getEarliestDate() + "'");
                 }
 
                 if (Strings.hasValue( this.getLatestDate() ))
                 {
-                    script += "    AND TS.initialization_date + INTERVAL '1 HOUR' * FV.lead <= '" + this.getLatestDate() + "'" + NEWLINE;
+                    script.addTab().addLine("AND TS.initialization_date + INTERVAL '1 HOUR' * TSV.lead <= '" + this.getLatestDate() + "'");
                 }
 
-                script += "    AND EXISTS (" + NEWLINE;
-                script += "        SELECT 1" + NEWLINE;
-                script += "        FROM wres.ProjectSource PS" + NEWLINE;
-                script += "        INNER JOIN wres.ForecastSource FS" + NEWLINE;
-                script += "            ON FS.source_id = PS.source_id" + NEWLINE;
-                script += "        WHERE PS.project_id = " + this.getId() + NEWLINE;
-                script += "            AND PS.member = " + ProjectDetails.RIGHT_MEMBER + NEWLINE;
-                script += "            AND FS.forecast_id = TS.timeseries_id" + NEWLINE;
-                script += "    );";
-
-                lastLead = Database.getResult( script, "last_lead" );
-
-                if (Objects.isNull( lastLead ))
-                {
-                    throw new NoDataException( "No count could be found for the "
-                                               + "right hand data that could be "
-                                               + "used. Variable ID: " +
-                                               this.rightVariableID +
-                                               " Feature: " +
-                                               FeaturePlus.of( feature ) );
-                }
+                script.addTab().addLine("AND EXISTS (");
+                script.addTab(  2  ).addLine("SELECT 1");
+                script.addTab(  2  ).addLine("FROM wres.ProjectSource PS");
+                script.addTab(  2  ).addLine("INNER JOIN wres.TimeSeriesSource TSS");
+                script.addTab(   3   ).addLine("ON TSS.source_id = PS.source_id");
+                script.addTab(  2  ).addLine("WHERE PS.project_id = " + this.getId());
+                script.addTab(   3   ).addLine("AND PS.member = " + ProjectDetails.RIGHT_MEMBER);
+                script.addTab(   3   ).addLine("AND TSS.timeseries_id = TS.timeseries_id");
+                script.addTab().addLine(");");
             }
             else
             {
-                script += "SELECT COUNT(*)::int AS last_lead" + NEWLINE;
-                script += "FROM wres.Observation O" + NEWLINE;
-                script += "INNER JOIN wres.ProjectSource PS" + NEWLINE;
-                script += "     ON PS.source_id = O.source_id" + NEWLINE;
-                script += "WHERE PS.project_id = " + this.getId() + NEWLINE;
-                script += "     AND " +
-                          ConfigHelper.getVariablePositionClause(
+                script.addLine("SELECT COUNT(*)::int AS last_lead");
+                script.addLine("FROM wres.Observation O");
+                script.addLine("INNER JOIN wres.ProjectSource PS");
+                script.addTab().addLine("ON PS.source_id = O.source_id");
+                script.addLine("WHERE PS.project_id = " + this.getId());
+                script.addTab().addLine("AND " +
+                          ConfigHelper.getVariableFeatureClause(
                                   feature,
                                   this.getRightVariableID(),
-                                  "O;" );
-                lastLead = Database.getResult( script, "last_lead" );
+                                  "O;" ));
+            }
+            lastLead = script.retrieve( "last_lead" );
 
-                if (Objects.isNull( lastLead ))
-                {
-                    throw new NoDataException( "No count of the right hand data "
-                                               + "could be performed. Variable ID: " +
-                                               this.getRightVariableID() +
-                                               " Feature: " +
-                                               FeaturePlus.of( feature ));
-                }
+            if (Objects.isNull( lastLead ))
+            {
+                throw new NoDataException( "No count of the right hand data "
+                                           + "could be performed. Variable ID: " +
+                                           this.getRightVariableID() +
+                                           " Feature: " +
+                                           FeaturePlus.of( feature ));
             }
 
             this.lastLeads.put(feature, lastLead);
@@ -3112,9 +3059,9 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
      */
     public Integer getForecastLag(DataSourceConfig sourceConfig, Feature feature) throws SQLException
     {
-        synchronized (this.forecastLag)
+        synchronized (this.timeSeriesLag )
         {
-            if (!this.forecastLag.containsKey( feature ))
+            if (!this.timeSeriesLag.containsKey( feature ))
             {
                 // This script will tell us the maximum distance between
                 // sequential forecasts for a feature for this project.
@@ -3138,19 +3085,19 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
                 script.addTab(  2  ).addLine(") / 3600)::int AS lag");
                 script.addTab().addLine("FROM wres.TimeSeries TS");
                 script.addTab().add("WHERE ");
-                script.addLine(ConfigHelper.getVariablePositionClause(
+                script.addLine(ConfigHelper.getVariableFeatureClause(
                         feature,
                         Variables.getVariableID( sourceConfig ),
                         "TS" )
                 );
                 script.addTab(  2  ).addLine("AND EXISTS (");
                 script.addTab(   3   ).addLine("SELECT 1");
-                script.addTab(   3   ).addLine("FROM wres.ForecastSource FS");
+                script.addTab(   3   ).addLine("FROM wres.TimeSeriesSource TSS");
                 script.addTab(   3   ).addLine("INNER JOIN wres.ProjectSource PS");
-                script.addTab(    4    ).addLine("ON PS.source_id = FS.source_id");
+                script.addTab(    4    ).addLine("ON PS.source_id = TSS.source_id");
                 script.addTab(   3   ).addLine("WHERE PS.project_id = ", this.getId());
                 script.addTab(    4    ).addLine("AND PS.member = ", this.getInputName( sourceConfig ));
-                script.addTab(    4    ).addLine("AND FS.forecast_id = TS.timeseries_id");
+                script.addTab(    4    ).addLine("AND TSS.timeseries_id = TS.timeseries_id");
                 script.addTab(  2  ).addLine(")");
                 script.addTab().addLine("GROUP BY TS.initialization_date");
                 script.addTab().addLine("ORDER BY TS.initialization_date");
@@ -3162,11 +3109,11 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
                 script.addLine("FROM initialization_lag IL");
                 script.addLine("WHERE IL.lag IS NOT NULL;");
 
-                this.forecastLag.put( feature, script.retrieve( "typical_gap" ) );
+                this.timeSeriesLag.put( feature, script.retrieve( "typical_gap" ) );
             }
 
 
-            return this.forecastLag.get( feature );
+            return this.timeSeriesLag.get( feature );
         }
     }
 

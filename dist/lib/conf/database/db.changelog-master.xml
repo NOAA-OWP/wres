@@ -3,11 +3,31 @@
         xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
-                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
-    <include file="nonsrc/database/setup_v1.xml"/>
-    <include file="nonsrc/database/wres.measurementunit_v1.xml" />
-    <include file="nonsrc/database/wres.unitconversion_v1.xml" />
-    <include file="nonsrc/database/wres.variable_v1.xml" />
-    <include file="nonsrc/database/wres.variableposition_v1.xml" />
-    <include file="nonsrc/database/wres.observation_v1.xml" />
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <include file="setup_v1.xml" relativeToChangelogFile="true"/>
+    <include file="wres.measurementunit_v1.xml" relativeToChangelogFile="true" />
+    <include file="wres.variable_v1.xml" relativeToChangelogFile="true" />
+    <include file="wres.source_v1.xml" relativeToChangelogFile="true" />
+    <include file="wres.project_v1.xml" relativeToChangelogFile="true" />
+    <include file="operating_member_v1.xml" relativeToChangelogFile="true" />
+    <include file="wres.projectsource_v1.xml" relativeToChangelogFile="true" />
+    <include file="wres.feature_v1.xml" relativeToChangelogFile="true" />
+    <include file="wres.variablefeature_v1.xml" relativeToChangelogFile="true" />
+    <include file="wres.ensemble_v1.xml" relativeToChangelogFile="true" />
+    <include file="wres.timeseries_v1.xml" relativeToChangelogFile="true" />
+    <include file="wres.observation_v1.xml" relativeToChangelogFile="true" />
+    <include file="wres.unitconversion_v1.xml" relativeToChangelogFile="true" />
+    <include file="wres.timeseriesvalue_v1.xml" relativeToChangelogFile="true" />
+    <include file="wres.gridprojection_v1.xml" relativeToChangelogFile="true" />
+    <include file="wres.netcdfcoordinate_v1.xml" relativeToChangelogFile="true" />
+    <include file="wres.timeseriessource_v1.xml" relativeToChangelogFile="true" />
+    <include file="wres.usgsparameter_v1.xml" relativeToChangelogFile="true" />
+    <include file="wres.variablebyfeature_v1.xml" relativeToChangelogFile="true" />
+    <include file="wres.forecasts_v1.xml" relativeToChangelogFile="true" />
+    <include file="wres.conversions_v1.xml" relativeToChangelogFile="true" />
+    <include file="wres.conversions_v1.xml" relativeToChangelogFile="true" />
+    <include file="public.executionlog_v1.xml" relativeToChangelogFile="true" />
+    <include file="public.indexqueue_v1.xml" relativeToChangelogFile="true" />
+    <include file="public.projectexecutions_v1.xml" relativeToChangelogFile="true" />
 </databaseChangeLog>

@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="ProjectSource1.0" author="Christopher Tubbs" dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="f">
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM pg_catalog.pg_tables
+                    WHERE schemaname = 'wres'
+                        AND tablename = 'ProjectSource'
+                );
+            </sqlCheck>
+        </preConditions>
+        <createTable tableName="ProjectSource" schemaName="wres">
+            <column name="project_id" type="smallint">
+                <constraints nullable="false" />
+            </column>
+            <column name="source_id" type="smallint">
+                <constraints nullable="false" />
+            </column>
+            <column name="member" type="operating_member">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="ProjectSource" baseColumnNames="project_id"
+                                 constraintName="projectsource_project_fk" referencedTableName="Project"
+                                 referencedColumnNames="project_id" baseTableSchemaName="wres"
+                                 onDelete="CASCADE" referencedTableSchemaName="wres" />
+        <addForeignKeyConstraint baseTableName="ProjectSource" baseColumnNames="source_id"
+                                 constraintName="projectsource_source_fk" referencedTableName="Source"
+                                 referencedColumnNames="source_id" baseTableSchemaName="wres"
+                                 onDelete="CASCADE" referencedTableSchemaName="wres" />
+        <createIndex tableName="ProjectSource" schemaName="wres" indexName="projectsource_project_idx">
+            <column name="project_id"/>
+            <column name="member" />
+        </createIndex>
+        <sql>
+            ALTER TABLE wres.ProjectSource CLUSTER ON projectsource_project_idx;
+        </sql>
+        <createIndex tableName="ProjectSource" schemaName="wres" indexName="projectsource_source_idx">
+            <column name="source_id" />
+        </createIndex>
+        <sql>
+            ALTER TABLE wres.ProjectSource OWNER TO wres;
+        </sql>
+        <comment>
+            The wres.Project table has been created.
+        </comment>
+    </changeSet>
+</databaseChangeLog>

@@ -62,7 +62,7 @@ class VectorCache implements LeftHandCache
 
         String timeShift = null;
 
-        String variablepositionClause = ConfigHelper.getVariablePositionClause( this.feature, leftVariableID, "");
+        String variablepositionClause = ConfigHelper.getVariableFeatureClause( this.feature, leftVariableID, "");
 
         if (left.getTimeShift() != null)
         {

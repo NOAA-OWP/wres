@@ -1,0 +1,583 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="USGSParameter 1.0" author="Christopher Tubbs" dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="f">
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM pg_catalog.pg_tables
+                    WHERE schemaname = 'wres'
+                        AND tablename = 'usgsparameter'
+                );
+            </sqlCheck>
+        </preConditions>
+        <createTable tableName="USGSParameter" schemaName="wres">
+            <column name="name" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="text" />
+            <column name="parameter_code" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="measurement_unit" type="text" />
+            <column name="measurementunit_id" type="smallint" />
+            <column name="aggregation" type="text" />
+        </createTable>
+        <sql>
+            ALTER TABLE wres.USGSParameter OWNER TO wres;
+        </sql>
+        <createIndex tableName="USGSParameter" schemaName="wres" indexName="usgsparameter_name_agg_measurement_idx">
+            <column name="name"/>
+            <column name="aggregation" />
+            <column name="measurement_unit" />
+        </createIndex>
+        <comment>
+            The wres.USGSParameter table has been created.
+        </comment>
+        <sql>
+            INSERT INTO wres.USGSParameter(
+                name,
+                description,
+                parameter_code,
+                measurement_unit,
+                measurementunit_id,
+                aggregation
+            )
+            SELECT 'Streamflow',
+                'Discharge, instantaneous, cubic meters per second',
+                '30209',
+                'm3/sec',
+                MU.measurementunit_id,
+                'instant'
+            FROM wres.MeasurementUnit MU
+            WHERE MU.unit_name = 'CMS';
+        </sql>
+        <sql>
+            INSERT INTO wres.USGSParameter(
+                name,
+                description,
+                parameter_code,
+                measurement_unit,
+                measurementunit_id,
+                aggregation
+            )
+            SELECT 'Streamflow',
+                'Discharge, cubic meters per second',
+                '30208',
+                'm3/sec',
+                MU.measurementunit_id,
+                'None'
+            FROM wres.MeasurementUnit MU
+            WHERE MU.unit_name = 'CMS';
+        </sql>
+        <sql>
+            INSERT INTO wres.USGSParameter(
+                name,
+                description,
+                parameter_code,
+                measurement_unit,
+                measurementunit_id,
+                aggregation
+            )
+            SELECT 'Streamflow',
+                'Discharge, instantaneous, cubic feet per second',
+                '00061',
+                'ft3/s',
+                MU.measurementunit_id,
+                'instant'
+            FROM wres.MeasurementUnit MU
+            WHERE MU.unit_name = 'CFS';
+        </sql>
+        <sql>
+            INSERT INTO wres.USGSParameter(
+                name,
+                description,
+                parameter_code,
+                measurement_unit,
+                measurementunit_id,
+                aggregation
+            )
+            SELECT 'Streamflow',
+                'Discharge, cubic feet per second',
+                '00060',
+                'ft3/s',
+                MU.measurementunit_id,
+                'None'
+            FROM wres.MeasurementUnit MU
+            WHERE MU.unit_name = 'CFS';
+        </sql>
+        <sql>
+            INSERT INTO wres.USGSParameter(
+                name,
+                description,
+                parameter_code,
+                measurement_unit,
+                measurementunit_id,
+                aggregation
+            )
+            SELECT 'Snow Depth',
+                'Snow depth, feet',
+                '72198',
+                'ft',
+                MU.measurementunit_id,
+                'None'
+            FROM wres.MeasurementUnit MU
+            WHERE MU.unit_name = 'FT';
+        </sql>
+        <sql>
+            INSERT INTO wres.USGSParameter(
+                name,
+                description,
+                parameter_code,
+                measurement_unit,
+                measurementunit_id,
+                aggregation
+            )
+            SELECT 'Temperature',
+                'Temperature, air, degrees Fahrenheit',
+                '00021',
+                'deg F',
+                MU.measurementunit_id,
+                'None'
+            FROM wres.MeasurementUnit MU
+            WHERE MU.unit_name = 'F';
+        </sql>
+        <sql>
+            INSERT INTO wres.USGSParameter(
+                name,
+                description,
+                parameter_code,
+                measurement_unit,
+                measurementunit_id,
+                aggregation
+            )
+            SELECT 'Snow Temperature',
+                'Temperature, snow, degrees Celsius',
+                '81029',
+                'deg C',
+                MU.measurementunit_id,
+                'None'
+            FROM wres.MeasurementUnit MU
+            WHERE MU.unit_name = 'C';
+        </sql>
+        <sql>
+            INSERT INTO wres.USGSParameter(
+                name,
+                description,
+                parameter_code,
+                measurement_unit,
+                measurementunit_id,
+                aggregation
+            )
+            SELECT 'Temperature',
+                'Temperature, air, degrees Celsius',
+                '00020',
+                'deg C',
+                MU.measurementunit_id,
+                'None'
+            FROM wres.MeasurementUnit MU
+            WHERE MU.unit_name = 'C';
+        </sql>
+        <sql>
+            INSERT INTO wres.USGSParameter(
+                name,
+                description,
+                parameter_code,
+                measurement_unit,
+                measurementunit_id,
+                aggregation
+            )
+            SELECT 'Snow Depth',
+                'Snow depth, inches',
+                '82300',
+                'in',
+                MU.measurementunit_id,
+                'None'
+            FROM wres.MeasurementUnit MU
+            WHERE MU.unit_name = 'IN';
+        </sql>
+        <sql>
+            INSERT INTO wres.USGSParameter(
+                name,
+                description,
+                parameter_code,
+                measurement_unit,
+                measurementunit_id,
+                aggregation
+            )
+            SELECT 'Water Content',
+                'Water content of snow, inches',
+                '81026',
+                'in',
+                MU.measurementunit_id,
+                'None'
+            FROM wres.MeasurementUnit MU
+            WHERE MU.unit_name = 'IN';
+        </sql>
+        <sql>
+            INSERT INTO wres.USGSParameter(
+                name,
+                description,
+                parameter_code,
+                measurement_unit,
+                measurementunit_id,
+                aggregation
+            )
+            SELECT 'Precipitation',
+                'Precipitation, cumulative, inches',
+                '72192',
+                'in',
+                MU.measurementunit_id,
+                'sum'
+            FROM wres.MeasurementUnit MU
+            WHERE MU.unit_name = 'IN';
+        </sql>
+        <sql>
+            INSERT INTO wres.USGSParameter(
+                name,
+                description,
+                parameter_code,
+                measurement_unit,
+                measurementunit_id,
+                aggregation
+            )
+            SELECT 'Precipitation',
+                'Precipitation, inches',
+                '46529',
+                'in',
+                MU.measurementunit_id,
+                'None'
+            FROM wres.MeasurementUnit MU
+            WHERE MU.unit_name = 'IN';
+        </sql>
+        <sql>
+            INSERT INTO wres.USGSParameter(
+                name,
+                description,
+                parameter_code,
+                measurement_unit,
+                measurementunit_id,
+                aggregation
+            )
+            SELECT 'Streamflow',
+                'Discharge duration, minutes',
+                '81381',
+                'minutes',
+                MU.measurementunit_id,
+                'None'
+            FROM wres.MeasurementUnit MU
+            WHERE MU.unit_name = 'M';
+        </sql>
+        <sql>
+            INSERT INTO wres.USGSParameter(
+                name,
+                description,
+                parameter_code,
+                measurement_unit,
+                measurementunit_id,
+                aggregation
+            )
+            SELECT 'Snow Depth',
+                'Snow depth, meters',
+                '72189',
+                'm',
+                MU.measurementunit_id,
+                'None'
+            FROM wres.MeasurementUnit MU
+            WHERE MU.unit_name = 'M';
+        </sql>
+        <sql>
+            INSERT INTO wres.USGSParameter(
+                name,
+                description,
+                parameter_code,
+                measurement_unit,
+                measurementunit_id,
+                aggregation
+            )
+            SELECT 'Precipitation',
+                'Precipitation, millimeters',
+                '99772',
+                'mm',
+                MU.measurementunit_id,
+                'None'
+            FROM wres.MeasurementUnit MU
+            WHERE MU.unit_name = 'MM';
+        </sql>
+        <sql>
+            INSERT INTO wres.USGSParameter(
+                name,
+                description,
+                parameter_code,
+                measurement_unit,
+                measurementunit_id,
+                aggregation
+            )
+            SELECT 'Cloud Cover',
+                'Cloud cover, percent',
+                '00032',
+                '%',
+                MU.measurementunit_id,
+                'None'
+            FROM wres.MeasurementUnit MU
+            WHERE MU.unit_name = '%';
+        </sql>
+        <sql>
+            INSERT INTO wres.USGSParameter(
+                name,
+                description,
+                parameter_code,
+                measurement_unit,
+                measurementunit_id,
+                aggregation
+            )
+            SELECT 'Velocity',
+                'Stream velocity, feet per second',
+                '00055',
+                'ft/sec',
+                MU.measurementunit_id,
+                'None'
+            FROM wres.MeasurementUnit MU
+            WHERE MU.unit_name = 'ft/sec';
+        </sql>
+        <sql>
+            INSERT INTO wres.USGSParameter(
+                name,
+                description,
+                parameter_code,
+                measurement_unit,
+                measurementunit_id,
+                aggregation
+            )
+            SELECT 'Streamflow',
+                'Discharge, gallons per minute',
+                '50042',
+                'gal/min',
+                MU.measurementunit_id,
+                'None'
+            FROM wres.MeasurementUnit MU
+            WHERE MU.unit_name = 'gal/min';
+        </sql>
+        <sql>
+            INSERT INTO wres.USGSParameter(
+                name,
+                description,
+                parameter_code,
+                measurement_unit,
+                measurementunit_id,
+                aggregation
+            )
+            SELECT 'Flow Rate',
+                'Flow rate, instantaneous, gallons per minute',
+                '00059',
+                'gal/min',
+                MU.measurementunit_id,
+                'instant'
+            FROM wres.MeasurementUnit MU
+            WHERE MU.unit_name = 'gal/min';
+        </sql>
+        <sql>
+            INSERT INTO wres.USGSParameter(
+                name,
+                description,
+                parameter_code,
+                measurement_unit,
+                measurementunit_id,
+                aggregation
+            )
+            SELECT 'Flow Rate',
+                'Flow rate, instantaneous, million gallons per day',
+                '50051',
+                'mgd',
+                MU.measurementunit_id,
+                'instant'
+            FROM wres.MeasurementUnit MU
+            WHERE MU.unit_name = 'mgd';
+        </sql>
+        <sql>
+            INSERT INTO wres.USGSParameter(
+                name,
+                description,
+                parameter_code,
+                measurement_unit,
+                measurementunit_id,
+                aggregation
+            )
+            SELECT 'Flow Rate',
+                'Flow, minimum during 24 hour period, million gallons per day',
+                '50048',
+                'mgd',
+                MU.measurementunit_id,
+                'min'
+            FROM wres.MeasurementUnit MU
+            WHERE MU.unit_name = 'mgd';
+        </sql>
+        <sql>
+            INSERT INTO wres.USGSParameter(
+                name,
+                description,
+                parameter_code,
+                measurement_unit,
+                measurementunit_id,
+                aggregation
+            )
+            SELECT 'Flow Rate',
+                'Flow, maximum during 24 hour period, million gallons per day',
+                '50047',
+                'mgd',
+                MU.measurementunit_id,
+                'max'
+            FROM wres.MeasurementUnit MU
+            WHERE MU.unit_name = 'mgd';
+        </sql>
+        <sql>
+            INSERT INTO wres.USGSParameter(
+                name,
+                description,
+                parameter_code,
+                measurement_unit,
+                measurementunit_id,
+                aggregation
+            )
+            SELECT 'Streamflow Velocity',
+                'Discharge velocity, meters per second',
+                '81380',
+                'm/sec',
+                MU.measurementunit_id,
+                'None'
+            FROM wres.MeasurementUnit MU
+            WHERE MU.unit_name = 'm/sec';
+        </sql>
+        <sql>
+            INSERT INTO wres.USGSParameter(
+                name,
+                description,
+                parameter_code,
+                measurement_unit,
+                measurementunit_id,
+                aggregation
+            )
+            SELECT 'Velocity',
+                'Stream velocity, meters per second',
+                '72149',
+                'm/sec',
+                MU.measurementunit_id,
+                'None'
+            FROM wres.MeasurementUnit MU
+            WHERE MU.unit_name = 'm/sec';
+        </sql>
+        <sql>
+            INSERT INTO wres.USGSParameter(
+                name,
+                description,
+                parameter_code,
+                measurement_unit,
+                measurementunit_id,
+                aggregation
+            )
+            SELECT 'Streamflow',
+                'Discharge, cubic feet per day',
+                '72243',
+                'ft3/day',
+                MU.measurementunit_id,
+                'None'
+            FROM wres.MeasurementUnit MU
+            WHERE MU.unit_name = 'ft3/day';
+        </sql>
+        <sql>
+            INSERT INTO wres.USGSParameter(
+                name,
+                description,
+                parameter_code,
+                measurement_unit,
+                measurementunit_id,
+                aggregation
+            )
+            SELECT 'Streamflow',
+                'Streamflow, daily, acre-feet',
+                '74082',
+                'ac-ft',
+                MU.measurementunit_id,
+                'None'
+            FROM wres.MeasurementUnit MU
+            WHERE MU.unit_name = 'ac-ft';
+        </sql>
+        <sql>
+            INSERT INTO wres.USGSParameter(
+                name,
+                description,
+                parameter_code,
+                measurement_unit,
+                measurementunit_id,
+                aggregation
+            )
+            SELECT 'Streamflow',
+                'Discharge, cumulative, acre-feet',
+                '72272',
+                'ac-ft',
+                MU.measurementunit_id,
+                'sum'
+            FROM wres.MeasurementUnit MU
+            WHERE MU.unit_name = 'ac-ft';
+        </sql>
+        <sql>
+            INSERT INTO wres.USGSParameter(
+                name,
+                description,
+                parameter_code,
+                measurement_unit,
+                measurementunit_id,
+                aggregation
+            )
+            SELECT 'Velocity',
+                'Stream velocity, miles per hour',
+                '72321',
+                'mph',
+                MU.measurementunit_id,
+                'None'
+            FROM wres.MeasurementUnit MU
+            WHERE MU.unit_name = 'mph';
+        </sql>
+        <sql>
+            INSERT INTO wres.USGSParameter(
+                name,
+                description,
+                parameter_code,
+                measurement_unit,
+                measurementunit_id,
+                aggregation
+            )
+            SELECT 'Velocity',
+                'Mean water velocity for discharge computation, miles per hour',
+                '72294',
+                'mph',
+                MU.measurementunit_id,
+                'sum'
+            FROM wres.MeasurementUnit MU
+            WHERE MU.unit_name = 'mph';
+        </sql>
+        <sql>
+            INSERT INTO wres.USGSParameter(
+                name,
+                description,
+                parameter_code,
+                measurement_unit,
+                measurementunit_id,
+                aggregation
+            )
+            SELECT 'Flow Rate',
+                'Flow rate, liters per second',
+                '74072',
+                'l/sec',
+                MU.measurementunit_id,
+                'None'
+            FROM wres.MeasurementUnit MU
+            WHERE MU.unit_name = 'l/sec';
+        </sql>
+    </changeSet>
+</databaseChangeLog>

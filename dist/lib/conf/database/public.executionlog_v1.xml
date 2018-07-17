@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="ExecutionLog - Change System Settings" author="Christopher Tubbs">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="ExecutionLog" schemaName="public" />
+            <columnExists tableName="ExecutionLog" schemaName="public" columnName="system_settings" />
+        </preConditions>
+        <renameColumn tableName="ExecutionLog" oldColumnName="system_settings" newColumnName="system_version" />
+    </changeSet>
+    <changeSet id="ExecutionLog v1.0" author="Christopher Tubbs" dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="ExecutionLog" schemaName="public" />
+            </not>
+        </preConditions>
+        <createTable tableName="ExecutionLog" schemaName="public">
+           <column name="log_id" type="serial" autoIncrement="true" />
+            <column name="arguments" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="system_version" type="text">
+                <constraints nullable="false" />
+            </column>
+            <column name="project" type="text" />
+            <column name="username" type="text" />
+            <column name="address" type="text" />
+            <column name="start_time" type="timestamp without time zone" />
+            <column name="run_time" type="interval" />
+            <column name="failed" type="boolean" defaultValueBoolean="false" />
+            <column name="error" type="text" />
+            <column name="input_code" type="text" />
+        </createTable>
+        <sql>
+            ALTER TABLE public.ExecutionLog OWNER TO wres;
+        </sql>
+        <comment>
+            The public.ExecutionLog table has been created.
+        </comment>
+    </changeSet>
+</databaseChangeLog>

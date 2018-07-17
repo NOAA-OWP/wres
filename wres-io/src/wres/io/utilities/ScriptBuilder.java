@@ -398,20 +398,36 @@ public class ScriptBuilder
     {
         PreparedStatement statement = this.getPreparedStatement( connection );
 
-        for (Object[] statementParameters : parameters )
+        for ( Object[] statementParameters : parameters )
         {
             int addedParameters = 0;
-            for (; addedParameters < statementParameters.length; ++addedParameters)
+            try
             {
-                statement.setObject( addedParameters + 1, statementParameters[addedParameters] );
-            }
+                for ( ; addedParameters < statementParameters.length; ++addedParameters )
+                {
+                    statement.setObject( addedParameters + 1, statementParameters[addedParameters] );
+                }
 
-            while (addedParameters < statement.getParameterMetaData().getParameterCount())
+                while ( addedParameters < statement.getParameterMetaData().getParameterCount() )
+                {
+                    statement.setObject( addedParameters + 1, null );
+                }
+
+                statement.addBatch();
+            }
+            catch ( SQLException e )
             {
-                statement.setObject( addedParameters + 1, null );
-            }
+                LOGGER.error("Prepared Statement could not be created.");
+                LOGGER.error(this.toString());
+                LOGGER.error( "Parameters:" );
 
-            statement.addBatch();
+                for (Object parameter : statementParameters)
+                {
+                    LOGGER.error("    " + String.valueOf( parameter ));
+                }
+
+                throw e;
+            }
         }
 
         return statement;

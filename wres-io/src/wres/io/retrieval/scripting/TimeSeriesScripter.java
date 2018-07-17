@@ -26,14 +26,14 @@ class TimeSeriesScripter extends Scripter
         this.add("SELECT ");
         this.applyValueDate();
         this.applyBasisTime();
-        this.addTab().addLine( "FV.lead,");
-        this.addTab().addLine( "ARRAY_AGG(FV.forecasted_value ORDER BY TS.ensemble_id) AS measurements," );
+        this.addTab().addLine( "TSV.lead,");
+        this.addTab().addLine( "ARRAY_AGG(TSV.series_value ORDER BY TS.ensemble_id) AS measurements," );
         this.addTab().addLine( "TS.measurementunit_id" );
         this.addLine("FROM (");
         this.applyTimeSeriesSelect();
         this.addLine(") AS TS");
-        this.addLine( "INNER JOIN wres.ForecastValue FV");
-        this.addLine( "    ON FV.timeseries_id = TS.timeseries_id" );
+        this.addLine( "INNER JOIN wres.TimeSeriesValue TSV");
+        this.addLine( "    ON TSV.timeseries_id = TS.timeseries_id" );
 
         this.applyLeadQualifier();
 
@@ -68,7 +68,7 @@ class TimeSeriesScripter extends Scripter
         }
         else
         {
-            this.addLine("FS.source_id");
+            this.addLine("TSS.source_id");
         }
 
         this.addTab().addLine("FROM wres.TimeSeries TS");
@@ -80,11 +80,11 @@ class TimeSeriesScripter extends Scripter
         }
         else
         {
-            this.addTab().addLine("INNER JOIN wres.ForecastSource FS");
-            this.addTab(  2  ).addLine("ON FS.forecast_id = TS.timeseries_id");
+            this.addTab().addLine("INNER JOIN wres.TimeSeriesSource TSS");
+            this.addTab(  2  ).addLine("ON TSS.timeseries_id = TS.timeseries_id");
         }
 
-        this.addTab().addLine("WHERE ", this.getVariablePositionClause());
+        this.addTab().addLine("WHERE ", this.getVariableFeatureClause());
 
         // Handles the case when every value lies on the exact initialization date
         if (this.getForecastLag() != 0)
@@ -114,17 +114,17 @@ class TimeSeriesScripter extends Scripter
 
         if (this.usesNetCDF())
         {
-            this.addTab(   3   ).addLine("INNER JOIN wres.ForecastSource FS" );
-            this.addTab(    4    ).addLine( "ON FS.source_id = PS.source_id");
+            this.addTab(   3   ).addLine("INNER JOIN wres.TimeSeriesSource TSS" );
+            this.addTab(    4    ).addLine( "ON TSS.source_id = PS.source_id");
             this.addTab(   3   ).addLine("WHERE PS.project_id = ", this.getProjectDetails().getId());
             this.addTab(    4    ).addLine( "AND PS.member = ", this.getProjectDetails().getInputName( this.getDataSourceConfig() ));
-            this.addTab(    4    ).addLine( "AND FS.forecast_id = TS.timeseries_id");
+            this.addTab(    4    ).addLine( "AND TSS.timeseries_id = TS.timeseries_id");
         }
         else
         {
             this.addTab(   3   ).addLine("WHERE PS.project_id = ", this.getProjectDetails().getId());
             this.addTab(    4    ).addLine( "AND PS.member = ", this.getProjectDetails().getInputName( this.getDataSourceConfig() ));
-            this.addTab(    4    ).addLine( "AND PS.source_id = FS.source_id");
+            this.addTab(    4    ).addLine( "AND PS.source_id = TSS.source_id");
         }
 
         this.addTab(  2  ).addLine(")");
@@ -136,14 +136,14 @@ class TimeSeriesScripter extends Scripter
         {
             this.addTab();
             this.addWhere();
-            this.addLine("FV.lead <= ", this.getProjectDetails().getMaximumLeadHour());
+            this.addLine("TSV.lead <= ", this.getProjectDetails().getMaximumLeadHour());
         }
 
         if (this.getProjectDetails().getMinimumLeadHour() > Integer.MIN_VALUE)
         {
             this.addTab();
             this.addWhere();
-            this.addLine("FV.lead >= ", this.getProjectDetails().getMinimumLeadHour());
+            this.addLine("TSV.lead >= ", this.getProjectDetails().getMinimumLeadHour());
         }
     }
 
@@ -212,7 +212,7 @@ class TimeSeriesScripter extends Scripter
         if (this.validTimeCalculation == null)
         {
             this.validTimeCalculation = this.getBaseDateName() +
-                                        " + INTERVAL '1 HOUR' * FV.lead";
+                                        " + INTERVAL '1 HOUR' * TSV.lead";
         }
         return this.validTimeCalculation;
     }
@@ -229,7 +229,7 @@ class TimeSeriesScripter extends Scripter
         {
             this.add("TS.source_id, ");
         }
-        this.addLine(this.getBaseDateName(), ", FV.lead, TS.measurementunit_id");
+        this.addLine(this.getBaseDateName(), ", TSV.lead, TS.measurementunit_id");
     }
 
     private void applyOrdering()

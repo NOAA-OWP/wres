@@ -37,7 +37,7 @@ class PoolingForecastScripter extends Scripter
         }
 
         this.addLine("))::bigint AS basis_epoch_time,");
-        this.addTab().add("(EXTRACT(epoch FROM TS.initialization_date + INTERVAL '1 HOUR' * FV.lead");
+        this.addTab().add("(EXTRACT(epoch FROM TS.initialization_date + INTERVAL '1 HOUR' * TSV.lead");
 
         if (this.getTimeShift() != null)
         {
@@ -45,14 +45,14 @@ class PoolingForecastScripter extends Scripter
         }
 
         this.addLine("))::bigint AS value_date,");
-        this.addTab().addLine("FV.lead,");
-        this.addTab().addLine("ARRAY_AGG(FV.forecasted_value ORDER BY TS.ensemble_id) AS measurements,");
+        this.addTab().addLine("TSV.lead,");
+        this.addTab().addLine("ARRAY_AGG(TSV.series_value ORDER BY TS.ensemble_id) AS measurements,");
         this.addTab().addLine("TS.measurementunit_id");
         this.addLine("FROM wres.TimeSeries TS");
-        this.addLine("INNER JOIN wres.ForecastValue FV");
-        this.addTab().addLine("ON FV.timeseries_id = TS.timeseries_id");
-        this.addLine("INNER JOIN wres.ForecastSource FS");
-        this.addTab().addLine("ON FS.forecast_id = TS.timeseries_id");
+        this.addLine("INNER JOIN wres.TimeSeriesValue TSV");
+        this.addTab().addLine("ON TSV.timeseries_id = TS.timeseries_id");
+        this.addLine("INNER JOIN wres.TimeSeriesSource TSS");
+        this.addTab().addLine("ON TSS.timeseries_id = TS.timeseries_id");
         this.addLine("INNER JOIN (");
         this.addTab().addLine("SELECT PS.source_id");
 
@@ -72,15 +72,15 @@ class PoolingForecastScripter extends Scripter
         this.addTab().addLine("WHERE PS.project_id = ", this.getProjectDetails().getId());
         this.addTab(  2  ).addLine("AND PS.member = ", this.getMember());
         this.addLine(") AS PS");
-        this.addTab().addLine("ON PS.source_id = FS.source_id");
+        this.addTab().addLine("ON PS.source_id = TSS.source_id");
 
         if ( usesNetcdf )
         {
-            this.addTab( 2 ).addLine( "AND PS.lead = FV.lead" );
+            this.addTab( 2 ).addLine( "AND PS.lead = TSV.lead" );
         }
 
-        this.addLine("WHERE TS.", this.getVariablePositionClause());
-        this.addTab().addLine("AND ", this.getProjectDetails().getLeadQualifier( this.getFeature(), this.getProgress(), "FV" ));
+        this.addLine("WHERE TS.", this.getVariableFeatureClause());
+        this.addTab().addLine("AND ", this.getProjectDetails().getLeadQualifier( this.getFeature(), this.getProgress(), "TSV" ));
 
         this.applyEnsembleConstraint();
 
@@ -101,7 +101,7 @@ class PoolingForecastScripter extends Scripter
         if (this.getProjectDetails().getEarliestDate() != null)
         {
             this.addTab().addLine("AND TS.initialization_date + ",
-                                   "INTERVAL '1 HOUR' * FV.lead >= '",
+                                   "INTERVAL '1 HOUR' * TSV.lead >= '",
                                    this.getProjectDetails().getEarliestDate(),
                                    "'");
         }
@@ -109,7 +109,7 @@ class PoolingForecastScripter extends Scripter
         if (this.getProjectDetails().getLatestDate() != null)
         {
             this.addTab().addLine("AND TS.initialization_date + ",
-                                  "INTERVAL '1 HOUR' * FV.lead <= '",
+                                  "INTERVAL '1 HOUR' * TSV.lead <= '",
                                   this.getProjectDetails().getLatestDate(),
                                   "'");
         }
@@ -119,13 +119,13 @@ class PoolingForecastScripter extends Scripter
         this.addTab(  2  ).addLine("FROM wres.ProjectSource PS");
         this.addTab(  2  ).addLine("WHERE PS.project_id = ", this.getProjectDetails().getId());
         this.addTab(   3   ).addLine("AND PS.member = ", this.getMember());
-        this.addTab(   3   ).addLine("AND PS.source_id = FS.source_id");
+        this.addTab(   3   ).addLine("AND PS.source_id = TSS.source_id");
         this.addTab().addLine(")");
-        this.add("GROUP BY TS.initialization_date, FV.lead, ");
+        this.add("GROUP BY TS.initialization_date, TSV.lead, ");
 
         if (!usesNetcdf)
         {
-            this.add( "FS.source_id, " );
+            this.add( "TSS.source_id, " );
         }
 
         this.addLine("TS.measurementunit_id");
@@ -134,10 +134,10 @@ class PoolingForecastScripter extends Scripter
 
         if (!usesNetcdf)
         {
-            this.add( "FS.source_id, " );
+            this.add( "TSS.source_id, " );
         }
 
-        this.add("FV.lead;");
+        this.add("TSV.lead;");
 
         return this.getScript();
     }

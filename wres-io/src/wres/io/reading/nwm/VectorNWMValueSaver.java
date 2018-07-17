@@ -10,6 +10,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -153,7 +154,7 @@ class VectorNWMValueSaver extends WRESRunnable
 
     private static final String DELIMITER = "|";
     private static final String FORECAST_COLUMN_DEFINTIION =
-            "(timeseries_id, lead, forecasted_value)";
+            "(timeseries_id, lead, series_value)";
 
 
     private StringBuilder copyScript;
@@ -240,14 +241,14 @@ class VectorNWMValueSaver extends WRESRunnable
     {
         if (!Strings.hasValue( this.copyHeader ) && this.isForecast())
         {
-            this.copyHeader = TimeSeries.getForecastValueParitionName( this.getLead() );
+            this.copyHeader = TimeSeries.getTimeSeriesValuePartition( this.getLead() );
             this.copyHeader += " ";
             this.copyHeader += VectorNWMValueSaver.FORECAST_COLUMN_DEFINTIION;
         }
         else if (!Strings.hasValue( this.copyHeader ))
         {
             this.copyHeader = "wres.Observation (" +
-                                    "variableposition_id, " +
+                                    "variablefeature_id, " +
                                     "observation_time, " +
                                     "observed_value, " +
                                     "measurementunit_id, " +
@@ -334,45 +335,33 @@ class VectorNWMValueSaver extends WRESRunnable
         // in charge of ingest.
         if ( this.isForecast() && this.inChargeOfIngest )
         {
-            this.addForecastSource();
+            this.addTimeSeriesSource();
         }
 
     }
 
-    private void addForecastSource() throws IOException, SQLException
+    private void addTimeSeriesSource() throws IOException, SQLException
     {
-        // Create the script to add this source file to all time series
-        // that it contributes to
-        String forecastSourceInsert =
-                "INSERT INTO wres.ForecastSource (forecast_id, source_id)"
-                + NEWLINE;
-        forecastSourceInsert +=
-                "SELECT TS.timeseries_id, " + this.sourceID + NEWLINE;
-        forecastSourceInsert += "FROM wres.TimeSeries TS" + NEWLINE;
-        forecastSourceInsert +=
-                "INNER JOIN wres.VariablePosition VP" + NEWLINE;
-        forecastSourceInsert +=
-                "   ON TS.variableposition_id = VP.variableposition_id"
-                + NEWLINE;
-        forecastSourceInsert +=
-                "WHERE TS.ensemble_id = " + this.getEnsembleID() + NEWLINE;
-        forecastSourceInsert += "   AND TS.initialization_date = '" +
-                                NetCDF.getReferenceTime( this.getSource() ) + "'" + NEWLINE;
-        forecastSourceInsert += "   AND TS.measurementunit_id = "
-                                + this.getMeasurementUnitID() + NEWLINE;
-        forecastSourceInsert +=
-                "   AND VP.variable_id = " + this.getVariableID() + NEWLINE;
-        forecastSourceInsert += "   AND NOT EXISTS (" + NEWLINE;
-        forecastSourceInsert += "  SELECT 1" + NEWLINE;
-        forecastSourceInsert += "  FROM wres.ForecastSource FS" + NEWLINE;
-        forecastSourceInsert +=
-                "  WHERE FS.source_id = " + this.sourceID + NEWLINE;
-        forecastSourceInsert +=
-                "      AND FS.forecast_id = TS.timeseries_id" + NEWLINE;
-        forecastSourceInsert += ");";
+        ScriptBuilder script = new ScriptBuilder(  );
+
+        script.addLine("INSERT INTO wres.TimeSeriesSource (timeseries_id, source_id, lead)");
+        script.addLine("SELECT TS.timeseries_id, ", this.sourceID, ", ", this.getLead());
+        script.addLine("FROM wres.TimeSeries TS");
+        script.addLine("INNER JOIN wres.VariableFeature VF");
+        script.addTab().addLine("ON VF.variablefeature_id = TS.variablefeature_id");
+        script.addLine("WHERE TS.ensemble_id = ", this.getEnsembleID());
+        script.addTab().addLine("AND TS.initialization_date = '", NetCDF.getReferenceTime( this.getSource() ), "'");
+        script.addTab().addLine("AND TS.measurementunit_id = ", this.getMeasurementUnitID());
+        script.addTab().addLine("AND VF.variable_id = ", this.getVariableID());
+        script.addTab().addLine("AND NOT EXISTS (");
+        script.addTab(  2  ).addLine("SELECT 1");
+        script.addTab(  2  ).addLine("FROM wres.TimeSeriesSource TSS");
+        script.addTab(  2  ).addLine("WHERE TSS.source_id = ", this.sourceID);
+        script.addTab(   3   ).addLine("AND TSS.timeseries_id = TS.timeseries_id");
+        script.addTab(  2  ).add(");");
 
         // Attach the source to its time series
-        Database.execute( forecastSourceInsert );
+        script.execute();
     }
 
     @Override
@@ -415,7 +404,7 @@ class VectorNWMValueSaver extends WRESRunnable
      * Add the read value to the queue of values to send to the database
      * @param spatioVariableID The id that ties the value to its locality and
      *                         variable. This will be the timeseries_id for
-     *                         forecasts and the variableposition_id for
+     *                         forecasts and the variablefeature_id for
      *                         observations
      * @param value The read value
      * @throws IOException Thrown if communication with the source file failed
@@ -656,7 +645,7 @@ class VectorNWMValueSaver extends WRESRunnable
      * read and sent to the database
      * @throws SQLException Thrown if communication with the database failed
      */
-    private void addVariablePositions() throws IOException, SQLException
+    private void addVariableFeatures() throws IOException, SQLException
     {
         synchronized ( VectorNWMValueSaver.addedVariables)
         {
@@ -666,7 +655,7 @@ class VectorNWMValueSaver extends WRESRunnable
             // once per variable.
             if ( !VectorNWMValueSaver.addedVariables.contains( this.getVariableID() ) )
             {
-                Features.addNHDPlusVariablePositions(this.getVariableID());
+                Features.addNHDPlusVariableFeatures(this.getVariableID());
                 VectorNWMValueSaver.addedVariables.add( this.getVariableID() );
             }
         }
@@ -684,27 +673,28 @@ class VectorNWMValueSaver extends WRESRunnable
         // position that doesn't already exist
         ScriptBuilder script = new ScriptBuilder(  );
         script.addLine("INSERT INTO wres.TimeSeries (");
-        script.addTab().addLine("variableposition_id,");
+        script.addTab().addLine("variablefeature_id,");
         script.addTab().addLine("ensemble_id,");
         script.addTab().addLine("measurementunit_id,");
         script.addTab().addLine("initialization_date");
         script.addLine(")");
-        script.addLine("SELECT VP.variableposition_id,");
+        script.addLine("SELECT VF.variablefeature_id,");
         script.addTab().addLine(this.getEnsembleID(), ",");
         script.addTab().addLine(this.getMeasurementUnitID(), "," );
         script.addTab().addLine("'", NetCDF.getReferenceTime( this.getSource() ), "'");
-        script.addLine("FROM wres.VariablePosition VP");
+        script.addLine("FROM wres.VariableFeature VF");
         script.addLine("INNER JOIN wres.Feature F");
-        script.addTab().addLine("ON F.feature_id = VP.x_position");
+        script.addTab().addLine("ON F.feature_id = VF.feature_id");
         script.addLine("WHERE variable_id = ", this.getVariableID());
-        script.addTab().addLine("AND F.nwm_index IS NOT NULL");
-        script.addTab().addLine("AND NOT EXISTS (");
-        script.addTab(  2  ).addLine("SELECT 1");
-        script.addTab(  2  ).addLine("FROM wres.TimeSeries TS");
-        script.addTab(  2  ).addLine("WHERE TS.variableposition_id = VP.variableposition_id");
-        script.addTab(   3   ).addLine("AND TS.ensemble_id = ", this.getEnsembleID());
-        script.addTab(   3   ).addLine("AND TS.initialization_date = '", NetCDF.getReferenceTime( this.getSource() ), "'");
-        script.addTab(  2  ).add(");");
+        script.addTab(  2  ).addLine("AND F.comid IS NOT NULL");
+        script.addTab(  2  ).addLine("AND F.comid != -999");
+        script.addTab(  2  ).addLine("AND NOT EXISTS (");
+        script.addTab(   3   ).addLine("SELECT 1");
+        script.addTab(   3   ).addLine("FROM wres.TimeSeries TS");
+        script.addTab(   3   ).addLine("WHERE TS.variablefeature_id = VF.variablefeature_id");
+        script.addTab(    4    ).addLine("AND TS.ensemble_id = ", this.getEnsembleID());
+        script.addTab(    4    ).addLine("AND TS.initialization_date = '", NetCDF.getReferenceTime( this.getSource() ), "'");
+        script.addTab(   3   ).add(");");
         script.execute();
         this.addSource();
     }
@@ -790,10 +780,12 @@ class VectorNWMValueSaver extends WRESRunnable
                 if ( VectorNWMValueSaver.indexMapping == null
                      || !VectorNWMValueSaver.indexMapping.containsKey( key ) )
                 {
-                    // Add all missing locations for variables
-                    this.addVariablePositions();
+                    LOGGER.info("Forming index mapping and adding variable features for {}", key);
 
-                    String keyLabel = "nwm_index";
+                    // Add all missing locations for variables
+                    this.addVariableFeatures();
+
+                    String keyLabel = "comid";
                     String valueLabel;
                     ScriptBuilder script = new ScriptBuilder(  );
 
@@ -802,6 +794,11 @@ class VectorNWMValueSaver extends WRESRunnable
                         // Add all time series that correspond with this data
                         this.addTimeSeries();
 
+                        /*1. load the comids and timeseries_ids for all the included time series
+                        2. Open the file, read through the feature variable, compare each field with one of the returned comids
+                        3. If there is a comid match, add the index of the feature id as the key and link it to the id of the time series
+                        4. Remove the matching key from the mapping of comids -> time series
+*/
                         // Form a script that will retrieve the IDs for each
                         // valid location for each time series for this set
                         // of data
@@ -809,46 +806,47 @@ class VectorNWMValueSaver extends WRESRunnable
                         script.addLine("SELECT F.", keyLabel, ", TS.", valueLabel);
                         script.addLine("FROM wres.TimeSeries TS");
                         script.addLine("INNER JOIN (");
-                        script.addTab().addLine("SELECT VP.variableposition_id, F.nwm_index");
+                        script.addTab().addLine("SELECT VF.variablefeature_id, F.", keyLabel);
                         script.addTab().addLine("FROM wres.Feature F");
-                        script.addTab().addLine("INNER JOIN wres.VariablePosition VP");
-                        script.addTab(  2  ).addLine("ON VP.x_position = F.feature_id");
-                        script.addTab().addLine("WHERE F.nwm_index IS NOT NULL");
-                        script.addTab(  2  ).addLine("AND VP.variable_id = ", this.getVariableID());
+                        script.addTab().addLine("INNER JOIN wres.VariableFeature VF");
+                        script.addTab(  2  ).addLine("ON VF.feature_id = F.feature_id");
+                        script.addTab().addLine("WHERE F.comid IS NOT NULL");
+                        script.addTab(  2  ).addLine("AND F.comid > 0");
+                        script.addTab(  2  ).addLine("AND VF.variable_id = ", this.getVariableID());
                         script.addLine(") AS F");
-                        script.addTab().addLine("ON F.variableposition_id = TS.variableposition_id");
+                        script.addTab().addLine("ON F.variablefeature_id = TS.variablefeature_id");
                         script.addLine("WHERE TS.initialization_date = '", initializationTime, "'");
                         script.addTab().addLine("AND TS.ensemble_id = ", ensembleID);
                         script.addTab().addLine("AND EXISTS (");
                         script.addTab(  2  ).addLine("SELECT 1");
-                        script.addTab(  2  ).addLine("FROM wres.ForecastSource FS");
+                        script.addTab(  2  ).addLine("FROM wres.TimeSeriesSource TSS");
                         script.addTab(  2  ).addLine("INNER JOIN (");
                         script.addTab(   3   ).addLine("SELECT S.source_id");
                         script.addTab(   3   ).addLine("FROM wres.Source S");
                         script.addTab(   3   ).addLine("WHERE S.output_time = '", NetCDF.getReferenceTime( this.getSource() ), "'");
                         script.addTab(  2  ).addLine(") AS S");
-                        script.addTab(   3   ).addLine("ON S.source_id = FS.source_id");
+                        script.addTab(   3   ).addLine("ON S.source_id = TSS.source_id");
                         script.addTab(  2  ).addLine("LEFT OUTER JOIN wres.ProjectSource PS");
-                        script.addTab(   3   ).addLine("ON PS.source_id = FS.source_id");
+                        script.addTab(   3   ).addLine("ON PS.source_id = TSS.source_id");
                         script.addTab(  2  ).addLine("WHERE NOT EXISTS (");
                         script.addTab(    4    ).addLine("SELECT 1");
                         script.addTab(    4    ).addLine("FROM wres.ProjectSource PS");
                         script.addTab(    4    ).addLine("WHERE PS.source_id = S.source_id");
                         script.addTab(   3   ).addLine(")");
-                        script.addTab(   3   ).addLine("AND FS.forecast_id = TS.timeseries_id");
+                        script.addTab(   3   ).addLine("AND TSS.timeseries_id = TS.timeseries_id");
                         script.addTab().addLine(");");
                     }
                     else
                     {
                         // Form a script that will map each variable position
                         // to each valid location for the variable in question
-                        valueLabel = "variableposition_id";
+                        valueLabel = "variablefeature_id";
                         script.addLine("SELECT ", keyLabel, ", ", valueLabel);
-                        script.addLine("FROM wres.VariablePosition VP");
+                        script.addLine("FROM wres.VariableFeature VF");
                         script.addLine("INNER JOIN wres.Feature F");
-                        script.addTab().addLine("ON F.feature_id = VP.x_position");
-                        script.addLine("WHERE F.nwm_index IS NOT NULL");
-                        script.addTab().addLine("AND VP.variable_id = ", this.getVariableID(), ";");
+                        script.addTab().addLine("ON F.feature_id = VF.feature_id");
+                        script.addLine("WHERE F.comid > 0");
+                        script.addTab().addLine("AND VF.variable_id = ", this.getVariableID(), ";");
                     }
 
                     // If a map hasn't been created yet, create it
@@ -859,22 +857,41 @@ class VectorNWMValueSaver extends WRESRunnable
                     }
 
                     // Create a map specific to this set of circumstances
-                    Map<Integer, Integer> currentVariableIndices =
-                            new ConcurrentHashMap<>();
+                    Map<Integer, Integer> variableComids =
+                            new TreeMap<>();
 
                     script.consume( ( ResultSet results ) ->
-                        currentVariableIndices.put(results.getInt( keyLabel), results.getInt(valueLabel))
+                                            variableComids.put(results.getInt( keyLabel), results.getInt(valueLabel))
                     );
 
-                    // Add the populated map to the overal collection
+                    // Add the populated map to the overall collection
                     VectorNWMValueSaver.indexMapping.put( key,
-                                                          currentVariableIndices );
+                                                          getFeatureIndexMap( variableComids ) );
                 }
             }
         }
 
         // Retrieve the custom tailored index mapping for these circumstances
         return VectorNWMValueSaver.indexMapping.get( key );
+    }
+
+    private Map<Integer, Integer> getFeatureIndexMap(Map<Integer, Integer> variableComids) throws IOException
+    {
+        Variable features = NetCDF.getVectorCoordinateVariable( this.getSource() );
+        Map<Integer, Integer> featureIndexMap = new ConcurrentHashMap<>( variableComids.size() );
+
+        Array comids = features.read();
+
+        for (int comidIndex = 0; comidIndex < comids.getSize(); ++comidIndex)
+        {
+            int comid = comids.getInt( comidIndex );
+            if (variableComids.containsKey( comid ))
+            {
+                featureIndexMap.put( comidIndex, variableComids.get( comid ) );
+            }
+        }
+
+        return featureIndexMap;
     }
 
     /**

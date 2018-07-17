@@ -75,24 +75,24 @@ public final class Variables extends Cache<VariableDetails, String>
         script.addLine("FROM wres.Variable V");
         script.addLine("WHERE EXISTS (");
         script.addTab().addLine("SELECT 1");
-        script.addTab().addLine("FROM wres.VariablePosition VP");
-        script.addTab().addLine("WHERE V.variable_id = VP.variable_id");
+        script.addTab().addLine("FROM wres.VariableFeature VF");
+        script.addTab().addLine("WHERE V.variable_id = VF.variable_id");
         script.addTab(  2  ).addLine("AND EXISTS (");
         script.addTab(   3   ).addLine("SELECT 1");
         script.addTab(   3   ).addLine("FROM wres.TimeSeries TS");
-        script.addTab(   3   ).addLine("WHERE TS.variableposition_id = VP.variableposition_id");
+        script.addTab(   3   ).addLine("WHERE TS.variablefeature_id = VF.variablefeature_id");
         script.addTab(    4    ).addLine("AND EXISTS (");
         script.addTab(     5     ).addLine("SELECT 1");
         script.addTab(     5     ).addLine("FROM wres.ProjectSource PS");
-        script.addTab(     5     ).addLine("INNER JOIN wres.ForecastSource FS");
-        script.addTab(      6      ).addLine("ON FS.source_id = PS.source_id");
+        script.addTab(     5     ).addLine("INNER JOIN wres.TimeSeriesSource TSS");
+        script.addTab(      6      ).addLine("ON TSS.source_id = PS.source_id");
         script.addTab(     5     ).addLine("WHERE PS.project_id = ", projectID);
         script.addTab(      6      ).addLine("AND PS.member = ", member);
-        script.addTab(      6      ).addLine("AND FS.forecast_id = TS.timeseries_id");
+        script.addTab(      6      ).addLine("AND TSS.timeseries_id = TS.timeseries_id");
         script.addTab(    4    ).addLine(") AND EXISTS (");
         script.addTab(     5     ).addLine("SELECT 1");
-        script.addTab(     5     ).addLine("FROM wres.ForecastValue FV");
-        script.addTab(     5     ).addLine("WHERE FV.timeseries_id = TS.timeseries_id");
+        script.addTab(     5     ).addLine("FROM wres.TimeSeriesValue TSV");
+        script.addTab(     5     ).addLine("WHERE TSV.timeseries_id = TS.timeseries_id");
         script.addTab(    4    ).addLine(")");
         script.addTab(  2  ).addLine(")");
         script.add(");");
@@ -123,12 +123,12 @@ public final class Variables extends Cache<VariableDetails, String>
         script.addLine("FROM wres.Variable V");
         script.addLine("WHERE EXISTS (");
         script.addTab().addLine("SELECT 1");
-        script.addTab().addLine("FROM wres.VariablePosition VP");
-        script.addTab().addLine("WHERE VP.variable_id = V.variable_id");
+        script.addTab().addLine("FROM wres.VariableFeature VF");
+        script.addTab().addLine("WHERE VF.variable_id = V.variable_id");
         script.addTab(  2  ).addLine("AND EXISTS (");
         script.addTab(   3   ).addLine("SELECT 1");
         script.addTab(   3   ).addLine("FROM wres.Observation O");
-        script.addTab(   3   ).addLine("WHERE O.variableposition_id = VP.variableposition_id");
+        script.addTab(   3   ).addLine("WHERE O.variablefeature_id = VF.variablefeature_id");
         script.addTab(    4    ).addLine("AND EXISTS (");
         script.addTab(     5     ).addLine("SELECT 1");
         script.addTab(     5     ).addLine("FROM wres.ProjectSource PS");
@@ -183,20 +183,20 @@ public final class Variables extends Cache<VariableDetails, String>
 		script.addTab(    4    ).addLine("WHERE PS.project_id = ", projectID);
 		script.addTab(     5     ).addLine("AND PS.member = ", member);
 		script.addTab(   3   ).addLine(") AS PS");
-		script.addTab(   3   ).addLine("INNER JOIN wres.ForecastSource FS");
-		script.addTab(    4    ).addLine("ON FS.source_id = PS.source_id");
-		script.addTab(   3   ).addLine("WHERE FS.forecast_id = TS.timeseries_id");
+		script.addTab(   3   ).addLine("INNER JOIN wres.TimeSeriesSource TSS");
+		script.addTab(    4    ).addLine("ON TSS.source_id = PS.source_id");
+		script.addTab(   3   ).addLine("WHERE TSS.timeseries_id = TS.timeseries_id");
 		script.addTab(  2  ).addLine(") AND EXISTS (");
 		script.addTab(   3   ).addLine("SELECT 1");
-		script.addTab(   3   ).addLine("FROM wres.VariablePosition VP");
-		script.addTab(   3   ).addLine("WHERE VP.variable_id = ", variableID);
-		script.addTab(    4    ).addLine("AND VP.variableposition_id = TS.variableposition_id");
+		script.addTab(   3   ).addLine("FROM wres.VariableFeature VF");
+		script.addTab(   3   ).addLine("WHERE VF.variable_id = ", variableID);
+		script.addTab(    4    ).addLine("AND VF.variablefeature_id = TS.variablefeature_id");
 		script.addTab(  2  ).addLine(")");
 		script.addTab().addLine(") AS TS");
 		script.addTab().addLine("WHERE EXISTS (");
 		script.addTab(  2  ).addLine("SELECT 1");
-		script.addTab(  2  ).addLine("FROM wres.ForecastValue FV");
-		script.addTab(  2  ).addLine("WHERE FV.timeseries_id = TS.timeseries_id");
+		script.addTab(  2  ).addLine("FROM wres.TimeSeriesValue TSV");
+		script.addTab(  2  ).addLine("WHERE TSV.timeseries_id = TS.timeseries_id");
 		script.addTab().addLine(")");
 		script.add(");");
 
@@ -242,9 +242,9 @@ public final class Variables extends Cache<VariableDetails, String>
 		script.addTab(   3   ).addLine("AND PS.source_id = O.source_id");
 		script.addTab().addLine(") AND EXISTS (");
 		script.addTab(  2  ).addLine("SELECT 1");
-		script.addTab(  2  ).addLine("FROM wres.VariablePosition VP");
-		script.addTab(  2  ).addLine("WHERE VP.variable_id = ", variableID);
-		script.addTab(   3   ).addLine("AND VP.variableposition_id = O.variableposition_id");
+		script.addTab(  2  ).addLine("FROM wres.VariableFeature VF");
+		script.addTab(  2  ).addLine("WHERE VF.variable_id = ", variableID);
+		script.addTab(   3   ).addLine("AND VF.variablefeature_id = O.variablefeature_id");
 		script.addTab().addLine(")");
 		script.add(");");
 
@@ -269,32 +269,6 @@ public final class Variables extends Cache<VariableDetails, String>
 	/**
 	 * Returns the ID of the variable from the instance cache
 	 * @param variableName The short name of the variable
-	 * @param measurementUnit The name of the unit of measurement for the variable
-	 * @return The ID of the variable
-     * @throws SQLException if the ID could not be added to the cache
-	 */
-	public Integer getID(String variableName, String measurementUnit) throws SQLException {
-		if (!getKeyIndex().containsKey(variableName)) {
-			VariableDetails detail = new VariableDetails();
-			detail.setVariableName(variableName);
-			detail.setMeasurementunitId( MeasurementUnits.getMeasurementUnitID(measurementUnit) );
-            try
-			{
-                addElement(detail);
-            }
-            catch (SQLException e) {
-                String message = "The variable '" + variableName + "' could not be added to the cache.";
-                LOGGER.error(message);
-                throw new SQLException(message, e);
-            }
-        }
-
-		return this.getKeyIndex().get(variableName);
-	}
-	
-	/**
-	 * Returns the ID of the variable from the instance cache
-	 * @param variableName The short name of the variable
 	 * @return The ID of the variable
 	 * @throws SQLException Thrown if an error was encountered while interacting with the database or storing
 	 * the result in the cache
@@ -312,12 +286,6 @@ public final class Variables extends Cache<VariableDetails, String>
 	public static String getName(Integer variableId)
 	{
 		return getCache().getKey(variableId);
-	}
-
-	public static int getMeasurementUnitId(Integer variableId)
-	{
-		VariableDetails details = getCache().get( variableId );
-		return details.getMeasurementunitId();
 	}
 
 	public String getKey(Integer variableId)
@@ -362,7 +330,7 @@ public final class Variables extends Cache<VariableDetails, String>
             	ScriptBuilder script = new ScriptBuilder(  );
             	script.setHighPriority( true );
 
-            	script.addLine("SELECT variable_id, variable_name, measurementunit_id");
+            	script.addLine("SELECT variable_id, variable_name");
             	script.add("FROM wres.Variable;");
 
             	script.consume( variable -> this.add(VariableDetails.from(variable)) );

@@ -4,7 +4,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.sql.Timestamp;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -44,6 +48,7 @@ import wres.io.writing.PairWriter;
 import wres.io.writing.netcdf.NetCDFCopier;
 import wres.io.writing.netcdf.NetcdfOutputWriter;
 import wres.system.ProgressMonitor;
+import wres.util.NotImplementedException;
 
 public final class Operations {
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(Operations.class);
@@ -491,14 +496,6 @@ public final class Operations {
     }
 
     /**
-     * Builds the database up to current specifications
-     */
-    public static void install()
-    {
-        Database.buildInstance();
-    }
-
-    /**
      * Gracefully shuts down all IO operations
      */
     public static void shutdown()
@@ -662,7 +659,7 @@ public final class Operations {
 
             script.addLine("INSERT INTO ExecutionLog (");
             script.addTab().addLine("arguments,");
-            script.addTab().addLine("system_settings,");
+            script.addTab().addLine("system_version,");
             script.addTab().addLine("project,");
             script.addTab().addLine("username,");
             script.addTab().addLine("address,");
@@ -767,21 +764,21 @@ public final class Operations {
     {
         final String NEWLINE = System.lineSeparator();
         final String LABEL = "total_leads";
-        String query = "SELECT count( distinct( FV.lead ) ) AS "
+        String query = "SELECT count( distinct( TSV.lead ) ) AS "
                        + LABEL + NEWLINE
                        + "FROM wres.TimeSeries TS" + NEWLINE
-                       + "INNER JOIN wres.ForecastValue FV" + NEWLINE
-                       + "    ON TS.timeseries_id = FV.timeseries_id" + NEWLINE
+                       + "INNER JOIN wres.TimeSeriesValue TSV" + NEWLINE
+                       + "    ON TS.timeseries_id = TSV.timeseries_id" + NEWLINE
                        + "WHERE EXISTS (" + NEWLINE
                        + "        SELECT 1" + NEWLINE
                        + "        FROM wres.ProjectSource PS" + NEWLINE
-                       + "        INNER JOIN wres.ForecastSource FS" + NEWLINE
-                       + "            ON FS.source_id = PS.source_id" + NEWLINE
+                       + "        INNER JOIN wres.TimeSeriesSource TSS" + NEWLINE
+                       + "            ON TSS.source_id = PS.source_id" + NEWLINE
                        + "        INNER JOIN wres.Project P" + NEWLINE
                        + "            ON P.project_id = PS.project_id" + NEWLINE
                        + "        WHERE P.input_code = "
                        + projectIdentifier + NEWLINE
-                       + "            AND FS.forecast_id = TS.timeseries_id" + NEWLINE
+                       + "            AND TSS.timeseries_id = TS.timeseries_id" + NEWLINE
                        + "    );";
         return (long) Database.getResult( query, LABEL );
     }
@@ -806,13 +803,13 @@ public final class Operations {
                        + "WHERE EXISTS (" + NEWLINE
                        + "        SELECT 1" + NEWLINE
                        + "        FROM wres.ProjectSource PS" + NEWLINE
-                       + "        INNER JOIN wres.ForecastSource FS" + NEWLINE
-                       + "            ON FS.source_id = PS.source_id" + NEWLINE
+                       + "        INNER JOIN wres.TimeSeriesSource TSS" + NEWLINE
+                       + "            ON TSS.source_id = PS.source_id" + NEWLINE
                        + "        INNER JOIN wres.Project P" + NEWLINE
                        + "            ON P.project_id = PS.project_id"
                        + "        WHERE P.input_code = "
                        + projectIdentifier + NEWLINE
-                       + "            AND FS.forecast_id = TS.timeseries_id" + NEWLINE
+                       + "            AND TSS.timeseries_id = TS.timeseries_id" + NEWLINE
                        + "    );";
         return (long) Database.getResult( query, LABEL );
     }
@@ -825,5 +822,16 @@ public final class Operations {
         {
             writer.write();
         }
+    }
+
+    /**
+     * Calls functions used to set up the system for future use
+     * @throws SQLException
+     */
+    public static void install() throws SQLException
+    {
+
+        // Pinging the database settings will trigger essentially set up scripts
+        Operations.testConnection();
     }
 }
