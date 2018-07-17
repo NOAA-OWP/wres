@@ -17,8 +17,6 @@ import wres.datamodel.SafeMetricOutputMapByTimeAndThreshold.SafeMetricOutputMapB
 import wres.datamodel.SafeMetricOutputMultiMapByTimeAndThreshold.SafeMetricOutputMultiMapByTimeAndThresholdBuilder;
 import wres.datamodel.SafeThresholdsByMetric.SafeThresholdsByMetricBuilder;
 import wres.datamodel.SafeTimeSeries.SafeTimeSeriesBuilder;
-import wres.datamodel.SafeTimeSeriesOfEnsemblePairs.SafeTimeSeriesOfEnsemblePairsBuilder;
-import wres.datamodel.SafeTimeSeriesOfSingleValuedPairs.SafeTimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
@@ -26,9 +24,16 @@ import wres.datamodel.inputs.pairs.MulticategoryPairs;
 import wres.datamodel.inputs.pairs.PairOfBooleans;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
+import wres.datamodel.inputs.pairs.SafeDichotomousPairs;
+import wres.datamodel.inputs.pairs.SafeDiscreteProbabilityPairs;
+import wres.datamodel.inputs.pairs.SafeEnsemblePairs;
+import wres.datamodel.inputs.pairs.SafeMulticategoryPairs;
+import wres.datamodel.inputs.pairs.SafeSingleValuedPairs;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairsBuilder;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairsBuilder;
+import wres.datamodel.inputs.pairs.SafeTimeSeriesOfEnsemblePairs.SafeTimeSeriesOfEnsemblePairsBuilder;
+import wres.datamodel.inputs.pairs.SafeTimeSeriesOfSingleValuedPairs.SafeTimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
@@ -503,7 +508,7 @@ public enum DefaultDataFactory implements DataFactory
      * @return the immutable output
      */
 
-    List<PairOfDoubles> safePairOfDoublesList( List<PairOfDoubles> input )
+    public List<PairOfDoubles> safePairOfDoublesList( List<PairOfDoubles> input )
     {
         Objects.requireNonNull( input,
                                 "Specify a non-null list of single-valued pairs from which to create a safe type." );
@@ -528,7 +533,7 @@ public enum DefaultDataFactory implements DataFactory
      * @return the immutable output
      */
 
-    List<PairOfDoubleAndVectorOfDoubles>
+    public List<PairOfDoubleAndVectorOfDoubles>
             safePairOfDoubleAndVectorOfDoublesList( List<PairOfDoubleAndVectorOfDoubles> input )
     {
         Objects.requireNonNull( input, "Specify a non-null list of ensemble pairs from which to create a safe type." );
@@ -553,7 +558,7 @@ public enum DefaultDataFactory implements DataFactory
      * @return the immutable output
      */
 
-    List<VectorOfBooleans> safeVectorOfBooleansList( List<VectorOfBooleans> input )
+    public List<VectorOfBooleans> safeVectorOfBooleansList( List<VectorOfBooleans> input )
     {
         Objects.requireNonNull( input,
                                 "Specify a non-null list of dichotomous inputs from which to create a safe type." );

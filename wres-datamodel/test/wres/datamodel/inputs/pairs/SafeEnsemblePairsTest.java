@@ -1,4 +1,4 @@
-package wres.datamodel;
+package wres.datamodel.inputs.pairs;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -8,10 +8,14 @@ import java.util.List;
 
 import org.junit.Test;
 
-import wres.datamodel.SafeEnsemblePairs.EnsemblePairsBuilder;
+import wres.datamodel.DataFactory;
+import wres.datamodel.DefaultDataFactory;
+import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.inputs.pairs.SafeEnsemblePairs;
+import wres.datamodel.inputs.pairs.SafeEnsemblePairs.EnsemblePairsBuilder;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 

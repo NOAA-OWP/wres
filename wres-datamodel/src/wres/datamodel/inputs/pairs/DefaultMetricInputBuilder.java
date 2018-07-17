@@ -1,5 +1,6 @@
-package wres.datamodel;
+package wres.datamodel.inputs.pairs;
 
+import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.inputs.MetricInputBuilder;
 import wres.datamodel.metadata.Metadata;
@@ -9,7 +10,7 @@ import wres.datamodel.metadata.Metadata;
  * 
  * @author james.brown@hydrosolved.com
  */
-abstract class DefaultMetricInputBuilder<S> implements MetricInputBuilder<S>
+public abstract class DefaultMetricInputBuilder<S> implements MetricInputBuilder<S>
 {
 
     /**

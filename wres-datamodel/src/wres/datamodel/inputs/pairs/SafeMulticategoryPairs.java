@@ -1,10 +1,13 @@
-package wres.datamodel;
+package wres.datamodel.inputs.pairs;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
+import wres.datamodel.DefaultDataFactory;
+import wres.datamodel.VectorOfBooleans;
+import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.MulticategoryPairs;
 import wres.datamodel.metadata.Metadata;
@@ -16,10 +19,8 @@ import wres.datamodel.metadata.Metadata;
  * encoded with a single indicator. The observed outcomes are recorded first, followed by the predicted outcomes.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
-class SafeMulticategoryPairs implements MulticategoryPairs
+public class SafeMulticategoryPairs implements MulticategoryPairs
 {
 
     /**
@@ -118,7 +119,7 @@ class SafeMulticategoryPairs implements MulticategoryPairs
      * A {@link DefaultMetricInputBuilder} to build the metric input.
      */
 
-    static class MulticategoryPairsBuilder extends DefaultMetricInputBuilder<VectorOfBooleans>
+    public static class MulticategoryPairsBuilder extends DefaultMetricInputBuilder<VectorOfBooleans>
     {
 
         /**

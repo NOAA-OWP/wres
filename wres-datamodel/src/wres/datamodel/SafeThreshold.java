@@ -348,7 +348,7 @@ class SafeThreshold implements Threshold
     }
 
     /**
-     * A {@link DefaultMetricInputBuilder} to build the metric input.
+     * A builder to build the threshold.
      */
 
     static class ThresholdBuilder
