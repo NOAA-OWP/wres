@@ -15,16 +15,16 @@
             <column name="indexqueue_id" type="serial" autoIncrement="true">
                 <constraints nullable="false" primaryKey="true" primaryKeyName="indexqueue_pk" />
             </column>
-            <column name="table_name" type="text">
+            <column name="table_name" type="text" remarks="The name of the table that the index belongs to">
                 <constraints nullable="false" />
             </column>
-            <column name="index_name" type="text" >
+            <column name="index_name" type="text" remarks="The name of the index" >
                 <constraints nullable="false" />
             </column>
-            <column name="column_definition" type="text" >
+            <column name="column_definition" type="text" remarks="The columns used for the index" >
                 <constraints nullable="false" />
             </column>
-            <column name="method" type="text" defaultValue="btree" />
+            <column name="method" type="text" defaultValue="btree" remarks="The indexing method" />
         </createTable>
         <sql>
             ALTER TABLE public.IndexQueue OWNER TO wres;

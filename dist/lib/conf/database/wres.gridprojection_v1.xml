@@ -7,33 +7,29 @@
         objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
     <changeSet id="GridProjection 1.0" author="Christopher Tubbs" dbms="PostgreSQL">
         <preConditions onFail="MARK_RAN">
-            <sqlCheck expectedResult="f">
-                SELECT EXISTS (
-                    SELECT 1
-                    FROM pg_catalog.pg_tables
-                    WHERE schemaname = 'wres'
-                        AND tablename = 'gridprojection'
-                );
-            </sqlCheck>
+            <not>
+                <tableExists tableName="GridProjection" schemaName="wres" />
+            </not>
         </preConditions>
         <createTable tableName="GridProjection" schemaName="wres">
             <column name="gridprojection_id" type="smallserial" autoIncrement="true">
                 <constraints nullable="false" primaryKey="true" primaryKeyName="gridprojection_pk"/>
             </column>
-            <column name="proj4" type="text" >
+            <column name="proj4" type="text" remarks="The proj4 parameters used for the projection" >
                 <constraints nullable="false" />
             </column>
-            <column name="srtext" type="text" />
-            <column name="projection_mapping" type="text" />
-            <column name="x_resolution" type="double precision" />
-            <column name="y_resolution" type="double precision" />
-            <column name="x_unit" type="text" />
-            <column name="y_unit" type="text" />
-            <column name="x_type" type="text" />
-            <column name="y_type" type="text" />
-            <column name="x_size" type="int" />
-            <column name="y_size" type="int" />
-            <column name="load_complete" type="boolean" defaultValueBoolean="false" />
+            <column name="srtext" type="text" remarks="The text parameters used to describe the projection" />
+            <column name="projection_mapping" type="text" remarks="The type of mapping for used for the projection" />
+            <column name="x_resolution" type="double precision" remarks="The resolution of the x units" />
+            <column name="y_resolution" type="double precision" remarks="The resolutions of the y units" />
+            <column name="x_unit" type="text" remarks="The unit of measurement used to describe the x units" />
+            <column name="y_unit" type="text" remarks="The unit of measurement used to describe the y units" />
+            <column name="x_type" type="text" remarks="The coordinate type used for the x units (such as GeoX)" />
+            <column name="y_type" type="text" remarks="The coordinate type used for the y units (such as GeoY)" />
+            <column name="x_size" type="int" remarks="The size of the x coordinate axis" />
+            <column name="y_size" type="int" remarks="The size of the y coordinate axis" />
+            <column name="load_complete" type="boolean" defaultValueBoolean="false"
+                    remarks="Whether or not all points for the projection have been saved." />
         </createTable>
         <sql>
             ALTER TABLE wres.GridProjection OWNER TO wres;

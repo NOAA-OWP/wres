@@ -7,29 +7,27 @@
         objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
     <changeSet id="UnitConversion1.0" author="Christopher Tubbs" dbms="PostgreSQL">
         <preConditions onFail="MARK_RAN">
-            <sqlCheck expectedResult="f">
-                SELECT EXISTS (
-                    SELECT 1
-                    FROM pg_catalog.pg_tables
-                    WHERE schemaname = 'wres'
-                        AND tablename = 'unitconversion'
-                );
-            </sqlCheck>
+            <not>
+                <tableExists tableName="UnitConversion" schemaName="wres" />
+            </not>
         </preConditions>
         <createTable tableName="UnitConversion" schemaName="wres">
-            <column name="from_unit" type="smallint" >
+            <column name="from_unit" type="smallint" remarks="The ID of the unit to convert from" >
                 <constraints nullable="false"/>
             </column>
-            <column name="to_unit" type="smallint">
+            <column name="to_unit" type="smallint" remarks="The ID of the unit to convert to">
                 <constraints nullable="false"/>
             </column>
-            <column name="factor" type="DOUBLE PRECISION" defaultValue="1" >
+            <column name="factor" type="DOUBLE PRECISION" defaultValue="1"
+                    remarks="The multiplicative factor to modify the initial value by" >
                 <constraints nullable="false" />
             </column>
-            <column name="initial_offset" type="DOUBLE PRECISION" defaultValue="0">
+            <column name="initial_offset" type="DOUBLE PRECISION" defaultValue="0"
+                    remarks="A value to add to the initial value prior to multiplying by the factor">
                 <constraints nullable="false" />
             </column>
-            <column name="final_offset" type="DOUBLE PRECISION" defaultValue="0">
+            <column name="final_offset" type="DOUBLE PRECISION" defaultValue="0"
+                    remarks="A final value to add after multiplying by the factor">
                 <constraints nullable="false" />
             </column>
         </createTable>

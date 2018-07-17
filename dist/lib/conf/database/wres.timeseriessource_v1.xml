@@ -7,23 +7,19 @@
         objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
     <changeSet id="TimeSeriesSource v1.0" author="Christopher Tubbs" dbms="PostgreSQL">
         <preConditions onFail="MARK_RAN">
-            <sqlCheck expectedResult="f">
-                SELECT EXISTS (
-                    SELECT 1
-                    FROM pg_catalog.pg_tables
-                    WHERE schemaname = 'wres'
-                        AND tablename = 'timeseriessource'
-                );
-            </sqlCheck>
+            <not>
+                <tableExists tableName="TimeSeriesSource" schemaName="wres" />
+            </not>
         </preConditions>
         <createTable tableName="TimeSeriesSource" schemaName="wres">
-            <column name="timeseries_id" type="integer">
+            <column name="timeseries_id" type="integer" remarks="The ID of the time series that uses the connected source">
                 <constraints nullable="false" deferrable="true" initiallyDeferred="true"/>
             </column>
-            <column name="source_id" type="integer">
+            <column name="source_id" type="integer" remarks="The ID for the source of the data for the time series">
                 <constraints nullable="false" deferrable="true" initiallyDeferred="true" />
             </column>
-            <column name="lead" type="int" />
+            <column name="lead" type="int"
+                    remarks="The amount of temporal units away from the connected Time Series' initialization date that the file holds data for" />
         </createTable>
         <sql>
             ALTER TABLE wres.TimeSeriesSource OWNER TO wres;

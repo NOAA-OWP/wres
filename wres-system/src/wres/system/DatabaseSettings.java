@@ -622,6 +622,7 @@ final class DatabaseSettings
         }
 
         Database database = null;
+        Liquibase liquibase = null;
 
         try (Connection connection = DriverManager.getConnection(this.getConnectionString(), this.username, this.password); )
         {
@@ -629,14 +630,16 @@ final class DatabaseSettings
             URL changelogURL = this.getClass().getClassLoader().getResource( "database/db.changelog-master.xml" );
 
             Objects.requireNonNull(changelogURL, "The definition for the WRES data model could not be found.");
-            Liquibase liquibase = new Liquibase(
+            liquibase = new Liquibase(
                     "database/db.changelog-master.xml",
                     new ClassLoaderResourceAccessor(),
                     database
             );
+
             liquibase.update( new Contexts(), new LabelExpression());
         }
-        catch (SQLException | LiquibaseException e) {
+        catch (SQLException | LiquibaseException e)
+        {
             throw new SQLException( "The WRES could not be properly initialized.", e );
         }
         finally

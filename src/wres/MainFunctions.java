@@ -1027,7 +1027,7 @@ final class MainFunctions
                     script.addLine("WHERE gridprojection_id = ", gridProjectionID, ";");
                     script.execute();
 
-                    final String COPY_HEADER = "wres.NetCDFCoordinate (gridprojection_id, x_position, y_position, geographic_coordinate)";
+                    final String COPY_HEADER = "wres.NetCDFCoordinate (gridprojection_id, x_position, y_position, x, y, geographic_coordinate)";
                     final String DELIMITER = "|";
 
 					GridDataset grid = new GridDataset( new NetcdfDataset( file ) );
@@ -1048,6 +1048,8 @@ final class MainFunctions
                             line.add( String.valueOf(gridProjectionID) );
                             line.add(String.valueOf(xIndex));
                             line.add(String.valueOf(yIndex));
+                            line.add(String.valueOf(xCoordinates.read(new int[]{xIndex}, new int[]{1})));
+                            line.add(String.valueOf(yCoordinates.read( new int[]{yIndex}, new int[]{1} )));
                             line.add("(" + point.getLongitude() + "," + point.getLatitude() + ")");
                             copyValues.add( line.toString() );
                             copyCount++;
@@ -1201,8 +1203,11 @@ final class MainFunctions
         Integer status = FAILURE;
         try
         {
+            LOGGER.info("Updating the WRES installation...");
             Operations.install();
             status = SUCCESS;
+            LOGGER.info("Installation Complete!");
+            LOGGER.info("The WRES is ready for use.");
         }
         catch ( SQLException e )
         {

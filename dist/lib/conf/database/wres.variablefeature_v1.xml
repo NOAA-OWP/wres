@@ -7,14 +7,9 @@
         objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
     <changeSet id="VariableFeature v1.0" author="Christopher Tubbs" dbms="PostgreSQL">
         <preConditions onFail="MARK_RAN">
-            <sqlCheck expectedResult="f">
-                SELECT EXISTS (
-                    SELECT 1
-                    FROM pg_catalog.pg_tables
-                    WHERE schemaname = 'wres'
-                        AND tablename = 'variablefeature'
-                );
-            </sqlCheck>
+            <not>
+                <tableExists tableName="VariableFeature" schemaName="wres" />
+            </not>
         </preConditions>
         <createTable tableName="VariableFeature" schemaName="wres">
             <column name="variablefeature_id" type="serial" autoIncrement="true">

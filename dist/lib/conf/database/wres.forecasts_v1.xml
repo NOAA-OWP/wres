@@ -7,8 +7,8 @@
         objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
     <changeSet id="Forecasts v1.0" author="Christopher Tubbs" dbms="PostgreSQL">
         <createView viewName="Forecasts" schemaName="wres" replaceIfExists="true">
-            SELECT  VBF.feature_id,
-                VBF.variable_id,
+            SELECT  VF.feature_id,
+                VF.variable_id,
                 TS.initialization_date AS basis_time,
                 TS.initialization_date + INTERVAL '1 HOUR' * TSV.lead AS valid_time,
                 TSV.lead,
@@ -19,8 +19,8 @@
             FROM wres.TimeSeries TS
             INNER JOIN wres.TimeSeriesValue TSV
                 ON TSV.timeseries_id = TS.timeseries_id
-            INNER JOIN wres.VariableByFeature VBF
-                ON VBF.variablefeature_id = TS.variablefeature_id;
+            INNER JOIN wres.VariableFeature VF
+                ON VF.variablefeature_id = TS.variablefeature_id;
         </createView>
         <sql>
             ALTER TABLE wres.Forecasts OWNER TO wres;

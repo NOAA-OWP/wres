@@ -15,15 +15,17 @@
             <column name="source_id" type="smallserial" autoIncrement="true">
                 <constraints nullable="false" primaryKey="true" primaryKeyName="source_pk"/>
             </column>
-            <column name="path" type="text">
+            <column name="path" type="text" remarks="Textual description of the original location of the data">
                 <constraints nullable="false" unique="true"/>
             </column>
-            <column name="output_time" type="timestamp without time zone">
+            <column name="output_time" type="timestamp without time zone" remarks="A release date for the data">
                 <constraints nullable="false" />
             </column>
-            <column name="is_point_data" type="boolean" defaultValueBoolean="true" />
-            <column name="lead" type="smallint" />
-            <column name="hash" type="text" />
+            <column name="is_point_data" type="boolean" defaultValueBoolean="true"
+                    remarks="Whether or not the source pertains to point data" />
+            <column name="lead" type="smallint"
+                    remarks="When present, represents the relative amount of time between the output time and the values held within the source data" />
+            <column name="hash" type="text" remarks="A unique identifier for the data" />
         </createTable>
         <sql>
             ALTER TABLE wres.Source OWNER TO wres;
