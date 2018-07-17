@@ -7,20 +7,15 @@
         objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
     <changeSet id="Variable v1.0" author="Christopher Tubbs" dbms="PostgreSQL">
         <preConditions onFail="MARK_RAN">
-            <sqlCheck expectedResult="f">
-                SELECT EXISTS (
-                    SELECT 1
-                    FROM pg_catalog.pg_tables
-                    WHERE schemaname = 'wres'
-                        AND tablename = 'variable'
-                );
-            </sqlCheck>
+            <not>
+                <tableExists tableName="Variable" schemaName="wres" />
+            </not>
         </preConditions>
         <createTable tableName="Variable" schemaName="wres">
             <column name="variable_id" type="smallserial" autoIncrement="true">
                 <constraints primaryKey="true" primaryKeyName="variable_pk"/>
             </column>
-            <column name="variable_name" type="text">
+            <column name="variable_name" type="text" remarks="The name of the variable">
                 <constraints nullable="false" deferrable="true" unique="true" />
             </column>
         </createTable>

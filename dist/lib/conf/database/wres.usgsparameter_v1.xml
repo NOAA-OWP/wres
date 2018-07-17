@@ -7,26 +7,21 @@
         objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
     <changeSet id="USGSParameter 1.0" author="Christopher Tubbs" dbms="PostgreSQL">
         <preConditions onFail="MARK_RAN">
-            <sqlCheck expectedResult="f">
-                SELECT EXISTS (
-                    SELECT 1
-                    FROM pg_catalog.pg_tables
-                    WHERE schemaname = 'wres'
-                        AND tablename = 'usgsparameter'
-                );
-            </sqlCheck>
+            <not>
+                <tableExists tableName="USGSParameter" schemaName="wres" />
+            </not>
         </preConditions>
         <createTable tableName="USGSParameter" schemaName="wres">
-            <column name="name" type="text">
+            <column name="name" type="text" remarks="Short name for the parameter">
                 <constraints nullable="false"/>
             </column>
-            <column name="description" type="text" />
-            <column name="parameter_code" type="text">
+            <column name="description" type="text" remarks="Full description for the parameter" />
+            <column name="parameter_code" type="text" remarks="Numerical code for the parameter">
                 <constraints nullable="false"/>
             </column>
-            <column name="measurement_unit" type="text" />
-            <column name="measurementunit_id" type="smallint" />
-            <column name="aggregation" type="text" />
+            <column name="measurement_unit" type="text" remarks="The unit of measurement used by USGS" />
+            <column name="measurementunit_id" type="smallint" remarks="The id of the WRES unit that maps to the USGS unit" />
+            <column name="aggregation" type="text" remarks="A description of any sort of aggregation performed on the data by USGS" />
         </createTable>
         <sql>
             ALTER TABLE wres.USGSParameter OWNER TO wres;
@@ -39,6 +34,8 @@
         <comment>
             The wres.USGSParameter table has been created.
         </comment>
+    </changeSet>
+    <changeSet id="USGSParameter - Stock Parameters" author="Christopher Tubbs">
         <sql>
             INSERT INTO wres.USGSParameter(
                 name,
@@ -55,9 +52,13 @@
                 MU.measurementunit_id,
                 'instant'
             FROM wres.MeasurementUnit MU
-            WHERE MU.unit_name = 'CMS';
-        </sql>
-        <sql>
+            WHERE MU.unit_name = 'CMS'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.USGSParameter P
+                    WHERE P.parameter_code = '30209'
+                );
+
             INSERT INTO wres.USGSParameter(
                 name,
                 description,
@@ -73,9 +74,13 @@
                 MU.measurementunit_id,
                 'None'
             FROM wres.MeasurementUnit MU
-            WHERE MU.unit_name = 'CMS';
-        </sql>
-        <sql>
+            WHERE MU.unit_name = 'CMS'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.USGSParameter P
+                    WHERE P.parameter_code = '30208'
+                );
+
             INSERT INTO wres.USGSParameter(
                 name,
                 description,
@@ -91,9 +96,13 @@
                 MU.measurementunit_id,
                 'instant'
             FROM wres.MeasurementUnit MU
-            WHERE MU.unit_name = 'CFS';
-        </sql>
-        <sql>
+            WHERE MU.unit_name = 'CFS'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.USGSParameter P
+                    WHERE P.parameter_code = '00061'
+                );
+
             INSERT INTO wres.USGSParameter(
                 name,
                 description,
@@ -109,9 +118,13 @@
                 MU.measurementunit_id,
                 'None'
             FROM wres.MeasurementUnit MU
-            WHERE MU.unit_name = 'CFS';
-        </sql>
-        <sql>
+            WHERE MU.unit_name = 'CFS'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.USGSParameter P
+                    WHERE P.parameter_code = '00060'
+                );
+
             INSERT INTO wres.USGSParameter(
                 name,
                 description,
@@ -127,9 +140,13 @@
                 MU.measurementunit_id,
                 'None'
             FROM wres.MeasurementUnit MU
-            WHERE MU.unit_name = 'FT';
-        </sql>
-        <sql>
+            WHERE MU.unit_name = 'FT'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.USGSParameter P
+                    WHERE P.parameter_code = '72198'
+                );
+
             INSERT INTO wres.USGSParameter(
                 name,
                 description,
@@ -145,9 +162,13 @@
                 MU.measurementunit_id,
                 'None'
             FROM wres.MeasurementUnit MU
-            WHERE MU.unit_name = 'F';
-        </sql>
-        <sql>
+            WHERE MU.unit_name = 'F'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.USGSParameter P
+                    WHERE P.parameter_code = '00021'
+                );
+
             INSERT INTO wres.USGSParameter(
                 name,
                 description,
@@ -163,9 +184,13 @@
                 MU.measurementunit_id,
                 'None'
             FROM wres.MeasurementUnit MU
-            WHERE MU.unit_name = 'C';
-        </sql>
-        <sql>
+            WHERE MU.unit_name = 'C'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.USGSParameter P
+                    WHERE P.parameter_code = '81029'
+                );
+
             INSERT INTO wres.USGSParameter(
                 name,
                 description,
@@ -181,9 +206,13 @@
                 MU.measurementunit_id,
                 'None'
             FROM wres.MeasurementUnit MU
-            WHERE MU.unit_name = 'C';
-        </sql>
-        <sql>
+            WHERE MU.unit_name = 'C'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.USGSParameter P
+                    WHERE P.parameter_code = '00020'
+                );
+
             INSERT INTO wres.USGSParameter(
                 name,
                 description,
@@ -199,9 +228,13 @@
                 MU.measurementunit_id,
                 'None'
             FROM wres.MeasurementUnit MU
-            WHERE MU.unit_name = 'IN';
-        </sql>
-        <sql>
+            WHERE MU.unit_name = 'IN'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.USGSParameter P
+                    WHERE P.parameter_code = '82300'
+                );
+
             INSERT INTO wres.USGSParameter(
                 name,
                 description,
@@ -217,9 +250,13 @@
                 MU.measurementunit_id,
                 'None'
             FROM wres.MeasurementUnit MU
-            WHERE MU.unit_name = 'IN';
-        </sql>
-        <sql>
+            WHERE MU.unit_name = 'IN'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.USGSParameter P
+                    WHERE P.parameter_code = '81026'
+                );
+
             INSERT INTO wres.USGSParameter(
                 name,
                 description,
@@ -235,9 +272,13 @@
                 MU.measurementunit_id,
                 'sum'
             FROM wres.MeasurementUnit MU
-            WHERE MU.unit_name = 'IN';
-        </sql>
-        <sql>
+            WHERE MU.unit_name = 'IN'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.USGSParameter P
+                    WHERE P.parameter_code = '72192'
+                );
+
             INSERT INTO wres.USGSParameter(
                 name,
                 description,
@@ -253,9 +294,13 @@
                 MU.measurementunit_id,
                 'None'
             FROM wres.MeasurementUnit MU
-            WHERE MU.unit_name = 'IN';
-        </sql>
-        <sql>
+            WHERE MU.unit_name = 'IN'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.USGSParameter P
+                    WHERE P.parameter_code = '46529'
+                );
+
             INSERT INTO wres.USGSParameter(
                 name,
                 description,
@@ -271,9 +316,13 @@
                 MU.measurementunit_id,
                 'None'
             FROM wres.MeasurementUnit MU
-            WHERE MU.unit_name = 'M';
-        </sql>
-        <sql>
+            WHERE MU.unit_name = 'M'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.USGSParameter P
+                    WHERE P.parameter_code = '81381'
+                );
+
             INSERT INTO wres.USGSParameter(
                 name,
                 description,
@@ -289,9 +338,13 @@
                 MU.measurementunit_id,
                 'None'
             FROM wres.MeasurementUnit MU
-            WHERE MU.unit_name = 'M';
-        </sql>
-        <sql>
+            WHERE MU.unit_name = 'M'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.USGSParameter P
+                    WHERE P.parameter_code = '72189'
+                );
+
             INSERT INTO wres.USGSParameter(
                 name,
                 description,
@@ -307,9 +360,13 @@
                 MU.measurementunit_id,
                 'None'
             FROM wres.MeasurementUnit MU
-            WHERE MU.unit_name = 'MM';
-        </sql>
-        <sql>
+            WHERE MU.unit_name = 'MM'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.USGSParameter P
+                    WHERE P.parameter_code = '99772'
+                );
+
             INSERT INTO wres.USGSParameter(
                 name,
                 description,
@@ -325,9 +382,13 @@
                 MU.measurementunit_id,
                 'None'
             FROM wres.MeasurementUnit MU
-            WHERE MU.unit_name = '%';
-        </sql>
-        <sql>
+            WHERE MU.unit_name = '%'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.USGSParameter P
+                    WHERE P.parameter_code = '00032'
+                );
+
             INSERT INTO wres.USGSParameter(
                 name,
                 description,
@@ -343,9 +404,13 @@
                 MU.measurementunit_id,
                 'None'
             FROM wres.MeasurementUnit MU
-            WHERE MU.unit_name = 'ft/sec';
-        </sql>
-        <sql>
+            WHERE MU.unit_name = 'ft/sec'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.USGSParameter P
+                    WHERE P.parameter_code = '00055'
+                );
+
             INSERT INTO wres.USGSParameter(
                 name,
                 description,
@@ -361,9 +426,13 @@
                 MU.measurementunit_id,
                 'None'
             FROM wres.MeasurementUnit MU
-            WHERE MU.unit_name = 'gal/min';
-        </sql>
-        <sql>
+            WHERE MU.unit_name = 'gal/min'
+                    AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.USGSParameter P
+                    WHERE P.parameter_code = '50042'
+                );
+
             INSERT INTO wres.USGSParameter(
                 name,
                 description,
@@ -379,9 +448,13 @@
                 MU.measurementunit_id,
                 'instant'
             FROM wres.MeasurementUnit MU
-            WHERE MU.unit_name = 'gal/min';
-        </sql>
-        <sql>
+            WHERE MU.unit_name = 'gal/min'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.USGSParameter P
+                    WHERE P.parameter_code = '00059'
+                );
+
             INSERT INTO wres.USGSParameter(
                 name,
                 description,
@@ -397,9 +470,13 @@
                 MU.measurementunit_id,
                 'instant'
             FROM wres.MeasurementUnit MU
-            WHERE MU.unit_name = 'mgd';
-        </sql>
-        <sql>
+            WHERE MU.unit_name = 'mgd'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.USGSParameter P
+                    WHERE P.parameter_code = '50051'
+                );
+
             INSERT INTO wres.USGSParameter(
                 name,
                 description,
@@ -415,9 +492,13 @@
                 MU.measurementunit_id,
                 'min'
             FROM wres.MeasurementUnit MU
-            WHERE MU.unit_name = 'mgd';
-        </sql>
-        <sql>
+            WHERE MU.unit_name = 'mgd'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.USGSParameter P
+                    WHERE P.parameter_code = '50048'
+                );
+
             INSERT INTO wres.USGSParameter(
                 name,
                 description,
@@ -433,9 +514,13 @@
                 MU.measurementunit_id,
                 'max'
             FROM wres.MeasurementUnit MU
-            WHERE MU.unit_name = 'mgd';
-        </sql>
-        <sql>
+            WHERE MU.unit_name = 'mgd'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.USGSParameter P
+                    WHERE P.parameter_code = '50047'
+                );
+
             INSERT INTO wres.USGSParameter(
                 name,
                 description,
@@ -451,9 +536,13 @@
                 MU.measurementunit_id,
                 'None'
             FROM wres.MeasurementUnit MU
-            WHERE MU.unit_name = 'm/sec';
-        </sql>
-        <sql>
+            WHERE MU.unit_name = 'm/sec'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.USGSParameter P
+                    WHERE P.parameter_code = '81380'
+                );
+
             INSERT INTO wres.USGSParameter(
                 name,
                 description,
@@ -469,9 +558,13 @@
                 MU.measurementunit_id,
                 'None'
             FROM wres.MeasurementUnit MU
-            WHERE MU.unit_name = 'm/sec';
-        </sql>
-        <sql>
+            WHERE MU.unit_name = 'm/sec'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.USGSParameter P
+                    WHERE P.parameter_code = '72149'
+                );
+
             INSERT INTO wres.USGSParameter(
                 name,
                 description,
@@ -487,9 +580,13 @@
                 MU.measurementunit_id,
                 'None'
             FROM wres.MeasurementUnit MU
-            WHERE MU.unit_name = 'ft3/day';
-        </sql>
-        <sql>
+            WHERE MU.unit_name = 'ft3/day'
+            AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.USGSParameter P
+                    WHERE P.parameter_code = '72243'
+                );
+
             INSERT INTO wres.USGSParameter(
                 name,
                 description,
@@ -505,9 +602,13 @@
                 MU.measurementunit_id,
                 'None'
             FROM wres.MeasurementUnit MU
-            WHERE MU.unit_name = 'ac-ft';
-        </sql>
-        <sql>
+            WHERE MU.unit_name = 'ac-ft'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.USGSParameter P
+                    WHERE P.parameter_code = '74082'
+                );
+
             INSERT INTO wres.USGSParameter(
                 name,
                 description,
@@ -523,9 +624,13 @@
                 MU.measurementunit_id,
                 'sum'
             FROM wres.MeasurementUnit MU
-            WHERE MU.unit_name = 'ac-ft';
-        </sql>
-        <sql>
+            WHERE MU.unit_name = 'ac-ft'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.USGSParameter P
+                    WHERE P.parameter_code = '72272'
+                );
+
             INSERT INTO wres.USGSParameter(
                 name,
                 description,
@@ -541,9 +646,13 @@
                 MU.measurementunit_id,
                 'None'
             FROM wres.MeasurementUnit MU
-            WHERE MU.unit_name = 'mph';
-        </sql>
-        <sql>
+            WHERE MU.unit_name = 'mph'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.USGSParameter P
+                    WHERE P.parameter_code = '72321'
+                );
+
             INSERT INTO wres.USGSParameter(
                 name,
                 description,
@@ -559,9 +668,13 @@
                 MU.measurementunit_id,
                 'sum'
             FROM wres.MeasurementUnit MU
-            WHERE MU.unit_name = 'mph';
-        </sql>
-        <sql>
+            WHERE MU.unit_name = 'mph'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.USGSParameter P
+                    WHERE P.parameter_code = '72294'
+                );
+
             INSERT INTO wres.USGSParameter(
                 name,
                 description,
@@ -577,7 +690,12 @@
                 MU.measurementunit_id,
                 'None'
             FROM wres.MeasurementUnit MU
-            WHERE MU.unit_name = 'l/sec';
+            WHERE MU.unit_name = 'l/sec'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.USGSParameter P
+                    WHERE P.parameter_code = '74072'
+                );
         </sql>
     </changeSet>
 </databaseChangeLog>

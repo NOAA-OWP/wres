@@ -20,20 +20,20 @@
         </preConditions>
         <createTable tableName="ExecutionLog" schemaName="public">
            <column name="log_id" type="serial" autoIncrement="true" />
-            <column name="arguments" type="text">
+            <column name="arguments" type="text" remarks="Arguments passed into the application upon execution">
                 <constraints nullable="false"/>
             </column>
-            <column name="system_version" type="text">
+            <column name="system_version" type="text" remarks="The version of the application">
                 <constraints nullable="false" />
             </column>
-            <column name="project" type="text" />
-            <column name="username" type="text" />
-            <column name="address" type="text" />
-            <column name="start_time" type="timestamp without time zone" />
-            <column name="run_time" type="interval" />
-            <column name="failed" type="boolean" defaultValueBoolean="false" />
-            <column name="error" type="text" />
-            <column name="input_code" type="text" />
+            <column name="project" type="text" remarks="The project configuration used" />
+            <column name="username" type="text" remarks="The name of the user who ran the application" />
+            <column name="address" type="text" remarks="The address of the user on the network" />
+            <column name="start_time" type="timestamp without time zone" remarks="The time at which the execution started" />
+            <column name="run_time" type="interval" remarks="The total runtime of the application" />
+            <column name="failed" type="boolean" defaultValueBoolean="false" remarks="Whether or not the application failed" />
+            <column name="error" type="text" remarks="Information about a failed execution" />
+            <column name="input_code" type="text" remarks="The input code of a project that was executed" />
         </createTable>
         <sql>
             ALTER TABLE public.ExecutionLog OWNER TO wres;

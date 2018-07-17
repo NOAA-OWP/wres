@@ -7,23 +7,19 @@
         objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
     <changeSet id="ProjectSource1.0" author="Christopher Tubbs" dbms="PostgreSQL">
         <preConditions onFail="MARK_RAN">
-            <sqlCheck expectedResult="f">
-                SELECT EXISTS (
-                    SELECT 1
-                    FROM pg_catalog.pg_tables
-                    WHERE schemaname = 'wres'
-                        AND tablename = 'ProjectSource'
-                );
-            </sqlCheck>
+            <not>
+                <tableExists tableName="ProjectSource" schemaName="wres" />
+            </not>
         </preConditions>
         <createTable tableName="ProjectSource" schemaName="wres">
             <column name="project_id" type="smallint">
                 <constraints nullable="false" />
             </column>
-            <column name="source_id" type="smallint">
+            <column name="source_id" type="smallint" remarks="The ID of the file used by a project">
                 <constraints nullable="false" />
             </column>
-            <column name="member" type="operating_member">
+            <column name="member" type="operating_member"
+                    remarks="The side of the evaluation that is responsible for the source data (left/right/baseline)">
                 <constraints nullable="false"/>
             </column>
         </createTable>

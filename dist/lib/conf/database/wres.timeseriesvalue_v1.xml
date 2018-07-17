@@ -7,23 +7,20 @@
         objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
     <changeSet id="TimeSeriesValue v1.0" author="Christopher Tubbs" dbms="PostgreSQL">
         <preConditions onFail="MARK_RAN">
-            <sqlCheck expectedResult="f">
-                SELECT EXISTS (
-                    SELECT 1
-                    FROM pg_catalog.pg_tables
-                    WHERE schemaname = 'wres'
-                        AND tablename = 'timeseriesvalue'
-                );
-            </sqlCheck>
+            <not>
+                <tableExists tableName="TimeSeriesValue" schemaName="wres" />
+            </not>
         </preConditions>
         <createTable tableName="TimeSeriesValue" schemaName="wres">
-            <column name="timeseries_id" type="integer">
+            <column name="timeseries_id" type="integer" remarks="The ID of the time series that the value belongs to">
                 <constraints nullable="false" deferrable="true" initiallyDeferred="true"/>
             </column>
-            <column name="lead" type="int" >
+            <column name="lead" type="int"
+                    remarks="The number of temporal units apart from the time series' initialization data where the value is valid" >
                 <constraints nullable="false" deferrable="true" initiallyDeferred="true" />
             </column>
-            <column name="series_value" type="double precision" />
+            <column name="series_value" type="double precision"
+                    remarks="The value in the time series at the specified lead" />
         </createTable>
         <sql>
             ALTER TABLE wres.TimeSeriesValue OWNER TO wres;

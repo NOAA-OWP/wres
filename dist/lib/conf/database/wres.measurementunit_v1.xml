@@ -7,20 +7,15 @@
         objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
     <changeSet id="MeasurementUnit1.0" author="Christopher Tubbs" dbms="PostgreSQL">
         <preConditions onFail="MARK_RAN">
-            <sqlCheck expectedResult="f">
-                SELECT EXISTS (
-                    SELECT 1
-                    FROM pg_catalog.pg_tables
-                    WHERE schemaname = 'wres'
-                        AND tablename = 'measurementunit'
-                );
-            </sqlCheck>
+            <not>
+                <tableExists tableName="MeasurementUnit" schemaName="wres" />
+            </not>
         </preConditions>
         <createTable tableName="MeasurementUnit" schemaName="wres">
             <column name="measurementunit_id" type="smallserial" autoIncrement="true">
                 <constraints nullable="false" primaryKey="true"/>
             </column>
-            <column name="unit_name" type="text">
+            <column name="unit_name" type="text" remarks="Name or abbreviation for a unit of measurement">
                 <constraints nullable="false" unique="true"/>
             </column>
         </createTable>
@@ -32,164 +27,432 @@
         <sql>
             ALTER TABLE wres.MeasurementUnit OWNER TO wres;
         </sql>
-        <insert tableName="MeasurementUnit" schemaName="wres">
-            <column name="unit_name">NONE</column>
-        </insert>
-        <insert tableName="MeasurementUnit" schemaName="wres">
-            <column name="unit_name">CMS</column>
-        </insert>
-        <insert tableName="MeasurementUnit" schemaName="wres">
-            <column name="unit_name">CFS</column>
-        </insert>
-        <insert tableName="MeasurementUnit" schemaName="wres">
-            <column name="unit_name">FT</column>
-        </insert>
-        <insert tableName="MeasurementUnit" schemaName="wres">
-            <column name="unit_name">F</column>
-        </insert>
-        <insert tableName="MeasurementUnit" schemaName="wres">
-            <column name="unit_name">C</column>
-        </insert>
-        <insert tableName="MeasurementUnit" schemaName="wres">
-            <column name="unit_name">IN</column>
-        </insert>
-        <insert tableName="MeasurementUnit" schemaName="wres">
-            <column name="unit_name">M</column>
-        </insert>
-        <insert tableName="MeasurementUnit" schemaName="wres">
-            <column name="unit_name">MS</column>
-        </insert>
-        <insert tableName="MeasurementUnit" schemaName="wres">
-            <column name="unit_name">HR</column>
-        </insert>
-        <insert tableName="MeasurementUnit" schemaName="wres">
-            <column name="unit_name">H</column>
-        </insert>
-        <insert tableName="MeasurementUnit" schemaName="wres">
-            <column name="unit_name">S</column>
-        </insert>
-        <insert tableName="MeasurementUnit" schemaName="wres">
-            <column name="unit_name">MM</column>
-        </insert>
-        <insert tableName="MeasurementUnit" schemaName="wres">
-            <column name="unit_name">CM</column>
-        </insert>
-        <insert tableName="MeasurementUnit" schemaName="wres">
-            <column name="unit_name">m3 s-1</column>
-        </insert>
-        <insert tableName="MeasurementUnit" schemaName="wres">
-            <column name="unit_name">kg m{-2}</column>
-        </insert>
-        <insert tableName="MeasurementUnit" schemaName="wres">
-            <column name="unit_name">%</column>
-        </insert>
-        <insert tableName="MeasurementUnit" schemaName="wres">
-            <column name="unit_name">ft/sec</column>
-        </insert>
-        <insert tableName="MeasurementUnit" schemaName="wres">
-            <column name="unit_name">gal/min</column>
-        </insert>
-        <insert tableName="MeasurementUnit" schemaName="wres">
-            <column name="unit_name">mgd</column>
-        </insert>
-        <insert tableName="MeasurementUnit" schemaName="wres">
-            <column name="unit_name">m/sec</column>
-        </insert>
-        <insert tableName="MeasurementUnit" schemaName="wres">
-            <column name="unit_name">ft3/day</column>
-        </insert>
-        <insert tableName="MeasurementUnit" schemaName="wres">
-            <column name="unit_name">ac-ft</column>
-        </insert>
-        <insert tableName="MeasurementUnit" schemaName="wres">
-            <column name="unit_name">mph</column>
-        </insert>
-        <insert tableName="MeasurementUnit" schemaName="wres">
-            <column name="unit_name">l/sec</column>
-        </insert>
-        <insert tableName="MeasurementUnit" schemaName="wres">
-            <column name="unit_name">ft3/s</column>
-        </insert>
-        <insert tableName="MeasurementUnit" schemaName="wres">
-            <column name="unit_name">m3/sec</column>
-        </insert>
-        <insert tableName="MeasurementUnit" schemaName="wres">
-            <column name="unit_name">mm/s</column>
-        </insert>
-        <insert tableName="MeasurementUnit" schemaName="wres">
-            <column name="unit_name">mm s^-1</column>
-        </insert>
-        <insert tableName="MeasurementUnit" schemaName="wres">
-            <column name="unit_name">mm s{-1}</column>
-        </insert>
-        <insert tableName="MeasurementUnit" schemaName="wres">
-            <column name="unit_name">mm s-1</column>
-        </insert>
-        <insert tableName="MeasurementUnit" schemaName="wres">
-            <column name="unit_name">mm h^-1</column>
-        </insert>
-        <insert tableName="MeasurementUnit" schemaName="wres">
-            <column name="unit_name">mm/h</column>
-        </insert>
-        <insert tableName="MeasurementUnit" schemaName="wres">
-            <column name="unit_name">mm h-1</column>
-        </insert>
-        <insert tableName="MeasurementUnit" schemaName="wres">
-            <column name="unit_name">mm h{-1}</column>
-        </insert>
-        <insert tableName="MeasurementUnit" schemaName="wres">
-            <column name="unit_name">kg/m^2</column>
-        </insert>
-        <insert tableName="MeasurementUnit" schemaName="wres">
-            <column name="unit_name">kg/m^2h</column>
-        </insert>
-        <insert tableName="MeasurementUnit" schemaName="wres">
-            <column name="unit_name">kg/m^2s</column>
-        </insert>
-        <insert tableName="MeasurementUnit" schemaName="wres">
-            <column name="unit_name">kg/m^2/s</column>
-        </insert>
-        <insert tableName="MeasurementUnit" schemaName="wres">
-            <column name="unit_name">kg/m^2/h</column>
-        </insert>
-        <insert tableName="MeasurementUnit" schemaName="wres">
-            <column name="unit_name">Pa</column>
-        </insert>
-        <insert tableName="MeasurementUnit" schemaName="wres">
-            <column name="unit_name">W/m^2</column>
-        </insert>
-        <insert tableName="MeasurementUnit" schemaName="wres">
-            <column name="unit_name">W m{-2}</column>
-        </insert>
-        <insert tableName="MeasurementUnit" schemaName="wres">
-            <column name="unit_name">W m-2</column>
-        </insert>
-        <insert tableName="MeasurementUnit" schemaName="wres">
-            <column name="unit_name">m s-1</column>
-        </insert>
-        <insert tableName="MeasurementUnit" schemaName="wres">
-            <column name="unit_name">m/s</column>
-        </insert>
-        <insert tableName="MeasurementUnit" schemaName="wres">
-            <column name="unit_name">m s{-1}</column>
-        </insert>
-        <insert tableName="MeasurementUnit" schemaName="wres">
-            <column name="unit_name">kg kg-1</column>
-        </insert>
-        <insert tableName="MeasurementUnit" schemaName="wres">
-            <column name="unit_name">kg kg{-1}</column>
-        </insert>
-        <insert tableName="MeasurementUnit" schemaName="wres">
-            <column name="unit_name">kg m-2</column>
-        </insert>
-        <insert tableName="MeasurementUnit" schemaName="wres">
-            <column name="unit_name">fraction</column>
-        </insert>
-        <insert tableName="MeasurementUnit" schemaName="wres">
-            <column name="unit_name">K</column>
-        </insert>
-        <insert tableName="MeasurementUnit" schemaName="wres">
-            <column name="unit_name">-</column>
-        </insert>
+    </changeSet>
+    <changeSet id="Add Stock Units" author="Christopher Tubbs">
+        <sql>
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT 'NONE'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = 'NONE'
+            );
+
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT 'CMS'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = 'CMS'
+            );
+
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT 'CFS'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = 'CFS'
+            );
+
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT 'FT'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = 'FT'
+            );
+
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT 'F'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = 'F'
+            );
+
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT 'C'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = 'C'
+            );
+
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT 'IN'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = 'IN'
+            );
+
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT 'M'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = 'M'
+            );
+
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT 'MS'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = 'MS'
+            );
+
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT 'HR'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = 'HR'
+            );
+
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT 'H'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = 'H'
+            );
+
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT 'S'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = 'S'
+            );
+
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT 'MM'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = 'MM'
+            );
+
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT 'CM'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = 'CM'
+            );
+
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT 'm3 s-1'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = 'm3 s-1'
+            );
+
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT 'kg m{-2}'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = 'kg m{-2}'
+            );
+
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT '%'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = '%'
+            );
+
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT 'ft/sec'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = 'ft/sec'
+            );
+
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT 'gal/min'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = 'gal/min'
+            );
+
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT 'mgd'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = 'mgd'
+            );
+
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT 'm/sec'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = 'm/sec'
+            );
+
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT 'ft3/day'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = 'ft3/day'
+            );
+
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT 'ac-ft'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = 'ac-ft'
+            );
+
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT 'mph'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = 'mph'
+            );
+
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT 'l/sec'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = 'l/sec'
+            );
+
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT 'ft3/s'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = 'ft3/s'
+            );
+
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT 'm3/sec'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = 'm3/sec'
+            );
+
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT 'mm/s'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = 'mm/s'
+            );
+
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT 'mm s^-1'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = 'mm s^-1'
+            );
+
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT 'mm s{-1}'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = 'mm s{-1}'
+            );
+
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT 'mm s-1'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = 'mm s-1'
+            );
+
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT 'mm h^-1'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = 'mm h^-1'
+            );
+
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT 'mm/h'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = 'mm/h'
+            );
+
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT 'mm h-1'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = 'mm h-1'
+            );
+
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT 'mm h{-1}'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = 'mm h{-1}'
+            );
+
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT 'kg/m^2'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = 'kg/m^2'
+            );
+
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT 'kg/m^2h'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = 'kg/m^2h'
+            );
+
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT 'kg/m^2s'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = 'kg/m^2s'
+            );
+
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT 'kg/m^2/s'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = 'kg/m^2/s'
+            );
+
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT 'kg/m^2/h'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = 'kg/m^2/h'
+            );
+
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT 'Pa'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = 'Pa'
+            );
+
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT 'W/m^2'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = 'W/m^2'
+            );
+
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT 'W m{-2}'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = 'W m{-2}'
+            );
+
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT 'W m-2'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = 'W m-2'
+            );
+
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT 'm s-1'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = 'm s-1'
+            );
+
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT 'm/s'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = 'm/s'
+            );
+
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT 'm s{-1}'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = 'm s{-1}'
+            );
+
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT 'kg kg-1'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = 'kg kg-1'
+            );
+
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT 'kg kg{-1}'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = 'kg kg{-1}'
+            );
+
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT 'kg m-2'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = 'kg m-2'
+            );
+
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT 'fraction'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = 'fraction'
+            );
+
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT 'K'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = 'K'
+            );
+
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT '-'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = '-'
+            );
+        </sql>
     </changeSet>
 </databaseChangeLog>

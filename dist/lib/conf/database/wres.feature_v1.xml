@@ -5,30 +5,41 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
                       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd"
         objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="Rename Feature.RFC" author="Christopher Tubbs">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="Feature" schemaName="wres" />
+            <columnExists tableName="Feature" columnName="rfc" schemaName="wres" />
+        </preConditions>
+        <renameColumn tableName="Feature" oldColumnName="rfc" newColumnName="region" schemaName="wres"/>
+        <comment>Renamed 'Feature.rfc' to 'Feature.region'</comment>
+    </changeSet>
+    <changeSet id="Rename Feature.st" author="Christopher Tubbs">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="Feature" schemaName="wres" />
+            <columnExists tableName="Feature" schemaName="wres" columnName="st" />
+        </preConditions>
+        <renameColumn tableName="Feature" schemaName="wres" oldColumnName="st" newColumnName="state" />
+        <comment>Renamed 'Feature.st' to 'Feature.state'</comment>
+    </changeSet>
     <changeSet id="Feature v1.0" author="Christopher Tubbs" dbms="PostgreSQL">
         <preConditions onFail="MARK_RAN">
-            <sqlCheck expectedResult="f">
-                SELECT EXISTS (
-                    SELECT 1
-                    FROM pg_catalog.pg_tables
-                    WHERE schemaname = 'wres'
-                        AND tablename = 'feature'
-                );
-            </sqlCheck>
+            <not>
+                <tableExists tableName="Feature" schemaName="wres" />
+            </not>
         </preConditions>
         <createTable tableName="Feature" schemaName="wres">
             <column name="feature_id" type="serial" autoIncrement="true">
                 <constraints nullable="false" primaryKeyName="feature_pk" primaryKey="true" />
             </column>
-            <column name="comid" type="int"/>
-            <column name="lid" type="text" />
-            <column name="gage_id" type="text" />
-            <column name="region" type="text" />
-            <column name="state" type="text" />
-            <column name="huc" type="text" />
-            <column name="feature_name" type="text" />
-            <column name="latitude" type="real" />
-            <column name="longitude" type="real" />
+            <column name="comid" type="int" remarks="NHDPlus Common Identifier"/>
+            <column name="lid" type="text" remarks="Location ID" />
+            <column name="gage_id" type="text" remarks="Unique ID for a gage" />
+            <column name="region" type="text" remarks="The region that contains the feature" />
+            <column name="state" type="text" remarks="The state which contains the feature" />
+            <column name="huc" type="text" remarks="The Hydrologic Unit Code for the feature" />
+            <column name="feature_name" type="text" remarks="The long form name for the feature" />
+            <column name="latitude" type="real" remarks="The latitude of the feature" />
+            <column name="longitude" type="real" remarks="The longitude of the feature" />
         </createTable>
         <sql>
             ALTER TABLE wres.Feature OWNER TO wres;

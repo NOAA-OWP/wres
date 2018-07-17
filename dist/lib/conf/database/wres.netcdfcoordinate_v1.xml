@@ -5,34 +5,54 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
                       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd"
         objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="NetcdfCoordinate - add X" author="Christopher Tubbs">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="NetcdfCoordinate" schemaName="wres" />
+            <not>
+                <columnExists tableName="NetcdfCoordinate" columnName="x" schemaName="wres" />
+            </not>
+        </preConditions>
+        <addColumn tableName="NetcdfCoordinate" schemaName="wres">
+            <column name="x" type="double precision"
+                    remarks="The X value in the original projection" />
+        </addColumn>
+        <comment>wres.NetcdfCoordinate - the x column has been added.</comment>
+    </changeSet>
+    <changeSet id="NetcdfCoordinate - add Y" author="Christopher Tubbs">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="NetcdfCoordinate" schemaName="wres" />
+            <not>
+                <columnExists tableName="NetcdfCoordinate" schemaName="wres" columnName="y" />
+            </not>
+        </preConditions>
+        <addColumn tableName="NetcdfCoordinate" schemaName="wres">
+            <column name="y" type="double precision" remarks="The Y value in the original projection"/>
+        </addColumn>
+        <comment>wres.NetcdfCoordinate - the y column has been added.</comment>
+    </changeSet>
     <changeSet id="NetcdfCoordinate v1.0" author="Christopher Tubbs" dbms="PostgreSQL">
         <preConditions onFail="MARK_RAN">
-            <sqlCheck expectedResult="f">
-                SELECT EXISTS (
-                    SELECT 1
-                    FROM pg_catalog.pg_tables
-                    WHERE schemaname = 'wres'
-                        AND tablename = 'netcdfcoordinate'
-                );
-            </sqlCheck>
+            <not>
+                <tableExists tableName="NetcdfCoordinate" schemaName="wres" />
+            </not>
         </preConditions>
         <createTable tableName="NetcdfCoordinate" schemaName="wres">
-            <column name="gridprojection_id" type="integer">
+            <column name="gridprojection_id" type="integer" remarks="The ID for the projection that this definition belongs to">
                 <constraints nullable="false" deferrable="true" initiallyDeferred="true"/>
             </column>
-            <column name="x_position" type="smallint">
+            <column name="x_position" type="smallint" remarks="The x index for the value in the Netcdf file">
                 <constraints nullable="false" />
             </column>
-            <column name="y_position" type="smallint">
+            <column name="y_position" type="smallint" remarks="The y index for the value in the NetCDF file">
                 <constraints nullable="false" />
             </column>
-            <column name="x" type="double precision" >
+            <column name="x" type="double precision" remarks="The X value in the original projection" >
                 <constraints nullable="false" />
             </column>
-            <column name="y" type="double precision" >
+            <column name="y" type="double precision" remarks="The Y value in the original projection" >
                 <constraints nullable="false" />
             </column>
-            <column name="geographic_coordinate" type="POINT">
+            <column name="geographic_coordinate" type="POINT" remarks="The geographic latitude and longitude point">
                 <constraints nullable="false" />
             </column>
         </createTable>

@@ -7,24 +7,19 @@
         objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
     <changeSet id="Ensemble v1.0" author="Christopher Tubbs" dbms="PostgreSQL">
         <preConditions onFail="MARK_RAN">
-            <sqlCheck expectedResult="f">
-                SELECT EXISTS (
-                    SELECT 1
-                    FROM pg_catalog.pg_tables
-                    WHERE schemaname = 'wres'
-                        AND tablename = 'Ensemble'
-                );
-            </sqlCheck>
+            <not>
+                <tableExists tableName="Ensemble" schemaName="wres" />
+            </not>
         </preConditions>
         <createTable tableName="Ensemble" schemaName="wres">
             <column name="ensemble_id" type="serial" autoIncrement="true">
                 <constraints primaryKey="true" primaryKeyName="ensemble_pk"/>
             </column>
-            <column name="ensemble_name" type="text">
+            <column name="ensemble_name" type="text" remarks="A name associated with the ensemble">
                 <constraints nullable="false" />
             </column>
-            <column name="qualifier_id" type="text" />
-            <column name="ensemblemember_id" type="int" />
+            <column name="qualifier_id" type="text" remarks="A secondary, textual identifier for an ensemble" />
+            <column name="ensemblemember_id" type="int" remarks="A numerical distinction for the ensemble" />
         </createTable>
         <sql>
             ALTER TABLE wres.Ensemble OWNER TO wres;
