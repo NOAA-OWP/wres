@@ -1,4 +1,4 @@
-package wres.datamodel;
+package wres.datamodel.inputs.pairs;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -8,9 +8,13 @@ import java.util.List;
 
 import org.junit.Test;
 
+import wres.datamodel.DataFactory;
+import wres.datamodel.DefaultDataFactory;
+import wres.datamodel.Location;
 import wres.datamodel.VectorOfBooleans;
-import wres.datamodel.SafeMulticategoryPairs.MulticategoryPairsBuilder;
 import wres.datamodel.inputs.pairs.MulticategoryPairs;
+import wres.datamodel.inputs.pairs.SafeMulticategoryPairs;
+import wres.datamodel.inputs.pairs.SafeMulticategoryPairs.MulticategoryPairsBuilder;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 

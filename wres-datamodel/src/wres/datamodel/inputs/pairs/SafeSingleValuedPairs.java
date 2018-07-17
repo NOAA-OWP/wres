@@ -1,30 +1,32 @@
-package wres.datamodel;
+package wres.datamodel.inputs.pairs;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
-import java.util.StringJoiner;
 
+import wres.datamodel.DefaultDataFactory;
+import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.inputs.pairs.EnsemblePairs;
-import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.inputs.pairs.PairOfDoubles;
+import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.Metadata;
 
 /**
- * Immutable implementation of a store of verification pairs that comprise a single value and an ensemble of values.
+ * Immutable implementation of a store of verification pairs that comprise two single-valued, continuous numerical,
+ * variables.
  * 
  * @author james.brown@hydrosolved.com
  */
-class SafeEnsemblePairs implements EnsemblePairs
+public class SafeSingleValuedPairs implements SingleValuedPairs
 {
 
     /**
      * The verification pairs in an immutable list.
      */
 
-    private final List<PairOfDoubleAndVectorOfDoubles> mainInput;
+    private final List<PairOfDoubles> mainInput;
 
     /**
      * Metadata associated with the verification pairs.
@@ -36,7 +38,7 @@ class SafeEnsemblePairs implements EnsemblePairs
      * The verification pairs for a baseline in an immutable list (may be null).
      */
 
-    private final List<PairOfDoubleAndVectorOfDoubles> baselineInput;
+    private final List<PairOfDoubles> baselineInput;
 
     /**
      * Metadata associated with the baseline verification pairs (may be null).
@@ -51,7 +53,7 @@ class SafeEnsemblePairs implements EnsemblePairs
     private VectorOfDoubles climatology;
 
     @Override
-    public List<PairOfDoubleAndVectorOfDoubles> getRawData()
+    public List<PairOfDoubles> getRawData()
     {
         return mainInput;
     }
@@ -63,17 +65,17 @@ class SafeEnsemblePairs implements EnsemblePairs
     }
 
     @Override
-    public EnsemblePairs getBaselineData()
+    public SingleValuedPairs getBaselineData()
     {
         if ( !hasBaseline() )
         {
             return null;
         }
-        return DefaultDataFactory.getInstance().ofEnsemblePairs( baselineInput, baselineMeta );
+        return DefaultDataFactory.getInstance().ofSingleValuedPairs( baselineInput, baselineMeta );
     }
 
     @Override
-    public List<PairOfDoubleAndVectorOfDoubles> getRawDataForBaseline()
+    public List<PairOfDoubles> getRawDataForBaseline()
     {
         return baselineInput;
     }
@@ -91,52 +93,30 @@ class SafeEnsemblePairs implements EnsemblePairs
     }
 
     @Override
-    public Iterator<PairOfDoubleAndVectorOfDoubles> iterator()
+    public Iterator<PairOfDoubles> iterator()
     {
         return mainInput.iterator();
-    }
-
-    @Override
-    public String toString()
-    {
-        StringJoiner join = new StringJoiner( System.lineSeparator() );
-        join.add( "Main pairs:" );
-        mainInput.forEach( a -> join.add( a.toString() ) );
-        if ( hasBaseline() )
-        {
-            join.add( "" ).add( "Baseline pairs:" );
-            baselineInput.forEach( a -> join.add( a.toString() ) );
-        }
-        if ( hasClimatology() )
-        {
-            join.add( "" ).add( "Climatology:" );
-            for ( Double next : climatology.getDoubles() )
-            {
-                join.add( next.toString() );
-            }
-        }
-        return join.toString();
     }
 
     /**
      * A {@link DefaultMetricInputBuilder} to build the metric input.
      */
 
-    static class EnsemblePairsBuilder extends DefaultMetricInputBuilder<PairOfDoubleAndVectorOfDoubles>
+    public static class SingleValuedPairsBuilder extends DefaultMetricInputBuilder<PairOfDoubles>
     {
 
         /**
          * Pairs.
          */
-        List<PairOfDoubleAndVectorOfDoubles> mainInput = new ArrayList<>();
+        List<PairOfDoubles> mainInput = new ArrayList<>();
 
         /**
          * Pairs for baseline.
          */
-        List<PairOfDoubleAndVectorOfDoubles> baselineInput = null;
+        List<PairOfDoubles> baselineInput = null;
 
         @Override
-        public EnsemblePairsBuilder addData( final List<PairOfDoubleAndVectorOfDoubles> mainInput )
+        public SingleValuedPairsBuilder addData( final List<PairOfDoubles> mainInput )
         {
             if ( Objects.nonNull( mainInput ) )
             {
@@ -146,7 +126,7 @@ class SafeEnsemblePairs implements EnsemblePairs
         }
 
         @Override
-        public EnsemblePairsBuilder addDataForBaseline( final List<PairOfDoubleAndVectorOfDoubles> baselineInput )
+        public SingleValuedPairsBuilder addDataForBaseline( final List<PairOfDoubles> baselineInput )
         {
             if ( Objects.nonNull( baselineInput ) )
             {
@@ -160,11 +140,10 @@ class SafeEnsemblePairs implements EnsemblePairs
         }
 
         @Override
-        public SafeEnsemblePairs build()
+        public SafeSingleValuedPairs build()
         {
-            return new SafeEnsemblePairs( this );
+            return new SafeSingleValuedPairs( this );
         }
-
     }
 
     /**
@@ -174,18 +153,18 @@ class SafeEnsemblePairs implements EnsemblePairs
      * @throws MetricInputException if the pairs are invalid
      */
 
-    SafeEnsemblePairs( final EnsemblePairsBuilder b )
+    SafeSingleValuedPairs( final SingleValuedPairsBuilder b )
     {
         //Ensure safe types
         DefaultDataFactory factory = (DefaultDataFactory) DefaultDataFactory.getInstance();
-        this.mainInput = factory.safePairOfDoubleAndVectorOfDoublesList( b.mainInput );
+        this.mainInput = factory.safePairOfDoublesList( b.mainInput );
         this.mainMeta = b.mainMeta;
         this.climatology = b.climatology;
         
         // Baseline data?
         if( Objects.nonNull( b.baselineInput ) )
         {
-            this.baselineInput = factory.safePairOfDoubleAndVectorOfDoublesList( b.baselineInput );
+            this.baselineInput = factory.safePairOfDoublesList( b.baselineInput );
         }
         else 
         {
@@ -194,11 +173,11 @@ class SafeEnsemblePairs implements EnsemblePairs
         
         // Always set baseline metadata because null-status is validated
         this.baselineMeta = b.baselineMeta;
-        
+
         //Validate
-        validateMainInput();
-        validateBaselineInput();
-        validateClimatologicalInput();
+        this.validateMainInput();
+        this.validateBaselineInput();
+        this.validateClimatologicalInput();
     }
 
     /**
@@ -209,7 +188,6 @@ class SafeEnsemblePairs implements EnsemblePairs
 
     private void validateMainInput()
     {
-
         if ( Objects.isNull( mainMeta ) )
         {
             throw new MetricInputException( "Specify non-null metadata for the metric input." );
@@ -224,7 +202,6 @@ class SafeEnsemblePairs implements EnsemblePairs
         {
             throw new MetricInputException( "One or more of the pairs is null." );
         }
-        
     }
 
     /**
@@ -238,14 +215,14 @@ class SafeEnsemblePairs implements EnsemblePairs
         if ( Objects.isNull( baselineInput ) != Objects.isNull( baselineMeta ) )
         {
             throw new MetricInputException( "Specify a non-null baseline input and associated metadata or leave both "
-                                            + "null." );
+                                            + "unspecified." );
         }
 
         if ( Objects.nonNull( baselineInput ) && baselineInput.contains( null ) )
         {
             throw new MetricInputException( "One or more of the baseline pairs is null." );
         }
-        
+
     }
 
     /**
@@ -271,6 +248,5 @@ class SafeEnsemblePairs implements EnsemblePairs
             }
         }
     }
-
 
 }

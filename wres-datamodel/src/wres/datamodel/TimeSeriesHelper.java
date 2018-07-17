@@ -20,7 +20,7 @@ import wres.datamodel.time.TimeSeries;
  * 
  * @author james.brown@hydrosolved.com
  */
-class TimeSeriesHelper
+public class TimeSeriesHelper
 {
 
     /**
@@ -97,7 +97,7 @@ class TimeSeriesHelper
      * @return the earliest basis time
      */
 
-    static Instant getEarliestBasisTime( List<Instant> basisTimes )
+    public static Instant getEarliestBasisTime( List<Instant> basisTimes )
     {
         if( basisTimes.isEmpty() )
         {
@@ -118,7 +118,7 @@ class TimeSeriesHelper
      * @return the latest basis time
      */
 
-    static Instant getLatestBasisTime( List<Instant> basisTimes )
+    public static Instant getLatestBasisTime( List<Instant> basisTimes )
     {
         if( basisTimes.isEmpty() )
         {
@@ -135,11 +135,11 @@ class TimeSeriesHelper
     /**
      * Returns a string representation of the {@link TimeSeries}.
      * @param <T> the type of time-series
-     * @param timeSeries
+     * @param timeSeries the input time-series
      * @return a string representation
      */
 
-    static <T> String toString( TimeSeries<T> timeSeries )
+    public static <T> String toString( TimeSeries<T> timeSeries )
     {
         StringJoiner joiner = new StringJoiner( System.lineSeparator() );
         if ( timeSeries.hasMultipleTimeSeries() )
@@ -162,12 +162,12 @@ class TimeSeriesHelper
     /**
      * Unwraps a list of lists into the atomic contents.
      * 
-     * @param the listed type
+     * @param <T> the event type
      * @param input the input
      * @return the atomic content
      */
 
-    static <T> List<T> unwrap( List<Event<List<Event<T>>>> input )
+    public static <T> List<T> unwrap( List<Event<List<Event<T>>>> input )
     {
         List<T> returnMe = new ArrayList<>();
         for ( Event<List<Event<T>>> nextSeries : input )
@@ -186,6 +186,7 @@ class TimeSeriesHelper
     /**
      * Renders all lists in the input to immutable types.
      * 
+     * @param <T> the event type
      * @param input the input with possibly mutable lists
      * @return the input with immutable lists
      * @throws MetricInputException if the input is null or any items in the list are null
@@ -218,12 +219,13 @@ class TimeSeriesHelper
     /**
      * Sorts the input in time order.
      * 
+     * @param <T> the event type
      * @param input the unsorted input
      * @return the sorted input in time order
      * @throws MetricInputException if the input is null or any items in the list are null
      */
 
-    static <T> List<Event<List<Event<T>>>> sort( List<Event<List<Event<T>>>> input )
+    public static <T> List<Event<List<Event<T>>>> sort( List<Event<List<Event<T>>>> input )
     {
         if ( Objects.isNull( input ) )
         {
@@ -257,6 +259,7 @@ class TimeSeriesHelper
     /**
      * Compares two events by time.
      * 
+     * @param <T> the event type
      * @param left the left event
      * @param right the right event
      * @return a negative integer, zero, or a positive integer as the left event is less than, equal to, or greater 

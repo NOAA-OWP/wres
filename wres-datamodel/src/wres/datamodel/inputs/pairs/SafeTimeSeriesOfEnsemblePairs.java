@@ -1,4 +1,4 @@
-package wres.datamodel;
+package wres.datamodel.inputs.pairs;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -9,6 +9,10 @@ import java.util.List;
 import java.util.Objects;
 import java.util.SortedSet;
 
+import wres.datamodel.DefaultMetadataFactory;
+import wres.datamodel.SafeTimeSeries;
+import wres.datamodel.SafeTimeSeries.SafeTimeSeriesBuilder;
+import wres.datamodel.TimeSeriesHelper;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairs;
@@ -23,10 +27,8 @@ import wres.datamodel.time.TimeSeries;
  * comprises an ensemble.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.4
  */
-class SafeTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
+public class SafeTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
         implements TimeSeriesOfEnsemblePairs
 {
 
@@ -124,7 +126,7 @@ class SafeTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
      * A {@link DefaultMetricInputBuilder} to build the metric input.
      */
 
-    static class SafeTimeSeriesOfEnsemblePairsBuilder extends EnsemblePairsBuilder
+    public static class SafeTimeSeriesOfEnsemblePairsBuilder extends EnsemblePairsBuilder
             implements TimeSeriesOfEnsemblePairsBuilder
     {
 
@@ -251,8 +253,20 @@ class SafeTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
     SafeTimeSeriesOfEnsemblePairs( final SafeTimeSeriesOfEnsemblePairsBuilder b )
     {
         super( b );
-        main = new SafeTimeSeries<>( b.data );
-        this.baseline = this.hasBaseline() ? new SafeTimeSeries<>( b.baselineData ): null;
+        SafeTimeSeriesBuilder<PairOfDoubleAndVectorOfDoubles> builder = new SafeTimeSeriesBuilder<>();
+        builder.addTimeSeriesData( b.data );
+        this.main = builder.build();
+        // Baseline data?
+        if( this.hasBaseline() )
+        {
+            SafeTimeSeriesBuilder<PairOfDoubleAndVectorOfDoubles> baselineBuilder = new SafeTimeSeriesBuilder<>();
+            baselineBuilder.addTimeSeriesData( b.baselineData );
+            this.baseline = baselineBuilder.build();
+        }
+        else 
+        {
+            this.baseline = null;
+        }
     }
 
 //    @Override

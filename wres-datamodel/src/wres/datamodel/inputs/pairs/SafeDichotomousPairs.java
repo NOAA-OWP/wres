@@ -1,9 +1,12 @@
-package wres.datamodel;
+package wres.datamodel.inputs.pairs;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import wres.datamodel.DataFactory;
+import wres.datamodel.DefaultDataFactory;
+import wres.datamodel.VectorOfBooleans;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.PairOfBooleans;
@@ -14,10 +17,8 @@ import wres.datamodel.inputs.pairs.PairOfBooleans;
  * pair is be encoded with a single indicator.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
-class SafeDichotomousPairs extends SafeMulticategoryPairs implements DichotomousPairs
+public class SafeDichotomousPairs extends SafeMulticategoryPairs implements DichotomousPairs
 {
 
     @Override
@@ -41,7 +42,7 @@ class SafeDichotomousPairs extends SafeMulticategoryPairs implements Dichotomous
      * A {@link DefaultMetricInputBuilder} to build the metric input.
      */
 
-    static class DichotomousPairsBuilder extends MulticategoryPairsBuilder
+    public static class DichotomousPairsBuilder extends MulticategoryPairsBuilder
     {
 
         @Override

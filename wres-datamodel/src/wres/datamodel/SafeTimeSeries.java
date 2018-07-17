@@ -14,6 +14,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
+import wres.datamodel.Slicer;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
@@ -25,7 +26,7 @@ import wres.datamodel.time.TimeSeriesBuilder;
  * @param <T> the type of time-series data
  * @author james.brown@hydrosolved.com
  */
-class SafeTimeSeries<T> implements TimeSeries<T>
+public class SafeTimeSeries<T> implements TimeSeries<T>
 {
 
     /**
@@ -162,7 +163,7 @@ class SafeTimeSeries<T> implements TimeSeries<T>
      * @return the raw data
      */
 
-    List<Event<List<Event<T>>>> getRawData()
+    public List<Event<List<Event<T>>>> getRawData()
     {
         // Rendered immutable on construction
         return this.data;
@@ -172,7 +173,7 @@ class SafeTimeSeries<T> implements TimeSeries<T>
      * A default builder to build the time-series.
      */
 
-    static class SafeTimeSeriesBuilder<T> implements TimeSeriesBuilder<T>
+    public static class SafeTimeSeriesBuilder<T> implements TimeSeriesBuilder<T>
     {
 
         /**
@@ -182,14 +183,14 @@ class SafeTimeSeries<T> implements TimeSeries<T>
         private List<Event<List<Event<T>>>> data = new ArrayList<>();
 
         @Override
-        public TimeSeriesBuilder<T> addTimeSeriesData( List<Event<List<Event<T>>>> timeSeries )
+        public SafeTimeSeriesBuilder<T> addTimeSeriesData( List<Event<List<Event<T>>>> timeSeries )
         {
             data.addAll( timeSeries );
             return this;
         }
 
         @Override
-        public TimeSeries<T> build()
+        public SafeTimeSeries<T> build()
         {
             return new SafeTimeSeries<>( this );
         }
