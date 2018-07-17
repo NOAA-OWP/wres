@@ -31,7 +31,7 @@ class BackToBackObservationScripter extends Scripter
         this.addLine("    O.measurementunit_id");
         this.addLine("FROM wres.Observation O");
 
-        this.applyVariablePositionClause();
+        this.applyVariableFeatureClause();
 
         this.applyEarliestDateConstraint();
         this.applyLatestDateConstraint();

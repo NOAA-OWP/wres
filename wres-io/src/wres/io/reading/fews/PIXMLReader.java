@@ -66,16 +66,14 @@ public final class PIXMLReader extends XMLReader
      */
 	private static final String NEWLINE = System.lineSeparator();
 
-	private static final String INSERT_OBSERVATION_HEADER = "wres.Observation(variableposition_id, " +
+	private static final String INSERT_OBSERVATION_HEADER = "wres.Observation(variablefeature_id, " +
 																			  "observation_time, " +
 																			  "observed_value, " +
 																			  "measurementunit_id, " +
 																			  "source_id)";
 
-    private static final String PATTERN = "yyyy-MM-dd HH:mm:ss";
     private static final DateTimeFormatter FORMATTER
-            = DateTimeFormatter.ofPattern( PATTERN,
-                                           Locale.US )
+            = DateTimeFormatter.ofPattern( "yyyy-MM-dd HH:mm:ss", Locale.US )
                                .withZone( ZoneId.of( "UTC" ) );
 
     private DataSourceConfig.Source sourceConfig;
@@ -83,15 +81,15 @@ public final class PIXMLReader extends XMLReader
     // Start by assuming we must ingest
     private boolean inChargeOfIngest = true;
 
-	private static String createForecastValuePartition(Integer leadTime) throws SQLException {
+	private static String createTimeSeriesValuePartition( Integer leadTime) throws SQLException {
 
 		if (leadTime == null)
 		{
 			return null;
 		}
-		String partitionHeader = TimeSeries.getForecastValueParitionName( leadTime);
+		String partitionHeader = TimeSeries.getTimeSeriesValuePartition( leadTime);
 
-		partitionHeader += " (timeseries_id, lead, forecasted_value)";
+		partitionHeader += " (timeseries_id, lead, series_value)";
 		return partitionHeader;
 	}
 
@@ -291,7 +289,6 @@ public final class PIXMLReader extends XMLReader
 	private void parseEvent(XMLStreamReader reader)
 			throws SQLException
 	{
-		this.incrementLead();
 		String value = null;
 		String localName;
         LocalDate localDate = null;
@@ -299,14 +296,6 @@ public final class PIXMLReader extends XMLReader
         String dateText = "";
         String timeText = "";
 
-        // TODO: Return lead logic to the programmatic method, not the date time
-        // object allocation method. The date time allocation method doubles
-        // the processing time for small data sets and increases
-        // super linearly and increases the memory footprint.
-        // "startDate" is required and it is always the date and time of the
-        // first event.  The initial lead time can then be calculated by determining
-        // the distance between the forecast date and the start date, then offsetting
-        // it by the time step
 		for (int attributeIndex = 0; attributeIndex < reader.getAttributeCount(); ++attributeIndex)
 		{
 			localName = reader.getAttributeLocalName(attributeIndex);
@@ -352,33 +341,31 @@ public final class PIXMLReader extends XMLReader
                                                   dateTime );
             int leadTimeInHours = (int) leadTime.toHours();
 
-            // MAGIC HAPPENS HERE:
-            // getTimeSeriesID checks to see if we need to continue ingesting
-            Integer timeSeriesID = getTimeSeriesID();
-            if ( inChargeOfIngest )
+            if ( this.inChargeOfIngest )
             {
                 PIXMLReader.addForecastEvent( this.getValueToSave( value ),
                                               leadTimeInHours,
-                                              timeSeriesID );
+                                              this.getTimeSeriesID() );
             }
             else
             {
-                LOGGER.debug( "This PIXMLReader yields for source {}", hash );
+                LOGGER.trace( "This PIXMLReader yields for source {}", hash );
             }
         }
         else
         {
             if (value.trim().equalsIgnoreCase( "nan" ))
             {
-                LOGGER.debug( "NaN encountered." );
+                LOGGER.trace( "NaN encountered." );
             }
+
             OffsetDateTime offsetDateTime
                 = OffsetDateTime.of( dateTime, this.getZoneOffset() );
             String formattedDate = offsetDateTime.format( FORMATTER );
             this.addObservedEvent( formattedDate, this.getValueToSave( value ) );
         }
 
-		if ( insertCount >= SystemSettings.getMaximumCopies()) {
+		if ( this.insertCount >= SystemSettings.getMaximumCopies()) {
             saveLeftoverObservations();
 		}
 	}
@@ -439,7 +426,7 @@ public final class PIXMLReader extends XMLReader
 			currentScript = new StringBuilder();
 		}
 		
-		currentScript.append(this.getVariablePositionID());
+		currentScript.append(this.getVariableFeatureID());
 		currentScript.append(delimiter);
 		currentScript.append("'").append(observedTime).append("'");
 		currentScript.append(delimiter);
@@ -510,7 +497,6 @@ public final class PIXMLReader extends XMLReader
 			reader.next();
 		}
 		String localName;
-		currentLeadTime = 0;
 		creationDate = null;
 		creationTime = null;
 
@@ -537,7 +523,7 @@ public final class PIXMLReader extends XMLReader
 				    // TODO: Set the LID on a FeatureDetails object; don't just store the LID
 					//	If we are at the tag for the location id, save it to the location metadata
 					this.currentLID = XMLHelper.getXMLText( reader);
-					this.currentVariablePositionID = null;
+					this.currentVariableFeatureID = null;
 					this.currentTimeSeriesID = null;
 					this.currentTimeSeries = null;
 
@@ -728,17 +714,17 @@ public final class PIXMLReader extends XMLReader
 	 * @return The ID of the position for the variable being parsed
 	 * @throws SQLException Thrown if the ID of the position could not be loaded from the cache
 	 */
-	private int getVariablePositionID() throws SQLException
+	private int getVariableFeatureID() throws SQLException
 	{
-		if (currentVariablePositionID == null)
+		if (currentVariableFeatureID == null)
 		{
 		    // TODO: This needs to rely on a FeatureDetails object, not an LID
             //       If we store additional information, new values become easier
             //       to use
-			currentVariablePositionID = Features.getVariablePositionIDByLID( currentLID,
+			currentVariableFeatureID = Features.getVariableFeatureIDByLID( currentLID,
                                                                              getVariableID());
 		}
-		return currentVariablePositionID;
+		return currentVariableFeatureID;
 	}
 	
 	/**
@@ -753,7 +739,7 @@ public final class PIXMLReader extends XMLReader
 		{
 			this.getCurrentTimeSeries().setEnsembleID(getEnsembleID());
             this.getCurrentTimeSeries().setMeasurementUnitID(getMeasurementID());
-            this.getCurrentTimeSeries().setVariablePositionID(getVariablePositionID());
+            this.getCurrentTimeSeries().setVariableFeatureID(getVariableFeatureID());
             currentTimeSeriesID = this.getCurrentTimeSeries().getTimeSeriesID();
 		}
 		return currentTimeSeriesID;
@@ -1015,11 +1001,6 @@ public final class PIXMLReader extends XMLReader
 	private int insertCount = 0;
 	
 	/**
-	 * The current amount of hours into the forecast
-	 */
-	private int currentLeadTime = 0;
-	
-	/**
 	 * The delimiter between values for copy statements
 	 */
 	private static final String delimiter = "|";
@@ -1047,7 +1028,7 @@ public final class PIXMLReader extends XMLReader
 	/**
 	 * The ID for the position for the variable that is currently being parsed
 	 */
-	private Integer currentVariablePositionID = null;
+	private Integer currentVariableFeatureID = null;
 
 	/**
 	 * The ID for the current source file
@@ -1089,10 +1070,6 @@ public final class PIXMLReader extends XMLReader
         return this.hash;
     }
 
-	private void incrementLead() {
-		this.currentLeadTime += this.timeStep;
-	}
-
 	private static StringBuilder getBuilder(Integer lead)
     {
         synchronized (groupLock)
@@ -1112,7 +1089,7 @@ public final class PIXMLReader extends XMLReader
         {
             if (!PIXMLReader.headerMap.containsKey(lead))
             {
-                PIXMLReader.headerMap.putIfAbsent(lead, PIXMLReader.createForecastValuePartition(lead));
+                PIXMLReader.headerMap.putIfAbsent(lead, PIXMLReader.createTimeSeriesValuePartition( lead));
             }
         }
 	    return PIXMLReader.headerMap.get(lead);

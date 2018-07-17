@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="VariableFeature v1.0" author="Christopher Tubbs" dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="f">
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM pg_catalog.pg_tables
+                    WHERE schemaname = 'wres'
+                        AND tablename = 'variablefeature'
+                );
+            </sqlCheck>
+        </preConditions>
+        <createTable tableName="VariableFeature" schemaName="wres">
+            <column name="variablefeature_id" type="serial" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="variablefeature_pk" />
+            </column>
+            <column name="variable_id" type="smallint" />
+            <column name="feature_id" type="integer" >
+                <constraints nullable="false" />
+            </column>
+        </createTable>
+        <sql>
+            ALTER TABLE wres.VariableFeature OWNER TO wres;
+        </sql>
+        <addForeignKeyConstraint baseTableName="VariableFeature" baseColumnNames="variable_id" baseTableSchemaName="wres"
+                                 constraintName="variablefeature_variable_fk" referencedTableName="Variable"
+                                 referencedColumnNames="variable_id" referencedTableSchemaName="wres"
+                                 deferrable="true" initiallyDeferred="true" onDelete="CASCADE" />
+        <addForeignKeyConstraint baseTableName="VariableFeature" baseColumnNames="feature_id" baseTableSchemaName="wres"
+                                 constraintName="variablefeature_feature_fk" referencedTableName="Feature"
+                                 referencedColumnNames="feature_id" referencedTableSchemaName="wres"
+                                 deferrable="true" initiallyDeferred="true" onDelete="CASCADE" />
+        <createIndex tableName="VariableFeature" schemaName="wres" indexName="variablefeature_feature_uix" unique="true">
+            <column name="variable_id" type="smallint" />
+            <column name="feature_id" type="integer" />
+        </createIndex>
+        <comment>
+            The wres.VariableFeature table has been added to the database.
+        </comment>
+    </changeSet>
+</databaseChangeLog>

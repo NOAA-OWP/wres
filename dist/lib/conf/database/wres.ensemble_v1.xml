@@ -5,33 +5,35 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
                       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd"
         objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
-    <changeSet id="Variable v1.0" author="Christopher Tubbs" dbms="PostgreSQL">
+    <changeSet id="Ensemble v1.0" author="Christopher Tubbs" dbms="PostgreSQL">
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="f">
                 SELECT EXISTS (
                     SELECT 1
                     FROM pg_catalog.pg_tables
                     WHERE schemaname = 'wres'
-                        AND tablename = 'variable'
+                        AND tablename = 'Ensemble'
                 );
             </sqlCheck>
         </preConditions>
-        <createTable tableName="Variable" schemaName="wres">
-            <column name="variable_id" type="smallserial" autoIncrement="true">
-                <constraints primaryKey="true" primaryKeyName="variable_pk"/>
+        <createTable tableName="Ensemble" schemaName="wres">
+            <column name="ensemble_id" type="serial" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="ensemble_pk"/>
             </column>
-            <column name="variable_name" type="text">
-                <constraints nullable="false" deferrable="true" unique="true" />
+            <column name="ensemble_name" type="text">
+                <constraints nullable="false" />
             </column>
+            <column name="qualifier_id" type="text" />
+            <column name="ensemblemember_id" type="int" />
         </createTable>
         <sql>
-            ALTER TABLE wres.Variable OWNER TO wres;
+            ALTER TABLE wres.Ensemble OWNER TO wres;
         </sql>
-        <createIndex tableName="Variable" schemaName="wres" indexName="variable_variable_name_idx">
-            <column name="variable_name" />
-        </createIndex>
+        <insert tableName="Ensemble" schemaName="wres">
+            <column name="ensemble_name">default</column>
+        </insert>
         <comment>
-            The wres.Variable table has been added to the database.
+            The wres.Ensemble table has been added to the database.
         </comment>
     </changeSet>
 </databaseChangeLog>

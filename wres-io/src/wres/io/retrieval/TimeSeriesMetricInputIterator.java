@@ -59,7 +59,7 @@ public class TimeSeriesMetricInputIterator extends MetricInputIterator
         }
 
         Integer seriesToRetrieve = this.getProjectDetails().getNumberOfSeriesToRetrieve();
-        String variablePosition = ConfigHelper.getVariablePositionClause(
+        String variablePosition = ConfigHelper.getVariableFeatureClause(
                 this.getFeature(),
                 getProjectDetails().getRightVariableID(),
                 "TS"
@@ -87,11 +87,11 @@ public class TimeSeriesMetricInputIterator extends MetricInputIterator
         script.addTab(  2  ).addLine("AND EXISTS (");
         script.addTab(   3   ).addLine("SELECT 1");
         script.addTab(   3   ).addLine("FROM wres.ProjectSource PS");
-        script.addTab(   3   ).addLine("INNER JOIN wres.ForecastSource FS");
-        script.addTab(    4    ).addLine("ON FS.source_id = PS.source_id");
+        script.addTab(   3   ).addLine("INNER JOIN wres.TimeSeriesSource TSS");
+        script.addTab(    4    ).addLine("ON TSS.source_id = PS.source_id");
         script.addTab(   3   ).addLine("WHERE PS.project_id = ", this.getProjectDetails().getId());
         script.addTab(    4    ).addLine("AND PS.member = ", ProjectDetails.RIGHT_MEMBER);
-        script.addTab(    4    ).addLine("AND FS.forecast_id = TS.timeseries_id");
+        script.addTab(    4    ).addLine("AND TSS.timeseries_id = TS.timeseries_id");
         script.addTab(  2  ).addLine(")");
         script.addLine(") AS TS;");
 

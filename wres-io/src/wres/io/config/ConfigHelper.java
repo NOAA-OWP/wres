@@ -258,21 +258,21 @@ public class ConfigHelper
         return false;
     }
 
-    public static String getVariablePositionClause( Feature feature, int variableId, String alias )
+    public static String getVariableFeatureClause( Feature feature, int variableId, String alias )
             throws SQLException
     {
         StringBuilder clause = new StringBuilder();
 
-        Integer variablePositionId = Features.getVariablePositionID( feature, variableId );
+        Integer variableFeatureId = Features.getVariableFeatureID( feature, variableId );
 
-        if ( variablePositionId != null )
+        if ( variableFeatureId != null )
         {
             if ( Strings.hasValue( alias ) )
             {
                 clause.append( alias ).append( "." );
             }
 
-            clause.append( "variableposition_id = " ).append( variablePositionId );
+            clause.append( "variablefeature_id = " ).append( variableFeatureId );
         }
 
         return clause.toString();
@@ -359,38 +359,36 @@ public class ConfigHelper
             member = ProjectDetails.BASELINE_MEMBER;
         }
 
-        String variablePositionClause = ConfigHelper.getVariablePositionClause( feature, variableId, "" );
+        String variableFeatureClause = ConfigHelper.getVariableFeatureClause( feature, variableId, "" );
 
         StringBuilder script = new StringBuilder( "SELECT COUNT(*)::int" ).append( NEWLINE );
 
         if ( ConfigHelper.isForecast( dataSourceConfig ) )
         {
             script.append( "FROM wres.TimeSeries TS" ).append( NEWLINE );
-            script.append( "INNER JOIN wres.ForecastValue FV" ).append( NEWLINE );
-            script.append( "    ON TS.timeseries_id = FV.timeseries_id" ).append( NEWLINE );
-            script.append( "WHERE " ).append( variablePositionClause ).append( NEWLINE );
+            script.append( "INNER JOIN wres.TimeSeriesValue TSV" ).append( NEWLINE );
+            script.append( "    ON TS.timeseries_id = TSV.timeseries_id" ).append( NEWLINE );
+            script.append( "WHERE " ).append( variableFeatureClause ).append( NEWLINE );
             script.append( "    EXISTS (" ).append( NEWLINE );
             script.append( "        SELECT 1" ).append( NEWLINE );
-            script.append( "        FROM wres.ForecastSource FS" ).append( NEWLINE );
+            script.append( "        FROM wres.TimeSeriesSource TSS" ).append( NEWLINE );
             script.append( "        INNER JOIN wres.ProjectSource PS" ).append( NEWLINE );
-            script.append( "            ON FS.source_id = PS.source_id" ).append( NEWLINE );
+            script.append( "            ON TSS.source_id = PS.source_id" ).append( NEWLINE );
             script.append( "        WHERE PS.project_id = " ).append( projectDetails.getId() ).append( NEWLINE );
             script.append( "            AND PS.member = " ).append( member ).append( NEWLINE );
-            script.append( "            AND PS.inactive_time IS NULL" ).append( NEWLINE );
-            script.append( "            AND FS.forecast_id = TS.timeseries_id" ).append( NEWLINE );
+            script.append( "            AND TSS.timeseries_id = TS.timeseries_id" ).append( NEWLINE );
             script.append( "    );" );
         }
         else
         {
             script.append( "FROM wres.Observation O" ).append( NEWLINE );
-            script.append( "WHERE " ).append( variablePositionClause ).append( NEWLINE );
+            script.append( "WHERE " ).append( variableFeatureClause ).append( NEWLINE );
             script.append( "    AND EXISTS (" ).append( NEWLINE );
             script.append( "        SELECT 1" ).append( NEWLINE );
             script.append( "        FROM wres.ProjectSource PS" ).append( NEWLINE );
             script.append( "        WHERE PS.project_id = " ).append( projectDetails.getId() ).append( NEWLINE );
             script.append( "            AND PS.member = " ).append( member ).append( NEWLINE );
             script.append( "            AND PS.source_id = O.source_id" ).append( NEWLINE );
-            script.append( "            AND PS.inactive_time IS NULL" ).append( NEWLINE );
             script.append( "    );" );
         }
 
@@ -837,7 +835,6 @@ public class ConfigHelper
         Instant latestTime;
 
         Duration beginningLead;
-        Duration endingLead = lastLead;
 
         // Default reference time
         ReferenceTime referenceTime = ReferenceTime.VALID_TIME;
@@ -854,12 +851,12 @@ public class ConfigHelper
                     projectDetails.getProjectConfig().getPair().getLeadTimesPoolingWindow();
 
             beginningLead =
-                    endingLead.minus( leadPoolingWindow.getPeriod(),
+                    lastLead.minus( leadPoolingWindow.getPeriod(),
                                       ChronoUnit.valueOf( leadPoolingWindow.getUnit().toString().toUpperCase() ) );
         }
         else
         {
-            beginningLead = endingLead;
+            beginningLead = lastLead;
         }
 
         if ( projectDetails.getPairingMode() == ROLLING )
@@ -911,7 +908,7 @@ public class ConfigHelper
                               latestTime,
                               referenceTime,
                               beginningLead,
-                              endingLead );
+                              lastLead );
     }
 
     /**

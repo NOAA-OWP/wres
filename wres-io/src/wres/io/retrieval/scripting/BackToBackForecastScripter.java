@@ -24,17 +24,17 @@ class BackToBackForecastScripter extends Scripter
     {
         this.add("SELECT ");
         this.applyValueDate();
-        this.addTab().addLine( "FV.lead,");
-        this.addTab().addLine( "ARRAY_AGG(FV.forecasted_value ORDER BY TS.ensemble_id) AS measurements," );
+        this.addTab().addLine( "TSV.lead,");
+        this.addTab().addLine( "ARRAY_AGG(TSV.series_value ORDER BY TS.ensemble_id) AS measurements," );
         this.applyBasisTime();
         this.addTab().addLine( "TS.measurementunit_id" );
         this.addLine( "FROM wres.TimeSeries TS" );
-        this.addLine( "INNER JOIN wres.ForecastValue FV");
-        this.addLine( "    ON FV.timeseries_id = TS.timeseries_id" );
+        this.addLine( "INNER JOIN wres.TimeSeriesValue TSV");
+        this.addLine( "    ON TSV.timeseries_id = TS.timeseries_id" );
 
         this.applySourceConstraint();
 
-        this.applyVariablePositionClause();
+        this.applyVariableFeatureClause();
         this.applyLeadQualifier();
 
         this.applyEarliestDateConstraint();
@@ -78,7 +78,7 @@ class BackToBackForecastScripter extends Scripter
                                   .getLeadQualifier(
                                           this.getFeature(),
                                           this.getProgress(),
-                                          "FV"
+                                          "TSV"
                                   )
         );
     }
@@ -89,7 +89,7 @@ class BackToBackForecastScripter extends Scripter
         if (this.validTimeCalculation == null)
         {
             this.validTimeCalculation = this.getBaseDateName() +
-                                        " + INTERVAL '1 HOUR' * FV.lead";
+                                        " + INTERVAL '1 HOUR' * TSV.lead";
         }
         return this.validTimeCalculation;
     }
@@ -102,23 +102,21 @@ class BackToBackForecastScripter extends Scripter
 
     private void applySourceConstraint()
     {
-        this.addLine( "INNER JOIN wres.ForecastSource AS FS" );
-        this.addLine( "    ON FS.forecast_id = TS.timeseries_id" );
-        this.addLine( "INNER JOIN wres.ProjectSource AS PS" );
-        this.addLine( "    ON PS.source_id = FS.source_id" );
+        this.addLine( "INNER JOIN wres.TimeSeriesSource AS TSS" );
+        this.addTab().addLine( "ON TSS.timeseries_id = TS.timeseries_id" );
 
         if (ConfigHelper.usesNetCDFData( this.getProjectDetails().getProjectConfig() ))
         {
-            this.addLine( "INNER JOIN wres.Source S");
-            this.addTab().addLine("ON S.source_id = PS.source_id");
-            this.addTab( 2 )
-                .addLine( "AND (S.lead IS NULL OR S.lead = FV.lead)" );
+            this.addTab(  2  ).addLine("AND TSS.lead = TSV.lead");
         }
+
+        this.addLine( "INNER JOIN wres.ProjectSource AS PS" );
+        this.addTab().addLine( "ON PS.source_id = TSS.source_id" );
     }
 
     private void applyGrouping()
     {
-        this.add( "GROUP BY ", this.getBaseDateName(), ", FV.lead, TS.measurementunit_id" );
+        this.add( "GROUP BY ", this.getBaseDateName(), ", TSV.lead, TS.measurementunit_id" );
 
         if (ConfigHelper.usesNetCDFData( this.getProjectDetails().getProjectConfig() ))
         {
@@ -126,7 +124,7 @@ class BackToBackForecastScripter extends Scripter
         }
         else
         {
-            this.addLine(", FS.source_id");
+            this.addLine(", TSS.source_id");
         }
     }
 
@@ -140,7 +138,7 @@ class BackToBackForecastScripter extends Scripter
         // this logic for NetCDF data
         if (!ConfigHelper.usesNetCDFData( this.getProjectDetails().getProjectConfig() ))
         {
-            this.add(", FS.source_id");
+            this.add(", TSS.source_id");
         }
 
         this.addLine(", lead");

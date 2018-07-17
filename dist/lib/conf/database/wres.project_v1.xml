@@ -5,33 +5,32 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
                       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd"
         objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
-    <changeSet id="Variable v1.0" author="Christopher Tubbs" dbms="PostgreSQL">
+    <changeSet id="Project1.0" author="Christopher Tubbs" dbms="PostgreSQL">
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="f">
                 SELECT EXISTS (
                     SELECT 1
                     FROM pg_catalog.pg_tables
                     WHERE schemaname = 'wres'
-                        AND tablename = 'variable'
+                        AND tablename = 'Project'
                 );
             </sqlCheck>
         </preConditions>
-        <createTable tableName="Variable" schemaName="wres">
-            <column name="variable_id" type="smallserial" autoIncrement="true">
-                <constraints primaryKey="true" primaryKeyName="variable_pk"/>
+        <createTable tableName="Project" schemaName="wres">
+            <column name="project_id" type="smallserial" autoIncrement="true">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="project_pk"/>
             </column>
-            <column name="variable_name" type="text">
-                <constraints nullable="false" deferrable="true" unique="true" />
+            <column name="input_code" type="int">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="project_name" type="text">
             </column>
         </createTable>
         <sql>
-            ALTER TABLE wres.Variable OWNER TO wres;
+            ALTER TABLE wres.Project OWNER TO wres;
         </sql>
-        <createIndex tableName="Variable" schemaName="wres" indexName="variable_variable_name_idx">
-            <column name="variable_name" />
-        </createIndex>
         <comment>
-            The wres.Variable table has been added to the database.
+            The wres.Project table has been created.
         </comment>
     </changeSet>
 </databaseChangeLog>

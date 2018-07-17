@@ -4,16 +4,28 @@ import java.beans.PropertyVetoException;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.URL;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TreeMap;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
 import com.mchange.v2.c3p0.ComboPooledDataSource;
+import liquibase.Contexts;
+import liquibase.LabelExpression;
+import liquibase.Liquibase;
+import liquibase.database.Database;
+import liquibase.database.DatabaseFactory;
+import liquibase.database.jvm.JdbcConnection;
+import liquibase.exception.DatabaseException;
+import liquibase.exception.LiquibaseException;
+import liquibase.resource.ClassLoaderResourceAccessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,6 +94,7 @@ final class DatabaseSettings
 				}
 			}
 			this.applySystemPropertyOverrides();
+			this.buildInstance();
 			testConnection();
 			cleanPriorRuns();
 		}
@@ -524,4 +537,121 @@ final class DatabaseSettings
             }
         }
 	}
+
+    /**
+     * Executes the configured Liquibase scripts to keep the database up to date
+     */
+    private void buildInstance() throws SQLException
+    {
+        try
+        {
+            Class.forName(DRIVER_MAPPING.get(getDatabaseType()));
+        }
+        catch ( ClassNotFoundException e )
+        {
+            throw new SQLException( "The driver that will call the database "
+                                    + "could not be found.", e );
+        }
+
+        StringBuilder directConnectionString = new StringBuilder();
+        directConnectionString.append( "jdbc:" );
+        directConnectionString.append( this.getDatabaseType() );
+        directConnectionString.append( "://" );
+        directConnectionString.append( this.getUrl() );
+
+        if ( this.getPort() != null )
+        {
+            directConnectionString.append( ":" );
+            directConnectionString.append( this.getPort() );
+        }
+
+        directConnectionString.append( "/" );
+
+        // TODO: If we're in a postgresql instance, the default db is postgres. We'll need to add other
+        // defaults for other types
+        if (this.getDatabaseType().equalsIgnoreCase( "postgresql" ))
+        {
+            directConnectionString.append( "postgres" );
+        }
+
+        try (Connection connection = DriverManager.getConnection(directConnectionString.toString(), this.username, this.password))
+        {
+            boolean databaseExists = false;
+            boolean canAddDatabase = false;
+
+            Statement statement = connection.createStatement();
+
+            ResultSet results = statement.executeQuery( "SELECT * FROM pg_database;" );
+
+            while (results.next())
+            {
+                String name = results.getString( 1 );
+                if (name.equalsIgnoreCase( this.getDatabaseName() ))
+                {
+                    databaseExists = true;
+                    break;
+                }
+            }
+
+            if (!databaseExists)
+            {
+                statement.close();
+                statement = connection.createStatement();
+
+                // TODO: If we support another database, we'll need to modify this to handle the others as well
+                results = statement.executeQuery( "SELECT rolcreatedb FROM pg_roles WHERE rolname = CURRENT_USER;" );
+                while (results.next())
+                {
+                    canAddDatabase = results.getBoolean( 1 );
+                }
+
+                statement.close();
+
+                if (!canAddDatabase)
+                {
+                    throw new SQLException( "The database '" + this.getDatabaseName() + "' does not exist on '" +
+                                            this.url +
+                                            "' and you do not have permission to create it. Please contact an "
+                                            + "administrator to add it."  );
+                }
+
+                statement = connection.createStatement();
+                statement.execute( "CREATE DATABASE " + this.getDatabaseName() + ";" );
+                statement.close();
+            }
+        }
+
+        Database database = null;
+
+        try (Connection connection = DriverManager.getConnection(this.getConnectionString(), this.username, this.password); )
+        {
+            database = DatabaseFactory.getInstance().findCorrectDatabaseImplementation( new JdbcConnection( connection));
+            URL changelogURL = this.getClass().getClassLoader().getResource( "database/db.changelog-master.xml" );
+
+            Objects.requireNonNull(changelogURL, "The definition for the WRES data model could not be found.");
+            Liquibase liquibase = new Liquibase(
+                    "database/db.changelog-master.xml",
+                    new ClassLoaderResourceAccessor(),
+                    database
+            );
+            liquibase.update( new Contexts(), new LabelExpression());
+        }
+        catch (SQLException | LiquibaseException e) {
+            throw new SQLException( "The WRES could not be properly initialized.", e );
+        }
+        finally
+        {
+            if (database != null)
+            {
+                try
+                {
+                    database.close();
+                }
+                catch ( DatabaseException e )
+                {
+                    LOGGER.debug( "The liquibase database class used to update the database could not be closed." );
+                }
+            }
+        }
+    }
 }

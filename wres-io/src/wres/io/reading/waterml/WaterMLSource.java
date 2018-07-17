@@ -27,14 +27,14 @@ import wres.util.NotImplementedException;
 /**
  * Saves WaterML Response objects to the database
  *
- * TODO: Fix database deadlocking issues
+ * TODO: Fix database deadlocking issues that prevent heavy concurrency
  */
 public class WaterMLSource
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(WaterMLSource.class);
 
     private static final String OBSERVATION_HEADER = "wres.Observation ("
-                                                     + "variableposition_id, "
+                                                     + "variablefeature_id, "
                                                      + "observation_id, "
                                                      + "observation_time, "
                                                      + "observed_value, "
@@ -45,7 +45,7 @@ public class WaterMLSource
 
     private final int sourceId;
     private final Response waterML;
-    private final SortedMap<String, Integer> variablePositionIDs;
+    private final SortedMap<String, Integer> variableFeatureIDs;
     private final int variableId;
     private ExceptionalConsumer<TimeSeries, IOException> invalidSeriesHandler;
     private ExceptionalConsumer<TimeSeries, IOException> seriesReadCompleteHandler;
@@ -61,7 +61,7 @@ public class WaterMLSource
                           int variableId)
     {
         this.waterML = waterML;
-        this.variablePositionIDs = new TreeMap<>();
+        this.variableFeatureIDs = new TreeMap<>();
         this.sourceId = sourceId;
         this.waterMLMeasurementId = waterMLMeasurementId;
         this.variableId = variableId;
@@ -185,7 +185,7 @@ public class WaterMLSource
             this.copyScript = new ScriptBuilder(  );
         }
 
-        this.copyScript.add(this.getVariablePositionID( gageID )).add(DELIMITER)
+        this.copyScript.add(this.getVariableFeatureID( gageID )).add(DELIMITER)
                        .add("'" + observationTime + "'").add(DELIMITER);
 
         if (value == null)
@@ -239,16 +239,16 @@ public class WaterMLSource
         }
     }
 
-    private int getVariablePositionID(String gageId) throws SQLException
+    private int getVariableFeatureID(String gageId) throws SQLException
     {
-        if (!this.variablePositionIDs.containsKey( gageId ))
+        if (!this.variableFeatureIDs.containsKey( gageId ))
         {
             FeatureDetails feature = Features.getDetailsByGageID( gageId );
-            this.variablePositionIDs.put(
+            this.variableFeatureIDs.put(
                     gageId,
-                    Features.getVariablePositionByFeature( feature, this.variableId )
+                    Features.getVariableFeatureByFeature( feature, this.variableId )
             );
         }
-        return this.variablePositionIDs.get(gageId);
+        return this.variableFeatureIDs.get(gageId);
     }
 }

@@ -163,8 +163,8 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
 
         if (ConfigHelper.usesNetCDFData( projectConfig ))
         {
-            script.addTab().addLine("AND comid != -999");
-            script.addTab().addLine("AND nwm_index IS NOT NULL");
+            script.addTab().addLine("AND comid > 0");
+            script.addTab().addLine("AND comid IS NOT NULL");
         }
 
         if (ConfigHelper.usesUSGSData( projectConfig ))
@@ -304,7 +304,7 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
 
         if (Strings.hasValue(feature.getRfc()))
         {
-            details.addAll(Features.getDetailsByRFC( feature.getRfc().toUpperCase()));
+            details.addAll(Features.getDetailsByRegion( feature.getRfc().toUpperCase()));
         }
 
         if (Strings.hasValue( feature.getState() ))
@@ -575,13 +575,13 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         return Features.getDetailsFromDatabase( script );
     }
 
-    private static List<FeatureDetails> getDetailsByRFC(String rfc)
+    private static List<FeatureDetails> getDetailsByRegion( String region)
             throws SQLException
     {
         ScriptBuilder script = new ScriptBuilder(  );
         script.addLine("SELECT *");
         script.addLine("FROM wres.Feature");
-        script.addLine("WHERE rfc = '", rfc, "'");
+        script.addLine("WHERE region = '", region, "'");
         script.addLine("ORDER BY feature_id;");
 
         return Features.getDetailsFromDatabase( script );
@@ -593,7 +593,7 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         ScriptBuilder script = new ScriptBuilder(  );
         script.addLine("SELECT *");
         script.addLine("FROM wres.Feature");
-        script.addLine("WHERE st = '", state, "'");
+        script.addLine("WHERE state = '", state, "'");
         script.addLine("ORDER BY feature_id;");
 
         return Features.getDetailsFromDatabase( script );
@@ -608,76 +608,77 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         return features;
     }
 
-    public static Integer getVariablePositionIDByLID(String lid, Integer variableID)
+    public static Integer getVariableFeatureIDByLID(String lid, Integer variableID)
             throws SQLException
     {
         FeatureDetails featureDetails = Features.getDetailsByLID( lid );
-        return Features.getVariablePositionByFeature( featureDetails, variableID );
+        return Features.getVariableFeatureByFeature( featureDetails, variableID );
     }
 
-    public static Integer getVariablePositionID(Feature feature, Integer variableID)
+    public static Integer getVariableFeatureID( Feature feature, Integer variableID)
             throws SQLException
     {
         FeatureDetails featureDetails = Features.getDetails( feature );
-        return Features.getVariablePositionByFeature( featureDetails, variableID );
+        return Features.getVariableFeatureByFeature( featureDetails, variableID );
     }
 
-    public static Integer getVariablePositionByFeature(FeatureDetails featureDetails, Integer variableId) throws SQLException
+    public static Integer getVariableFeatureByFeature(FeatureDetails featureDetails, Integer variableId) throws SQLException
     {
         synchronized ( Features.POSITION_LOCK )
         {
-            Integer id = featureDetails.getVariablePositionID( variableId );
+            Integer id = featureDetails.getVariableFeatureID( variableId );
 
             if (id == null)
             {
                 ScriptBuilder script = new ScriptBuilder(  );
 
-                script.addLine("WITH new_variableposition_id AS");
+                script.addLine("WITH new_variablefeature_id AS");
                 script.addLine("(");
-                script.addTab().addLine("INSERT INTO wres.VariablePosition (variable_id, x_position)");
+                script.addTab().addLine("INSERT INTO wres.VariableFeature (variable_id, feature_id)");
                 script.addTab().addLine("SELECT ", variableId, ", ", featureDetails.getId());
                 script.addTab().addLine("WHERE NOT EXISTS (");
                 script.addTab(  2  ).addLine("SELECT 1");
-                script.addTab(  2  ).addLine("FROM wres.VariablePosition VP");
-                script.addTab(  2  ).addLine("WHERE VP.variable_id = ", variableId);
-                script.addTab(   3   ).addLine("AND VP.x_position = ", featureDetails.getId());
+                script.addTab(  2  ).addLine("FROM wres.VariableFeature VF");
+                script.addTab(  2  ).addLine("WHERE VF.variable_id = ", variableId);
+                script.addTab(   3   ).addLine("AND VF.feature_id = ", featureDetails.getId());
                 script.addTab().addLine(")");
-                script.addTab().addLine("RETURNING variableposition_id");
+                script.addTab().addLine("RETURNING variablefeature_id");
                 script.addLine(")");
-                script.addLine("SELECT variableposition_id");
-                script.addLine("FROM new_variableposition_id");
+                script.addLine("SELECT variablefeature_id");
+                script.addLine("FROM new_variablefeature_id");
                 script.addLine();
                 script.addLine("UNION");
                 script.addLine();
-                script.addLine("SELECT variableposition_id");
-                script.addLine("FROM wres.VariablePosition VP");
-                script.addLine("WHERE VP.variable_id = ", variableId);
-                script.addTab().addLine("AND VP.x_position = ", featureDetails.getId(), ";");
+                script.addLine("SELECT variablefeature_id");
+                script.addLine("FROM wres.VariableFeature VF");
+                script.addLine("WHERE VF.variable_id = ", variableId);
+                script.addTab().addLine("AND VF.feature_id = ", featureDetails.getId(), ";");
 
-                id = script.retrieve( "variableposition_id" );
+                id = script.retrieve( "variablefeature_id" );
 
-                featureDetails.addVariablePosition( variableId, id );
+                featureDetails.addVariableFeature( variableId, id );
             }
 
             return id;
         }
     }
 
-    public static void addNHDPlusVariablePositions(Integer variableId)
+    public static void addNHDPlusVariableFeatures(Integer variableId)
             throws SQLException
     {
         synchronized ( Features.POSITION_LOCK )
         {
             ScriptBuilder script = new ScriptBuilder(  );
-            script.addLine("INSERT INTO wres.VariablePosition (variable_id, x_position)");
+            script.addLine("INSERT INTO wres.VariableFeature (variable_id, feature_id)");
             script.addLine("SELECT ", variableId, ", F.feature_id");
             script.addLine("FROM wres.Feature F");
-            script.addLine("WHERE F.nwm_index IS NOT NULL");
+            script.addLine("WHERE F.comid IS NOT NULL");
+            script.addTab().addLine("AND F.comid != -999");
             script.addTab().addLine("AND NOT EXISTS (");
             script.addTab(  2  ).addLine("SELECT 1");
-            script.addTab(  2  ).addLine("FROM wres.VariablePosition VP");
-            script.addTab(  2  ).addLine("WHERE VP.variable_id = ", variableId);
-            script.addTab(   3   ).addLine("AND VP.x_position = F.feature_id");
+            script.addTab(  2  ).addLine("FROM wres.VariableFeature VF");
+            script.addTab(  2  ).addLine("WHERE VF.variable_id = ", variableId);
+            script.addTab(   3   ).addLine("AND VF.feature_id = F.feature_id");
             script.addTab().addLine(");");
             script.execute();
         }

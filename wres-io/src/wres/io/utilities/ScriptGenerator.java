@@ -25,19 +25,19 @@ public final class ScriptGenerator
     
     private static final String NEWLINE = System.lineSeparator();
 
-    public static String formVariablePositionLoadScript( final ProjectDetails projectDetails, final boolean selectObservedPositions)
+    public static String formVariableFeatureLoadScript( final ProjectDetails projectDetails, final boolean selectObservedFeatures)
             throws NoDataException, SQLException
     {
 
         ScriptBuilder script = new ScriptBuilder(  );
 
-        script.addLine( "WITH forecast_positions AS" );
+        script.addLine( "WITH forecast_features AS" );
         script.addLine( "(");
-        script.addTab().addLine("SELECT VP.variableposition_id, feature_id, comid, gage_id, lid, huc, latitude, longitude");
-        script.addTab().addLine("FROM wres.VariablePosition VP");
+        script.addTab().addLine("SELECT VF.variablefeature_id, F.feature_id, comid, gage_id, lid, huc, latitude, longitude");
+        script.addTab().addLine("FROM wres.VariableFeature VF");
         script.addTab().addLine("INNER JOIN wres.Feature F");
-        script.addTab(  2  ).addLine("ON F.feature_id = VP.x_position");
-        script.addTab().addLine("WHERE VP.variable_id = ", projectDetails.getRightVariableID());
+        script.addTab(  2  ).addLine("ON F.feature_id = VF.feature_id");
+        script.addTab().addLine("WHERE VF.variable_id = ", projectDetails.getRightVariableID());
 
         boolean addedFeature = false;
         for (Feature feature : projectDetails.getProjectConfig().getPair().getFeature())
@@ -110,7 +110,7 @@ public final class ScriptGenerator
                     addedParameter = true;
                 }
 
-                script.add(" rfc = '", feature.getRfc().toUpperCase(), "'");
+                script.add(" region = '", feature.getRfc().toUpperCase(), "'");
             }
 
             if (Strings.hasValue( feature.getGageId() ))
@@ -138,7 +138,7 @@ public final class ScriptGenerator
                     addedParameter = true;
                 }
 
-                script.add(" st = '", feature.getState().toUpperCase(), "'");
+                script.add(" state = '", feature.getState().toUpperCase(), "'");
             }
 
             if (feature.getPolygon() != null)
@@ -235,32 +235,32 @@ public final class ScriptGenerator
         script.addTab(  2  ).addLine("AND EXISTS (");
         script.addTab(   3   ).addLine("SELECT 1");
         script.addTab(   3   ).addLine("FROM wres.TimeSeries TS");
-        script.addTab(   3   ).addLine("INNER JOIN wres.ForecastSource FS");
-        script.addTab(    4    ).addLine("ON TS.timeseries_id = FS.forecast_id");
+        script.addTab(   3   ).addLine("INNER JOIN wres.TimeSeriesSource TSS");
+        script.addTab(    4    ).addLine("ON TS.timeseries_id = TSS.timeseries_id");
         script.addTab(   3   ).addLine("INNER JOIN wres.ProjectSource PS");
-        script.addTab(    4    ).addLine("ON PS.source_id = FS.source_id");
+        script.addTab(    4    ).addLine("ON PS.source_id = TSS.source_id");
         script.addTab(   3   ).addLine("WHERE PS.project_id = ", projectDetails.getId());
         script.addTab(    4    ).addLine("AND PS.member = 'right'");
-        script.addTab(    4    ).addLine("AND TS.variableposition_id = VP.variableposition_id");
+        script.addTab(    4    ).addLine("AND TS.variablefeature_id = VF.variablefeature_id");
         script.addTab(    4    ).addLine("AND EXISTS (");
         script.addTab(     5     ).addLine("SELECT 1");
-        script.addTab(     5     ).addLine("FROM wres.ForecastValue FV");
-        script.addTab(     5     ).addLine("WHERE FV.timeseries_id = TS.timeseries_id");
+        script.addTab(     5     ).addLine("FROM wres.TimeSeriesValue TSV");
+        script.addTab(     5     ).addLine("WHERE TSV.timeseries_id = TS.timeseries_id");
         script.addTab(    4    ).addLine(")");
         script.addTab(   3   ).addLine(")");
-        script.addTab().addLine("GROUP BY VP.variableposition_id, F.feature_id");
-        script.addLine(")");
+        script.addTab().addLine("GROUP BY VF.variablefeature_id, F.feature_id");
+        script.add(")");
 
-        if (selectObservedPositions)
+        if (selectObservedFeatures)
         {
             script.addLine( "," );
-            script.addLine( "observation_positions AS " );
+            script.addLine( "observation_features AS " );
             script.addLine( "(" );
-            script.addTab().addLine("SELECT VP.variableposition_id, feature_id");
-            script.addTab().addLine("FROM wres.VariablePosition VP");
+            script.addTab().addLine("SELECT VF.variablefeature_id, VF.feature_id");
+            script.addTab().addLine("FROM wres.VariableFeature VF");
             script.addTab().addLine("INNER JOIN wres.Feature F");
-            script.addTab(  2  ).addLine("ON F.feature_id = VP.x_position");
-            script.addTab().addLine("WHERE VP.variable_id = ", projectDetails.getLeftVariableID());
+            script.addTab(  2  ).addLine("ON F.feature_id = VF.feature_id");
+            script.addTab().addLine("WHERE VF.variable_id = ", projectDetails.getLeftVariableID());
 
             addedFeature = false;
             for ( Feature feature : projectDetails.getProjectConfig()
@@ -314,7 +314,7 @@ public final class ScriptGenerator
                         addedParameter = true;
                     }
 
-                    script.add(" st = '", feature.getState().toUpperCase(), "'");
+                    script.add(" state = '", feature.getState().toUpperCase(), "'");
                 }
 
                 if ( Strings.hasValue( feature.getHuc() ) )
@@ -342,7 +342,7 @@ public final class ScriptGenerator
                         addedParameter = true;
                     }
 
-                    script.add( " rfc = '",
+                    script.add( " region = '",
                                 feature.getRfc().toUpperCase(),
                                 "'" );
                 }
@@ -455,9 +455,9 @@ public final class ScriptGenerator
             script.addTab(    4    ).addLine("ON PS.source_id = O.source_id");
             script.addTab(   3   ).addLine("WHERE PS.project_id = ", projectDetails.getId());
             script.addTab(    4    ).addLine("AND PS.member = 'left'");
-            script.addTab(    4    ).addLine("AND O.variableposition_id = VP.variableposition_id");
+            script.addTab(    4    ).addLine("AND O.variablefeature_id = VF.variablefeature_id");
             script.addTab(  2  ).addLine(")");
-            script.addTab(  2  ).addLine("GROUP BY VP.variableposition_id, feature_id");
+            script.addTab(  2  ).addLine("GROUP BY VF.variablefeature_id, VF.feature_id");
             script.addLine(")");
         }
         else
@@ -465,11 +465,11 @@ public final class ScriptGenerator
             script.addLine();
         }
 
-        script.addLine("SELECT FP.variableposition_id AS forecast_position,");
+        script.addLine("SELECT FP.variablefeature_id AS forecast_feature,");
 
-        if (selectObservedPositions)
+        if (selectObservedFeatures)
         {
-            script.addTab().addLine( "O.variableposition_id AS observation_position," );
+            script.addTab().addLine( "O.variablefeature_id AS observation_feature," );
         }
 
         script.addTab().addLine("FP.comid,");
@@ -478,11 +478,11 @@ public final class ScriptGenerator
         script.addTab().addLine("FP.lid,");
         script.addTab().addLine("FP.latitude,");
         script.addTab().addLine("FP.longitude");
-        script.addLine("FROM forecast_positions FP");
+        script.addLine("FROM forecast_features FP");
 
-        if (selectObservedPositions)
+        if (selectObservedFeatures)
         {
-            script.addLine("INNER JOIN observation_positions O");
+            script.addLine("INNER JOIN observation_features O");
             script.addTab().addLine("ON O.feature_id = FP.feature_id");
         }
 
@@ -518,6 +518,7 @@ public final class ScriptGenerator
 
         if (projectDetails.usesGriddedData( projectDetails.getRight() ))
         {
+            // TODO: Experiment with removing the floor to determine if the issue dates extend beyond the upper limit correctly
             script.addLine("SELECT FLOOR (");
             script.addTab().addLine("(");
             script.addTab(  2  ).addLine("(");
@@ -544,13 +545,14 @@ public final class ScriptGenerator
         }
         else
         {
-            String timeSeriesVariablePosition =
-                ConfigHelper.getVariablePositionClause(
+            String timeSeriesVariableFeature =
+                ConfigHelper.getVariableFeatureClause(
                         feature,
                         Variables.getVariableID( projectDetails.getRight() ),
                         "TS"
                 );
 
+            // TODO: Experiment with removing the floor to determine if the issue dates extend beyond the upper limit correctly
             script.addLine("SELECT FLOOR(((EXTRACT( epoch FROM AGE(LEAST(MAX(initialization_date), '",
                            projectDetails.getLatestIssueDate(), "') - INTERVAL '",
                            period - frequency,
@@ -560,15 +562,15 @@ public final class ScriptGenerator
                            distanceBetween,
                            ")))::int AS window_count");
             script.addLine("FROM wres.TimeSeries TS");
-            script.addLine("WHERE ", timeSeriesVariablePosition);
+            script.addLine("WHERE ", timeSeriesVariableFeature);
             script.addLine("    AND EXISTS (");
             script.addLine("        SELECT 1");
-            script.addLine("        FROM wres.ForecastSource FS");
+            script.addLine("        FROM wres.TimeSeriesSource TSSS");
             script.addLine("        INNER JOIN wres.ProjectSource PS");
-            script.addLine("            ON PS.source_id = FS.source_id");
+            script.addLine("            ON PS.source_id = TSSS.source_id");
             script.addLine("        WHERE PS.project_id = ", projectDetails.getId());
             script.addLine("            AND PS.member = 'right'");
-            script.addLine("            AND FS.forecast_id = TS.timeseries_id");
+            script.addLine("            AND TS.timeseries_id = TS.timeseries_id");
             script.addLine("    );");
         }
 
@@ -591,9 +593,9 @@ public final class ScriptGenerator
         script.append( "SELECT '''' || MIN(O.observation_time)::text || '''' AS zero_date" ).append(NEWLINE);
         script.append("FROM wres.Observation O").append(NEWLINE);
         script.append("WHERE ")
-              .append(ConfigHelper.getVariablePositionClause( feature,
-                                                              Variables.getVariableID( simulation ),
-                                                              "O"))
+              .append(ConfigHelper.getVariableFeatureClause( feature,
+                                                             Variables.getVariableID( simulation ),
+                                                             "O"))
               .append(NEWLINE);
         script.append("    AND EXISTS (").append(NEWLINE);
         script.append("        SELECT 1").append(NEWLINE);
@@ -649,15 +651,15 @@ public final class ScriptGenerator
 
         script.addLine("SELECT '''' || MIN(TS.initialization_date)::text || '''' AS zero_date" );
         script.addLine("FROM wres.TimeSeries TS");
-        script.addLine("WHERE ", ConfigHelper.getVariablePositionClause( feature, Variables.getVariableID( forecastConfig ) , "TS"));
+        script.addLine("WHERE ", ConfigHelper.getVariableFeatureClause( feature, Variables.getVariableID( forecastConfig ) , "TS"));
         script.addTab().addLine("AND EXISTS (");
         script.addTab(  2  ).addLine("SELECT 1");
         script.addTab(  2  ).addLine("FROM wres.ProjectSource PS");
-        script.addTab(  2  ).addLine("INNER JOIN wres.ForecastSource FS");
-        script.addTab(   3   ).addLine( "ON FS.source_id = PS.source_id");
+        script.addTab(  2  ).addLine("INNER JOIN wres.TimeSeriesSource TSS");
+        script.addTab(   3   ).addLine( "ON TSS.source_id = PS.source_id");
         script.addTab(  2  ).addLine("WHERE PS.project_id = ", projectDetails.getId());
         script.addTab(   3   ).addLine( "AND PS.member = ", projectDetails.getInputName( forecastConfig ));
-        script.addTab(   3   ).addLine( "AND FS.forecast_id = TS.timeseries_id");
+        script.addTab(   3   ).addLine( "AND TSS.timeseries_id = TS.timeseries_id");
         script.addTab(  2  ).add(")");
 
         if (projectDetails.getEarliestIssueDate() != null)

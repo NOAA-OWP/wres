@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="Conversions v1.0" author="Christopher Tubbs" dbms="PostgreSQL">
+        <createView viewName="Conversions" schemaName="wres" replaceIfExists="true">
+            SELECT F.measurementunit_id AS from_unit_id,
+                T.measurementunit_id AS to_unit_id,
+                F.unit_name AS from_unit,
+                T.unit_name AS to_unit,
+                CASE
+                    WHEN UC.initial_offset != 0 AND UC.final_offset != 0 THEN
+                        '(x + (' || UC.initial_offset || ')) * ' || trunc(UC.factor::NUMERIC, 4) || ' + ' || UC.final_offset
+                    WHEN UC.initial_offset != 0 THEN
+                        '(x + (' || UC.initial_offset || ')) * ' || trunc(UC.factor::NUMERIC, 4)
+                    WHEN UC.final_offset != 0 THEN
+                        'x * ' || trunc(UC.factor::NUMERIC, 4) || ' + ' || UC.final_offset
+                    ELSE
+                        'x * ' || trunc(UC.factor::NUMERIC, 4)
+                END AS formula,
+                UC.initial_offset,
+                trunc(UC.factor::numeric, 4) AS factor,
+                UC.final_offset,
+                '10 ' || F.unit_name AS input,
+                '' || trunc(((10 + (UC.initial_offset)) *  UC.factor + UC.final_offset)::NUMERIC, 4) || ' ' || T.unit_name AS output
+            FROM wres.UnitConversion UC
+            INNER JOIN wres.MeasurementUnit F
+                ON F.measurementunit_id = UC.from_unit
+            INNER JOIN wres.MeasurementUnit T
+                ON T.measurementunit_id = UC.to_unit
+            ORDER BY from_unit, to_unit;
+        </createView>
+        <sql>
+            ALTER TABLE wres.Conversions OWNER TO wres;
+        </sql>
+        <comment>
+            The wres.Conversions view has been added to the database.
+        </comment>
+    </changeSet>
+</databaseChangeLog>

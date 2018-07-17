@@ -30,27 +30,13 @@ public final class VariableDetails extends CachedDetail<VariableDetails, String>
 	{
 	    VariableDetails details = new VariableDetails();
         details.setVariableName(resultSet.getString("variable_name"));
-        details.setMeasurementunitId( Database.getValue( resultSet, "measurementunit_id" ));
         details.setID(Database.getValue( resultSet,"variable_id"));
         return details;
 	}
 
 	private String variableName = null;
-
-    public Integer getMeasurementunitId()
-    {
-        return measurementunitId;
-    }
-
-    public void setMeasurementunitId( Integer measurementunitId )
-    {
-        this.measurementunitId = measurementunitId;
-    }
-
-    private Integer measurementunitId = null;
 	private Integer variableID = null;
 	private String variablePositionPartitionName;
-	private static final Object saveLock = new Object();
 
 	/**
 	 * Sets the name of the variable. The ID of the variable is invalidated if its name changes
@@ -65,11 +51,11 @@ public final class VariableDetails extends CachedDetail<VariableDetails, String>
         this.variableName = variableName;
 	}
 
-	public String getVariablePositionPartitionName()
+	public String getVariableFeaturePartitionName()
 	{
 		if (this.variablePositionPartitionName == null)
 		{
-			this.variablePositionPartitionName = "partitions.VARIABLEPOSITION_VARIABLE_" + this.getId().toString();
+			this.variablePositionPartitionName = "partitions.VARIABLEFEATURE_VARIABLE_" + this.getId().toString();
 		}
 		return this.variablePositionPartitionName;
 	}
@@ -80,13 +66,13 @@ public final class VariableDetails extends CachedDetail<VariableDetails, String>
 		super.update( databaseResults );
 		String partition = "";
 		partition += "CREATE TABLE IF NOT EXISTS ";
-		partition += this.getVariablePositionPartitionName();
+		partition += this.getVariableFeaturePartitionName();
 		partition += " ( " + NEWLINE;
 		partition += "	CHECK (variable_id = ";
 		partition += this.getId().toString();
 		partition += ")" + NEWLINE;
-		partition += ") INHERITS (wres.VariablePosition);" + NEWLINE;
-		partition += "ALTER TABLE " + this.getVariablePositionPartitionName() + " OWNER TO wres;";
+		partition += ") INHERITS (wres.VariableFeature);" + NEWLINE;
+		partition += "ALTER TABLE " + this.getVariableFeaturePartitionName() + " OWNER TO wres;";
 
 		Database.execute(partition);
 	}
@@ -134,11 +120,10 @@ public final class VariableDetails extends CachedDetail<VariableDetails, String>
 
 		script.addLine("WITH new_variable_id AS");
 		script.addLine("(");
-		script.addTab().addLine("INSERT INTO wres.Variable(variable_name, variable_type, measurementunit_id)");
-		script.addTab().addLine("SELECT ?, 'Double', ?");
+		script.addTab().addLine("INSERT INTO wres.Variable(variable_name)");
+		script.addTab().addLine("SELECT ?");
 
 		args.add(this.variableName);
-		args.add(this.measurementunitId);
 
 		script.addTab().addLine("WHERE NOT EXISTS (");
 		script.addTab(  2  ).addLine("SELECT 1");

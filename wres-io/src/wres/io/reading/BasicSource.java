@@ -488,22 +488,22 @@ public abstract class BasicSource
         if (ConfigHelper.isForecast(dataSourceConfig))
         {
             script.append("     FROM wres.TimeSeries TS").append(NEWLINE);
-            script.append("     INNER JOIN wres.ForecastSource SL").append(NEWLINE);
-            script.append("         ON SL.forecast_id = TS.timeseries_id").append(NEWLINE);
-            script.append("     INNER JOIN wres.VariablePosition VP").append(NEWLINE);
-            script.append("         ON VP.variableposition_id = TS.variableposition_id").append(NEWLINE);
+            script.append("     INNER JOIN wres.TimeSeriesSource SL").append(NEWLINE);
+            script.append("         ON SL.timeseries_id = TS.timeseries_id").append(NEWLINE);
+            script.append("     INNER JOIN wres.VariableFeature VF").append(NEWLINE);
+            script.append("         ON VF.variablefeature_id = TS.variablefeature_id").append(NEWLINE);
         }
         else
         {
             script.append("     FROM wres.Observation SL").append(NEWLINE);
-            script.append("     INNER JOIN wres.VariablePosition VP").append(NEWLINE);
-            script.append("         ON VP.variableposition_id = SL.variableposition_id").append(NEWLINE);
+            script.append("     INNER JOIN wres.VariableFeature VF").append(NEWLINE);
+            script.append("         ON VF.variablefeature_id = SL.variablefeature_id").append(NEWLINE);
         }
 
         script.append("     INNER JOIN wres.Source S").append(NEWLINE);
         script.append("         ON S.source_id = SL.source_id").append(NEWLINE);
         script.append("     INNER JOIN wres.Variable V").append(NEWLINE);
-        script.append("         ON VP.variable_id = V.variable_id").append(NEWLINE);
+        script.append("         ON VF.variable_id = V.variable_id").append(NEWLINE);
 
         script.append("     WHERE S.hash = '")
               .append( contentHash )
@@ -528,15 +528,6 @@ public abstract class BasicSource
         }
 
         return this.variableId;
-    }
-
-    protected int getMeasurementunitId() throws SQLException
-    {
-        if (this.measurementunitId == 0)
-        {
-            this.measurementunitId = Variables.getMeasurementUnitId( this.getVariableId() );
-        }
-        return this.measurementunitId;
     }
 
     /**

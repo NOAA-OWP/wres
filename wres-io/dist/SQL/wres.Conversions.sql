@@ -23,7 +23,7 @@ CREATE OR REPLACE VIEW wres.Conversions AS
      ON F.measurementunit_id = UC.from_unit
  INNER JOIN wres.MeasurementUnit T
      ON T.measurementunit_id = UC.to_unit     
- ORDER BY from_unit, to_unit
+ ORDER BY from_unit, to_unit;
  
 ALTER TABLE wres.Conversions
   OWNER TO wres;

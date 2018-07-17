@@ -432,9 +432,9 @@ class ClimatologyBuilder
         try
         {
             script.append("WHERE ")
-                  .append(ConfigHelper.getVariablePositionClause( this.feature,
-                                                                  Variables.getVariableID( this.dataSourceConfig ),
-                                                                  "O"))
+                  .append(ConfigHelper.getVariableFeatureClause( this.feature,
+                                                                 Variables.getVariableID( this.dataSourceConfig ),
+                                                                 "O"))
                   .append(NEWLINE);
         }
         catch ( SQLException e )
@@ -516,7 +516,6 @@ class ClimatologyBuilder
               .append(this.projectDetails.getInputName( this.dataSourceConfig ))
               .append(NEWLINE);
         script.append("        AND PS.source_id = O.source_id").append(NEWLINE);
-        script.append("        AND PS.inactive_time IS NULL").append(NEWLINE);
         script.append(");");
 
         Connection connection = null;

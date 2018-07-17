@@ -35,7 +35,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
 	private Integer featureId = null;
 	private Integer comid = null;
 	private String gageID = null;
-	private String rfc = null;
+	private String region = null;
 	private String state = null;
 	private String stateCode = null;
 	private String huc = null;
@@ -43,9 +43,6 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
     private Float longitude = null;
 	private Float latitude = null;
 	private Integer nwmIndex = null;
-
-	private Integer netcdfXIndex = null;
-	private Integer netcdfYIndex = null;
 
 	private List<String> aliases = null;
 
@@ -102,7 +99,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
                             this.getGageID(),
                             this.getHuc(),
                             this.getFeatureName(),
-                            this.getRfc(),
+                            this.getRegion(),
                             this.getState(),
                             null );
     }
@@ -125,19 +122,14 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
             this.setGageID( Database.getValue( row, "gage_id" ) );
         }
 
-        if (Database.hasColumn( row, "rfc" ))
+        if (Database.hasColumn( row, "region" ))
         {
-            this.setRfc( Database.getValue( row, "rfc" ) );
+            this.setRegion( Database.getValue( row, "region" ) );
         }
 
         if (Database.hasColumn( row, "st" ))
         {
             this.setState( Database.getValue(row, "st") );
-        }
-
-        if (Database.hasColumn( row, "st_code" ))
-        {
-            this.setStateCode( Database.getValue( row, "st_code" ) );
         }
 
         if (Database.hasColumn( row, "huc" ))
@@ -160,21 +152,6 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
             this.setLongitude( Database.getValue( row, "longitude" ) );
         }
 
-        if (Database.hasColumn( row, "nwm_index" ))
-        {
-            this.nwmIndex = Database.getValue( row, "nwm_index" );
-        }
-
-        if (Database.hasColumn( row, "x_position" ))
-        {
-            this.netcdfXIndex = Database.getValue( row, "x_position" );
-        }
-
-        if (Database.hasColumn( row, "y_position" ))
-        {
-            this.netcdfYIndex = Database.getValue( row, "y_position" );
-        }
-
         if (Database.hasColumn( row, this.getIDName() ))
         {
             this.setID( Database.getValue( row, this.getIDName() ) );
@@ -187,7 +164,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
 	 * @return The id of the variable position mapping the feature to the
      * variable, null if an ID has not been added for the variable
 	 */
-	public Integer getVariablePositionID(Integer variableID)
+	public Integer getVariableFeatureID(Integer variableID)
 	{
 		synchronized (POSITION_LOCK)
         {
@@ -195,9 +172,9 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
         }
 	}
 
-	public void addVariablePosition(int variableId, int variablepositionId)
+	public void addVariableFeature(int variableId, int variablefeatureId)
     {
-        this.variablePositions.putIfAbsent( variableId, variablepositionId );
+        this.variablePositions.putIfAbsent( variableId, variablefeatureId );
     }
 	
 	/**
@@ -312,17 +289,17 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
         return this.gageID;
     }
 
-    public String getRfc()
+    public String getRegion()
     {
-        return this.rfc;
+        return this.region;
     }
 
-    public void setRfc(String rfc)
+    public void setRegion( String region )
     {
         // Only set the value if you won't be erasing a value
-        if (this.rfc == null || Strings.hasValue (rfc))
+        if ( this.region == null || Strings.hasValue ( region ))
         {
-            this.rfc = rfc;
+            this.region = region;
         }
     }
 
@@ -337,20 +314,6 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
         if (this.state == null || Strings.hasValue (state))
         {
             this.state = state;
-        }
-    }
-
-    public String getStateCode()
-    {
-        return this.stateCode;
-    }
-
-    public void setStateCode(String stateCode)
-    {
-        // Only set the value if you won't be erasing a value
-        if (this.stateCode == null || Strings.hasValue (stateCode))
-        {
-            this.stateCode = stateCode;
         }
     }
 
@@ -411,16 +374,6 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
         }
     }
 
-    public Integer getNetcdfXIndex()
-    {
-        return this.netcdfXIndex;
-    }
-
-    public Integer getNetcdfYIndex()
-    {
-        return this.netcdfYIndex;
-    }
-
     @Override
     protected Logger getLogger()
     {
@@ -477,8 +430,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
                 lineAdded = true;
             }
 
-            script.addTab(2).addLine("lid,");
-            script.addTab(2).add("parent_feature_id");
+            script.addTab(2).add("lid");
         }
 
         if (this.getGageID() != null)
@@ -496,7 +448,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
             script.addTab(2).add("gage_id");
         }
 
-        if (this.getRfc() != null)
+        if ( this.getRegion() != null)
         {
             if (lineAdded)
             {
@@ -509,7 +461,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
                 lineAdded = true;
             }
 
-            script.addTab(2).add("rfc");
+            script.addTab(2).add("region");
         }
 
         if (this.getState() != null)
@@ -525,23 +477,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
                 lineAdded = true;
             }
 
-            script.addTab(2).add("st");
-        }
-
-        if (this.getStateCode() != null)
-        {
-            if (lineAdded)
-            {
-                // Add a separator between this and the previously added field
-                script.addLine(",");
-            }
-            else
-            {
-                // A field has been added
-                lineAdded = true;
-            }
-
-            script.addTab(2).add("st_code");
+            script.addTab(2).add("state");
         }
 
         if (this.getHuc() != null)
@@ -635,15 +571,8 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
                 lineAdded = true;
             }
 
-            script.addTab(2).addLine("?,");
-            script.addTab(2).addLine("(");
-            script.addTab(  3  ).addLine("SELECT feature_id");
-            script.addTab(  3  ).addLine("FROM wres.Feature F");
-            script.addTab(  3  ).addLine("WHERE ? LIKE F.lid || '%'");
-            script.addTab(2).add(")");
-
-            args.add(this.getLid());
-            args.add(this.getLid());
+            script.addTab(2).add("?");
+            args.add( this.getLid() );
         }
 
         if (this.getGageID() != null)
@@ -664,7 +593,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
             args.add(this.getGageID());
         }
 
-        if (this.getRfc() != null)
+        if ( this.getRegion() != null)
         {
             if (lineAdded)
             {
@@ -678,7 +607,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
             }
 
             script.addTab(2).add("?");
-            args.add(this.getRfc());
+            args.add(this.getRegion());
         }
 
         if (this.getState() != null)
@@ -696,23 +625,6 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
 
             script.addTab(2).add("?");
             args.add(this.getState());
-        }
-
-        if (this.getStateCode() != null)
-        {
-            if (lineAdded)
-            {
-                // Separate this value from the previous one
-                script.addLine(",");
-            }
-            else
-            {
-                // A value will be added
-                lineAdded = true;
-            }
-
-            script.addTab(2).add("?");
-            args.add(this.getStateCode());
         }
 
         if (this.getHuc() != null)
@@ -834,17 +746,15 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
         script.addTab(  2  ).addLine("comid,");
         script.addTab(  2  ).addLine("lid,");
         script.addTab(  2  ).addLine("gage_id,");
-        script.addTab(  2  ).addLine("rfc,");
-        script.addTab(  2  ).addLine("st,");
-        script.addTab(  2  ).addLine("st_code,");
+        script.addTab(  2  ).addLine("region,");
+        script.addTab(  2  ).addLine("state,");
         script.addTab(  2  ).addLine("huc,");
         script.addTab(  2  ).addLine("feature_name,");
         script.addTab(  2  ).addLine("latitude,");
-        script.addTab(  2  ).addLine("longitude,");
-        script.addTab(  2  ).addLine("nwm_index");
+        script.addTab(  2  ).addLine("longitude");
         script.addLine(")");
         script.addLine("SELECT *");
-        script.addLine("FROM new_feature");
+        script.add("FROM new_feature");
 
         return script.toString();
     }
@@ -857,14 +767,12 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
         script.addTab().addLine("comid,");
         script.addTab().addLine("lid,");
         script.addTab().addLine("gage_id,");
-        script.addTab().addLine("rfc,");
-        script.addTab().addLine("st,");
-        script.addTab().addLine("st_code,");
+        script.addTab().addLine("region,");
+        script.addTab().addLine("state,");
         script.addTab().addLine("huc,");
         script.addTab().addLine("feature_name,");
         script.addTab().addLine("latitude,");
-        script.addTab().addLine("longitude,");
-        script.addTab().addLine("nwm_index");
+        script.addTab().addLine("longitude");
         script.addLine("FROM wres.Feature");
         script.add("WHERE ");
 

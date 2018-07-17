@@ -3,8 +3,9 @@
         xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
-                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
-    <changeSet id="Setup WRES Role v1.0" author="Christopher Tubbs" dbms="PostgreSQL">
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="Setup WRES Role v1.0" author="Christopher Tubbs" dbms="PostgreSQL" failOnError="false">
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="f">
                 SELECT EXISTS (
@@ -20,7 +21,7 @@
         </sql>
         <comment>The wres database role has been created.</comment>
     </changeSet>
-    <changeSet id="Setup wres_user Role v1.0" author="Christopher Tubbs" dbms="PostgreSQL">
+    <changeSet id="Setup wres_user Role v1.0" author="Christopher Tubbs" dbms="PostgreSQL" failOnError="true">
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="f">
                 SELECT EXISTS (
@@ -39,19 +40,45 @@
         </sql>
         <comment>The default wres_user has been added to the database.</comment>
     </changeSet>
-    <changeSet id="Setup Database v1.0" author="Christopher Tubbs" dbms="PostgreSQL" >
+    <changeSet id="Add Self to WRES v1.0" author="Christopher Tubbs" dbms="PostgreSQL" failOnError="true" runAlways="true">
+        <preConditions onFail="CONTINUE">
+            <sqlCheck expectedResult="t">
+                SELECT rolcreaterole
+                FROM pg_roles
+                WHERE rolname = CURRENT_USER;
+            </sqlCheck>
+        </preConditions>
         <sql>
-            CREATE DATABASE IF NOT EXISTS wres;
+            GRANT wres TO CURRENT_USER;
         </sql>
-        <comment>The wres database has been created.</comment>
     </changeSet>
-    <changeSet id="Setup WRES Schema v1.0" author="Christopher Tubbs" dbms="PostgreSQL">
+    <changeSet id="Setup WRES Schema v1.0" author="Christopher Tubbs" dbms="PostgreSQL" failOnError="true">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="f">
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM information_schema.schemata
+                    WHERE catalog_name = 'wres'
+                        AND schema_name = 'wres'
+                );
+            </sqlCheck>
+        </preConditions>
         <sql>
             CREATE SCHEMA IF NOT EXISTS wres AUTHORIZATION wres;
         </sql>
         <comment>The wres schema has been created.</comment>
     </changeSet>
     <changeSet id="Setup PARTITIONS Schema v1.0" author="Christopher Tubbs" dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="f">
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM information_schema.schemata
+                    WHERE catalog_name = 'wres'
+                        AND schema_name = 'partitions'
+                );
+            </sqlCheck>
+        </preConditions>
         <sql>
             CREATE SCHEMA IF NOT EXISTS partitions AUTHORIZATION wres;
         </sql>

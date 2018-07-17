@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="TimeSeries v1.0" author="Christopher Tubbs" dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="f">
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM pg_catalog.pg_tables
+                    WHERE schemaname = 'wres'
+                        AND tablename = 'timeseries'
+                );
+            </sqlCheck>
+        </preConditions>
+        <createTable tableName="TimeSeries" schemaName="wres">
+            <column name="timeseries_id" type="serial" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="timeseries_pk"/>
+            </column>
+            <column name="variablefeature_id" type="int" >
+                <constraints nullable="false" />
+            </column>
+            <column name="ensemble_id" type="int" >
+                <constraints nullable="false" />
+            </column>
+            <column name="measurementunit_id" type="smallint" >
+                <constraints nullable="false" />
+            </column>
+            <column name="initialization_date" type="timestamp without time zone" >
+                <constraints nullable="false" />
+            </column>
+        </createTable>
+        <sql>
+            ALTER TABLE wres.TimeSeries OWNER TO wres;
+        </sql>
+        <addForeignKeyConstraint baseTableName="TimeSeries" baseTableSchemaName="wres"
+                                 baseColumnNames="variablefeature_id"
+                                 constraintName="timeseries_variablefeature_fk" referencedTableName="VariableFeature"
+                                 referencedColumnNames="variablefeature_id" referencedTableSchemaName="wres"
+                                 onDelete="CASCADE" initiallyDeferred="true" deferrable="true" />
+        <addForeignKeyConstraint baseTableName="TimeSeries" baseTableSchemaName="wres"
+                                 baseColumnNames="measurementunit_id" constraintName="timeseries_measurementunit_fk"
+                                 referencedTableName="MeasurementUnit" referencedTableSchemaName="wres"
+                                 referencedColumnNames="measurementunit_id" deferrable="true" initiallyDeferred="true"
+                                 onDelete="CASCADE"/>
+        <createIndex tableName="TimeSeries" schemaName="wres" indexName="timeseries_variablefeature_ix">
+            <column name="variablefeature_id" />
+        </createIndex>
+        <comment>
+            The wres.TimeSeries table has been added to the database.
+        </comment>
+    </changeSet>
+</databaseChangeLog>

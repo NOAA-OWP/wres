@@ -21,7 +21,7 @@ class PersistenceForecastScripter extends Scripter
     private static final int DUMMY = -9;
 
     private final Instant zeroDate;
-    private final String variablePositionClause;
+    private final String variableFeatureClause;
     // The Integer is the count of values expected for a basis time
     private List<Instant> instantsToGetValuesFor;
 
@@ -40,7 +40,7 @@ class PersistenceForecastScripter extends Scripter
                                      .replace( "'", "" )
                              + "Z";
         this.zeroDate = Instant.parse( isoZeroDate );
-        this.variablePositionClause = super.getVariablePositionClause();
+        this.variableFeatureClause = super.getVariableFeatureClause();
         this.instantsToGetValuesFor = instantsToGetValuesFor;
     }
 
@@ -65,25 +65,25 @@ class PersistenceForecastScripter extends Scripter
         // The caller then will have to do some work on the results to find the
         // correct data for each basis time. The reason for this is rescaling.
         return "SELECT ( EXTRACT( epoch from o.observation_time ) * 1000 )::bigint AS valid_time,"
-                + NEWLINE
-                + "    o.observed_value AS observed_value," + NEWLINE
-                + "    o.measurementunit_id" + NEWLINE
-                + "FROM wres.observation AS o" + NEWLINE
-                + "INNER JOIN wres.projectsource AS ps" + NEWLINE
-                + "    ON ps.source_id = o.source_id" + NEWLINE
-                + "WHERE o.observed_value IS NOT NULL" + NEWLINE
-                + "    AND ps.project_id = "
-                + getProjectDetails().getId() + NEWLINE
-                + "    AND ps.member = 'baseline'" + NEWLINE
-                + "    AND o." + this.variablePositionClause + NEWLINE
-                + "    AND o.observation_time >= '"
-                + this.getZeroDate() + "'" + NEWLINE
+               + NEWLINE
+               + "    o.observed_value AS observed_value," + NEWLINE
+               + "    o.measurementunit_id" + NEWLINE
+               + "FROM wres.observation AS o" + NEWLINE
+               + "INNER JOIN wres.projectsource AS ps" + NEWLINE
+               + "    ON ps.source_id = o.source_id" + NEWLINE
+               + "WHERE o.observed_value IS NOT NULL" + NEWLINE
+               + "    AND ps.project_id = "
+               + getProjectDetails().getId() + NEWLINE
+               + "    AND ps.member = 'baseline'" + NEWLINE
+               + "    AND o." + this.variableFeatureClause + NEWLINE
+               + "    AND o.observation_time >= '"
+               + this.getZeroDate() + "'" + NEWLINE
 
-                // The next line is intentionally inclusive to pick t0's value.
-                // InputRetriever counts on this.
-                + "    AND o.observation_time <= '"
-                + latestBasisTime.toString() + "'" + NEWLINE
-                + "ORDER BY o.observation_time DESC";
+               // The next line is intentionally inclusive to pick t0's value.
+               // InputRetriever counts on this.
+               + "    AND o.observation_time <= '"
+               + latestBasisTime.toString() + "'" + NEWLINE
+               + "ORDER BY o.observation_time DESC";
                 // Removing limit because we *can't* limit it due to scaling
     }
 

@@ -229,16 +229,16 @@ public abstract class Scripter extends ScriptBuilder
         return this.variableID;
     }
 
-    String getVariablePositionClause() throws SQLException
+    String getVariableFeatureClause() throws SQLException
     {
-        if (this.variablePositionClause == null)
+        if (this.VariableFeatureClause == null)
         {
-            this.variablePositionClause = ConfigHelper.getVariablePositionClause(
+            this.VariableFeatureClause = ConfigHelper.getVariableFeatureClause(
                     this.getFeature(),
                     this.getVariableID(),
                     "" );
         }
-        return this.variablePositionClause;
+        return this.VariableFeatureClause;
     }
 
     Integer getTimeShift()
@@ -284,9 +284,9 @@ public abstract class Scripter extends ScriptBuilder
                                                   this.getTimeShift() ));
     }
 
-    void applyVariablePositionClause() throws SQLException
+    void applyVariableFeatureClause() throws SQLException
     {
-        this.addLine( "WHERE ", this.getVariablePositionClause());
+        this.addLine( "WHERE ", this.getVariableFeatureClause());
     }
 
     void applyEarliestIssueDateConstraint()
@@ -350,7 +350,7 @@ public abstract class Scripter extends ScriptBuilder
     private final int sequenceStep;
 
     private Integer variableID;
-    private String variablePositionClause;
+    private String VariableFeatureClause;
     private Integer timeShift;
     private String member;
 

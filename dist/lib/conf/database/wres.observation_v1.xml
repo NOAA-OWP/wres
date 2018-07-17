@@ -3,21 +3,25 @@
         xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
-                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
-    <changeSet id="Observations v1.0" author="Christopher Tubbs" dbms="PostgreSQL">
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="Remove Old Observations v1.0" author="Christopher Tubbs">
         <preConditions onFail="MARK_RAN">
-            <sqlCheck expectedResult="f">
-                SELECT EXISTS (
-                    SELECT 1
-                    FROM information_schema.tables
-                    WHERE table_schema = 'wres'
-                        AND table_name = 'Observation'
-                );
-            </sqlCheck>
+            <tableExists tableName="Observation" schemaName="wres" />
+            <columnExists tableName="Observation" schemaName="wres" columnName="variableposition_id" />
+        </preConditions>
+        <renameColumn tableName="Observation" schemaName="wres"
+                      oldColumnName="variableposition_id" newColumnName="variablefeature_id" />
+    </changeSet>
+    <changeSet id="Observations v1.0" author="Christopher Tubbs" dbms="PostgreSQL">
+        <preConditions>
+            <not>
+                <tableExists tableName="Observations" schemaName="wres" />
+            </not>
         </preConditions>
         <createTable tableName="Observation" schemaName="wres">
-            <column name="variableposition_id" type="integer">
-                <constraints nullable="false" deferrable="true" />
+            <column name="variablefeature_id" type="integer">
+                <constraints nullable="false" deferrable="true" initiallyDeferred="true" />
             </column>
             <column name="observation_time" type="timestamp without time zone" >
                 <constraints nullable="false" />
@@ -33,14 +37,19 @@
         <sql>
             ALTER TABLE wres.Observation OWNER TO wres;
         </sql>
-        <createIndex tableName="Observation" schemaName="wres" indexName="observation_time_idx">
-            <column name="observation_time" type="timestamp without time zone" />
+        <addForeignKeyConstraint baseTableName="Observation" baseTableSchemaName="wres"
+                                 baseColumnNames="variablefeature_id"
+                                 constraintName="observation_variablefeature_fk" referencedTableSchemaName="wres"
+                                 referencedTableName="VariableFeature" referencedColumnNames="variablefeature_id"
+                                 deferrable="true" initiallyDeferred="true" onDelete="CASCADE" />
+        <createIndex tableName="Observation" schemaName="wres" indexName="observation_variablefeature_idx">
+            <column name="variablefeature_id" type="integer" />
         </createIndex>
         <sql>
-            ALTER TABLE wres.Observation CLUSTER ON observation_time_idx;
+            ALTER TABLE wres.Observation CLUSTER ON observation_variablefeature_idx;
         </sql>
-        <createIndex tableName="Observation" schemaName="wres" indexName="observation_variableposition_idx">
-            <column name="variableposition_id" type="integer" />
+        <createIndex tableName="Observation" schemaName="wres" indexName="observation_time_idx">
+            <column name="observation_time" type="timestamp without time zone" />
         </createIndex>
         <comment>
             The wres.Observation table has been created.

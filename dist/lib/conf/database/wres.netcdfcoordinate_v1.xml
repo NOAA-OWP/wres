@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="NetcdfCoordinate v1.0" author="Christopher Tubbs" dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="f">
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM pg_catalog.pg_tables
+                    WHERE schemaname = 'wres'
+                        AND tablename = 'netcdfcoordinate'
+                );
+            </sqlCheck>
+        </preConditions>
+        <createTable tableName="NetcdfCoordinate" schemaName="wres">
+            <column name="gridprojection_id" type="integer">
+                <constraints nullable="false" deferrable="true" initiallyDeferred="true"/>
+            </column>
+            <column name="x_position" type="smallint">
+                <constraints nullable="false" />
+            </column>
+            <column name="y_position" type="smallint">
+                <constraints nullable="false" />
+            </column>
+            <column name="x" type="double precision" >
+                <constraints nullable="false" />
+            </column>
+            <column name="y" type="double precision" >
+                <constraints nullable="false" />
+            </column>
+            <column name="geographic_coordinate" type="POINT">
+                <constraints nullable="false" />
+            </column>
+        </createTable>
+        <sql>
+            ALTER TABLE wres.NetcdfCoordinate OWNER TO wres;
+        </sql>
+        <comment>Manually creating the coordinate index in order to specify a GIS index</comment>
+        <sql>
+            CREATE INDEX IF NOT EXISTS Netcdfcoordinate_coordinate_idx
+                ON wres.NetcdfCoordinate
+                USING gist
+                (geographic_coordinate);
+        </sql>
+        <comment>
+            The wres.NetcdfCoordinate table has been added to the database.
+        </comment>
+    </changeSet>
+</databaseChangeLog>

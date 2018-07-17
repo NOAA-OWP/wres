@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="operating_member1.0" author="Christopher Tubbs" dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="f">
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM pg_type
+                    WHERE typname = 'operating_member'
+                );
+            </sqlCheck>
+        </preConditions>
+        <sql>
+            CREATE TYPE operating_member AS ENUM('left', 'right', 'baseline');
+        </sql>
+        <comment>
+            Added the operating_member data type.
+        </comment>
+    </changeSet>
+</databaseChangeLog>
