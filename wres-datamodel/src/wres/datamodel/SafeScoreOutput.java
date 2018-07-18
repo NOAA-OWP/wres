@@ -11,6 +11,7 @@ import java.util.Set;
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
+import wres.datamodel.metadata.DefaultMetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.MetricOutputException;
 import wres.datamodel.outputs.ScoreOutput;

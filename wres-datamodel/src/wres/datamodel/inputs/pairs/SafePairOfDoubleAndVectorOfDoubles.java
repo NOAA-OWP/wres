@@ -1,13 +1,14 @@
-package wres.datamodel;
+package wres.datamodel.inputs.pairs;
 
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.stream.Stream;
 
+import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 
-class SafePairOfDoubleAndVectorOfDoubles
+public class SafePairOfDoubleAndVectorOfDoubles
 implements PairOfDoubleAndVectorOfDoubles
 {
     private final double itemOne;
@@ -57,7 +58,8 @@ implements PairOfDoubleAndVectorOfDoubles
         return s.toString();
     }
 
-    @Override public int compareTo(PairOfDoubleAndVectorOfDoubles other)
+    @Override 
+    public int compareTo(PairOfDoubleAndVectorOfDoubles other)
     {
         // if the instances are the same...
         if (this == other)
@@ -66,7 +68,7 @@ implements PairOfDoubleAndVectorOfDoubles
         }
         else if (Double.compare(this.getItemOne(), other.getItemOne()) == 0)
         {
-            return SafeVectorOfDoubles.compareDoubleArray(this.getItemTwo(),
+            return DefaultDataFactory.compareDoubleArray(this.getItemTwo(),
                                                           other.getItemTwo());
         }
         else if (this.getItemOne() < other.getItemOne())

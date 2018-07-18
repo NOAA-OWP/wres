@@ -1,10 +1,14 @@
-package wres.datamodel;
+package wres.datamodel.metadata;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.StringJoiner;
 
+import wres.datamodel.DatasetIdentifier;
+import wres.datamodel.Dimension;
+import wres.datamodel.Location;
+import wres.datamodel.MetricConstants;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataException;
 import wres.datamodel.metadata.MetadataFactory;
