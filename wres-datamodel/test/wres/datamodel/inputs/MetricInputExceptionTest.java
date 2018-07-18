@@ -1,4 +1,4 @@
-package wres.datamodel;
+package wres.datamodel.inputs;
 
 import org.junit.Test;
 
