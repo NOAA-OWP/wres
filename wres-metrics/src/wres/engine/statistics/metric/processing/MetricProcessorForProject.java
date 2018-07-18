@@ -90,7 +90,6 @@ public class MetricProcessorForProject
      */
 
     public MetricProcessorByTime<SingleValuedPairs> getMetricProcessorForSingleValuedPairs()
-            throws MetricProcessorException
     {
         if ( Objects.isNull( singleValuedProcessor ) )
         {
@@ -109,7 +108,6 @@ public class MetricProcessorForProject
      */
 
     public MetricProcessorByTime<EnsemblePairs> getMetricProcessorForEnsemblePairs()
-            throws MetricProcessorException
     {
         if ( Objects.isNull( ensembleProcessor ) )
         {

@@ -53,6 +53,7 @@ public class IngestResult
      * @param projectConfig the ProjectConfig causing the ingest
      * @param dataSourceConfig the config element ingesting for
      * @param hash the hash of the data
+     * @param name the name
      * @param foundAlready true if found in the database, false otherwise
      * @return the IngestResult
      */
@@ -79,6 +80,7 @@ public class IngestResult
      * @param projectConfig the ProjectConfig causing the ingest
      * @param dataSourceConfig the config element ingesting for
      * @param hash the hash of the data
+     * @param name the name
      * @param foundAlready true if found in the database, false otherwise
      * @return a list with a single IngestResult in it
      */
@@ -108,6 +110,7 @@ public class IngestResult
      * @param projectConfig the project configuration
      * @param dataSourceConfig the data source configuration
      * @param hash the hash of the individual source
+     * @param name the name
      * @return an immediately-returning Future
      */
 

@@ -8,7 +8,7 @@ import java.util.Objects;
  * @author james.brown@hydrosolved.com
  */
 
-class SafeOneOrTwoDoubles implements OneOrTwoDoubles
+public class SafeOneOrTwoDoubles implements OneOrTwoDoubles
 {
     /**
      * First value.
@@ -30,7 +30,7 @@ class SafeOneOrTwoDoubles implements OneOrTwoDoubles
      * @throws NullPointerException if the value is null
      */
 
-    static SafeOneOrTwoDoubles of( Double first )
+    public static SafeOneOrTwoDoubles of( Double first )
     {
         return of( first, null );
     }    
@@ -44,7 +44,7 @@ class SafeOneOrTwoDoubles implements OneOrTwoDoubles
      * @throws NullPointerException if the first value is null
      */
 
-    static SafeOneOrTwoDoubles of( Double first, Double second )
+    public static SafeOneOrTwoDoubles of( Double first, Double second )
     {
         return new SafeOneOrTwoDoubles( first, second );
     }

@@ -37,7 +37,7 @@ public abstract class Diagram<S extends MetricInput<?>, T extends MetricOutput<?
      * A {@link MetricBuilder} to build the metric.
      */
 
-    public static abstract class DiagramBuilder<S extends MetricInput<?>, T extends MetricOutput<?>>
+    public abstract static class DiagramBuilder<S extends MetricInput<?>, T extends MetricOutput<?>>
             implements
             MetricBuilder<S, T>
     {

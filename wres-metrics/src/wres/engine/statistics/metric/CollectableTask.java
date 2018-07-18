@@ -48,7 +48,7 @@ implements Callable<U>
     }
 
     @Override
-    public U call() throws MetricInputException, MetricCalculationException, InterruptedException, ExecutionException
+    public U call() throws InterruptedException, ExecutionException
     {
         final T in = input.get();
         if(Objects.isNull(in))

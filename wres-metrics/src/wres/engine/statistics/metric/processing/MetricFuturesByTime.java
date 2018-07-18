@@ -439,7 +439,6 @@ class MetricFuturesByTime
                 safePut( MetricOutputGroup outGroup,
                          Map<Pair<TimeWindow, OneOrTwoThresholds>, List<Future<MetricOutputMapByMetric<T>>>> mutate,
                          Map<Pair<TimeWindow, OneOrTwoThresholds>, List<Future<MetricOutputMapByMetric<T>>>> newInput )
-                        throws MetricOutputMergeException
         {
             for ( Entry<Pair<TimeWindow, OneOrTwoThresholds>, List<Future<MetricOutputMapByMetric<T>>>> next : newInput.entrySet() )
             {
