@@ -15,7 +15,6 @@ import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.SafeMetricOutputMapByMetric.SafeMetricOutputMapByMetricBuilder;
 import wres.datamodel.SafeMetricOutputMapByTimeAndThreshold.SafeMetricOutputMapByTimeAndThresholdBuilder;
 import wres.datamodel.SafeMetricOutputMultiMapByTimeAndThreshold.SafeMetricOutputMultiMapByTimeAndThresholdBuilder;
-import wres.datamodel.SafeTimeSeries.SafeTimeSeriesBuilder;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
@@ -60,6 +59,7 @@ import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.thresholds.ThresholdsByMetric.ThresholdsByMetricBuilder;
 import wres.datamodel.time.TimeSeriesBuilder;
+import wres.datamodel.time.SafeTimeSeries.SafeTimeSeriesBuilder;
 
 /**
  * A default factory class for producing metric inputs.
