@@ -1,4 +1,4 @@
-package wres.datamodel;
+package wres.datamodel.outputs;
 
 import java.util.Collections;
 import java.util.EnumMap;
@@ -10,6 +10,7 @@ import java.util.Set;
 
 import org.apache.commons.lang3.tuple.Pair;
 
+import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.metadata.DefaultMetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
@@ -20,8 +21,6 @@ import wres.datamodel.outputs.ScoreOutput;
  * An abstract base class for an immutable score output.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.4
  */
 
 abstract class SafeScoreOutput<T,U extends ScoreOutput<T,?>> implements ScoreOutput<T,U>

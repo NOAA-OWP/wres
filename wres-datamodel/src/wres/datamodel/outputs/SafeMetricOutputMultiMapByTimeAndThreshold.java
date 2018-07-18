@@ -1,4 +1,4 @@
-package wres.datamodel;
+package wres.datamodel.outputs;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -11,6 +11,9 @@ import java.util.concurrent.ConcurrentSkipListMap;
 
 import org.apache.commons.lang3.tuple.Pair;
 
+import wres.datamodel.DataFactory;
+import wres.datamodel.DefaultDataFactory;
+import wres.datamodel.MetricConstants;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.MapKey;
@@ -25,11 +28,9 @@ import wres.datamodel.thresholds.OneOrTwoThresholds;
  * Default implementation of a safe map that contains {@link MetricOutputMapByTimeAndThreshold} for several metrics.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 
-class SafeMetricOutputMultiMapByTimeAndThreshold<S extends MetricOutput<?>>
+public class SafeMetricOutputMultiMapByTimeAndThreshold<S extends MetricOutput<?>>
         implements MetricOutputMultiMapByTimeAndThreshold<S>
 {
 
@@ -123,7 +124,7 @@ class SafeMetricOutputMultiMapByTimeAndThreshold<S extends MetricOutput<?>>
         return Objects.hash( store );
     }
 
-    protected static class SafeMetricOutputMultiMapByTimeAndThresholdBuilder<S extends MetricOutput<?>>
+    public static class SafeMetricOutputMultiMapByTimeAndThresholdBuilder<S extends MetricOutput<?>>
             implements MetricOutputMultiMapByTimeAndThresholdBuilder<S>
     {
 
