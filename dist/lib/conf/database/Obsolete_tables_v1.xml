@@ -20,7 +20,13 @@
                 FROM wres.TimeSeriesSource TSS
                 WHERE TSS.timeseries_id = FS.forecast_id
                     AND TSS.source_id = FS.source_id
-                    AND TSS.lead = S.lead
+                    AND (
+                        TSS.lead = S.lead
+                        OR (
+                            TSS.lead IS NULL
+                            AND S.lead IS NULL
+                        )
+                    )
             );
         </sql>
         <dropTable tableName="ForecastSource" schemaName="wres"/>
