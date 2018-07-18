@@ -18,7 +18,7 @@ import wres.datamodel.outputs.ScoreOutput;
  * 
  * @author james.brown@hydrosolved.com
  */
-public final class SafeScalarOutputTest
+public final class SafeScoreOutputTest
 {
 
     /**
