@@ -39,4 +39,24 @@
             The wres.VariableFeature table has been added to the database.
         </comment>
     </changeSet>
+    <changeSet id="Migrate wres.VariablePosition to wres.VariableFeature" author="Christopher Tubbs">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableIsEmpty schemaName="wres" tableName="VariableFeature" />
+                <tableExists tableName="VariablePosition" schemaName="wres" />
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO wres.VariableFeature (variablefeature_id, variable_id, feature_id)
+            SELECT variableposition_id, variable_id, x_position
+            FROM wres.VariablePosition VP
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.VariableFeature VF
+                WHERE VF.variable_id = VP.variable_id
+                    AND VF.feature_id = VP.x_position
+                );
+        </sql>
+        <comment>Data from wres.VariablePosition successfully migrated to wres.VariableFeature</comment>
+    </changeSet>
 </databaseChangeLog>

@@ -44,7 +44,7 @@
                     AND TSV.series_value = FV.forecasted_value
             );
         </sql>
-        <dropTable tableName="ForecastValue" schemaName="wres" />
+        <dropTable tableName="ForecastValue" schemaName="wres" cascadeConstraints="true" />
         <comment>Removed wres.ForecastValue since it was replaced by wres.TimeSeriesValue</comment>
     </changeSet>
     <changeSet id="Remove wres.NetcdfPosition" author="Christopher Tubbs" >
@@ -73,8 +73,8 @@
             <tableExists tableName="VariablePosition" schemaName="wres" />
         </preConditions>
         <sql>
-            INSERT INTO wres.VariableFeature (variable_id, feature_id)
-            SELECT variable_id, x_position
+            INSERT INTO wres.VariableFeature (variablefeature_id, variable_id, feature_id)
+            SELECT variableposition_id, variable_id, x_position
             FROM wres.VariablePosition VP
             WHERE NOT EXISTS (
                 SELECT 1
@@ -83,6 +83,6 @@
                     AND VF.feature_id = VP.x_position
             );
         </sql>
-        <dropTable tableName="VariablePosition" schemaName="wres" />
+        <dropTable tableName="VariablePosition" schemaName="wres" cascadeConstraints="true"/>
     </changeSet>
 </databaseChangeLog>

@@ -29,4 +29,25 @@
             The wres.TimeSeriesValue table has been added to the database.
         </comment>
     </changeSet>
+    <changeSet id="Migrate wres.ForecastValue data to wres.TimeSeriesValue" author="Christopher Tubbs">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableIsEmpty schemaName="wres" tableName="TimeSeriesValue" />
+                <tableExists tableName="ForecastValue" schemaName="wres" />
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO wres.TimeSeriesValue (timeseries_id, lead, series_value)
+            SELECT FV.timeseries_id, FV.lead, FV.forecasted_value
+            FROM wres.ForecastValue FV
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.TimeSeriesValue TSV
+                WHERE TSV.timeseries_id = FV.timeseries_id
+                    AND TSV.lead = FV.lead
+                    AND TSV.series_value = FV.forecasted_value
+                );
+        </sql>
+        <comment>Data from wres.ForecastValue successfully migrated to wres.TimeSeriesValue</comment>
+    </changeSet>
 </databaseChangeLog>

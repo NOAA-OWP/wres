@@ -42,4 +42,27 @@
             The wres.TimeSeriesSource table has been added to the database.
         </comment>
     </changeSet>
+    <changeSet id="Migrate wres.ForecastSource to wres.TimeSeriesSource" author="Christopher Tubbs">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableIsEmpty tableName="TimeSeriesSource" schemaName="wres" />
+                <tableExists tableName="ForecastSource" schemaName="wres" />
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO wres.TimeSeriesSource(timeseries_id, source_id, lead)
+            SELECT FS.forecast_id, FS.source_id, S.lead
+            FROM wres.ForecastSource FS
+            INNER JOIN wres.Source S
+                ON S.source_id = FS.source_id
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.TimeSeriesSource TSS
+                WHERE TSS.timeseries_id = FS.forecast_id
+                    AND TSS.source_id = FS.source_id
+                    AND TSS.lead = S.lead
+            );
+        </sql>
+        <comment>Data from wres.ForecastSource successfully migrated to wres.TimeSeriesSource</comment>
+    </changeSet>
 </databaseChangeLog>

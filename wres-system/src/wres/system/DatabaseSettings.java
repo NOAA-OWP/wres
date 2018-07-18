@@ -636,6 +636,10 @@ final class DatabaseSettings
                     database
             );
 
+            // Liquibase sends a lot of information to its own internal logging system that spits everything out to
+            // stdout at the 'info' level. Changing it to 'severe' (i.e. error) to prevent all of the diagnostic
+            // messaging.
+            liquibase.getLog().setLogLevel( "severe" );
             liquibase.update( new Contexts(), new LabelExpression());
         }
         catch (SQLException | LiquibaseException e)

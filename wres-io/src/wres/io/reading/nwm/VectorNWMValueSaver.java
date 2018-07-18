@@ -780,8 +780,6 @@ class VectorNWMValueSaver extends WRESRunnable
                 if ( VectorNWMValueSaver.indexMapping == null
                      || !VectorNWMValueSaver.indexMapping.containsKey( key ) )
                 {
-                    LOGGER.info("Forming index mapping and adding variable features for {}", key);
-
                     // Add all missing locations for variables
                     this.addVariableFeatures();
 
@@ -794,11 +792,6 @@ class VectorNWMValueSaver extends WRESRunnable
                         // Add all time series that correspond with this data
                         this.addTimeSeries();
 
-                        /*1. load the comids and timeseries_ids for all the included time series
-                        2. Open the file, read through the feature variable, compare each field with one of the returned comids
-                        3. If there is a comid match, add the index of the feature id as the key and link it to the id of the time series
-                        4. Remove the matching key from the mapping of comids -> time series
-*/
                         // Form a script that will retrieve the IDs for each
                         // valid location for each time series for this set
                         // of data
