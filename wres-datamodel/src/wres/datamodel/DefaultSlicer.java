@@ -40,6 +40,7 @@ import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdType;
 import wres.datamodel.time.Event;
+import wres.datamodel.time.SafeTimeSeries;
 import wres.datamodel.time.TimeSeries;
 
 /**
@@ -49,7 +50,7 @@ import wres.datamodel.time.TimeSeries;
  * @author james.brown@hydrosolved.com
  */
 
-enum DefaultSlicer implements Slicer
+public enum DefaultSlicer implements Slicer
 {
 
     /**
@@ -362,7 +363,7 @@ enum DefaultSlicer implements Slicer
                 }
             }
         }
-        return new SafeTimeSeries<>( returnMe );
+        return SafeTimeSeries.of( returnMe );
     }
 
     @Override

@@ -9,9 +9,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.SortedSet;
 
-import wres.datamodel.SafeTimeSeries;
-import wres.datamodel.TimeSeriesHelper;
-import wres.datamodel.SafeTimeSeries.SafeTimeSeriesBuilder;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
@@ -20,7 +17,9 @@ import wres.datamodel.metadata.DefaultMetadataFactory;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.time.Event;
+import wres.datamodel.time.SafeTimeSeries;
 import wres.datamodel.time.TimeSeries;
+import wres.datamodel.time.TimeSeriesHelper;
 
 /**
  * Immutable implementation of a possibly irregular time-series of verification pairs that comprise two single-valued, 
@@ -252,15 +251,11 @@ public class SafeTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
     SafeTimeSeriesOfSingleValuedPairs( final SafeTimeSeriesOfSingleValuedPairsBuilder b )
     {
         super( b );
-        SafeTimeSeriesBuilder<PairOfDoubles> builder = new SafeTimeSeriesBuilder<>();
-        builder.addTimeSeriesData( b.data );
-        this.main = builder.build();
+        this.main = SafeTimeSeries.of( b.data );
         // Baseline data?
         if( this.hasBaseline() )
         {
-            SafeTimeSeriesBuilder<PairOfDoubles> baselineBuilder = new SafeTimeSeriesBuilder<>();
-            baselineBuilder.addTimeSeriesData( b.baselineData );
-            this.baseline = baselineBuilder.build();
+            this.baseline = SafeTimeSeries.of( b.baselineData );
         }
         else 
         {

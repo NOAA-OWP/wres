@@ -1,4 +1,4 @@
-package wres.datamodel;
+package wres.datamodel.time;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -18,11 +18,14 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import wres.datamodel.SafeTimeSeries.SafeTimeSeriesBuilder;
+import wres.datamodel.DataFactory;
+import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.time.Event;
+import wres.datamodel.time.SafeTimeSeries;
 import wres.datamodel.time.TimeSeries;
+import wres.datamodel.time.SafeTimeSeries.SafeTimeSeriesBuilder;
 
 /**
  * Tests the {@link SafeTimeSeries}.

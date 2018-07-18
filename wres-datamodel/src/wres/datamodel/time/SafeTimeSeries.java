@@ -1,4 +1,4 @@
-package wres.datamodel;
+package wres.datamodel.time;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -14,11 +14,11 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
+import wres.datamodel.DefaultSlicer;
 import wres.datamodel.Slicer;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
-import wres.datamodel.time.TimeSeriesBuilder;
 
 /**
  * Base class for an immutable implementation of a (possibly irregular) time-series.
@@ -65,6 +65,49 @@ public class SafeTimeSeries<T> implements TimeSeries<T>
 
     private final Iterable<Event<T>> timeIterator;
 
+    /**
+     * Builds a time-series from the input. Each {@link Event} in the outer list represents one basis time (i.e. one
+     * time-series). Each {@link Event} in the inner list represents one valid time.
+     * 
+     * @param <T> the type of event
+     * @param timeSeries the input time-series data
+     * @return a time-series
+     */
+
+    public static <T> SafeTimeSeries<T> of( List<Event<List<Event<T>>>> timeSeries )
+    {
+        return new SafeTimeSeries<>( timeSeries );
+    }
+
+
+    /**
+     * A default builder to build a time-series incrementally. Also see {@link SafeTimeSeries#of(List)}.
+     */
+
+    public static class SafeTimeSeriesBuilder<T> implements TimeSeriesBuilder<T>
+    {
+
+        /**
+         * The raw data.
+         */
+
+        private List<Event<List<Event<T>>>> data = new ArrayList<>();
+
+        @Override
+        public SafeTimeSeriesBuilder<T> addTimeSeriesData( List<Event<List<Event<T>>>> timeSeries )
+        {
+            data.addAll( timeSeries );
+            return this;
+        }
+
+        @Override
+        public SafeTimeSeries<T> build()
+        {
+            return new SafeTimeSeries<>( this );
+        }
+
+    }    
+    
     @Override
     public Iterable<Event<T>> timeIterator()
     {
@@ -170,34 +213,6 @@ public class SafeTimeSeries<T> implements TimeSeries<T>
     }
 
     /**
-     * A default builder to build the time-series.
-     */
-
-    public static class SafeTimeSeriesBuilder<T> implements TimeSeriesBuilder<T>
-    {
-
-        /**
-         * The raw data.
-         */
-
-        private List<Event<List<Event<T>>>> data = new ArrayList<>();
-
-        @Override
-        public SafeTimeSeriesBuilder<T> addTimeSeriesData( List<Event<List<Event<T>>>> timeSeries )
-        {
-            data.addAll( timeSeries );
-            return this;
-        }
-
-        @Override
-        public SafeTimeSeries<T> build()
-        {
-            return new SafeTimeSeries<>( this );
-        }
-
-    }
-
-    /**
      * Build the time-series.
      * 
      * @param data the raw data
@@ -210,7 +225,7 @@ public class SafeTimeSeries<T> implements TimeSeries<T>
     SafeTimeSeries( final SafeTimeSeriesBuilder<T> builder )
     {
         this( builder.data );
-    }
+    }    
 
     /**
      * Build the time-series internally.
