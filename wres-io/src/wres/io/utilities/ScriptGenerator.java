@@ -565,12 +565,12 @@ public final class ScriptGenerator
             script.addLine("WHERE ", timeSeriesVariableFeature);
             script.addLine("    AND EXISTS (");
             script.addLine("        SELECT 1");
-            script.addLine("        FROM wres.TimeSeriesSource TSSS");
+            script.addLine("        FROM wres.TimeSeriesSource TSS");
             script.addLine("        INNER JOIN wres.ProjectSource PS");
-            script.addLine("            ON PS.source_id = TSSS.source_id");
+            script.addLine("            ON PS.source_id = TSS.source_id");
             script.addLine("        WHERE PS.project_id = ", projectDetails.getId());
             script.addLine("            AND PS.member = 'right'");
-            script.addLine("            AND TS.timeseries_id = TS.timeseries_id");
+            script.addLine("            AND TSS.timeseries_id = TS.timeseries_id");
             script.addLine("    );");
         }
 

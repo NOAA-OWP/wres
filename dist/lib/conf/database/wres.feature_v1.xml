@@ -21,7 +21,7 @@
         <renameColumn tableName="Feature" schemaName="wres" oldColumnName="st" newColumnName="state" />
         <comment>Renamed 'Feature.st' to 'Feature.state'</comment>
     </changeSet>
-    <changeSet id="Feature v1.0" author="Christopher Tubbs" dbms="PostgreSQL">
+    <changeSet id="Feature v1.0" author="Christopher Tubbs" dbms="PostgreSQL" onValidationFail="MARK_RAN">
         <preConditions onFail="MARK_RAN">
             <not>
                 <tableExists tableName="Feature" schemaName="wres" />
@@ -50,6 +50,11 @@
         <comment>
             The wres.Feature table has been created.
         </comment>
+    </changeSet>
+    <changeSet id="Add stock features" author="Christopher Tubbs">
+        <preConditions onFail="MARK_RAN">
+            <tableIsEmpty schemaName="wres" tableName="Feature" />
+        </preConditions>
         <sqlFile relativeToChangelogFile="true" path="Features.sql" />
     </changeSet>
 </databaseChangeLog>
