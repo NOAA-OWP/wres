@@ -1,4 +1,4 @@
-package wres.datamodel;
+package wres.datamodel.thresholds;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -11,6 +11,7 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
@@ -414,7 +415,7 @@ public class SafeThresholdsByMetric implements ThresholdsByMetric
      * Builder.
      */
 
-    static class SafeThresholdsByMetricBuilder implements ThresholdsByMetricBuilder
+    public static class SafeThresholdsByMetricBuilder implements ThresholdsByMetricBuilder
     {
 
         /**

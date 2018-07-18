@@ -1,4 +1,4 @@
-package wres.datamodel;
+package wres.datamodel.thresholds;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -7,9 +7,12 @@ import static org.junit.Assert.fail;
 
 import org.junit.Test;
 
-import wres.datamodel.SafeThreshold.ThresholdBuilder;
+import wres.datamodel.DataFactory;
+import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.thresholds.SafeThreshold;
 import wres.datamodel.thresholds.Threshold;
+import wres.datamodel.thresholds.SafeThreshold.ThresholdBuilder;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 
@@ -19,8 +22,6 @@ import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
  * TODO: this is a placeholder to be implemented properly in terms of depth and coverage
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 public final class SafeThresholdTest
 {
