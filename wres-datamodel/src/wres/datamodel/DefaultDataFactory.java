@@ -12,9 +12,6 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
-import wres.datamodel.SafeMetricOutputMapByMetric.SafeMetricOutputMapByMetricBuilder;
-import wres.datamodel.SafeMetricOutputMapByTimeAndThreshold.SafeMetricOutputMapByTimeAndThresholdBuilder;
-import wres.datamodel.SafeMetricOutputMultiMapByTimeAndThreshold.SafeMetricOutputMultiMapByTimeAndThresholdBuilder;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
@@ -46,11 +43,22 @@ import wres.datamodel.outputs.MapKey;
 import wres.datamodel.outputs.MatrixOutput;
 import wres.datamodel.outputs.MetricOutput;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold.MetricOutputForProjectByTimeAndThresholdBuilder;
+import wres.datamodel.outputs.SafeMetricOutputMapByMetric.SafeMetricOutputMapByMetricBuilder;
+import wres.datamodel.outputs.SafeMetricOutputMapByTimeAndThreshold.SafeMetricOutputMapByTimeAndThresholdBuilder;
+import wres.datamodel.outputs.SafeMetricOutputMultiMapByTimeAndThreshold.SafeMetricOutputMultiMapByTimeAndThresholdBuilder;
 import wres.datamodel.outputs.MetricOutputMapByMetric;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.PairedOutput;
+import wres.datamodel.outputs.SafeBoxPlotOutput;
+import wres.datamodel.outputs.SafeDoubleScoreOutput;
+import wres.datamodel.outputs.SafeDurationScoreOutput;
+import wres.datamodel.outputs.SafeMatrixOutput;
+import wres.datamodel.outputs.SafeMetricOutputForProjectByTimeAndThreshold;
+import wres.datamodel.outputs.SafeMetricOutputMapByTimeAndThreshold;
+import wres.datamodel.outputs.SafeMultiVectorOutput;
+import wres.datamodel.outputs.SafePairedOutput;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.SafeThreshold;
 import wres.datamodel.thresholds.Threshold;
@@ -629,7 +637,7 @@ public enum DefaultDataFactory implements DataFactory
      * @return a safe implementation of the input
      */
 
-    VectorOfDoubles safeVectorOf( VectorOfDoubles input )
+    public VectorOfDoubles safeVectorOf( VectorOfDoubles input )
     {
         Objects.requireNonNull( input, "Expected non-null input for the safe vector." );
         if ( input instanceof SafeVectorOfDoubles )
@@ -646,7 +654,7 @@ public enum DefaultDataFactory implements DataFactory
      * @return a safe implementation of the input
      */
 
-    MatrixOfDoubles safeMatrixOf( MatrixOfDoubles input )
+    public MatrixOfDoubles safeMatrixOf( MatrixOfDoubles input )
     {
         Objects.requireNonNull( input, "Expected non-null input for the safe matrix." );
         if ( input instanceof SafeMatrixOfDoubles )

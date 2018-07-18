@@ -1,4 +1,4 @@
-package wres.datamodel;
+package wres.datamodel.outputs;
 
 import java.util.Collections;
 import java.util.Iterator;
@@ -16,11 +16,9 @@ import wres.datamodel.outputs.PairedOutput;
  * A read-only list of paired outputs. The pairs may or may not be immutable, but the list is read only.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.4
  */
 
-class SafePairedOutput<S, T> implements PairedOutput<S, T>
+public class SafePairedOutput<S, T> implements PairedOutput<S, T>
 {
 
     /**
@@ -94,7 +92,7 @@ class SafePairedOutput<S, T> implements PairedOutput<S, T>
      * @throws MetricOutputException if any of the inputs are invalid
      */
 
-    SafePairedOutput( final List<Pair<S, T>> output, final MetricOutputMetadata meta )
+    public SafePairedOutput( final List<Pair<S, T>> output, final MetricOutputMetadata meta )
     {
         //Validate
         if ( Objects.isNull( output ) )

@@ -1,4 +1,4 @@
-package wres.datamodel;
+package wres.datamodel.outputs;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 
+import wres.datamodel.DefaultDataFactory;
+import wres.datamodel.MatrixOfDoubles;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.MatrixOutput;
@@ -17,10 +19,8 @@ import wres.datamodel.outputs.MetricOutputException;
  * An immutable matrix of outputs associated with a metric.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.2
- * @since 0.1
  */
-class SafeMatrixOutput implements MatrixOutput
+public class SafeMatrixOutput implements MatrixOutput
 {
 
     /**
@@ -161,7 +161,7 @@ class SafeMatrixOutput implements MatrixOutput
      * @throws MetricOutputException if any of the inputs are invalid
      */
 
-    SafeMatrixOutput( final MatrixOfDoubles output, List<MetricDimension> names, final MetricOutputMetadata meta )
+    public SafeMatrixOutput( final MatrixOfDoubles output, List<MetricDimension> names, final MetricOutputMetadata meta )
     {
         if ( Objects.isNull( output ) )
         {

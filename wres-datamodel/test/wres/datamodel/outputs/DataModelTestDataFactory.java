@@ -1,4 +1,4 @@
-package wres.datamodel;
+package wres.datamodel.outputs;
 
 import java.io.File;
 import java.time.Duration;
@@ -15,15 +15,20 @@ import evs.metric.results.MetricResult;
 import evs.metric.results.MetricResultByLeadTime;
 import evs.metric.results.MetricResultByThreshold;
 import evs.metric.results.MetricResultKey;
+import wres.datamodel.DataFactory;
+import wres.datamodel.DefaultDataFactory;
+import wres.datamodel.MetricConstants;
+import wres.datamodel.SafeOneOrTwoDoubles;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
-import wres.datamodel.SafeMetricOutputMapByTimeAndThreshold.SafeMetricOutputMapByTimeAndThresholdBuilder;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
+import wres.datamodel.outputs.SafeMetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.ScoreOutput;
+import wres.datamodel.outputs.SafeMetricOutputMapByTimeAndThreshold.SafeMetricOutputMapByTimeAndThresholdBuilder;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
@@ -32,8 +37,6 @@ import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
  * Factory class for generating test datasets for metric calculations.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 public final class DataModelTestDataFactory
 {
@@ -50,7 +53,8 @@ public final class DataModelTestDataFactory
     {
         final DataFactory outputFactory = DefaultDataFactory.getInstance();
         final MetadataFactory metaFactory = outputFactory.getMetadataFactory();
-        final SafeMetricOutputMapByTimeAndThresholdBuilder<DoubleScoreOutput> builder = new SafeMetricOutputMapByTimeAndThreshold.SafeMetricOutputMapByTimeAndThresholdBuilder<>();
+        final SafeMetricOutputMapByTimeAndThresholdBuilder<DoubleScoreOutput> builder =
+                new SafeMetricOutputMapByTimeAndThreshold.SafeMetricOutputMapByTimeAndThresholdBuilder<>();
         try
         {
             //Create the input file

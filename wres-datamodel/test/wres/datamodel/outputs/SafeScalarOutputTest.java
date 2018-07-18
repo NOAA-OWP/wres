@@ -1,19 +1,22 @@
-package wres.datamodel;
+package wres.datamodel.outputs;
 
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
+import wres.datamodel.DataFactory;
+import wres.datamodel.DefaultDataFactory;
+import wres.datamodel.Location;
+import wres.datamodel.MetricConstants;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
+import wres.datamodel.outputs.SafeDoubleScoreOutput;
 import wres.datamodel.outputs.ScoreOutput;
 
 /**
  * Tests the {@link SafeDoubleScoreOutput}.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 public final class SafeScalarOutputTest
 {

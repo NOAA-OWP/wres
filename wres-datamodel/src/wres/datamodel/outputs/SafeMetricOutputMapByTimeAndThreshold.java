@@ -1,4 +1,4 @@
-package wres.datamodel;
+package wres.datamodel.outputs;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -33,7 +33,7 @@ import wres.datamodel.thresholds.Threshold;
  *
  * @author james.brown@hydrosolved.com
  */
-class SafeMetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>> implements MetricOutputMapByTimeAndThreshold<T>
+public class SafeMetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>> implements MetricOutputMapByTimeAndThreshold<T>
 {
 
     /**
@@ -355,7 +355,7 @@ class SafeMetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>> implement
      * @param <T> the metric output
      */
 
-    static class SafeMetricOutputMapByTimeAndThresholdBuilder<T extends MetricOutput<?>>
+    public static class SafeMetricOutputMapByTimeAndThresholdBuilder<T extends MetricOutput<?>>
     {
 
         /**
@@ -377,7 +377,7 @@ class SafeMetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>> implement
          * @return the builder
          */
 
-        protected SafeMetricOutputMapByTimeAndThresholdBuilder<T> put( final Pair<TimeWindow, OneOrTwoThresholds> key,
+        public SafeMetricOutputMapByTimeAndThresholdBuilder<T> put( final Pair<TimeWindow, OneOrTwoThresholds> key,
                                                                        final T value )
         {
             this.store.put( key, value );
@@ -391,7 +391,7 @@ class SafeMetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>> implement
          * @return the builder
          */
 
-        protected SafeMetricOutputMapByTimeAndThresholdBuilder<T>
+        public SafeMetricOutputMapByTimeAndThresholdBuilder<T>
                 setOverrideMetadata( final MetricOutputMetadata overrideMeta )
         {
             this.overrideMeta = overrideMeta;
@@ -404,7 +404,7 @@ class SafeMetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>> implement
          * @return the mapping
          */
 
-        protected MetricOutputMapByTimeAndThreshold<T> build()
+        public MetricOutputMapByTimeAndThreshold<T> build()
         {
             return new SafeMetricOutputMapByTimeAndThreshold<>( this );
         }

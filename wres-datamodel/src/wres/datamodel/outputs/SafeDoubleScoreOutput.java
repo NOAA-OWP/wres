@@ -1,20 +1,21 @@
-package wres.datamodel;
+package wres.datamodel.outputs;
 
-import java.time.Duration;
+import java.util.Arrays;
 import java.util.Map;
 
+import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.DurationScoreOutput;
+import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MetricOutputException;
 
 /**
- * An immutable output that contains {@link Duration} values associated with a score.
+ * An immutable output that contains <code>double</code> values associated with a score.
  * 
  * @author james.brown@hydrosolved.com
  */
 
-class SafeDurationScoreOutput extends SafeScoreOutput<Duration,DurationScoreOutput> implements DurationScoreOutput
+public class SafeDoubleScoreOutput extends SafeScoreOutput<Double,DoubleScoreOutput> implements DoubleScoreOutput
 {
 
     /**
@@ -25,9 +26,9 @@ class SafeDurationScoreOutput extends SafeScoreOutput<Duration,DurationScoreOutp
      * @throws MetricOutputException if any of the inputs are invalid
      */
 
-    SafeDurationScoreOutput( final Duration output, final MetricOutputMetadata meta )
+    public SafeDoubleScoreOutput( final double output, final MetricOutputMetadata meta )
     {
-        super(output, meta);
+        super( output, meta );
     }
 
     /**
@@ -38,9 +39,9 @@ class SafeDurationScoreOutput extends SafeScoreOutput<Duration,DurationScoreOutp
      * @throws MetricOutputException if any of the inputs are invalid
      */
 
-    SafeDurationScoreOutput( final Map<MetricConstants, Duration> output, final MetricOutputMetadata meta )
+    public SafeDoubleScoreOutput( final Map<MetricConstants, Double> output, final MetricOutputMetadata meta )
     {
-        super(output, meta);
+        super( output, meta );
     }
 
     /**
@@ -52,15 +53,16 @@ class SafeDurationScoreOutput extends SafeScoreOutput<Duration,DurationScoreOutp
      * @throws MetricOutputException if any of the inputs are invalid
      */
 
-    SafeDurationScoreOutput( final Duration[] output, final ScoreOutputGroup template, final MetricOutputMetadata meta )
+    public SafeDoubleScoreOutput( final double[] output, final ScoreOutputGroup template, final MetricOutputMetadata meta )
     {
-        super( output, template, meta );
+        super( Arrays.stream( output ).boxed().toArray( Double[]::new ), template, meta );
     }
 
     @Override
-    DurationScoreOutput getScoreOutput( Duration input, MetricOutputMetadata meta )
+    DoubleScoreOutput getScoreOutput( Double input, MetricOutputMetadata meta )
     {
-        return new SafeDurationScoreOutput( input, meta );
+        return new SafeDoubleScoreOutput( input, meta );
     }
+
 
 }
