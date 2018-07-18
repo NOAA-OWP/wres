@@ -29,6 +29,7 @@ import wres.datamodel.inputs.pairs.SafeTimeSeriesOfEnsemblePairs.SafeTimeSeriesO
 import wres.datamodel.inputs.pairs.SafeTimeSeriesOfSingleValuedPairs.SafeTimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.outputs.DataModelTestDataFactory;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.thresholds.Threshold;

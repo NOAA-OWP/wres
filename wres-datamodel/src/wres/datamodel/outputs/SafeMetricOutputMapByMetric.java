@@ -1,4 +1,4 @@
-package wres.datamodel;
+package wres.datamodel.outputs;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -11,6 +11,8 @@ import java.util.SortedMap;
 import java.util.StringJoiner;
 import java.util.TreeMap;
 
+import wres.datamodel.DefaultDataFactory;
+import wres.datamodel.MetricConstants;
 import wres.datamodel.outputs.MapKey;
 import wres.datamodel.outputs.MetricOutput;
 import wres.datamodel.outputs.MetricOutputException;
@@ -21,7 +23,7 @@ import wres.datamodel.outputs.MetricOutputMapByMetric;
  *
  * @author james.brown@hydrosolved.com
  */
-class SafeMetricOutputMapByMetric<T extends MetricOutput<?>> implements MetricOutputMapByMetric<T>
+public class SafeMetricOutputMapByMetric<T extends MetricOutput<?>> implements MetricOutputMapByMetric<T>
 {
 
     /**
@@ -150,7 +152,7 @@ class SafeMetricOutputMapByMetric<T extends MetricOutput<?>> implements MetricOu
      * @param <T> the metric output
      */
 
-    static class SafeMetricOutputMapByMetricBuilder<T extends MetricOutput<?>>
+    public static class SafeMetricOutputMapByMetricBuilder<T extends MetricOutput<?>>
     {
 
         private final TreeMap<MapKey<MetricConstants>, T> store = new TreeMap<>();
@@ -164,7 +166,7 @@ class SafeMetricOutputMapByMetric<T extends MetricOutput<?>> implements MetricOu
          * @throws MetricOutputException if the input already exists in this store
          */
 
-        SafeMetricOutputMapByMetricBuilder<T> put( final MapKey<MetricConstants> key, final T value )
+        public SafeMetricOutputMapByMetricBuilder<T> put( final MapKey<MetricConstants> key, final T value )
         {
             if ( store.containsKey( key ) )
             {
@@ -184,7 +186,7 @@ class SafeMetricOutputMapByMetric<T extends MetricOutput<?>> implements MetricOu
          * @throws MetricOutputException if one or more of the inputs already exist in this store
          */
 
-        SafeMetricOutputMapByMetricBuilder<T> put( MetricOutputMapByMetric<T> map )
+        public SafeMetricOutputMapByMetricBuilder<T> put( MetricOutputMapByMetric<T> map )
         {
             map.forEach( this::put );
             return this;
@@ -196,7 +198,7 @@ class SafeMetricOutputMapByMetric<T extends MetricOutput<?>> implements MetricOu
          * @return the mapping
          */
 
-        MetricOutputMapByMetric<T> build()
+        public MetricOutputMapByMetric<T> build()
         {
             return new SafeMetricOutputMapByMetric<>( this );
         }

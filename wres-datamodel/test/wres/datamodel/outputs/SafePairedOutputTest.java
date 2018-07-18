@@ -1,4 +1,4 @@
-package wres.datamodel;
+package wres.datamodel.outputs;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -11,17 +11,20 @@ import java.util.List;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
+import wres.datamodel.DataFactory;
+import wres.datamodel.DefaultDataFactory;
+import wres.datamodel.Location;
+import wres.datamodel.MetricConstants;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.MetricOutputException;
 import wres.datamodel.outputs.PairedOutput;
+import wres.datamodel.outputs.SafePairedOutput;
 
 /**
  * Tests the {@link SafePairedOutput}.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.4
- * @since 0.1
  */
 public final class SafePairedOutputTest
 {

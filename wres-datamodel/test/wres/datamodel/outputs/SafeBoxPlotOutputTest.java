@@ -1,4 +1,4 @@
-package wres.datamodel;
+package wres.datamodel.outputs;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -9,19 +9,23 @@ import java.util.Objects;
 
 import org.junit.Test;
 
+import wres.datamodel.DataFactory;
+import wres.datamodel.DefaultDataFactory;
+import wres.datamodel.Location;
+import wres.datamodel.MetricConstants;
+import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.outputs.MetricOutputException;
+import wres.datamodel.outputs.SafeBoxPlotOutput;
 
 /**
  * Tests the {@link SafeBoxPlotOutput}.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 public final class SafeBoxPlotOutputTest
 {
