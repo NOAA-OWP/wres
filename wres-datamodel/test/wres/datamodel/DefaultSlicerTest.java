@@ -17,8 +17,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import wres.datamodel.SafeTimeSeriesOfEnsemblePairs.SafeTimeSeriesOfEnsemblePairsBuilder;
-import wres.datamodel.SafeTimeSeriesOfSingleValuedPairs.SafeTimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.PairOfBooleans;
@@ -27,8 +25,11 @@ import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
+import wres.datamodel.inputs.pairs.SafeTimeSeriesOfEnsemblePairs.SafeTimeSeriesOfEnsemblePairsBuilder;
+import wres.datamodel.inputs.pairs.SafeTimeSeriesOfSingleValuedPairs.SafeTimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.outputs.DataModelTestDataFactory;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.thresholds.Threshold;
@@ -192,7 +193,7 @@ public final class DefaultSlicerTest
     }
 
     /**
-     * Tests the {@link Slicer#transform(EnsemblePairs, Function)}.
+     * Tests the {@link Slicer#toSingleValuedPairs(EnsemblePairs, Function)}.
      */
 
     @Test
@@ -214,16 +215,16 @@ public final class DefaultSlicerTest
         double[] expected = new double[] { 3.0, 8.0, 13.0, 18.0, 23.0, 28.0 };
         //Test without baseline
         double[] actualNoBase =
-                slicer.getRightSide( slicer.transform( metIn.ofEnsemblePairs( values, meta ), mapper ) );
+                slicer.getRightSide( slicer.toSingleValuedPairs( metIn.ofEnsemblePairs( values, meta ), mapper ) );
         assertTrue( "The transformed test data does not match the benchmark.",
                     Arrays.equals( actualNoBase, expected ) );
         //Test baseline
-        double[] actualBase = slicer.getRightSide( slicer.transform( input, mapper ).getBaselineData() );
+        double[] actualBase = slicer.getRightSide( slicer.toSingleValuedPairs( input, mapper ).getBaselineData() );
         assertTrue( "The transformed test data does not match the benchmark.", Arrays.equals( actualBase, expected ) );
     }
 
     /**
-     * Tests the {@link Slicer#transform(SingleValuedPairs, Function)}. 
+     * Tests the {@link Slicer#toDichotomousPairs(SingleValuedPairs, Function)}. 
      */
 
     @Test
@@ -256,19 +257,19 @@ public final class DefaultSlicerTest
                                                                             null );
 
         //Test without baseline
-        DichotomousPairs actualNoBase = slicer.transform( metIn.ofSingleValuedPairs( values, meta ), mapper );
+        DichotomousPairs actualNoBase = slicer.toDichotomousPairs( metIn.ofSingleValuedPairs( values, meta ), mapper );
         assertTrue( "The transformed test data does not match the benchmark.",
                     actualNoBase.getRawData().equals( expectedNoBase.getRawData() ) );
         //Test baseline
         DichotomousPairs actualBase =
-                slicer.transform( metIn.ofSingleValuedPairs( values, values, meta, meta, null ),
+                slicer.toDichotomousPairs( metIn.ofSingleValuedPairs( values, values, meta, meta, null ),
                                   mapper );
         assertTrue( "The transformed test data does not match the benchmark.",
                     actualBase.getRawDataForBaseline().equals( expectedBase.getRawDataForBaseline() ) );
     }
 
     /**
-     * Tests the {@link Slicer#transform(EnsemblePairs, Threshold, BiFunction)}.
+     * Tests the {@link Slicer#toDiscreteProbabilityPairs(EnsemblePairs, Threshold, BiFunction)}.
      */
 
     @Test
@@ -286,15 +287,15 @@ public final class DefaultSlicerTest
         Threshold threshold = metIn.ofThreshold( SafeOneOrTwoDoubles.of( 3.0 ),
                                                  Operator.GREATER,
                                                  ThresholdDataType.LEFT );
-        BiFunction<PairOfDoubleAndVectorOfDoubles, Threshold, PairOfDoubles> mapper = metIn.getSlicer()::transform;
+        BiFunction<PairOfDoubleAndVectorOfDoubles, Threshold, PairOfDoubles> mapper = metIn.getSlicer()::toDiscreteProbabilityPair;
         double[] expectedLeft = new double[] { 0.0, 0.0, 0.0, 1.0, 0.0, 1.0 };
         double[] expectedRight = new double[] { 2.0 / 5.0, 0.0 / 5.0, 0.0 / 5.0, 5.0 / 5.0, 2.0 / 5.0, 3.0 / 5.0 };
 
         //Test without baseline
-        double[] actualNoBaseLeft = slicer.getLeftSide( slicer.transform( metIn.ofEnsemblePairs( values, meta ),
+        double[] actualNoBaseLeft = slicer.getLeftSide( slicer.toDiscreteProbabilityPairs( metIn.ofEnsemblePairs( values, meta ),
                                                                           threshold,
                                                                           mapper ) );
-        double[] actualNoBaseRight = slicer.getRightSide( slicer.transform( metIn.ofEnsemblePairs( values, meta ),
+        double[] actualNoBaseRight = slicer.getRightSide( slicer.toDiscreteProbabilityPairs( metIn.ofEnsemblePairs( values, meta ),
                                                                             threshold,
                                                                             mapper ) );
         assertTrue( "The transformed test data does not match the benchmark.",
@@ -303,7 +304,7 @@ public final class DefaultSlicerTest
                     Arrays.equals( actualNoBaseRight, expectedRight ) );
 
         //Test baseline
-        double[] actualBaseLeft = slicer.getLeftSide( slicer.transform( metIn.ofEnsemblePairs( values,
+        double[] actualBaseLeft = slicer.getLeftSide( slicer.toDiscreteProbabilityPairs( metIn.ofEnsemblePairs( values,
                                                                                                values,
                                                                                                meta,
                                                                                                meta,
@@ -311,7 +312,7 @@ public final class DefaultSlicerTest
                                                                         threshold,
                                                                         mapper )
                                                             .getBaselineData() );
-        double[] actualBaseRight = slicer.getRightSide( slicer.transform( metIn.ofEnsemblePairs( values,
+        double[] actualBaseRight = slicer.getRightSide( slicer.toDiscreteProbabilityPairs( metIn.ofEnsemblePairs( values,
                                                                                                  values,
                                                                                                  meta,
                                                                                                  meta,
@@ -326,11 +327,11 @@ public final class DefaultSlicerTest
     }
 
     /**
-     * Tests the {@link Slicer#transform(PairOfDoubleAndVectorOfDoubles, Threshold)}.
+     * Tests the {@link Slicer#toDiscreteProbabilityPair(PairOfDoubleAndVectorOfDoubles, Threshold)}.
      */
 
     @Test
-    public void testTransformEnsemblePairToDiscreteProbabilitPair()
+    public void testTransformEnsemblePairToDiscreteProbabilityPair()
     {
         DataFactory metIn = DefaultDataFactory.getInstance();
         PairOfDoubleAndVectorOfDoubles a = metIn.pairOf( 3, new double[] { 1, 2, 3, 4, 5 } );
@@ -342,7 +343,7 @@ public final class DefaultSlicerTest
         Threshold threshold = metIn.ofThreshold( SafeOneOrTwoDoubles.of( 3.0 ),
                                                  Operator.GREATER,
                                                  ThresholdDataType.LEFT );
-        BiFunction<PairOfDoubleAndVectorOfDoubles, Threshold, PairOfDoubles> mapper = metIn.getSlicer()::transform;
+        BiFunction<PairOfDoubleAndVectorOfDoubles, Threshold, PairOfDoubles> mapper = metIn.getSlicer()::toDiscreteProbabilityPair;
         assertTrue( "The transformed pair does not match the benchmark",
                     mapper.apply( a, threshold ).equals( metIn.pairOf( 0.0, 2.0 / 5.0 ) ) );
         assertTrue( "The transformed pair does not match the benchmark",
@@ -494,7 +495,7 @@ public final class DefaultSlicerTest
     }
 
     /**
-     * Tests the {@link Slicer#transform(PairOfDoubleAndVectorOfDoubles)}.
+     * Tests the {@link Slicer#ofSingleValuedPairMapper(PairOfDoubleAndVectorOfDoubles)}.
      */
 
     @Test
@@ -508,7 +509,7 @@ public final class DefaultSlicerTest
         PairOfDoubleAndVectorOfDoubles e = metIn.pairOf( 0, new double[] { 1, 2, 3, 4, 5 } );
         PairOfDoubleAndVectorOfDoubles f = metIn.pairOf( 5, new double[] { 1, 1, 6, 6, 50 } );
         Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles> mapper =
-                metIn.getSlicer().transform( vector -> vector[0] );
+                metIn.getSlicer().ofSingleValuedPairMapper( vector -> vector[0] );
         assertTrue( "The transformed pair does not match the benchmark",
                     mapper.apply( a ).equals( metIn.pairOf( 3, 1 ) ) );
         assertTrue( "The transformed pair does not match the benchmark",

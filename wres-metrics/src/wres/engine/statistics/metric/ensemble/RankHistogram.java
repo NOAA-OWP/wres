@@ -6,6 +6,7 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Random;
 import java.util.function.BiConsumer;
 import java.util.stream.IntStream;
@@ -66,19 +67,22 @@ public class RankHistogram extends Diagram<EnsemblePairs, MultiVectorOutput>
             //Acquire subsets in case of missing data
             Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> sliced = slicer.filterByRightSize( s.getRawData() );
             //Find the subset with the most elements
-            List<PairOfDoubleAndVectorOfDoubles> useMe =
-                    sliced.values().stream().max( Comparator.comparingInt( List::size ) ).get();
+            Optional<List<PairOfDoubleAndVectorOfDoubles>> useMe =
+                    sliced.values().stream().max( Comparator.comparingInt( List::size ) );
 
-            //Set the ranked positions as 1:N+1
-            ranks = IntStream.range( 1, useMe.get( 0 ).getItemTwo().length + 2 ).asDoubleStream().toArray();
-            double[] sumRanks = new double[ranks.length]; //Total falling in each ranked position
+            if ( useMe.isPresent() )
+            {
+                //Set the ranked positions as 1:N+1
+                ranks = IntStream.range( 1, useMe.get().get( 0 ).getItemTwo().length + 2 ).asDoubleStream().toArray();
+                double[] sumRanks = new double[ranks.length]; //Total falling in each ranked position
 
-            //Compute the sum of ranks
-            BiConsumer<PairOfDoubleAndVectorOfDoubles, double[]> ranker = rankWithTies( rng );
-            useMe.forEach( nextPair -> ranker.accept( nextPair, sumRanks ) );
+                //Compute the sum of ranks
+                BiConsumer<PairOfDoubleAndVectorOfDoubles, double[]> ranker = rankWithTies( rng );
+                useMe.get().forEach( nextPair -> ranker.accept( nextPair, sumRanks ) );
 
-            //Compute relative frequencies
-            relativeFrequencies = Arrays.stream( sumRanks ).map( a -> a / useMe.size() ).toArray();
+                //Compute relative frequencies
+                relativeFrequencies = Arrays.stream( sumRanks ).map( a -> a / useMe.get().size() ).toArray();
+            }
         }
 
         //Set and return the results

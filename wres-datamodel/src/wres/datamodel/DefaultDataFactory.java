@@ -12,13 +12,6 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
-import wres.datamodel.SafeMetricOutputMapByMetric.SafeMetricOutputMapByMetricBuilder;
-import wres.datamodel.SafeMetricOutputMapByTimeAndThreshold.SafeMetricOutputMapByTimeAndThresholdBuilder;
-import wres.datamodel.SafeMetricOutputMultiMapByTimeAndThreshold.SafeMetricOutputMultiMapByTimeAndThresholdBuilder;
-import wres.datamodel.SafeThresholdsByMetric.SafeThresholdsByMetricBuilder;
-import wres.datamodel.SafeTimeSeries.SafeTimeSeriesBuilder;
-import wres.datamodel.SafeTimeSeriesOfEnsemblePairs.SafeTimeSeriesOfEnsemblePairsBuilder;
-import wres.datamodel.SafeTimeSeriesOfSingleValuedPairs.SafeTimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
@@ -26,9 +19,19 @@ import wres.datamodel.inputs.pairs.MulticategoryPairs;
 import wres.datamodel.inputs.pairs.PairOfBooleans;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
+import wres.datamodel.inputs.pairs.SafeDichotomousPairs;
+import wres.datamodel.inputs.pairs.SafeDiscreteProbabilityPairs;
+import wres.datamodel.inputs.pairs.SafeEnsemblePairs;
+import wres.datamodel.inputs.pairs.SafeMulticategoryPairs;
+import wres.datamodel.inputs.pairs.SafePairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.inputs.pairs.SafePairOfDoubles;
+import wres.datamodel.inputs.pairs.SafeSingleValuedPairs;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairsBuilder;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairsBuilder;
+import wres.datamodel.inputs.pairs.SafeTimeSeriesOfEnsemblePairs.SafeTimeSeriesOfEnsemblePairsBuilder;
+import wres.datamodel.inputs.pairs.SafeTimeSeriesOfSingleValuedPairs.SafeTimeSeriesOfSingleValuedPairsBuilder;
+import wres.datamodel.metadata.DefaultMetadataFactory;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
@@ -40,17 +43,31 @@ import wres.datamodel.outputs.MapKey;
 import wres.datamodel.outputs.MatrixOutput;
 import wres.datamodel.outputs.MetricOutput;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold.MetricOutputForProjectByTimeAndThresholdBuilder;
+import wres.datamodel.outputs.SafeMetricOutputMapByMetric.SafeMetricOutputMapByMetricBuilder;
+import wres.datamodel.outputs.SafeMetricOutputMapByTimeAndThreshold.SafeMetricOutputMapByTimeAndThresholdBuilder;
+import wres.datamodel.outputs.SafeMetricOutputMultiMapByTimeAndThreshold.SafeMetricOutputMultiMapByTimeAndThresholdBuilder;
 import wres.datamodel.outputs.MetricOutputMapByMetric;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.PairedOutput;
+import wres.datamodel.outputs.SafeBoxPlotOutput;
+import wres.datamodel.outputs.SafeDoubleScoreOutput;
+import wres.datamodel.outputs.SafeDurationScoreOutput;
+import wres.datamodel.outputs.SafeMatrixOutput;
+import wres.datamodel.outputs.SafeMetricOutputForProjectByTimeAndThreshold;
+import wres.datamodel.outputs.SafeMetricOutputMapByTimeAndThreshold;
+import wres.datamodel.outputs.SafeMultiVectorOutput;
+import wres.datamodel.outputs.SafePairedOutput;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
+import wres.datamodel.thresholds.SafeThreshold;
 import wres.datamodel.thresholds.Threshold;
+import wres.datamodel.thresholds.SafeThresholdsByMetric.SafeThresholdsByMetricBuilder;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.thresholds.ThresholdsByMetric.ThresholdsByMetricBuilder;
 import wres.datamodel.time.TimeSeriesBuilder;
+import wres.datamodel.time.SafeTimeSeries.SafeTimeSeriesBuilder;
 
 /**
  * A default factory class for producing metric inputs.
@@ -503,7 +520,7 @@ public enum DefaultDataFactory implements DataFactory
      * @return the immutable output
      */
 
-    List<PairOfDoubles> safePairOfDoublesList( List<PairOfDoubles> input )
+    public List<PairOfDoubles> safePairOfDoublesList( List<PairOfDoubles> input )
     {
         Objects.requireNonNull( input,
                                 "Specify a non-null list of single-valued pairs from which to create a safe type." );
@@ -528,7 +545,7 @@ public enum DefaultDataFactory implements DataFactory
      * @return the immutable output
      */
 
-    List<PairOfDoubleAndVectorOfDoubles>
+    public List<PairOfDoubleAndVectorOfDoubles>
             safePairOfDoubleAndVectorOfDoublesList( List<PairOfDoubleAndVectorOfDoubles> input )
     {
         Objects.requireNonNull( input, "Specify a non-null list of ensemble pairs from which to create a safe type." );
@@ -553,7 +570,7 @@ public enum DefaultDataFactory implements DataFactory
      * @return the immutable output
      */
 
-    List<VectorOfBooleans> safeVectorOfBooleansList( List<VectorOfBooleans> input )
+    public List<VectorOfBooleans> safeVectorOfBooleansList( List<VectorOfBooleans> input )
     {
         Objects.requireNonNull( input,
                                 "Specify a non-null list of dichotomous inputs from which to create a safe type." );
@@ -572,13 +589,55 @@ public enum DefaultDataFactory implements DataFactory
     }
 
     /**
+     * Consistent comparison of double arrays, first checks count of elements,
+     * next goes through values.
+     *
+     * If first has fewer values, return -1, if first has more values, return 1.
+     *
+     * If value count is equal, go through in order until an element is less
+     * or greater than another. If all values are equal, return 0.
+     *
+     * @param first the first array
+     * @param second the second array
+     * @return -1 if first is less than second, 0 if equal, 1 otherwise.
+     */
+    public static int compareDoubleArray(final double[] first,
+                                         final double[] second)
+    {
+        // this one has fewer elements
+        if (first.length < second.length)
+        {
+            return -1;
+        }
+        // this one has more elements
+        else if (first.length > second.length)
+        {
+            return 1;
+        }
+        // compare values until we diverge
+        else // assumption here is lengths are equal
+        {
+            for (int i = 0; i < first.length; i++)
+            {
+                int safeComparisonResult = Double.compare(first[i], second[i]);
+                if (safeComparisonResult != 0)
+                {
+                    return safeComparisonResult;
+                }
+            }
+            // all values were equal
+            return 0;
+        }
+    }    
+    
+    /**
      * Returns a safe type of the input.
      * 
      * @param input the potentially unsafe input
      * @return a safe implementation of the input
      */
 
-    VectorOfDoubles safeVectorOf( VectorOfDoubles input )
+    public VectorOfDoubles safeVectorOf( VectorOfDoubles input )
     {
         Objects.requireNonNull( input, "Expected non-null input for the safe vector." );
         if ( input instanceof SafeVectorOfDoubles )
@@ -595,7 +654,7 @@ public enum DefaultDataFactory implements DataFactory
      * @return a safe implementation of the input
      */
 
-    MatrixOfDoubles safeMatrixOf( MatrixOfDoubles input )
+    public MatrixOfDoubles safeMatrixOf( MatrixOfDoubles input )
     {
         Objects.requireNonNull( input, "Expected non-null input for the safe matrix." );
         if ( input instanceof SafeMatrixOfDoubles )

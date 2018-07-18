@@ -392,7 +392,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                     pair -> dataFactory.pairOf( useMe.test( pair.getItemOne() ),
                                                 useMe.test( pair.getItemTwo() ) );
             //Transform the pairs
-            DichotomousPairs transformed = dataFactory.getSlicer().transform( input, mapper );
+            DichotomousPairs transformed = dataFactory.getSlicer().toDichotomousPairs( input, mapper );
 
             processDichotomousPairs( Pair.of( timeWindow, OneOrTwoThresholds.of( useMe ) ),
                                      transformed,

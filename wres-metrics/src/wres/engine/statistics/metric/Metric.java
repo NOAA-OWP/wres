@@ -101,7 +101,7 @@ public interface Metric<S extends MetricInput<?>, T extends MetricOutput<?>> ext
      */
     default boolean nameEquals( final Object o )
     {
-        return o != null && o instanceof Metric && ( (Metric<?, ?>) o ).getName().equals( getName() );
+        return o instanceof Metric && ( (Metric<?, ?>) o ).getName().equals( getName() );
     }
 
     /**

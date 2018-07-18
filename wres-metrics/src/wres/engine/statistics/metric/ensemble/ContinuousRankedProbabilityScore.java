@@ -52,7 +52,10 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<Ensemble
         //CRPS, currently without decomposition
         //TODO: implement the decomposition
         double[] crps = new double[1];
-        sliced.values().forEach( pairs -> crps[0] += getSumCRPS( pairs )[0] );
+        sliced.values().forEach( pairs -> {
+            double increment = this.getSumCRPS( pairs )[0];
+            crps[0] += increment;
+        } );
         //Compute the average (implicitly weighted by the number of pairs in each group)
         crps[0] = FunctionFactory.finiteOrMissing().applyAsDouble( crps[0] / s.getRawData().size() );
         //Metadata
@@ -230,21 +233,17 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<Ensemble
             if ( pair[0] >= pair[inc.member + 1] ) //Correction to Hersbach
             {
                 final double nextAlpha = pair[inc.member + 1] - pair[inc.member];
-//                inc.alphaSum += nextAlpha; //Beta unchanged
                 inc.totCRPS += nextAlpha * inc.probSquared;
             } //Case 4: observed falls below ith
             else if ( pair[0] <= pair[inc.member] ) //Correction to Hersbach
             {
                 final double nextBeta = pair[inc.member + 1] - pair[inc.member];
-//                inc.betaSum += nextBeta; //Alpha unchanged
                 inc.totCRPS += nextBeta * inc.invProbSquared;
             } //Case 5: observed falls between ith and ith+1
             else if ( pair[0] > pair[inc.member] && pair[0] < pair[inc.member + 1] )
             {
                 final double nextAlpha = pair[0] - pair[inc.member];
                 final double nextBeta = pair[inc.member + 1] - pair[0];
-//                inc.alphaSum += nextAlpha;
-//                inc.betaSum += nextBeta;
                 inc.totCRPS += ( ( nextAlpha * inc.probSquared ) + ( nextBeta * inc.invProbSquared ) );
             }
         };
@@ -312,18 +311,6 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<Ensemble
          */
 
         private double totCRPS = 0.0;
-
-//        /**
-//         * The incremented alpha parameter.
-//         */
-//        
-//        private double alphaSum = 0.0;
-//        
-//        /**
-//         * The incremented beta parameter.
-//         */
-//        
-//        private double betaSum = 0.0;
 
         /**
          * Construct the incrementer.

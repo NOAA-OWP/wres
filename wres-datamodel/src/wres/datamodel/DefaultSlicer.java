@@ -21,8 +21,6 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
 
-import wres.datamodel.SafeTimeSeriesOfEnsemblePairs.SafeTimeSeriesOfEnsemblePairsBuilder;
-import wres.datamodel.SafeTimeSeriesOfSingleValuedPairs.SafeTimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
@@ -33,6 +31,8 @@ import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairsBuilder;
+import wres.datamodel.inputs.pairs.SafeTimeSeriesOfEnsemblePairs.SafeTimeSeriesOfEnsemblePairsBuilder;
+import wres.datamodel.inputs.pairs.SafeTimeSeriesOfSingleValuedPairs.SafeTimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.ScoreOutput;
@@ -40,6 +40,7 @@ import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdType;
 import wres.datamodel.time.Event;
+import wres.datamodel.time.SafeTimeSeries;
 import wres.datamodel.time.TimeSeries;
 
 /**
@@ -49,7 +50,7 @@ import wres.datamodel.time.TimeSeries;
  * @author james.brown@hydrosolved.com
  */
 
-enum DefaultSlicer implements Slicer
+public enum DefaultSlicer implements Slicer
 {
 
     /**
@@ -114,6 +115,30 @@ enum DefaultSlicer implements Slicer
         Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
 
         return input.getRawData().stream().mapToDouble( PairOfDoubles::getItemTwo ).toArray();
+    }
+    
+    @Override
+    public Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubleAndVectorOfDoubles>
+            leftAndEachOfRight( DoublePredicate predicate )
+    {
+        return pair -> {
+            PairOfDoubleAndVectorOfDoubles returnMe = null;
+
+            //Left meets condition
+            if ( predicate.test( pair.getItemOne() ) )
+            {
+                double[] filtered = Arrays.stream( pair.getItemTwo() )
+                                          .filter( predicate )
+                                          .toArray();
+
+                //One or more of right meets condition
+                if ( filtered.length > 0 )
+                {
+                    returnMe = dataFac.pairOf( pair.getItemOne(), filtered );
+                }
+            }
+            return returnMe;
+        };
     }
 
     @Override
@@ -338,7 +363,7 @@ enum DefaultSlicer implements Slicer
                 }
             }
         }
-        return new SafeTimeSeries<>( returnMe );
+        return SafeTimeSeries.of( returnMe );
     }
 
     @Override
@@ -507,7 +532,7 @@ enum DefaultSlicer implements Slicer
     }
 
     @Override
-    public List<PairOfDoubles> transform( List<PairOfDoubleAndVectorOfDoubles> input,
+    public List<PairOfDoubles> toSingleValuedPairs( List<PairOfDoubleAndVectorOfDoubles> input,
                                           Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles> mapper )
     {
         Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
@@ -520,7 +545,7 @@ enum DefaultSlicer implements Slicer
     }
 
     @Override
-    public DichotomousPairs transform( SingleValuedPairs input, Function<PairOfDoubles, PairOfBooleans> mapper )
+    public DichotomousPairs toDichotomousPairs( SingleValuedPairs input, Function<PairOfDoubles, PairOfBooleans> mapper )
     {
         Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
 
@@ -546,17 +571,17 @@ enum DefaultSlicer implements Slicer
     }
 
     @Override
-    public SingleValuedPairs transform( EnsemblePairs input,
+    public SingleValuedPairs toSingleValuedPairs( EnsemblePairs input,
                                         Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles> mapper )
     {
         Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
 
         Objects.requireNonNull( mapper, NULL_MAPPER_EXCEPTION );
 
-        List<PairOfDoubles> mainPairsTransformed = transform( input.getRawData(), mapper );
+        List<PairOfDoubles> mainPairsTransformed = toSingleValuedPairs( input.getRawData(), mapper );
         if ( input.hasBaseline() )
         {
-            List<PairOfDoubles> basePairsTransformed = transform( input.getRawDataForBaseline(), mapper );
+            List<PairOfDoubles> basePairsTransformed = toSingleValuedPairs( input.getRawDataForBaseline(), mapper );
             return dataFac.ofSingleValuedPairs( mainPairsTransformed,
                                                 basePairsTransformed,
                                                 input.getMetadata(),
@@ -567,7 +592,7 @@ enum DefaultSlicer implements Slicer
     }
 
     @Override
-    public DiscreteProbabilityPairs transform( EnsemblePairs input,
+    public DiscreteProbabilityPairs toDiscreteProbabilityPairs( EnsemblePairs input,
                                                Threshold threshold,
                                                BiFunction<PairOfDoubleAndVectorOfDoubles, Threshold, PairOfDoubles> mapper )
     {
@@ -593,7 +618,7 @@ enum DefaultSlicer implements Slicer
     }
 
     @Override
-    public PairOfDoubles transform( PairOfDoubleAndVectorOfDoubles pair, Threshold threshold )
+    public PairOfDoubles toDiscreteProbabilityPair( PairOfDoubleAndVectorOfDoubles pair, Threshold threshold )
     {
         Objects.requireNonNull( pair, NULL_INPUT_EXCEPTION );
 
@@ -604,37 +629,13 @@ enum DefaultSlicer implements Slicer
     }
 
     @Override
-    public Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles> transform( ToDoubleFunction<double[]> transformer )
+    public Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles> ofSingleValuedPairMapper( ToDoubleFunction<double[]> transformer )
     {
         Objects.requireNonNull( transformer, NULL_INPUT_EXCEPTION );
 
         return pair -> dataFac.pairOf( pair.getItemOne(), transformer.applyAsDouble( pair.getItemTwo() ) );
     }
-
-    @Override
-    public Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubleAndVectorOfDoubles>
-            leftAndEachOfRight( DoublePredicate predicate )
-    {
-        return pair -> {
-            PairOfDoubleAndVectorOfDoubles returnMe = null;
-
-            //Left meets condition
-            if ( predicate.test( pair.getItemOne() ) )
-            {
-                double[] filtered = Arrays.stream( pair.getItemTwo() )
-                                          .filter( predicate )
-                                          .toArray();
-
-                //One or more of right meets condition
-                if ( filtered.length > 0 )
-                {
-                    returnMe = dataFac.pairOf( pair.getItemOne(), filtered );
-                }
-            }
-            return returnMe;
-        };
-    }
-
+    
     @Override
     public DoubleUnaryOperator getQuantileFunction( double[] sorted )
     {

@@ -1,0 +1,112 @@
+package wres.datamodel.outputs;
+
+import java.util.EnumMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.StringJoiner;
+
+import wres.datamodel.DefaultDataFactory;
+import wres.datamodel.VectorOfDoubles;
+import wres.datamodel.MetricConstants.MetricDimension;
+import wres.datamodel.metadata.MetricOutputMetadata;
+import wres.datamodel.outputs.MetricOutputException;
+import wres.datamodel.outputs.MultiVectorOutput;
+
+/**
+ * An immutable mapping of {@link VectorOfDoubles} to a {@link MetricDimension}.
+ * 
+ * @author james.brown@hydrosolved.com
+ */
+public class SafeMultiVectorOutput implements MultiVectorOutput
+{
+
+    /**
+     * The output.
+     */
+
+    private final EnumMap<MetricDimension, VectorOfDoubles> output;
+
+    /**
+     * The metadata associated with the output.
+     */
+
+    private final MetricOutputMetadata meta;
+
+    @Override
+    public MetricOutputMetadata getMetadata()
+    {
+        return meta;
+    }
+
+    @Override
+    public VectorOfDoubles get( MetricDimension identifier )
+    {
+        return output.get( identifier );
+    }
+
+    @Override
+    public boolean containsKey( MetricDimension identifier )
+    {
+        return output.containsKey( identifier );
+    }
+
+    @Override
+    public Map<MetricDimension, VectorOfDoubles> getData()
+    {
+        return new EnumMap<>( output );
+    }
+
+    @Override
+    public boolean equals( final Object o )
+    {
+        if ( ! ( o instanceof SafeMultiVectorOutput ) )
+        {
+            return false;
+        }
+        final SafeMultiVectorOutput v = (SafeMultiVectorOutput) o;
+        return meta.equals( v.getMetadata() ) && output.equals( v.output );
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash( meta, output );
+    }
+
+    @Override
+    public String toString()
+    {
+        StringJoiner joiner = new StringJoiner( System.lineSeparator() );
+        output.forEach( ( key, value ) -> joiner.add( key + ": " + value ) );
+        return joiner.toString();
+    }
+
+    /**
+     * Construct the output.
+     * 
+     * @param output the verification output
+     * @param meta the metadata
+     * @throws MetricOutputException if any of the inputs are invalid
+     */
+
+    public SafeMultiVectorOutput( final Map<MetricDimension, VectorOfDoubles> output, final MetricOutputMetadata meta )
+    {
+        if ( Objects.isNull( output ) )
+        {
+            throw new MetricOutputException( "Specify a non-null output." );
+        }
+        if ( Objects.isNull( meta ) )
+        {
+            throw new MetricOutputException( "Specify non-null metadata." );
+        }
+        if ( output.isEmpty() )
+        {
+            throw new MetricOutputException( "Specify one or more outputs to store." );
+        }
+        this.output = new EnumMap<>( MetricDimension.class );
+        DefaultDataFactory inFac = (DefaultDataFactory) DefaultDataFactory.getInstance();
+        output.forEach( ( key, value ) -> this.output.put( key, inFac.safeVectorOf( value ) ) );
+        this.meta = meta;
+    }
+
+}
