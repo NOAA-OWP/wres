@@ -1,4 +1,4 @@
-package wres.datamodel;
+package wres.datamodel.thresholds;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -12,12 +12,16 @@ import java.util.Set;
 
 import org.junit.Test;
 
+import wres.datamodel.DataFactory;
+import wres.datamodel.DefaultDataFactory;
+import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
-import wres.datamodel.SafeThresholdsByMetric.SafeThresholdsByMetricBuilder;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
+import wres.datamodel.thresholds.SafeThresholdsByMetric;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdsByMetric;
+import wres.datamodel.thresholds.SafeThresholdsByMetric.SafeThresholdsByMetricBuilder;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdGroup;

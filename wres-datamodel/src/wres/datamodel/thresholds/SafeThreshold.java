@@ -1,7 +1,10 @@
-package wres.datamodel;
+package wres.datamodel.thresholds;
 
 import java.util.Objects;
 
+import wres.datamodel.Dimension;
+import wres.datamodel.OneOrTwoDoubles;
+import wres.datamodel.SafeOneOrTwoDoubles;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
@@ -11,7 +14,7 @@ import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
  * 
  * @author james.brown@hydrosolved.com
  */
-class SafeThreshold implements Threshold
+public class SafeThreshold implements Threshold
 {
 
     /**
@@ -351,7 +354,7 @@ class SafeThreshold implements Threshold
      * A builder to build the threshold.
      */
 
-    static class ThresholdBuilder
+    public static class ThresholdBuilder
     {
 
         /**
@@ -397,7 +400,7 @@ class SafeThreshold implements Threshold
          * @return the builder
          */
 
-        ThresholdBuilder setCondition( Operator condition )
+        public ThresholdBuilder setCondition( Operator condition )
         {
             this.condition = condition;
             return this;
@@ -410,7 +413,7 @@ class SafeThreshold implements Threshold
          * @return the builder
          */
 
-        ThresholdBuilder setDataType( ThresholdDataType dataType )
+        public ThresholdBuilder setDataType( ThresholdDataType dataType )
         {
             this.dataType = dataType;
             return this;
@@ -423,7 +426,7 @@ class SafeThreshold implements Threshold
          * @return the builder
          */
 
-        ThresholdBuilder setValues( OneOrTwoDoubles values )
+        public ThresholdBuilder setValues( OneOrTwoDoubles values )
         {
             this.values = values;
             return this;
@@ -436,7 +439,7 @@ class SafeThreshold implements Threshold
          * @return the builder
          */
 
-        ThresholdBuilder setProbabilities( OneOrTwoDoubles probabilities )
+        public ThresholdBuilder setProbabilities( OneOrTwoDoubles probabilities )
         {
             this.probabilities = probabilities;
             return this;
@@ -449,7 +452,7 @@ class SafeThreshold implements Threshold
          * @return the builder
          */
 
-        ThresholdBuilder setLabel( String label )
+        public ThresholdBuilder setLabel( String label )
         {
             this.label = label;
             return this;
@@ -462,7 +465,7 @@ class SafeThreshold implements Threshold
          * @return the builder
          */
 
-        ThresholdBuilder setUnits( Dimension units )
+        public ThresholdBuilder setUnits( Dimension units )
         {
             this.units = units;
             return this;
