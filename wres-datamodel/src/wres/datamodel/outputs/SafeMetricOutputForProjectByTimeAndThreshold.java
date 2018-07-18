@@ -1,4 +1,4 @@
-package wres.datamodel;
+package wres.datamodel.outputs;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -19,8 +19,9 @@ import java.util.concurrent.Future;
 
 import org.apache.commons.lang3.tuple.Pair;
 
+import wres.datamodel.DataFactory;
+import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
-import wres.datamodel.SafeMetricOutputMultiMapByTimeAndThreshold.SafeMetricOutputMultiMapByTimeAndThresholdBuilder;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.outputs.DoubleScoreOutput;
@@ -32,6 +33,7 @@ import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMapByMetric;
 import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold.MetricOutputMultiMapByTimeAndThresholdBuilder;
+import wres.datamodel.outputs.SafeMetricOutputMultiMapByTimeAndThreshold.SafeMetricOutputMultiMapByTimeAndThresholdBuilder;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.PairedOutput;
@@ -42,11 +44,9 @@ import wres.datamodel.outputs.PairedOutput;
  * </p>
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 
-class SafeMetricOutputForProjectByTimeAndThreshold implements MetricOutputForProjectByTimeAndThreshold
+public class SafeMetricOutputForProjectByTimeAndThreshold implements MetricOutputForProjectByTimeAndThreshold
 {
 
     /**
@@ -235,7 +235,7 @@ class SafeMetricOutputForProjectByTimeAndThreshold implements MetricOutputForPro
      * Builder.
      */
 
-    static class SafeMetricOutputForProjectByTimeAndThresholdBuilder
+    public static class SafeMetricOutputForProjectByTimeAndThresholdBuilder
             implements MetricOutputForProjectByTimeAndThresholdBuilder
     {
 

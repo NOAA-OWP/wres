@@ -1,10 +1,12 @@
-package wres.datamodel;
+package wres.datamodel.outputs;
 
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.StringJoiner;
 
+import wres.datamodel.DefaultDataFactory;
+import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.MetricOutputException;
@@ -14,10 +16,8 @@ import wres.datamodel.outputs.MultiVectorOutput;
  * An immutable mapping of {@link VectorOfDoubles} to a {@link MetricDimension}.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
-class SafeMultiVectorOutput implements MultiVectorOutput
+public class SafeMultiVectorOutput implements MultiVectorOutput
 {
 
     /**
@@ -89,7 +89,7 @@ class SafeMultiVectorOutput implements MultiVectorOutput
      * @throws MetricOutputException if any of the inputs are invalid
      */
 
-    SafeMultiVectorOutput( final Map<MetricDimension, VectorOfDoubles> output, final MetricOutputMetadata meta )
+    public SafeMultiVectorOutput( final Map<MetricDimension, VectorOfDoubles> output, final MetricOutputMetadata meta )
     {
         if ( Objects.isNull( output ) )
         {

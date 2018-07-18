@@ -1,4 +1,4 @@
-package wres.datamodel;
+package wres.datamodel.outputs;
 
 import static org.junit.Assert.assertTrue;
 
@@ -14,7 +14,11 @@ import java.util.TreeSet;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
-import wres.datamodel.SafeMetricOutputMapByTimeAndThreshold.SafeMetricOutputMapByTimeAndThresholdBuilder;
+import wres.datamodel.DataFactory;
+import wres.datamodel.DefaultDataFactory;
+import wres.datamodel.Location;
+import wres.datamodel.MetricConstants;
+import wres.datamodel.SafeOneOrTwoDoubles;
 import wres.datamodel.metadata.DefaultMetadataFactory;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
@@ -22,6 +26,8 @@ import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
+import wres.datamodel.outputs.SafeMetricOutputMapByTimeAndThreshold;
+import wres.datamodel.outputs.SafeMetricOutputMapByTimeAndThreshold.SafeMetricOutputMapByTimeAndThresholdBuilder;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
@@ -31,8 +37,6 @@ import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
  * Tests the {@link SafeMetricOutputMapByTimeAndThreshold}.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 public final class SafeMetricOutputMapByTimeAndThresholdTest
 {

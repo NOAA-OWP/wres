@@ -1,10 +1,12 @@
-package wres.datamodel;
+package wres.datamodel.outputs;
 
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.StringJoiner;
 
+import wres.datamodel.DefaultDataFactory;
+import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.metadata.MetricOutputMetadata;
@@ -15,10 +17,8 @@ import wres.datamodel.outputs.MetricOutputException;
  * Immutable implementation of a store for box plot outputs.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
-class SafeBoxPlotOutput implements BoxPlotOutput
+public class SafeBoxPlotOutput implements BoxPlotOutput
 {
 
     /**
@@ -156,7 +156,7 @@ class SafeBoxPlotOutput implements BoxPlotOutput
      * @throws MetricOutputException if any of the inputs are invalid
      */
 
-    SafeBoxPlotOutput( List<PairOfDoubleAndVectorOfDoubles> output,
+    public SafeBoxPlotOutput( List<PairOfDoubleAndVectorOfDoubles> output,
                        VectorOfDoubles probabilities,
                        MetricOutputMetadata meta,
                        MetricDimension domainAxisDimension,
