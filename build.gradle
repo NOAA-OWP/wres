@@ -147,7 +147,6 @@ project(':wres-util')
 {
     dependencies
     {
-        compile project(':wres-datamodel-api')
         compile project(':wres-datamodel')
 
         compile 'org.slf4j:slf4j-api:1.7.25'
@@ -193,21 +192,10 @@ project(':wres-system')
             }
 }
 
-project(':wres-datamodel-api')
-{
-    dependencies
-    {
-        compile 'org.apache.commons:commons-lang3:3.6'
-        testCompile 'junit:junit:4.12'
-    }
-}
-
 project(':wres-datamodel')
 {
     dependencies
     {
-        compile project(':wres-datamodel-api')
-
         compile 'org.slf4j:slf4j-api:1.7.25'
         compile 'org.apache.commons:commons-lang3:3.6'
 
@@ -223,7 +211,7 @@ project(':wres-io')
     {
         compile project(':wres-util')
         compile project(':wres-system')
-        compile project(':wres-datamodel-api')
+        compile project(':wres-datamodel')
         compile project(':wres-config')
         compile project(':wres-vis')
         compile project(':wres-grid')
@@ -268,7 +256,7 @@ project(':wres-metrics')
 {
     dependencies
     {
-        compile project(':wres-datamodel-api')
+        compile project(':wres-datamodel')
         compile project(':wres-config')
         compile group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
         compile 'org.slf4j:slf4j-api:1.7.25'
@@ -284,7 +272,7 @@ project(':wres-vis')
 {
     dependencies
     {
-        compile project(':wres-datamodel-api')
+        compile project(':wres-datamodel')
         compile project(':wres-config')
         
         compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.6'
@@ -327,7 +315,7 @@ project(':wres-config')
 
     dependencies
     {
-        compile project(':wres-datamodel-api')
+        compile project(':wres-datamodel')
         // For Java 9+ compatibility:
         compile 'javax.xml.bind:jaxb-api:2.2.11'
         runtime 'com.sun.xml.bind:jaxb-core:2.2.11'
@@ -728,7 +716,6 @@ dependencies
 {
     compile project(':wres-util')
     compile project(':wres-system')
-    compile project(':wres-datamodel-api')
     compile project(':wres-datamodel')
     compile project(':wres-io')
     compile project(':wres-metrics')
