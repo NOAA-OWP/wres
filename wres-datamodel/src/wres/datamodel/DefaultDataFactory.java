@@ -28,12 +28,15 @@ import wres.datamodel.inputs.pairs.SafeDichotomousPairs;
 import wres.datamodel.inputs.pairs.SafeDiscreteProbabilityPairs;
 import wres.datamodel.inputs.pairs.SafeEnsemblePairs;
 import wres.datamodel.inputs.pairs.SafeMulticategoryPairs;
+import wres.datamodel.inputs.pairs.SafePairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.inputs.pairs.SafePairOfDoubles;
 import wres.datamodel.inputs.pairs.SafeSingleValuedPairs;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairsBuilder;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.inputs.pairs.SafeTimeSeriesOfEnsemblePairs.SafeTimeSeriesOfEnsemblePairsBuilder;
 import wres.datamodel.inputs.pairs.SafeTimeSeriesOfSingleValuedPairs.SafeTimeSeriesOfSingleValuedPairsBuilder;
+import wres.datamodel.metadata.DefaultMetadataFactory;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
@@ -576,6 +579,48 @@ public enum DefaultDataFactory implements DataFactory
         return Collections.unmodifiableList( returnMe );
     }
 
+    /**
+     * Consistent comparison of double arrays, first checks count of elements,
+     * next goes through values.
+     *
+     * If first has fewer values, return -1, if first has more values, return 1.
+     *
+     * If value count is equal, go through in order until an element is less
+     * or greater than another. If all values are equal, return 0.
+     *
+     * @param first the first array
+     * @param second the second array
+     * @return -1 if first is less than second, 0 if equal, 1 otherwise.
+     */
+    public static int compareDoubleArray(final double[] first,
+                                         final double[] second)
+    {
+        // this one has fewer elements
+        if (first.length < second.length)
+        {
+            return -1;
+        }
+        // this one has more elements
+        else if (first.length > second.length)
+        {
+            return 1;
+        }
+        // compare values until we diverge
+        else // assumption here is lengths are equal
+        {
+            for (int i = 0; i < first.length; i++)
+            {
+                int safeComparisonResult = Double.compare(first[i], second[i]);
+                if (safeComparisonResult != 0)
+                {
+                    return safeComparisonResult;
+                }
+            }
+            // all values were equal
+            return 0;
+        }
+    }    
+    
     /**
      * Returns a safe type of the input.
      * 

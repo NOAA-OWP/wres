@@ -1,4 +1,4 @@
-package wres.datamodel;
+package wres.datamodel.inputs.pairs;
 
 import java.util.Objects;
 
@@ -11,7 +11,7 @@ import wres.datamodel.inputs.pairs.PairOfDoubles;
  * @author james.brown@hydrosolved.com
  */
 
-class SafePairOfDoubles implements PairOfDoubles
+public class SafePairOfDoubles implements PairOfDoubles
 {
     /**
      * The first item.
@@ -32,7 +32,7 @@ class SafePairOfDoubles implements PairOfDoubles
      * @param itemTwo the second item
      */
     
-    SafePairOfDoubles(double itemOne, double itemTwo)
+    public SafePairOfDoubles(double itemOne, double itemTwo)
     {
         this.itemOne = itemOne;
         this.itemTwo = itemTwo;

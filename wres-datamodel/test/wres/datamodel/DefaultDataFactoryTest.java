@@ -16,6 +16,7 @@ import wres.datamodel.DefaultDataFactory.DefaultMapKey;
 import wres.datamodel.inputs.pairs.PairOfBooleans;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
+import wres.datamodel.metadata.DefaultMetadataFactory;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.ReferenceTime;

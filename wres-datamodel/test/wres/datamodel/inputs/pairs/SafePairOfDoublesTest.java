@@ -1,4 +1,4 @@
-package wres.datamodel;
+package wres.datamodel.inputs.pairs;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -6,6 +6,7 @@ import static org.junit.Assert.assertTrue;
 import org.junit.Test;
 
 import wres.datamodel.inputs.pairs.PairOfDoubles;
+import wres.datamodel.inputs.pairs.SafePairOfDoubles;
 
 public class SafePairOfDoublesTest
 {

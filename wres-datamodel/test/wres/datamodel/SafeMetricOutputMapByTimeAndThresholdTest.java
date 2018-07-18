@@ -15,6 +15,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
 import wres.datamodel.SafeMetricOutputMapByTimeAndThreshold.SafeMetricOutputMapByTimeAndThresholdBuilder;
+import wres.datamodel.metadata.DefaultMetadataFactory;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;

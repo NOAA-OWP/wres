@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.SortedSet;
 
-import wres.datamodel.DefaultMetadataFactory;
 import wres.datamodel.SafeTimeSeries;
 import wres.datamodel.SafeTimeSeries.SafeTimeSeriesBuilder;
 import wres.datamodel.TimeSeriesHelper;
@@ -17,6 +16,7 @@ import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairsBuilder;
+import wres.datamodel.metadata.DefaultMetadataFactory;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.time.Event;

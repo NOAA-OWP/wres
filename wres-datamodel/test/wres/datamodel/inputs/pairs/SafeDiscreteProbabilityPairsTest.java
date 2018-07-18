@@ -7,11 +7,11 @@ import org.junit.Test;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
-import wres.datamodel.DefaultMetadataFactory;
 import wres.datamodel.Location;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.SafeDiscreteProbabilityPairs;
 import wres.datamodel.inputs.pairs.SafeDiscreteProbabilityPairs.DiscreteProbabilityPairsBuilder;
+import wres.datamodel.metadata.DefaultMetadataFactory;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 

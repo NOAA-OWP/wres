@@ -1,8 +1,9 @@
-package wres.datamodel;
+package wres.datamodel.inputs.pairs;
 
 import org.junit.Test;
 
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.inputs.pairs.SafePairOfDoubleAndVectorOfDoubles;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
