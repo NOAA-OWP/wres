@@ -31,4 +31,5 @@
     <include file="public.indexqueue_v1.xml" relativeToChangelogFile="true" />
     <include file="public.projectexecutions_v1.xml" relativeToChangelogFile="true" />
     <include file="Obsolete_tables_v1.xml" relativeToChangelogFile="true" />
+    <include file="keys_v1.0.xml" relativeToChangelogFile="true" />
 </databaseChangeLog>
