@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="Add Observation FK - variable feature" author="Christopher Tubbs" dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <foreignKeyConstraintExists schemaName="wres" foreignKeyName="observation_variablefeature_fk" />
+            </not>
+        </preConditions>
+        <addForeignKeyConstraint baseTableName="Observation" baseTableSchemaName="wres"
+                                 baseColumnNames="variablefeature_id"
+                                 constraintName="observation_variablefeature_fk" referencedTableSchemaName="wres"
+                                 referencedTableName="VariableFeature" referencedColumnNames="variablefeature_id"
+                                 deferrable="true" initiallyDeferred="true" onDelete="CASCADE" />
+        <comment>
+            Added the the foreign key linking wres.Observation to wres.VariableFeature
+        </comment>
+    </changeSet>
+    <changeSet id="Add Observation FK - source" author="Christopher Tubbs">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <foreignKeyConstraintExists schemaName="wres" foreignKeyName="observation_source_fk" />
+            </not>
+        </preConditions>
+        <addForeignKeyConstraint baseTableSchemaName="wres" baseTableName="Observation"
+                                 baseColumnNames="source_id" constraintName="observation_source_fk"
+                                 referencedTableSchemaName="wres" referencedTableName="Source"
+                                 referencedColumnNames="source_id" onDelete="CASCADE" />
+        <comment>Linked wres.Observation to wres.Source</comment>
+    </changeSet>
+    <changeSet id="Add Observation Index - Variable Feature" author="Christopher Tubbs">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists schemaName="wres" tableName="Observation"
+                             columnNames="variablefeature_id" indexName="observation_variablefeature_idx" />
+            </not>
+        </preConditions>
+        <createIndex tableName="Observation" schemaName="wres" indexName="observation_variablefeature_idx">
+            <column name="variablefeature_id" type="integer" />
+        </createIndex>
+        <sql>
+            ALTER TABLE wres.Observation CLUSTER ON observation_variablefeature_idx;
+        </sql>
+        <comment>Added an index on wres.Observation.variablefeature_id and clustered on it.</comment>
+    </changeSet>
+    <changeSet id="Add Observation Index - Observation Time" author="Christopher Tubbs">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists schemaName="wres" tableName="Observation"
+                             columnNames="observation_time" indexName="observation_time_idx" />
+            </not>
+        </preConditions>
+        <createIndex tableName="Observation" schemaName="wres" indexName="observation_time_idx">
+            <column name="observation_time" type="timestamp without time zone" />
+        </createIndex>
+        <comment>Added an index on wres.Observation.observation_time</comment>
+    </changeSet>
+    <changeSet id="Add Observation Index - Source" author="Christopher Tubbs">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists schemaName="wres" tableName="Observation"
+                             columnNames="source_id" indexName="observation_source_idx" />
+            </not>
+        </preConditions>
+        <createIndex schemaName="wres" tableName="Observation" indexName="observation_source_idx">
+            <column name="source_id"/>
+        </createIndex>
+    </changeSet>
+    <changeSet id="Add Time Series FK - Variable Feature" author="Christopher Tubbs">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <foreignKeyConstraintExists schemaName="wres" foreignKeyName="timeseries_variablefeature_fk" />
+            </not>
+        </preConditions>
+        <addForeignKeyConstraint baseTableName="TimeSeries" baseTableSchemaName="wres"
+                                 baseColumnNames="variablefeature_id"
+                                 constraintName="timeseries_variablefeature_fk" referencedTableName="VariableFeature"
+                                 referencedColumnNames="variablefeature_id" referencedTableSchemaName="wres"
+                                 onDelete="CASCADE" initiallyDeferred="true" deferrable="true" />
+        <comment>Linked wres.TimeSeries to wres.VariableFeature</comment>
+    </changeSet>
+    <changeSet id="Add Time Series FK - Measurement Unit" author="Christopher Tubbs">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <foreignKeyConstraintExists schemaName="wres" foreignKeyName="timeseries_measurementunit_fk" />
+            </not>
+        </preConditions>
+        <addForeignKeyConstraint baseTableName="TimeSeries" baseTableSchemaName="wres"
+                                 baseColumnNames="measurementunit_id" constraintName="timeseries_measurementunit_fk"
+                                 referencedTableName="MeasurementUnit" referencedTableSchemaName="wres"
+                                 referencedColumnNames="measurementunit_id" deferrable="true" initiallyDeferred="true"
+                                 onDelete="CASCADE"/>
+        <comment>Linked wres.TimeSeries to wres.MeasurementUnit</comment>
+    </changeSet>
+    <changeSet id="Add TimeSeries Index - Variable Feature" author="Christopher Tubbs" >
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists schemaName="wres" tableName="TimeSeries"
+                             columnNames="variablefeature_id" indexName="timeseries_variablefeature_ix" />
+            </not>
+        </preConditions>
+        <createIndex tableName="TimeSeries" schemaName="wres" indexName="timeseries_variablefeature_ix">
+            <column name="variablefeature_id" />
+        </createIndex>
+        <comment>Added an index on wres.TimeSeries.variablefeature_id</comment>
+    </changeSet>
+    <changeSet id="Add TimeSeriesValue FK - Time Series" author="Christopher Tubbs">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <foreignKeyConstraintExists schemaName="wres" foreignKeyName="timeseriesvalue_timeseries_fk" />
+            </not>
+        </preConditions>
+        <addForeignKeyConstraint baseTableSchemaName="wres" baseTableName="TimeSeriesValue"
+                                 baseColumnNames="timeseries_id" constraintName="timeseriesvalue_timeseries_fk"
+                                 referencedTableSchemaName="wres" referencedTableName="TimeSeries"
+                                 referencedColumnNames="timeseries_id" initiallyDeferred="true"
+                                 deferrable="true" onDelete="CASCADE" />
+        <comment>Linked wres.TimeSeriesValue to wres.TimeSeries</comment>
+    </changeSet>
+    <changeSet id="Add TimeSeriesValue Index - Time Series" author="Christopher Tubbs">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists schemaName="wres" tableName="TimeSeriesValue"
+                             columnNames="timeseries_id" indexName="timeseriesvalue_timeseries_idx" />
+            </not>
+        </preConditions>
+        <createIndex schemaName="wres" tableName="TimeSeriesValue" indexName="timeseriesvalue_timeseries_idx">
+            <column name="timeseries_id"/>
+        </createIndex>
+        <comment>Added an index on wres.TimeSeriesValue.timeseries_id</comment>
+    </changeSet>
+    <changeSet id="Add UnitConversion Index - MeasurementUnit" author="">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists schemaName="wres" tableName="UnitConversion"
+                             columnNames="from_unit,to_unit" indexName="unitconversion_measurement_uix" />
+            </not>
+        </preConditions>
+        <createIndex tableName="UnitConversion" schemaName="wres" indexName="unitconversion_measurement_uix" unique="true">
+            <column name="from_unit" type="smallint" />
+            <column name="to_unit" type="smallint" />
+        </createIndex>
+        <comment>Added an index on wres.UnitConversion to_unit and from_unit</comment>
+    </changeSet>
+</databaseChangeLog>
