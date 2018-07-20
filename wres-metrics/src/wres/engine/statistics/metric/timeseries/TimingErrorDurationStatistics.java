@@ -16,6 +16,7 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MissingValues;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.inputs.MetricInputException;
+import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DurationScoreOutput;
 import wres.datamodel.outputs.PairedOutput;
@@ -35,23 +36,17 @@ public class TimingErrorDurationStatistics implements Function<PairedOutput<Inst
 {
 
     /**
-     * The data factory.
-     */
-
-    private final DataFactory dataFactory;
-
-    /**
      * The summary statistics and associated identifiers
      */
 
     private final Map<MetricConstants, ToDoubleFunction<VectorOfDoubles>> statistics;
-    
+
     /**
      * The unique identifier associated with these summary statistics.
      */
 
     private final MetricConstants identifier;
-    
+
     @Override
     public DurationScoreOutput apply( PairedOutput<Instant, Duration> pairs )
     {
@@ -78,8 +73,7 @@ public class TimingErrorDurationStatistics implements Function<PairedOutput<Inst
                 // Some loss of precision here, not consequential
                 returnMe.put( nextIdentifier,
                               Duration.ofMillis( (long) statistics.get( nextIdentifier )
-                                                                  .applyAsDouble( this.getDataFactory()
-                                                                                      .vectorOf( input ) ) ) );
+                                                                  .applyAsDouble( DataFactory.vectorOf( input ) ) ) );
             }
             // No data available
             else
@@ -97,14 +91,14 @@ public class TimingErrorDurationStatistics implements Function<PairedOutput<Inst
         {
             singleIdentifier = nextIdentifier;
         }
-        MetricOutputMetadata meta = this.getDataFactory().getMetadataFactory().getOutputMetadata( in.getSampleSize(),
-                                                                                                  in.getDimension(),
-                                                                                                  in.getInputDimension(),
-                                                                                                  this.getID(),
-                                                                                                  singleIdentifier,
-                                                                                                  in.getIdentifier(),
-                                                                                                  in.getTimeWindow() );
-        return this.getDataFactory().ofDurationScoreOutput( returnMe, meta );
+        MetricOutputMetadata meta = MetadataFactory.getOutputMetadata( in.getSampleSize(),
+                                                                       in.getDimension(),
+                                                                       in.getInputDimension(),
+                                                                       this.getID(),
+                                                                       singleIdentifier,
+                                                                       in.getIdentifier(),
+                                                                       in.getTimeWindow() );
+        return DataFactory.ofDurationScoreOutput( returnMe, meta );
     }
 
     /**
@@ -115,17 +109,11 @@ public class TimingErrorDurationStatistics implements Function<PairedOutput<Inst
     {
 
         /**
-         * The data factory.
-         */
-
-        private DataFactory dataFactory;
-
-        /**
          * The identifier for the summary statistic.
          */
 
         private Set<MetricConstants> statistics = new HashSet<>();
-        
+
         /**
          * The unique identifier associated with these summary statistics.
          */
@@ -144,7 +132,7 @@ public class TimingErrorDurationStatistics implements Function<PairedOutput<Inst
             this.statistics.addAll( statistics );
             return this;
         }
-        
+
         /**
          * Sets the unique identifier for the summary statistics.
          * 
@@ -155,19 +143,6 @@ public class TimingErrorDurationStatistics implements Function<PairedOutput<Inst
         public TimingErrorDurationStatisticsBuilder setID( MetricConstants identifier )
         {
             this.identifier = identifier;
-            return this;
-        }
-        
-        /**
-         * Set the output factory.
-         * 
-         * @param dataFactory the output factory
-         * @return the builder
-         */
-
-        public TimingErrorDurationStatisticsBuilder setOutputFactory( final DataFactory dataFactory )
-        {
-            this.dataFactory = dataFactory;
             return this;
         }
 
@@ -199,15 +174,8 @@ public class TimingErrorDurationStatistics implements Function<PairedOutput<Inst
             throw new MetricParameterException( "Cannot construct the metric with a null builder." );
         }
 
-        this.dataFactory = builder.dataFactory;
-
-        if ( Objects.isNull( this.dataFactory ) )
-        {
-            throw new MetricParameterException( "Specify a data factory with which to build the metric." );
-        }
-        
         this.identifier = builder.identifier;
-        
+
         if ( Objects.isNull( this.identifier ) )
         {
             throw new MetricParameterException( "Specify a unique identifier from which to build the statistics." );
@@ -237,17 +205,6 @@ public class TimingErrorDurationStatistics implements Function<PairedOutput<Inst
     }
 
     /**
-     * Returns the data factory.
-     * 
-     * @return the data factory
-     */
-
-    private DataFactory getDataFactory()
-    {
-        return this.dataFactory;
-    }
-    
-    /**
      * Returns the unique identifier associated with these statistics.
      * 
      * @return the unique identifier
@@ -256,6 +213,6 @@ public class TimingErrorDurationStatistics implements Function<PairedOutput<Inst
     private MetricConstants getID()
     {
         return this.identifier;
-    }    
+    }
 
 }

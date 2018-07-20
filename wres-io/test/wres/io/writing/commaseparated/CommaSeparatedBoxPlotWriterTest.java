@@ -23,7 +23,6 @@ import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DatasetIdentifier;
-import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.VectorOfDoubles;
@@ -68,11 +67,8 @@ public class CommaSeparatedBoxPlotWriterTest extends CommaSeparatedWriterTest
 
         // Create fake outputs
 
-        DataFactory outputFactory = DefaultDataFactory.getInstance();
-        MetadataFactory metaFac = outputFactory.getMetadataFactory();
-
         MetricOutputForProjectByTimeAndThreshold.MetricOutputForProjectByTimeAndThresholdBuilder outputBuilder =
-                outputFactory.ofMetricOutputForProjectByTimeAndThreshold();
+                DataFactory.ofMetricOutputForProjectByTimeAndThreshold();
 
         TimeWindow timeOne =
                 TimeWindow.of( Instant.MIN,
@@ -85,30 +81,30 @@ public class CommaSeparatedBoxPlotWriterTest extends CommaSeparatedWriterTest
         // which requires a datasetidentifier..
 
         DatasetIdentifier datasetIdentifier =
-                metaFac.getDatasetIdentifier( metaFac.getLocation( LID ),
+                MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation( LID ),
                                               "SQIN",
                                               "HEFS",
                                               "ESP" );
 
         MetricOutputMetadata fakeMetadata =
-                metaFac.getOutputMetadata( 1000,
-                                           metaFac.getDimension(),
-                                           metaFac.getDimension( "CMS" ),
+                MetadataFactory.getOutputMetadata( 1000,
+                                           MetadataFactory.getDimension(),
+                                           MetadataFactory.getDimension( "CMS" ),
                                            MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
                                            null,
                                            datasetIdentifier );
 
         List<PairOfDoubleAndVectorOfDoubles> fakeOutputs = new ArrayList<>();
-        VectorOfDoubles probs = outputFactory.vectorOf( new double[] { 0, 0.25, 0.5, 0.75, 1.0 } );
+        VectorOfDoubles probs = DataFactory.vectorOf( new double[] { 0, 0.25, 0.5, 0.75, 1.0 } );
 
-        fakeOutputs.add( outputFactory.pairOf( 1, new double[] { 2, 3, 4, 5, 6 } ) );
-        fakeOutputs.add( outputFactory.pairOf( 3, new double[] { 7, 9, 11, 13, 15 } ) );
-        fakeOutputs.add( outputFactory.pairOf( 5, new double[] { 21, 24, 27, 30, 33 } ) );
+        fakeOutputs.add( DataFactory.pairOf( 1, new double[] { 2, 3, 4, 5, 6 } ) );
+        fakeOutputs.add( DataFactory.pairOf( 3, new double[] { 7, 9, 11, 13, 15 } ) );
+        fakeOutputs.add( DataFactory.pairOf( 5, new double[] { 21, 24, 27, 30, 33 } ) );
 
         // Fake output wrapper.
         MetricOutputMapByMetric<BoxPlotOutput> fakeOutputData =
-                outputFactory.ofMetricOutputMapByMetric( Collections.singletonMap( MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
-                                                                                   outputFactory.ofBoxPlotOutput( fakeOutputs,
+                DataFactory.ofMetricOutputMapByMetric( Collections.singletonMap( MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
+                                                                                   DataFactory.ofBoxPlotOutput( fakeOutputs,
                                                                                                                   probs,
                                                                                                                   fakeMetadata,
                                                                                                                   MetricDimension.OBSERVED_VALUE,
@@ -121,7 +117,7 @@ public class CommaSeparatedBoxPlotWriterTest extends CommaSeparatedWriterTest
         // Fake lead time and threshold
         Pair<TimeWindow, OneOrTwoThresholds> mapKeyByLeadThreshold =
                 Pair.of( timeOne,
-                         OneOrTwoThresholds.of( outputFactory.ofThreshold( outputFactory.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
+                         OneOrTwoThresholds.of( DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
                                                                            Operator.GREATER,
                                                                            ThresholdDataType.LEFT ) ) );
 

@@ -15,11 +15,9 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
 import wres.datamodel.DataFactory;
-import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.Location;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.SafeOneOrTwoDoubles;
-import wres.datamodel.metadata.DefaultMetadataFactory;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
@@ -49,7 +47,6 @@ public final class SafeMetricOutputMapByTimeAndThresholdTest
     @Test
     public void testFilterByTimeAndFilterByThreshold()
     {
-        final DataFactory outputFactory = DefaultDataFactory.getInstance();
         final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> results =
                 DataModelTestDataFactory.getScalarMetricOutputMapByLeadThresholdOne();
 
@@ -59,10 +56,10 @@ public final class SafeMetricOutputMapByTimeAndThresholdTest
                                                      ReferenceTime.VALID_TIME,
                                                      Duration.ofHours( 42 ) );
         final OneOrTwoThresholds q =
-                OneOrTwoThresholds.of( outputFactory.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 531.88 ),
-                                                                          SafeOneOrTwoDoubles.of( 0.005 ),
-                                                                          Operator.GREATER,
-                                                                          ThresholdDataType.LEFT ) );
+                OneOrTwoThresholds.of( DataFactory.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 531.88 ),
+                                                                        SafeOneOrTwoDoubles.of( 0.005 ),
+                                                                        Operator.GREATER,
+                                                                        ThresholdDataType.LEFT ) );
         final Pair<TimeWindow, OneOrTwoThresholds> testKeyOne = Pair.of( timeWindow, q );
         final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> subMap =
                 results.filterByTime( timeWindow ).filterByThreshold( q );
@@ -87,10 +84,10 @@ public final class SafeMetricOutputMapByTimeAndThresholdTest
 
 
         final OneOrTwoThresholds q2 =
-                OneOrTwoThresholds.of( outputFactory.ofQuantileThreshold( SafeOneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                                          SafeOneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                                          Operator.GREATER,
-                                                                          ThresholdDataType.LEFT ) );
+                OneOrTwoThresholds.of( DataFactory.ofQuantileThreshold( SafeOneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                                                                        SafeOneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                                                                        Operator.GREATER,
+                                                                        ThresholdDataType.LEFT ) );
         final Pair<TimeWindow, OneOrTwoThresholds> testKeyTwo = Pair.of( timeWindowTwo, q2 );
 
         //Slice by threshold = all data
@@ -144,47 +141,46 @@ public final class SafeMetricOutputMapByTimeAndThresholdTest
     @Test
     public void testSetOfTimeWindowKeyByLeadTime()
     {
-        DataFactory outputFactory = DefaultDataFactory.getInstance();
-        MetadataFactory metaFac = outputFactory.getMetadataFactory();
-        final MetricOutputMetadata meta = metaFac.getOutputMetadata( 1,
-                                                                     metaFac.getDimension(),
-                                                                     metaFac.getDimension(),
-                                                                     MetricConstants.COEFFICIENT_OF_DETERMINATION,
-                                                                     MetricConstants.MAIN );
+        final MetricOutputMetadata meta = MetadataFactory.getOutputMetadata( 1,
+                                                                             MetadataFactory.getDimension(),
+                                                                             MetadataFactory.getDimension(),
+                                                                             MetricConstants.COEFFICIENT_OF_DETERMINATION,
+                                                                             MetricConstants.MAIN );
         Map<Pair<TimeWindow, OneOrTwoThresholds>, DoubleScoreOutput> testMap = new HashMap<>();
         OneOrTwoThresholds threshold =
-                OneOrTwoThresholds.of( outputFactory.ofThreshold( SafeOneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                                  Operator.GREATER,
-                                                                  ThresholdDataType.LEFT ) );
+                OneOrTwoThresholds.of( DataFactory.ofThreshold( SafeOneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                                                                Operator.GREATER,
+                                                                ThresholdDataType.LEFT ) );
         testMap.put( Pair.of( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                              Instant.parse( "1985-01-02T00:00:00Z" ),
                                              ReferenceTime.ISSUE_TIME,
                                              Duration.ofHours( 1 ),
                                              Duration.ofHours( 2 ) ),
                               threshold ),
-                     outputFactory.ofDoubleScoreOutput( 1.0, meta ) );
+                     DataFactory.ofDoubleScoreOutput( 1.0, meta ) );
         testMap.put( Pair.of( TimeWindow.of( Instant.parse( "1985-01-03T00:00:00Z" ),
                                              Instant.parse( "1985-01-04T00:00:00Z" ),
                                              ReferenceTime.ISSUE_TIME,
                                              Duration.ofHours( 1 ),
                                              Duration.ofHours( 2 ) ),
                               threshold ),
-                     outputFactory.ofDoubleScoreOutput( 2.0, meta ) );
+                     DataFactory.ofDoubleScoreOutput( 2.0, meta ) );
         testMap.put( Pair.of( TimeWindow.of( Instant.parse( "1985-01-05T00:00:00Z" ),
                                              Instant.parse( "1985-01-06T00:00:00Z" ),
                                              ReferenceTime.ISSUE_TIME,
                                              Duration.ofHours( 1 ),
                                              Duration.ofHours( 2 ) ),
                               threshold ),
-                     outputFactory.ofDoubleScoreOutput( 3.0, meta ) );
+                     DataFactory.ofDoubleScoreOutput( 3.0, meta ) );
         testMap.put( Pair.of( TimeWindow.of( Instant.parse( "1985-01-07T00:00:00Z" ),
                                              Instant.parse( "1985-01-08T00:00:00Z" ),
                                              ReferenceTime.ISSUE_TIME,
                                              Duration.ofHours( 1 ),
                                              Duration.ofHours( 2 ) ),
                               threshold ),
-                     outputFactory.ofDoubleScoreOutput( 4.0, meta ) );
-        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> test = outputFactory.ofMetricOutputMapByTimeAndThreshold( testMap );
+                     DataFactory.ofDoubleScoreOutput( 4.0, meta ) );
+        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> test =
+                DataFactory.ofMetricOutputMapByTimeAndThreshold( testMap );
         Set<TimeWindow> benchmarkTimes = new TreeSet<>();
         benchmarkTimes.add( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                            Instant.parse( "1985-01-02T00:00:00Z" ),
@@ -203,99 +199,98 @@ public final class SafeMetricOutputMapByTimeAndThresholdTest
     @Test
     public void testSetOfThresholdOne()
     {
-        final DataFactory outF = DefaultDataFactory.getInstance();
         final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> results =
                 DataModelTestDataFactory.getScalarMetricOutputMapByLeadThresholdOne();
 
         Set<Threshold> benchmark = new HashSet<>();
-        benchmark.add( outF.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 3588.66667 ),
-                                                 SafeOneOrTwoDoubles.of( 0.6 ),
-                                                 Operator.GREATER,
-                                                 ThresholdDataType.LEFT ) );
-        benchmark.add( outF.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 1996.4 ),
-                                                 SafeOneOrTwoDoubles.of( 0.4 ),
-                                                 Operator.GREATER,
-                                                 ThresholdDataType.LEFT ) );
-        benchmark.add( outF.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 2707.5 ),
-                                                 SafeOneOrTwoDoubles.of( 0.5 ),
-                                                 Operator.GREATER,
-                                                 ThresholdDataType.LEFT ) );
-        benchmark.add( outF.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 12641.14286 ),
-                                                 SafeOneOrTwoDoubles.of( 0.94 ),
-                                                 Operator.GREATER,
-                                                 ThresholdDataType.LEFT ) );
-        benchmark.add( outF.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 11819.66667 ),
-                                                 SafeOneOrTwoDoubles.of( 0.93 ),
-                                                 Operator.GREATER,
-                                                 ThresholdDataType.LEFT ) );
-        benchmark.add( outF.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 13685.0 ),
-                                                 SafeOneOrTwoDoubles.of( 0.95 ),
-                                                 Operator.GREATER,
-                                                 ThresholdDataType.LEFT ) );
-        benchmark.add( outF.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 4749.0 ),
-                                                 SafeOneOrTwoDoubles.of( 0.7 ),
-                                                 Operator.GREATER,
-                                                 ThresholdDataType.LEFT ) );
-        benchmark.add( outF.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 10944.0 ),
-                                                 SafeOneOrTwoDoubles.of( 0.92 ),
-                                                 Operator.GREATER,
-                                                 ThresholdDataType.LEFT ) );
-        benchmark.add( outF.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 858.04 ),
-                                                 SafeOneOrTwoDoubles.of( 0.1 ),
-                                                 Operator.GREATER,
-                                                 ThresholdDataType.LEFT ) );
-        benchmark.add( outF.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 9647.0 ),
-                                                 SafeOneOrTwoDoubles.of( 0.9 ),
-                                                 Operator.GREATER,
-                                                 ThresholdDataType.LEFT ) );
-        benchmark.add( outF.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 560.26 ),
-                                                 SafeOneOrTwoDoubles.of( 0.01 ),
-                                                 Operator.GREATER,
-                                                 ThresholdDataType.LEFT ) );
-        benchmark.add( outF.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 26648.0 ),
-                                                 SafeOneOrTwoDoubles.of( 0.99 ),
-                                                 Operator.GREATER,
-                                                 ThresholdDataType.LEFT ) );
-        benchmark.add( outF.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 1513.25 ),
-                                                 SafeOneOrTwoDoubles.of( 0.3 ),
-                                                 Operator.GREATER,
-                                                 ThresholdDataType.LEFT ) );
-        benchmark.add( outF.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 713.6 ),
-                                                 SafeOneOrTwoDoubles.of( 0.05 ),
-                                                 Operator.GREATER,
-                                                 ThresholdDataType.LEFT ) );
-        benchmark.add( outF.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 6315.33333 ),
-                                                 SafeOneOrTwoDoubles.of( 0.8 ),
-                                                 Operator.GREATER,
-                                                 ThresholdDataType.LEFT ) );
-        benchmark.add( outF.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 18122.0 ),
-                                                 SafeOneOrTwoDoubles.of( 0.97 ),
-                                                 Operator.GREATER,
-                                                 ThresholdDataType.LEFT ) );
-        benchmark.add( outF.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 1147.05263 ),
-                                                 SafeOneOrTwoDoubles.of( 0.2 ),
-                                                 Operator.GREATER,
-                                                 ThresholdDataType.LEFT ) );
-        benchmark.add( outF.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 15278.4 ),
-                                                 SafeOneOrTwoDoubles.of( 0.96 ),
-                                                 Operator.GREATER,
-                                                 ThresholdDataType.LEFT ) );
-        benchmark.add( outF.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 22448.0 ),
-                                                 SafeOneOrTwoDoubles.of( 0.98 ),
-                                                 Operator.GREATER,
-                                                 ThresholdDataType.LEFT ) );
-        benchmark.add( outF.ofQuantileThreshold( SafeOneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                 SafeOneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                 Operator.GREATER,
-                                                 ThresholdDataType.LEFT ) );
-        benchmark.add( outF.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 531.88 ),
-                                                 SafeOneOrTwoDoubles.of( 0.005 ),
-                                                 Operator.GREATER,
-                                                 ThresholdDataType.LEFT ) );
-        benchmark.add( outF.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 10261.71429 ),
-                                                 SafeOneOrTwoDoubles.of( 0.91 ),
-                                                 Operator.GREATER,
-                                                 ThresholdDataType.LEFT ) );
+        benchmark.add( DataFactory.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 3588.66667 ),
+                                                        SafeOneOrTwoDoubles.of( 0.6 ),
+                                                        Operator.GREATER,
+                                                        ThresholdDataType.LEFT ) );
+        benchmark.add( DataFactory.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 1996.4 ),
+                                                        SafeOneOrTwoDoubles.of( 0.4 ),
+                                                        Operator.GREATER,
+                                                        ThresholdDataType.LEFT ) );
+        benchmark.add( DataFactory.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 2707.5 ),
+                                                        SafeOneOrTwoDoubles.of( 0.5 ),
+                                                        Operator.GREATER,
+                                                        ThresholdDataType.LEFT ) );
+        benchmark.add( DataFactory.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 12641.14286 ),
+                                                        SafeOneOrTwoDoubles.of( 0.94 ),
+                                                        Operator.GREATER,
+                                                        ThresholdDataType.LEFT ) );
+        benchmark.add( DataFactory.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 11819.66667 ),
+                                                        SafeOneOrTwoDoubles.of( 0.93 ),
+                                                        Operator.GREATER,
+                                                        ThresholdDataType.LEFT ) );
+        benchmark.add( DataFactory.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 13685.0 ),
+                                                        SafeOneOrTwoDoubles.of( 0.95 ),
+                                                        Operator.GREATER,
+                                                        ThresholdDataType.LEFT ) );
+        benchmark.add( DataFactory.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 4749.0 ),
+                                                        SafeOneOrTwoDoubles.of( 0.7 ),
+                                                        Operator.GREATER,
+                                                        ThresholdDataType.LEFT ) );
+        benchmark.add( DataFactory.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 10944.0 ),
+                                                        SafeOneOrTwoDoubles.of( 0.92 ),
+                                                        Operator.GREATER,
+                                                        ThresholdDataType.LEFT ) );
+        benchmark.add( DataFactory.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 858.04 ),
+                                                        SafeOneOrTwoDoubles.of( 0.1 ),
+                                                        Operator.GREATER,
+                                                        ThresholdDataType.LEFT ) );
+        benchmark.add( DataFactory.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 9647.0 ),
+                                                        SafeOneOrTwoDoubles.of( 0.9 ),
+                                                        Operator.GREATER,
+                                                        ThresholdDataType.LEFT ) );
+        benchmark.add( DataFactory.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 560.26 ),
+                                                        SafeOneOrTwoDoubles.of( 0.01 ),
+                                                        Operator.GREATER,
+                                                        ThresholdDataType.LEFT ) );
+        benchmark.add( DataFactory.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 26648.0 ),
+                                                        SafeOneOrTwoDoubles.of( 0.99 ),
+                                                        Operator.GREATER,
+                                                        ThresholdDataType.LEFT ) );
+        benchmark.add( DataFactory.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 1513.25 ),
+                                                        SafeOneOrTwoDoubles.of( 0.3 ),
+                                                        Operator.GREATER,
+                                                        ThresholdDataType.LEFT ) );
+        benchmark.add( DataFactory.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 713.6 ),
+                                                        SafeOneOrTwoDoubles.of( 0.05 ),
+                                                        Operator.GREATER,
+                                                        ThresholdDataType.LEFT ) );
+        benchmark.add( DataFactory.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 6315.33333 ),
+                                                        SafeOneOrTwoDoubles.of( 0.8 ),
+                                                        Operator.GREATER,
+                                                        ThresholdDataType.LEFT ) );
+        benchmark.add( DataFactory.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 18122.0 ),
+                                                        SafeOneOrTwoDoubles.of( 0.97 ),
+                                                        Operator.GREATER,
+                                                        ThresholdDataType.LEFT ) );
+        benchmark.add( DataFactory.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 1147.05263 ),
+                                                        SafeOneOrTwoDoubles.of( 0.2 ),
+                                                        Operator.GREATER,
+                                                        ThresholdDataType.LEFT ) );
+        benchmark.add( DataFactory.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 15278.4 ),
+                                                        SafeOneOrTwoDoubles.of( 0.96 ),
+                                                        Operator.GREATER,
+                                                        ThresholdDataType.LEFT ) );
+        benchmark.add( DataFactory.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 22448.0 ),
+                                                        SafeOneOrTwoDoubles.of( 0.98 ),
+                                                        Operator.GREATER,
+                                                        ThresholdDataType.LEFT ) );
+        benchmark.add( DataFactory.ofQuantileThreshold( SafeOneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                                                        SafeOneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                                                        Operator.GREATER,
+                                                        ThresholdDataType.LEFT ) );
+        benchmark.add( DataFactory.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 531.88 ),
+                                                        SafeOneOrTwoDoubles.of( 0.005 ),
+                                                        Operator.GREATER,
+                                                        ThresholdDataType.LEFT ) );
+        benchmark.add( DataFactory.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 10261.71429 ),
+                                                        SafeOneOrTwoDoubles.of( 0.91 ),
+                                                        Operator.GREATER,
+                                                        ThresholdDataType.LEFT ) );
 
         assertTrue( "Unexpected set of thresholds.", results.setOfThresholdOne().equals( benchmark ) );
 
@@ -310,7 +305,6 @@ public final class SafeMetricOutputMapByTimeAndThresholdTest
     @Test
     public void testFilterByThresholdOne()
     {
-        final DataFactory outputFactory = DefaultDataFactory.getInstance();
         final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> results =
                 DataModelTestDataFactory.getScalarMetricOutputMapByLeadThresholdOne();
 
@@ -319,10 +313,10 @@ public final class SafeMetricOutputMapByTimeAndThresholdTest
                                                      Instant.parse( "2010-12-31T11:59:59Z" ),
                                                      ReferenceTime.VALID_TIME,
                                                      Duration.ofHours( 42 ) );
-        final Threshold q = outputFactory.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 531.88 ),
-                                                               SafeOneOrTwoDoubles.of( 0.005 ),
-                                                               Operator.GREATER,
-                                                               ThresholdDataType.LEFT );
+        final Threshold q = DataFactory.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 531.88 ),
+                                                             SafeOneOrTwoDoubles.of( 0.005 ),
+                                                             Operator.GREATER,
+                                                             ThresholdDataType.LEFT );
         final Pair<TimeWindow, OneOrTwoThresholds> testKeyOne = Pair.of( timeWindow, OneOrTwoThresholds.of( q ) );
         final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> subMap =
                 results.filterByTime( timeWindow ).filterByThresholdOne( q );
@@ -347,10 +341,10 @@ public final class SafeMetricOutputMapByTimeAndThresholdTest
 
 
         final OneOrTwoThresholds q2 =
-                OneOrTwoThresholds.of( outputFactory.ofQuantileThreshold( SafeOneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                                          SafeOneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                                          Operator.GREATER,
-                                                                          ThresholdDataType.LEFT ) );
+                OneOrTwoThresholds.of( DataFactory.ofQuantileThreshold( SafeOneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                                                                        SafeOneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                                                                        Operator.GREATER,
+                                                                        ThresholdDataType.LEFT ) );
         final Pair<TimeWindow, OneOrTwoThresholds> testKeyTwo = Pair.of( timeWindowTwo, q2 );
 
         //Slice by threshold = all data
@@ -386,17 +380,16 @@ public final class SafeMetricOutputMapByTimeAndThresholdTest
     @Test
     public void testSetOfThresholdTwo()
     {
-        final DataFactory outF = DefaultDataFactory.getInstance();
         final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> results =
                 DataModelTestDataFactory.getScalarMetricOutputMapByLeadThresholdTwo();
 
         Set<Threshold> benchmark = new HashSet<>();
-        benchmark.add( outF.ofThreshold( SafeOneOrTwoDoubles.of( 5.0 ),
-                                         Operator.GREATER,
-                                         ThresholdDataType.LEFT ) );
-        benchmark.add( outF.ofThreshold( SafeOneOrTwoDoubles.of( 6.0 ),
-                                         Operator.GREATER,
-                                         ThresholdDataType.LEFT ) );
+        benchmark.add( DataFactory.ofThreshold( SafeOneOrTwoDoubles.of( 5.0 ),
+                                                Operator.GREATER,
+                                                ThresholdDataType.LEFT ) );
+        benchmark.add( DataFactory.ofThreshold( SafeOneOrTwoDoubles.of( 6.0 ),
+                                                Operator.GREATER,
+                                                ThresholdDataType.LEFT ) );
 
         assertTrue( "Unexpected set of thresholds.", results.setOfThresholdTwo().equals( benchmark ) );
 
@@ -411,30 +404,29 @@ public final class SafeMetricOutputMapByTimeAndThresholdTest
     @Test
     public void testFilterByThresholdTwo()
     {
-        DataFactory outF = DefaultDataFactory.getInstance();
-        MetadataFactory metaF = DefaultMetadataFactory.getInstance();
         MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> results =
                 DataModelTestDataFactory.getScalarMetricOutputMapByLeadThresholdTwo();
 
         // Filter first
         MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> filteredOne =
-                results.filterByThresholdTwo( outF.ofThreshold( SafeOneOrTwoDoubles.of( 5.0 ),
-                                                                Operator.GREATER,
-                                                                ThresholdDataType.LEFT ) );
+                results.filterByThresholdTwo( DataFactory.ofThreshold( SafeOneOrTwoDoubles.of( 5.0 ),
+                                                                       Operator.GREATER,
+                                                                       ThresholdDataType.LEFT ) );
 
-        SafeMetricOutputMapByTimeAndThresholdBuilder<DoubleScoreOutput> benchmarkOne = new SafeMetricOutputMapByTimeAndThreshold.SafeMetricOutputMapByTimeAndThresholdBuilder<>();
+        SafeMetricOutputMapByTimeAndThresholdBuilder<DoubleScoreOutput> benchmarkOne =
+                new SafeMetricOutputMapByTimeAndThreshold.SafeMetricOutputMapByTimeAndThresholdBuilder<>();
 
         //Metadata
-        Location location = metaF.getLocation( "DRRC2" );
-        MetricOutputMetadata meta = metaF.getOutputMetadata( 1000,
-                                                             metaF.getDimension(),
-                                                             metaF.getDimension( "CMS" ),
-                                                             MetricConstants.MEAN_ABSOLUTE_ERROR,
-                                                             MetricConstants.MAIN,
-                                                             metaF.getDatasetIdentifier( location,
-                                                                                         "SQIN",
-                                                                                         "HEFS",
-                                                                                         "ESP" ) );
+        Location location = MetadataFactory.getLocation( "DRRC2" );
+        MetricOutputMetadata meta = MetadataFactory.getOutputMetadata( 1000,
+                                                                       MetadataFactory.getDimension(),
+                                                                       MetadataFactory.getDimension( "CMS" ),
+                                                                       MetricConstants.MEAN_ABSOLUTE_ERROR,
+                                                                       MetricConstants.MAIN,
+                                                                       MetadataFactory.getDatasetIdentifier( location,
+                                                                                                             "SQIN",
+                                                                                                             "HEFS",
+                                                                                                             "ESP" ) );
 
         int[] leadTimes = new int[] { 1, 2, 3, 4, 5 };
 
@@ -448,30 +440,30 @@ public final class SafeMetricOutputMapByTimeAndThresholdTest
 
             // Add first result
             OneOrTwoThresholds first =
-                    OneOrTwoThresholds.of( outF.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 1.0 ),
-                                                                     SafeOneOrTwoDoubles.of( 0.1 ),
-                                                                     Operator.GREATER,
-                                                                     ThresholdDataType.LEFT ),
-                                           outF.ofThreshold( SafeOneOrTwoDoubles.of( 5.0 ),
-                                                             Operator.GREATER,
-                                                             ThresholdDataType.LEFT ) );
+                    OneOrTwoThresholds.of( DataFactory.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 1.0 ),
+                                                                            SafeOneOrTwoDoubles.of( 0.1 ),
+                                                                            Operator.GREATER,
+                                                                            ThresholdDataType.LEFT ),
+                                           DataFactory.ofThreshold( SafeOneOrTwoDoubles.of( 5.0 ),
+                                                                    Operator.GREATER,
+                                                                    ThresholdDataType.LEFT ) );
 
-            DoubleScoreOutput firstValue = outF.ofDoubleScoreOutput( 66.0, meta );
+            DoubleScoreOutput firstValue = DataFactory.ofDoubleScoreOutput( 66.0, meta );
 
             benchmarkOne.put( Pair.of( timeWindow, first ), firstValue );
 
 
             // Add second result
             OneOrTwoThresholds second =
-                    OneOrTwoThresholds.of( outF.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 2.0 ),
-                                                                     SafeOneOrTwoDoubles.of( 0.2 ),
-                                                                     Operator.GREATER,
-                                                                     ThresholdDataType.LEFT ),
-                                           outF.ofThreshold( SafeOneOrTwoDoubles.of( 5.0 ),
-                                                             Operator.GREATER,
-                                                             ThresholdDataType.LEFT ) );
+                    OneOrTwoThresholds.of( DataFactory.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 2.0 ),
+                                                                            SafeOneOrTwoDoubles.of( 0.2 ),
+                                                                            Operator.GREATER,
+                                                                            ThresholdDataType.LEFT ),
+                                           DataFactory.ofThreshold( SafeOneOrTwoDoubles.of( 5.0 ),
+                                                                    Operator.GREATER,
+                                                                    ThresholdDataType.LEFT ) );
 
-            DoubleScoreOutput secondValue = outF.ofDoubleScoreOutput( 67.0, meta );
+            DoubleScoreOutput secondValue = DataFactory.ofDoubleScoreOutput( 67.0, meta );
 
             benchmarkOne.put( Pair.of( timeWindow, second ), secondValue );
 
@@ -481,11 +473,12 @@ public final class SafeMetricOutputMapByTimeAndThresholdTest
 
         // Filter second        
         MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> filteredTwo =
-                results.filterByThresholdTwo( outF.ofThreshold( SafeOneOrTwoDoubles.of( 6.0 ),
-                                                                Operator.GREATER,
-                                                                ThresholdDataType.LEFT ) );
+                results.filterByThresholdTwo( DataFactory.ofThreshold( SafeOneOrTwoDoubles.of( 6.0 ),
+                                                                       Operator.GREATER,
+                                                                       ThresholdDataType.LEFT ) );
 
-        SafeMetricOutputMapByTimeAndThresholdBuilder<DoubleScoreOutput> benchmarkTwo = new SafeMetricOutputMapByTimeAndThreshold.SafeMetricOutputMapByTimeAndThresholdBuilder<>();
+        SafeMetricOutputMapByTimeAndThresholdBuilder<DoubleScoreOutput> benchmarkTwo =
+                new SafeMetricOutputMapByTimeAndThreshold.SafeMetricOutputMapByTimeAndThresholdBuilder<>();
 
         //Iterate through the lead times
         for ( int leadTime : leadTimes )
@@ -497,16 +490,16 @@ public final class SafeMetricOutputMapByTimeAndThresholdTest
 
             // Add first result
             OneOrTwoThresholds first =
-                    OneOrTwoThresholds.of( outF.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 3.0 ),
-                                                                     SafeOneOrTwoDoubles.of( 0.3 ),
-                                                                     Operator.GREATER,
-                                                                     ThresholdDataType.LEFT ),
-                                           outF.ofThreshold( SafeOneOrTwoDoubles.of( 6.0 ),
-                                                             Operator.GREATER,
-                                                             ThresholdDataType.LEFT ) );
+                    OneOrTwoThresholds.of( DataFactory.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 3.0 ),
+                                                                            SafeOneOrTwoDoubles.of( 0.3 ),
+                                                                            Operator.GREATER,
+                                                                            ThresholdDataType.LEFT ),
+                                           DataFactory.ofThreshold( SafeOneOrTwoDoubles.of( 6.0 ),
+                                                                    Operator.GREATER,
+                                                                    ThresholdDataType.LEFT ) );
 
 
-            DoubleScoreOutput thirdValue = outF.ofDoubleScoreOutput( 68.0, meta );
+            DoubleScoreOutput thirdValue = DataFactory.ofDoubleScoreOutput( 68.0, meta );
 
             benchmarkTwo.put( Pair.of( timeWindow, first ), thirdValue );
 

@@ -83,9 +83,8 @@ abstract class ContingencyTableScore<S extends MulticategoryPairs> extends Ordin
     MetricOutputMetadata getMetadata( final MatrixOutput output )
     {
         final MetricOutputMetadata metIn = output.getMetadata();
-        final MetadataFactory f = getDataFactory().getMetadataFactory();
-        return f.getOutputMetadata( metIn.getSampleSize(),
-                                    f.getDimension(),
+        return MetadataFactory.getOutputMetadata( metIn.getSampleSize(),
+                                                  MetadataFactory.getDimension(),
                                     metIn.getInputDimension(),
                                     getID(),
                                     MetricConstants.MAIN,
@@ -155,15 +154,13 @@ abstract class ContingencyTableScore<S extends MulticategoryPairs> extends Ordin
     /**
      * Hidden constructor.
      * 
-     * @param builder the builder
      * @throws MetricParameterException if one or more parameters is invalid
      */
 
-    ContingencyTableScore( final OrdinaryScoreBuilder<S, DoubleScoreOutput> builder ) throws MetricParameterException
+    ContingencyTableScore() throws MetricParameterException
     {
-        super( builder );
+        super();
         ContingencyTableBuilder<S> ct = new ContingencyTableBuilder<>();
-        ct.setOutputFactory( getDataFactory() );
         table = ct.build();
     }
 

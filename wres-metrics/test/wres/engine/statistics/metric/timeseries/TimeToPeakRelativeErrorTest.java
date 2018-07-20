@@ -13,7 +13,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.DataFactory;
-import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
@@ -46,10 +45,6 @@ public final class TimeToPeakRelativeErrorTest
     @Test
     public void testTimeToPeakRelativeError() throws MetricParameterException
     {
-        // Obtain the factories
-        final DataFactory outF = DefaultDataFactory.getInstance();
-        final MetadataFactory metaFac = outF.getMetadataFactory();
-
         // Generate some data
         TimeSeriesOfSingleValuedPairs input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsOne();
 
@@ -59,17 +54,16 @@ public final class TimeToPeakRelativeErrorTest
                                                  ReferenceTime.ISSUE_TIME,
                                                  Duration.ofHours( 6 ),
                                                  Duration.ofHours( 18 ) );
-        final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getBasisTimes().size(),
-                                                                   metaFac.getDimension( "DURATION IN RELATIVE HOURS" ),
-                                                                   metaFac.getDimension( "CMS" ),
+        final MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( input.getBasisTimes().size(),
+                                                                   MetadataFactory.getDimension( "DURATION IN RELATIVE HOURS" ),
+                                                                   MetadataFactory.getDimension( "CMS" ),
                                                                    MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR,
                                                                    MetricConstants.MAIN,
-                                                                   metaFac.getDatasetIdentifier( metaFac.getLocation("A"),
+                                                                           MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation("A"),
                                                                                                  "Streamflow" ),
                                                                    window );
         // Build the metric
         final TimeToPeakRelativeErrorBuilder b = new TimeToPeakRelativeErrorBuilder();
-        b.setOutputFactory( outF );
         final TimeToPeakRelativeError ttp = b.build();
 
         // Check the parameters
@@ -81,7 +75,7 @@ public final class TimeToPeakRelativeErrorTest
         List<Pair<Instant, Duration>> expectedSource = new ArrayList<>();
         expectedSource.add( Pair.of( Instant.parse( "1985-01-01T00:00:00Z" ), Duration.ofMinutes( -20 ) ) );
         expectedSource.add( Pair.of( Instant.parse( "1985-01-02T00:00:00Z" ), Duration.ofHours( 2 ) ) );
-        final PairedOutput<Instant, Duration> expected = outF.ofPairedOutput( expectedSource, m1 );
+        final PairedOutput<Instant, Duration> expected = DataFactory.ofPairedOutput( expectedSource, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -99,9 +93,7 @@ public final class TimeToPeakRelativeErrorTest
     public void testApplyThrowsExceptionOnNullInput() throws MetricParameterException
     {
         //Build the metric
-        final DataFactory outF = DefaultDataFactory.getInstance();
         final TimeToPeakRelativeErrorBuilder b = new TimeToPeakRelativeErrorBuilder();
-        b.setOutputFactory( outF );
         final TimeToPeakRelativeError ttp = b.build();
 
         //Check the exceptions

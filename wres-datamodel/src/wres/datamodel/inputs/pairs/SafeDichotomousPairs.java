@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Objects;
 
 import wres.datamodel.DataFactory;
-import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.VectorOfBooleans;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
@@ -28,8 +27,7 @@ public class SafeDichotomousPairs extends SafeMulticategoryPairs implements Dich
         {
             return null;
         }
-        final DataFactory metIn = DefaultDataFactory.getInstance();
-        return metIn.ofDichotomousPairs( getRawDataForBaseline(), getMetadataForBaseline() );
+        return DataFactory.ofDichotomousPairs( getRawDataForBaseline(), getMetadataForBaseline() );
     }
 
     @Override
@@ -62,10 +60,9 @@ public class SafeDichotomousPairs extends SafeMulticategoryPairs implements Dich
         {
             if ( Objects.nonNull( mainInput ) )
             {
-                DataFactory d = DefaultDataFactory.getInstance();
                 List<VectorOfBooleans> mainIn = new ArrayList<>();
-                mainInput.forEach( pair -> mainIn.add( d.vectorOf( new boolean[] { pair.getItemOne(),
-                                                                                   pair.getItemTwo() } ) ) );
+                mainInput.forEach( pair -> mainIn.add( DataFactory.vectorOf( new boolean[] { pair.getItemOne(),
+                                                                                             pair.getItemTwo() } ) ) );
                 addData( mainIn );
             }
             return this;
@@ -82,10 +79,9 @@ public class SafeDichotomousPairs extends SafeMulticategoryPairs implements Dich
         {
             if ( Objects.nonNull( baselineInput ) )
             {
-                DataFactory d = DefaultDataFactory.getInstance();
                 List<VectorOfBooleans> baseIn = new ArrayList<>();
-                baselineInput.forEach( pair -> baseIn.add( d.vectorOf( new boolean[] { pair.getItemOne(),
-                                                                                       pair.getItemTwo() } ) ) );
+                baselineInput.forEach( pair -> baseIn.add( DataFactory.vectorOf( new boolean[] { pair.getItemOne(),
+                                                                                                 pair.getItemTwo() } ) ) );
                 addDataForBaseline( baseIn );
             }
             return this;

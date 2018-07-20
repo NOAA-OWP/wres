@@ -1,5 +1,6 @@
 package wres.engine.statistics.metric.categorical;
 
+import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.outputs.DoubleScoreOutput;
@@ -33,7 +34,7 @@ public class ThreatScore extends ContingencyTableScore<DichotomousPairs>
         final MatrixOutput v = output;
         final double[][] cm = v.getData().getDoubles();
         double result = FunctionFactory.finiteOrMissing().applyAsDouble( cm[0][0] / ( cm[0][0] + cm[0][1] + cm[1][0] ) );
-        return getDataFactory().ofDoubleScoreOutput( result, getMetadata( output ) );
+        return DataFactory.ofDoubleScoreOutput( result, getMetadata( output ) );
     }
 
     @Override
@@ -52,7 +53,7 @@ public class ThreatScore extends ContingencyTableScore<DichotomousPairs>
      * A {@link MetricBuilder} to build the metric.
      */
 
-    public static class ThreatScoreBuilder extends OrdinaryScoreBuilder<DichotomousPairs, DoubleScoreOutput>
+    public static class ThreatScoreBuilder implements MetricBuilder<DichotomousPairs, DoubleScoreOutput>
     {
 
         @Override
@@ -72,7 +73,7 @@ public class ThreatScore extends ContingencyTableScore<DichotomousPairs>
 
     private ThreatScore( final ThreatScoreBuilder builder ) throws MetricParameterException
     {
-        super( builder );
+        super();
     }
 
 }

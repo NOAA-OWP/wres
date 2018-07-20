@@ -15,7 +15,6 @@ import java.util.TreeSet;
 import wres.config.FeaturePlus;
 import wres.config.generated.Feature;
 import wres.datamodel.DataFactory;
-import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.Dimension;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
@@ -195,8 +194,6 @@ public class CommaSeparatedReader
         
         Set<Threshold> returnMe = new TreeSet<>();
 
-        DataFactory factory = DefaultDataFactory.getInstance();
-
         // Define possibly null labels for iteration 
         String[] iterateLabels = labels;
         if ( Objects.isNull( labels ) )
@@ -216,20 +213,20 @@ public class CommaSeparatedReader
                 // Probability thresholds
                 if ( isProbability )
                 {
-                    returnMe.add( factory.ofProbabilityThreshold( factory.ofOneOrTwoDoubles( threshold ),
-                                                                  condition,
-                                                                  dataType,
-                                                                  iterateLabels[i],
-                                                                  units ) );
+                    returnMe.add( DataFactory.ofProbabilityThreshold( DataFactory.ofOneOrTwoDoubles( threshold ),
+                                                                      condition,
+                                                                      dataType,
+                                                                      iterateLabels[i],
+                                                                      units ) );
                 }
                 // Ordinary thresholds
                 else
                 {
-                    returnMe.add( factory.ofThreshold( factory.ofOneOrTwoDoubles( threshold ),
-                                                       condition,
-                                                       dataType,
-                                                       iterateLabels[i],
-                                                       units ) );
+                    returnMe.add( DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( threshold ),
+                                                           condition,
+                                                           dataType,
+                                                           iterateLabels[i],
+                                                           units ) );
                 }
             }
         }

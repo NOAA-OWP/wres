@@ -21,6 +21,7 @@ import wres.config.MetricConfigException;
 import wres.config.ProjectConfigs;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
+import wres.datamodel.DefaultSlicer;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
@@ -84,7 +85,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
         Objects.requireNonNull( timeWindow, "Expected a non-null time window in the input metadata." );
 
         //Slicer
-        Slicer slicer = dataFactory.getSlicer();
+        Slicer slicer = DefaultSlicer.getInstance();
 
         //Remove missing values, except for ordered input, such as time-series
         SingleValuedPairs inputNoMissing = input;
@@ -101,7 +102,6 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
 
         //Metric futures 
         MetricFuturesByTimeBuilder futures = new MetricFuturesByTimeBuilder();
-        futures.setDataFactory( dataFactory );
 
         //Process the metrics that consume single-valued pairs
         if ( this.hasMetrics( MetricInputGroup.SINGLE_VALUED ) )
@@ -147,7 +147,6 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
     /**
      * Hidden constructor.
      * 
-     * @param dataFactory the data factory
      * @param config the project configuration
      * @param externalThresholds an optional set of external thresholds, may be null
      * @param thresholdExecutor an {@link ExecutorService} for executing thresholds, cannot be null 
@@ -159,15 +158,14 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
      * @throws NullPointerException if a required input is null
      */
 
-    public MetricProcessorByTimeSingleValuedPairs( final DataFactory dataFactory,
-                                                   final ProjectConfig config,
+    public MetricProcessorByTimeSingleValuedPairs( final ProjectConfig config,
                                                    final ThresholdsByMetric externalThresholds,
                                                    final ExecutorService thresholdExecutor,
                                                    final ExecutorService metricExecutor,
                                                    final Set<MetricOutputGroup> mergeSet )
             throws MetricParameterException
     {
-        super( dataFactory, config, externalThresholds, thresholdExecutor, metricExecutor, mergeSet );
+        super( config, externalThresholds, thresholdExecutor, metricExecutor, mergeSet );
 
         //Construct the metrics
 
@@ -274,7 +272,6 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
         {
 
             MetricFuturesByTimeBuilder addFutures = new MetricFuturesByTimeBuilder();
-            addFutures.setDataFactory( dataFactory );
 
             // Iterate through the timing error metrics
             for ( Entry<MetricConstants, TimingErrorDurationStatistics> nextStats : this.timingErrorDurationStatistics.entrySet() )
@@ -282,7 +279,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                 // Output available
                 if ( this.getCachedMetricOutputInternal()
                          .getPairedOutput()
-                         .containsKey( dataFactory.getMapKey( nextStats.getKey() ) ) )
+                         .containsKey( DataFactory.getMapKey( nextStats.getKey() ) ) )
                 {
                     // Obtain the paired output
                     MetricOutputMapByTimeAndThreshold<PairedOutput<Instant, Duration>> output =
@@ -299,7 +296,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                                 output.filterByThreshold( threshold );
 
                         // Find the union of the paired output
-                        PairedOutput<Instant, Duration> union = dataFactory.unionOf( sliced.values() );
+                        PairedOutput<Instant, Duration> union = DataFactory.unionOf( sliced.values() );
 
                         // Find the union of the metadata
                         TimeWindow unionWindow = union.getMetadata().getTimeWindow();
@@ -312,7 +309,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                             DurationScoreOutput result = timeToPeakErrorStats.apply( union );
                             Map<MetricConstants, DurationScoreOutput> input =
                                     Collections.singletonMap( result.getMetadata().getMetricID(), result );
-                            return dataFactory.ofMetricOutputMapByMetric( input );
+                            return DataFactory.ofMetricOutputMapByMetric( input );
                         };
 
                         // Execute
@@ -389,10 +386,10 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
 
             //Define a mapper to convert the single-valued pairs to dichotomous pairs
             Function<PairOfDoubles, PairOfBooleans> mapper =
-                    pair -> dataFactory.pairOf( useMe.test( pair.getItemOne() ),
+                    pair -> DataFactory.pairOf( useMe.test( pair.getItemOne() ),
                                                 useMe.test( pair.getItemTwo() ) );
             //Transform the pairs
-            DichotomousPairs transformed = dataFactory.getSlicer().toDichotomousPairs( input, mapper );
+            DichotomousPairs transformed = DefaultSlicer.getInstance().toDichotomousPairs( input, mapper );
 
             processDichotomousPairs( Pair.of( timeWindow, OneOrTwoThresholds.of( useMe ) ),
                                      transformed,
@@ -444,7 +441,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                 Predicate<TimeSeries<PairOfDoubles>> filter =
                         MetricProcessorByTime.getFilterForTimeSeriesOfSingleValuedPairs( useMe );
 
-                pairs = dataFactory.getSlicer().filter( input, filter, null );
+                pairs = DefaultSlicer.getInstance().filter( input, filter, null );
             }
             else
             {

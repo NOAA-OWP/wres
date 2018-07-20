@@ -5,9 +5,9 @@ import java.util.Objects;
 import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
 
 import wres.datamodel.DataFactory;
+import wres.datamodel.DefaultSlicer;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
-import wres.datamodel.Slicer;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.Metadata;
@@ -28,7 +28,7 @@ import wres.engine.statistics.metric.OrdinaryScore;
  * @author james.brown@hydrosolved.com
  */
 public class CorrelationPearsons extends OrdinaryScore<SingleValuedPairs, DoubleScoreOutput>
-implements Collectable<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput>
+        implements Collectable<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput>
 {
 
     /**
@@ -38,33 +38,32 @@ implements Collectable<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput>
     private final PearsonsCorrelation correlation;
 
     @Override
-    public DoubleScoreOutput apply(SingleValuedPairs s)
+    public DoubleScoreOutput apply( SingleValuedPairs s )
     {
-        if(Objects.isNull(s))
+        if ( Objects.isNull( s ) )
         {
-            throw new MetricInputException("Specify non-null input to the '"+this+"'.");
+            throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
         }
 
-        DataFactory d = getDataFactory();
-        MetadataFactory mF = d.getMetadataFactory();
-        Slicer slicer = d.getSlicer();
         Metadata in = s.getMetadata();
         // Set the metadata explicitly since this class implements Collectable and getID() may be overridden
-        MetricOutputMetadata meta = mF.getOutputMetadata( s.getRawData().size(),
-                                                          mF.getDimension(),
-                                                          in.getDimension(),
-                                                          MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
-                                                          MetricConstants.MAIN,
-                                                          in.getIdentifier() );
+        MetricOutputMetadata meta = MetadataFactory.getOutputMetadata( s.getRawData().size(),
+                                                                       MetadataFactory.getDimension(),
+                                                                       in.getDimension(),
+                                                                       MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
+                                                                       MetricConstants.MAIN,
+                                                                       in.getIdentifier() );
         double returnMe = Double.NaN;
         // Minimum sample size of 1
         if ( s.getRawData().size() > 1 )
         {
             returnMe = FunctionFactory.finiteOrMissing()
-                                      .applyAsDouble( correlation.correlation( slicer.getLeftSide( s ),
-                                                                               slicer.getRightSide( s ) ) );
+                                      .applyAsDouble( correlation.correlation( DefaultSlicer.getInstance()
+                                                                                            .getLeftSide( s ),
+                                                                               DefaultSlicer.getInstance()
+                                                                                            .getRightSide( s ) ) );
         }
-        return getDataFactory().ofDoubleScoreOutput( returnMe, meta );
+        return DataFactory.ofDoubleScoreOutput( returnMe, meta );
     }
 
     @Override
@@ -98,7 +97,7 @@ implements Collectable<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput>
     }
 
     @Override
-    public DoubleScoreOutput aggregate(DoubleScoreOutput output)
+    public DoubleScoreOutput aggregate( DoubleScoreOutput output )
     {
         if ( Objects.isNull( output ) )
         {
@@ -108,9 +107,9 @@ implements Collectable<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput>
     }
 
     @Override
-    public DoubleScoreOutput getInputForAggregation(SingleValuedPairs input)
+    public DoubleScoreOutput getInputForAggregation( SingleValuedPairs input )
     {
-        return apply(input);
+        return apply( input );
     }
 
     @Override
@@ -123,13 +122,13 @@ implements Collectable<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput>
      * A {@link MetricBuilder} to build the metric.
      */
 
-    public static class CorrelationPearsonsBuilder extends OrdinaryScoreBuilder<SingleValuedPairs, DoubleScoreOutput>
+    public static class CorrelationPearsonsBuilder implements MetricBuilder<SingleValuedPairs, DoubleScoreOutput>
     {
 
         @Override
         public CorrelationPearsons build() throws MetricParameterException
         {
-            return new CorrelationPearsons(this);
+            return new CorrelationPearsons( this );
         }
 
     }
@@ -141,9 +140,9 @@ implements Collectable<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput>
      * @throws MetricParameterException if one or more parameters is invalid 
      */
 
-    protected CorrelationPearsons(final CorrelationPearsonsBuilder builder) throws MetricParameterException
+    protected CorrelationPearsons( final CorrelationPearsonsBuilder builder ) throws MetricParameterException
     {
-        super(builder);
+        super();
         correlation = new PearsonsCorrelation();
     }
 

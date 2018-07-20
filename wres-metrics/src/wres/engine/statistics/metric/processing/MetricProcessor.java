@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import wres.config.MetricConfigException;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
+import wres.datamodel.DefaultSlicer;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
@@ -112,12 +113,6 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
      */
 
     final MetricFactory metricFactory;
-
-    /**
-     * Instance of a {@link DataFactory}.
-     */
-
-    final DataFactory dataFactory;
 
     /**
      * Set of thresholds associated with each metric.
@@ -332,7 +327,6 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
     /**
      * Constructor.
      * 
-     * @param dataFactory the data factory
      * @param config the project configuration
      * @param externalThresholds an optional set of external thresholds, may be null
      * @param thresholdExecutor an {@link ExecutorService} for executing thresholds, cannot be null 
@@ -344,8 +338,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
      * @throws NullPointerException if a required input is null
      */
 
-    MetricProcessor( final DataFactory dataFactory,
-                     final ProjectConfig config,
+    MetricProcessor( final ProjectConfig config,
                      final ThresholdsByMetric externalThresholds,
                      final ExecutorService thresholdExecutor,
                      final ExecutorService metricExecutor,
@@ -354,16 +347,13 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
     {
 
         Objects.requireNonNull( config, MetricConfigHelper.NULL_CONFIGURATION_ERROR );
-
-        Objects.requireNonNull( dataFactory, MetricConfigHelper.NULL_DATA_FACTORY_ERROR );
         
         Objects.requireNonNull( thresholdExecutor, "Specify a non-null threshold executor service." );
         
         Objects.requireNonNull( metricExecutor, "Specify a non-null metric executor service." );
-        
-        this.dataFactory = dataFactory;
+
         this.metrics = MetricConfigHelper.getMetricsFromConfig( config );
-        this.metricFactory = MetricFactory.getInstance( dataFactory );
+        this.metricFactory = MetricFactory.getInstance();
 
         //Construct the metrics that are common to more than one type of input pairs
         if ( this.hasMetrics( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.DOUBLE_SCORE ) )
@@ -415,7 +405,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
         }
 
         //Set the thresholds: canonical --> metric-local overrides --> global        
-        this.thresholdsByMetric = MetricConfigHelper.getThresholdsFromConfig( config, dataFactory, externalThresholds );
+        this.thresholdsByMetric = MetricConfigHelper.getThresholdsFromConfig( config, externalThresholds );
 
         if ( Objects.nonNull( mergeSet ) )
         {
@@ -429,7 +419,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
         //Set the executor for processing thresholds
         this.thresholdExecutor = thresholdExecutor;
 
-        this.allDataThreshold = dataFactory.ofThreshold( dataFactory.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
+        this.allDataThreshold = DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
                                                          Operator.GREATER,
                                                          ThresholdDataType.LEFT_AND_RIGHT );
 
@@ -555,7 +545,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
                                                   + "the input." );
         }
 
-        return dataFactory.getSlicer().getQuantileFromProbability( threshold,
+        return DefaultSlicer.getInstance().getQuantileFromProbability( threshold,
                                                                    sorted,
                                                                    DECIMALS );
     }

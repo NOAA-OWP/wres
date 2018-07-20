@@ -3,6 +3,7 @@ package wres.engine.statistics.metric.singlevalued;
 import java.util.Objects;
 import java.util.concurrent.atomic.DoubleAdder;
 
+import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
@@ -42,7 +43,7 @@ public class BiasFraction extends DoubleErrorScore<SingleValuedPairs>
         {
             result = Double.NaN;
         }
-        return getDataFactory().ofDoubleScoreOutput( result, metOut );
+        return DataFactory.ofDoubleScoreOutput( result, metOut );
     }
 
     @Override

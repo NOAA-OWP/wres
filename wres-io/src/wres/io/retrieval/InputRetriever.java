@@ -29,7 +29,6 @@ import wres.config.generated.ProjectConfig;
 import wres.config.generated.TimeScaleConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DatasetIdentifier;
-import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.Dimension;
 import wres.datamodel.Location;
 import wres.datamodel.VectorOfDoubles;
@@ -362,19 +361,17 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             baseline = convertToPairOfDoubles( this.baselinePairs );
         }
 
-        return DefaultDataFactory.getInstance()
-                                  .ofSingleValuedPairs( primary,
-                                                        baseline,
-                                                        rightMetadata,
-                                                        baselineMetadata,
-                                                        this.climatology );
+        return DataFactory.ofSingleValuedPairs( primary,
+                                                baseline,
+                                                rightMetadata,
+                                                baselineMetadata,
+                                                this.climatology );
     }
 
     private MetricInput createSingleValuedTimeSeriesInput(Metadata rightMetadata, Metadata baselineMetadata)
             throws IOException, SQLException
     {
-        TimeSeriesOfSingleValuedPairsBuilder builder = DefaultDataFactory.getInstance()
-                                                                         .ofTimeSeriesOfSingleValuedPairsBuilder();
+        TimeSeriesOfSingleValuedPairsBuilder builder = DataFactory.ofTimeSeriesOfSingleValuedPairsBuilder();
 
         Map<Instant, List<Event<PairOfDoubles>>> events = this.getSingleValuedEvents( primaryPairs );
         events.forEach( builder::addTimeSeriesData );
@@ -397,7 +394,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
     {
         throw new NotImplementedException( "Ensemble Time Series Inputs cannot be created yet." );
         /*
-        TimeSeriesOfEnsemblePairsBuilder builder = DefaultDataFactory.getInstance()
+        TimeSeriesOfEnsemblePairsBuilder builder = DataFactory.
                                                                          .ofTimeSeriesOfEnsemblePairsBuilder();
 
         Map<Instant, List<Event<PairOfDoubleAndVectorOfDoubles>>> events = this.getEnsembleEvents( primaryPairs );
@@ -429,13 +426,11 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             baseline = InputRetriever.extractRawPairs( this.baselinePairs );
         }
 
-        return DefaultDataFactory.getInstance()
-                                  .ofEnsemblePairs(
-                                          primary,
-                                          baseline,
-                                          rightMetadata,
-                                          baselineMetadata,
-                                          this.climatology );
+        return DataFactory.ofEnsemblePairs( primary,
+                                            baseline,
+                                            rightMetadata,
+                                            baselineMetadata,
+                                            this.climatology );
     }
 
     /*private Map<Instant, List<Event<PairOfDoubleAndVectorOfDoubles>>> getEnsembleEvents(List<ForecastedPair> pairs)
@@ -518,15 +513,13 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
     {
         List<PairOfDoubles> pairs = new ArrayList<>(  );
 
-        DataFactory factory = DefaultDataFactory.getInstance();
-
         for ( ForecastedPair pair : multiValuedPairs)
         {
             for ( double pairedValue : pair.getValues().getItemTwo() )
             {
-                pairs.add( factory.pairOf( pair.getValues()
-                                               .getItemOne(),
-                                           pairedValue ) );
+                pairs.add( DataFactory.pairOf( pair.getValues()
+                                                   .getItemOne(),
+                                               pairedValue ) );
             }
         }
 
@@ -1014,10 +1007,9 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                 double[] wrappedValue = { convertedValue };
 
                 PairOfDoubleAndVectorOfDoubles pair =
-                        DefaultDataFactory.getInstance()
-                                          .pairOf( primaryPair.getValues()
-                                                              .getItemOne(),
-                                                   wrappedValue );
+                        DataFactory.pairOf( primaryPair.getValues()
+                                                       .getItemOne(),
+                                            wrappedValue );
 
                 return new ForecastedPair( primaryPair.getBasisTime(),
                                            primaryPair.getValidTime(),
@@ -1104,10 +1096,9 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         double[] aggregatedWrapped = { aggregated };
 
         PairOfDoubleAndVectorOfDoubles pair =
-                DefaultDataFactory.getInstance()
-                                  .pairOf( primaryPair.getValues()
-                                                      .getItemOne(),
-                                           aggregatedWrapped );
+                DataFactory.pairOf( primaryPair.getValues()
+                                               .getItemOne(),
+                                    aggregatedWrapped );
 
         return new ForecastedPair( primaryPair.getBasisTime(),
                                    primaryPair.getValidTime(),
@@ -1181,8 +1172,6 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                                     boolean isBaseline )
             throws SQLException, IOException
     {
-        DataFactory dataFactory = DefaultDataFactory.getInstance();
-        
         DataSourceConfig sourceConfig;
         if( isBaseline )
         {
@@ -1193,8 +1182,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             sourceConfig = projectConfig.getInputs().getRight(); 
         }
 
-        MetadataFactory metadataFactory = dataFactory.getMetadataFactory();
-        Dimension dim = metadataFactory.getDimension( this.projectDetails.getDesiredMeasurementUnit());
+        Dimension dim = MetadataFactory.getDimension( this.projectDetails.getDesiredMeasurementUnit());
         Float longitude = null;
         Float latitude = null;
 
@@ -1204,7 +1192,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             latitude = this.feature.getCoordinate().getLatitude();
         }
 
-        Location geospatialIdentifier = metadataFactory.getLocation(
+        Location geospatialIdentifier = MetadataFactory.getLocation(
                 this.feature.getComid(),
                 this.feature.getLocationId(),
                 longitude,
@@ -1215,7 +1203,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         // Get the variable identifier
         String variableIdentifier = ConfigHelper.getVariableIdFromProjectConfig( projectConfig, isBaseline );
 
-        DatasetIdentifier datasetIdentifier = metadataFactory.getDatasetIdentifier(geospatialIdentifier,
+        DatasetIdentifier datasetIdentifier = MetadataFactory.getDatasetIdentifier(geospatialIdentifier,
                                                                                    variableIdentifier,
                                                                                    sourceConfig.getLabel());
         // Replicated from earlier declaration as long
@@ -1288,7 +1276,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                                                             lastLead,
                                                             this.issueDatesPool );
 
-        return metadataFactory.getMetadata( dim,
+        return MetadataFactory.getMetadata( dim,
                                             datasetIdentifier,
                                             timeWindow );
     }
@@ -1313,7 +1301,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             return null;
         }
 
-        return DefaultDataFactory.getInstance().pairOf(
+        return DataFactory.pairOf(
                 leftAggregation,
                 condensedIngestedValue.getAggregatedValues(
                         this.projectDetails.shouldScale(),
@@ -1479,9 +1467,8 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
 
             for (int i = 0; i < pairOfDoubles.length; ++i)
             {
-                pairOfDoubles[i] = DefaultDataFactory.getInstance()
-                                                     .pairOf( this.getValues().getItemOne(),
-                                                              this.getValues().getItemTwo()[i] );
+                pairOfDoubles[i] = DataFactory.pairOf( this.getValues().getItemOne(),
+                                                       this.getValues().getItemTwo()[i] );
             }
 
             return pairOfDoubles;

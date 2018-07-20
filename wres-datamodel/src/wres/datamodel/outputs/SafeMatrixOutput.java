@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 
-import wres.datamodel.DefaultDataFactory;
+import wres.datamodel.DataFactory;
 import wres.datamodel.MatrixOfDoubles;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.metadata.MetricOutputMetadata;
@@ -180,7 +180,7 @@ public class SafeMatrixOutput implements MatrixOutput
         }
         
         // Set
-        this.output = ( (DefaultDataFactory) DefaultDataFactory.getInstance() ).safeMatrixOf( output );
+        this.output = DataFactory.safeMatrixOf( output );
         this.meta = meta;
         if( Objects.nonNull( names ) ) 
         {

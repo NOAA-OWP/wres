@@ -23,7 +23,6 @@ import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DatasetIdentifier;
-import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
@@ -65,12 +64,8 @@ public class CommaSeparatedPairedWriterTest extends CommaSeparatedWriterTest
         final String LID = "FTSC1";
 
         // Create fake outputs
-
-        DataFactory outputFactory = DefaultDataFactory.getInstance();
-        MetadataFactory metaFac = outputFactory.getMetadataFactory();
-
         MetricOutputForProjectByTimeAndThreshold.MetricOutputForProjectByTimeAndThresholdBuilder outputBuilder =
-                outputFactory.ofMetricOutputForProjectByTimeAndThreshold();
+                DataFactory.ofMetricOutputForProjectByTimeAndThreshold();
 
         TimeWindow timeOne =
                 TimeWindow.of( Instant.MIN,
@@ -83,18 +78,18 @@ public class CommaSeparatedPairedWriterTest extends CommaSeparatedWriterTest
         // which requires a datasetidentifier..
 
         DatasetIdentifier datasetIdentifier =
-                metaFac.getDatasetIdentifier( metaFac.getLocation( LID ),
-                                              "SQIN",
-                                              "HEFS",
-                                              "ESP" );
+                MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation( LID ),
+                                                      "SQIN",
+                                                      "HEFS",
+                                                      "ESP" );
 
         MetricOutputMetadata fakeMetadata =
-                metaFac.getOutputMetadata( 1000,
-                                           metaFac.getDimension(),
-                                           metaFac.getDimension( "CMS" ),
-                                           MetricConstants.TIME_TO_PEAK_ERROR,
-                                           null,
-                                           datasetIdentifier );
+                MetadataFactory.getOutputMetadata( 1000,
+                                                   MetadataFactory.getDimension(),
+                                                   MetadataFactory.getDimension( "CMS" ),
+                                                   MetricConstants.TIME_TO_PEAK_ERROR,
+                                                   null,
+                                                   datasetIdentifier );
 
         List<Pair<Instant, Duration>> fakeOutputs = new ArrayList<>();
         fakeOutputs.add( Pair.of( Instant.parse( "1985-01-01T00:00:00Z" ), Duration.ofHours( 1 ) ) );
@@ -103,9 +98,9 @@ public class CommaSeparatedPairedWriterTest extends CommaSeparatedWriterTest
 
         // Fake output wrapper.
         MetricOutputMapByMetric<PairedOutput<Instant, Duration>> fakeOutputData =
-                outputFactory.ofMetricOutputMapByMetric( Collections.singletonMap( MetricConstants.TIME_TO_PEAK_ERROR,
-                                                                                   outputFactory.ofPairedOutput( fakeOutputs,
-                                                                                                                 fakeMetadata ) ) );
+                DataFactory.ofMetricOutputMapByMetric( Collections.singletonMap( MetricConstants.TIME_TO_PEAK_ERROR,
+                                                                                 DataFactory.ofPairedOutput( fakeOutputs,
+                                                                                                             fakeMetadata ) ) );
 
         // wrap outputs in future
         Future<MetricOutputMapByMetric<PairedOutput<Instant, Duration>>> outputMapByMetricFuture =
@@ -113,10 +108,10 @@ public class CommaSeparatedPairedWriterTest extends CommaSeparatedWriterTest
 
         // Fake lead time and threshold
         Pair<TimeWindow, OneOrTwoThresholds> mapKeyByLeadThreshold =
-                outputFactory.ofMapKeyByTimeThreshold( timeOne,
-                                                       outputFactory.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
-                                                       Operator.GREATER,
-                                                       ThresholdDataType.LEFT );
+                DataFactory.ofMapKeyByTimeThreshold( timeOne,
+                                                     DataFactory.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
+                                                     Operator.GREATER,
+                                                     ThresholdDataType.LEFT );
 
         outputBuilder.addPairedOutput( mapKeyByLeadThreshold,
                                        outputMapByMetricFuture );

@@ -1,7 +1,6 @@
 package wres.datamodel.inputs.pairs;
 
 import wres.datamodel.DataFactory;
-import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
 
@@ -20,8 +19,7 @@ public class SafeDiscreteProbabilityPairs extends SafeSingleValuedPairs implemen
         {
             return null;
         }
-        final DataFactory metIn = DefaultDataFactory.getInstance();
-        return metIn.ofDiscreteProbabilityPairs(getRawDataForBaseline(),getMetadataForBaseline());
+        return DataFactory.ofDiscreteProbabilityPairs(getRawDataForBaseline(),getMetadataForBaseline());
     }     
 
     /**

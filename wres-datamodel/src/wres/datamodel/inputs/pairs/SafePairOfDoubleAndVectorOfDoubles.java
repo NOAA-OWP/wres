@@ -5,7 +5,7 @@ import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.stream.Stream;
 
-import wres.datamodel.DefaultDataFactory;
+import wres.datamodel.DataFactory;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 
 public class SafePairOfDoubleAndVectorOfDoubles
@@ -68,7 +68,7 @@ implements PairOfDoubleAndVectorOfDoubles
         }
         else if (Double.compare(this.getItemOne(), other.getItemOne()) == 0)
         {
-            return DefaultDataFactory.compareDoubleArray(this.getItemTwo(),
+            return DataFactory.compareDoubleArray(this.getItemTwo(),
                                                           other.getItemTwo());
         }
         else if (this.getItemOne() < other.getItemOne())

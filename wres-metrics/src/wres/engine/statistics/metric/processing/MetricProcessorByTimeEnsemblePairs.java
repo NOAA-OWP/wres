@@ -18,6 +18,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import wres.config.MetricConfigException;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
+import wres.datamodel.DefaultSlicer;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
@@ -122,10 +123,9 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
 
         //Metric futures 
         MetricFuturesByTimeBuilder futures = new MetricFuturesByTimeBuilder();
-        futures.setDataFactory( dataFactory );
 
         //Slicer
-        Slicer slicer = dataFactory.getSlicer();
+        Slicer slicer = DefaultSlicer.getInstance();
 
         //Remove missing values. 
         //TODO: when time-series metrics are supported, leave missings in place for time-series
@@ -175,7 +175,6 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
     /**
      * Constructor.
      * 
-     * @param dataFactory the data factory
      * @param config the project configuration
      * @param externalThresholds an optional set of external thresholds, may be null
      * @param thresholdExecutor an {@link ExecutorService} for executing thresholds, cannot be null 
@@ -187,15 +186,14 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
      * @throws NullPointerException if a required input is null
      */
 
-    public MetricProcessorByTimeEnsemblePairs( final DataFactory dataFactory,
-                                               final ProjectConfig config,
+    public MetricProcessorByTimeEnsemblePairs( final ProjectConfig config,
                                                final ThresholdsByMetric externalThresholds,
                                                final ExecutorService thresholdExecutor,
                                                final ExecutorService metricExecutor,
                                                final Set<MetricOutputGroup> mergeSet )
             throws MetricParameterException
     {
-        super( dataFactory, config, externalThresholds, thresholdExecutor, metricExecutor, mergeSet );
+        super( config, externalThresholds, thresholdExecutor, metricExecutor, mergeSet );
 
         //Construct the metrics
         //Discrete probability input, vector output
@@ -258,11 +256,11 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         }
 
         //Construct the default mapper from ensembles to single-values: this is not currently configurable
-        toSingleValues = in -> dataFactory.pairOf( in.getItemOne(),
+        toSingleValues = in -> DataFactory.pairOf( in.getItemOne(),
                                                    Arrays.stream( in.getItemTwo() ).average().getAsDouble() );
 
         //Construct the default mapper from ensembles to probabilities: this is not currently configurable
-        toDiscreteProbabilities = dataFactory.getSlicer()::toDiscreteProbabilityPair;
+        toDiscreteProbabilities = DefaultSlicer.getInstance()::toDiscreteProbabilityPair;
 
         // Finalize validation now all required parameters are available
         // This is also called by the constructor of the superclass, but local parameters must be validated too
@@ -429,7 +427,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                 Predicate<PairOfDoubleAndVectorOfDoubles> filter =
                         MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( useMe );
 
-                pairs = dataFactory.getSlicer().filter( input, filter, null );
+                pairs = DefaultSlicer.getInstance().filter( input, filter, null );
             }
 
             processEnsemblePairs( Pair.of( timeWindow, OneOrTwoThresholds.of( useMe ) ),
@@ -460,21 +458,24 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
     {
         if ( outGroup == MetricOutputGroup.DOUBLE_SCORE )
         {
-            futures.addDoubleScoreOutput( key, processEnsemblePairs( input,
-                                                                     ensembleScore,
-                                                                     ignoreTheseMetrics ) );
+            futures.addDoubleScoreOutput( key,
+                                          processEnsemblePairs( input,
+                                                                ensembleScore,
+                                                                ignoreTheseMetrics ) );
         }
         else if ( outGroup == MetricOutputGroup.MULTIVECTOR )
         {
-            futures.addMultiVectorOutput( key, processEnsemblePairs( input,
-                                                                     ensembleMultiVector,
-                                                                     ignoreTheseMetrics ) );
+            futures.addMultiVectorOutput( key,
+                                          processEnsemblePairs( input,
+                                                                ensembleMultiVector,
+                                                                ignoreTheseMetrics ) );
         }
         else if ( outGroup == MetricOutputGroup.BOXPLOT )
         {
-            futures.addBoxPlotOutput( key, processEnsemblePairs( input,
-                                                                 ensembleBoxPlot,
-                                                                 ignoreTheseMetrics ) );
+            futures.addBoxPlotOutput( key,
+                                      processEnsemblePairs( input,
+                                                            ensembleBoxPlot,
+                                                            ignoreTheseMetrics ) );
         }
     }
 
@@ -562,10 +563,10 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
             Threshold useMe = addQuantilesToThreshold( threshold, sorted );
 
             // Transform the pairs
-            DiscreteProbabilityPairs transformed = dataFactory.getSlicer()
-                                                              .toDiscreteProbabilityPairs( input,
-                                                                          useMe,
-                                                                          toDiscreteProbabilities );
+            DiscreteProbabilityPairs transformed = DefaultSlicer.getInstance()
+                                                                .toDiscreteProbabilityPairs( input,
+                                                                                             useMe,
+                                                                                             toDiscreteProbabilities );
 
             processDiscreteProbabilityPairs( Pair.of( timeWindow, OneOrTwoThresholds.of( useMe ) ),
                                              transformed,
@@ -596,15 +597,17 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
     {
         if ( outGroup == MetricOutputGroup.DOUBLE_SCORE )
         {
-            futures.addDoubleScoreOutput( key, processDiscreteProbabilityPairs( input,
-                                                                                discreteProbabilityScore,
-                                                                                ignoreTheseMetrics ) );
+            futures.addDoubleScoreOutput( key,
+                                          processDiscreteProbabilityPairs( input,
+                                                                           discreteProbabilityScore,
+                                                                           ignoreTheseMetrics ) );
         }
         else if ( outGroup == MetricOutputGroup.MULTIVECTOR )
         {
-            futures.addMultiVectorOutput( key, processDiscreteProbabilityPairs( input,
-                                                                                discreteProbabilityMultiVector,
-                                                                                ignoreTheseMetrics ) );
+            futures.addMultiVectorOutput( key,
+                                          processDiscreteProbabilityPairs( input,
+                                                                           discreteProbabilityMultiVector,
+                                                                           ignoreTheseMetrics ) );
         }
     }
 
@@ -690,10 +693,10 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
             Threshold outerThreshold = addQuantilesToThreshold( threshold, sorted );
 
             // Transform the pairs to probabilities first
-            DiscreteProbabilityPairs transformed = dataFactory.getSlicer()
-                                                              .toDiscreteProbabilityPairs( input,
-                                                                          outerThreshold,
-                                                                          toDiscreteProbabilities );
+            DiscreteProbabilityPairs transformed = DefaultSlicer.getInstance()
+                                                                .toDiscreteProbabilityPairs( input,
+                                                                                             outerThreshold,
+                                                                                             toDiscreteProbabilities );
 
             // Find the union of classifiers across all metrics   
             Set<Threshold> classifiers = filteredByInner.union();
@@ -716,10 +719,10 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
 
                 //Define a mapper to convert the discrete probability pairs to dichotomous pairs
                 Function<PairOfDoubles, PairOfBooleans> mapper =
-                        pair -> dataFactory.pairOf( innerThreshold.test( pair.getItemOne() ),
+                        pair -> DataFactory.pairOf( innerThreshold.test( pair.getItemOne() ),
                                                     innerThreshold.test( pair.getItemTwo() ) );
                 //Transform the pairs
-                DichotomousPairs dichotomous = dataFactory.getSlicer().toDichotomousPairs( transformed, mapper );
+                DichotomousPairs dichotomous = DefaultSlicer.getInstance().toDichotomousPairs( transformed, mapper );
                 processDichotomousPairs( nextKey, dichotomous, futures, outGroup, unionToIgnore );
             }
         }

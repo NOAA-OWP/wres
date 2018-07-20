@@ -16,7 +16,6 @@ import evs.metric.results.MetricResultByLeadTime;
 import evs.metric.results.MetricResultByThreshold;
 import evs.metric.results.MetricResultKey;
 import wres.datamodel.DataFactory;
-import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.SafeOneOrTwoDoubles;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
@@ -51,8 +50,7 @@ public final class DataModelTestDataFactory
 
     public static MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> getScalarMetricOutputMapByLeadThresholdOne()
     {
-        final DataFactory outputFactory = DefaultDataFactory.getInstance();
-        final MetadataFactory metaFactory = outputFactory.getMetadataFactory();
+
         final SafeMetricOutputMapByTimeAndThresholdBuilder<DoubleScoreOutput> builder =
                 new SafeMetricOutputMapByTimeAndThreshold.SafeMetricOutputMapByTimeAndThresholdBuilder<>();
         try
@@ -65,15 +63,15 @@ public final class DataModelTestDataFactory
             final Iterator<MetricResultKey> d = data.getIterator();
 
             //Metric output metadata: add fake sample sizes as these are not readily available
-            final MetricOutputMetadata meta = metaFactory.getOutputMetadata( 1000,
-                                                                             metaFactory.getDimension(),
-                                                                             metaFactory.getDimension( "CMS" ),
-                                                                             MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
-                                                                             MetricConstants.MAIN,
-                                                                             metaFactory.getDatasetIdentifier( metaFactory.getLocation( "DRRC2" ),
-                                                                                                               "SQIN",
-                                                                                                               "HEFS",
-                                                                                                               "ESP" ) );
+            final MetricOutputMetadata meta = MetadataFactory.getOutputMetadata( 1000,
+                                                                                 MetadataFactory.getDimension(),
+                                                                                 MetadataFactory.getDimension( "CMS" ),
+                                                                                 MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
+                                                                                 MetricConstants.MAIN,
+                                                                                 MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation( "DRRC2" ),
+                                                                                                                       "SQIN",
+                                                                                                                       "HEFS",
+                                                                                                                       "ESP" ) );
 
             //Iterate through the lead times
             while ( d.hasNext() )
@@ -95,16 +93,16 @@ public final class DataModelTestDataFactory
                     final double[] constants = f.getParValReal().getConstants();
                     final double[] probConstants = f.getParVal().getConstants();
                     final OneOrTwoThresholds q =
-                            OneOrTwoThresholds.of( outputFactory.ofQuantileThreshold( SafeOneOrTwoDoubles.of( constants[0] ),
-                                                                                      SafeOneOrTwoDoubles.of( probConstants[0] ),
-                                                                                      Operator.GREATER,
-                                                                                      ThresholdDataType.LEFT ) );
+                            OneOrTwoThresholds.of( DataFactory.ofQuantileThreshold( SafeOneOrTwoDoubles.of( constants[0] ),
+                                                                                    SafeOneOrTwoDoubles.of( probConstants[0] ),
+                                                                                    Operator.GREATER,
+                                                                                    ThresholdDataType.LEFT ) );
                     final Pair<TimeWindow, OneOrTwoThresholds> key = Pair.of( timeWindow, q );
 
                     //Build the scalar result
                     final MetricResult result = t.getResult( f );
                     final double[] res = ( (DoubleMatrix1DResult) result ).getResult().toArray();
-                    final DoubleScoreOutput value = outputFactory.ofDoubleScoreOutput( res[0], meta );
+                    final DoubleScoreOutput value = DataFactory.ofDoubleScoreOutput( res[0], meta );
 
                     //Append result
                     builder.put( key, value );
@@ -129,20 +127,20 @@ public final class DataModelTestDataFactory
 
     public static MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> getScalarMetricOutputMapByLeadThresholdTwo()
     {
-        DataFactory outF = DefaultDataFactory.getInstance();
-        MetadataFactory metaFactory = outF.getMetadataFactory();
-        SafeMetricOutputMapByTimeAndThresholdBuilder<DoubleScoreOutput> builder = new SafeMetricOutputMapByTimeAndThreshold.SafeMetricOutputMapByTimeAndThresholdBuilder<>();
+
+        SafeMetricOutputMapByTimeAndThresholdBuilder<DoubleScoreOutput> builder =
+                new SafeMetricOutputMapByTimeAndThreshold.SafeMetricOutputMapByTimeAndThresholdBuilder<>();
 
         //Fake metadata
-        MetricOutputMetadata meta = metaFactory.getOutputMetadata( 1000,
-                                                                   metaFactory.getDimension(),
-                                                                   metaFactory.getDimension( "CMS" ),
-                                                                   MetricConstants.MEAN_ABSOLUTE_ERROR,
-                                                                   MetricConstants.MAIN,
-                                                                   metaFactory.getDatasetIdentifier( metaFactory.getLocation( "DRRC2" ),
-                                                                                                     "SQIN",
-                                                                                                     "HEFS",
-                                                                                                     "ESP" ) );
+        MetricOutputMetadata meta = MetadataFactory.getOutputMetadata( 1000,
+                                                                       MetadataFactory.getDimension(),
+                                                                       MetadataFactory.getDimension( "CMS" ),
+                                                                       MetricConstants.MEAN_ABSOLUTE_ERROR,
+                                                                       MetricConstants.MAIN,
+                                                                       MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation( "DRRC2" ),
+                                                                                                             "SQIN",
+                                                                                                             "HEFS",
+                                                                                                             "ESP" ) );
 
         int[] leadTimes = new int[] { 1, 2, 3, 4, 5 };
 
@@ -156,46 +154,46 @@ public final class DataModelTestDataFactory
 
             // Add first result
             OneOrTwoThresholds first =
-                    OneOrTwoThresholds.of( outF.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 1.0 ),
-                                                                     SafeOneOrTwoDoubles.of( 0.1 ),
-                                                                     Operator.GREATER,
-                                                                     ThresholdDataType.LEFT ),
-                                           outF.ofThreshold( SafeOneOrTwoDoubles.of( 5.0 ),
-                                                             Operator.GREATER,
-                                                             ThresholdDataType.LEFT ) );
+                    OneOrTwoThresholds.of( DataFactory.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 1.0 ),
+                                                                            SafeOneOrTwoDoubles.of( 0.1 ),
+                                                                            Operator.GREATER,
+                                                                            ThresholdDataType.LEFT ),
+                                           DataFactory.ofThreshold( SafeOneOrTwoDoubles.of( 5.0 ),
+                                                                    Operator.GREATER,
+                                                                    ThresholdDataType.LEFT ) );
 
-            DoubleScoreOutput firstValue = outF.ofDoubleScoreOutput( 66.0, meta );
+            DoubleScoreOutput firstValue = DataFactory.ofDoubleScoreOutput( 66.0, meta );
 
             builder.put( Pair.of( timeWindow, first ), firstValue );
 
 
             // Add second result
             OneOrTwoThresholds second =
-                    OneOrTwoThresholds.of( outF.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 2.0 ),
-                                                                     SafeOneOrTwoDoubles.of( 0.2 ),
-                                                                     Operator.GREATER,
-                                                                     ThresholdDataType.LEFT ),
-                                           outF.ofThreshold( SafeOneOrTwoDoubles.of( 5.0 ),
-                                                             Operator.GREATER,
-                                                             ThresholdDataType.LEFT ) );
+                    OneOrTwoThresholds.of( DataFactory.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 2.0 ),
+                                                                            SafeOneOrTwoDoubles.of( 0.2 ),
+                                                                            Operator.GREATER,
+                                                                            ThresholdDataType.LEFT ),
+                                           DataFactory.ofThreshold( SafeOneOrTwoDoubles.of( 5.0 ),
+                                                                    Operator.GREATER,
+                                                                    ThresholdDataType.LEFT ) );
 
-            DoubleScoreOutput secondValue = outF.ofDoubleScoreOutput( 67.0, meta );
+            DoubleScoreOutput secondValue = DataFactory.ofDoubleScoreOutput( 67.0, meta );
 
             builder.put( Pair.of( timeWindow, second ), secondValue );
 
 
             // Add third result
             OneOrTwoThresholds third =
-                    OneOrTwoThresholds.of( outF.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 3.0 ),
-                                                                     SafeOneOrTwoDoubles.of( 0.3 ),
-                                                                     Operator.GREATER,
-                                                                     ThresholdDataType.LEFT ),
-                                           outF.ofThreshold( SafeOneOrTwoDoubles.of( 6.0 ),
-                                                             Operator.GREATER,
-                                                             ThresholdDataType.LEFT ) );
+                    OneOrTwoThresholds.of( DataFactory.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 3.0 ),
+                                                                            SafeOneOrTwoDoubles.of( 0.3 ),
+                                                                            Operator.GREATER,
+                                                                            ThresholdDataType.LEFT ),
+                                           DataFactory.ofThreshold( SafeOneOrTwoDoubles.of( 6.0 ),
+                                                                    Operator.GREATER,
+                                                                    ThresholdDataType.LEFT ) );
 
 
-            DoubleScoreOutput thirdValue = outF.ofDoubleScoreOutput( 68.0, meta );
+            DoubleScoreOutput thirdValue = DataFactory.ofDoubleScoreOutput( 68.0, meta );
 
             builder.put( Pair.of( timeWindow, third ), thirdValue );
 
@@ -214,9 +212,9 @@ public final class DataModelTestDataFactory
 
     public static MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> getVectorMetricOutputMapByLeadThresholdOne()
     {
-        final DataFactory outputFactory = DefaultDataFactory.getInstance();
-        final MetadataFactory metaFactory = outputFactory.getMetadataFactory();
-        final SafeMetricOutputMapByTimeAndThresholdBuilder<DoubleScoreOutput> builder = new SafeMetricOutputMapByTimeAndThreshold.SafeMetricOutputMapByTimeAndThresholdBuilder<>();
+
+        final SafeMetricOutputMapByTimeAndThresholdBuilder<DoubleScoreOutput> builder =
+                new SafeMetricOutputMapByTimeAndThreshold.SafeMetricOutputMapByTimeAndThresholdBuilder<>();
         try
         {
             //Create the input file
@@ -227,15 +225,15 @@ public final class DataModelTestDataFactory
             final Iterator<MetricResultKey> d = data.getIterator();
 
             //Metric output metadata: add fake sample sizes as these are not readily available
-            final MetricOutputMetadata meta = metaFactory.getOutputMetadata( 1000,
-                                                                             metaFactory.getDimension(),
-                                                                             metaFactory.getDimension( "CFS" ),
-                                                                             MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
-                                                                             MetricConstants.CR_POT,
-                                                                             metaFactory.getDatasetIdentifier( metaFactory.getLocation( "NPTP1" ),
-                                                                                                               "SQIN",
-                                                                                                               "HEFS",
-                                                                                                               "ESP" ) );
+            final MetricOutputMetadata meta = MetadataFactory.getOutputMetadata( 1000,
+                                                                                 MetadataFactory.getDimension(),
+                                                                                 MetadataFactory.getDimension( "CFS" ),
+                                                                                 MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
+                                                                                 MetricConstants.CR_POT,
+                                                                                 MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation( "NPTP1" ),
+                                                                                                                       "SQIN",
+                                                                                                                       "HEFS",
+                                                                                                                       "ESP" ) );
 
             //Iterate through the lead times
             while ( d.hasNext() )
@@ -257,17 +255,17 @@ public final class DataModelTestDataFactory
                     final double[] constants = f.getParValReal().getConstants();
                     final double[] probConstants = f.getParVal().getConstants();
                     final OneOrTwoThresholds q =
-                            OneOrTwoThresholds.of( outputFactory.ofQuantileThreshold( SafeOneOrTwoDoubles.of( constants[0] ),
-                                                                                      SafeOneOrTwoDoubles.of( probConstants[0] ),
-                                                                                      Operator.GREATER,
-                                                                                      ThresholdDataType.LEFT ) );
+                            OneOrTwoThresholds.of( DataFactory.ofQuantileThreshold( SafeOneOrTwoDoubles.of( constants[0] ),
+                                                                                    SafeOneOrTwoDoubles.of( probConstants[0] ),
+                                                                                    Operator.GREATER,
+                                                                                    ThresholdDataType.LEFT ) );
                     final Pair<TimeWindow, OneOrTwoThresholds> key = Pair.of( timeWindow, q );
 
                     //Build the scalar result
                     final MetricResult result = t.getResult( f );
                     final double[] res = ( (DoubleMatrix1DResult) result ).getResult().toArray();
                     final DoubleScoreOutput value =
-                            outputFactory.ofDoubleScoreOutput( res, ScoreOutputGroup.CR_POT, meta );
+                            DataFactory.ofDoubleScoreOutput( res, ScoreOutputGroup.CR_POT, meta );
 
                     //Append result
                     builder.put( key, value );

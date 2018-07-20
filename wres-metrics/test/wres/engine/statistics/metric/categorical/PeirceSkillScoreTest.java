@@ -11,7 +11,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.DataFactory;
-import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
@@ -42,18 +41,6 @@ public final class PeirceSkillScoreTest
     public final ExpectedException exception = ExpectedException.none();
 
     /**
-     * Output factory.
-     */
-
-    private DataFactory outF;
-
-    /**
-     * Metadata factory.
-     */
-
-    private MetadataFactory metaFac;
-
-    /**
      * Metric factory.
      */
 
@@ -74,20 +61,17 @@ public final class PeirceSkillScoreTest
     @Before
     public void setUpBeforeEachTest() throws MetricParameterException
     {
-        outF = DefaultDataFactory.getInstance();
-        metaFac = outF.getMetadataFactory();
-        metricFactory = MetricFactory.getInstance( outF );
+        metricFactory = MetricFactory.getInstance();
         pss = metricFactory.ofPeirceSkillScore();
-        meta = metaFac.getOutputMetadata( 365,
-                                          metaFac.getDimension(),
-                                          metaFac.getDimension(),
-                                          MetricConstants.PEIRCE_SKILL_SCORE,
-                                          MetricConstants.MAIN,
-                                          metaFac.getDatasetIdentifier(
-                                                  metaFac.getLocation( "DRRC2" ),
-                                                  "SQIN",
-                                                  "HEFS" )
-        );
+        meta = MetadataFactory.getOutputMetadata( 365,
+                                                  MetadataFactory.getDimension(),
+                                                  MetadataFactory.getDimension(),
+                                                  MetricConstants.PEIRCE_SKILL_SCORE,
+                                                  MetricConstants.MAIN,
+                                                  MetadataFactory.getDatasetIdentifier(
+                                                                                        MetadataFactory.getLocation( "DRRC2" ),
+                                                                                        "SQIN",
+                                                                                        "HEFS" ) );
     }
 
     /**
@@ -103,7 +87,7 @@ public final class PeirceSkillScoreTest
 
         //Check the results
         final DoubleScoreOutput actual = pss.apply( input );
-        final DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 0.6347985347985348, meta );
+        final DoubleScoreOutput expected = DataFactory.ofDoubleScoreOutput( 0.6347985347985348, meta );
         assertTrue( "Actual: " + actual.getData().doubleValue()
                     + ". Expected: "
                     + expected.getData().doubleValue()
@@ -124,14 +108,13 @@ public final class PeirceSkillScoreTest
         final MulticategoryPairs input = MetricTestDataFactory.getMulticategoryPairsOne();
 
         final PeirceSkillScoreBuilder<MulticategoryPairs> b = new PeirceSkillScore.PeirceSkillScoreBuilder<>();
-        b.setOutputFactory( outF );
         final PeirceSkillScore<MulticategoryPairs> ps = b.build();
 
         //Check the results
         final DoubleScoreOutput actual = ps.apply( input );
         final DoubleScoreOutput expected =
-                outF.ofDoubleScoreOutput( 0.05057466520850963,
-                                          metaFac.getOutputMetadata( meta, input.getRawData().size() ) );
+                DataFactory.ofDoubleScoreOutput( 0.05057466520850963,
+                                                 MetadataFactory.getOutputMetadata( meta, input.getRawData().size() ) );
         assertTrue( "Actual: " + actual.getData().doubleValue()
                     + ". Expected: "
                     + expected.getData().doubleValue()
@@ -148,13 +131,13 @@ public final class PeirceSkillScoreTest
     {
         // Generate empty data
         DichotomousPairs input =
-                outF.ofDichotomousPairs( Arrays.asList(), outF.getMetadataFactory().getMetadata() );
- 
+                DataFactory.ofDichotomousPairs( Arrays.asList(), MetadataFactory.getMetadata() );
+
         DoubleScoreOutput actual = pss.apply( input );
 
         assertTrue( actual.getData().isNaN() );
-    }     
-    
+    }
+
     /**
      * Verifies that {@link Metric#getName()} returns the expected result.
      */
@@ -228,8 +211,10 @@ public final class PeirceSkillScoreTest
     {
         exception.expect( MetricInputException.class );
         exception.expectMessage( "Expected an intermediate result with a square matrix when computing the "
-                                 + "'" + pss.getName() + "': [2, 3]." );
-        pss.aggregate( outF.ofMatrixOutput( new double[][] { { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 } }, meta ) );
+                                 + "'"
+                                 + pss.getName()
+                                 + "': [2, 3]." );
+        pss.aggregate( DataFactory.ofMatrixOutput( new double[][] { { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 } }, meta ) );
     }
 
     /**
@@ -242,10 +227,12 @@ public final class PeirceSkillScoreTest
     {
         exception.expect( MetricCalculationException.class );
         exception.expectMessage( "The sum product of the rows and columns in the contingency table "
-                                                  + "must exceed zero when computing the '" + pss.getName() + "': 0.0");
-        pss.aggregate( outF.ofMatrixOutput( new double[][] { { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 },
-                                                             { 0.0, 0.0, 0.0 } },
-                                            meta ) );
+                                 + "must exceed zero when computing the '"
+                                 + pss.getName()
+                                 + "': 0.0" );
+        pss.aggregate( DataFactory.ofMatrixOutput( new double[][] { { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 },
+                                                                    { 0.0, 0.0, 0.0 } },
+                                                   meta ) );
     }
 
 

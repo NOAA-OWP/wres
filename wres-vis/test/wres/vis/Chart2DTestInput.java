@@ -17,7 +17,6 @@ import ohd.hseb.charter.ChartTools;
 import ohd.hseb.charter.datasource.XYChartDataSourceException;
 
 import wres.datamodel.DataFactory;
-import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.Metadata;
@@ -29,16 +28,16 @@ public class Chart2DTestInput extends TestCase
             throws ChartEngineException, XYChartDataSourceException, IOException
     {
         final Random rand = new Random(0L);
-        final DataFactory metIn = DefaultDataFactory.getInstance();
+
         final List<PairOfDoubles> values = new ArrayList<>();
         for (int i = 0; i < 100; i ++)
         {
-            values.add(metIn.pairOf(rand.nextGaussian(), rand.nextGaussian()));
+            values.add(DataFactory.pairOf(rand.nextGaussian(), rand.nextGaussian()));
         }
-        final MetadataFactory metFac = metIn.getMetadataFactory();
-        final Metadata meta = metFac.getMetadata(metFac.getDimension("CMS"),
-                                                 metFac.getDatasetIdentifier(metFac.getLocation("DRRC2"), "SQIN", "HEFS"));
-        final SingleValuedPairs pairs = metIn.ofSingleValuedPairs(values, meta);
+
+        final Metadata meta = MetadataFactory.getMetadata(MetadataFactory.getDimension("CMS"),
+                                                 MetadataFactory.getDatasetIdentifier(MetadataFactory.getLocation("DRRC2"), "SQIN", "HEFS"));
+        final SingleValuedPairs pairs = DataFactory.ofSingleValuedPairs(values, meta);
 
         //Construct the source from the pairs assigning it a data source order index of 0.
         //The order index indicates the order in which the different sources are rendered.
@@ -70,22 +69,21 @@ public class Chart2DTestInput extends TestCase
     public static void main( final String[] args ) throws ChartEngineException, IOException
     {
         //Construct some single-valued pairs
-        final DataFactory metIn = DefaultDataFactory.getInstance();
         final List<PairOfDoubles> values = new ArrayList<>();
-        values.add(metIn.pairOf(22.9, 22.8));
-        values.add(metIn.pairOf(75.2, 80));
-        values.add(metIn.pairOf(63.2, 65));
-        values.add(metIn.pairOf(29, 30));
-        values.add(metIn.pairOf(5, 2));
-        values.add(metIn.pairOf(2.1, 3.1));
-        values.add(metIn.pairOf(35000, 37000));
-        values.add(metIn.pairOf(8, 7));
-        values.add(metIn.pairOf(12, 12));
-        values.add(metIn.pairOf(93, 94));
-        final MetadataFactory metFac = metIn.getMetadataFactory();
-        final Metadata meta = metFac.getMetadata(metFac.getDimension("CMS"),
-                                                 metFac.getDatasetIdentifier(metFac.getLocation("DRRC2"), "SQIN", "HEFS"));
-        final SingleValuedPairs pairs = metIn.ofSingleValuedPairs(values, meta);
+        values.add(DataFactory.pairOf(22.9, 22.8));
+        values.add(DataFactory.pairOf(75.2, 80));
+        values.add(DataFactory.pairOf(63.2, 65));
+        values.add(DataFactory.pairOf(29, 30));
+        values.add(DataFactory.pairOf(5, 2));
+        values.add(DataFactory.pairOf(2.1, 3.1));
+        values.add(DataFactory.pairOf(35000, 37000));
+        values.add(DataFactory.pairOf(8, 7));
+        values.add(DataFactory.pairOf(12, 12));
+        values.add(DataFactory.pairOf(93, 94));
+
+        final Metadata meta = MetadataFactory.getMetadata(MetadataFactory.getDimension("CMS"),
+                                                 MetadataFactory.getDatasetIdentifier(MetadataFactory.getLocation("DRRC2"), "SQIN", "HEFS"));
+        final SingleValuedPairs pairs = DataFactory.ofSingleValuedPairs(values, meta);
 
         ChartEngine engine = ChartEngineFactory.buildSingleValuedPairsChartEngine( pairs, null, null );
 

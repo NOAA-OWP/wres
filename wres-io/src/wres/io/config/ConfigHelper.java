@@ -64,9 +64,9 @@ import wres.config.generated.ThresholdFormat;
 import wres.config.generated.ThresholdsConfig;
 import wres.config.generated.TimeScaleConfig;
 import wres.datamodel.DataFactory;
-import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.Dimension;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
@@ -1515,8 +1515,7 @@ public class ConfigHelper
         Dimension units = null;
         if ( Objects.nonNull( projectConfig.getPair() ) && Objects.nonNull( projectConfig.getPair().getUnit() ) )
         {
-            DataFactory dataFactory = DefaultDataFactory.getInstance();
-            units = dataFactory.getMetadataFactory().getDimension( projectConfig.getPair().getUnit() );
+            units = MetadataFactory.getDimension( projectConfig.getPair().getUnit() );
         }
 
         for ( MetricsConfig nextGroup : metrics )
@@ -1680,7 +1679,7 @@ public class ConfigHelper
             // Add the thresholds for each feature
             for ( Entry<FeaturePlus, Set<Threshold>> nextEntry : read.entrySet() )
             {
-                ThresholdsByMetricBuilder builder = DefaultDataFactory.getInstance().ofThresholdsByMetricBuilder();
+                ThresholdsByMetricBuilder builder = DataFactory.ofThresholdsByMetricBuilder();
                 Map<MetricConstants, Set<Threshold>> thresholds = new EnumMap<>( MetricConstants.class );
 
                 // Add the thresholds for each metric in the group

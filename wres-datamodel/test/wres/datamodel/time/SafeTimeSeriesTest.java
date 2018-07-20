@@ -19,7 +19,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.DataFactory;
-import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.time.Event;
@@ -39,12 +38,6 @@ public final class SafeTimeSeriesTest
     public ExpectedException exception = ExpectedException.none();
 
     /**
-     * Data factory.
-     */
-
-    private DataFactory metIn;
-
-    /**
      * Default time-series for testing.
      */
 
@@ -54,7 +47,6 @@ public final class SafeTimeSeriesTest
     @Before
     public void setUpBeforeEachTest()
     {
-        metIn = DefaultDataFactory.getInstance();
         SafeTimeSeriesBuilder<Double> b = new SafeTimeSeriesBuilder<>();
         List<Event<Double>> first = new ArrayList<>();
         Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
@@ -164,14 +156,14 @@ public final class SafeTimeSeriesTest
         Instant secondBasisTime = Instant.parse( "1985-01-03T00:00:00Z" );
         second.add( Event.of( Instant.parse( "1985-01-04T00:00:00Z" ), 3.0 ) );
         second.add( Event.of( Instant.parse( "1985-01-05T00:00:00Z" ), 4.0 ) );
-        
+
         List<Event<List<Event<Double>>>> expected = new ArrayList<>();
         expected.add( Event.of( firstBasisTime, first ) );
         expected.add( Event.of( secondBasisTime, second ) );
-        
+
         assertTrue( expected.equals( defaultTimeSeries.getRawData() ) );
     }
-    
+
     /**
      * Confirms that the {@link SafeTimeSeries#getRawData()} returns an immutable outer container.
      */
@@ -180,12 +172,12 @@ public final class SafeTimeSeriesTest
     public void testGetRawDataIsImmutableOuter()
     {
         List<Event<List<Event<Double>>>> rawData = defaultTimeSeries.getRawData();
-        
+
         exception.expect( UnsupportedOperationException.class );
         Instant time = Instant.parse( "1985-01-03T00:00:00Z" );
         rawData.add( Event.of( time, Arrays.asList( Event.of( time, 1.0 ) ) ) );
 
-    }    
+    }
 
     /**
      * Confirms that the {@link SafeTimeSeries#getRawData()} returns immutable inner containers.
@@ -195,12 +187,12 @@ public final class SafeTimeSeriesTest
     public void testGetRawDataIsImmutableInner()
     {
         List<Event<List<Event<Double>>>> rawData = defaultTimeSeries.getRawData();
-        
+
         exception.expect( UnsupportedOperationException.class );
 
         rawData.get( 0 ).getValue().add( Event.of( Instant.parse( "1985-01-03T00:00:00Z" ), 1.0 ) );
-    }     
-    
+    }
+
     /**
      * Tests {@link SafeTimeSeries#isRegular()}.
      */
@@ -210,7 +202,7 @@ public final class SafeTimeSeriesTest
     {
         assertTrue( "Expected a regular time-series.", defaultTimeSeries.isRegular() );
     }
-    
+
     /**
      * Tests {@link SafeTimeSeries#toString()}.
      */
@@ -226,7 +218,7 @@ public final class SafeTimeSeriesTest
 
         assertTrue( expected.toString().equals( defaultTimeSeries.toString() ) );
     }
-    
+
     /**
      * Tests {@link SafeTimeSeries#getRegularDuration()}.
      */
@@ -238,7 +230,7 @@ public final class SafeTimeSeriesTest
         List<Event<PairOfDoubles>> first = new ArrayList<>();
         SafeTimeSeriesBuilder<PairOfDoubles> b = new SafeTimeSeriesBuilder<>();
         Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
-        first.add( Event.of( Instant.parse( "1985-01-02T00:00:00Z" ), metIn.pairOf( 1, 1 ) ) );
+        first.add( Event.of( Instant.parse( "1985-01-02T00:00:00Z" ), DataFactory.pairOf( 1, 1 ) ) );
 
         TimeSeries<PairOfDoubles> ts = b.addTimeSeriesData( firstBasisTime, first )
                                         .build();
@@ -248,9 +240,9 @@ public final class SafeTimeSeriesTest
                     ts.getRegularDuration().equals( benchmark ) );
 
         //Add more data and test again
-        first.add( Event.of( Instant.parse( "1985-01-03T00:00:00Z" ), metIn.pairOf( 2, 2 ) ) );
-        first.add( Event.of( Instant.parse( "1985-01-04T00:00:00Z" ), metIn.pairOf( 3, 3 ) ) );
-        first.add( Event.of( Instant.parse( "1985-01-05T00:00:00Z" ), metIn.pairOf( 4, 4 ) ) );
+        first.add( Event.of( Instant.parse( "1985-01-03T00:00:00Z" ), DataFactory.pairOf( 2, 2 ) ) );
+        first.add( Event.of( Instant.parse( "1985-01-04T00:00:00Z" ), DataFactory.pairOf( 3, 3 ) ) );
+        first.add( Event.of( Instant.parse( "1985-01-05T00:00:00Z" ), DataFactory.pairOf( 4, 4 ) ) );
 
         SafeTimeSeriesBuilder<PairOfDoubles> c = new SafeTimeSeriesBuilder<>();
         TimeSeries<PairOfDoubles> tsSecond = c.addTimeSeriesData( firstBasisTime, first )
@@ -260,7 +252,7 @@ public final class SafeTimeSeriesTest
                     tsSecond.getRegularDuration().equals( benchmark ) );
 
         //Add an irregular timestep and check for null output
-        first.add( Event.of( Instant.parse( "1985-01-07T00:00:00Z" ), metIn.pairOf( 4, 4 ) ) );
+        first.add( Event.of( Instant.parse( "1985-01-07T00:00:00Z" ), DataFactory.pairOf( 4, 4 ) ) );
         SafeTimeSeriesBuilder<PairOfDoubles> d = new SafeTimeSeriesBuilder<>();
         TimeSeries<PairOfDoubles> tsThird = d.addTimeSeriesData( firstBasisTime, first )
                                              .build();
@@ -279,7 +271,7 @@ public final class SafeTimeSeriesTest
         List<Event<PairOfDoubles>> values = new ArrayList<>();
         SafeTimeSeriesBuilder<PairOfDoubles> b = new SafeTimeSeriesBuilder<>();
         Instant basisTime = Instant.parse( "1985-01-01T00:00:00Z" );
-        values.add( Event.of( Instant.parse( "1985-01-02T00:00:00Z" ), metIn.pairOf( 1, 1 ) ) );
+        values.add( Event.of( Instant.parse( "1985-01-02T00:00:00Z" ), DataFactory.pairOf( 1, 1 ) ) );
 
         b.addTimeSeriesData( basisTime, values );
 
@@ -303,7 +295,7 @@ public final class SafeTimeSeriesTest
         List<Event<PairOfDoubles>> values = new ArrayList<>();
         SafeTimeSeriesBuilder<PairOfDoubles> b = new SafeTimeSeriesBuilder<>();
         Instant basisTime = Instant.parse( "1985-01-01T00:00:00Z" );
-        values.add( Event.of( Instant.parse( "1985-01-02T00:00:00Z" ), metIn.pairOf( 1, 1 ) ) );
+        values.add( Event.of( Instant.parse( "1985-01-02T00:00:00Z" ), DataFactory.pairOf( 1, 1 ) ) );
         b.addTimeSeriesData( basisTime, values );
 
         Instant nextBasisTime = Instant.parse( "1985-01-02T00:00:00Z" );
@@ -332,9 +324,9 @@ public final class SafeTimeSeriesTest
         List<Event<PairOfDoubles>> values = new ArrayList<>();
         SafeTimeSeriesBuilder<PairOfDoubles> b = new SafeTimeSeriesBuilder<>();
         Instant basisTime = Instant.parse( "1985-01-01T00:00:00Z" );
-        values.add( Event.of( Instant.parse( "1985-01-02T00:00:00Z" ), metIn.pairOf( 1, 1 ) ) );
-        values.add( Event.of( Instant.parse( "1985-01-03T00:00:00Z" ), metIn.pairOf( 2, 2 ) ) );
-        values.add( Event.of( Instant.parse( "1985-01-04T00:00:00Z" ), metIn.pairOf( 3, 3 ) ) );
+        values.add( Event.of( Instant.parse( "1985-01-02T00:00:00Z" ), DataFactory.pairOf( 1, 1 ) ) );
+        values.add( Event.of( Instant.parse( "1985-01-03T00:00:00Z" ), DataFactory.pairOf( 2, 2 ) ) );
+        values.add( Event.of( Instant.parse( "1985-01-04T00:00:00Z" ), DataFactory.pairOf( 3, 3 ) ) );
 
         b.addTimeSeriesData( basisTime, values );
         //Check dataset count

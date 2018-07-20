@@ -11,7 +11,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.DataFactory;
-import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
@@ -41,18 +40,10 @@ public final class SumOfSquareErrorTest
 
     private SumOfSquareError<SingleValuedPairs> sse;
 
-    /**
-     * Instance of a data factory.
-     */
-
-    private DataFactory outF;
-
     @Before
     public void setupBeforeEachTest() throws MetricParameterException
     {
         SumOfSquareErrorBuilder<SingleValuedPairs> b = new SumOfSquareError.SumOfSquareErrorBuilder<>();
-        this.outF = DefaultDataFactory.getInstance();
-        b.setOutputFactory( outF );
         this.sse = b.build();
     }
 
@@ -67,20 +58,19 @@ public final class SumOfSquareErrorTest
         SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsTwo();
 
         //Metadata for the output
-        MetadataFactory metaFac = outF.getMetadataFactory();
-        final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getRawData().size(),
-                                                                   metaFac.getDimension( "CMS" ),
-                                                                   metaFac.getDimension( "CMS" ),
+        final MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( input.getRawData().size(),
+                                                                   MetadataFactory.getDimension( "CMS" ),
+                                                                   MetadataFactory.getDimension( "CMS" ),
                                                                    MetricConstants.SUM_OF_SQUARE_ERROR,
                                                                    MetricConstants.MAIN,
-                                                                   metaFac.getDatasetIdentifier( metaFac.getLocation("DRRC2"),
+                                                                   MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation("DRRC2"),
                                                                                                  "SQIN",
                                                                                                  "HEFS",
                                                                                                  "ESP" ) );
         //Check the results
         DoubleScoreOutput actual = sse.apply( input );
 
-        DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 4000039.29, m1 );
+        DoubleScoreOutput expected = DataFactory.ofDoubleScoreOutput( 4000039.29, m1 );
 
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
@@ -98,7 +88,7 @@ public final class SumOfSquareErrorTest
     {
         // Generate empty data
         DiscreteProbabilityPairs input =
-                outF.ofDiscreteProbabilityPairs( Arrays.asList(), outF.getMetadataFactory().getMetadata() );
+                DataFactory.ofDiscreteProbabilityPairs( Arrays.asList(), MetadataFactory.getMetadata() );
 
         DoubleScoreOutput actual = sse.apply( input );
 

@@ -14,7 +14,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.DataFactory;
-import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
@@ -46,18 +45,10 @@ public final class KlingGuptaEfficiencyTest
 
     private KlingGuptaEfficiency kge;
 
-    /**
-     * Instance of a data factory.
-     */
-
-    private DataFactory outF;
-
     @Before
     public void setupBeforeEachTest() throws MetricParameterException
     {
         KlingGuptaEfficiencyBuilder b = new KlingGuptaEfficiency.KlingGuptaEfficiencyBuilder();
-        this.outF = DefaultDataFactory.getInstance();
-        b.setOutputFactory( outF );
         this.kge = b.build();
     }
 
@@ -71,20 +62,18 @@ public final class KlingGuptaEfficiencyTest
     {
         SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsFive();
 
-        MetadataFactory metaFac = outF.getMetadataFactory();
-
         //Metadata for the output
         TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                            Instant.parse( "2010-12-31T11:59:59Z" ),
                                            ReferenceTime.VALID_TIME,
                                            Duration.ofHours( 24 ) );
 
-        MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getRawData().size(),
-                                                             metaFac.getDimension(),
-                                                             metaFac.getDimension( "MM/DAY" ),
+        MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( input.getRawData().size(),
+                                                             MetadataFactory.getDimension(),
+                                                             MetadataFactory.getDimension( "MM/DAY" ),
                                                              MetricConstants.KLING_GUPTA_EFFICIENCY,
                                                              MetricConstants.MAIN,
-                                                             metaFac.getDatasetIdentifier( metaFac.getLocation("103.1"),
+                                                             MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation("103.1"),
                                                                                            "QME",
                                                                                            "NVE" ),
                                                              window );
@@ -92,7 +81,7 @@ public final class KlingGuptaEfficiencyTest
         //Check the results
         DoubleScoreOutput actual = kge.apply( input );
 
-        DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 0.8921704394462281, m1 );
+        DoubleScoreOutput expected = DataFactory.ofDoubleScoreOutput( 0.8921704394462281, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -109,18 +98,16 @@ public final class KlingGuptaEfficiencyTest
     {
         SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
-        MetadataFactory metaFac = outF.getMetadataFactory();
-
-        MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getRawData().size(),
-                                                             metaFac.getDimension(),
-                                                             metaFac.getDimension(),
+        MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( input.getRawData().size(),
+                                                             MetadataFactory.getDimension(),
+                                                             MetadataFactory.getDimension(),
                                                              MetricConstants.KLING_GUPTA_EFFICIENCY,
                                                              MetricConstants.MAIN );
 
         //Check the results
         DoubleScoreOutput actual = kge.apply( input );
 
-        DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 0.9432025316651065, m1 );
+        DoubleScoreOutput expected = DataFactory.ofDoubleScoreOutput( 0.9432025316651065, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -137,7 +124,7 @@ public final class KlingGuptaEfficiencyTest
     {
         // Generate empty data
         DiscreteProbabilityPairs input =
-                outF.ofDiscreteProbabilityPairs( Arrays.asList(), outF.getMetadataFactory().getMetadata() );
+                DataFactory.ofDiscreteProbabilityPairs( Arrays.asList(), MetadataFactory.getMetadata() );
 
         DoubleScoreOutput actual = kge.apply( input );
 

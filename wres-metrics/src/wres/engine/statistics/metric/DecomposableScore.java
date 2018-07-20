@@ -38,8 +38,7 @@ public abstract class DecomposableScore<S extends MetricInput<?>> extends Ordina
      */
 
     public abstract static class DecomposableScoreBuilder<S extends MetricInput<?>>
-            extends
-            OrdinaryScoreBuilder<S, DoubleScoreOutput>
+            implements MetricBuilder<S, DoubleScoreOutput>
     {
         /**
          * The type of metric decomposition. See {@link ScoreOutputGroup}.
@@ -70,7 +69,7 @@ public abstract class DecomposableScore<S extends MetricInput<?>> extends Ordina
 
     protected DecomposableScore( final DecomposableScoreBuilder<S> builder ) throws MetricParameterException
     {
-        super( builder );
+        super();
         this.decompositionID = builder.decompositionID;
         if ( Objects.isNull( this.decompositionID ) )
         {

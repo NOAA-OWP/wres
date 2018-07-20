@@ -14,7 +14,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.DataFactory;
-import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.inputs.MetricInputException;
@@ -43,23 +42,15 @@ public final class RankHistogramTest
     private RankHistogram rh;
 
     /**
-     * Instance of a data factory.
-     */
-
-    private DataFactory outF;
-    
-    /**
      * Instance of a random number generator.
      */
 
     private Random rng;
-    
+
     @Before
     public void setupBeforeEachTest() throws MetricParameterException
     {
         RankHistogramBuilder b = new RankHistogramBuilder();
-        this.outF = DefaultDataFactory.getInstance();
-        b.setOutputFactory( outF );
         rng = new Random( 12345678 );
         b.setRNGForTies( rng );
         this.rh = b.build();
@@ -73,8 +64,6 @@ public final class RankHistogramTest
     @Test
     public void testApplyWithoutTies() throws MetricParameterException
     {
-        MetadataFactory metaFac = outF.getMetadataFactory();
-
         final List<PairOfDoubleAndVectorOfDoubles> values = new ArrayList<>();
         for ( int i = 0; i < 10000; i++ )
         {
@@ -84,10 +73,10 @@ public final class RankHistogramTest
             {
                 right[j] = rng.nextDouble();
             }
-            values.add( outF.pairOf( left, right ) );
+            values.add( DataFactory.pairOf( left, right ) );
         }
 
-        final EnsemblePairs input = outF.ofEnsemblePairs( values, metaFac.getMetadata() );
+        final EnsemblePairs input = DataFactory.ofEnsemblePairs( values, MetadataFactory.getMetadata() );
 
         //Check the results       
         final MultiVectorOutput actual = rh.apply( input );
@@ -103,7 +92,7 @@ public final class RankHistogramTest
         assertTrue( "Difference between actual and expected relative frequencies.",
                     Arrays.equals( actualRFreqs, expectedRFreqs ) );
     }
-    
+
     /**
      * Compares the output from {@link RankHistogram#apply(EnsemblePairs)} against expected output for pairs with
      * ties.
@@ -112,12 +101,10 @@ public final class RankHistogramTest
     @Test
     public void testApplyWithTies()
     {
-        MetadataFactory metaFac = outF.getMetadataFactory();
-
         //Generate some data using an RNG for a uniform U[0,1] distribution with a fixed seed
         final List<PairOfDoubleAndVectorOfDoubles> values = new ArrayList<>();
-        values.add( outF.pairOf( 2, new double[] { 1, 2, 2, 2, 4, 5, 6, 7, 8 } ) );
-        final EnsemblePairs input = outF.ofEnsemblePairs( values, metaFac.getMetadata() );
+        values.add( DataFactory.pairOf( 2, new double[] { 1, 2, 2, 2, 4, 5, 6, 7, 8 } ) );
+        final EnsemblePairs input = DataFactory.ofEnsemblePairs( values, MetadataFactory.getMetadata() );
 
         //Check the results       
         final MultiVectorOutput actual = rh.apply( input );
@@ -134,7 +121,7 @@ public final class RankHistogramTest
         assertTrue( "Difference between actual and expected relative frequencies.",
                     Arrays.equals( actualRFreqs, expectedRFreqs ) );
     }
-    
+
 
     /**
      * Validates the output from {@link RankHistogram#apply(EnsemblePairs)} when 
@@ -146,21 +133,23 @@ public final class RankHistogramTest
     {
         // Generate empty data
         EnsemblePairs input =
-                outF.ofEnsemblePairs( Arrays.asList(), outF.getMetadataFactory().getMetadata() );
+                DataFactory.ofEnsemblePairs( Arrays.asList(), MetadataFactory.getMetadata() );
 
         MultiVectorOutput actual = rh.apply( input );
-        
+
         double[] source = new double[1];
-        
+
         Arrays.fill( source, Double.NaN );
 
         assertTrue( Arrays.equals( actual.getData()
-                          .get( MetricDimension.RANK_ORDER )
-                          .getDoubles(), source ) );
+                                         .get( MetricDimension.RANK_ORDER )
+                                         .getDoubles(),
+                                   source ) );
 
         assertTrue( Arrays.equals( actual.getData()
-                          .get( MetricDimension.OBSERVED_RELATIVE_FREQUENCY )
-                          .getDoubles(), source ) );
+                                         .get( MetricDimension.OBSERVED_RELATIVE_FREQUENCY )
+                                         .getDoubles(),
+                                   source ) );
     }
 
     /**
@@ -184,11 +173,11 @@ public final class RankHistogramTest
     {
         exception.expect( MetricInputException.class );
         exception.expectMessage( "Specify non-null input to the 'RANK HISTOGRAM'." );
-        
-        rh.apply( null );
-    }    
 
-    
+        rh.apply( null );
+    }
+
+
     /**
      * Tests for the correct construction of a {@link RankHistogram} when a random number generator is not supplied.
      * @throws MetricParameterException if construction fails for an unexpected reason
@@ -198,8 +187,7 @@ public final class RankHistogramTest
     public void testConstructionWithoutRNG() throws MetricParameterException
     {
         RankHistogramBuilder b = new RankHistogramBuilder();
-        b.setOutputFactory( outF );
-        assertTrue( Objects.nonNull( b.build() ) );               
-    }  
-    
+        assertTrue( Objects.nonNull( b.build() ) );
+    }
+
 }

@@ -22,8 +22,6 @@ import wres.config.generated.MetricConfigName;
 import wres.config.generated.MetricsConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Inputs;
-import wres.datamodel.DataFactory;
-import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
@@ -38,12 +36,6 @@ public final class MetricProcessorForProjectTest
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
-    
-    /**
-     * Instance of a data factory.
-     */
-
-    private DataFactory dataFac;
 
     /**
      * Instance of a metric factory.
@@ -66,8 +58,7 @@ public final class MetricProcessorForProjectTest
     @Before
     public void setupBeforeEachTest() throws MetricParameterException
     {
-        dataFac = DefaultDataFactory.getInstance();
-        metricFac = MetricFactory.getInstance( dataFac );
+        metricFac = MetricFactory.getInstance();
 
         // Mock some metrics
         List<MetricConfig> metrics = new ArrayList<>();

@@ -14,7 +14,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.DataFactory;
-import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
@@ -46,18 +45,10 @@ public final class IndexOfAgreementTest
 
     private IndexOfAgreement ioa;
 
-    /**
-     * Instance of a data factory.
-     */
-
-    private DataFactory outF;
-
     @Before
     public void setupBeforeEachTest() throws MetricParameterException
     {
         IndexOfAgreementBuilder b = new IndexOfAgreement.IndexOfAgreementBuilder();
-        this.outF = DefaultDataFactory.getInstance();
-        b.setOutputFactory( outF );
         this.ioa = b.build();
     }
 
@@ -70,20 +61,18 @@ public final class IndexOfAgreementTest
     public void testApply() throws IOException
     {
         SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsFive();
-
-        MetadataFactory metaFac = outF.getMetadataFactory();
-
+        
         //Metadata for the output
         final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                  Instant.parse( "2010-12-31T11:59:59Z" ),
                                                  ReferenceTime.VALID_TIME,
                                                  Duration.ofHours( 24 ) );
-        final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getRawData().size(),
-                                                                   metaFac.getDimension(),
-                                                                   metaFac.getDimension( "MM/DAY" ),
+        final MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( input.getRawData().size(),
+                                                                   MetadataFactory.getDimension(),
+                                                                   MetadataFactory.getDimension( "MM/DAY" ),
                                                                    MetricConstants.INDEX_OF_AGREEMENT,
                                                                    MetricConstants.MAIN,
-                                                                   metaFac.getDatasetIdentifier( metaFac.getLocation("103.1"),
+                                                                   MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation("103.1"),
                                                                                                  "QME",
                                                                                                  "NVE" ),
                                                                    window );
@@ -91,7 +80,7 @@ public final class IndexOfAgreementTest
         //Check the results
         DoubleScoreOutput actual = ioa.apply( input );
 
-        DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 0.8221179993380173, m1 );
+        DoubleScoreOutput expected = DataFactory.ofDoubleScoreOutput( 0.8221179993380173, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -108,7 +97,7 @@ public final class IndexOfAgreementTest
     {
         // Generate empty data
         DiscreteProbabilityPairs input =
-                outF.ofDiscreteProbabilityPairs( Arrays.asList(), outF.getMetadataFactory().getMetadata() );
+                DataFactory.ofDiscreteProbabilityPairs( Arrays.asList(), MetadataFactory.getMetadata() );
 
         DoubleScoreOutput actual = ioa.apply( input );
 

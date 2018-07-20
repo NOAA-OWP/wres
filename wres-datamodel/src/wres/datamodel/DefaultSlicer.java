@@ -58,23 +58,6 @@ public enum DefaultSlicer implements Slicer
      */
 
     INSTANCE;
-    
-    /**
-     * Data factory for transformations.
-     */
-
-    private final DataFactory dataFac;
-
-    /**
-     * Returns an instance of a {@link Slicer}.
-     * 
-     * @return a {@link DataFactory}
-     */
-
-    public static Slicer getInstance()
-    {
-        return INSTANCE;
-    }
 
     /**
      * Null input error message.
@@ -92,6 +75,17 @@ public enum DefaultSlicer implements Slicer
      */
 
     private static final String NULL_PREDICATE_EXCEPTION = "Specify a non-null predicate.";
+    
+    /**
+     * Returns an instance of a {@link Slicer}.
+     * 
+     * @return a {@link DataFactory}
+     */
+
+    public static Slicer getInstance()
+    {
+        return INSTANCE;
+    }
 
     @Override
     public double[] getLeftSide( SingleValuedPairs input )
@@ -116,7 +110,7 @@ public enum DefaultSlicer implements Slicer
 
         return input.getRawData().stream().mapToDouble( PairOfDoubles::getItemTwo ).toArray();
     }
-    
+
     @Override
     public Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubleAndVectorOfDoubles>
             leftAndEachOfRight( DoublePredicate predicate )
@@ -134,7 +128,7 @@ public enum DefaultSlicer implements Slicer
                 //One or more of right meets condition
                 if ( filtered.length > 0 )
                 {
-                    returnMe = dataFac.pairOf( pair.getItemOne(), filtered );
+                    returnMe = DataFactory.pairOf( pair.getItemOne(), filtered );
                 }
             }
             return returnMe;
@@ -168,14 +162,14 @@ public enum DefaultSlicer implements Slicer
             List<PairOfDoubles> basePairs = input.getRawDataForBaseline();
             List<PairOfDoubles> basePairsSubset = basePairs.stream().filter( condition ).collect( Collectors.toList() );
 
-            return dataFac.ofSingleValuedPairs( mainPairsSubset,
-                                                basePairsSubset,
-                                                input.getMetadata(),
-                                                input.getMetadataForBaseline(),
-                                                climatology );
+            return DataFactory.ofSingleValuedPairs( mainPairsSubset,
+                                                    basePairsSubset,
+                                                    input.getMetadata(),
+                                                    input.getMetadataForBaseline(),
+                                                    climatology );
         }
 
-        return dataFac.ofSingleValuedPairs( mainPairsSubset, input.getMetadata(), climatology );
+        return DataFactory.ofSingleValuedPairs( mainPairsSubset, input.getMetadata(), climatology );
     }
 
     @Override
@@ -206,14 +200,14 @@ public enum DefaultSlicer implements Slicer
             List<PairOfDoubleAndVectorOfDoubles> basePairsSubset =
                     basePairs.stream().filter( condition ).collect( Collectors.toList() );
 
-            return dataFac.ofEnsemblePairs( mainPairsSubset,
-                                            basePairsSubset,
-                                            input.getMetadata(),
-                                            input.getMetadataForBaseline(),
-                                            climatology );
+            return DataFactory.ofEnsemblePairs( mainPairsSubset,
+                                                basePairsSubset,
+                                                input.getMetadata(),
+                                                input.getMetadataForBaseline(),
+                                                climatology );
         }
 
-        return dataFac.ofEnsemblePairs( mainPairsSubset, input.getMetadata(), climatology );
+        return DataFactory.ofEnsemblePairs( mainPairsSubset, input.getMetadata(), climatology );
     }
 
     @Override
@@ -259,13 +253,13 @@ public enum DefaultSlicer implements Slicer
                 }
             }
 
-            return dataFac.ofEnsemblePairs( mainPairsSubset,
-                                            basePairsSubset,
-                                            input.getMetadata(),
-                                            input.getMetadataForBaseline(),
-                                            climatology );
+            return DataFactory.ofEnsemblePairs( mainPairsSubset,
+                                                basePairsSubset,
+                                                input.getMetadata(),
+                                                input.getMetadataForBaseline(),
+                                                climatology );
         }
-        return dataFac.ofEnsemblePairs( mainPairsSubset, input.getMetadata(), climatology );
+        return DataFactory.ofEnsemblePairs( mainPairsSubset, input.getMetadata(), climatology );
     }
 
     @Override
@@ -277,7 +271,7 @@ public enum DefaultSlicer implements Slicer
 
         Objects.requireNonNull( condition, NULL_PREDICATE_EXCEPTION );
 
-        TimeSeriesOfSingleValuedPairsBuilder builder = dataFac.ofTimeSeriesOfSingleValuedPairsBuilder();
+        TimeSeriesOfSingleValuedPairsBuilder builder = DataFactory.ofTimeSeriesOfSingleValuedPairsBuilder();
 
         // Set the metadata explicitly in case of an empty slice
         builder.setMetadata( input.getMetadata() );
@@ -451,7 +445,6 @@ public enum DefaultSlicer implements Slicer
         SafeTimeSeriesOfEnsemblePairsBuilder builder =
                 new SafeTimeSeriesOfEnsemblePairsBuilder();
         builder.setMetadata( input.getMetadata() );
-        DataFactory dFac = DefaultDataFactory.getInstance();
 
         //Iterate through the basis times
         for ( TimeSeries<PairOfDoubleAndVectorOfDoubles> nextSeries : input.basisTimeIterator() )
@@ -478,8 +471,8 @@ public enum DefaultSlicer implements Slicer
                     return null;
                 }
                 rawInput.add( Event.of( next.getTime(),
-                                        dFac.pairOf( next.getValue().getItemOne(),
-                                                     subTraces.toArray( new Double[subTraces.size()] ) ) ) );
+                                        DataFactory.pairOf( next.getValue().getItemOne(),
+                                                            subTraces.toArray( new Double[subTraces.size()] ) ) ) );
             }
             builder.addTimeSeriesData( nextSeries.getEarliestBasisTime(), rawInput );
         }
@@ -527,13 +520,13 @@ public enum DefaultSlicer implements Slicer
         Map<MetricConstants, MetricOutputMapByTimeAndThreshold<T>> returnMe =
                 new EnumMap<>( MetricConstants.class );
         sourceMap.forEach( ( key, value ) -> returnMe.put( key,
-                                                           dataFac.ofMetricOutputMapByTimeAndThreshold( value ) ) );
+                                                           DataFactory.ofMetricOutputMapByTimeAndThreshold( value ) ) );
         return returnMe;
     }
 
     @Override
     public List<PairOfDoubles> toSingleValuedPairs( List<PairOfDoubleAndVectorOfDoubles> input,
-                                          Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles> mapper )
+                                                    Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles> mapper )
     {
         Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
 
@@ -545,7 +538,8 @@ public enum DefaultSlicer implements Slicer
     }
 
     @Override
-    public DichotomousPairs toDichotomousPairs( SingleValuedPairs input, Function<PairOfDoubles, PairOfBooleans> mapper )
+    public DichotomousPairs toDichotomousPairs( SingleValuedPairs input,
+                                                Function<PairOfDoubles, PairOfBooleans> mapper )
     {
         Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
 
@@ -559,20 +553,20 @@ public enum DefaultSlicer implements Slicer
             List<PairOfDoubles> basePairs = input.getRawDataForBaseline();
             List<PairOfBooleans> basePairsTransformed = new ArrayList<>();
             basePairs.stream().map( mapper ).forEach( basePairsTransformed::add );
-            return dataFac.ofDichotomousPairsFromAtomic( mainPairsTransformed,
-                                                         basePairsTransformed,
-                                                         input.getMetadata(),
-                                                         input.getMetadataForBaseline(),
-                                                         input.getClimatology() );
+            return DataFactory.ofDichotomousPairsFromAtomic( mainPairsTransformed,
+                                                             basePairsTransformed,
+                                                             input.getMetadata(),
+                                                             input.getMetadataForBaseline(),
+                                                             input.getClimatology() );
         }
-        return dataFac.ofDichotomousPairsFromAtomic( mainPairsTransformed,
-                                                     input.getMetadata(),
-                                                     input.getClimatology() );
+        return DataFactory.ofDichotomousPairsFromAtomic( mainPairsTransformed,
+                                                         input.getMetadata(),
+                                                         input.getClimatology() );
     }
 
     @Override
     public SingleValuedPairs toSingleValuedPairs( EnsemblePairs input,
-                                        Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles> mapper )
+                                                  Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles> mapper )
     {
         Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
 
@@ -582,19 +576,19 @@ public enum DefaultSlicer implements Slicer
         if ( input.hasBaseline() )
         {
             List<PairOfDoubles> basePairsTransformed = toSingleValuedPairs( input.getRawDataForBaseline(), mapper );
-            return dataFac.ofSingleValuedPairs( mainPairsTransformed,
-                                                basePairsTransformed,
-                                                input.getMetadata(),
-                                                input.getMetadataForBaseline(),
-                                                input.getClimatology() );
+            return DataFactory.ofSingleValuedPairs( mainPairsTransformed,
+                                                    basePairsTransformed,
+                                                    input.getMetadata(),
+                                                    input.getMetadataForBaseline(),
+                                                    input.getClimatology() );
         }
-        return dataFac.ofSingleValuedPairs( mainPairsTransformed, input.getMetadata(), input.getClimatology() );
+        return DataFactory.ofSingleValuedPairs( mainPairsTransformed, input.getMetadata(), input.getClimatology() );
     }
 
     @Override
     public DiscreteProbabilityPairs toDiscreteProbabilityPairs( EnsemblePairs input,
-                                               Threshold threshold,
-                                               BiFunction<PairOfDoubleAndVectorOfDoubles, Threshold, PairOfDoubles> mapper )
+                                                                Threshold threshold,
+                                                                BiFunction<PairOfDoubleAndVectorOfDoubles, Threshold, PairOfDoubles> mapper )
     {
         Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
 
@@ -608,13 +602,15 @@ public enum DefaultSlicer implements Slicer
             List<PairOfDoubleAndVectorOfDoubles> basePairs = input.getRawDataForBaseline();
             List<PairOfDoubles> basePairsTransformed = new ArrayList<>();
             basePairs.forEach( pair -> basePairsTransformed.add( mapper.apply( pair, threshold ) ) );
-            return dataFac.ofDiscreteProbabilityPairs( mainPairsTransformed,
-                                                       basePairsTransformed,
-                                                       input.getMetadata(),
-                                                       input.getMetadataForBaseline(),
-                                                       input.getClimatology() );
+            return DataFactory.ofDiscreteProbabilityPairs( mainPairsTransformed,
+                                                           basePairsTransformed,
+                                                           input.getMetadata(),
+                                                           input.getMetadataForBaseline(),
+                                                           input.getClimatology() );
         }
-        return dataFac.ofDiscreteProbabilityPairs( mainPairsTransformed, input.getMetadata(), input.getClimatology() );
+        return DataFactory.ofDiscreteProbabilityPairs( mainPairsTransformed,
+                                                       input.getMetadata(),
+                                                       input.getClimatology() );
     }
 
     @Override
@@ -625,17 +621,18 @@ public enum DefaultSlicer implements Slicer
         Objects.requireNonNull( threshold, NULL_INPUT_EXCEPTION );
 
         double rhs = Arrays.stream( pair.getItemTwo() ).map( a -> threshold.test( a ) ? 1 : 0 ).average().getAsDouble();
-        return dataFac.pairOf( threshold.test( pair.getItemOne() ) ? 1 : 0, rhs );
+        return DataFactory.pairOf( threshold.test( pair.getItemOne() ) ? 1 : 0, rhs );
     }
 
     @Override
-    public Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles> ofSingleValuedPairMapper( ToDoubleFunction<double[]> transformer )
+    public Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles>
+            ofSingleValuedPairMapper( ToDoubleFunction<double[]> transformer )
     {
         Objects.requireNonNull( transformer, NULL_INPUT_EXCEPTION );
 
-        return pair -> dataFac.pairOf( pair.getItemOne(), transformer.applyAsDouble( pair.getItemTwo() ) );
+        return pair -> DataFactory.pairOf( pair.getItemOne(), transformer.applyAsDouble( pair.getItemTwo() ) );
     }
-    
+
     @Override
     public DoubleUnaryOperator getQuantileFunction( double[] sorted )
     {
@@ -710,12 +707,12 @@ public enum DefaultSlicer implements Slicer
                 second = round().apply( second, digits );
             }
         }
-        return dataFac.ofQuantileThreshold( SafeOneOrTwoDoubles.of( first, second ),
-                                            threshold.getProbabilities(),
-                                            threshold.getCondition(),
-                                            threshold.getDataType(),
-                                            threshold.getLabel(),
-                                            threshold.getUnits() );
+        return DataFactory.ofQuantileThreshold( SafeOneOrTwoDoubles.of( first, second ),
+                                                threshold.getProbabilities(),
+                                                threshold.getCondition(),
+                                                threshold.getDataType(),
+                                                threshold.getLabel(),
+                                                threshold.getUnits() );
     }
 
     /**
@@ -751,7 +748,7 @@ public enum DefaultSlicer implements Slicer
                                   .filter( condition )
                                   .toArray();
 
-        return dataFac.vectorOf( filtered );
+        return DataFactory.vectorOf( filtered );
     }
 
     /**
@@ -760,7 +757,6 @@ public enum DefaultSlicer implements Slicer
 
     private DefaultSlicer()
     {
-        dataFac = DefaultDataFactory.getInstance();
     }
 
 }

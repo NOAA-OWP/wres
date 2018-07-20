@@ -43,7 +43,7 @@ class SafeVectorOfDoubles implements VectorOfDoubles
     public int compareTo(VectorOfDoubles other)
     {
         double[] otherDoubles = other.getDoubles();
-        return DefaultDataFactory.compareDoubleArray(this.getDoubles(), otherDoubles);
+        return DataFactory.compareDoubleArray(this.getDoubles(), otherDoubles);
     }
 
     @Override
@@ -52,7 +52,7 @@ class SafeVectorOfDoubles implements VectorOfDoubles
         if ( other instanceof VectorOfDoubles )
         {
             VectorOfDoubles otherVec = (VectorOfDoubles) other;
-            return 0 == DefaultDataFactory.compareDoubleArray( this.getDoubles(), otherVec.getDoubles() );
+            return 0 == DataFactory.compareDoubleArray( this.getDoubles(), otherVec.getDoubles() );
         }
         else
         {

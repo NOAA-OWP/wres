@@ -19,7 +19,6 @@ import wres.config.ProjectConfigException;
 import wres.config.ProjectConfigPlus;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
-import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.thresholds.ThresholdsByMetric;
@@ -42,12 +41,6 @@ import wres.system.ProgressMonitor;
 class ProcessorHelper
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( ProcessorHelper.class );
-
-    /**
-     * Default data factory.
-     */
-
-    private static final DataFactory DATA_FACTORY = DefaultDataFactory.getInstance();
 
     private ProcessorHelper()
     {
@@ -150,8 +143,7 @@ class ProcessorHelper
                                                                                                                resolvedProject,
                                                                                                                projectDetails,
                                                                                                                executors,
-                                                                                                               sharedWriters,
-                                                                                                               DATA_FACTORY ),
+                                                                                                               sharedWriters ),
                                                                                          executors.getFeatureExecutor() )
                                                                            .thenAccept( featureReport );
 

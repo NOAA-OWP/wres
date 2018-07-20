@@ -8,8 +8,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import wres.datamodel.DataFactory;
-import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
@@ -36,18 +34,10 @@ public final class DoubleErrorScoreTest
 
     private DoubleErrorScore<SingleValuedPairs> score;
 
-    /**
-     * Instance of a data factory.
-     */
-
-    private DataFactory outF;
-
     @Before
     public void setupBeforeEachTest() throws MetricParameterException
     {
         MeanErrorBuilder b = new MeanError.MeanErrorBuilder();
-        this.outF = DefaultDataFactory.getInstance();
-        b.setOutputFactory( outF );
         this.score = b.build();
     }
     
@@ -101,7 +91,6 @@ public final class DoubleErrorScoreTest
     {     
         MeanErrorBuilder builder = new MeanErrorBuilder();
         builder.setErrorFunction( null );
-        builder.setOutputFactory( DefaultDataFactory.getInstance() );
         MeanError error = builder.build();
         error.f = null;
         

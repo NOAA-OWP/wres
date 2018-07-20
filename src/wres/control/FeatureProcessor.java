@@ -76,12 +76,6 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
     private final SharedWriters sharedWriters;
 
     /**
-     * The data factory.
-     */
-
-    private final DataFactory dataFactory;
-
-    /**
      * Error message.
      */
 
@@ -95,7 +89,6 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
      * @param projectDetails the project details to use
      * @param executors the executors for pairs, thresholds, and metrics
      * @param sharedWriters writers that are shared across features 
-     * @param dataFactory a data factory
      * @return a feature result
      */
 
@@ -103,15 +96,13 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                       final ResolvedProject resolvedProject,
                       final ProjectDetails projectDetails,
                       final ExecutorServices executors,
-                      final SharedWriters sharedWriters,
-                      final DataFactory dataFactory )
+                      final SharedWriters sharedWriters )
     {
         this.feature = feature;
         this.resolvedProject = resolvedProject;
         this.projectDetails = projectDetails;
         this.executors = executors;
         this.sharedWriters = sharedWriters;
-        this.dataFactory = dataFactory;
 
         // Error message
         String featureDescription = ConfigHelper.getFeatureDescription( this.feature );
@@ -138,7 +129,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
         final MetricProcessorForProject processor;
         try
         {
-            processor = MetricFactory.getInstance( this.dataFactory )
+            processor = MetricFactory.getInstance()
                                      .ofMetricProcessorForProject( projectConfig,
                                                                    thresholds,
                                                                    this.executors.getThresholdExecutor(),

@@ -5,7 +5,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
-import wres.datamodel.DefaultDataFactory;
+import wres.datamodel.DataFactory;
 import wres.datamodel.VectorOfBooleans;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.inputs.MetricInputException;
@@ -72,7 +72,7 @@ public class SafeMulticategoryPairs implements MulticategoryPairs
         {
             return null;
         }
-        return DefaultDataFactory.getInstance().ofMulticategoryPairs(baselineInput, baselineMeta);
+        return DataFactory.ofMulticategoryPairs(baselineInput, baselineMeta);
     }
 
     @Override
@@ -163,9 +163,8 @@ public class SafeMulticategoryPairs implements MulticategoryPairs
     SafeMulticategoryPairs(final MulticategoryPairsBuilder b)
     {
         //Ensure safe types
-        DefaultDataFactory factory = (DefaultDataFactory)DefaultDataFactory.getInstance();
-        mainInput = factory.safeVectorOfBooleansList(b.mainInput);
-        baselineInput = Objects.nonNull(b.baselineInput) ? factory.safeVectorOfBooleansList(b.baselineInput) : null;
+        mainInput = DataFactory.safeVectorOfBooleansList(b.mainInput);
+        baselineInput = Objects.nonNull(b.baselineInput) ? DataFactory.safeVectorOfBooleansList(b.baselineInput) : null;
         mainMeta = b.mainMeta;
         baselineMeta = b.baselineMeta;
         climatology = b.climatology;

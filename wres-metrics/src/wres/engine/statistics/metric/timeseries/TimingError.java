@@ -5,9 +5,7 @@ import java.time.Instant;
 import java.util.Objects;
 import java.util.Random;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
-import wres.datamodel.outputs.MetricOutput;
 import wres.datamodel.outputs.PairedOutput;
 import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricParameterException;
@@ -25,18 +23,6 @@ public abstract class TimingError implements Metric<TimeSeriesOfSingleValuedPair
      */
     
     private final Random rng;
-    
-    /**
-     * The data factory.
-     */
-
-    private final DataFactory dataFactory;
-
-    @Override
-    public DataFactory getDataFactory()
-    {
-        return dataFactory;
-    }
 
     @Override
     public String toString()
@@ -59,30 +45,10 @@ public abstract class TimingError implements Metric<TimeSeriesOfSingleValuedPair
     {
 
         /**
-         * The data factory.
-         */
-
-        private DataFactory dataFactory;
-        
-        /**
          * A random number generator for resolving ties.
          */
         
         private Random rng;
-
-        /**
-         * Sets the {@link DataFactory} for constructing a {@link MetricOutput}.
-         * 
-         * @param dataFactory the {@link DataFactory}
-         * @return the builder
-         */
-
-        @Override
-        public TimingErrorBuilder setOutputFactory( final DataFactory dataFactory )
-        {
-            this.dataFactory = dataFactory;
-            return this;
-        }
         
         /**
          * Optionally, assign a random number generator for resolving ties.
@@ -110,13 +76,6 @@ public abstract class TimingError implements Metric<TimeSeriesOfSingleValuedPair
         if ( Objects.isNull( builder ) )
         {
             throw new MetricParameterException( "Cannot construct the metric with a null builder." );
-        }
-
-        this.dataFactory = builder.dataFactory;
-
-        if ( Objects.isNull( this.dataFactory ) )
-        {
-            throw new MetricParameterException( "Specify a data factory with which to build the metric." );
         }
         
         if ( Objects.nonNull( builder.rng ) )

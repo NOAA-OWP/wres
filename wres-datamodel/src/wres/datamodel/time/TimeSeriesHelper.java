@@ -10,8 +10,8 @@ import java.util.StringJoiner;
 import java.util.TreeSet;
 
 import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.metadata.DefaultMetadataFactory;
 import wres.datamodel.metadata.Metadata;
+import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
@@ -49,13 +49,12 @@ public class TimeSeriesHelper
         if ( input.hasTimeWindow() )
         {
             TimeWindow current = input.getTimeWindow();
-            returnMe = DefaultMetadataFactory.getInstance()
-                                             .getMetadata( returnMe,
-                                                           TimeWindow.of( earliestTime,
-                                                                          latestTime,
-                                                                          current.getReferenceTime(),
-                                                                          current.getEarliestLeadTime(),
-                                                                          current.getLatestLeadTime() ) );
+            returnMe = MetadataFactory.getMetadata( returnMe,
+                                                    TimeWindow.of( earliestTime,
+                                                                   latestTime,
+                                                                   current.getReferenceTime(),
+                                                                   current.getEarliestLeadTime(),
+                                                                   current.getLatestLeadTime() ) );
         }
         return returnMe;
     }
@@ -79,15 +78,14 @@ public class TimeSeriesHelper
         if ( input.hasTimeWindow() )
         {
             TimeWindow current = input.getTimeWindow();
-            returnMe = DefaultMetadataFactory.getInstance()
-                                             .getMetadata( returnMe,
-                                                           TimeWindow.of( current.getEarliestTime(),
-                                                                          current.getLatestTime(),
-                                                                          current.getReferenceTime(),
-                                                                          earliestDuration,
-                                                                          latestDuration ) );
+            returnMe = MetadataFactory.getMetadata( returnMe,
+                                                    TimeWindow.of( current.getEarliestTime(),
+                                                                   current.getLatestTime(),
+                                                                   current.getReferenceTime(),
+                                                                   earliestDuration,
+                                                                   latestDuration ) );
         }
-        
+
         return returnMe;
     }
 
@@ -100,7 +98,7 @@ public class TimeSeriesHelper
 
     public static Instant getEarliestBasisTime( List<Instant> basisTimes )
     {
-        if( basisTimes.isEmpty() )
+        if ( basisTimes.isEmpty() )
         {
             return Instant.MIN;
         }
@@ -108,7 +106,7 @@ public class TimeSeriesHelper
         {
             return ( basisTimes ).iterator().next();
         }
-        
+
         return new TreeSet<>( basisTimes ).first();
     }
 
@@ -121,7 +119,7 @@ public class TimeSeriesHelper
 
     public static Instant getLatestBasisTime( List<Instant> basisTimes )
     {
-        if( basisTimes.isEmpty() )
+        if ( basisTimes.isEmpty() )
         {
             return Instant.MAX;
         }
@@ -129,10 +127,10 @@ public class TimeSeriesHelper
         {
             return ( basisTimes ).iterator().next();
         }
-        
+
         return new TreeSet<>( basisTimes ).last();
-    }    
-    
+    }
+
     /**
      * Returns a string representation of the {@link TimeSeries}.
      * @param <T> the type of time-series
@@ -247,16 +245,16 @@ public class TimeSeriesHelper
             }
             // Sort by inner time
             nextList.sort( TimeSeriesHelper::compareByTime );
-            
+
             returnMe.add( Event.of( nextSeries.getTime(), nextList ) );
         }
-        
+
         // Sort by outer time
         returnMe.sort( TimeSeriesHelper::compareByTime );
-        
+
         return returnMe;
-    }    
-    
+    }
+
     /**
      * Compares two events by time.
      * 
@@ -266,12 +264,12 @@ public class TimeSeriesHelper
      * @return a negative integer, zero, or a positive integer as the left event is less than, equal to, or greater 
      *            than the right event.
      */
-    
+
     private static <T> int compareByTime( Event<T> left, Event<T> right )
     {
         return left.getTime().compareTo( right.getTime() );
-    }    
-    
+    }
+
     /**
      * Prevent construction.
      */

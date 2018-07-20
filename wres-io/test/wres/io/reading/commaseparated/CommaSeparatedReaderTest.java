@@ -15,7 +15,6 @@ import org.junit.Test;
 import wres.config.FeaturePlus;
 import wres.config.generated.Feature;
 import wres.datamodel.DataFactory;
-import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.Dimension;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.thresholds.Threshold;
@@ -26,18 +25,10 @@ import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
  * Tests the {@link CommaSeparatedReader}.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 1.0
  */
 
 public class CommaSeparatedReaderTest
 {
-
-    /**
-     * Data factory.
-     */
-
-    private static final DataFactory FACTORY = DefaultDataFactory.getInstance();
 
     /**
      * Tests the {@link CommaSeparatedReader#readThresholds(java.net.URI, boolean, wres.datamodel.Threshold.Operator)}
@@ -63,15 +54,15 @@ public class CommaSeparatedReaderTest
         Map<FeaturePlus, Set<Threshold>> expected = new TreeMap<>();
 
         Set<Threshold> first = new TreeSet<>();
-        first.add( FACTORY.ofProbabilityThreshold( FACTORY.ofOneOrTwoDoubles( 0.4 ),
+        first.add( DataFactory.ofProbabilityThreshold( DataFactory.ofOneOrTwoDoubles( 0.4 ),
                                                    Operator.GREATER,
                                                    ThresholdDataType.LEFT,
                                                    "A" ) );
-        first.add( FACTORY.ofProbabilityThreshold( FACTORY.ofOneOrTwoDoubles( 0.6 ),
+        first.add( DataFactory.ofProbabilityThreshold( DataFactory.ofOneOrTwoDoubles( 0.6 ),
                                                    Operator.GREATER,
                                                    ThresholdDataType.LEFT,
                                                    "B" ) );
-        first.add( FACTORY.ofProbabilityThreshold( FACTORY.ofOneOrTwoDoubles( 0.8 ),
+        first.add( DataFactory.ofProbabilityThreshold( DataFactory.ofOneOrTwoDoubles( 0.8 ),
                                                    Operator.GREATER,
                                                    ThresholdDataType.LEFT,
                                                    "C" ) );
@@ -80,15 +71,15 @@ public class CommaSeparatedReaderTest
         expected.put( FeaturePlus.of( firstFeature ), first );
 
         Set<Threshold> second = new TreeSet<>();
-        second.add( FACTORY.ofProbabilityThreshold( FACTORY.ofOneOrTwoDoubles( 0.2 ),
+        second.add( DataFactory.ofProbabilityThreshold( DataFactory.ofOneOrTwoDoubles( 0.2 ),
                                                     Operator.GREATER,
                                                     ThresholdDataType.LEFT,
                                                     "A" ) );
-        second.add( FACTORY.ofProbabilityThreshold( FACTORY.ofOneOrTwoDoubles( 0.3 ),
+        second.add( DataFactory.ofProbabilityThreshold( DataFactory.ofOneOrTwoDoubles( 0.3 ),
                                                     Operator.GREATER,
                                                     ThresholdDataType.LEFT,
                                                     "B" ) );
-        second.add( FACTORY.ofProbabilityThreshold( FACTORY.ofOneOrTwoDoubles( 0.7 ),
+        second.add( DataFactory.ofProbabilityThreshold( DataFactory.ofOneOrTwoDoubles( 0.7 ),
                                                     Operator.GREATER,
                                                     ThresholdDataType.LEFT,
                                                     "C" ) );
@@ -113,9 +104,7 @@ public class CommaSeparatedReaderTest
     {
         Path commaSeparated = Paths.get( "testinput/commaseparated/testValueThresholdsWithLabels.csv" );
 
-
-        MetadataFactory meta = FACTORY.getMetadataFactory();
-        Dimension dim = meta.getDimension( "CMS" );
+        Dimension dim = MetadataFactory.getDimension( "CMS" );
 
         Map<FeaturePlus, Set<Threshold>> actual =
                 CommaSeparatedReader.readThresholds( commaSeparated,
@@ -129,17 +118,17 @@ public class CommaSeparatedReaderTest
         Map<FeaturePlus, Set<Threshold>> expected = new TreeMap<>();
 
         Set<Threshold> first = new TreeSet<>();
-        first.add( FACTORY.ofThreshold( FACTORY.ofOneOrTwoDoubles( 3.0 ),
+        first.add( DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( 3.0 ),
                                         Operator.GREATER,
                                         ThresholdDataType.LEFT,
                                         "E",
                                         dim ) );
-        first.add( FACTORY.ofThreshold( FACTORY.ofOneOrTwoDoubles( 7.0 ),
+        first.add( DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( 7.0 ),
                                         Operator.GREATER,
                                         ThresholdDataType.LEFT,
                                         "F",
                                         dim ) );
-        first.add( FACTORY.ofThreshold( FACTORY.ofOneOrTwoDoubles( 15.0 ),
+        first.add( DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( 15.0 ),
                                         Operator.GREATER,
                                         ThresholdDataType.LEFT,
                                         "G",
@@ -149,17 +138,17 @@ public class CommaSeparatedReaderTest
         expected.put( FeaturePlus.of( firstFeature ), first );
 
         Set<Threshold> second = new TreeSet<>();
-        second.add( FACTORY.ofThreshold( FACTORY.ofOneOrTwoDoubles( 23.0 ),
+        second.add( DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( 23.0 ),
                                          Operator.GREATER,
                                          ThresholdDataType.LEFT,
                                          "E",
                                          dim ) );
-        second.add( FACTORY.ofThreshold( FACTORY.ofOneOrTwoDoubles( 12.0 ),
+        second.add( DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( 12.0 ),
                                          Operator.GREATER,
                                          ThresholdDataType.LEFT,
                                          "F",
                                          dim ) );
-        second.add( FACTORY.ofThreshold( FACTORY.ofOneOrTwoDoubles( 99.7 ),
+        second.add( DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( 99.7 ),
                                          Operator.GREATER,
                                          ThresholdDataType.LEFT,
                                          "G",
@@ -197,13 +186,13 @@ public class CommaSeparatedReaderTest
         Map<FeaturePlus, Set<Threshold>> expected = new TreeMap<>();
 
         Set<Threshold> first = new TreeSet<>();
-        first.add( FACTORY.ofProbabilityThreshold( FACTORY.ofOneOrTwoDoubles( 0.4 ),
+        first.add( DataFactory.ofProbabilityThreshold( DataFactory.ofOneOrTwoDoubles( 0.4 ),
                                                    Operator.GREATER,
                                                    ThresholdDataType.LEFT ) );
-        first.add( FACTORY.ofProbabilityThreshold( FACTORY.ofOneOrTwoDoubles( 0.6 ),
+        first.add( DataFactory.ofProbabilityThreshold( DataFactory.ofOneOrTwoDoubles( 0.6 ),
                                                    Operator.GREATER,
                                                    ThresholdDataType.LEFT ) );
-        first.add( FACTORY.ofProbabilityThreshold( FACTORY.ofOneOrTwoDoubles( 0.8 ),
+        first.add( DataFactory.ofProbabilityThreshold( DataFactory.ofOneOrTwoDoubles( 0.8 ),
                                                    Operator.GREATER,
                                                    ThresholdDataType.LEFT ) );
 
@@ -211,13 +200,13 @@ public class CommaSeparatedReaderTest
         expected.put( FeaturePlus.of( firstFeature ), first );
 
         Set<Threshold> second = new TreeSet<>();
-        second.add( FACTORY.ofProbabilityThreshold( FACTORY.ofOneOrTwoDoubles( 0.2 ),
+        second.add( DataFactory.ofProbabilityThreshold( DataFactory.ofOneOrTwoDoubles( 0.2 ),
                                                     Operator.GREATER,
                                                     ThresholdDataType.LEFT ) );
-        second.add( FACTORY.ofProbabilityThreshold( FACTORY.ofOneOrTwoDoubles( 0.3 ),
+        second.add( DataFactory.ofProbabilityThreshold( DataFactory.ofOneOrTwoDoubles( 0.3 ),
                                                     Operator.GREATER,
                                                     ThresholdDataType.LEFT ) );
-        second.add( FACTORY.ofProbabilityThreshold( FACTORY.ofOneOrTwoDoubles( 0.7 ),
+        second.add( DataFactory.ofProbabilityThreshold( DataFactory.ofOneOrTwoDoubles( 0.7 ),
                                                     Operator.GREATER,
                                                     ThresholdDataType.LEFT ) );
 
@@ -253,21 +242,21 @@ public class CommaSeparatedReaderTest
         Map<FeaturePlus, Set<Threshold>> expected = new TreeMap<>();
 
         Set<Threshold> first = new TreeSet<>();
-        first.add( FACTORY.ofThreshold( FACTORY.ofOneOrTwoDoubles( 3.0 ), Operator.GREATER, ThresholdDataType.LEFT ) );
-        first.add( FACTORY.ofThreshold( FACTORY.ofOneOrTwoDoubles( 7.0 ), Operator.GREATER, ThresholdDataType.LEFT ) );
-        first.add( FACTORY.ofThreshold( FACTORY.ofOneOrTwoDoubles( 15.0 ), Operator.GREATER, ThresholdDataType.LEFT ) );
+        first.add( DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( 3.0 ), Operator.GREATER, ThresholdDataType.LEFT ) );
+        first.add( DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( 7.0 ), Operator.GREATER, ThresholdDataType.LEFT ) );
+        first.add( DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( 15.0 ), Operator.GREATER, ThresholdDataType.LEFT ) );
 
         Feature firstFeature = new Feature( null, null, null, null, null, "DRRC2", null, null, null, null, null, null, null );
         expected.put( FeaturePlus.of( firstFeature ), first );
 
         Set<Threshold> second = new TreeSet<>();
-        second.add( FACTORY.ofThreshold( FACTORY.ofOneOrTwoDoubles( 23.0 ),
+        second.add( DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( 23.0 ),
                                          Operator.GREATER,
                                          ThresholdDataType.LEFT ) );
-        second.add( FACTORY.ofThreshold( FACTORY.ofOneOrTwoDoubles( 12.0 ),
+        second.add( DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( 12.0 ),
                                          Operator.GREATER,
                                          ThresholdDataType.LEFT ) );
-        second.add( FACTORY.ofThreshold( FACTORY.ofOneOrTwoDoubles( 99.7 ),
+        second.add( DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( 99.7 ),
                                          Operator.GREATER,
                                          ThresholdDataType.LEFT ) );
 
@@ -303,17 +292,17 @@ public class CommaSeparatedReaderTest
         Map<FeaturePlus, Set<Threshold>> expected = new TreeMap<>();
 
         Set<Threshold> first = new TreeSet<>();
-        first.add( FACTORY.ofThreshold( FACTORY.ofOneOrTwoDoubles( 3.0 ), Operator.GREATER, ThresholdDataType.LEFT ) );
-        first.add( FACTORY.ofThreshold( FACTORY.ofOneOrTwoDoubles( 7.0 ), Operator.GREATER, ThresholdDataType.LEFT ) );
+        first.add( DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( 3.0 ), Operator.GREATER, ThresholdDataType.LEFT ) );
+        first.add( DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( 7.0 ), Operator.GREATER, ThresholdDataType.LEFT ) );
 
         Feature firstFeature = new Feature( null, null, null, null, null, "DRRC2", null, null, null, null, null, null, null );
         expected.put( FeaturePlus.of( firstFeature ), first );
 
         Set<Threshold> second = new TreeSet<>();
-        second.add( FACTORY.ofThreshold( FACTORY.ofOneOrTwoDoubles( 23.0 ),
+        second.add( DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( 23.0 ),
                                          Operator.GREATER,
                                          ThresholdDataType.LEFT ) );
-        second.add( FACTORY.ofThreshold( FACTORY.ofOneOrTwoDoubles( 99.7 ),
+        second.add( DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( 99.7 ),
                                          Operator.GREATER,
                                          ThresholdDataType.LEFT ) );
 
