@@ -16,9 +16,9 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.DataFactory;
-import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
+import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
 
@@ -61,8 +61,7 @@ public final class MetricTaskTest
         final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Add some appropriate metrics to the collection
-        final DataFactory outF = DefaultDataFactory.getInstance();
-        final MetricFactory metF = MetricFactory.getInstance( outF );
+        final MetricFactory metF = MetricFactory.getInstance();
         final Metric<SingleValuedPairs, DoubleScoreOutput> m = metF.ofMeanError();
 
         // Wrap an input in a future
@@ -81,13 +80,12 @@ public final class MetricTaskTest
         pairPool.submit( futureInput );
 
         //Should not throw an exception
-        MetricOutputMetadata benchmarkMeta = outF.getMetadataFactory().getOutputMetadata( 10,
-                                                                                          outF.getMetadataFactory()
-                                                                                              .getDimension(),
-                                                                                          input.getMetadata(),
-                                                                                          MetricConstants.MEAN_ERROR,
-                                                                                          MetricConstants.MAIN );
-        DoubleScoreOutput benchmark = outF.ofDoubleScoreOutput( 200.55, benchmarkMeta );
+        MetricOutputMetadata benchmarkMeta = MetadataFactory.getOutputMetadata( 10,
+                                                                                MetadataFactory.getDimension(),
+                                                                                input.getMetadata(),
+                                                                                MetricConstants.MEAN_ERROR,
+                                                                                MetricConstants.MAIN );
+        DoubleScoreOutput benchmark = DataFactory.ofDoubleScoreOutput( 200.55, benchmarkMeta );
 
         assertTrue( benchmark.equals( task.call() ) );
 
@@ -107,8 +105,7 @@ public final class MetricTaskTest
     {
 
         // Add some appropriate metrics to the collection
-        final DataFactory outF = DefaultDataFactory.getInstance();
-        final MetricFactory metF = MetricFactory.getInstance( outF );
+        final MetricFactory metF = MetricFactory.getInstance();
         final Metric<SingleValuedPairs, DoubleScoreOutput> m = metF.ofMeanError();
 
         final FutureTask<SingleValuedPairs> futureInputNull =
@@ -122,7 +119,7 @@ public final class MetricTaskTest
 
         // Compute the pairs
         pairPool.submit( futureInputNull );
-        
+
         // Exceptional case
         MetricTask<SingleValuedPairs, DoubleScoreOutput> task2 = new MetricTask<>( m, futureInputNull );
         exception.expect( MetricCalculationException.class );

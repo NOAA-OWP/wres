@@ -15,7 +15,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.DataFactory;
-import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
@@ -37,8 +36,6 @@ public final class CollectableTaskTest
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
-    private DataFactory outF;
-    private MetadataFactory metaFac;
     private MetricFactory metF;
     private ExecutorService pairPool;
     private Collectable<DichotomousPairs, MatrixOutput, DoubleScoreOutput> m;
@@ -46,25 +43,23 @@ public final class CollectableTaskTest
     /** 
      * Metadata for the output 
      */
-    
+
     private MetricOutputMetadata m1;
 
     @Before
     public void setupBeforeEachTest() throws MetricParameterException
     {
-        outF = DefaultDataFactory.getInstance();
-        metaFac = outF.getMetadataFactory();
-        metF = MetricFactory.getInstance( outF );
+        metF = MetricFactory.getInstance();
         // Tests can run simultaneously, use only 1 (additional) Thread per test
         pairPool = Executors.newFixedThreadPool( 1 );
         //Add some appropriate metrics to the collection
         m = metF.ofThreatScore();
 
-        m1 = metaFac.getOutputMetadata( 100,
-                                        metaFac.getDimension(),
-                                        metaFac.getDimension(),
-                                        MetricConstants.CONTINGENCY_TABLE,
-                                        MetricConstants.MAIN );
+        m1 = MetadataFactory.getOutputMetadata( 100,
+                                                MetadataFactory.getDimension(),
+                                                MetadataFactory.getDimension(),
+                                                MetricConstants.CONTINGENCY_TABLE,
+                                                MetricConstants.MAIN );
     }
 
     @Test
@@ -78,7 +73,7 @@ public final class CollectableTaskTest
                     {
                         final double[][] returnMe =
                                 new double[][] { { 1.0, 1.0 }, { 1.0, 1.0 } };
-                        return outF.ofMatrixOutput( returnMe, m1 );
+                        return DataFactory.ofMatrixOutput( returnMe, m1 );
                     }
                 } );
 
@@ -99,18 +94,17 @@ public final class CollectableTaskTest
     public void testExceptionOnNullInput() throws ExecutionException, InterruptedException
     {
         final FutureTask<MatrixOutput> futureInputNull =
-                new FutureTask<MatrixOutput>(new Callable<MatrixOutput>()
+                new FutureTask<MatrixOutput>( new Callable<MatrixOutput>()
                 {
                     public MatrixOutput call()
                     {
                         return null;
                     }
-                });
+                } );
 
         pairPool.submit( futureInputNull );
 
-        final CollectableTask<DichotomousPairs, MatrixOutput, DoubleScoreOutput>
-                task2 =
+        final CollectableTask<DichotomousPairs, MatrixOutput, DoubleScoreOutput> task2 =
                 new CollectableTask<>( m,
                                        futureInputNull );
 

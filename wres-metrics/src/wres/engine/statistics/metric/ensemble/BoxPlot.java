@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
+import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.VectorOfDoubles;
@@ -81,7 +82,7 @@ abstract class BoxPlot
             boxes.add( getBox( next ) );
         }
         MetricOutputMetadata metOut = getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, null );
-        return getDataFactory().ofBoxPlotOutput( boxes,
+        return DataFactory.ofBoxPlotOutput( boxes,
                                                  probabilities,
                                                  metOut,
                                                  getDomainAxisDimension(),
@@ -98,7 +99,7 @@ abstract class BoxPlot
      * Builder for the {@link BoxPlot}
      */
 
-    abstract static class BoxPlotBuilder extends DiagramBuilder<EnsemblePairs, BoxPlotOutput>
+    abstract static class BoxPlotBuilder implements MetricBuilder<EnsemblePairs, BoxPlotOutput>
     {
 
         /**
@@ -129,12 +130,12 @@ abstract class BoxPlot
 
     BoxPlot( final BoxPlotBuilder builder ) throws MetricParameterException
     {
-        super( builder );
+        super();
         //Validate the probabilities
         if ( Objects.isNull( builder.probabilities ) )
         {
             //Add default probabilities
-            probabilities = getDataFactory().vectorOf( new double[]{0.0,0.25,0.5,0.75,1.0} );
+            probabilities = DataFactory.vectorOf( new double[]{0.0,0.25,0.5,0.75,1.0} );
         }
         else
         {

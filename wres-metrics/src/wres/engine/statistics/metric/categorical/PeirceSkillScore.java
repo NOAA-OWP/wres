@@ -1,5 +1,6 @@
 package wres.engine.statistics.metric.categorical;
 
+import wres.datamodel.DataFactory;
 import wres.datamodel.MatrixOfDoubles;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.pairs.MulticategoryPairs;
@@ -39,8 +40,8 @@ public class PeirceSkillScore<S extends MulticategoryPairs> extends ContingencyT
         if ( v.rows() == 2 )
         {
             double result = FunctionFactory.finiteOrMissing().applyAsDouble( ( cm[0][0] / ( cm[0][0] + cm[1][0] ) )
-                                                                         - ( cm[0][1] / ( cm[0][1] + cm[1][1] ) ) );
-            return getDataFactory().ofDoubleScoreOutput( result, getMetadata( output ) );
+                                                                             - ( cm[0][1] / ( cm[0][1] + cm[1][1] ) ) );
+            return DataFactory.ofDoubleScoreOutput( result, getMetadata( output ) );
         }
 
         //Multicategory predictand
@@ -70,13 +71,16 @@ public class PeirceSkillScore<S extends MulticategoryPairs> extends ContingencyT
         if ( n <= 0 )
         {
             throw new MetricCalculationException( "The sum product of the rows and columns in the contingency table "
-                                                  + "must exceed zero when computing the '" + this + "': " + n );
+                                                  + "must exceed zero when computing the '"
+                                                  + this
+                                                  + "': "
+                                                  + n );
         }
         //Compose the result
         final double nSquared = n * n;
         final double result = FunctionFactory.finiteOrMissing().applyAsDouble( ( ( diag / n ) - ( sumProd / nSquared ) )
-                                                                           / ( 1.0 - ( uniProd / nSquared ) ) );
-        return getDataFactory().ofDoubleScoreOutput( result, getMetadata( output ) );
+                                                                               / ( 1.0 - ( uniProd / nSquared ) ) );
+        return DataFactory.ofDoubleScoreOutput( result, getMetadata( output ) );
     }
 
     @Override
@@ -96,7 +100,7 @@ public class PeirceSkillScore<S extends MulticategoryPairs> extends ContingencyT
      */
 
     public static class PeirceSkillScoreBuilder<S extends MulticategoryPairs>
-            extends OrdinaryScoreBuilder<S, DoubleScoreOutput>
+            implements MetricBuilder<S, DoubleScoreOutput>
     {
 
         @Override
@@ -116,7 +120,7 @@ public class PeirceSkillScore<S extends MulticategoryPairs> extends ContingencyT
 
     private PeirceSkillScore( final PeirceSkillScoreBuilder<S> builder ) throws MetricParameterException
     {
-        super( builder );
+        super();
     }
 
 }

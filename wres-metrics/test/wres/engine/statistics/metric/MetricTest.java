@@ -3,9 +3,6 @@ package wres.engine.statistics.metric;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-
-import wres.datamodel.DataFactory;
-import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 
 /**
@@ -34,8 +31,7 @@ public final class MetricTest
                                  + "PEARSON CORRELATION COEFFICIENT"
                                  + "': build the metadata in the implementing class." );
 
-        final DataFactory outF = DefaultDataFactory.getInstance();
-        MetricFactory.getInstance( outF )
+        MetricFactory.getInstance()
                      .ofCorrelationPearsons()
                      .getMetadata( MetricTestDataFactory.getSingleValuedPairsOne(),
                                    1,

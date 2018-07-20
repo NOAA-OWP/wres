@@ -11,7 +11,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.DataFactory;
-import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
@@ -41,18 +40,10 @@ public final class RootMeanSquareErrorTest
 
     private RootMeanSquareError rmse;
 
-    /**
-     * Instance of a data factory.
-     */
-
-    private DataFactory outF;
-
     @Before
     public void setupBeforeEachTest() throws MetricParameterException
     {
         RootMeanSquareErrorBuilder b = new RootMeanSquareError.RootMeanSquareErrorBuilder();
-        this.outF = DefaultDataFactory.getInstance();
-        b.setOutputFactory( outF );
         this.rmse = b.build();
     }
 
@@ -67,15 +58,14 @@ public final class RootMeanSquareErrorTest
         SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Metadata for the output
-        MetadataFactory metaFac = outF.getMetadataFactory();
-        MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getRawData().size(),
-                                                                   metaFac.getDimension(),
-                                                                   metaFac.getDimension(),
+        MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( input.getRawData().size(),
+                                                                   MetadataFactory.getDimension(),
+                                                                   MetadataFactory.getDimension(),
                                                                    MetricConstants.ROOT_MEAN_SQUARE_ERROR,
                                                                    MetricConstants.MAIN );
         //Check the results
         DoubleScoreOutput actual = rmse.apply( input );
-        DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 632.4586381732801, m1 );
+        DoubleScoreOutput expected = DataFactory.ofDoubleScoreOutput( 632.4586381732801, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -92,7 +82,7 @@ public final class RootMeanSquareErrorTest
     {
         // Generate empty data
         DiscreteProbabilityPairs input =
-                outF.ofDiscreteProbabilityPairs( Arrays.asList(), outF.getMetadataFactory().getMetadata() );
+                DataFactory.ofDiscreteProbabilityPairs( Arrays.asList(), MetadataFactory.getMetadata() );
  
         DoubleScoreOutput actual = rmse.apply( input );
 

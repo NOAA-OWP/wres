@@ -28,8 +28,6 @@ import wres.vis.ChartEngineFactory;
  * Helps write charts comprising {@link MultiVectorOutput} to a file in Portable Network Graphics (PNG) format.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 1.0
  */
 
 public class PNGDiagramWriter extends PNGWriter
@@ -105,7 +103,6 @@ public class PNGDiagramWriter extends PNGWriter
             final Map<Object, ChartEngine> engines =
                     ChartEngineFactory.buildMultiVectorOutputChartEngine( projectConfigPlus.getProjectConfig(),
                                                                           output,
-                                                                          DATA_FACTORY,
                                                                           helper.getOutputType(),
                                                                           helper.getTemplateResourceName(),
                                                                           helper.getGraphicsString() );

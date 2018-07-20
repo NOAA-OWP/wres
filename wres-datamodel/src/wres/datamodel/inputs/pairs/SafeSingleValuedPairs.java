@@ -6,7 +6,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
-import wres.datamodel.DefaultDataFactory;
+import wres.datamodel.DataFactory;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
@@ -71,7 +71,7 @@ public class SafeSingleValuedPairs implements SingleValuedPairs
         {
             return null;
         }
-        return DefaultDataFactory.getInstance().ofSingleValuedPairs( baselineInput, baselineMeta );
+        return DataFactory.ofSingleValuedPairs( baselineInput, baselineMeta );
     }
 
     @Override
@@ -156,15 +156,14 @@ public class SafeSingleValuedPairs implements SingleValuedPairs
     SafeSingleValuedPairs( final SingleValuedPairsBuilder b )
     {
         //Ensure safe types
-        DefaultDataFactory factory = (DefaultDataFactory) DefaultDataFactory.getInstance();
-        this.mainInput = factory.safePairOfDoublesList( b.mainInput );
+        this.mainInput = DataFactory.safePairOfDoublesList( b.mainInput );
         this.mainMeta = b.mainMeta;
         this.climatology = b.climatology;
         
         // Baseline data?
         if( Objects.nonNull( b.baselineInput ) )
         {
-            this.baselineInput = factory.safePairOfDoublesList( b.baselineInput );
+            this.baselineInput = DataFactory.safePairOfDoublesList( b.baselineInput );
         }
         else 
         {

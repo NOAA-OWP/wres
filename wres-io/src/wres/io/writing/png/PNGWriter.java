@@ -20,8 +20,6 @@ import wres.config.generated.MetricConfigName;
 import wres.config.generated.MetricsConfig;
 import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.DataFactory;
-import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.io.config.ConfigHelper;
 import wres.system.SystemSettings;
@@ -41,12 +39,6 @@ abstract class PNGWriter
 
     static final Logger LOGGER = LoggerFactory.getLogger( PNGWriter.class );
 
-    /**
-     * Default data factory.
-     */
-
-    static final DataFactory DATA_FACTORY = DefaultDataFactory.getInstance();    
-    
     /**
      * The project configuration to write.
      */
@@ -147,11 +139,11 @@ abstract class PNGWriter
         {
             ProjectConfig config = projectConfigPlus.getProjectConfig();
             String graphicsString = projectConfigPlus.getGraphicsStrings().get( destConfig );
-            
+
             // Build the chart engine
             MetricConfig nextConfig =
                     getNamedConfigOrAllValid( metricId, config );
-            
+
             // Default to global type parameter
             OutputTypeSelection outputType = OutputTypeSelection.DEFAULT;
             if ( Objects.nonNull( destConfig.getOutputType() ) )
@@ -216,29 +208,29 @@ abstract class PNGWriter
 
         private static MetricConfig getNamedConfigOrAllValid( final MetricConstants metric, final ProjectConfig config )
         {
-            
+
             // Deal with MetricConfigName.ALL_VALID first
             MetricConfig allValid = ConfigHelper.getMetricConfigByName( config, MetricConfigName.ALL_VALID );
             if ( Objects.nonNull( allValid ) )
             {
                 return allValid;
             }
-            
+
             // Find the corresponding configuration
-            for( MetricsConfig next : config.getMetrics() )
+            for ( MetricsConfig next : config.getMetrics() )
             {
                 Optional<MetricConfig> test =
                         next.getMetric().stream().filter( a -> metric.name().equals( a.getName().name() ) ).findFirst();
-                if( test.isPresent() )
+                if ( test.isPresent() )
                 {
                     return test.get();
                 }
             }
-            
+
             return null;
-        } 
+        }
     }
-    
+
     /**
      * Hidden constructor.
      * 

@@ -5,8 +5,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.StringJoiner;
 
-import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.VectorOfDoubles;
+import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.MetricOutputException;
@@ -104,8 +104,7 @@ public class SafeMultiVectorOutput implements MultiVectorOutput
             throw new MetricOutputException( "Specify one or more outputs to store." );
         }
         this.output = new EnumMap<>( MetricDimension.class );
-        DefaultDataFactory inFac = (DefaultDataFactory) DefaultDataFactory.getInstance();
-        output.forEach( ( key, value ) -> this.output.put( key, inFac.safeVectorOf( value ) ) );
+        output.forEach( ( key, value ) -> this.output.put( key, DataFactory.safeVectorOf( value ) ) );
         this.meta = meta;
     }
 

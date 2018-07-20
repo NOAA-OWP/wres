@@ -17,8 +17,6 @@ import org.jfree.data.time.FixedMillisecond;
 import org.jfree.data.time.TimeSeries;
 import org.jfree.data.time.TimeSeriesCollection;
 import org.jfree.data.xy.XYDataset;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import ohd.hseb.charter.ChartConstants;
 import ohd.hseb.charter.datasource.DefaultXYChartDataSource;
@@ -46,8 +44,7 @@ import wres.datamodel.thresholds.OneOrTwoThresholds;
  */
 public abstract class XYChartDataSourceFactory
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger( XYChartDataSourceFactory.class );
-
+    
     /**
      * Number of milliseconds in an hour for conversion of {@link Duration} to decimal hours for plotting.
      */

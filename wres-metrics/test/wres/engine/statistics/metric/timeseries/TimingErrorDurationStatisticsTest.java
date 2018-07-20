@@ -15,7 +15,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.DataFactory;
-import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
@@ -49,10 +48,6 @@ public final class TimingErrorDurationStatisticsTest
     @Test
     public void testApplyOneStatisticPerInstance() throws MetricParameterException
     {
-        // Obtain the factories
-        DataFactory outF = DefaultDataFactory.getInstance();
-        MetadataFactory metaFac = outF.getMetadataFactory();
-
         // Generate some data
         TimeSeriesOfSingleValuedPairs input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsOne();
 
@@ -62,23 +57,21 @@ public final class TimingErrorDurationStatisticsTest
                                            ReferenceTime.ISSUE_TIME,
                                            Duration.ofHours( 6 ),
                                            Duration.ofHours( 18 ) );
-        MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getBasisTimes().size(),
-                                                             metaFac.getDimension( "DURATION" ),
-                                                             metaFac.getDimension( "CMS" ),
-                                                             MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
-                                                             MetricConstants.MEAN,
-                                                             metaFac.getDatasetIdentifier( metaFac.getLocation("A"),
-                                                                                           "Streamflow" ),
-                                                             window );
+        MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( input.getBasisTimes().size(),
+                                                                     MetadataFactory.getDimension( "DURATION" ),
+                                                                     MetadataFactory.getDimension( "CMS" ),
+                                                                     MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
+                                                                     MetricConstants.MEAN,
+                                                                     MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation( "A" ),
+                                                                                                           "Streamflow" ),
+                                                                     window );
         // Build a metric
         TimeToPeakErrorBuilder peakErrorBuilder = new TimeToPeakErrorBuilder();
-        peakErrorBuilder.setOutputFactory( outF );
         TimeToPeakError peakError = peakErrorBuilder.build();
 
         // Build the summary statistics
         TimingErrorDurationStatisticsBuilder b = new TimingErrorDurationStatisticsBuilder();
         b.setStatistics( Collections.singleton( MetricConstants.MEAN ) )
-         .setOutputFactory( outF )
          .setID( MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC );
         TimingErrorDurationStatistics ttps = b.build();
 
@@ -86,7 +79,7 @@ public final class TimingErrorDurationStatisticsTest
         DurationScoreOutput actual = ttps.apply( peakError.apply( input ) );
         Duration expectedSource = Duration.ofHours( 3 );
         // Expected, which uses identifier of MetricConstants.MAIN for convenience
-        DurationScoreOutput expected = outF.ofDurationScoreOutput( expectedSource, m1 );
+        DurationScoreOutput expected = DataFactory.ofDurationScoreOutput( expectedSource, m1 );
         assertTrue( "Actual: " + actual.getComponent( MetricConstants.MEAN )
                     + ". Expected: "
                     + expected.getData()
@@ -132,10 +125,6 @@ public final class TimingErrorDurationStatisticsTest
     @Test
     public void testApplyMultipleStatisticInOneInstance() throws MetricParameterException
     {
-        // Obtain the factories
-        DataFactory outF = DefaultDataFactory.getInstance();
-        MetadataFactory metaFac = outF.getMetadataFactory();
-
         // Generate some data
         TimeSeriesOfSingleValuedPairs input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsOne();
 
@@ -145,18 +134,17 @@ public final class TimingErrorDurationStatisticsTest
                                            ReferenceTime.ISSUE_TIME,
                                            Duration.ofHours( 6 ),
                                            Duration.ofHours( 18 ) );
-        MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getBasisTimes().size(),
-                                                             metaFac.getDimension( "DURATION" ),
-                                                             metaFac.getDimension( "CMS" ),
-                                                             MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
-                                                             null,
-                                                             metaFac.getDatasetIdentifier( metaFac.getLocation("A"),
-                                                                                           "Streamflow" ),
-                                                             window );
+        MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( input.getBasisTimes().size(),
+                                                                     MetadataFactory.getDimension( "DURATION" ),
+                                                                     MetadataFactory.getDimension( "CMS" ),
+                                                                     MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
+                                                                     null,
+                                                                     MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation( "A" ),
+                                                                                                           "Streamflow" ),
+                                                                     window );
 
         // Build a metric
         TimeToPeakErrorBuilder peakErrorBuilder = new TimeToPeakErrorBuilder();
-        peakErrorBuilder.setOutputFactory( outF );
         TimeToPeakError peakError = peakErrorBuilder.build();
 
         // Build the summary statistics
@@ -165,7 +153,6 @@ public final class TimingErrorDurationStatisticsTest
                                                                                             MetricConstants.MAXIMUM,
                                                                                             MetricConstants.MINIMUM,
                                                                                             MetricConstants.MEAN_ABSOLUTE ) ) )
-                                              .setOutputFactory( outF )
                                               .setID( MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC )
                                               .build();
 
@@ -182,7 +169,7 @@ public final class TimingErrorDurationStatisticsTest
         expectedSource.put( MetricConstants.MEAN_ABSOLUTE, expectedMeanAbs );
 
         // Expected, which uses identifier of MetricConstants.MAIN for convenience
-        DurationScoreOutput expected = outF.ofDurationScoreOutput( expectedSource, m1 );
+        DurationScoreOutput expected = DataFactory.ofDurationScoreOutput( expectedSource, m1 );
         assertTrue( "Actual and expected results differ.", actual.equals( expected ) );
     }
 
@@ -195,34 +182,28 @@ public final class TimingErrorDurationStatisticsTest
     @Test
     public void testApplyWithNoData() throws MetricParameterException
     {
-        // Obtain the factories
-        DataFactory outF = DefaultDataFactory.getInstance();
-        MetadataFactory metaFac = outF.getMetadataFactory();
-
         // Generate some data
         TimeSeriesOfSingleValuedPairs input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsFour();
 
         // Metadata for the output
         TimeWindow window = TimeWindow.of( Instant.MIN,
-                                                 Instant.MAX );
-        MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getBasisTimes().size(),
-                                                             metaFac.getDimension( "DURATION" ),
-                                                             metaFac.getDimension( "CMS" ),
-                                                             MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
-                                                             MetricConstants.MEAN,
-                                                             metaFac.getDatasetIdentifier( metaFac.getLocation("A"),
-                                                                                           "Streamflow" ),
-                                                             window );
+                                           Instant.MAX );
+        MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( input.getBasisTimes().size(),
+                                                                     MetadataFactory.getDimension( "DURATION" ),
+                                                                     MetadataFactory.getDimension( "CMS" ),
+                                                                     MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
+                                                                     MetricConstants.MEAN,
+                                                                     MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation( "A" ),
+                                                                                                           "Streamflow" ),
+                                                                     window );
 
         // Build a metric
         TimeToPeakErrorBuilder peakErrorBuilder = new TimeToPeakErrorBuilder();
-        peakErrorBuilder.setOutputFactory( outF );
         TimeToPeakError peakError = peakErrorBuilder.build();
 
         // Build the summary statistics
         TimingErrorDurationStatisticsBuilder b = new TimingErrorDurationStatisticsBuilder();
         TimingErrorDurationStatistics ttps = b.setStatistics( new HashSet<>( Arrays.asList( MetricConstants.MEAN ) ) )
-                                              .setOutputFactory( outF )
                                               .setID( MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC )
                                               .build();
 
@@ -233,7 +214,7 @@ public final class TimingErrorDurationStatisticsTest
         expectedSource.put( MetricConstants.MEAN, MetricConstants.MissingValues.MISSING_DURATION );
 
         // Expected, which uses identifier of MetricConstants.MAIN for convenience
-        DurationScoreOutput expected = outF.ofDurationScoreOutput( expectedSource, m1 );
+        DurationScoreOutput expected = DataFactory.ofDurationScoreOutput( expectedSource, m1 );
 
         assertTrue( "Actual and expected results differ.", actual.equals( expected ) );
     }
@@ -247,10 +228,8 @@ public final class TimingErrorDurationStatisticsTest
     public void testExceptionOnMissingStatistic() throws MetricParameterException
     {
         //Build the metric
-        DataFactory outF = DefaultDataFactory.getInstance();
         TimingErrorDurationStatisticsBuilder b =
                 new TimingErrorDurationStatisticsBuilder();
-        b.setOutputFactory( outF );
 
         // Missing statistic
         exception.expect( MetricParameterException.class );
@@ -265,16 +244,11 @@ public final class TimingErrorDurationStatisticsTest
     @Test
     public void testExceptionOnEmptyStatistic() throws MetricParameterException
     {
-        //Build the metric
-        DataFactory outF = DefaultDataFactory.getInstance();
-        TimingErrorDurationStatisticsBuilder b = new TimingErrorDurationStatisticsBuilder();
-        b.setOutputFactory( outF );
-
         // Empty statistic
         exception.expect( MetricParameterException.class );
 
         TimingErrorDurationStatisticsBuilder c = new TimingErrorDurationStatisticsBuilder();
-        c.setOutputFactory( outF );
+
         c.setStatistics( Collections.emptySet() ).build();
     }
 
@@ -286,11 +260,6 @@ public final class TimingErrorDurationStatisticsTest
     @Test
     public void testExceptionOnNullStatistic() throws MetricParameterException
     {
-        //Build the metric
-        DataFactory outF = DefaultDataFactory.getInstance();
-        TimingErrorDurationStatisticsBuilder b = new TimingErrorDurationStatisticsBuilder();
-        b.setOutputFactory( outF );
-
         // Null statistic
         exception.expect( MetricParameterException.class );
 
@@ -307,17 +276,11 @@ public final class TimingErrorDurationStatisticsTest
     @Test
     public void testExceptionOnUnrecognizedStatistic() throws MetricParameterException
     {
-        //Build the metric
-        DataFactory outF = DefaultDataFactory.getInstance();
-        TimingErrorDurationStatisticsBuilder b = new TimingErrorDurationStatisticsBuilder();
-        b.setOutputFactory( outF );
-
         // Unrecognized statistic
         exception.expect( IllegalArgumentException.class );
 
         TimingErrorDurationStatisticsBuilder c = new TimingErrorDurationStatisticsBuilder();
-        c.setOutputFactory( outF )
-         .setID( MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC )
+        c.setID( MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC )
          .setStatistics( Collections.singleton( MetricConstants.NONE ) )
          .build();
     }
@@ -330,17 +293,11 @@ public final class TimingErrorDurationStatisticsTest
     @Test
     public void testExceptionOnNullIdentifier() throws MetricParameterException
     {
-        //Build the metric
-        DataFactory outF = DefaultDataFactory.getInstance();
-        TimingErrorDurationStatisticsBuilder b = new TimingErrorDurationStatisticsBuilder();
-        b.setOutputFactory( outF );
-
         // Null identifier
         exception.expect( MetricParameterException.class );
 
         TimingErrorDurationStatisticsBuilder c = new TimingErrorDurationStatisticsBuilder();
-        c.setOutputFactory( outF )
-         .setStatistics( Collections.singleton( MetricConstants.MEAN ) )
+        c.setStatistics( Collections.singleton( MetricConstants.MEAN ) )
          .build();
     }
 
@@ -353,17 +310,11 @@ public final class TimingErrorDurationStatisticsTest
     @Test
     public void testApplyThrowsExceptionOnNullInput() throws MetricParameterException
     {
-        //Build the metric
-        DataFactory outF = DefaultDataFactory.getInstance();
-        TimingErrorDurationStatisticsBuilder b = new TimingErrorDurationStatisticsBuilder();
-        b.setOutputFactory( outF );
-
         // Null input to apply
         exception.expect( MetricInputException.class );
 
         TimingErrorDurationStatisticsBuilder c = new TimingErrorDurationStatisticsBuilder();
-        c.setOutputFactory( outF )
-         .setID( MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC )
+        c.setID( MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC )
          .setStatistics( Collections.singleton( MetricConstants.MEAN ) );
         c.build().apply( null );
     }
@@ -397,15 +348,10 @@ public final class TimingErrorDurationStatisticsTest
         exception.expect( MetricParameterException.class );
         exception.expectMessage( "Specify one or more summary statistics." );
 
-        DataFactory outF = DefaultDataFactory.getInstance();
-        TimingErrorDurationStatisticsBuilder b = new TimingErrorDurationStatisticsBuilder();
-        b.setOutputFactory( outF );
-
         TimingErrorDurationStatisticsBuilder c = new TimingErrorDurationStatisticsBuilder();
-        c.setOutputFactory( outF )
-         .setID( MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC )
-         .setStatistics( new HashSet<>() );
-        c.build();
+        c.setID( MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC )
+         .setStatistics( new HashSet<>() )
+         .build();
     }
 
     /**
@@ -421,14 +367,9 @@ public final class TimingErrorDurationStatisticsTest
         exception.expect( MetricParameterException.class );
         exception.expectMessage( "Cannot build the metric with a null statistic." );
 
-        DataFactory outF = DefaultDataFactory.getInstance();
-        TimingErrorDurationStatisticsBuilder b = new TimingErrorDurationStatisticsBuilder();
-        b.setOutputFactory( outF );
-
         TimingErrorDurationStatisticsBuilder c = new TimingErrorDurationStatisticsBuilder();
-        c.setOutputFactory( outF )
-         .setID( MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC )
-         .setStatistics( Collections.singleton( null ) );
-        c.build();
+        c.setID( MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC )
+         .setStatistics( Collections.singleton( null ) )
+         .build();
     }
 }

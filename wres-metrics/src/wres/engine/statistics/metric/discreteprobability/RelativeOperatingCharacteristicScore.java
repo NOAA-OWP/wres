@@ -69,7 +69,7 @@ public class RelativeOperatingCharacteristicScore extends OrdinaryScore<Discrete
         }
         final MetricOutputMetadata metOut =
                 getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, baselineIdentifier );
-        return getDataFactory().ofDoubleScoreOutput( rocScore, metOut );
+        return DataFactory.ofDoubleScoreOutput( rocScore, metOut );
     }
 
     @Override
@@ -120,8 +120,7 @@ public class RelativeOperatingCharacteristicScore extends OrdinaryScore<Discrete
      */
 
     public static class RelativeOperatingCharacteristicScoreBuilder
-            extends
-            OrdinaryScoreBuilder<DiscreteProbabilityPairs, DoubleScoreOutput>
+            implements MetricBuilder<DiscreteProbabilityPairs, DoubleScoreOutput>
     {
 
         @Override
@@ -141,14 +140,13 @@ public class RelativeOperatingCharacteristicScore extends OrdinaryScore<Discrete
 
     private double getAUCMasonGraham( DiscreteProbabilityPairs pairs )
     {
-        DataFactory d = getDataFactory();
         //Obtain the predicted probabilities when the event occurred and did not occur
         //Begin by collecting against occurrence/non-occurrence
         Map<Boolean, List<PairOfDoubles>> mapped = pairs.getRawData()
                                                         .stream()
-                                                        .collect( Collectors.groupingBy( a -> d.doubleEquals( a.getItemOne(),
-                                                                                                              1.0,
-                                                                                                              7 ) ) );
+                                                        .collect( Collectors.groupingBy( a -> DataFactory.doubleEquals( a.getItemOne(),
+                                                                                                                        1.0,
+                                                                                                                        7 ) ) );
         if ( mapped.size() != 2 )
         {
             return Double.NaN; //Undefined
@@ -201,7 +199,7 @@ public class RelativeOperatingCharacteristicScore extends OrdinaryScore<Discrete
     private RelativeOperatingCharacteristicScore( final RelativeOperatingCharacteristicScoreBuilder builder )
             throws MetricParameterException
     {
-        super( builder );
+        super();
     }
 
 }

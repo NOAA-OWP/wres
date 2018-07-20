@@ -2,6 +2,7 @@ package wres.engine.statistics.metric.singlevalued;
 
 import java.util.Objects;
 
+import wres.datamodel.DataFactory;
 import wres.datamodel.Dimension;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.MetricInputException;
@@ -60,26 +61,25 @@ public class MeanSquareError<S extends SingleValuedPairs> extends SumOfSquareErr
         }
 
         final MetricOutputMetadata metIn = output.getMetadata();
-        final MetadataFactory f = getDataFactory().getMetadataFactory();
 
         // Set the output dimension
-        Dimension outputDimension = f.getDimension();
+        Dimension outputDimension = MetadataFactory.getDimension();
         if ( hasRealUnits() )
         {
             outputDimension = metIn.getDimension();
         }
-        MetricOutputMetadata meta = f.getOutputMetadata( metIn.getSampleSize(),
-                                                         outputDimension,
-                                                         metIn.getDimension(),
-                                                         this.getID(),
-                                                         MetricConstants.MAIN,
-                                                         metIn.getIdentifier(),
-                                                         metIn.getTimeWindow() );
+        MetricOutputMetadata meta = MetadataFactory.getOutputMetadata( metIn.getSampleSize(),
+                                                                       outputDimension,
+                                                                       metIn.getDimension(),
+                                                                       this.getID(),
+                                                                       MetricConstants.MAIN,
+                                                                       metIn.getIdentifier(),
+                                                                       metIn.getTimeWindow() );
 
         double mse = FunctionFactory.finiteOrMissing()
                                     .applyAsDouble( output.getData() / metIn.getSampleSize() );
 
-        return this.getDataFactory().ofDoubleScoreOutput( mse, meta );
+        return DataFactory.ofDoubleScoreOutput( mse, meta );
     }
 
     /**

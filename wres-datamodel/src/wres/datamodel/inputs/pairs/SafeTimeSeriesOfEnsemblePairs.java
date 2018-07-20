@@ -13,7 +13,6 @@ import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairsBuilder;
-import wres.datamodel.metadata.DefaultMetadataFactory;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.time.Event;
@@ -184,14 +183,13 @@ public class SafeTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
             }
 
             // Set the union of the current metadata and any previously added time-series
-            MetadataFactory metaFac = DefaultMetadataFactory.getInstance();
             List<Metadata> mainMeta = new ArrayList<>();
             mainMeta.add( timeSeries.getMetadata() );
             if ( Objects.nonNull( this.mainMeta ) )
             {
                 mainMeta.add( this.mainMeta );
             }
-            this.setMetadata( metaFac.unionOf( mainMeta ) );
+            this.setMetadata( MetadataFactory.unionOf( mainMeta ) );
 
             //Add the baseline data if required
             if ( timeSeries.hasBaseline() )
@@ -220,7 +218,6 @@ public class SafeTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
             }
 
             // Set the union of the current metadata and any previously added time-series
-            MetadataFactory metaFac = DefaultMetadataFactory.getInstance();
             List<Metadata> baselineMeta = new ArrayList<>();
 
             // Metadata, as with data, is taken from the main input
@@ -229,7 +226,7 @@ public class SafeTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
             {
                 baselineMeta.add( this.baselineMeta );
             }
-            this.setMetadataForBaseline( metaFac.unionOf( baselineMeta ) );
+            this.setMetadataForBaseline( MetadataFactory.unionOf( baselineMeta ) );
 
             return this;
         }

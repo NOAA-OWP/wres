@@ -62,12 +62,6 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
     static final Logger LOGGER = LoggerFactory.getLogger( MetricCollection.class );
 
     /**
-     * Instance of a {@link DataFactory} for constructing a {@link MetricOutput}.
-     */
-
-    private final DataFactory dataFactory;
-
-    /**
      * A collection of {@link Metric} that are not {@link Collectable}.
      */
 
@@ -144,12 +138,6 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
         private ExecutorService metricPool;
 
         /**
-         * The {@link DataFactory} to build a {@link MetricOutput}.
-         */
-
-        private DataFactory dataFactory;
-
-        /**
          * The list of {@link Metric}.
          */
 
@@ -213,19 +201,6 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
         protected MetricCollectionBuilder<S, T, U> setExecutorService( final ExecutorService metricPool )
         {
             this.metricPool = metricPool;
-            return this;
-        }
-
-        /**
-         * Sets the {@link DataFactory} for constructing a {@link MetricOutput}.
-         * 
-         * @param dataFactory the {@link DataFactory}
-         * @return the builder
-         */
-
-        protected MetricCollectionBuilder<S, T, U> setOutputFactory( final DataFactory dataFactory )
-        {
-            this.dataFactory = dataFactory;
             return this;
         }
 
@@ -328,7 +303,7 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
 
         this.logEndOfCalculation( LOGGER, returnMe );
 
-        return this.dataFactory.ofMetricOutputMapByMetric( returnMe );
+        return DataFactory.ofMetricOutputMapByMetric( returnMe );
     }
 
     /**
@@ -341,7 +316,6 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
     private MetricCollection( final MetricCollectionBuilder<S, T, U> builder ) throws MetricParameterException
     {
         //Set 
-        this.dataFactory = builder.dataFactory;
         this.metricPool = builder.metricPool;
         this.metrics = new EnumMap<>( builder.metrics );
         this.collectableMetrics = new EnumMap<>( MetricConstants.class );
@@ -375,11 +349,6 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
         if ( Objects.isNull( metricPool ) )
         {
             throw new MetricParameterException( "Cannot construct the metric collection without an executor service." );
-        }
-        if ( Objects.isNull( dataFactory ) )
-        {
-            throw new MetricParameterException( "Cannot construct the metric collection without a metric output "
-                                                + "factory." );
         }
         if ( metrics.isEmpty() && collectableMetrics.isEmpty() )
         {

@@ -11,7 +11,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.DataFactory;
-import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MissingValues;
 
@@ -25,12 +24,6 @@ public final class FunctionFactoryTest
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
-    
-    /**
-     * Data factory.
-     */
-
-    private DataFactory dataFac = DefaultDataFactory.getInstance();
 
     /**
      * Tests for double equality.
@@ -45,19 +38,19 @@ public final class FunctionFactoryTest
     @Test
     public void testError()
     {
-        assertTrue( doubleTester.test( FunctionFactory.error().applyAsDouble( dataFac.pairOf( -1, 1 ) ), 2.0 ) );
+        assertTrue( doubleTester.test( FunctionFactory.error().applyAsDouble( DataFactory.pairOf( -1, 1 ) ), 2.0 ) );
     }
 
     @Test
     public void testAbsError()
     {
-        assertTrue( doubleTester.test( FunctionFactory.absError().applyAsDouble( dataFac.pairOf( -1, 1 ) ), 2.0 ) );
+        assertTrue( doubleTester.test( FunctionFactory.absError().applyAsDouble( DataFactory.pairOf( -1, 1 ) ), 2.0 ) );
     }
 
     @Test
     public void testSquareError()
     {
-        assertTrue( doubleTester.test( FunctionFactory.squareError().applyAsDouble( dataFac.pairOf( -5, 5 ) ),
+        assertTrue( doubleTester.test( FunctionFactory.squareError().applyAsDouble( DataFactory.pairOf( -5, 5 ) ),
                                        100.0 ) );
     }
 
@@ -112,8 +105,9 @@ public final class FunctionFactoryTest
     @Test
     public void testMean()
     {
-        assertTrue( doubleTester.test( FunctionFactory.mean().applyAsDouble( dataFac.vectorOf( new double[] { 1.0, 2.0,
-                                                                                                              3.0 } ) ),
+        assertTrue( doubleTester.test( FunctionFactory.mean()
+                                                      .applyAsDouble( DataFactory.vectorOf( new double[] { 1.0, 2.0,
+                                                                                                           3.0 } ) ),
                                        2.0 ) );
     }
 
@@ -121,9 +115,9 @@ public final class FunctionFactoryTest
     public void testMedian()
     {
         assertTrue( doubleTester.test( FunctionFactory.median()
-                                                      .applyAsDouble( dataFac.vectorOf( new double[] { 4.0, 7.0,
-                                                                                                       6.3,
-                                                                                                       5.1723 } ) ),
+                                                      .applyAsDouble( DataFactory.vectorOf( new double[] { 4.0, 7.0,
+                                                                                                           6.3,
+                                                                                                           5.1723 } ) ),
                                        5.73615 ) );
     }
 
@@ -131,8 +125,8 @@ public final class FunctionFactoryTest
     public void testMeanAbsolute()
     {
         assertTrue( doubleTester.test( FunctionFactory.meanAbsolute()
-                                                      .applyAsDouble( dataFac.vectorOf( new double[] { 4.3, -2.9, 7,
-                                                                                                       13.13131 } ) ),
+                                                      .applyAsDouble( DataFactory.vectorOf( new double[] { 4.3, -2.9, 7,
+                                                                                                           13.13131 } ) ),
                                        6.8328275 ) );
     }
 
@@ -140,13 +134,13 @@ public final class FunctionFactoryTest
     public void testMinimum()
     {
         assertTrue( doubleTester.test( FunctionFactory.minimum()
-                                                      .applyAsDouble( dataFac.vectorOf( new double[] { 4.3, -2.9, 7,
-                                                                                                       13.13131 } ) ),
+                                                      .applyAsDouble( DataFactory.vectorOf( new double[] { 4.3, -2.9, 7,
+                                                                                                           13.13131 } ) ),
                                        -2.9 ) );
 
         assertTrue( doubleTester.test( FunctionFactory.minimum()
-                                                      .applyAsDouble( dataFac.vectorOf( new double[] { 4.3,
-                                                                                                       Double.NEGATIVE_INFINITY } ) ),
+                                                      .applyAsDouble( DataFactory.vectorOf( new double[] { 4.3,
+                                                                                                           Double.NEGATIVE_INFINITY } ) ),
                                        Double.NEGATIVE_INFINITY ) );
     }
 
@@ -154,14 +148,14 @@ public final class FunctionFactoryTest
     public void testMaximum()
     {
         assertTrue( doubleTester.test( FunctionFactory.maximum()
-                                                      .applyAsDouble( dataFac.vectorOf( new double[] { 4.3, -2.9, 7,
-                                                                                                       13.13131 } ) ),
+                                                      .applyAsDouble( DataFactory.vectorOf( new double[] { 4.3, -2.9, 7,
+                                                                                                           13.13131 } ) ),
                                        13.13131 ) );
 
         assertTrue( doubleTester.test( FunctionFactory.maximum()
-                                                      .applyAsDouble( dataFac.vectorOf( new double[] { Double.POSITIVE_INFINITY,
-                                                                                                       4.3,
-                                                                                                       Double.NEGATIVE_INFINITY } ) ),
+                                                      .applyAsDouble( DataFactory.vectorOf( new double[] { Double.POSITIVE_INFINITY,
+                                                                                                           4.3,
+                                                                                                           Double.NEGATIVE_INFINITY } ) ),
                                        Double.POSITIVE_INFINITY ) );
     }
 
@@ -169,17 +163,17 @@ public final class FunctionFactoryTest
     public void testStandardDeviation()
     {
         assertTrue( doubleTester.test( FunctionFactory.standardDeviation()
-                                                      .applyAsDouble( dataFac.vectorOf( new double[] { 7, 9, 11, 13,
-                                                                                                       123.883 } ) ),
+                                                      .applyAsDouble( DataFactory.vectorOf( new double[] { 7, 9, 11, 13,
+                                                                                                           123.883 } ) ),
                                        50.97908922 ) );
     }
-    
+
     @Test
     public void testSampleSize()
     {
         assertTrue( doubleTester.test( FunctionFactory.sampleSize()
-                                                      .applyAsDouble( dataFac.vectorOf( new double[] { 7, 9, 11, 13,
-                                                                                                       123.883 } ) ),
+                                                      .applyAsDouble( DataFactory.vectorOf( new double[] { 7, 9, 11, 13,
+                                                                                                           123.883 } ) ),
                                        5.0 ) );
     }
 
@@ -194,20 +188,20 @@ public final class FunctionFactoryTest
         assertTrue( Objects.nonNull( FunctionFactory.ofStatistic( MetricConstants.MEAN_ABSOLUTE ) ) );
         assertTrue( Objects.nonNull( FunctionFactory.ofStatistic( MetricConstants.STANDARD_DEVIATION ) ) );
     }
-    
+
     @Test
     public void testOfStatisticWithWrongInput()
     {
         exception.expect( IllegalArgumentException.class );
         exception.expectMessage( "The statistic 'MAIN' is not a recognized statistic in this context." );
-        
+
         FunctionFactory.ofStatistic( MetricConstants.MAIN );
     }
-    
+
     @Test
     public void testGetSupportUnivariateStatistics()
     {
         assertTrue( Objects.nonNull( FunctionFactory.getSupportedUnivariateStatistics() ) );
     }
-    
+
 }

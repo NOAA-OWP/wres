@@ -3,8 +3,8 @@ package wres.engine.statistics.metric.singlevalued;
 import java.util.Objects;
 
 import wres.datamodel.DataFactory;
+import wres.datamodel.DefaultSlicer;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
@@ -70,12 +70,10 @@ public class KlingGuptaEfficiency extends DecomposableScore<SingleValuedPairs>
         //TODO: implement any required decompositions, based on the instance parameters and return the decomposition
         //template as the componentID in the metadata
 
-        DataFactory dataFactory = getDataFactory();
-        Slicer slicer = dataFactory.getSlicer();
         double result = Double.NaN;
         // Compute the components
-        VectorOfDoubles leftValues = dataFactory.vectorOf( slicer.getLeftSide( s ) );
-        VectorOfDoubles rightValues = dataFactory.vectorOf( slicer.getRightSide( s ) );
+        VectorOfDoubles leftValues = DataFactory.vectorOf( DefaultSlicer.getInstance().getLeftSide( s ) );
+        VectorOfDoubles rightValues = DataFactory.vectorOf( DefaultSlicer.getInstance().getRightSide( s ) );
         double rhoVal = rho.apply( s ).getData();
         // Check for finite correlation
         if ( Double.isFinite( rhoVal ) )
@@ -93,7 +91,7 @@ public class KlingGuptaEfficiency extends DecomposableScore<SingleValuedPairs>
         }
         //Metadata
         final MetricOutputMetadata metOut = this.getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, null );
-        return dataFactory.ofDoubleScoreOutput( result, metOut );
+        return DataFactory.ofDoubleScoreOutput( result, metOut );
     }
 
     @Override
@@ -142,7 +140,6 @@ public class KlingGuptaEfficiency extends DecomposableScore<SingleValuedPairs>
     {
         super( builder );
         CorrelationPearsonsBuilder rhoBuilder = new CorrelationPearsonsBuilder();
-        rhoBuilder.setOutputFactory( getDataFactory() );
         rho = rhoBuilder.build();
         //Equal weighting of terms
         rhoWeight = 1.0;

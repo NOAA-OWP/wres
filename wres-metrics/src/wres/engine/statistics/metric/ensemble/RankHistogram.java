@@ -12,10 +12,10 @@ import java.util.function.BiConsumer;
 import java.util.stream.IntStream;
 
 import wres.datamodel.DataFactory;
+import wres.datamodel.DefaultSlicer;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.MissingValues;
-import wres.datamodel.Slicer;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
@@ -53,8 +53,6 @@ public class RankHistogram extends Diagram<EnsemblePairs, MultiVectorOutput>
         {
             throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
         }
-        
-        DataFactory d = getDataFactory();
 
         double[] ranks = new double[] { MissingValues.MISSING_DOUBLE };
         double[] relativeFrequencies = new double[] { MissingValues.MISSING_DOUBLE };
@@ -63,9 +61,9 @@ public class RankHistogram extends Diagram<EnsemblePairs, MultiVectorOutput>
         if ( !s.getRawData().isEmpty() )
         {
 
-            Slicer slicer = d.getSlicer();
             //Acquire subsets in case of missing data
-            Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> sliced = slicer.filterByRightSize( s.getRawData() );
+            Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> sliced =
+                    DefaultSlicer.getInstance().filterByRightSize( s.getRawData() );
             //Find the subset with the most elements
             Optional<List<PairOfDoubleAndVectorOfDoubles>> useMe =
                     sliced.values().stream().max( Comparator.comparingInt( List::size ) );
@@ -90,7 +88,7 @@ public class RankHistogram extends Diagram<EnsemblePairs, MultiVectorOutput>
         output.put( MetricDimension.RANK_ORDER, ranks );
         output.put( MetricDimension.OBSERVED_RELATIVE_FREQUENCY, relativeFrequencies );
         final MetricOutputMetadata metOut = getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, null );
-        return d.ofMultiVectorOutput( output, metOut );
+        return DataFactory.ofMultiVectorOutput( output, metOut );
     }
 
     @Override
@@ -109,7 +107,7 @@ public class RankHistogram extends Diagram<EnsemblePairs, MultiVectorOutput>
      * A {@link MetricBuilder} to build the metric.
      */
 
-    public static class RankHistogramBuilder extends DiagramBuilder<EnsemblePairs, MultiVectorOutput>
+    public static class RankHistogramBuilder implements MetricBuilder<EnsemblePairs, MultiVectorOutput>
     {
         /**
          * Random number generator to assign ties randomly.
@@ -145,7 +143,7 @@ public class RankHistogram extends Diagram<EnsemblePairs, MultiVectorOutput>
 
     private RankHistogram( final RankHistogramBuilder builder ) throws MetricParameterException
     {
-        super( builder );
+        super();
         if ( Objects.nonNull( builder.rng ) )
         {
             rng = builder.rng;

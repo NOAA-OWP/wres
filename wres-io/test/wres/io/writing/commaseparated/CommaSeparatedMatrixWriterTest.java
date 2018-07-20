@@ -23,7 +23,6 @@ import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DatasetIdentifier;
-import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.Location;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
@@ -66,12 +65,8 @@ public class CommaSeparatedMatrixWriterTest extends CommaSeparatedWriterTest
         final String LID = "BDAC1";
 
         // Create fake outputs
-
-        DataFactory outputFactory = DefaultDataFactory.getInstance();
-        MetadataFactory metaFac = outputFactory.getMetadataFactory();
-
         MetricOutputForProjectByTimeAndThreshold.MetricOutputForProjectByTimeAndThresholdBuilder outputBuilder =
-                outputFactory.ofMetricOutputForProjectByTimeAndThreshold();
+                DataFactory.ofMetricOutputForProjectByTimeAndThreshold();
 
         TimeWindow timeOne =
                 TimeWindow.of( Instant.MIN,
@@ -84,18 +79,18 @@ public class CommaSeparatedMatrixWriterTest extends CommaSeparatedWriterTest
         // which requires a datasetidentifier...
         // which requires a location...
 
-        Location fakeLocation = metaFac.getLocation( LID );
+        Location fakeLocation = MetadataFactory.getLocation( LID );
 
         DatasetIdentifier datasetIdentifier =
-                metaFac.getDatasetIdentifier( fakeLocation,
+                MetadataFactory.getDatasetIdentifier( fakeLocation,
                                               "SQIN",
                                               "HEFS",
                                               "ESP" );
 
         MetricOutputMetadata fakeMetadata =
-                metaFac.getOutputMetadata( 1000,
-                                           metaFac.getDimension(),
-                                           metaFac.getDimension( "CMS" ),
+                MetadataFactory.getOutputMetadata( 1000,
+                                           MetadataFactory.getDimension(),
+                                           MetadataFactory.getDimension( "CMS" ),
                                            MetricConstants.CONTINGENCY_TABLE,
                                            null,
                                            datasetIdentifier );
@@ -105,8 +100,8 @@ public class CommaSeparatedMatrixWriterTest extends CommaSeparatedWriterTest
 
         // Fake output wrapper.
         MetricOutputMapByMetric<MatrixOutput> fakeOutputData =
-                outputFactory.ofMetricOutputMapByMetric( Collections.singletonMap( MetricConstants.CONTINGENCY_TABLE,
-                                                                                   outputFactory.ofMatrixOutput( fakeOutputs,
+                DataFactory.ofMetricOutputMapByMetric( Collections.singletonMap( MetricConstants.CONTINGENCY_TABLE,
+                                                                                   DataFactory.ofMatrixOutput( fakeOutputs,
                                                                                                                  Arrays.asList( MetricDimension.TRUE_POSITIVES,
                                                                                                                                 MetricDimension.FALSE_POSITIVES,
                                                                                                                                 MetricDimension.FALSE_NEGATIVES,
@@ -120,7 +115,7 @@ public class CommaSeparatedMatrixWriterTest extends CommaSeparatedWriterTest
         // Fake lead time and threshold
         Pair<TimeWindow, OneOrTwoThresholds> mapKeyByLeadThreshold =
                 Pair.of( timeOne,
-                         OneOrTwoThresholds.of( outputFactory.ofThreshold( outputFactory.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
+                         OneOrTwoThresholds.of( DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
                                                                            Operator.GREATER,
                                                                            ThresholdDataType.LEFT ) ) );
 

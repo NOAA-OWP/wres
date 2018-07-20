@@ -20,7 +20,6 @@ import java.util.concurrent.Future;
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.DataFactory;
-import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
@@ -405,11 +404,10 @@ public class SafeMetricOutputForProjectByTimeAndThreshold implements MetricOutpu
     private void addToBuilder( MetricOutputMultiMapByTimeAndThresholdBuilder<MetricOutput<?>> builder,
                                MetricOutputMultiMapByTimeAndThreshold<?> addMe )
     {
-        DataFactory d = DefaultDataFactory.getInstance();
         addMe.forEach( ( key, value ) -> {
             Map<Pair<TimeWindow, OneOrTwoThresholds>, MetricOutput<?>> map = new TreeMap<>();
             value.forEach( map::put );
-            builder.put( key, d.ofMetricOutputMapByTimeAndThreshold( map ) );
+            builder.put( key, DataFactory.ofMetricOutputMapByTimeAndThreshold( map ) );
         } );
     }
 
@@ -433,7 +431,6 @@ public class SafeMetricOutputForProjectByTimeAndThreshold implements MetricOutpu
         {
             return null;
         }
-        DataFactory d = DefaultDataFactory.getInstance();
         Map<Pair<TimeWindow, OneOrTwoThresholds>, List<MetricOutputMapByMetric<T>>> unwrapped = new HashMap<>();
         for ( Map.Entry<Pair<TimeWindow, OneOrTwoThresholds>, List<Future<MetricOutputMapByMetric<T>>>> next : wrapped.entrySet() )
         {
@@ -475,7 +472,7 @@ public class SafeMetricOutputForProjectByTimeAndThreshold implements MetricOutpu
                                                  e );
             }
         }
-        return d.ofMetricOutputMultiMapByTimeAndThreshold( unwrapped );
+        return DataFactory.ofMetricOutputMultiMapByTimeAndThreshold( unwrapped );
     }
 
 }

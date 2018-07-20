@@ -2,6 +2,7 @@ package wres.engine.statistics.metric.singlevalued;
 
 import java.util.Objects;
 
+import wres.datamodel.DataFactory;
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.Dimension;
 import wres.datamodel.MetricConstants;
@@ -61,7 +62,7 @@ public class SumOfSquareError<S extends SingleValuedPairs> extends DecomposableS
         double returnMe = MissingValues.MISSING_DOUBLE;
 
         // Data available
-        if ( ! input.getRawData().isEmpty() )
+        if ( !input.getRawData().isEmpty() )
         {
             returnMe = input.getRawData().stream().mapToDouble( FunctionFactory.squareError() ).sum();
         }
@@ -69,7 +70,7 @@ public class SumOfSquareError<S extends SingleValuedPairs> extends DecomposableS
         //Metadata
         final MetricOutputMetadata metOut = this.getMetadata( input );
 
-        return this.getDataFactory().ofDoubleScoreOutput( returnMe, metOut );
+        return DataFactory.ofDoubleScoreOutput( returnMe, metOut );
     }
 
     @Override
@@ -79,15 +80,15 @@ public class SumOfSquareError<S extends SingleValuedPairs> extends DecomposableS
         {
             throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
         }
-        final MetadataFactory f = getDataFactory().getMetadataFactory();
-        MetricOutputMetadata meta = f.getOutputMetadata( output.getMetadata().getSampleSize(),
-                                                         output.getMetadata().getDimension(),
-                                                         output.getMetadata().getInputDimension(),
-                                                         this.getID(),
-                                                         output.getMetadata().getMetricComponentID(),
-                                                         output.getMetadata().getIdentifier(),
-                                                         output.getMetadata().getTimeWindow() );
-        return this.getDataFactory().ofDoubleScoreOutput( output.getData(), meta );
+
+        MetricOutputMetadata meta = MetadataFactory.getOutputMetadata( output.getMetadata().getSampleSize(),
+                                                                       output.getMetadata().getDimension(),
+                                                                       output.getMetadata().getInputDimension(),
+                                                                       this.getID(),
+                                                                       output.getMetadata().getMetricComponentID(),
+                                                                       output.getMetadata().getIdentifier(),
+                                                                       output.getMetadata().getTimeWindow() );
+        return DataFactory.ofDoubleScoreOutput( output.getData(), meta );
     }
 
     @Override
@@ -121,27 +122,29 @@ public class SumOfSquareError<S extends SingleValuedPairs> extends DecomposableS
     protected MetricOutputMetadata getMetadata( SingleValuedPairs input )
     {
         final Metadata metIn = input.getMetadata();
-        final MetadataFactory f = getDataFactory().getMetadataFactory();
+
         DatasetIdentifier identifier = metIn.getIdentifier();
         // Add the baseline scenario identifier
         if ( input.hasBaseline() )
         {
-            identifier = f.getDatasetIdentifier( identifier,
-                                                 input.getMetadataForBaseline().getIdentifier().getScenarioID() );
+            identifier = MetadataFactory.getDatasetIdentifier( identifier,
+                                                               input.getMetadataForBaseline()
+                                                                    .getIdentifier()
+                                                                    .getScenarioID() );
         }
         // Set the output dimension
-        Dimension outputDimension = f.getDimension();
+        Dimension outputDimension = MetadataFactory.getDimension();
         if ( hasRealUnits() )
         {
             outputDimension = metIn.getDimension();
         }
-        return f.getOutputMetadata( input.getRawData().size(),
-                                    outputDimension,
-                                    metIn.getDimension(),
-                                    this.getID(),
-                                    MetricConstants.MAIN,
-                                    identifier,
-                                    metIn.getTimeWindow() );
+        return MetadataFactory.getOutputMetadata( input.getRawData().size(),
+                                                  outputDimension,
+                                                  metIn.getDimension(),
+                                                  this.getID(),
+                                                  MetricConstants.MAIN,
+                                                  identifier,
+                                                  metIn.getTimeWindow() );
     }
 
     /**

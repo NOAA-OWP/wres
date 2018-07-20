@@ -4,6 +4,7 @@ import java.util.Objects;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.DatasetIdentifier;
+import wres.datamodel.DefaultSlicer;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
@@ -62,8 +63,9 @@ public class MeanSquareErrorSkillScore<S extends SingleValuedPairs> extends Deco
             }
             else
             {
-                DataFactory d = getDataFactory();
-                double meanLeft = FunctionFactory.mean().applyAsDouble( d.vectorOf( d.getSlicer().getLeftSide( s ) ) );
+                double meanLeft =
+                        FunctionFactory.mean().applyAsDouble( DataFactory.vectorOf( DefaultSlicer.getInstance()
+                                                                                                 .getLeftSide( s ) ) );
                 for ( PairOfDoubles next : s.getRawData() )
                 {
                     denominator += Math.pow( next.getItemOne() - meanLeft, 2 );
@@ -80,7 +82,7 @@ public class MeanSquareErrorSkillScore<S extends SingleValuedPairs> extends Deco
         }
         final MetricOutputMetadata metOut =
                 this.getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, baselineIdentifier );
-        return this.getDataFactory().ofDoubleScoreOutput( result, metOut );
+        return DataFactory.ofDoubleScoreOutput( result, metOut );
     }
 
     @Override
@@ -129,7 +131,7 @@ public class MeanSquareErrorSkillScore<S extends SingleValuedPairs> extends Deco
             throws MetricParameterException
     {
         super( builder );
-        sse = MetricFactory.getInstance( this.getDataFactory() ).ofSumOfSquareError();
+        sse = MetricFactory.getInstance().ofSumOfSquareError();
     }
 
 }

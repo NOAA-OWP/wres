@@ -12,7 +12,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
-import wres.datamodel.metadata.DefaultMetadataFactory;
+import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.MetricOutputException;
 import wres.datamodel.outputs.ScoreOutput;
@@ -153,7 +153,7 @@ abstract class SafeScoreOutput<T,U extends ScoreOutput<T,?>> implements ScoreOut
     public U getComponent( MetricConstants component )
     {
         return getScoreOutput( output.get( component ),
-                               DefaultMetadataFactory.getInstance().getOutputMetadata( meta, component ) );
+                               MetadataFactory.getOutputMetadata( meta, component ) );
     }        
 
     @Override

@@ -15,7 +15,6 @@ import java.util.Map.Entry;
 import java.util.function.BiPredicate;
 
 import org.apache.commons.lang3.tuple.Pair;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -31,7 +30,6 @@ import wres.config.generated.ThresholdOperator;
 import wres.config.generated.ThresholdType;
 import wres.config.generated.ThresholdsConfig;
 import wres.datamodel.DataFactory;
-import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MatrixOfDoubles;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
@@ -69,53 +67,41 @@ public final class MetricProcessorByTimeEnsemblePairsTest
     public final ExpectedException exception = ExpectedException.none();
 
     /**
-     * Instance of a data factory.
-     */
-
-    private DataFactory dataFac;
-
-    @Before
-    public void setupBeforeEachTest()
-    {
-        dataFac = DefaultDataFactory.getInstance();
-    }
-
-    /**
      * Tests the {@link MetricProcessorByTimeEnsemblePairs#getFilterForEnsemblePairs(wres.datamodel.thresholds.Threshold)}.
      */
 
     @Test
     public void testGetFilterForEnsemblePairs()
     {
-        OneOrTwoDoubles doubles = dataFac.ofOneOrTwoDoubles( 1.0 );
+        OneOrTwoDoubles doubles = DataFactory.ofOneOrTwoDoubles( 1.0 );
         Operator condition = Operator.GREATER;
-        assertNotNull( MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( dataFac.ofThreshold( doubles,
-                                                                                                          condition,
-                                                                                                          ThresholdDataType.LEFT ) ) );
-        assertNotNull( MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( dataFac.ofThreshold( doubles,
-                                                                                                          condition,
-                                                                                                          ThresholdDataType.RIGHT ) ) );
-        assertNotNull( MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( dataFac.ofThreshold( doubles,
-                                                                                                          condition,
-                                                                                                          ThresholdDataType.LEFT_AND_RIGHT ) ) );
-        assertNotNull( MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( dataFac.ofThreshold( doubles,
-                                                                                                          condition,
-                                                                                                          ThresholdDataType.LEFT_AND_ANY_RIGHT ) ) );
-        assertNotNull( MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( dataFac.ofThreshold( doubles,
-                                                                                                          condition,
-                                                                                                          ThresholdDataType.LEFT_AND_RIGHT_MEAN ) ) );
-        assertNotNull( MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( dataFac.ofThreshold( doubles,
-                                                                                                          condition,
-                                                                                                          ThresholdDataType.ANY_RIGHT ) ) );
-        assertNotNull( MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( dataFac.ofThreshold( doubles,
-                                                                                                          condition,
-                                                                                                          ThresholdDataType.RIGHT_MEAN ) ) );
+        assertNotNull( MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( DataFactory.ofThreshold( doubles,
+                                                                                                              condition,
+                                                                                                              ThresholdDataType.LEFT ) ) );
+        assertNotNull( MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( DataFactory.ofThreshold( doubles,
+                                                                                                              condition,
+                                                                                                              ThresholdDataType.RIGHT ) ) );
+        assertNotNull( MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( DataFactory.ofThreshold( doubles,
+                                                                                                              condition,
+                                                                                                              ThresholdDataType.LEFT_AND_RIGHT ) ) );
+        assertNotNull( MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( DataFactory.ofThreshold( doubles,
+                                                                                                              condition,
+                                                                                                              ThresholdDataType.LEFT_AND_ANY_RIGHT ) ) );
+        assertNotNull( MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( DataFactory.ofThreshold( doubles,
+                                                                                                              condition,
+                                                                                                              ThresholdDataType.LEFT_AND_RIGHT_MEAN ) ) );
+        assertNotNull( MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( DataFactory.ofThreshold( doubles,
+                                                                                                              condition,
+                                                                                                              ThresholdDataType.ANY_RIGHT ) ) );
+        assertNotNull( MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( DataFactory.ofThreshold( doubles,
+                                                                                                              condition,
+                                                                                                              ThresholdDataType.RIGHT_MEAN ) ) );
         // Check that average works        
-        PairOfDoubleAndVectorOfDoubles pair = dataFac.pairOf( 1.0, new double[] { 1.5, 2.0 } );
+        PairOfDoubleAndVectorOfDoubles pair = DataFactory.pairOf( 1.0, new double[] { 1.5, 2.0 } );
 
-        assertTrue( MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( dataFac.ofThreshold( doubles,
-                                                                                                       condition,
-                                                                                                       ThresholdDataType.RIGHT_MEAN ) )
+        assertTrue( MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( DataFactory.ofThreshold( doubles,
+                                                                                                           condition,
+                                                                                                           ThresholdDataType.RIGHT_MEAN ) )
                                                       .test( pair ) );
     }
 
@@ -136,7 +122,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
     {
         String configPath = "testinput/metricProcessorEnsemblePairsByTimeTest/testApplyWithoutThresholds.xml";
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-        MetricProcessorByTime<EnsemblePairs> processor = MetricFactory.getInstance( dataFac )
+        MetricProcessorByTime<EnsemblePairs> processor = MetricFactory.getInstance()
                                                                       .ofMetricProcessorByTimeEnsemblePairs( config,
                                                                                                              null );
         MetricOutputForProjectByTimeAndThreshold results =
@@ -195,7 +181,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processor =
-                MetricFactory.getInstance( dataFac )
+                MetricFactory.getInstance()
                              .ofMetricProcessorByTimeEnsemblePairs( config,
                                                                     MetricOutputGroup.set() );
         processor.apply( MetricTestDataFactory.getEnsemblePairsOne() );
@@ -412,7 +398,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                    null,
                                    null );
 
-        MetricProcessorByTime<EnsemblePairs> processor = MetricFactory.getInstance( dataFac )
+        MetricProcessorByTime<EnsemblePairs> processor = MetricFactory.getInstance()
                                                                       .ofMetricProcessorByTimeEnsemblePairs( mockedConfig,
                                                                                                              Collections.singleton( MetricOutputGroup.DOUBLE_SCORE ) );
 
@@ -451,7 +437,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processor =
-                MetricFactory.getInstance( dataFac )
+                MetricFactory.getInstance()
                              .ofMetricProcessorByTimeEnsemblePairs( config,
                                                                     Collections.singleton( MetricOutputGroup.DOUBLE_SCORE ) );
         processor.apply( MetricTestDataFactory.getEnsemblePairsOne() );
@@ -648,7 +634,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         exception.expect( NullPointerException.class );
         exception.expectMessage( "Expected non-null input to the metric processor." );
         MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processor =
-                MetricFactory.getInstance( dataFac )
+                MetricFactory.getInstance()
                              .ofMetricProcessorByTimeEnsemblePairs( new ProjectConfig( null,
                                                                                        null,
                                                                                        null,
@@ -671,14 +657,14 @@ public final class MetricProcessorByTimeEnsemblePairsTest
     {
         exception.expect( MetricConfigException.class );
         exception.expectMessage( "Cannot configure 'BRIER SCORE' without thresholds to define the events: correct the "
-                + "configuration labelled 'null'." );
+                                 + "configuration labelled 'null'." );
 
         MetricsConfig metrics =
                 new MetricsConfig( null,
                                    Arrays.asList( new MetricConfig( null, null, MetricConfigName.BRIER_SCORE ) ),
                                    null );
         MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processor =
-                MetricFactory.getInstance( dataFac )
+                MetricFactory.getInstance()
                              .ofMetricProcessorByTimeEnsemblePairs( new ProjectConfig( null,
                                                                                        null,
                                                                                        Arrays.asList( metrics ),
@@ -725,7 +711,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
 
 
         MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processor =
-                MetricFactory.getInstance( dataFac )
+                MetricFactory.getInstance()
                              .ofMetricProcessorByTimeEnsemblePairs( mockedConfig,
                                                                     Collections.singleton( MetricOutputGroup.DOUBLE_SCORE ) );
         processor.apply( MetricTestDataFactory.getEnsemblePairsThree() );
@@ -743,7 +729,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
     {
         exception.expect( MetricConfigException.class );
         exception.expectMessage( "Specify a non-null baseline from which to generate the 'CONTINUOUS RANKED "
-                + "PROBABILITY SKILL SCORE'." );
+                                 + "PROBABILITY SKILL SCORE'." );
 
         // Mock configuration
         List<MetricConfig> metrics = new ArrayList<>();
@@ -758,7 +744,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                    null );
 
         MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processor =
-                MetricFactory.getInstance( dataFac )
+                MetricFactory.getInstance()
                              .ofMetricProcessorByTimeEnsemblePairs( mockedConfig,
                                                                     Collections.singleton( MetricOutputGroup.DOUBLE_SCORE ) );
         processor.apply( MetricTestDataFactory.getEnsemblePairsThree() );
@@ -776,8 +762,8 @@ public final class MetricProcessorByTimeEnsemblePairsTest
     {
         exception.expect( MetricConfigException.class );
         exception.expectMessage( "In order to configure dichotomous metrics for ensemble inputs, every metric group "
-                + "that contains dichotomous metrics must also contain thresholds for classifying the forecast "
-                + "probabilities into occurrences and non-occurrences." );
+                                 + "that contains dichotomous metrics must also contain thresholds for classifying the forecast "
+                                 + "probabilities into occurrences and non-occurrences." );
 
         // Mock configuration
         List<MetricConfig> metrics = new ArrayList<>();
@@ -798,7 +784,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                    null,
                                    null );
 
-        MetricFactory.getInstance( dataFac )
+        MetricFactory.getInstance()
                      .ofMetricProcessorByTimeEnsemblePairs( mockedConfig,
                                                             Collections.singleton( MetricOutputGroup.DOUBLE_SCORE ) );
     }
@@ -815,8 +801,8 @@ public final class MetricProcessorByTimeEnsemblePairsTest
     {
         exception.expect( MetricConfigException.class );
         exception.expectMessage( "In order to configure multicategory metrics for ensemble inputs, every metric "
-                + "group that contains multicategory metrics must also contain thresholds for classifying the "
-                + "forecast probabilities into occurrences and non-occurrences." );
+                                 + "group that contains multicategory metrics must also contain thresholds for classifying the "
+                                 + "forecast probabilities into occurrences and non-occurrences." );
 
         // Mock configuration
         List<MetricConfig> metrics = new ArrayList<>();
@@ -837,7 +823,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                    null,
                                    null );
 
-        MetricFactory.getInstance( dataFac )
+        MetricFactory.getInstance()
                      .ofMetricProcessorByTimeEnsemblePairs( mockedConfig,
                                                             Collections.singleton( MetricOutputGroup.DOUBLE_SCORE ) );
     }
@@ -857,7 +843,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processor =
-                MetricFactory.getInstance( dataFac )
+                MetricFactory.getInstance()
                              .ofMetricProcessorByTimeEnsemblePairs( config,
                                                                     MetricOutputGroup.set() );
         //Check for the expected number of metrics
@@ -888,7 +874,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processor =
-                MetricFactory.getInstance( dataFac )
+                MetricFactory.getInstance()
                              .ofMetricProcessorByTimeEnsemblePairs( config,
                                                                     MetricOutputGroup.set() );
         processor.apply( MetricTestDataFactory.getEnsemblePairsOneWithMissings() );
@@ -1089,7 +1075,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processor =
-                MetricFactory.getInstance( dataFac )
+                MetricFactory.getInstance()
                              .ofMetricProcessorByTimeEnsemblePairs( config, MetricOutputGroup.set() );
         processor.apply( MetricTestDataFactory.getEnsemblePairsTwo() );
         //Obtain the results
@@ -1103,15 +1089,15 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                          ReferenceTime.VALID_TIME,
                                                          Duration.ofHours( 24 ) );
         // Exceeds 50.0 with occurrences > 0.05
-        MatrixOfDoubles expectedFirst = dataFac.matrixOf( new double[][] { { 40.0, 32.0 }, { 2.0, 91.0 } } );
+        MatrixOfDoubles expectedFirst = DataFactory.matrixOf( new double[][] { { 40.0, 32.0 }, { 2.0, 91.0 } } );
         Pair<TimeWindow, OneOrTwoThresholds> first =
                 Pair.of( expectedWindow,
-                         OneOrTwoThresholds.of( dataFac.ofThreshold( dataFac.ofOneOrTwoDoubles( 50.0 ),
-                                                                     Operator.GREATER,
-                                                                     ThresholdDataType.LEFT ),
-                                                dataFac.ofProbabilityThreshold( dataFac.ofOneOrTwoDoubles( 0.05 ),
-                                                                                Operator.GREATER,
-                                                                                ThresholdDataType.LEFT ) ) );
+                         OneOrTwoThresholds.of( DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( 50.0 ),
+                                                                         Operator.GREATER,
+                                                                         ThresholdDataType.LEFT ),
+                                                DataFactory.ofProbabilityThreshold( DataFactory.ofOneOrTwoDoubles( 0.05 ),
+                                                                                    Operator.GREATER,
+                                                                                    ThresholdDataType.LEFT ) ) );
 
         assertTrue( "Unexpected results for the contingency table.",
                     expectedFirst.equals( results.get( MetricConstants.CONTINGENCY_TABLE )
@@ -1119,15 +1105,15 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                  .getData() ) );
 
         // Exceeds 50.0 with occurrences > 0.25
-        MatrixOfDoubles expectedSecond = dataFac.matrixOf( new double[][] { { 39.0, 17.0 }, { 3.0, 106.0 } } );
+        MatrixOfDoubles expectedSecond = DataFactory.matrixOf( new double[][] { { 39.0, 17.0 }, { 3.0, 106.0 } } );
         Pair<TimeWindow, OneOrTwoThresholds> second =
                 Pair.of( expectedWindow,
-                         OneOrTwoThresholds.of( dataFac.ofThreshold( dataFac.ofOneOrTwoDoubles( 50.0 ),
-                                                                     Operator.GREATER,
-                                                                     ThresholdDataType.LEFT ),
-                                                dataFac.ofProbabilityThreshold( dataFac.ofOneOrTwoDoubles( 0.25 ),
-                                                                                Operator.GREATER,
-                                                                                ThresholdDataType.LEFT ) ) );
+                         OneOrTwoThresholds.of( DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( 50.0 ),
+                                                                         Operator.GREATER,
+                                                                         ThresholdDataType.LEFT ),
+                                                DataFactory.ofProbabilityThreshold( DataFactory.ofOneOrTwoDoubles( 0.25 ),
+                                                                                    Operator.GREATER,
+                                                                                    ThresholdDataType.LEFT ) ) );
 
         assertTrue( "Unexpected results for the contingency table.",
                     expectedSecond.equals( results.get( MetricConstants.CONTINGENCY_TABLE )
@@ -1135,15 +1121,15 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                   .getData() ) );
 
         // Exceeds 50.0 with occurrences > 0.5
-        MatrixOfDoubles expectedThird = dataFac.matrixOf( new double[][] { { 39.0, 15.0 }, { 3.0, 108.0 } } );
+        MatrixOfDoubles expectedThird = DataFactory.matrixOf( new double[][] { { 39.0, 15.0 }, { 3.0, 108.0 } } );
         Pair<TimeWindow, OneOrTwoThresholds> third =
                 Pair.of( expectedWindow,
-                         OneOrTwoThresholds.of( dataFac.ofThreshold( dataFac.ofOneOrTwoDoubles( 50.0 ),
-                                                                     Operator.GREATER,
-                                                                     ThresholdDataType.LEFT ),
-                                                dataFac.ofProbabilityThreshold( dataFac.ofOneOrTwoDoubles( 0.5 ),
-                                                                                Operator.GREATER,
-                                                                                ThresholdDataType.LEFT ) ) );
+                         OneOrTwoThresholds.of( DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( 50.0 ),
+                                                                         Operator.GREATER,
+                                                                         ThresholdDataType.LEFT ),
+                                                DataFactory.ofProbabilityThreshold( DataFactory.ofOneOrTwoDoubles( 0.5 ),
+                                                                                    Operator.GREATER,
+                                                                                    ThresholdDataType.LEFT ) ) );
 
         assertTrue( "Unexpected results for the contingency table.",
                     expectedThird.equals( results.get( MetricConstants.CONTINGENCY_TABLE )
@@ -1151,15 +1137,15 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                  .getData() ) );
 
         // Exceeds 50.0 with occurrences > 0.75
-        MatrixOfDoubles expectedFourth = dataFac.matrixOf( new double[][] { { 37.0, 14.0 }, { 5.0, 109.0 } } );
+        MatrixOfDoubles expectedFourth = DataFactory.matrixOf( new double[][] { { 37.0, 14.0 }, { 5.0, 109.0 } } );
         Pair<TimeWindow, OneOrTwoThresholds> fourth =
                 Pair.of( expectedWindow,
-                         OneOrTwoThresholds.of( dataFac.ofThreshold( dataFac.ofOneOrTwoDoubles( 50.0 ),
-                                                                     Operator.GREATER,
-                                                                     ThresholdDataType.LEFT ),
-                                                dataFac.ofProbabilityThreshold( dataFac.ofOneOrTwoDoubles( 0.75 ),
-                                                                                Operator.GREATER,
-                                                                                ThresholdDataType.LEFT ) ) );
+                         OneOrTwoThresholds.of( DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( 50.0 ),
+                                                                         Operator.GREATER,
+                                                                         ThresholdDataType.LEFT ),
+                                                DataFactory.ofProbabilityThreshold( DataFactory.ofOneOrTwoDoubles( 0.75 ),
+                                                                                    Operator.GREATER,
+                                                                                    ThresholdDataType.LEFT ) ) );
 
         assertTrue( "Unexpected results for the contingency table.",
                     expectedFourth.equals( results.get( MetricConstants.CONTINGENCY_TABLE )
@@ -1167,15 +1153,15 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                   .getData() ) );
 
         // Exceeds 50.0 with occurrences > 0.9
-        MatrixOfDoubles expectedFifth = dataFac.matrixOf( new double[][] { { 37.0, 11.0 }, { 5.0, 112.0 } } );
+        MatrixOfDoubles expectedFifth = DataFactory.matrixOf( new double[][] { { 37.0, 11.0 }, { 5.0, 112.0 } } );
         Pair<TimeWindow, OneOrTwoThresholds> fifth =
                 Pair.of( expectedWindow,
-                         OneOrTwoThresholds.of( dataFac.ofThreshold( dataFac.ofOneOrTwoDoubles( 50.0 ),
-                                                                     Operator.GREATER,
-                                                                     ThresholdDataType.LEFT ),
-                                                dataFac.ofProbabilityThreshold( dataFac.ofOneOrTwoDoubles( 0.9 ),
-                                                                                Operator.GREATER,
-                                                                                ThresholdDataType.LEFT ) ) );
+                         OneOrTwoThresholds.of( DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( 50.0 ),
+                                                                         Operator.GREATER,
+                                                                         ThresholdDataType.LEFT ),
+                                                DataFactory.ofProbabilityThreshold( DataFactory.ofOneOrTwoDoubles( 0.9 ),
+                                                                                    Operator.GREATER,
+                                                                                    ThresholdDataType.LEFT ) ) );
 
         assertTrue( "Unexpected results for the contingency table.",
                     expectedFifth.equals( results.get( MetricConstants.CONTINGENCY_TABLE )
@@ -1183,15 +1169,15 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                  .getData() ) );
 
         // Exceeds 50.0 with occurrences > 0.95
-        MatrixOfDoubles expectedSixth = dataFac.matrixOf( new double[][] { { 36.0, 10.0 }, { 6.0, 113.0 } } );
+        MatrixOfDoubles expectedSixth = DataFactory.matrixOf( new double[][] { { 36.0, 10.0 }, { 6.0, 113.0 } } );
         Pair<TimeWindow, OneOrTwoThresholds> sixth =
                 Pair.of( expectedWindow,
-                         OneOrTwoThresholds.of( dataFac.ofThreshold( dataFac.ofOneOrTwoDoubles( 50.0 ),
-                                                                     Operator.GREATER,
-                                                                     ThresholdDataType.LEFT ),
-                                                dataFac.ofProbabilityThreshold( dataFac.ofOneOrTwoDoubles( 0.95 ),
-                                                                                Operator.GREATER,
-                                                                                ThresholdDataType.LEFT ) ) );
+                         OneOrTwoThresholds.of( DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( 50.0 ),
+                                                                         Operator.GREATER,
+                                                                         ThresholdDataType.LEFT ),
+                                                DataFactory.ofProbabilityThreshold( DataFactory.ofOneOrTwoDoubles( 0.95 ),
+                                                                                    Operator.GREATER,
+                                                                                    ThresholdDataType.LEFT ) ) );
 
         assertTrue( "Unexpected results for the contingency table.",
                     expectedSixth.equals( results.get( MetricConstants.CONTINGENCY_TABLE )
@@ -1220,7 +1206,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processor =
-                MetricFactory.getInstance( dataFac )
+                MetricFactory.getInstance()
                              .ofMetricProcessorByTimeEnsemblePairs( config, MetricOutputGroup.set() );
         processor.apply( MetricTestDataFactory.getEnsemblePairsFour() );
 
