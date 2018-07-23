@@ -15,9 +15,9 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.DataFactory;
-import wres.datamodel.DefaultSlicer;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
+import wres.datamodel.Slicer;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
@@ -300,10 +300,10 @@ public final class RelativeOperatingCharacteristicScoreTest
                                                        ThresholdDataType.LEFT );
 
         BiFunction<PairOfDoubleAndVectorOfDoubles, Threshold, PairOfDoubles> mapper =
-                DefaultSlicer.getInstance()::toDiscreteProbabilityPair;
+                Slicer::toDiscreteProbabilityPair;
 
         DiscreteProbabilityPairs transPairs =
-                DefaultSlicer.getInstance().toDiscreteProbabilityPairs( pairs, threshold, mapper );
+                Slicer.toDiscreteProbabilityPairs( pairs, threshold, mapper );
 
         assertTrue( rocScore.apply( transPairs )
                             .getMetadata()

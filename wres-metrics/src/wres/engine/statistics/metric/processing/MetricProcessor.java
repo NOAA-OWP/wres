@@ -15,10 +15,10 @@ import org.slf4j.LoggerFactory;
 import wres.config.MetricConfigException;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
-import wres.datamodel.DefaultSlicer;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
+import wres.datamodel.Slicer;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
@@ -288,8 +288,8 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
     public boolean hasThresholdMetrics()
     {
         return this.hasMetrics( MetricInputGroup.DISCRETE_PROBABILITY )
-                || this.hasMetrics( MetricInputGroup.MULTICATEGORY )
-                || this.hasMetrics( MetricInputGroup.DICHOTOMOUS );
+               || this.hasMetrics( MetricInputGroup.MULTICATEGORY )
+               || this.hasMetrics( MetricInputGroup.DICHOTOMOUS );
     }
 
     /**
@@ -347,9 +347,9 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
     {
 
         Objects.requireNonNull( config, MetricConfigHelper.NULL_CONFIGURATION_ERROR );
-        
+
         Objects.requireNonNull( thresholdExecutor, "Specify a non-null threshold executor service." );
-        
+
         Objects.requireNonNull( metricExecutor, "Specify a non-null metric executor service." );
 
         this.metrics = MetricConfigHelper.getMetricsFromConfig( config );
@@ -545,9 +545,9 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
                                                   + "the input." );
         }
 
-        return DefaultSlicer.getInstance().getQuantileFromProbability( threshold,
-                                                                   sorted,
-                                                                   DECIMALS );
+        return Slicer.getQuantileFromProbability( threshold,
+                                                  sorted,
+                                                  DECIMALS );
     }
 
 }

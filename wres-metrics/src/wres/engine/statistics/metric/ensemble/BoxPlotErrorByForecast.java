@@ -5,9 +5,9 @@ import java.util.Objects;
 import java.util.function.ToDoubleFunction;
 
 import wres.datamodel.DataFactory;
-import wres.datamodel.DefaultSlicer;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
+import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
@@ -66,7 +66,7 @@ public class BoxPlotErrorByForecast extends BoxPlot
 
         //Compute the quantiles
         double[] box =
-                Arrays.stream( probs ).map( DefaultSlicer.getInstance().getQuantileFunction( sortedErrors ) ).toArray();
+                Arrays.stream( probs ).map( Slicer.getQuantileFunction( sortedErrors ) ).toArray();
         return DataFactory.pairOf( domainMapper.applyAsDouble( DataFactory.vectorOf( sorted ) ), box );
     }
 
@@ -152,7 +152,7 @@ public class BoxPlotErrorByForecast extends BoxPlot
                 break;
             case ENSEMBLE_MEDIAN:
                 domainMapper =
-                        a -> DefaultSlicer.getInstance().getQuantileFunction( a.getDoubles() ).applyAsDouble( 0.5 );
+                        a -> Slicer.getQuantileFunction( a.getDoubles() ).applyAsDouble( 0.5 );
                 break;
             default:
                 throw new MetricParameterException( "Unsupported dimension for the domain axis of the box plot: "

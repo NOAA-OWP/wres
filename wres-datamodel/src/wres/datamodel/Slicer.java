@@ -1,17 +1,25 @@
 package wres.datamodel;
 
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.DoublePredicate;
 import java.util.function.DoubleUnaryOperator;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.ToDoubleFunction;
+import java.util.stream.Collectors;
+
+import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
@@ -19,13 +27,21 @@ import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.PairOfBooleans;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
+import wres.datamodel.inputs.pairs.SafeTimeSeriesOfEnsemblePairs.SafeTimeSeriesOfEnsemblePairsBuilder;
+import wres.datamodel.inputs.pairs.SafeTimeSeriesOfSingleValuedPairs.SafeTimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairs;
+import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairsBuilder;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
+import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairsBuilder;
+import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.ScoreOutput;
+import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
+import wres.datamodel.thresholds.ThresholdConstants.ThresholdType;
 import wres.datamodel.time.Event;
+import wres.datamodel.time.SafeTimeSeries;
 import wres.datamodel.time.TimeSeries;
 
 /**
@@ -34,8 +50,25 @@ import wres.datamodel.time.TimeSeries;
  * @author james.brown@hydrosolved.com
  */
 
-public interface Slicer
+public final class Slicer
 {
+
+    /**
+     * Null input error message.
+     */
+    private static final String NULL_INPUT_EXCEPTION = "Specify a non-null input.";
+
+    /**
+     * Null mapper function error message.
+     */
+
+    private static final String NULL_MAPPER_EXCEPTION = "Specify a non-null function to map the input to an output.";
+
+    /**
+     * Failure to supply a non-null predicate.
+     */
+
+    private static final String NULL_PREDICATE_EXCEPTION = "Specify a non-null predicate.";
 
     /**
      * <p>Composes the input predicate as applying to the left side of a pair. 
@@ -47,7 +80,7 @@ public interface Slicer
      * @throws NullPointerException if the input is null
      */
 
-    static Predicate<PairOfDoubles> left( DoublePredicate predicate )
+    public static Predicate<PairOfDoubles> left( DoublePredicate predicate )
     {
         Objects.requireNonNull( predicate, "Specify non-null input when slicing by left." );
 
@@ -64,7 +97,7 @@ public interface Slicer
      * @throws NullPointerException if the input is null
      */
 
-    static Predicate<PairOfDoubles> right( DoublePredicate predicate )
+    public static Predicate<PairOfDoubles> right( DoublePredicate predicate )
     {
         Objects.requireNonNull( predicate, "Specify non-null input when slicing by right." );
 
@@ -81,7 +114,7 @@ public interface Slicer
      * @throws NullPointerException if the input is null
      */
 
-    static Predicate<PairOfDoubles> leftAndRight( DoublePredicate predicate )
+    public static Predicate<PairOfDoubles> leftAndRight( DoublePredicate predicate )
     {
         Objects.requireNonNull( predicate, "Specify non-null input when slicing by left and right." );
 
@@ -98,7 +131,7 @@ public interface Slicer
      * @throws NullPointerException if the input is null
      */
 
-    static Predicate<PairOfDoubles> leftOrRight( DoublePredicate predicate )
+    public static Predicate<PairOfDoubles> leftOrRight( DoublePredicate predicate )
     {
         Objects.requireNonNull( predicate, "Specify non-null input when slicing by left or right." );
 
@@ -115,7 +148,7 @@ public interface Slicer
      * @throws NullPointerException if the input is null
      */
 
-    static Predicate<PairOfDoubleAndVectorOfDoubles> leftVector( DoublePredicate predicate )
+    public static Predicate<PairOfDoubleAndVectorOfDoubles> leftVector( DoublePredicate predicate )
     {
         Objects.requireNonNull( predicate, "Specify non-null input when slicing by left." );
 
@@ -132,7 +165,7 @@ public interface Slicer
      * @throws NullPointerException if the input is null
      */
 
-    static Predicate<PairOfDoubleAndVectorOfDoubles> allOfRight( DoublePredicate predicate )
+    public static Predicate<PairOfDoubleAndVectorOfDoubles> allOfRight( DoublePredicate predicate )
     {
         Objects.requireNonNull( predicate, "Specify non-null input when slicing by all of right." );
 
@@ -149,7 +182,7 @@ public interface Slicer
      * @throws NullPointerException if the input is null
      */
 
-    static Predicate<PairOfDoubleAndVectorOfDoubles> anyOfRight( DoublePredicate predicate )
+    public static Predicate<PairOfDoubleAndVectorOfDoubles> anyOfRight( DoublePredicate predicate )
     {
         Objects.requireNonNull( predicate, "Specify non-null input when slicing by any of right." );
 
@@ -166,7 +199,7 @@ public interface Slicer
      * @throws NullPointerException if the input is null
      */
 
-    static Predicate<PairOfDoubleAndVectorOfDoubles> leftAndAllOfRight( DoublePredicate predicate )
+    public static Predicate<PairOfDoubleAndVectorOfDoubles> leftAndAllOfRight( DoublePredicate predicate )
     {
         Objects.requireNonNull( predicate, "Specify non-null input when slicing by left and all of right." );
 
@@ -183,7 +216,7 @@ public interface Slicer
      * @throws NullPointerException if the input is null
      */
 
-    static Predicate<PairOfDoubleAndVectorOfDoubles> leftAndAnyOfRight( DoublePredicate predicate )
+    public static Predicate<PairOfDoubleAndVectorOfDoubles> leftAndAnyOfRight( DoublePredicate predicate )
     {
         Objects.requireNonNull( predicate, "Specify non-null input when slicing by left and any of right." );
 
@@ -201,8 +234,8 @@ public interface Slicer
      * @throws NullPointerException if the input is null
      */
 
-    static Predicate<PairOfDoubleAndVectorOfDoubles> right( DoublePredicate predicate,
-                                                            ToDoubleFunction<double[]> transformer )
+    public static Predicate<PairOfDoubleAndVectorOfDoubles> right( DoublePredicate predicate,
+                                                                   ToDoubleFunction<double[]> transformer )
     {
         Objects.requireNonNull( predicate, "Specify non-null input when slicing by right." );
 
@@ -223,8 +256,8 @@ public interface Slicer
      * @throws NullPointerException if the input is null
      */
 
-    static Predicate<PairOfDoubleAndVectorOfDoubles> leftAndRight( DoublePredicate predicate,
-                                                                   ToDoubleFunction<double[]> transformer )
+    public static Predicate<PairOfDoubleAndVectorOfDoubles> leftAndRight( DoublePredicate predicate,
+                                                                          ToDoubleFunction<double[]> transformer )
     {
         Objects.requireNonNull( predicate, "Specify non-null input when slicing by left and right." );
 
@@ -244,7 +277,7 @@ public interface Slicer
      * @throws NullPointerException if the input is null
      */
 
-    static Predicate<TimeSeries<PairOfDoubles>>
+    public static Predicate<TimeSeries<PairOfDoubles>>
             anyOfLeftInTimeSeriesOfSingleValuedPairs( DoublePredicate predicate )
     {
         Objects.requireNonNull( predicate, "Specify non-null input when slicing a time-series by any of left." );
@@ -275,7 +308,7 @@ public interface Slicer
      * @throws NullPointerException if the input is null
      */
 
-    static Predicate<TimeSeries<PairOfDoubles>>
+    public static Predicate<TimeSeries<PairOfDoubles>>
             anyOfRightInTimeSeriesOfSingleValuedPairs( DoublePredicate predicate )
     {
         Objects.requireNonNull( predicate, "Specify non-null input when slicing a time-series by any of right." );
@@ -307,10 +340,11 @@ public interface Slicer
      * @throws NullPointerException if the input is null
      */
 
-    static Predicate<TimeSeries<PairOfDoubles>>
+    public static Predicate<TimeSeries<PairOfDoubles>>
             anyOfLeftAndAnyOfRightInTimeSeriesOfSingleValuedPairs( DoublePredicate predicate )
     {
-        Objects.requireNonNull( predicate, "Specify non-null input when slicing a time-series by any of left"
+        Objects.requireNonNull( predicate,
+                                "Specify non-null input when slicing a time-series by any of left"
                                            + "and any of right." );
 
         // Compose independently
@@ -328,7 +362,7 @@ public interface Slicer
      * @throws NullPointerException if either input is null
      */
 
-    static boolean hasOneOrMoreOf( List<PairOfDoubles> pairs, DoublePredicate predicate )
+    public static boolean hasOneOrMoreOf( List<PairOfDoubles> pairs, DoublePredicate predicate )
     {
 
         Objects.requireNonNull( pairs, "Specify non-null pairs when checking for one or more of the input." );
@@ -356,7 +390,8 @@ public interface Slicer
      * @throws NullPointerException if either input is null
      */
 
-    static boolean hasOneOrMoreOfVectorRight( List<PairOfDoubleAndVectorOfDoubles> pairs, DoublePredicate predicate )
+    public static boolean hasOneOrMoreOfVectorRight( List<PairOfDoubleAndVectorOfDoubles> pairs,
+                                                     DoublePredicate predicate )
     {
         Objects.requireNonNull( pairs, "Specify non-null pairs when checking for one or more of the input." );
 
@@ -382,13 +417,13 @@ public interface Slicer
      * @throws NullPointerException if either input is null
      */
 
-    default Threshold getQuantileFromProbability( Threshold threshold, double[] sorted )
+    public static Threshold getQuantileFromProbability( Threshold threshold, double[] sorted )
     {
         Objects.requireNonNull( threshold, "Specify a non-null probability whose quantile value is required." );
 
         Objects.requireNonNull( sorted, "Specify a non-null array of sorted values to determine the quantile." );
 
-        return this.getQuantileFromProbability( threshold, sorted, null );
+        return Slicer.getQuantileFromProbability( threshold, sorted, null );
     }
 
     /**
@@ -399,35 +434,73 @@ public interface Slicer
      * @return a composed function
      */
 
-    Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubleAndVectorOfDoubles>
-            leftAndEachOfRight( DoublePredicate predicate );
-    
+    public static Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubleAndVectorOfDoubles>
+            leftAndEachOfRight( DoublePredicate predicate )
+    {
+        return pair -> {
+            PairOfDoubleAndVectorOfDoubles returnMe = null;
+
+            //Left meets condition
+            if ( predicate.test( pair.getItemOne() ) )
+            {
+                double[] filtered = Arrays.stream( pair.getItemTwo() )
+                                          .filter( predicate )
+                                          .toArray();
+
+                //One or more of right meets condition
+                if ( filtered.length > 0 )
+                {
+                    returnMe = DataFactory.pairOf( pair.getItemOne(), filtered );
+                }
+            }
+            return returnMe;
+        };
+    }
+
     /**
      * Returns the left side of a {@link SingleValuedPairs} as a primitive array of doubles.
      * 
      * @param input the input pairs
      * @return the left side
+     * @throws NullPointerException if the input is null
      */
 
-    double[] getLeftSide( SingleValuedPairs input );
+    public static double[] getLeftSide( SingleValuedPairs input )
+    {
+        Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
+
+        return input.getRawData().stream().mapToDouble( PairOfDoubles::getItemOne ).toArray();
+    }
 
     /**
      * Returns the right side of a {@link SingleValuedPairs} as a primitive array of doubles.
      * 
      * @param input the input pairs
      * @return the right side
+     * @throws NullPointerException if the input is null
      */
 
-    double[] getRightSide( SingleValuedPairs input );
+    public static double[] getRightSide( SingleValuedPairs input )
+    {
+        Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
+
+        return input.getRawData().stream().mapToDouble( PairOfDoubles::getItemTwo ).toArray();
+    }
 
     /**
      * Returns the left side of a {@link EnsemblePairs} as a primitive array of doubles.
      * 
      * @param input the input pairs
      * @return the left side
+     * @throws NullPointerException if the input is null
      */
 
-    double[] getLeftSide( EnsemblePairs input );
+    public static double[] getLeftSide( EnsemblePairs input )
+    {
+        Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
+
+        return input.getRawData().stream().mapToDouble( PairOfDoubleAndVectorOfDoubles::getItemOne ).toArray();
+    }
 
     /**
      * Returns the subset of pairs where the condition is met. Applies to both the main pairs and any baseline pairs.
@@ -439,9 +512,40 @@ public interface Slicer
      * @throws NullPointerException if either the input or condition is null
      */
 
-    SingleValuedPairs filter( SingleValuedPairs input,
-                              Predicate<PairOfDoubles> condition,
-                              DoublePredicate applyToClimatology );
+    public static SingleValuedPairs filter( SingleValuedPairs input,
+                                            Predicate<PairOfDoubles> condition,
+                                            DoublePredicate applyToClimatology )
+    {
+        Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
+
+        Objects.requireNonNull( condition, NULL_PREDICATE_EXCEPTION );
+
+        List<PairOfDoubles> mainPairs = input.getRawData();
+        List<PairOfDoubles> mainPairsSubset = mainPairs.stream().filter( condition ).collect( Collectors.toList() );
+
+        //Filter climatology as required
+        VectorOfDoubles climatology = input.getClimatology();
+        if ( input.hasClimatology() && Objects.nonNull( applyToClimatology ) )
+        {
+            climatology =
+                    Slicer.filter( input.getClimatology(), applyToClimatology );
+        }
+
+        //Filter baseline as required
+        if ( input.hasBaseline() )
+        {
+            List<PairOfDoubles> basePairs = input.getRawDataForBaseline();
+            List<PairOfDoubles> basePairsSubset = basePairs.stream().filter( condition ).collect( Collectors.toList() );
+
+            return DataFactory.ofSingleValuedPairs( mainPairsSubset,
+                                                    basePairsSubset,
+                                                    input.getMetadata(),
+                                                    input.getMetadataForBaseline(),
+                                                    climatology );
+        }
+
+        return DataFactory.ofSingleValuedPairs( mainPairsSubset, input.getMetadata(), climatology );
+    }
 
     /**
      * Returns the subset of pairs where the condition is met. Applies to both the main pairs and any baseline pairs.
@@ -453,9 +557,42 @@ public interface Slicer
      * @throws NullPointerException if either the input or condition is null
      */
 
-    EnsemblePairs filter( EnsemblePairs input,
-                          Predicate<PairOfDoubleAndVectorOfDoubles> condition,
-                          DoublePredicate applyToClimatology );
+    public static EnsemblePairs filter( EnsemblePairs input,
+                                        Predicate<PairOfDoubleAndVectorOfDoubles> condition,
+                                        DoublePredicate applyToClimatology )
+    {
+        Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
+
+        Objects.requireNonNull( condition, NULL_PREDICATE_EXCEPTION );
+
+        List<PairOfDoubleAndVectorOfDoubles> mainPairs = input.getRawData();
+        List<PairOfDoubleAndVectorOfDoubles> mainPairsSubset =
+                mainPairs.stream().filter( condition ).collect( Collectors.toList() );
+
+        //Filter climatology as required
+        VectorOfDoubles climatology = input.getClimatology();
+        if ( input.hasClimatology() && Objects.nonNull( applyToClimatology ) )
+        {
+            climatology =
+                    Slicer.filter( input.getClimatology(), applyToClimatology );
+        }
+
+        //Filter baseline as required
+        if ( input.hasBaseline() )
+        {
+            List<PairOfDoubleAndVectorOfDoubles> basePairs = input.getRawDataForBaseline();
+            List<PairOfDoubleAndVectorOfDoubles> basePairsSubset =
+                    basePairs.stream().filter( condition ).collect( Collectors.toList() );
+
+            return DataFactory.ofEnsemblePairs( mainPairsSubset,
+                                                basePairsSubset,
+                                                input.getMetadata(),
+                                                input.getMetadataForBaseline(),
+                                                climatology );
+        }
+
+        return DataFactory.ofEnsemblePairs( mainPairsSubset, input.getMetadata(), climatology );
+    }
 
     /**
      * Filters {@link EnsemblePairs} by applying a mapper function to the input. This allows for fine-grain filtering
@@ -469,9 +606,56 @@ public interface Slicer
      * @throws NullPointerException if either the input or condition is null
      */
 
-    EnsemblePairs filter( EnsemblePairs input,
-                          Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubleAndVectorOfDoubles> mapper,
-                          DoublePredicate applyToClimatology );
+    public static EnsemblePairs filter( EnsemblePairs input,
+                                        Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubleAndVectorOfDoubles> mapper,
+                                        DoublePredicate applyToClimatology )
+    {
+        Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
+
+        Objects.requireNonNull( mapper, NULL_MAPPER_EXCEPTION );
+
+        List<PairOfDoubleAndVectorOfDoubles> mainPairs = input.getRawData();
+        List<PairOfDoubleAndVectorOfDoubles> mainPairsSubset = new ArrayList<>();
+
+        for ( PairOfDoubleAndVectorOfDoubles next : mainPairs )
+        {
+            PairOfDoubleAndVectorOfDoubles transformed = mapper.apply( next );
+            if ( Objects.nonNull( transformed ) )
+            {
+                mainPairsSubset.add( transformed );
+            }
+        }
+
+        //Filter climatology as required
+        VectorOfDoubles climatology = input.getClimatology();
+        if ( input.hasClimatology() && Objects.nonNull( applyToClimatology ) )
+        {
+            climatology =
+                    Slicer.filter( input.getClimatology(), applyToClimatology );
+        }
+
+        if ( input.hasBaseline() )
+        {
+            List<PairOfDoubleAndVectorOfDoubles> basePairs = input.getRawDataForBaseline();
+            List<PairOfDoubleAndVectorOfDoubles> basePairsSubset = new ArrayList<>();
+
+            for ( PairOfDoubleAndVectorOfDoubles next : basePairs )
+            {
+                PairOfDoubleAndVectorOfDoubles transformed = mapper.apply( next );
+                if ( Objects.nonNull( transformed ) )
+                {
+                    basePairsSubset.add( transformed );
+                }
+            }
+
+            return DataFactory.ofEnsemblePairs( mainPairsSubset,
+                                                basePairsSubset,
+                                                input.getMetadata(),
+                                                input.getMetadataForBaseline(),
+                                                climatology );
+        }
+        return DataFactory.ofEnsemblePairs( mainPairsSubset, input.getMetadata(), climatology );
+    }
 
     /**
      * Returns a subset of pairs where the condition is met for each atomic time-series in the container. Applies to 
@@ -484,34 +668,122 @@ public interface Slicer
      * @throws NullPointerException if either the input or condition is null
      */
 
-    TimeSeriesOfSingleValuedPairs filter( TimeSeriesOfSingleValuedPairs input,
-                                          Predicate<TimeSeries<PairOfDoubles>> condition,
-                                          DoublePredicate applyToClimatology );
+    public static TimeSeriesOfSingleValuedPairs filter( TimeSeriesOfSingleValuedPairs input,
+                                                        Predicate<TimeSeries<PairOfDoubles>> condition,
+                                                        DoublePredicate applyToClimatology )
+    {
+        Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
+
+        Objects.requireNonNull( condition, NULL_PREDICATE_EXCEPTION );
+
+        TimeSeriesOfSingleValuedPairsBuilder builder = DataFactory.ofTimeSeriesOfSingleValuedPairsBuilder();
+
+        // Set the metadata explicitly in case of an empty slice
+        builder.setMetadata( input.getMetadata() );
+
+        // Filter the main pairs and add them
+        for ( TimeSeries<PairOfDoubles> next : input.basisTimeIterator() )
+        {
+            if ( condition.test( next ) )
+            {
+                builder.addTimeSeries( next );
+            }
+        }
+
+        //Filter climatology as required
+        if ( input.hasClimatology() && Objects.nonNull( applyToClimatology ) )
+        {
+            VectorOfDoubles climatology =
+                    Slicer.filter( input.getClimatology(), applyToClimatology );
+
+            builder.setClimatology( climatology );
+        }
+
+        //Filter baseline pairs as required
+        if ( input.hasBaseline() )
+        {
+            builder.setMetadataForBaseline( input.getMetadataForBaseline() );
+
+            for ( TimeSeries<PairOfDoubles> next : input.getBaselineData().basisTimeIterator() )
+            {
+                if ( condition.test( next ) )
+                {
+                    builder.addTimeSeriesForBaseline( next );
+                }
+            }
+
+        }
+
+        return builder.build();
+    }
 
     /**
      * Filters the input time-series by the {@link Duration} associated with each pair. Applies to both the main pairs 
      * and any baseline pairs.
      * 
      * @param input the pairs to slice
-     * @param condition the condition on which to slice
+     * @param duration the duration condition on which to slice
      * @return the subset of pairs that meet the condition
      * @throws NullPointerException if either the input or condition is null
      */
 
-    TimeSeriesOfSingleValuedPairs filterByDuration( TimeSeriesOfSingleValuedPairs input,
-                                                    Predicate<Duration> condition );
+    public static TimeSeriesOfSingleValuedPairs filterByDuration( TimeSeriesOfSingleValuedPairs input,
+                                                                  Predicate<Duration> duration )
+    {
+        Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
+
+        Objects.requireNonNull( duration, NULL_PREDICATE_EXCEPTION );
+
+        //Iterate through the durations and append to the builder
+        //Throw an exception if attempting to construct an irregular time-series
+        TimeSeriesOfSingleValuedPairsBuilder builder = new SafeTimeSeriesOfSingleValuedPairsBuilder();
+
+        // Set the metadata explicitly in case of an empty slice
+        builder.setMetadata( input.getMetadata() );
+
+        for ( TimeSeries<PairOfDoubles> a : input.durationIterator() )
+        {
+            if ( duration.test( a.getDurations().first() ) )
+            {
+                builder.addTimeSeries( a );
+            }
+        }
+
+        return builder.build();
+    }
 
     /**
      * Filters the input time-series by basis time. Applies to both the main pairs and any baseline pairs.
      * 
      * @param input the pairs to slice
-     * @param condition the condition on which to slice
+     * @param basisTime the basis time condition on which to slice
      * @return the subset of pairs that meet the condition
      * @throws NullPointerException if either the input or condition is null
      */
 
-    TimeSeriesOfSingleValuedPairs filterByBasisTime( TimeSeriesOfSingleValuedPairs input,
-                                                     Predicate<Instant> condition );
+    public static TimeSeriesOfSingleValuedPairs filterByBasisTime( TimeSeriesOfSingleValuedPairs input,
+                                                                   Predicate<Instant> basisTime )
+    {
+        Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
+
+        Objects.requireNonNull( basisTime, NULL_PREDICATE_EXCEPTION );
+
+        SafeTimeSeriesOfSingleValuedPairsBuilder builder = new SafeTimeSeriesOfSingleValuedPairsBuilder();
+
+        // Set the metadata explicitly in case of an empty slice
+        builder.setMetadata( input.getMetadata() );
+
+        //Add the filtered data
+        for ( TimeSeries<PairOfDoubles> a : input.basisTimeIterator() )
+        {
+            if ( basisTime.test( a.getEarliestBasisTime() ) )
+            {
+                builder.addTimeSeries( a );
+            }
+        }
+
+        return builder.build();
+    }
 
     /**
      * Filters the input time-series by the {@link Duration} associated with each pair. Applies to both the main pairs 
@@ -523,44 +795,150 @@ public interface Slicer
      * @throws NullPointerException if either the input or condition is null
      */
 
-    TimeSeriesOfEnsemblePairs filterByDuration( TimeSeriesOfEnsemblePairs input,
-                                                Predicate<Duration> condition );
+    public static TimeSeriesOfEnsemblePairs filterByDuration( TimeSeriesOfEnsemblePairs input,
+                                                              Predicate<Duration> condition )
+    {
+        Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
+
+        Objects.requireNonNull( condition, NULL_PREDICATE_EXCEPTION );
+
+        //Iterate through the durations and append to the builder
+        //Throw an exception if attempting to construct an irregular time-series
+        TimeSeriesOfEnsemblePairsBuilder builder = new SafeTimeSeriesOfEnsemblePairsBuilder();
+
+        // Set the metadata explicitly in case of an empty slice
+        builder.setMetadata( input.getMetadata() );
+
+        for ( TimeSeries<PairOfDoubleAndVectorOfDoubles> a : input.durationIterator() )
+        {
+            if ( condition.test( a.getDurations().first() ) )
+            {
+                builder.addTimeSeries( a );
+            }
+        }
+
+        return builder.build();
+    }
 
     /**
      * Filters the input time-series by the {@link Duration} associated with each value. 
      * 
      * @param <T> the type of time-series data
      * @param input the input to slice
-     * @param condition the condition on which to slice
+     * @param duration the duration condition on which to slice
      * @return the subset of the input that meets the condition
      * @throws NullPointerException if either the input or condition is null
      */
 
-    <T> TimeSeries<T> filterByDuration( TimeSeries<T> input, Predicate<Duration> condition );
+    public static <T> TimeSeries<T> filterByDuration( TimeSeries<T> input, Predicate<Duration> duration )
+    {
+        List<Event<List<Event<T>>>> returnMe = new ArrayList<>();
+        // Iterate through basis times
+        for ( TimeSeries<T> nextSeries : input.basisTimeIterator() )
+        {
+            Instant basisTime = nextSeries.getEarliestBasisTime();
+            // Iterate through durations until it is later than the nextDuration
+            for ( Event<T> nextEvent : nextSeries.timeIterator() )
+            {
+                Duration candidateDuration = Duration.between( basisTime, nextEvent.getTime() );
+                if ( duration.test( candidateDuration ) )
+                {
+                    returnMe.add( Event.of( basisTime, Arrays.asList( nextEvent ) ) );
+                }
+            }
+        }
+        return SafeTimeSeries.of( returnMe );
+    }
 
     /**
      * Filters the input time-series by basis time. Applies to both the main pairs and any baseline pairs.
      * 
      * @param input the pairs to slice
-     * @param condition the condition on which to slice
+     * @param basisTime the basis time condition on which to slice
      * @return the subset of pairs that meet the condition
      * @throws NullPointerException if either the input or condition is null
      */
 
-    TimeSeriesOfEnsemblePairs filterByBasisTime( TimeSeriesOfEnsemblePairs input,
-                                                 Predicate<Instant> condition );
+    public static TimeSeriesOfEnsemblePairs filterByBasisTime( TimeSeriesOfEnsemblePairs input,
+                                                               Predicate<Instant> basisTime )
+    {
+        Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
+
+        Objects.requireNonNull( basisTime, NULL_PREDICATE_EXCEPTION );
+
+        TimeSeriesOfEnsemblePairsBuilder builder = new SafeTimeSeriesOfEnsemblePairsBuilder();
+
+        // Set the metadata explicitly in case of an empty slice
+        builder.setMetadata( input.getMetadata() );
+
+        //Add the filtered data
+        for ( TimeSeries<PairOfDoubleAndVectorOfDoubles> a : input.basisTimeIterator() )
+        {
+            if ( basisTime.test( a.getEarliestBasisTime() ) )
+            {
+                builder.addTimeSeries( a );
+            }
+        }
+
+        return builder.build();
+    }
 
     /**
      * Returns a {@link TimeSeries} whose elements are filtered according to the zero-based index of the ensemble trace 
      * or null if no such time-series exist.
      * 
      * @param input the pairs to slice
-     * @param condition the trace index filter
+     * @param traceIndex the trace index filter
      * @return a time-series associated with a specific trace index or null
+     * @throws NullPointerException if either input is null
      */
 
-    TimeSeriesOfEnsemblePairs filterByTraceIndex( TimeSeriesOfEnsemblePairs input,
-                                                  Predicate<Integer> condition );
+    public static TimeSeriesOfEnsemblePairs filterByTraceIndex( TimeSeriesOfEnsemblePairs input,
+                                                                Predicate<Integer> traceIndex )
+    {
+        Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
+
+        Objects.requireNonNull( traceIndex, NULL_PREDICATE_EXCEPTION );
+
+        //Build a single-valued time-series with the trace at index currentTrace
+        SafeTimeSeriesOfEnsemblePairsBuilder builder =
+                new SafeTimeSeriesOfEnsemblePairsBuilder();
+        builder.setMetadata( input.getMetadata() );
+
+        //Iterate through the basis times
+        for ( TimeSeries<PairOfDoubleAndVectorOfDoubles> nextSeries : input.basisTimeIterator() )
+        {
+            List<Event<PairOfDoubleAndVectorOfDoubles>> rawInput = new ArrayList<>();
+
+            //Iterate through the pairs
+            for ( Event<PairOfDoubleAndVectorOfDoubles> next : nextSeries.timeIterator() )
+            {
+                //Reform the pairs with a subset of ensemble members
+                double[] allTraces = next.getValue().getItemTwo();
+                List<Double> subTraces = new ArrayList<>();
+                for ( int i = 0; i < allTraces.length; i++ )
+                {
+                    if ( traceIndex.test( i ) )
+                    {
+                        subTraces.add( allTraces[i] );
+                    }
+                }
+                //All time-series have the same number of ensemble members, 
+                //so the first instance with no members means no traces
+                if ( subTraces.isEmpty() )
+                {
+                    return null;
+                }
+                rawInput.add( Event.of( next.getTime(),
+                                        DataFactory.pairOf( next.getValue().getItemOne(),
+                                                            subTraces.toArray( new Double[subTraces.size()] ) ) ) );
+            }
+            builder.addTimeSeriesData( nextSeries.getEarliestBasisTime(), rawInput );
+        }
+
+        //Return the time-series
+        return builder.build();
+    }
 
     /**
      * Returns as many lists of {@link PairOfDoubleAndVectorOfDoubles} as groups of atomic pairs in the input with an
@@ -570,9 +948,16 @@ public interface Slicer
      * 
      * @param input a list of {@link PairOfDoubleAndVectorOfDoubles} to slice
      * @return as many subsets of {@link PairOfDoubleAndVectorOfDoubles} as groups of pairs in the input of equal size
+     * @throws NullPointerException if the input is null
      */
 
-    Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> filterByRightSize( List<PairOfDoubleAndVectorOfDoubles> input );
+    public static Map<Integer, List<PairOfDoubleAndVectorOfDoubles>>
+            filterByRightSize( List<PairOfDoubleAndVectorOfDoubles> input )
+    {
+        Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
+
+        return input.stream().collect( Collectors.groupingBy( pair -> pair.getItemTwo().length ) );
+    }
 
     /**
      * Returns a map of {@link ScoreOutput} for each component in the input map of {@link ScoreOutput}. The slices are 
@@ -581,10 +966,41 @@ public interface Slicer
      * @param <T> the score component type
      * @param input the input map
      * @return the input map sliced by component identifier
+     * @throws NullPointerException if the input is null
      */
 
-    <T extends ScoreOutput<?, T>> Map<MetricConstants, MetricOutputMapByTimeAndThreshold<T>>
-            filterByMetricComponent( MetricOutputMapByTimeAndThreshold<T> input );
+    public static <T extends ScoreOutput<?, T>> Map<MetricConstants, MetricOutputMapByTimeAndThreshold<T>>
+            filterByMetricComponent( MetricOutputMapByTimeAndThreshold<T> input )
+    {
+        Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
+
+        Map<MetricConstants, Map<Pair<TimeWindow, OneOrTwoThresholds>, T>> sourceMap =
+                new EnumMap<>( MetricConstants.class );
+        input.forEach( ( key, value ) -> {
+            Set<MetricConstants> components = value.getComponents();
+            for ( MetricConstants next : components )
+            {
+                Map<Pair<TimeWindow, OneOrTwoThresholds>, T> nextMap = null;
+                if ( sourceMap.containsKey( next ) )
+                {
+                    nextMap = sourceMap.get( next );
+                }
+                else
+                {
+                    nextMap = new HashMap<>();
+                    sourceMap.put( next, nextMap );
+                }
+                //Add the output
+                nextMap.put( key, value.getComponent( next ) );
+            }
+        } );
+        //Build the score result
+        Map<MetricConstants, MetricOutputMapByTimeAndThreshold<T>> returnMe =
+                new EnumMap<>( MetricConstants.class );
+        sourceMap.forEach( ( key, value ) -> returnMe.put( key,
+                                                           DataFactory.ofMetricOutputMapByTimeAndThreshold( value ) ) );
+        return returnMe;
+    }
 
     /**
      * Produces a {@link List} of {@link PairOfDoubles} from a {@link List} of {@link PairOfDoubleAndVectorOfDoubles}
@@ -593,10 +1009,20 @@ public interface Slicer
      * @param input the {@link EnsemblePairs}
      * @param mapper the function that maps from {@link EnsemblePairs} to {@link SingleValuedPairs}
      * @return the {@link SingleValuedPairs}
+     * @throws NullPointerException if either input is null
      */
 
-    List<PairOfDoubles> toSingleValuedPairs( List<PairOfDoubleAndVectorOfDoubles> input,
-                                   Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles> mapper );
+    public static List<PairOfDoubles> toSingleValuedPairs( List<PairOfDoubleAndVectorOfDoubles> input,
+                                                           Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles> mapper )
+    {
+        Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
+
+        Objects.requireNonNull( mapper, NULL_MAPPER_EXCEPTION );
+
+        List<PairOfDoubles> transformed = new ArrayList<>();
+        input.stream().map( mapper ).forEach( transformed::add );
+        return transformed;
+    }
 
     /**
      * Produces {@link DichotomousPairs} from a {@link SingleValuedPairs} by applying a mapper function to the input.
@@ -604,9 +1030,34 @@ public interface Slicer
      * @param input the {@link SingleValuedPairs} pairs
      * @param mapper the function that maps from {@link SingleValuedPairs} to {@link DichotomousPairs}
      * @return the {@link DichotomousPairs}
+     * @throws NullPointerException if either input is null
      */
 
-    DichotomousPairs toDichotomousPairs( SingleValuedPairs input, Function<PairOfDoubles, PairOfBooleans> mapper );
+    public static DichotomousPairs toDichotomousPairs( SingleValuedPairs input,
+                                                       Function<PairOfDoubles, PairOfBooleans> mapper )
+    {
+        Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
+
+        Objects.requireNonNull( mapper, NULL_MAPPER_EXCEPTION );
+
+        List<PairOfDoubles> mainPairs = input.getRawData();
+        List<PairOfBooleans> mainPairsTransformed = new ArrayList<>();
+        mainPairs.stream().map( mapper ).forEach( mainPairsTransformed::add );
+        if ( input.hasBaseline() )
+        {
+            List<PairOfDoubles> basePairs = input.getRawDataForBaseline();
+            List<PairOfBooleans> basePairsTransformed = new ArrayList<>();
+            basePairs.stream().map( mapper ).forEach( basePairsTransformed::add );
+            return DataFactory.ofDichotomousPairsFromAtomic( mainPairsTransformed,
+                                                             basePairsTransformed,
+                                                             input.getMetadata(),
+                                                             input.getMetadataForBaseline(),
+                                                             input.getClimatology() );
+        }
+        return DataFactory.ofDichotomousPairsFromAtomic( mainPairsTransformed,
+                                                         input.getMetadata(),
+                                                         input.getClimatology() );
+    }
 
     /**
      * Produces {@link SingleValuedPairs} from a {@link EnsemblePairs} by applying a mapper function to the input.
@@ -614,10 +1065,28 @@ public interface Slicer
      * @param input the {@link EnsemblePairs}
      * @param mapper the function that maps from {@link EnsemblePairs} to {@link SingleValuedPairs} pairs
      * @return the {@link SingleValuedPairs}
+     * @throws NullPointerException if either input is null
      */
 
-    SingleValuedPairs toSingleValuedPairs( EnsemblePairs input,
-                                 Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles> mapper );
+    public static SingleValuedPairs toSingleValuedPairs( EnsemblePairs input,
+                                                         Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles> mapper )
+    {
+        Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
+
+        Objects.requireNonNull( mapper, NULL_MAPPER_EXCEPTION );
+
+        List<PairOfDoubles> mainPairsTransformed = toSingleValuedPairs( input.getRawData(), mapper );
+        if ( input.hasBaseline() )
+        {
+            List<PairOfDoubles> basePairsTransformed = toSingleValuedPairs( input.getRawDataForBaseline(), mapper );
+            return DataFactory.ofSingleValuedPairs( mainPairsTransformed,
+                                                    basePairsTransformed,
+                                                    input.getMetadata(),
+                                                    input.getMetadataForBaseline(),
+                                                    input.getClimatology() );
+        }
+        return DataFactory.ofSingleValuedPairs( mainPairsTransformed, input.getMetadata(), input.getClimatology() );
+    }
 
     /**
      * Produces {@link DiscreteProbabilityPairs} from a {@link EnsemblePairs} by applying a mapper function to the input
@@ -628,11 +1097,35 @@ public interface Slicer
      * @param threshold the {@link Threshold} used to transform the pairs
      * @param mapper the function that maps from {@link EnsemblePairs} to {@link DiscreteProbabilityPairs}
      * @return the {@link DiscreteProbabilityPairs}
+     * @throws NullPointerException if any input is null
      */
 
-    DiscreteProbabilityPairs toDiscreteProbabilityPairs( EnsemblePairs input,
-                                        Threshold threshold,
-                                        BiFunction<PairOfDoubleAndVectorOfDoubles, Threshold, PairOfDoubles> mapper );
+    public static DiscreteProbabilityPairs toDiscreteProbabilityPairs( EnsemblePairs input,
+                                                                       Threshold threshold,
+                                                                       BiFunction<PairOfDoubleAndVectorOfDoubles, Threshold, PairOfDoubles> mapper )
+    {
+        Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
+
+        Objects.requireNonNull( mapper, NULL_MAPPER_EXCEPTION );
+
+        List<PairOfDoubleAndVectorOfDoubles> mainPairs = input.getRawData();
+        List<PairOfDoubles> mainPairsTransformed = new ArrayList<>();
+        mainPairs.forEach( pair -> mainPairsTransformed.add( mapper.apply( pair, threshold ) ) );
+        if ( input.hasBaseline() )
+        {
+            List<PairOfDoubleAndVectorOfDoubles> basePairs = input.getRawDataForBaseline();
+            List<PairOfDoubles> basePairsTransformed = new ArrayList<>();
+            basePairs.forEach( pair -> basePairsTransformed.add( mapper.apply( pair, threshold ) ) );
+            return DataFactory.ofDiscreteProbabilityPairs( mainPairsTransformed,
+                                                           basePairsTransformed,
+                                                           input.getMetadata(),
+                                                           input.getMetadataForBaseline(),
+                                                           input.getClimatology() );
+        }
+        return DataFactory.ofDiscreteProbabilityPairs( mainPairsTransformed,
+                                                       input.getMetadata(),
+                                                       input.getClimatology() );
+    }
 
     /**
      * Converts a {@link PairOfDoubleAndVectorOfDoubles} to a {@link PairOfDoubles} that contains the probabilities that
@@ -642,9 +1135,18 @@ public interface Slicer
      * @param pair the pair to transform
      * @param threshold the threshold
      * @return the transformed pair
+     * @throws NullPointerException if either input is null
      */
 
-    PairOfDoubles toDiscreteProbabilityPair( PairOfDoubleAndVectorOfDoubles pair, Threshold threshold );
+    public static PairOfDoubles toDiscreteProbabilityPair( PairOfDoubleAndVectorOfDoubles pair, Threshold threshold )
+    {
+        Objects.requireNonNull( pair, NULL_INPUT_EXCEPTION );
+
+        Objects.requireNonNull( threshold, NULL_INPUT_EXCEPTION );
+
+        double rhs = Arrays.stream( pair.getItemTwo() ).map( a -> threshold.test( a ) ? 1 : 0 ).average().getAsDouble();
+        return DataFactory.pairOf( threshold.test( pair.getItemOne() ) ? 1 : 0, rhs );
+    }
 
     /**
      * Returns a function that converts a {@link PairOfDoubleAndVectorOfDoubles} to a {@link PairOfDoubles} by 
@@ -652,9 +1154,16 @@ public interface Slicer
      * 
      * @param transformer the transformer
      * @return a composed function
+     * @throws NullPointerException if the input is null
      */
 
-    Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles> ofSingleValuedPairMapper( ToDoubleFunction<double[]> transformer );
+    public static Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles>
+            ofSingleValuedPairMapper( ToDoubleFunction<double[]> transformer )
+    {
+        Objects.requireNonNull( transformer, NULL_INPUT_EXCEPTION );
+
+        return pair -> DataFactory.pairOf( pair.getItemOne(), transformer.applyAsDouble( pair.getItemTwo() ) );
+    }
 
     /**
      * Returns a function to compute a value from the sorted array that corresponds to the input non-exceedence 
@@ -666,9 +1175,51 @@ public interface Slicer
      * 
      * @param sorted the sorted input array
      * @return the threshold
+     * @throws NullPointerException if the input is null
      */
 
-    DoubleUnaryOperator getQuantileFunction( double[] sorted );
+    public static DoubleUnaryOperator getQuantileFunction( double[] sorted )
+    {
+        return probability -> {
+            if ( probability < 0 || probability > 1 )
+            {
+                throw new IllegalArgumentException( "The input probability is not within the unit interval: "
+                                                    + probability );
+            }
+            if ( sorted.length == 0 )
+            {
+                return Double.NaN;
+            }
+            //Single item
+            if ( sorted.length == 1 )
+            {
+                return sorted[0];
+            }
+
+            //Estimate the position
+            double pos = probability * ( sorted.length + 1.0 );
+            //Lower bound
+            if ( pos < 1.0 )
+            {
+                return sorted[0];
+            }
+            //Upper bound
+            else if ( pos >= sorted.length )
+            {
+                return sorted[sorted.length - 1];
+            }
+            //Contained: use linear interpolation
+            else
+            {
+                double floorPos = Math.floor( pos );
+                double dif = pos - floorPos;
+                int intPos = (int) floorPos;
+                double lower = sorted[intPos - 1];
+                double upper = sorted[intPos];
+                return lower + dif * ( upper - lower );
+            }
+        };
+    }
 
     /**
      * Returns a {@link Threshold} with quantiles defined from a prescribed {@link Threshold} with probabilities, 
@@ -676,10 +1227,90 @@ public interface Slicer
      * 
      * @param sorted the sorted input array
      * @param threshold the probability threshold from which the quantile threshold is determined
-     * @param decimals an optional number of decimal places to which the threshold will be rounded up (may be null)
+     * @param digits an optional number of decimal places to which the threshold will be rounded up (may be null)
      * @return the probability threshold
+     * @throws NullPointerException if either input is null
      */
 
-    Threshold getQuantileFromProbability( Threshold threshold, double[] sorted, Integer decimals );
+    public static Threshold getQuantileFromProbability( Threshold threshold, double[] sorted, Integer digits )
+    {
+        Objects.requireNonNull( threshold, "Specify a non-null probability threshold." );
+
+        Objects.requireNonNull( sorted, "Specify a non-null array of sorted values." );
+
+        if ( threshold.getType() != ThresholdType.PROBABILITY_ONLY )
+        {
+            throw new IllegalArgumentException( "The input threshold must be a probability threshold." );
+        }
+        if ( sorted.length == 0 )
+        {
+            throw new IllegalArgumentException( "Cannot compute the quantile from empty input." );
+        }
+        DoubleUnaryOperator qF = getQuantileFunction( sorted );
+        Double first = qF.applyAsDouble( threshold.getProbabilities().first() );
+        if ( Objects.nonNull( digits ) )
+        {
+            first = round().apply( first, digits );
+        }
+        Double second = null;
+        if ( threshold.hasBetweenCondition() )
+        {
+            second = qF.applyAsDouble( threshold.getProbabilities().second() );
+            if ( Objects.nonNull( digits ) )
+            {
+                second = round().apply( second, digits );
+            }
+        }
+        return DataFactory.ofQuantileThreshold( SafeOneOrTwoDoubles.of( first, second ),
+                                                threshold.getProbabilities(),
+                                                threshold.getCondition(),
+                                                threshold.getDataType(),
+                                                threshold.getLabel(),
+                                                threshold.getUnits() );
+    }
+
+    /**
+     * Rounds the input to the prescribed number of decimal places using {@link BigDecimal#ROUND_HALF_UP}.
+     * 
+     * @return a function that rounds to a prescribed number of decimal places
+     */
+
+    private static BiFunction<Double, Integer, Double> round()
+    {
+        return ( input, digits ) -> {
+            BigDecimal bd = new BigDecimal( Double.toString( input ) ); //Always use String constructor
+            bd = bd.setScale( digits, BigDecimal.ROUND_HALF_UP );
+            return bd.doubleValue();
+        };
+    }
+
+    /**
+     * Filters a {@link VectorOfDoubles}, returning a subset whose elements meet the condition.
+     * 
+     * @param input the input
+     * @param condition the condition
+     * @return the filtered vector
+     */
+
+    private static VectorOfDoubles filter( VectorOfDoubles input, DoublePredicate condition )
+    {
+        Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
+
+        Objects.requireNonNull( input, NULL_PREDICATE_EXCEPTION );
+
+        double[] filtered = Arrays.stream( input.getDoubles() )
+                                  .filter( condition )
+                                  .toArray();
+
+        return DataFactory.vectorOf( filtered );
+    }
+
+    /**
+     * Hidden constructor.
+     */
+
+    private Slicer()
+    {
+    }
 
 }

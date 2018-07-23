@@ -5,9 +5,9 @@ import java.util.Objects;
 import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
 
 import wres.datamodel.DataFactory;
-import wres.datamodel.DefaultSlicer;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
+import wres.datamodel.Slicer;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.Metadata;
@@ -58,10 +58,8 @@ public class CorrelationPearsons extends OrdinaryScore<SingleValuedPairs, Double
         if ( s.getRawData().size() > 1 )
         {
             returnMe = FunctionFactory.finiteOrMissing()
-                                      .applyAsDouble( correlation.correlation( DefaultSlicer.getInstance()
-                                                                                            .getLeftSide( s ),
-                                                                               DefaultSlicer.getInstance()
-                                                                                            .getRightSide( s ) ) );
+                                      .applyAsDouble( correlation.correlation( Slicer.getLeftSide( s ),
+                                                                               Slicer.getRightSide( s ) ) );
         }
         return DataFactory.ofDoubleScoreOutput( returnMe, meta );
     }

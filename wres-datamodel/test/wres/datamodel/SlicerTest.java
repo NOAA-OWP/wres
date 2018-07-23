@@ -50,12 +50,6 @@ public final class SlicerTest
     public final ExpectedException exception = ExpectedException.none();
 
     /**
-     * Slicer.
-     */
-
-    Slicer slicer = DefaultSlicer.getInstance();
-
-    /**
      * Tests the {@link Slicer#getLeftSide(SingleValuedPairs)}.
      */
 
@@ -71,7 +65,7 @@ public final class SlicerTest
         values.add( DataFactory.pairOf( 1, 1.0 / 5.0 ) );
         double[] expected = new double[] { 0, 0, 1, 1, 0, 1 };
         assertTrue( "The left side of the test data does not match the benchmark.",
-                    Arrays.equals( slicer.getLeftSide( DataFactory.ofSingleValuedPairs( values,
+                    Arrays.equals( Slicer.getLeftSide( DataFactory.ofSingleValuedPairs( values,
                                                                                         MetadataFactory.getMetadata() ) ),
                                    expected ) );
     }
@@ -92,7 +86,7 @@ public final class SlicerTest
         values.add( DataFactory.pairOf( 1, new double[] { 1, 2, 3 } ) );
         double[] expected = new double[] { 0, 0, 1, 1, 0, 1 };
         assertTrue( "The left side of the test data does not match the benchmark.",
-                    Arrays.equals( slicer.getLeftSide( DataFactory.ofEnsemblePairs( values,
+                    Arrays.equals( Slicer.getLeftSide( DataFactory.ofEnsemblePairs( values,
                                                                                     MetadataFactory.getMetadata() ) ),
                                    expected ) );
     }
@@ -113,7 +107,7 @@ public final class SlicerTest
         values.add( DataFactory.pairOf( 1, 1.0 / 5.0 ) );
         double[] expected = new double[] { 3.0 / 5.0, 1.0 / 5.0, 2.0 / 5.0, 3.0 / 5.0, 0.0 / 5.0, 1.0 / 5.0 };
         assertTrue( "The right side of the test data does not match the benchmark.",
-                    Arrays.equals( slicer.getRightSide( DataFactory.ofSingleValuedPairs( values,
+                    Arrays.equals( Slicer.getRightSide( DataFactory.ofSingleValuedPairs( values,
                                                                                          MetadataFactory.getMetadata() ) ),
                                    expected ) );
     }
@@ -139,16 +133,16 @@ public final class SlicerTest
         Metadata meta = MetadataFactory.getMetadata();
         SingleValuedPairs pairs = DataFactory.ofSingleValuedPairs( values, values, meta, meta, null );
         SingleValuedPairs sliced =
-                slicer.filter( pairs, Slicer.left( threshold::test ), clim -> threshold.test( clim ) );
+                Slicer.filter( pairs, Slicer.left( threshold::test ), clim -> threshold.test( clim ) );
         //Test with baseline
         assertTrue( "The left side of the test data does not match the benchmark.",
-                    Arrays.equals( slicer.getLeftSide( sliced.getBaselineData() ), expected ) );
+                    Arrays.equals( Slicer.getLeftSide( sliced.getBaselineData() ), expected ) );
         //Test without baseline
         SingleValuedPairs pairsNoBase = DataFactory.ofSingleValuedPairs( values, meta );
         SingleValuedPairs slicedNoBase =
-                slicer.filter( pairsNoBase, Slicer.left( threshold::test ), clim -> threshold.test( clim ) );
+                Slicer.filter( pairsNoBase, Slicer.left( threshold::test ), clim -> threshold.test( clim ) );
         assertTrue( "The left side of the test data does not match the benchmark.",
-                    Arrays.equals( slicer.getLeftSide( slicedNoBase ), expected ) );
+                    Arrays.equals( Slicer.getLeftSide( slicedNoBase ), expected ) );
     }
 
     /**
@@ -172,16 +166,16 @@ public final class SlicerTest
         Metadata meta = MetadataFactory.getMetadata();
         EnsemblePairs pairs = DataFactory.ofEnsemblePairs( values, values, meta, meta, null );
         EnsemblePairs sliced =
-                slicer.filter( pairs, Slicer.leftVector( threshold::test ), clim -> threshold.test( clim ) );
+                Slicer.filter( pairs, Slicer.leftVector( threshold::test ), clim -> threshold.test( clim ) );
         //Test with baseline
         assertTrue( "The left side of the test data does not match the benchmark.",
-                    Arrays.equals( slicer.getLeftSide( sliced.getBaselineData() ), expected ) );
+                    Arrays.equals( Slicer.getLeftSide( sliced.getBaselineData() ), expected ) );
         //Test without baseline
         EnsemblePairs pairsNoBase = DataFactory.ofEnsemblePairs( values, meta );
         EnsemblePairs slicedNoBase =
-                slicer.filter( pairsNoBase, Slicer.leftVector( threshold::test ), clim -> threshold.test( clim ) );
+                Slicer.filter( pairsNoBase, Slicer.leftVector( threshold::test ), clim -> threshold.test( clim ) );
         assertTrue( "The left side of the test data does not match the benchmark.",
-                    Arrays.equals( slicer.getLeftSide( slicedNoBase ), expected ) );
+                    Arrays.equals( Slicer.getLeftSide( slicedNoBase ), expected ) );
     }
 
     /**
@@ -206,12 +200,12 @@ public final class SlicerTest
         double[] expected = new double[] { 3.0, 8.0, 13.0, 18.0, 23.0, 28.0 };
         //Test without baseline
         double[] actualNoBase =
-                slicer.getRightSide( slicer.toSingleValuedPairs( DataFactory.ofEnsemblePairs( values, meta ),
+                Slicer.getRightSide( Slicer.toSingleValuedPairs( DataFactory.ofEnsemblePairs( values, meta ),
                                                                  mapper ) );
         assertTrue( "The transformed test data does not match the benchmark.",
                     Arrays.equals( actualNoBase, expected ) );
         //Test baseline
-        double[] actualBase = slicer.getRightSide( slicer.toSingleValuedPairs( input, mapper ).getBaselineData() );
+        double[] actualBase = Slicer.getRightSide( Slicer.toSingleValuedPairs( input, mapper ).getBaselineData() );
         assertTrue( "The transformed test data does not match the benchmark.", Arrays.equals( actualBase, expected ) );
     }
 
@@ -249,12 +243,12 @@ public final class SlicerTest
 
         //Test without baseline
         DichotomousPairs actualNoBase =
-                slicer.toDichotomousPairs( DataFactory.ofSingleValuedPairs( values, meta ), mapper );
+                Slicer.toDichotomousPairs( DataFactory.ofSingleValuedPairs( values, meta ), mapper );
         assertTrue( "The transformed test data does not match the benchmark.",
                     actualNoBase.getRawData().equals( expectedNoBase.getRawData() ) );
         //Test baseline
         DichotomousPairs actualBase =
-                slicer.toDichotomousPairs( DataFactory.ofSingleValuedPairs( values, values, meta, meta, null ),
+                Slicer.toDichotomousPairs( DataFactory.ofSingleValuedPairs( values, values, meta, meta, null ),
                                            mapper );
         assertTrue( "The transformed test data does not match the benchmark.",
                     actualBase.getRawDataForBaseline().equals( expectedBase.getRawDataForBaseline() ) );
@@ -279,17 +273,17 @@ public final class SlicerTest
                                                        Operator.GREATER,
                                                        ThresholdDataType.LEFT );
         BiFunction<PairOfDoubleAndVectorOfDoubles, Threshold, PairOfDoubles> mapper =
-                DefaultSlicer.getInstance()::toDiscreteProbabilityPair;
+                Slicer::toDiscreteProbabilityPair;
         double[] expectedLeft = new double[] { 0.0, 0.0, 0.0, 1.0, 0.0, 1.0 };
         double[] expectedRight = new double[] { 2.0 / 5.0, 0.0 / 5.0, 0.0 / 5.0, 5.0 / 5.0, 2.0 / 5.0, 3.0 / 5.0 };
 
         //Test without baseline
         double[] actualNoBaseLeft =
-                slicer.getLeftSide( slicer.toDiscreteProbabilityPairs( DataFactory.ofEnsemblePairs( values, meta ),
+                Slicer.getLeftSide( Slicer.toDiscreteProbabilityPairs( DataFactory.ofEnsemblePairs( values, meta ),
                                                                        threshold,
                                                                        mapper ) );
         double[] actualNoBaseRight =
-                slicer.getRightSide( slicer.toDiscreteProbabilityPairs( DataFactory.ofEnsemblePairs( values, meta ),
+                Slicer.getRightSide( Slicer.toDiscreteProbabilityPairs( DataFactory.ofEnsemblePairs( values, meta ),
                                                                         threshold,
                                                                         mapper ) );
         assertTrue( "The transformed test data does not match the benchmark.",
@@ -299,7 +293,7 @@ public final class SlicerTest
 
         //Test baseline
         double[] actualBaseLeft =
-                slicer.getLeftSide( slicer.toDiscreteProbabilityPairs( DataFactory.ofEnsemblePairs( values,
+                Slicer.getLeftSide( Slicer.toDiscreteProbabilityPairs( DataFactory.ofEnsemblePairs( values,
                                                                                                     values,
                                                                                                     meta,
                                                                                                     meta,
@@ -308,7 +302,7 @@ public final class SlicerTest
                                                                        mapper )
                                           .getBaselineData() );
         double[] actualBaseRight =
-                slicer.getRightSide( slicer.toDiscreteProbabilityPairs( DataFactory.ofEnsemblePairs( values,
+                Slicer.getRightSide( Slicer.toDiscreteProbabilityPairs( DataFactory.ofEnsemblePairs( values,
                                                                                                      values,
                                                                                                      meta,
                                                                                                      meta,
@@ -339,7 +333,7 @@ public final class SlicerTest
                                                        Operator.GREATER,
                                                        ThresholdDataType.LEFT );
         BiFunction<PairOfDoubleAndVectorOfDoubles, Threshold, PairOfDoubles> mapper =
-                DefaultSlicer.getInstance()::toDiscreteProbabilityPair;
+                Slicer::toDiscreteProbabilityPair;
         assertTrue( "The transformed pair does not match the benchmark",
                     mapper.apply( a, threshold ).equals( DataFactory.pairOf( 0.0, 2.0 / 5.0 ) ) );
         assertTrue( "The transformed pair does not match the benchmark",
@@ -375,8 +369,8 @@ public final class SlicerTest
         double expectedE = 0.0;
 
         //Test for equality
-        DoubleUnaryOperator qFA = slicer.getQuantileFunction( sorted );
-        DoubleUnaryOperator qFB = slicer.getQuantileFunction( sortedB );
+        DoubleUnaryOperator qFA = Slicer.getQuantileFunction( sorted );
+        DoubleUnaryOperator qFB = Slicer.getQuantileFunction( sortedB );
 
         assertTrue( "The inverse cumulative probability does not match the benchmark",
                     DataFactory.doubleEquals( qFA.applyAsDouble( testA ), expectedA, 7 ) );
@@ -466,26 +460,26 @@ public final class SlicerTest
 
         //Test for equality
         assertTrue( "The inverse cumulative probability does not match the benchmark",
-                    slicer.getQuantileFromProbability( testA, sorted ).equals( expectedA ) );
+                    Slicer.getQuantileFromProbability( testA, sorted ).equals( expectedA ) );
         assertTrue( "The inverse cumulative probability does not match the benchmark",
-                    slicer.getQuantileFromProbability( testB, sorted ).equals( expectedB ) );
+                    Slicer.getQuantileFromProbability( testB, sorted ).equals( expectedB ) );
         assertTrue( "The inverse cumulative probability does not match the benchmark",
-                    slicer.getQuantileFromProbability( testC, sorted ).equals( expectedC ) );
+                    Slicer.getQuantileFromProbability( testC, sorted ).equals( expectedC ) );
         assertTrue( "The inverse cumulative probability does not match the benchmark",
-                    slicer.getQuantileFromProbability( testD, sorted ).equals( expectedD ) );
+                    Slicer.getQuantileFromProbability( testD, sorted ).equals( expectedD ) );
         assertTrue( "The inverse cumulative probability does not match the benchmark",
-                    slicer.getQuantileFromProbability( testE, sorted ).equals( expectedE ) );
+                    Slicer.getQuantileFromProbability( testE, sorted ).equals( expectedE ) );
         assertTrue( "The inverse cumulative probability does not match the benchmark",
-                    slicer.getQuantileFromProbability( testF, sortedSecond ).equals( expectedF ) );
+                    Slicer.getQuantileFromProbability( testF, sortedSecond ).equals( expectedF ) );
         assertTrue( "The inverse cumulative probability does not match the benchmark",
-                    slicer.getQuantileFromProbability( testG, sorted ).equals( expectedG ) );
+                    Slicer.getQuantileFromProbability( testG, sorted ).equals( expectedG ) );
 
         //Check exceptional cases
         exception.expect( NullPointerException.class );
 
-        slicer.getQuantileFromProbability( null, sorted );
-        slicer.getQuantileFromProbability( testA, null );
-        slicer.getQuantileFromProbability( testA, new double[] {} );
+        Slicer.getQuantileFromProbability( null, sorted );
+        Slicer.getQuantileFromProbability( testA, null );
+        Slicer.getQuantileFromProbability( testA, new double[] {} );
     }
 
     /**
@@ -502,7 +496,7 @@ public final class SlicerTest
         PairOfDoubleAndVectorOfDoubles e = DataFactory.pairOf( 0, new double[] { 1, 2, 3, 4, 5 } );
         PairOfDoubleAndVectorOfDoubles f = DataFactory.pairOf( 5, new double[] { 1, 1, 6, 6, 50 } );
         Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles> mapper =
-                DefaultSlicer.getInstance().ofSingleValuedPairMapper( vector -> vector[0] );
+                Slicer.ofSingleValuedPairMapper( vector -> vector[0] );
         assertTrue( "The transformed pair does not match the benchmark",
                     mapper.apply( a ).equals( DataFactory.pairOf( 3, 1 ) ) );
         assertTrue( "The transformed pair does not match the benchmark",
@@ -538,7 +532,7 @@ public final class SlicerTest
         input.add( DataFactory.pairOf( 3, new double[] { 1, 2, 3, 4, 5, 6 } ) );
         input.add( DataFactory.pairOf( 3, new double[] { 1, 2, 3, 4, 5, 6 } ) );
         //Slice
-        Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> sliced = slicer.filterByRightSize( input );
+        Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> sliced = Slicer.filterByRightSize( input );
         //Check the results
         assertTrue( "Expected three slices of data.", sliced.size() == 3 );
         assertTrue( "Expected the first slice to contain three pairs.", sliced.get( 3 ).size() == 3 );
@@ -557,7 +551,7 @@ public final class SlicerTest
         MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> toSlice =
                 DataModelTestDataFactory.getVectorMetricOutputMapByLeadThresholdOne();
         Map<MetricConstants, MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>> sliced =
-                slicer.filterByMetricComponent( toSlice );
+                Slicer.filterByMetricComponent( toSlice );
 
         //Check the results
         assertTrue( "Expected five slices of data.",
@@ -590,7 +584,7 @@ public final class SlicerTest
 
         Metadata meta = MetadataFactory.getMetadata();
         SingleValuedPairs pairs = DataFactory.ofSingleValuedPairs( values, values, meta, meta, climatology );
-        SingleValuedPairs sliced = slicer.filter( pairs, Slicer.leftAndRight( Double::isFinite ), Double::isFinite );
+        SingleValuedPairs sliced = Slicer.filter( pairs, Slicer.leftAndRight( Double::isFinite ), Double::isFinite );
 
         //Test with baseline
         assertTrue( "The sliced data does not match the benchmark.", sliced.getRawData().equals( expectedValues ) );
@@ -599,7 +593,7 @@ public final class SlicerTest
         assertTrue( "The sliced climatology data does not match the benchmark.",
                     Arrays.equals( sliced.getClimatology().getDoubles(), climatologyExpected.getDoubles() ) );
         assertTrue( "Unexpected equality of the sliced and unsliced climatology.",
-                    !Arrays.equals( slicer.filter( pairs, Slicer.leftAndRight( Double::isFinite ), null )
+                    !Arrays.equals( Slicer.filter( pairs, Slicer.leftAndRight( Double::isFinite ), null )
                                           .getClimatology()
                                           .getDoubles(),
                                     climatologyExpected.getDoubles() ) );
@@ -607,7 +601,7 @@ public final class SlicerTest
                     !sliced.getRawData().equals( values ) );
         //Test without baseline or climatology
         SingleValuedPairs pairsNoBase = DataFactory.ofSingleValuedPairs( values, meta );
-        SingleValuedPairs slicedNoBase = slicer.filter( pairsNoBase, Slicer.leftAndRight( Double::isFinite ), null );
+        SingleValuedPairs slicedNoBase = Slicer.filter( pairsNoBase, Slicer.leftAndRight( Double::isFinite ), null );
 
         assertTrue( "The sliced data without a baseline does not match the benchmark.",
                     slicedNoBase.getRawData().equals( expectedValues ) );
@@ -639,7 +633,7 @@ public final class SlicerTest
 
         Metadata meta = MetadataFactory.getMetadata();
         EnsemblePairs pairs = DataFactory.ofEnsemblePairs( values, values, meta, meta, climatology );
-        EnsemblePairs sliced = slicer.filter( pairs, slicer.leftAndEachOfRight( Double::isFinite ), Double::isFinite );
+        EnsemblePairs sliced = Slicer.filter( pairs, Slicer.leftAndEachOfRight( Double::isFinite ), Double::isFinite );
 
         //Test with baseline
         assertTrue( "The sliced data does not match the benchmark.", sliced.getRawData().equals( expectedValues ) );
@@ -648,7 +642,7 @@ public final class SlicerTest
         assertTrue( "The sliced climatology data does not match the benchmark.",
                     Arrays.equals( sliced.getClimatology().getDoubles(), climatologyExpected.getDoubles() ) );
         assertTrue( "Unexpected equality of the sliced and unsliced climatology.",
-                    !Arrays.equals( slicer.filter( pairs, slicer.leftAndEachOfRight( Double::isFinite ), null )
+                    !Arrays.equals( Slicer.filter( pairs, Slicer.leftAndEachOfRight( Double::isFinite ), null )
                                           .getClimatology()
                                           .getDoubles(),
                                     climatologyExpected.getDoubles() ) );
@@ -656,7 +650,7 @@ public final class SlicerTest
                     !sliced.getRawData().equals( values ) );
         //Test without baseline or climatology
         EnsemblePairs pairsNoBase = DataFactory.ofEnsemblePairs( values, meta );
-        EnsemblePairs slicedNoBase = slicer.filter( pairsNoBase, slicer.leftAndEachOfRight( Double::isFinite ), null );
+        EnsemblePairs slicedNoBase = Slicer.filter( pairsNoBase, Slicer.leftAndEachOfRight( Double::isFinite ), null );
 
         assertTrue( "The sliced data without a baseline does not match the benchmark.",
                     slicedNoBase.getRawData().equals( expectedValues ) );
@@ -701,7 +695,7 @@ public final class SlicerTest
 
         // Filter all values where the left side is greater than 0
         TimeSeriesOfSingleValuedPairs firstResult =
-                slicer.filter( firstSeries,
+                Slicer.filter( firstSeries,
                                Slicer.anyOfLeftInTimeSeriesOfSingleValuedPairs( value -> value > 0 ),
                                null );
 
@@ -710,7 +704,7 @@ public final class SlicerTest
 
         // Filter all values where the left side is greater than 3
         TimeSeriesOfSingleValuedPairs secondResult =
-                slicer.filter( firstSeries,
+                Slicer.filter( firstSeries,
                                Slicer.anyOfLeftInTimeSeriesOfSingleValuedPairs( value -> value > 3 ),
                                clim -> clim > 0 );
 
@@ -731,7 +725,7 @@ public final class SlicerTest
 
         // Filter all values where the left and right sides are both greater than 7
         TimeSeriesOfSingleValuedPairs thirdResult =
-                slicer.filter( firstSeries,
+                Slicer.filter( firstSeries,
                                Slicer.anyOfLeftAndAnyOfRightInTimeSeriesOfSingleValuedPairs( value -> value > 7 ),
                                null );
 
@@ -745,7 +739,7 @@ public final class SlicerTest
 
         // Filter on climatology simultaneously
         TimeSeriesOfSingleValuedPairs fourthResult =
-                slicer.filter( b.build(),
+                Slicer.filter( b.build(),
                                Slicer.anyOfLeftAndAnyOfRightInTimeSeriesOfSingleValuedPairs( value -> value > 7 ),
                                Double::isFinite );
         assertTrue( "The climatology in the fitlered time-series does not match the benchmark.",
@@ -758,7 +752,7 @@ public final class SlicerTest
 
         // Filter all values where both sides are greater than 4
         TimeSeriesOfSingleValuedPairs fifthResult =
-                slicer.filter( b.build(),
+                Slicer.filter( b.build(),
                                Slicer.anyOfLeftInTimeSeriesOfSingleValuedPairs( value -> value > 4 ),
                                clim -> clim > 0 );
 
@@ -816,7 +810,7 @@ public final class SlicerTest
                                              .build();
         //Iterate and test
         TimeSeries<PairOfDoubleAndVectorOfDoubles> filtered =
-                slicer.filterByBasisTime( ts, a -> a.equals( secondBasisTime ) );
+                Slicer.filterByBasisTime( ts, a -> a.equals( secondBasisTime ) );
         assertTrue( "Unexpected number of issue times in the filtered time-series.",
                     filtered.getBasisTimes().size() == 1 );
         assertTrue( "Unexpected issue time in the filtered time-series.",
@@ -829,14 +823,14 @@ public final class SlicerTest
                             .equals( DataFactory.pairOf( 4, new double[] { 4 } ) ) );
 
         //Check for empty output on none filter
-        List<Instant> sliced = slicer.filterByBasisTime( ts, a -> a.equals( Instant.parse( "1985-01-04T00:00:00Z" ) ) )
+        List<Instant> sliced = Slicer.filterByBasisTime( ts, a -> a.equals( Instant.parse( "1985-01-04T00:00:00Z" ) ) )
                                      .getBasisTimes();
         assertTrue( "Expected nullity on filtering basis times.", sliced.isEmpty() );
 
         //Check exceptional cases
         exception.expect( NullPointerException.class );
-        slicer.filterByBasisTime( (TimeSeriesOfEnsemblePairs) null, null );
-        slicer.filterByBasisTime( ts, null );
+        Slicer.filterByBasisTime( (TimeSeriesOfEnsemblePairs) null, null );
+        Slicer.filterByBasisTime( ts, null );
     }
 
     /**
@@ -874,8 +868,8 @@ public final class SlicerTest
                                              .setMetadata( meta )
                                              .build();
         //Iterate and test
-        TimeSeriesOfEnsemblePairs filtered = slicer.filterByBasisTime( ts, p -> p.equals( secondBasisTime ) );
-        filtered = slicer.filterByDuration( filtered, q -> q.equals( Duration.ofHours( 3 ) ) );
+        TimeSeriesOfEnsemblePairs filtered = Slicer.filterByBasisTime( ts, p -> p.equals( secondBasisTime ) );
+        filtered = Slicer.filterByDuration( filtered, q -> q.equals( Duration.ofHours( 3 ) ) );
 
         assertTrue( "Unexpected number of durations in filtered time-series.", filtered.getDurations().size() == 1 );
         assertTrue( "Unexpected duration in the filtered time-series.",
@@ -889,13 +883,13 @@ public final class SlicerTest
 
         //Check for empty output on none filter
         @SuppressWarnings( "unlikely-arg-type" )
-        Set<Duration> sliced = slicer.filterByBasisTime( ts, p -> p.equals( Duration.ofHours( 4 ) ) ).getDurations();
+        Set<Duration> sliced = Slicer.filterByBasisTime( ts, p -> p.equals( Duration.ofHours( 4 ) ) ).getDurations();
         assertTrue( "Expected nullity on filtering durations.", sliced.isEmpty() );
 
         //Check exceptional cases
         exception.expect( NullPointerException.class );
-        slicer.filterByDuration( (TimeSeriesOfEnsemblePairs) null, null );
-        slicer.filterByDuration( ts, null );
+        Slicer.filterByDuration( (TimeSeriesOfEnsemblePairs) null, null );
+        Slicer.filterByDuration( ts, null );
 
     }
 
@@ -935,7 +929,7 @@ public final class SlicerTest
                                                  .setMetadata( meta )
                                                  .build();
         //Iterate and test
-        TimeSeries<PairOfDoubles> filtered = slicer.filterByBasisTime( ts, a -> a.equals( secondBasisTime ) );
+        TimeSeries<PairOfDoubles> filtered = Slicer.filterByBasisTime( ts, a -> a.equals( secondBasisTime ) );
         assertTrue( "Unexpected number of issue times in the filtered time-series.",
                     filtered.getBasisTimes().size() == 1 );
         assertTrue( "Unexpected issue time in the filtered time-series.",
@@ -944,14 +938,14 @@ public final class SlicerTest
                     filtered.timeIterator().iterator().next().getValue().equals( DataFactory.pairOf( 4, 4 ) ) );
 
         //Check for empty output on none filter
-        List<Instant> sliced = slicer.filterByBasisTime( ts, p -> p.equals( Instant.parse( "1985-01-04T00:00:00Z" ) ) )
+        List<Instant> sliced = Slicer.filterByBasisTime( ts, p -> p.equals( Instant.parse( "1985-01-04T00:00:00Z" ) ) )
                                      .getBasisTimes();
         assertTrue( "Expected nullity on filtering durations.", sliced.isEmpty() );
 
         //Check exceptional cases
         exception.expect( NullPointerException.class );
-        slicer.filterByDuration( (TimeSeriesOfSingleValuedPairs) null, null );
-        slicer.filterByDuration( ts, null );
+        Slicer.filterByDuration( (TimeSeriesOfSingleValuedPairs) null, null );
+        Slicer.filterByDuration( ts, null );
     }
 
     /**
@@ -990,8 +984,8 @@ public final class SlicerTest
                                                  .build();
 
         //Iterate and test
-        TimeSeriesOfSingleValuedPairs filtered = slicer.filterByBasisTime( ts, p -> p.equals( secondBasisTime ) );
-        filtered = slicer.filterByDuration( filtered, q -> q.equals( Duration.ofHours( 3 ) ) );
+        TimeSeriesOfSingleValuedPairs filtered = Slicer.filterByBasisTime( ts, p -> p.equals( secondBasisTime ) );
+        filtered = Slicer.filterByDuration( filtered, q -> q.equals( Duration.ofHours( 3 ) ) );
 
         assertTrue( "Unexpected number of durations in filtered time-series.", filtered.getDurations().size() == 1 );
         assertTrue( "Unexpected duration in the filtered time-series.",
@@ -1000,13 +994,13 @@ public final class SlicerTest
                     filtered.timeIterator().iterator().next().getValue().equals( DataFactory.pairOf( 6, 6 ) ) );
 
         //Check for empty output on none filter
-        Set<Duration> sliced = slicer.filterByBasisTime( ts, p -> p.equals( Duration.ofHours( 4 ) ) ).getDurations();
+        Set<Duration> sliced = Slicer.filterByBasisTime( ts, p -> p.equals( Duration.ofHours( 4 ) ) ).getDurations();
         assertTrue( "Expected nullity on filtering durations.", sliced.isEmpty() );
 
         //Check exceptional cases
         exception.expect( NullPointerException.class );
-        slicer.filterByDuration( (TimeSeriesOfEnsemblePairs) null, null );
-        slicer.filterByDuration( ts, null );
+        Slicer.filterByDuration( (TimeSeriesOfEnsemblePairs) null, null );
+        Slicer.filterByDuration( ts, null );
 
     }
 

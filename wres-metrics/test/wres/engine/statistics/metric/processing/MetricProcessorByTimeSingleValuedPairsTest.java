@@ -33,11 +33,11 @@ import wres.config.generated.ThresholdsConfig;
 import wres.config.generated.TimeSeriesMetricConfig;
 import wres.config.generated.TimeSeriesMetricConfigName;
 import wres.datamodel.DataFactory;
-import wres.datamodel.DefaultSlicer;
 import wres.datamodel.MatrixOfDoubles;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
+import wres.datamodel.Slicer;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.metadata.Metadata;
@@ -479,11 +479,9 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         TimeSeriesOfSingleValuedPairs pairs = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsOne();
         //Break into two time-series to test sequential calls
         TimeSeriesOfSingleValuedPairs first =
-                DefaultSlicer.getInstance().filterByBasisTime( pairs,
-                                                               a -> a.equals( Instant.parse( "1985-01-01T00:00:00Z" ) ) );
+                Slicer.filterByBasisTime( pairs, a -> a.equals( Instant.parse( "1985-01-01T00:00:00Z" ) ) );
         TimeSeriesOfSingleValuedPairs second =
-                DefaultSlicer.getInstance().filterByBasisTime( pairs,
-                                                               a -> a.equals( Instant.parse( "1985-01-02T00:00:00Z" ) ) );
+                Slicer.filterByBasisTime( pairs, a -> a.equals( Instant.parse( "1985-01-02T00:00:00Z" ) ) );
 
         //Compute the metrics
         processor.apply( first );

@@ -3,8 +3,8 @@ package wres.engine.statistics.metric.singlevalued;
 import java.util.Objects;
 
 import wres.datamodel.DataFactory;
-import wres.datamodel.DefaultSlicer;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
@@ -62,9 +62,9 @@ public class KlingGuptaEfficiency extends DecomposableScore<SingleValuedPairs>
     @Override
     public DoubleScoreOutput apply( final SingleValuedPairs s )
     {
-        if(Objects.isNull(s))
+        if ( Objects.isNull( s ) )
         {
-            throw new MetricInputException("Specify non-null input to the '"+this+"'.");
+            throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
         }
 
         //TODO: implement any required decompositions, based on the instance parameters and return the decomposition
@@ -72,8 +72,8 @@ public class KlingGuptaEfficiency extends DecomposableScore<SingleValuedPairs>
 
         double result = Double.NaN;
         // Compute the components
-        VectorOfDoubles leftValues = DataFactory.vectorOf( DefaultSlicer.getInstance().getLeftSide( s ) );
-        VectorOfDoubles rightValues = DataFactory.vectorOf( DefaultSlicer.getInstance().getRightSide( s ) );
+        VectorOfDoubles leftValues = DataFactory.vectorOf( Slicer.getLeftSide( s ) );
+        VectorOfDoubles rightValues = DataFactory.vectorOf( Slicer.getRightSide( s ) );
         double rhoVal = rho.apply( s ).getData();
         // Check for finite correlation
         if ( Double.isFinite( rhoVal ) )

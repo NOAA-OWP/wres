@@ -18,9 +18,9 @@ import wres.config.ProjectConfigException;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.DefaultSlicer;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
+import wres.datamodel.Slicer;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.MapKey;
@@ -188,9 +188,7 @@ public class CommaSeparatedScoreWriter<T extends ScoreOutput<?, T>> extends Comm
                                 Format formatter )
     {
         // Slice score by components
-        Map<MetricConstants, MetricOutputMapByTimeAndThreshold<T>> helper =
-                DefaultSlicer.getInstance()
-                             .filterByMetricComponent( output );
+        Map<MetricConstants, MetricOutputMapByTimeAndThreshold<T>> helper = Slicer.filterByMetricComponent( output );
 
         String outerName = scoreName.toString();
         List<RowCompareByLeft> returnMe = new ArrayList<>();

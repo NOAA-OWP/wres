@@ -8,7 +8,7 @@ import java.util.List;
 import org.junit.Test;
 
 import wres.datamodel.DataFactory;
-import wres.datamodel.DefaultSlicer;
+import wres.datamodel.Slicer;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
@@ -179,8 +179,7 @@ public class TimeSeriesDemo
 
         //Slice the time-series to obtain the atomic time-series with an issue time of 1985-01-02T00:00:00Z
         TimeSeries<PairOfDoubles> filteredOne =
-                DefaultSlicer.getInstance()
-                             .filterByBasisTime( timeSeries, a -> a.equals( Instant.parse( "1985-01-02T00:00:00Z" ) ) );
+                Slicer.filterByBasisTime( timeSeries, a -> a.equals( Instant.parse( "1985-01-02T00:00:00Z" ) ) );
         if ( printOutput )
         {
             System.out.println( filteredOne );
@@ -192,7 +191,7 @@ public class TimeSeriesDemo
 
         //Slice the time-series to obtain the atomic time-series with a duration of 12 hours only
         TimeSeries<PairOfDoubles> filteredTwo =
-                DefaultSlicer.getInstance().filterByDuration( timeSeries, a -> a.equals( Duration.ofHours( 12 ) ) );
+                Slicer.filterByDuration( timeSeries, a -> a.equals( Duration.ofHours( 12 ) ) );
         if ( printOutput )
         {
             System.out.println( filteredTwo );
@@ -203,10 +202,9 @@ public class TimeSeriesDemo
         //Slice the time-series to obtain the atomic time-series with an issue time of 1985-01-02T00:00:00Z 
         //and a duration of 12 hours (i.e. filter chaining)
         TimeSeriesOfSingleValuedPairs filteredThree =
-                DefaultSlicer.getInstance()
-                             .filterByBasisTime( timeSeries, a -> a.equals( Instant.parse( "1985-01-02T00:00:00Z" ) ) );
+                Slicer.filterByBasisTime( timeSeries, a -> a.equals( Instant.parse( "1985-01-02T00:00:00Z" ) ) );
         filteredThree =
-                DefaultSlicer.getInstance().filterByDuration( filteredThree, b -> b.equals( Duration.ofHours( 12 ) ) );
+                Slicer.filterByDuration( filteredThree, b -> b.equals( Duration.ofHours( 12 ) ) );
         if ( printOutput )
         {
             System.out.println( filteredThree );
@@ -270,9 +268,9 @@ public class TimeSeriesDemo
                                              .build();
 
         //Iterate and test
-        TimeSeriesOfEnsemblePairs regular = DefaultSlicer.getInstance().filterByTraceIndex( ts,
-                                                                                            q -> q.equals( 0 )
-                                                                                                 || q.equals( 3 ) );
+        TimeSeriesOfEnsemblePairs regular = Slicer.filterByTraceIndex( ts,
+                                                                       q -> q.equals( 0 )
+                                                                            || q.equals( 3 ) );
         //Print the filtered output by basis time
         for ( TimeSeries<PairOfDoubleAndVectorOfDoubles> next : regular.basisTimeIterator() )
         {
