@@ -1,8 +1,10 @@
 package wres.io;
 
 import java.io.IOException;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.PathMatcher;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -10,6 +12,10 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -22,8 +28,26 @@ import java.util.TreeSet;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 
+import com.amazonaws.ClientConfiguration;
+import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.auth.AnonymousAWSCredentials;
+import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.client.builder.AwsClientBuilder;
+import com.amazonaws.regions.Regions;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.s3.model.GetObjectRequest;
+import com.amazonaws.services.s3.model.ListObjectsRequest;
+import com.amazonaws.services.s3.model.ObjectListing;
+import com.amazonaws.services.s3.model.S3Object;
+import com.amazonaws.services.s3.model.S3ObjectSummary;
+import com.amazonaws.util.StringUtils;
 import org.slf4j.LoggerFactory;
+import ucar.nc2.NetcdfFile;
 
 import wres.config.FeaturePlus;
 import wres.config.generated.Feature;
@@ -830,8 +854,49 @@ public final class Operations {
      */
     public static void install() throws SQLException
     {
-
-        // Pinging the database settings will trigger essentially set up scripts
+        // Pinging the database settings will trigger scripts
         Operations.testConnection();
+    }
+
+    public static void s3Test() throws IOException
+    {
+        AWSCredentials credentials = new AnonymousAWSCredentials();
+        AwsClientBuilder.EndpointConfiguration configuration = new AwsClientBuilder.EndpointConfiguration( "http://***REMOVED***rgw.***REMOVED***.***REMOVED***:8080", Regions.US_EAST_1.getName() );
+        ClientConfiguration clientConfiguration = new ClientConfiguration(  );
+        clientConfiguration.setSignerOverride( "S3SignerType" );
+        AmazonS3 connection = AmazonS3ClientBuilder.standard()
+                                                   .withCredentials( new AWSStaticCredentialsProvider( credentials ) )
+                                                   .withPathStyleAccessEnabled( true )
+                                                   .withEndpointConfiguration( configuration )
+                                                   .withClientConfiguration( clientConfiguration )
+                                                   .build();
+        final PathMatcher matcher = FileSystems.getDefault().getPathMatcher( "glob:nwm.*/short_range/*channel_rt*" );
+        ListObjectsRequest request = new ListObjectsRequest(  );
+        request.setPrefix( "nwm.20180605" );
+        request.setBucketName( "nwm" );
+        request.setMaxKeys( 12000 );
+        List<S3ObjectSummary> matchingSummaries = new ArrayList<>();
+
+        ObjectListing s3Objects = connection.listObjects( request );
+        do
+        {
+            s3Objects.getObjectSummaries().forEach( s3ObjectSummary -> {
+                if ( matcher.matches( Paths.get( s3ObjectSummary.getKey() ) ) )
+                {
+                    matchingSummaries.add( s3ObjectSummary );
+                    LOGGER.info("Added another object from {}. ({})", s3ObjectSummary.getLastModified(), matchingSummaries.size());
+                }
+            } );
+
+            s3Objects = connection.listNextBatchOfObjects( s3Objects );
+        } while ( !s3Objects.getObjectSummaries().isEmpty() );
+
+        LOGGER.info("Objects:");
+        matchingSummaries.forEach( summary -> LOGGER.info( "{}\t{}\t{}", summary.getBucketName(), summary.getETag(), summary.getKey() ) );
+
+        S3ObjectSummary first = matchingSummaries.get( 0 );
+        GetObjectRequest getObjectRequest = new GetObjectRequest( "nwm", first.getKey() );
+        S3Object object = connection.getObject( getObjectRequest );
+        object.close();
     }
 }
