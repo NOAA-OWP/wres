@@ -14,7 +14,6 @@ import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.MulticategoryPairs;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.MatrixOutput;
-import wres.datamodel.outputs.MetricOutput;
 import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricParameterException;
 
@@ -30,18 +29,6 @@ import wres.engine.statistics.metric.MetricParameterException;
 
 public class ContingencyTable<S extends MulticategoryPairs> implements Metric<S, MatrixOutput>
 {
-
-    /**
-     * The data factory.
-     */
-
-    private final DataFactory dataFactory;
-
-    @Override
-    public DataFactory getDataFactory()
-    {
-        return dataFactory;
-    }
 
     @Override
     public MatrixOutput apply( final MulticategoryPairs s )
@@ -76,7 +63,7 @@ public class ContingencyTable<S extends MulticategoryPairs> implements Metric<S,
                                             MetricDimension.TRUE_NEGATIVES );
         }
         final MetricOutputMetadata metOut = getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, null );
-        return getDataFactory().ofMatrixOutput( returnMe, componentNames, metOut );
+        return DataFactory.ofMatrixOutput( returnMe, componentNames, metOut );
     }
 
     @Override
@@ -110,26 +97,6 @@ public class ContingencyTable<S extends MulticategoryPairs> implements Metric<S,
             return new ContingencyTable<>( this );
         }
 
-        /**
-         * The data factory.
-         */
-
-        private DataFactory dataFactory;
-
-        /**
-         * Sets the {@link DataFactory} for constructing a {@link MetricOutput}.
-         * 
-         * @param dataFactory the {@link DataFactory}
-         * @return the builder
-         */
-
-        @Override
-        public ContingencyTableBuilder<S> setOutputFactory( final DataFactory dataFactory )
-        {
-            this.dataFactory = dataFactory;
-            return this;
-        }
-
     }
 
     /**
@@ -141,14 +108,5 @@ public class ContingencyTable<S extends MulticategoryPairs> implements Metric<S,
 
     ContingencyTable( final ContingencyTableBuilder<S> builder ) throws MetricParameterException
     {
-        if ( Objects.isNull( builder ) )
-        {
-            throw new MetricParameterException( "Cannot construct the metric with a null builder." );
-        }
-        this.dataFactory = builder.dataFactory;
-        if ( Objects.isNull( this.dataFactory ) )
-        {
-            throw new MetricParameterException( "Specify a data factory with which to build the metric." );
-        }
     }
 }

@@ -1,5 +1,6 @@
 package wres.engine.statistics.metric.categorical;
 
+import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.outputs.DoubleScoreOutput;
@@ -28,7 +29,7 @@ public class ProbabilityOfFalseDetection extends ContingencyTableScore<Dichotomo
         final MatrixOutput v = output;
         final double[][] cm = v.getData().getDoubles();
         double result = FunctionFactory.finiteOrMissing().applyAsDouble( cm[0][1] / ( cm[0][1] + cm[1][1] ) );
-        return getDataFactory().ofDoubleScoreOutput( result, getMetadata( output ) );
+        return DataFactory.ofDoubleScoreOutput( result, getMetadata( output ) );
     }
 
     @Override
@@ -47,8 +48,7 @@ public class ProbabilityOfFalseDetection extends ContingencyTableScore<Dichotomo
      * A {@link MetricBuilder} to build the metric.
      */
 
-    public static class ProbabilityOfFalseDetectionBuilder
-            extends OrdinaryScoreBuilder<DichotomousPairs, DoubleScoreOutput>
+    public static class ProbabilityOfFalseDetectionBuilder implements MetricBuilder<DichotomousPairs, DoubleScoreOutput>
     {
 
         @Override
@@ -69,6 +69,6 @@ public class ProbabilityOfFalseDetection extends ContingencyTableScore<Dichotomo
     private ProbabilityOfFalseDetection( final ProbabilityOfFalseDetectionBuilder builder )
             throws MetricParameterException
     {
-        super( builder );
+        super();
     }
 }

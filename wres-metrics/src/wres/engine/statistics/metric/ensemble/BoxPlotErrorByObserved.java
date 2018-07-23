@@ -2,6 +2,7 @@ package wres.engine.statistics.metric.ensemble;
 
 import java.util.Arrays;
 
+import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.Slicer;
@@ -42,10 +43,10 @@ public class BoxPlotErrorByObserved extends BoxPlot
         //Get the sorted errors
         double[] probs = probabilities.getDoubles();
         double[] sortedErrors = Arrays.stream( pair.getItemTwo() ).map( x -> x - pair.getItemOne() ).sorted().toArray();
-        Slicer slicer = getDataFactory().getSlicer();       
         //Compute the quantiles
-        double[] box = Arrays.stream( probs ).map( slicer.getQuantileFunction(sortedErrors) ).toArray();
-        return getDataFactory().pairOf( pair.getItemOne(), box );
+        double[] box =
+                Arrays.stream( probs ).map( Slicer.getQuantileFunction( sortedErrors ) ).toArray();
+        return DataFactory.pairOf( pair.getItemOne(), box );
     }
 
     /**

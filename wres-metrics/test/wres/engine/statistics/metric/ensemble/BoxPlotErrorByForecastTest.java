@@ -14,7 +14,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.DataFactory;
-import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.inputs.MetricInputException;
@@ -46,20 +45,12 @@ public final class BoxPlotErrorByForecastTest
 
     private BoxPlotErrorByForecast bpe;
 
-    /**
-     * Instance of a data factory.
-     */
-
-    private DataFactory outF;
-
     @Before
     public void setupBeforeEachTest() throws MetricParameterException
     {
         BoxPlotErrorByForecastBuilder b = new BoxPlotErrorByForecastBuilder();
-        this.outF = DefaultDataFactory.getInstance();
-        b.setOutputFactory( outF );
         b.setDomainDimension( MetricDimension.ENSEMBLE_MEAN );
-        b.setProbabilities( outF.vectorOf( new double[] { 0.0, 0.25, 0.5, 0.75, 1.0 } ) );
+        b.setProbabilities( DataFactory.vectorOf( new double[] { 0.0, 0.25, 0.5, 0.75, 1.0 } ) );
         this.bpe = (BoxPlotErrorByForecast) b.build();
     }
 
@@ -71,37 +62,34 @@ public final class BoxPlotErrorByForecastTest
     @Test
     public void testApplyWithEnsembleMean()
     {
-        //Obtain the factories
-        MetadataFactory metaFac = outF.getMetadataFactory();
-
         List<PairOfDoubleAndVectorOfDoubles> values = new ArrayList<>();
-        values.add( outF.pairOf( 0.0, new double[] { 0.0, 20.0, 30.0, 50.0, 100.0 } ) );
-        MetadataFactory metFac = outF.getMetadataFactory();
+        values.add( DataFactory.pairOf( 0.0, new double[] { 0.0, 20.0, 30.0, 50.0, 100.0 } ) );
+
         TimeWindow window = TimeWindow.of( Instant.MIN,
                                            Instant.MAX,
                                            ReferenceTime.VALID_TIME,
                                            Duration.ofHours( 24 ) );
-        final Metadata meta = metFac.getMetadata( metFac.getDimension( "MM/DAY" ),
-                                                  metFac.getDatasetIdentifier( metaFac.getLocation("A"), "MAP" ),
+        final Metadata meta = MetadataFactory.getMetadata( MetadataFactory.getDimension( "MM/DAY" ),
+                                                  MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation("A"), "MAP" ),
                                                   window );
-        EnsemblePairs input = outF.ofEnsemblePairs( values, meta );
+        EnsemblePairs input = DataFactory.ofEnsemblePairs( values, meta );
 
-        final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getRawData().size(),
-                                                                   metFac.getDimension( "MM/DAY" ),
-                                                                   metFac.getDimension( "MM/DAY" ),
+        final MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( input.getRawData().size(),
+                                                                   MetadataFactory.getDimension( "MM/DAY" ),
+                                                                   MetadataFactory.getDimension( "MM/DAY" ),
                                                                    MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE,
                                                                    MetricConstants.MAIN,
-                                                                   metFac.getDatasetIdentifier( metaFac.getLocation("A"), "MAP" ),
+                                                                   MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation("A"), "MAP" ),
                                                                    window );
 
         //Compute normally
         final BoxPlotOutput actual = bpe.apply( input );
         final PairOfDoubleAndVectorOfDoubles expectedBox =
-                outF.pairOf( 40.0, new double[] { 0.0, 10, 30.0, 75.0, 100.0 } );
+                DataFactory.pairOf( 40.0, new double[] { 0.0, 10, 30.0, 75.0, 100.0 } );
         List<PairOfDoubleAndVectorOfDoubles> expectedBoxes = new ArrayList<>();
         expectedBoxes.add( expectedBox );
-        BoxPlotOutput expected = outF.ofBoxPlotOutput( expectedBoxes,
-                                                       outF.vectorOf( new double[] { 0.0, 0.25, 0.5, 0.75, 1.0 } ),
+        BoxPlotOutput expected = DataFactory.ofBoxPlotOutput( expectedBoxes,
+                                                       DataFactory.vectorOf( new double[] { 0.0, 0.25, 0.5, 0.75, 1.0 } ),
                                                        m1,
                                                        MetricDimension.ENSEMBLE_MEAN,
                                                        MetricDimension.FORECAST_ERROR );
@@ -119,44 +107,40 @@ public final class BoxPlotErrorByForecastTest
     @Test
     public void testApplyWithEnsembleMedian() throws MetricParameterException
     {
-        //Obtain the factories
-        MetadataFactory metaFac = outF.getMetadataFactory();
-
         List<PairOfDoubleAndVectorOfDoubles> values = new ArrayList<>();
-        values.add( outF.pairOf( 0.0, new double[] { 0.0, 20.0, 30.0, 50.0, 100.0 } ) );
-        MetadataFactory metFac = outF.getMetadataFactory();
+        values.add( DataFactory.pairOf( 0.0, new double[] { 0.0, 20.0, 30.0, 50.0, 100.0 } ) );
+
         TimeWindow window = TimeWindow.of( Instant.MIN,
                                            Instant.MAX,
                                            ReferenceTime.VALID_TIME,
                                            Duration.ofHours( 24 ) );
-        final Metadata meta = metFac.getMetadata( metFac.getDimension( "MM/DAY" ),
-                                                  metFac.getDatasetIdentifier( metaFac.getLocation("A"), "MAP" ),
+        final Metadata meta = MetadataFactory.getMetadata( MetadataFactory.getDimension( "MM/DAY" ),
+                                                  MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation("A"), "MAP" ),
                                                   window );
-        EnsemblePairs input = outF.ofEnsemblePairs( values, meta );
+        EnsemblePairs input = DataFactory.ofEnsemblePairs( values, meta );
 
-        final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getRawData().size(),
-                                                                   metFac.getDimension( "MM/DAY" ),
-                                                                   metFac.getDimension( "MM/DAY" ),
+        final MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( input.getRawData().size(),
+                                                                   MetadataFactory.getDimension( "MM/DAY" ),
+                                                                   MetadataFactory.getDimension( "MM/DAY" ),
                                                                    MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE,
                                                                    MetricConstants.MAIN,
-                                                                   metFac.getDatasetIdentifier( metaFac.getLocation("A"), "MAP" ),
+                                                                   MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation("A"), "MAP" ),
                                                                    window );
 
         //Build the metric
         final BoxPlotErrorByForecastBuilder b = new BoxPlotErrorByForecast.BoxPlotErrorByForecastBuilder();
-        b.setOutputFactory( outF );
         b.setDomainDimension( MetricDimension.ENSEMBLE_MEDIAN );
-        b.setProbabilities( outF.vectorOf( new double[] { 0.0, 0.25, 0.5, 0.75, 1.0 } ) );
+        b.setProbabilities( DataFactory.vectorOf( new double[] { 0.0, 0.25, 0.5, 0.75, 1.0 } ) );
         BoxPlotErrorByForecast bpe = (BoxPlotErrorByForecast) b.build();
 
         //Compute normally
         final BoxPlotOutput actual = bpe.apply( input );
         final PairOfDoubleAndVectorOfDoubles expectedBox =
-                outF.pairOf( 30.0, new double[] { 0.0, 10, 30.0, 75.0, 100.0 } );
+                DataFactory.pairOf( 30.0, new double[] { 0.0, 10, 30.0, 75.0, 100.0 } );
         List<PairOfDoubleAndVectorOfDoubles> expectedBoxes = new ArrayList<>();
         expectedBoxes.add( expectedBox );
-        BoxPlotOutput expected = outF.ofBoxPlotOutput( expectedBoxes,
-                                                       outF.vectorOf( new double[] { 0.0, 0.25, 0.5, 0.75, 1.0 } ),
+        BoxPlotOutput expected = DataFactory.ofBoxPlotOutput( expectedBoxes,
+                                                       DataFactory.vectorOf( new double[] { 0.0, 0.25, 0.5, 0.75, 1.0 } ),
                                                        m1,
                                                        MetricDimension.ENSEMBLE_MEDIAN,
                                                        MetricDimension.FORECAST_ERROR );
@@ -174,7 +158,7 @@ public final class BoxPlotErrorByForecastTest
     {
         // Generate empty data
         EnsemblePairs input =
-                outF.ofEnsemblePairs( Arrays.asList(), outF.getMetadataFactory().getMetadata() );
+                DataFactory.ofEnsemblePairs( Arrays.asList(), MetadataFactory.getMetadata() );
 
         BoxPlotOutput actual = bpe.apply( input );
 
@@ -234,7 +218,6 @@ public final class BoxPlotErrorByForecastTest
                 + "for the domain axis" );
 
         BoxPlotErrorByForecastBuilder b = new BoxPlotErrorByForecast.BoxPlotErrorByForecastBuilder();
-        b.setOutputFactory( outF );
 
         //Test for construction with a null domain dimension
         b.setDomainDimension( null );
@@ -255,7 +238,6 @@ public final class BoxPlotErrorByForecastTest
         exception.expectMessage( "Unsupported dimension for the domain axis of the box plot: 'FALSE NEGATIVES'." );
 
         BoxPlotErrorByForecastBuilder b = new BoxPlotErrorByForecast.BoxPlotErrorByForecastBuilder();
-        b.setOutputFactory( outF );
 
         //Test for construction with a null domain dimension
         b.setDomainDimension( MetricDimension.FALSE_NEGATIVES );

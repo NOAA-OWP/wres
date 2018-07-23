@@ -24,7 +24,6 @@ import org.mockito.Mockito;
 import org.slf4j.Logger;
 
 import wres.datamodel.DataFactory;
-import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
@@ -50,15 +49,13 @@ public class MetricCollectionTest
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
-    private DataFactory outF;
     private MetricFactory metF;
     private ExecutorService metricPool;
 
     @Before
     public void setupBeforeEachTest() throws MetricParameterException
     {
-        outF = DefaultDataFactory.getInstance();
-        metF = MetricFactory.getInstance( outF );
+        metF = MetricFactory.getInstance();
         metricPool = Executors.newSingleThreadExecutor();
     }
 
@@ -132,7 +129,6 @@ public class MetricCollectionTest
         final MetricCollectionBuilder<DichotomousPairs, MetricOutput<?>, DoubleScoreOutput> m =
                 MetricCollectionBuilder.of();
 
-        m.setOutputFactory( outF );
         m.setExecutorService( ForkJoinPool.commonPool() );
 
         //Add some appropriate metrics to the collection     
@@ -208,7 +204,6 @@ public class MetricCollectionTest
         final MetricCollectionBuilder<DiscreteProbabilityPairs, MetricOutput<?>, DoubleScoreOutput> n =
                 MetricCollectionBuilder.of();
 
-        n.setOutputFactory( outF );
         n.setExecutorService( ForkJoinPool.commonPool() );
 
         //Add some appropriate metrics to the collection
@@ -262,7 +257,6 @@ public class MetricCollectionTest
         final MetricCollectionBuilder<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput> n =
                 MetricCollectionBuilder.of();
 
-        n.setOutputFactory( outF );
         n.setExecutorService( ForkJoinPool.commonPool() );
 
         //Add some appropriate metrics to the collection
@@ -316,7 +310,6 @@ public class MetricCollectionTest
         final MetricCollectionBuilder<MulticategoryPairs, MetricOutput<?>, DoubleScoreOutput> n =
                 MetricCollectionBuilder.of();
 
-        n.setOutputFactory( outF );
         n.setExecutorService( ForkJoinPool.commonPool() );
 
         //Add some appropriate metrics to the collection
@@ -360,8 +353,6 @@ public class MetricCollectionTest
         final MetricCollectionBuilder<SingleValuedPairs, MetricOutput<?>, DoubleScoreOutput> n =
                 MetricCollectionBuilder.of();
 
-        n.setOutputFactory( outF );
-
         //Add some appropriate metrics to the collection
         n.addMetric( metF.ofMeanError() );
 
@@ -397,7 +388,7 @@ public class MetricCollectionTest
         final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         final MetricCollection<SingleValuedPairs, MetricOutput<?>, DoubleScoreOutput> collection =
-                n.setOutputFactory( outF ).addMetric( metF.ofMeanError() ).setExecutorService( metricPool ).build();
+                n.addMetric( metF.ofMeanError() ).setExecutorService( metricPool ).build();
 
         //Null input
         exception.expect( MetricCalculationException.class );
@@ -426,7 +417,7 @@ public class MetricCollectionTest
         final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         final MetricCollection<SingleValuedPairs, MetricOutput<?>, DoubleScoreOutput> collection =
-                n.setOutputFactory( outF ).addMetric( metF.ofMeanError() ).setExecutorService( metricPool ).build();
+                n.addMetric( metF.ofMeanError() ).setExecutorService( metricPool ).build();
 
         //Null input
         exception.expect( MetricCalculationException.class );
@@ -455,25 +446,6 @@ public class MetricCollectionTest
     }
 
     /**
-     * Expects a {@link MetricParameterException} when building a {@link MetricCollection} without an 
-     * {@link ExecutorService}.
-     * 
-     * @throws MetricParameterException if the metric construction fails
-     */
-
-    @Test
-    public void testBuildWithNoMetricFactory() throws MetricParameterException
-    {
-        exception.expect( MetricParameterException.class );
-        exception.expectMessage( "Cannot construct the metric collection without a metric output factory." );
-
-        //No output factory            
-        final MetricCollectionBuilder<SingleValuedPairs, MetricOutput<?>, DoubleScoreOutput> m =
-                MetricCollectionBuilder.of();
-        m.setExecutorService( metricPool ).build();
-    }
-
-    /**
      * Expects a {@link MetricParameterException} when building a {@link MetricCollection} without any metrics.
      * 
      * @throws MetricParameterException if the metric construction fails
@@ -486,7 +458,7 @@ public class MetricCollectionTest
         exception.expectMessage( "Cannot construct a metric collection without any metrics." );
 
         //Try to build with no metrics
-        MetricCollectionBuilder.of().setOutputFactory( outF ).setExecutorService( metricPool ).build();
+        MetricCollectionBuilder.of().setExecutorService( metricPool ).build();
     }
 
     /**
@@ -557,7 +529,7 @@ public class MetricCollectionTest
                                         1,
                                         Collections.emptySet() );
     }
-    
+
     /**
      * Tests that {@link MetricCollection#apply(MetricInput, Set)} throws an expected exception when cancelled.
      * 
@@ -576,7 +548,7 @@ public class MetricCollectionTest
     {
         exception.expect( InvocationTargetException.class );
         exception.expectCause( CoreMatchers.isA( MetricCalculationException.class ) );
-        
+
         MetricCollection<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput> collection =
                 metF.ofSingleValuedScoreCollection( MetricConstants.MEAN_ERROR );
         Method method = collection.getClass().getDeclaredMethod( "apply", MetricInput.class, Set.class );
@@ -611,8 +583,7 @@ public class MetricCollectionTest
 
         MetricCollectionBuilder<SingleValuedPairs, MetricOutput<?>, DoubleScoreOutput> failed =
                 MetricCollectionBuilder.of();
-        failed.setOutputFactory( outF )
-              .setExecutorService( metricPool )
+        failed.setExecutorService( metricPool )
               .addMetric( meanError )
               .build()
               .apply( input );
@@ -706,9 +677,6 @@ public class MetricCollectionTest
         //Generate some data
         final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
-        //Create a collection of metrics that consume single-valued pairs and produce a scalar output
-        final MetadataFactory metaFac = outF.getMetadataFactory();
-
         //Add some appropriate metrics to the collection
         final MetricCollection<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput> collection =
                 metF.ofSingleValuedScoreCollection( ForkJoinPool.commonPool(),
@@ -720,24 +688,25 @@ public class MetricCollectionTest
                                                                     MetricConstants.MEAN_SQUARE_ERROR ) );
         final MetricOutputMapByMetric<DoubleScoreOutput> actual = collection.apply( input, ignore );
         MetricOutputMetadata outM =
-                metaFac.getOutputMetadata( 10,
-                                           metaFac.getDimension(),
-                                           metaFac.getDimension(),
-                                           MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
+                MetadataFactory.getOutputMetadata( 10,
+                                                   MetadataFactory.getDimension(),
+                                                   MetadataFactory.getDimension(),
+                                                   MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
         MetricOutputMapByMetric<DoubleScoreOutput> expected =
-                outF.ofMetricOutputMapByMetric( Collections.singletonMap( MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
-                                                                          outF.ofDoubleScoreOutput( 0.9999999910148981,
-                                                                                                    outM ) ) );
+                DataFactory.ofMetricOutputMapByMetric( Collections.singletonMap( MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
+                                                                                 DataFactory.ofDoubleScoreOutput( 0.9999999910148981,
+                                                                                                                  outM ) ) );
         //Check them   
         assertTrue( "Difference between the actual and expected output when ignoring some metrics in the "
-                    + "collection.", actual.equals( expected ) );
+                    + "collection.",
+                    actual.equals( expected ) );
     }
 
     @After
     public void tearDownAfterEachTest()
     {
         metricPool.shutdownNow();
-        
+
         // Return the interrupted status of the thread running the test
         Thread.interrupted();
     }

@@ -11,7 +11,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.DataFactory;
-import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
@@ -40,18 +39,10 @@ public final class BrierScoreTest
 
     private BrierScore brierScore;
 
-    /**
-     * Instance of a data factory.
-     */
-
-    private DataFactory outF;
-
     @Before
     public void setupBeforeEachTest() throws MetricParameterException
     {
         BrierScoreBuilder b = new BrierScore.BrierScoreBuilder();
-        this.outF = DefaultDataFactory.getInstance();
-        b.setOutputFactory( outF );
         b.setDecompositionID( ScoreOutputGroup.NONE );
         this.brierScore = b.build();
     }
@@ -65,20 +56,19 @@ public final class BrierScoreTest
     {
         // Generate some data
         DiscreteProbabilityPairs input = MetricTestDataFactory.getDiscreteProbabilityPairsOne();
-        MetadataFactory metaFac = outF.getMetadataFactory();
 
         // Metadata for the output
         MetricOutputMetadata m1 =
-                metaFac.getOutputMetadata( input.getRawData().size(),
-                                           metaFac.getDimension(),
-                                           metaFac.getDimension(),
+                MetadataFactory.getOutputMetadata( input.getRawData().size(),
+                                           MetadataFactory.getDimension(),
+                                           MetadataFactory.getDimension(),
                                            MetricConstants.BRIER_SCORE,
                                            MetricConstants.MAIN,
-                                           metaFac.getDatasetIdentifier( metaFac.getLocation("DRRC2"), "SQIN", "HEFS" ) );
+                                           MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation("DRRC2"), "SQIN", "HEFS" ) );
 
         // Check the results       
         DoubleScoreOutput actual = brierScore.apply( input );
-        DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 0.26, m1 );
+        DoubleScoreOutput expected = DataFactory.ofDoubleScoreOutput( 0.26, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -95,7 +85,7 @@ public final class BrierScoreTest
     {
         // Generate empty data
         DiscreteProbabilityPairs input =
-                outF.ofDiscreteProbabilityPairs( Arrays.asList(), outF.getMetadataFactory().getMetadata() );
+                DataFactory.ofDiscreteProbabilityPairs( Arrays.asList(), MetadataFactory.getMetadata() );
  
         DoubleScoreOutput actual = brierScore.apply( input );
 
@@ -190,8 +180,7 @@ public final class BrierScoreTest
         
         BrierScoreBuilder b = new BrierScore.BrierScoreBuilder();
         b.setDecompositionID( null );
-        this.outF = DefaultDataFactory.getInstance();
-        b.setOutputFactory( outF ).build();
+        b.build();
     }
 
 }

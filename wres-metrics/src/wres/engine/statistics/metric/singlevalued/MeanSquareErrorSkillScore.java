@@ -3,12 +3,13 @@ package wres.engine.statistics.metric.singlevalued;
 import java.util.Objects;
 
 import wres.datamodel.DataFactory;
-import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
+import wres.datamodel.Slicer;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
+import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.DecomposableScore;
@@ -62,8 +63,8 @@ public class MeanSquareErrorSkillScore<S extends SingleValuedPairs> extends Deco
             }
             else
             {
-                DataFactory d = getDataFactory();
-                double meanLeft = FunctionFactory.mean().applyAsDouble( d.vectorOf( d.getSlicer().getLeftSide( s ) ) );
+                double meanLeft =
+                        FunctionFactory.mean().applyAsDouble( DataFactory.vectorOf( Slicer.getLeftSide( s ) ) );
                 for ( PairOfDoubles next : s.getRawData() )
                 {
                     denominator += Math.pow( next.getItemOne() - meanLeft, 2 );
@@ -80,7 +81,7 @@ public class MeanSquareErrorSkillScore<S extends SingleValuedPairs> extends Deco
         }
         final MetricOutputMetadata metOut =
                 this.getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, baselineIdentifier );
-        return this.getDataFactory().ofDoubleScoreOutput( result, metOut );
+        return DataFactory.ofDoubleScoreOutput( result, metOut );
     }
 
     @Override
@@ -129,7 +130,7 @@ public class MeanSquareErrorSkillScore<S extends SingleValuedPairs> extends Deco
             throws MetricParameterException
     {
         super( builder );
-        sse = MetricFactory.getInstance( this.getDataFactory() ).ofSumOfSquareError();
+        sse = MetricFactory.getInstance().ofSumOfSquareError();
     }
 
 }

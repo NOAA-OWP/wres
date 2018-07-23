@@ -15,7 +15,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.DataFactory;
-import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
@@ -46,18 +45,10 @@ public final class TimeToPeakErrorTest
 
     private TimeToPeakError ttp;
 
-    /**
-     * Instance of a data factory.
-     */
-
-    private DataFactory outF;
-
     @Before
     public void setupBeforeEachTest() throws MetricParameterException
     {
-        outF = DefaultDataFactory.getInstance();
         TimeToPeakErrorBuilder b = new TimeToPeakErrorBuilder();
-        b.setOutputFactory( outF );
         
         // Seeded RNG to resolve ties consistently
         Random resolveTies = new Random( 123456789 );
@@ -75,10 +66,6 @@ public final class TimeToPeakErrorTest
     @Test
     public void testTimeToPeakError() throws MetricParameterException
     {
-        // Obtain the factories
-        DataFactory outF = DefaultDataFactory.getInstance();
-        MetadataFactory metaFac = outF.getMetadataFactory();
-
         // Generate some data
         TimeSeriesOfSingleValuedPairs input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsOne();
 
@@ -88,12 +75,12 @@ public final class TimeToPeakErrorTest
                                                  ReferenceTime.ISSUE_TIME,
                                                  Duration.ofHours( 6 ),
                                                  Duration.ofHours( 18 ) );
-        MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getBasisTimes().size(),
-                                                                   metaFac.getDimension( "DURATION" ),
-                                                                   metaFac.getDimension( "CMS" ),
+        MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( input.getBasisTimes().size(),
+                                                                   MetadataFactory.getDimension( "DURATION" ),
+                                                                   MetadataFactory.getDimension( "CMS" ),
                                                                    MetricConstants.TIME_TO_PEAK_ERROR,
                                                                    MetricConstants.MAIN,
-                                                                   metaFac.getDatasetIdentifier( metaFac.getLocation("A"),
+                                                                   MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation("A"),
                                                                                                  "Streamflow" ),
                                                                    window );
 
@@ -106,7 +93,7 @@ public final class TimeToPeakErrorTest
         List<Pair<Instant, Duration>> expectedSource = new ArrayList<>();
         expectedSource.add( Pair.of( Instant.parse( "1985-01-01T00:00:00Z" ), Duration.ofHours( -6 ) ) );
         expectedSource.add( Pair.of( Instant.parse( "1985-01-02T00:00:00Z" ), Duration.ofHours( 12 ) ) );
-        PairedOutput<Instant, Duration> expected = outF.ofPairedOutput( expectedSource, m1 );
+        PairedOutput<Instant, Duration> expected = DataFactory.ofPairedOutput( expectedSource, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -155,22 +142,6 @@ public final class TimeToPeakErrorTest
         new TimeToPeakError( null );
     }
     
-    /**
-     * Tests for an expected exception on attempting to build a {@link TimeToPeakError} with a null 
-     * data factory.
-     * @throws MetricParameterException if the test fails unexpectedly
-     */
-
-    @Test
-    public void testBuildThrowsExceptionOnNullDataFactory() throws MetricParameterException
-    {
-        // Null input to apply
-        exception.expect( MetricParameterException.class );
-        exception.expectMessage( "Specify a data factory with which to build the metric." );
-
-        new TimeToPeakError( new TimeToPeakErrorBuilder() );
-    }
-   
 //  /**
 //  * Tests the behavior of {@link Incremental} implemented by {@link TimeToPeakError}.
 //  * @throws MetricParameterException if the metric could not be constructed 
@@ -180,8 +151,8 @@ public final class TimeToPeakErrorTest
 // public void testCombineAndComplete() throws MetricParameterException
 // {
 //     // Obtain the factories
-//     final DataFactory outF = DefaultDataFactory.getInstance();
-//     final MetadataFactory metaFac = outF.getMetadataFactory();
+//     final DataFactory DataFactory = DefaultDataFactory.getInstance();
+//     final MetadataFactory MetadataFactory = DataFactory.getMetadataFactory();
 //
 //     // Generate some data
 //     TimeSeriesOfSingleValuedPairs input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsOne();
@@ -192,17 +163,17 @@ public final class TimeToPeakErrorTest
 //                                              ReferenceTime.ISSUE_TIME,
 //                                              Duration.ofHours( 6 ),
 //                                              Duration.ofHours( 18 ) );
-//     final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getBasisTimes().size() * 2,
-//                                                                metaFac.getDimension( "DURATION" ),
-//                                                                metaFac.getDimension( "CMS" ),
+//     final MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( input.getBasisTimes().size() * 2,
+//                                                                MetadataFactory.getDimension( "DURATION" ),
+//                                                                MetadataFactory.getDimension( "CMS" ),
 //                                                                MetricConstants.TIME_TO_PEAK_ERROR,
 //                                                                MetricConstants.MAIN,
-//                                                                metaFac.getDatasetIdentifier( "A",
+//                                                                MetadataFactory.getDatasetIdentifier( "A",
 //                                                                                              "Streamflow" ),
 //                                                                window );
 //     // Build the metric
 //     final TimeToPeakErrorBuilder b = new TimeToPeakErrorBuilder();
-//     b.setOutputFactory( outF );
+//     b.setOutputFactory( DataFactory );
 //     final TimeToPeakError ttp = b.build();
 //
 //     // Compute the combined and completed results
@@ -213,7 +184,7 @@ public final class TimeToPeakErrorTest
 //     expectedSource.add( Pair.of( Instant.parse( "1985-01-02T00:00:00Z" ), Duration.ofHours( 12 ) ) );
 //     expectedSource.add( Pair.of( Instant.parse( "1985-01-01T00:00:00Z" ), Duration.ofHours( -6 ) ) );
 //     expectedSource.add( Pair.of( Instant.parse( "1985-01-02T00:00:00Z" ), Duration.ofHours( 12 ) ) );
-//     final PairedOutput<Instant, Duration> expected = outF.ofPairedOutput( expectedSource, m1 );
+//     final PairedOutput<Instant, Duration> expected = DataFactory.ofPairedOutput( expectedSource, m1 );
 //     assertTrue( "Actual: " + actual.getData()
 //                 + ". Expected: "
 //                 + expected.getData()

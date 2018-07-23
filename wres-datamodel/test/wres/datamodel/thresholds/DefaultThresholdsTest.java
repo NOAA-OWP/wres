@@ -7,8 +7,7 @@ import static org.junit.Assert.fail;
 import org.junit.Test;
 
 import wres.datamodel.DataFactory;
-import wres.datamodel.DefaultDataFactory;
-import wres.datamodel.SafeOneOrTwoDoubles;
+import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
@@ -24,22 +23,16 @@ public final class DefaultThresholdsTest
 {
 
     /**
-     * Instance of a {@link DataFactory} for testing.
-     */
-
-    private static final DataFactory FACTORY = DefaultDataFactory.getInstance();
-
-    /**
      * Constructs a {@link OneOrTwoThresholds} and confirms that the {@link OneOrTwoThresholds#first()} returns the expected result.
      */
 
     @Test
     public void testGetFirst()
     {
-        OneOrTwoThresholds thresholds = OneOrTwoThresholds.of( FACTORY.ofThreshold( SafeOneOrTwoDoubles.of( 0.1 ), Operator.GREATER,
+        OneOrTwoThresholds thresholds = OneOrTwoThresholds.of( DataFactory.ofThreshold( OneOrTwoDoubles.of( 0.1 ), Operator.GREATER,
                                                                                     ThresholdDataType.LEFT ) );
         assertTrue( "The threshold has an unexpected first threshold.",
-                    FACTORY.ofThreshold( SafeOneOrTwoDoubles.of( 0.1 ), Operator.GREATER,
+                    DataFactory.ofThreshold( OneOrTwoDoubles.of( 0.1 ), Operator.GREATER,
                                          ThresholdDataType.LEFT )
                            .equals( thresholds.first() ) );
     }
@@ -51,12 +44,12 @@ public final class DefaultThresholdsTest
     @Test
     public void testGetSecond()
     {
-        OneOrTwoThresholds thresholds = OneOrTwoThresholds.of( FACTORY.ofThreshold( SafeOneOrTwoDoubles.of( 0.1 ), Operator.GREATER,
+        OneOrTwoThresholds thresholds = OneOrTwoThresholds.of( DataFactory.ofThreshold( OneOrTwoDoubles.of( 0.1 ), Operator.GREATER,
                                                                                     ThresholdDataType.LEFT ),
-                                               FACTORY.ofThreshold( SafeOneOrTwoDoubles.of( 0.2 ), Operator.GREATER,
+                                               DataFactory.ofThreshold( OneOrTwoDoubles.of( 0.2 ), Operator.GREATER,
                                                                     ThresholdDataType.LEFT ) );
         assertTrue( "The threshold has an unexpected first threshold.",
-                    FACTORY.ofThreshold( SafeOneOrTwoDoubles.of( 0.2 ), Operator.GREATER,
+                    DataFactory.ofThreshold( OneOrTwoDoubles.of( 0.2 ), Operator.GREATER,
                                          ThresholdDataType.LEFT )
                            .equals( thresholds.second() ) );
     }
@@ -69,19 +62,19 @@ public final class DefaultThresholdsTest
     public void testEquals()
     {
         // Reflexive 
-        OneOrTwoThresholds thresholds = OneOrTwoThresholds.of( FACTORY.ofThreshold( SafeOneOrTwoDoubles.of( 0.1 ), Operator.GREATER,
+        OneOrTwoThresholds thresholds = OneOrTwoThresholds.of( DataFactory.ofThreshold( OneOrTwoDoubles.of( 0.1 ), Operator.GREATER,
                                                                                     ThresholdDataType.LEFT ) );
         assertTrue( "The thresholds instance does not meet the equals contract for reflexivity.",
                     thresholds.equals( thresholds ) );
         // Symmetric
         OneOrTwoThresholds otherThresholds =
-                OneOrTwoThresholds.of( FACTORY.ofThreshold( SafeOneOrTwoDoubles.of( 0.1 ), Operator.GREATER,
+                OneOrTwoThresholds.of( DataFactory.ofThreshold( OneOrTwoDoubles.of( 0.1 ), Operator.GREATER,
                                                             ThresholdDataType.LEFT ) );
         assertTrue( "The thresholds instances do not meet the equals contract for symmetry.",
                     thresholds.equals( otherThresholds ) && otherThresholds.equals( thresholds ) );
         // Transitive
         OneOrTwoThresholds oneMoreThresholds =
-                OneOrTwoThresholds.of( FACTORY.ofThreshold( SafeOneOrTwoDoubles.of( 0.1 ), Operator.GREATER,
+                OneOrTwoThresholds.of( DataFactory.ofThreshold( OneOrTwoDoubles.of( 0.1 ), Operator.GREATER,
                                                             ThresholdDataType.LEFT ) );
         assertTrue( "The thresholds instances do not meet the equals contract for transitivity.",
                     thresholds.equals( otherThresholds ) && otherThresholds.equals( oneMoreThresholds )
@@ -97,22 +90,22 @@ public final class DefaultThresholdsTest
 
         // Check unequal cases
         OneOrTwoThresholds unequalOnFirst =
-                OneOrTwoThresholds.of( FACTORY.ofThreshold( SafeOneOrTwoDoubles.of( 0.2 ), Operator.GREATER,
+                OneOrTwoThresholds.of( DataFactory.ofThreshold( OneOrTwoDoubles.of( 0.2 ), Operator.GREATER,
                                                             ThresholdDataType.LEFT ),
-                               FACTORY.ofThreshold( SafeOneOrTwoDoubles.of( 0.1 ), Operator.GREATER,
+                               DataFactory.ofThreshold( OneOrTwoDoubles.of( 0.1 ), Operator.GREATER,
                                                     ThresholdDataType.LEFT ) );
         assertFalse( "Expected the thresholds to differ.", thresholds.equals( unequalOnFirst ) );
         // Differences on nullity of second
         OneOrTwoThresholds unequalOnNullity =
-                OneOrTwoThresholds.of( FACTORY.ofThreshold( SafeOneOrTwoDoubles.of( 0.1 ), Operator.GREATER,
+                OneOrTwoThresholds.of( DataFactory.ofThreshold( OneOrTwoDoubles.of( 0.1 ), Operator.GREATER,
                                                             ThresholdDataType.LEFT ),
-                               FACTORY.ofThreshold( SafeOneOrTwoDoubles.of( 0.3 ), Operator.GREATER,
+                               DataFactory.ofThreshold( OneOrTwoDoubles.of( 0.3 ), Operator.GREATER,
                                                     ThresholdDataType.LEFT ) );
         assertFalse( "Expected the event to differ on value.", thresholds.equals( unequalOnNullity ) );
         OneOrTwoThresholds unequalOnSecond =
-                OneOrTwoThresholds.of( FACTORY.ofThreshold( SafeOneOrTwoDoubles.of( 0.1 ), Operator.GREATER,
+                OneOrTwoThresholds.of( DataFactory.ofThreshold( OneOrTwoDoubles.of( 0.1 ), Operator.GREATER,
                                                             ThresholdDataType.LEFT ),
-                               FACTORY.ofThreshold( SafeOneOrTwoDoubles.of( 0.4 ), Operator.GREATER,
+                               DataFactory.ofThreshold( OneOrTwoDoubles.of( 0.4 ), Operator.GREATER,
                                                     ThresholdDataType.LEFT ) );
         assertFalse( "Expected the event to differ on value.", unequalOnNullity.equals( unequalOnSecond ) );
     }
@@ -125,10 +118,10 @@ public final class DefaultThresholdsTest
     public void testHashCode()
     {
         // Consistent with equals
-        OneOrTwoThresholds thresholds = OneOrTwoThresholds.of( FACTORY.ofThreshold( SafeOneOrTwoDoubles.of( 0.1 ), Operator.GREATER,
+        OneOrTwoThresholds thresholds = OneOrTwoThresholds.of( DataFactory.ofThreshold( OneOrTwoDoubles.of( 0.1 ), Operator.GREATER,
                                                                                     ThresholdDataType.LEFT ) );
         OneOrTwoThresholds otherThresholds =
-                OneOrTwoThresholds.of( FACTORY.ofThreshold( SafeOneOrTwoDoubles.of( 0.1 ), Operator.GREATER,
+                OneOrTwoThresholds.of( DataFactory.ofThreshold( OneOrTwoDoubles.of( 0.1 ), Operator.GREATER,
                                                             ThresholdDataType.LEFT ) );
         assertTrue( "The hashcode of the thresholds is inconsistent with equals.",
                     thresholds.equals( otherThresholds ) && thresholds.hashCode() == otherThresholds.hashCode() );
@@ -148,15 +141,15 @@ public final class DefaultThresholdsTest
     public void testCompareTo()
     {
         // Consistent with equals
-        OneOrTwoThresholds first = OneOrTwoThresholds.of( FACTORY.ofThreshold( SafeOneOrTwoDoubles.of( 0.1 ), Operator.GREATER,
+        OneOrTwoThresholds first = OneOrTwoThresholds.of( DataFactory.ofThreshold( OneOrTwoDoubles.of( 0.1 ), Operator.GREATER,
                                                                                ThresholdDataType.LEFT ) );
-        OneOrTwoThresholds second = OneOrTwoThresholds.of( FACTORY.ofThreshold( SafeOneOrTwoDoubles.of( 0.1 ), Operator.GREATER,
+        OneOrTwoThresholds second = OneOrTwoThresholds.of( DataFactory.ofThreshold( OneOrTwoDoubles.of( 0.1 ), Operator.GREATER,
                                                                                 ThresholdDataType.LEFT ) );
 
         assertTrue( "The thresholds are not comparable.",
                     first.compareTo( second ) == 0 );
 
-        OneOrTwoThresholds third = OneOrTwoThresholds.of( FACTORY.ofThreshold( SafeOneOrTwoDoubles.of( 0.2 ), Operator.GREATER,
+        OneOrTwoThresholds third = OneOrTwoThresholds.of( DataFactory.ofThreshold( OneOrTwoDoubles.of( 0.2 ), Operator.GREATER,
                                                                                ThresholdDataType.LEFT ) );
 
         // Anticommutative
@@ -169,7 +162,7 @@ public final class DefaultThresholdsTest
                     first.compareTo( second ) == 0 && second.compareTo( first ) == 0 );
 
         // Transitive 
-        OneOrTwoThresholds fourth = OneOrTwoThresholds.of( FACTORY.ofThreshold( SafeOneOrTwoDoubles.of( 0.3 ), Operator.GREATER,
+        OneOrTwoThresholds fourth = OneOrTwoThresholds.of( DataFactory.ofThreshold( OneOrTwoDoubles.of( 0.3 ), Operator.GREATER,
                                                                                 ThresholdDataType.LEFT ) );
 
         assertTrue( "Expected transitive behaviour.",
@@ -186,19 +179,19 @@ public final class DefaultThresholdsTest
     public void testToString()
     {
         OneOrTwoThresholds testString =
-                OneOrTwoThresholds.of( FACTORY.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 27.0 ),
-                                                            SafeOneOrTwoDoubles.of( 0.5 ),
+                OneOrTwoThresholds.of( DataFactory.ofQuantileThreshold( OneOrTwoDoubles.of( 27.0 ),
+                                                            OneOrTwoDoubles.of( 0.5 ),
                                                             Operator.GREATER_EQUAL,
                                                             ThresholdDataType.LEFT ) );
 
         assertTrue( ">= 27.0 [Pr = 0.5]".equals( testString.toString() ) );
 
         OneOrTwoThresholds secondTestString =
-                OneOrTwoThresholds.of( FACTORY.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 23.0 ),
-                                                            SafeOneOrTwoDoubles.of( 0.2 ),
+                OneOrTwoThresholds.of( DataFactory.ofQuantileThreshold( OneOrTwoDoubles.of( 23.0 ),
+                                                            OneOrTwoDoubles.of( 0.2 ),
                                                             Operator.GREATER,
                                                             ThresholdDataType.LEFT ),
-                               FACTORY.ofProbabilityThreshold( SafeOneOrTwoDoubles.of( 0.1 ), Operator.GREATER,
+                               DataFactory.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.1 ), Operator.GREATER,
                                                                ThresholdDataType.LEFT ) );
 
         assertTrue( "> 23.0 [Pr = 0.2] AND Pr > 0.1".equals( secondTestString.toString() ) );
@@ -212,19 +205,19 @@ public final class DefaultThresholdsTest
     public void testToStringSafe()
     {
         OneOrTwoThresholds testString =
-                OneOrTwoThresholds.of( FACTORY.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 27.0 ),
-                                                            SafeOneOrTwoDoubles.of( 0.5 ),
+                OneOrTwoThresholds.of( DataFactory.ofQuantileThreshold( OneOrTwoDoubles.of( 27.0 ),
+                                                            OneOrTwoDoubles.of( 0.5 ),
                                                             Operator.GREATER_EQUAL,
                                                             ThresholdDataType.LEFT ) );
 
         assertTrue( "GTE_27.0_Pr_EQ_0.5".equals( testString.toStringSafe() ) );
 
         OneOrTwoThresholds secondTestString =
-                OneOrTwoThresholds.of( FACTORY.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 23.0 ),
-                                                            SafeOneOrTwoDoubles.of( 0.2 ),
+                OneOrTwoThresholds.of( DataFactory.ofQuantileThreshold( OneOrTwoDoubles.of( 23.0 ),
+                                                            OneOrTwoDoubles.of( 0.2 ),
                                                             Operator.GREATER,
                                                             ThresholdDataType.LEFT ),
-                               FACTORY.ofProbabilityThreshold( SafeOneOrTwoDoubles.of( 0.1 ), Operator.GREATER,
+                                       DataFactory.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.1 ), Operator.GREATER,
                                                                ThresholdDataType.LEFT ) );
 
         assertTrue( "GT_23.0_Pr_EQ_0.2_AND_Pr_GT_0.1".equals( secondTestString.toStringSafe() ) );

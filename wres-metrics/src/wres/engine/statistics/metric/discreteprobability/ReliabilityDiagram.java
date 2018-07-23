@@ -10,6 +10,7 @@ import java.util.function.Consumer;
 
 import org.apache.commons.math3.util.Precision;
 
+import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.MissingValues;
@@ -63,10 +64,10 @@ public class ReliabilityDiagram extends Diagram<DiscreteProbabilityPairs, MultiV
         if ( !s.getRawData().isEmpty() )
         {
             // Compute the average probabilities for samples > 0
-            
+
             // Increment the reliability 
             s.getRawData().forEach( this.getIncrementor( fProb, oProb, samples, constant ) );
-            
+
             // Compute the average reliability
             List<Double> fProbFinal = new ArrayList<>(); //Forecast probs for samples > 0
             List<Double> oProbFinal = new ArrayList<>(); //Observed probs for samples > 0
@@ -85,7 +86,7 @@ public class ReliabilityDiagram extends Diagram<DiscreteProbabilityPairs, MultiV
                     oProbFinal.add( MissingValues.MISSING_DOUBLE );
                 }
             }
-            
+
             // Stream to an array
             fProb = fProbFinal.stream().mapToDouble( Double::doubleValue ).toArray();
             oProb = oProbFinal.stream().mapToDouble( Double::doubleValue ).toArray();
@@ -94,7 +95,7 @@ public class ReliabilityDiagram extends Diagram<DiscreteProbabilityPairs, MultiV
         else
         {
             Arrays.fill( fProb, MissingValues.MISSING_DOUBLE );
-            Arrays.fill( oProb, MissingValues.MISSING_DOUBLE );            
+            Arrays.fill( oProb, MissingValues.MISSING_DOUBLE );
         }
 
         // Set the results
@@ -102,10 +103,10 @@ public class ReliabilityDiagram extends Diagram<DiscreteProbabilityPairs, MultiV
         output.put( MetricDimension.FORECAST_PROBABILITY, fProb );
         output.put( MetricDimension.OBSERVED_RELATIVE_FREQUENCY, oProb );
         output.put( MetricDimension.SAMPLE_SIZE, samples );
-        
+
         MetricOutputMetadata metOut = getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, null );
 
-        return getDataFactory().ofMultiVectorOutput( output, metOut );
+        return DataFactory.ofMultiVectorOutput( output, metOut );
     }
 
     @Override
@@ -124,7 +125,7 @@ public class ReliabilityDiagram extends Diagram<DiscreteProbabilityPairs, MultiV
      * A {@link MetricBuilder} to build the metric.
      */
 
-    public static class ReliabilityDiagramBuilder extends DiagramBuilder<DiscreteProbabilityPairs, MultiVectorOutput>
+    public static class ReliabilityDiagramBuilder implements MetricBuilder<DiscreteProbabilityPairs, MultiVectorOutput>
     {
 
         @Override
@@ -144,8 +145,8 @@ public class ReliabilityDiagram extends Diagram<DiscreteProbabilityPairs, MultiV
 
     protected ReliabilityDiagram( final ReliabilityDiagramBuilder builder ) throws MetricParameterException
     {
-        super( builder );
-        
+        super();
+
         //Set the default bins
         this.bins = 10;
     }
@@ -163,7 +164,7 @@ public class ReliabilityDiagram extends Diagram<DiscreteProbabilityPairs, MultiV
     {
         //Consumer that increments the probabilities and sample size
         return pair -> {
-            
+
             //Determine forecast bin
             for ( int i = 0; i < this.bins; i++ )
             {

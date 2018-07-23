@@ -2,12 +2,13 @@ package wres.engine.statistics.metric.singlevalued;
 
 import java.util.Objects;
 
-import wres.datamodel.DatasetIdentifier;
+import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MissingValues;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
+import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.DoubleErrorFunction;
@@ -35,8 +36,7 @@ public abstract class DoubleErrorScore<S extends SingleValuedPairs> extends Ordi
      */
 
     public abstract static class DoubleErrorScoreBuilder<S extends SingleValuedPairs>
-            extends
-            OrdinaryScoreBuilder<S, DoubleScoreOutput>
+            implements MetricBuilder<S, DoubleScoreOutput>
     {
 
         /**
@@ -78,14 +78,14 @@ public abstract class DoubleErrorScore<S extends SingleValuedPairs> extends Ordi
             id = s.getMetadataForBaseline().getIdentifier();
         }
         final MetricOutputMetadata metOut = getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, id );
-        
+
         //Compute the atomic errors in a stream
         double doubleScore = MissingValues.MISSING_DOUBLE;
-        if( ! s.getRawData().isEmpty() )
+        if ( !s.getRawData().isEmpty() )
         {
             doubleScore = s.getRawData().stream().mapToDouble( f ).average().getAsDouble();
-        }        
-        return getDataFactory().ofDoubleScoreOutput( doubleScore, metOut );
+        }
+        return DataFactory.ofDoubleScoreOutput( doubleScore, metOut );
     }
 
     @Override
@@ -109,7 +109,7 @@ public abstract class DoubleErrorScore<S extends SingleValuedPairs> extends Ordi
 
     protected DoubleErrorScore( final DoubleErrorScoreBuilder<S> builder ) throws MetricParameterException
     {
-        super( builder );
+        super();
         // Function can be null if calculation is delegated
         this.f = builder.f;
     }

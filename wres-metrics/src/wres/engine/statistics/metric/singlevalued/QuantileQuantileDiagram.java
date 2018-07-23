@@ -41,19 +41,18 @@ public class QuantileQuantileDiagram extends Diagram<SingleValuedPairs, MultiVec
         {
             throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
         }
-        DataFactory d = getDataFactory();
-        Slicer slicer = d.getSlicer();
+
         //Determine the number of order statistics to compute
         double[] observedQ = new double[probCount];
         double[] predictedQ = new double[probCount];
 
         //Get the ordered data
-        double[] sortedLeft = slicer.getLeftSide( s );
-        double[] sortedRight = slicer.getRightSide( s );
+        double[] sortedLeft = Slicer.getLeftSide( s );
+        double[] sortedRight = Slicer.getRightSide( s );
         Arrays.sort( sortedLeft );
         Arrays.sort( sortedRight );
-        DoubleUnaryOperator qLeft = slicer.getQuantileFunction( sortedLeft );
-        DoubleUnaryOperator qRight = slicer.getQuantileFunction( sortedRight );
+        DoubleUnaryOperator qLeft = Slicer.getQuantileFunction( sortedLeft );
+        DoubleUnaryOperator qRight = Slicer.getQuantileFunction( sortedRight );
 
         //Compute the order statistics
         for ( int i = 0; i < probCount; i++ )
@@ -68,7 +67,7 @@ public class QuantileQuantileDiagram extends Diagram<SingleValuedPairs, MultiVec
         output.put( MetricDimension.OBSERVED_QUANTILES, observedQ );
         output.put( MetricDimension.PREDICTED_QUANTILES, predictedQ );
         final MetricOutputMetadata metOut = getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, null );
-        return d.ofMultiVectorOutput( output, metOut );
+        return DataFactory.ofMultiVectorOutput( output, metOut );
     }
 
     @Override
@@ -87,7 +86,7 @@ public class QuantileQuantileDiagram extends Diagram<SingleValuedPairs, MultiVec
      * A {@link MetricBuilder} to build the metric.
      */
 
-    public static class QuantileQuantileDiagramBuilder extends DiagramBuilder<SingleValuedPairs, MultiVectorOutput>
+    public static class QuantileQuantileDiagramBuilder implements MetricBuilder<SingleValuedPairs, MultiVectorOutput>
     {
 
         @Override
@@ -107,7 +106,7 @@ public class QuantileQuantileDiagram extends Diagram<SingleValuedPairs, MultiVec
 
     private QuantileQuantileDiagram( final QuantileQuantileDiagramBuilder builder ) throws MetricParameterException
     {
-        super( builder );
+        super();
         //Set the number of thresholds to 1000
         probCount = 1000;
     }

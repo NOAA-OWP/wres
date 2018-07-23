@@ -2,6 +2,7 @@ package wres.engine.statistics.metric.singlevalued;
 
 import java.util.Objects;
 
+import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MissingValues;
 import wres.datamodel.inputs.MetricInputException;
@@ -60,7 +61,7 @@ public class IndexOfAgreement extends DoubleErrorScore<SingleValuedPairs>
         //Metadata
         final MetricOutputMetadata metOut = this.getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, null );
 
-        return this.getDataFactory().ofDoubleScoreOutput( returnMe, metOut );
+        return DataFactory.ofDoubleScoreOutput( returnMe, metOut );
     }
 
     @Override

@@ -11,7 +11,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.DataFactory;
-import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
@@ -39,18 +38,6 @@ public final class EquitableThreatScoreTest
     public final ExpectedException exception = ExpectedException.none();
 
     /**
-     * Output factory.
-     */
-
-    private DataFactory outF;
-
-    /**
-     * Metadata factory.
-     */
-
-    private MetadataFactory metaFac;
-
-    /**
      * Metric factory.
      */
 
@@ -71,18 +58,18 @@ public final class EquitableThreatScoreTest
     @Before
     public void setUpBeforeEachTest() throws MetricParameterException
     {
-        outF = DefaultDataFactory.getInstance();
-        metaFac = outF.getMetadataFactory();
-        metricFactory = MetricFactory.getInstance( outF );
+        metricFactory = MetricFactory.getInstance();
         ets = metricFactory.ofEquitableThreatScore();
-        meta = metaFac.getOutputMetadata( 365,
-                                          metaFac.getDimension(),
-                                          metaFac.getDimension(),
-                                          MetricConstants.EQUITABLE_THREAT_SCORE,
-                                          MetricConstants.MAIN,
-                                          metaFac.getDatasetIdentifier( metaFac.getLocation("DRRC2"), "SQIN", "HEFS" ) );
-    }    
-    
+        meta = MetadataFactory.getOutputMetadata( 365,
+                                                  MetadataFactory.getDimension(),
+                                                  MetadataFactory.getDimension(),
+                                                  MetricConstants.EQUITABLE_THREAT_SCORE,
+                                                  MetricConstants.MAIN,
+                                                  MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation( "DRRC2" ),
+                                                                                        "SQIN",
+                                                                                        "HEFS" ) );
+    }
+
     /**
      * Compares the output from {@link Metric#apply(wres.datamodel.inputs.MetricInput)} against expected output.
      */
@@ -95,14 +82,14 @@ public final class EquitableThreatScoreTest
 
         //Check the results
         final DoubleScoreOutput actual = ets.apply( input );
-        final DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 0.43768152544513195, meta );
+        final DoubleScoreOutput expected = DataFactory.ofDoubleScoreOutput( 0.43768152544513195, meta );
         assertTrue( "Actual: " + actual.getData().doubleValue()
                     + ". Expected: "
                     + expected.getData().doubleValue()
                     + ".",
                     actual.equals( expected ) );
     }
-    
+
     /**
      * Validates the output from {@link Metric#apply(DichotomousPairs)} when supplied with no data.
      */
@@ -112,13 +99,13 @@ public final class EquitableThreatScoreTest
     {
         // Generate empty data
         DichotomousPairs input =
-                outF.ofDichotomousPairs( Arrays.asList(), outF.getMetadataFactory().getMetadata() );
- 
+                DataFactory.ofDichotomousPairs( Arrays.asList(), MetadataFactory.getMetadata() );
+
         DoubleScoreOutput actual = ets.apply( input );
 
         assertTrue( actual.getData().isNaN() );
-    }    
-    
+    }
+
     /**
      * Verifies that {@link Metric#getName()} returns the expected result.
      */
@@ -127,8 +114,8 @@ public final class EquitableThreatScoreTest
     public void testMetricIsNamedCorrectly()
     {
         assertTrue( ets.getName().equals( MetricConstants.EQUITABLE_THREAT_SCORE.toString() ) );
-    }    
-    
+    }
+
     /**
      * Verifies that {@link Score#isDecomposable()} returns <code>false</code>.
      */
@@ -137,8 +124,8 @@ public final class EquitableThreatScoreTest
     public void testMetricIsNotDecoposable()
     {
         assertFalse( ets.isDecomposable() );
-    }    
-    
+    }
+
     /**
      * Verifies that {@link Score#isSkillScore()} returns <code>true</code>.
      */
@@ -147,8 +134,8 @@ public final class EquitableThreatScoreTest
     public void testMetricIsASkillScore()
     {
         assertTrue( ets.isSkillScore() );
-    }       
-    
+    }
+
     /**
      * Verifies that {@link Score#getScoreOutputGroup()} returns {@link OutputScoreGroup#NONE}.
      */
@@ -157,8 +144,8 @@ public final class EquitableThreatScoreTest
     public void testGetScoreOutputGroup()
     {
         assertTrue( ets.getScoreOutputGroup() == ScoreOutputGroup.NONE );
-    }      
-    
+    }
+
     /**
      * Verifies that {@link Collectable#getCollectionOf()} returns {@link MetricConstants#CONTINGENCY_TABLE}.
      */
@@ -167,7 +154,7 @@ public final class EquitableThreatScoreTest
     public void testGetCollectionOf()
     {
         assertTrue( ets.getCollectionOf() == MetricConstants.CONTINGENCY_TABLE );
-    }      
+    }
 
     /**
      * Checks for an exception when calling {@link Collectable#aggregate(wres.datamodel.outputs.MetricOutput)} with 
@@ -178,7 +165,7 @@ public final class EquitableThreatScoreTest
     public void testExceptionOnNullInput()
     {
         exception.expect( MetricInputException.class );
-        exception.expectMessage( "Specify non-null input to the '"+ets.getName()+"'." );
+        exception.expectMessage( "Specify non-null input to the '" + ets.getName() + "'." );
         ets.aggregate( (MatrixOutput) null );
     }
 

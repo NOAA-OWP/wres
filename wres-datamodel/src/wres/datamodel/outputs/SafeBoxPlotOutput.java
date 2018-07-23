@@ -5,8 +5,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.StringJoiner;
 
-import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.VectorOfDoubles;
+import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.metadata.MetricOutputMetadata;
@@ -198,9 +198,8 @@ public class SafeBoxPlotOutput implements BoxPlotOutput
         checkEachBox( output );
 
         //Ensure safe types
-        DefaultDataFactory factory = (DefaultDataFactory) DefaultDataFactory.getInstance();
-        this.output = factory.safePairOfDoubleAndVectorOfDoublesList( output );
-        this.probabilities = factory.safeVectorOf( probabilities );
+        this.output = DataFactory.safePairOfDoubleAndVectorOfDoublesList( output );
+        this.probabilities = DataFactory.safeVectorOf( probabilities );
         this.domainAxisDimension = domainAxisDimension;
         this.rangeAxisDimension = rangeAxisDimension;
         this.meta = meta;

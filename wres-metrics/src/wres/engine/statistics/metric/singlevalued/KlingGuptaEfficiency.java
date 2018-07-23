@@ -62,20 +62,18 @@ public class KlingGuptaEfficiency extends DecomposableScore<SingleValuedPairs>
     @Override
     public DoubleScoreOutput apply( final SingleValuedPairs s )
     {
-        if(Objects.isNull(s))
+        if ( Objects.isNull( s ) )
         {
-            throw new MetricInputException("Specify non-null input to the '"+this+"'.");
+            throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
         }
 
         //TODO: implement any required decompositions, based on the instance parameters and return the decomposition
         //template as the componentID in the metadata
 
-        DataFactory dataFactory = getDataFactory();
-        Slicer slicer = dataFactory.getSlicer();
         double result = Double.NaN;
         // Compute the components
-        VectorOfDoubles leftValues = dataFactory.vectorOf( slicer.getLeftSide( s ) );
-        VectorOfDoubles rightValues = dataFactory.vectorOf( slicer.getRightSide( s ) );
+        VectorOfDoubles leftValues = DataFactory.vectorOf( Slicer.getLeftSide( s ) );
+        VectorOfDoubles rightValues = DataFactory.vectorOf( Slicer.getRightSide( s ) );
         double rhoVal = rho.apply( s ).getData();
         // Check for finite correlation
         if ( Double.isFinite( rhoVal ) )
@@ -93,7 +91,7 @@ public class KlingGuptaEfficiency extends DecomposableScore<SingleValuedPairs>
         }
         //Metadata
         final MetricOutputMetadata metOut = this.getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, null );
-        return dataFactory.ofDoubleScoreOutput( result, metOut );
+        return DataFactory.ofDoubleScoreOutput( result, metOut );
     }
 
     @Override
@@ -142,7 +140,6 @@ public class KlingGuptaEfficiency extends DecomposableScore<SingleValuedPairs>
     {
         super( builder );
         CorrelationPearsonsBuilder rhoBuilder = new CorrelationPearsonsBuilder();
-        rhoBuilder.setOutputFactory( getDataFactory() );
         rho = rhoBuilder.build();
         //Equal weighting of terms
         rhoWeight = 1.0;

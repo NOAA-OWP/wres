@@ -15,9 +15,9 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.DataFactory;
-import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
+import wres.datamodel.Slicer;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
@@ -51,19 +51,11 @@ public final class RelativeOperatingCharacteristicScoreTest
 
     private RelativeOperatingCharacteristicScore rocScore;
 
-    /**
-     * Instance of a data factory.
-     */
-
-    private DataFactory outF;
-
     @Before
     public void setupBeforeEachTest() throws MetricParameterException
     {
         RelativeOperatingCharacteristicScoreBuilder b =
                 new RelativeOperatingCharacteristicScore.RelativeOperatingCharacteristicScoreBuilder();
-        this.outF = DefaultDataFactory.getInstance();
-        b.setOutputFactory( outF );
         this.rocScore = b.build();
     }
 
@@ -76,37 +68,36 @@ public final class RelativeOperatingCharacteristicScoreTest
     public void testApplyWithTies()
     {
         //Generate some data
-        final DataFactory outF = DefaultDataFactory.getInstance();
-        final MetadataFactory metaFac = outF.getMetadataFactory();
         final List<PairOfDoubles> values = new ArrayList<>();
-        values.add( outF.pairOf( 0, 0.8 ) );
-        values.add( outF.pairOf( 0, 0.8 ) );
-        values.add( outF.pairOf( 0, 0.0 ) );
-        values.add( outF.pairOf( 1, 1.0 ) );
-        values.add( outF.pairOf( 1, 1.0 ) );
-        values.add( outF.pairOf( 1, 0.6 ) );
-        values.add( outF.pairOf( 0, 0.4 ) );
-        values.add( outF.pairOf( 1, 0.8 ) );
-        values.add( outF.pairOf( 1, 0.0 ) );
-        values.add( outF.pairOf( 0, 0.0 ) );
-        values.add( outF.pairOf( 0, 0.2 ) );
-        values.add( outF.pairOf( 0, 0.0 ) );
-        values.add( outF.pairOf( 0, 0.0 ) );
-        values.add( outF.pairOf( 1, 1.0 ) );
-        values.add( outF.pairOf( 1, 1.0 ) );
+        values.add( DataFactory.pairOf( 0, 0.8 ) );
+        values.add( DataFactory.pairOf( 0, 0.8 ) );
+        values.add( DataFactory.pairOf( 0, 0.0 ) );
+        values.add( DataFactory.pairOf( 1, 1.0 ) );
+        values.add( DataFactory.pairOf( 1, 1.0 ) );
+        values.add( DataFactory.pairOf( 1, 0.6 ) );
+        values.add( DataFactory.pairOf( 0, 0.4 ) );
+        values.add( DataFactory.pairOf( 1, 0.8 ) );
+        values.add( DataFactory.pairOf( 1, 0.0 ) );
+        values.add( DataFactory.pairOf( 0, 0.0 ) );
+        values.add( DataFactory.pairOf( 0, 0.2 ) );
+        values.add( DataFactory.pairOf( 0, 0.0 ) );
+        values.add( DataFactory.pairOf( 0, 0.0 ) );
+        values.add( DataFactory.pairOf( 1, 1.0 ) );
+        values.add( DataFactory.pairOf( 1, 1.0 ) );
 
-        final DiscreteProbabilityPairs input = outF.ofDiscreteProbabilityPairs( values, metaFac.getMetadata() );
+        final DiscreteProbabilityPairs input =
+                DataFactory.ofDiscreteProbabilityPairs( values, MetadataFactory.getMetadata() );
 
         //Metadata for the output
-        final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getRawData().size(),
-                                                                   metaFac.getDimension(),
-                                                                   metaFac.getDimension(),
-                                                                   MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE,
-                                                                   MetricConstants.MAIN );
+        final MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( input.getRawData().size(),
+                                                                           MetadataFactory.getDimension(),
+                                                                           MetadataFactory.getDimension(),
+                                                                           MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE,
+                                                                           MetricConstants.MAIN );
 
         //Check the results       
         final DoubleScoreOutput actual = rocScore.apply( input );
-        final DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 0.6785714285714286, m1 );
+        final DoubleScoreOutput expected = DataFactory.ofDoubleScoreOutput( 0.6785714285714286, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -123,37 +114,35 @@ public final class RelativeOperatingCharacteristicScoreTest
     public void testApplyWithoutTies()
     {
         //Generate some data
-        final DataFactory outF = DefaultDataFactory.getInstance();
-        final MetadataFactory metaFac = outF.getMetadataFactory();
         final List<PairOfDoubles> values = new ArrayList<>();
-        values.add( outF.pairOf( 0, 0.928 ) );
-        values.add( outF.pairOf( 0, 0.576 ) );
-        values.add( outF.pairOf( 0, 0.008 ) );
-        values.add( outF.pairOf( 1, 0.944 ) );
-        values.add( outF.pairOf( 1, 0.832 ) );
-        values.add( outF.pairOf( 1, 0.816 ) );
-        values.add( outF.pairOf( 0, 0.136 ) );
-        values.add( outF.pairOf( 1, 0.584 ) );
-        values.add( outF.pairOf( 1, 0.032 ) );
-        values.add( outF.pairOf( 0, 0.016 ) );
-        values.add( outF.pairOf( 0, 0.28 ) );
-        values.add( outF.pairOf( 0, 0.024 ) );
-        values.add( outF.pairOf( 0, 0.0 ) );
-        values.add( outF.pairOf( 1, 0.984 ) );
-        values.add( outF.pairOf( 1, 0.952 ) );
-        Metadata meta = metaFac.getMetadata();
-        DiscreteProbabilityPairs input = outF.ofDiscreteProbabilityPairs( values, meta );
+        values.add( DataFactory.pairOf( 0, 0.928 ) );
+        values.add( DataFactory.pairOf( 0, 0.576 ) );
+        values.add( DataFactory.pairOf( 0, 0.008 ) );
+        values.add( DataFactory.pairOf( 1, 0.944 ) );
+        values.add( DataFactory.pairOf( 1, 0.832 ) );
+        values.add( DataFactory.pairOf( 1, 0.816 ) );
+        values.add( DataFactory.pairOf( 0, 0.136 ) );
+        values.add( DataFactory.pairOf( 1, 0.584 ) );
+        values.add( DataFactory.pairOf( 1, 0.032 ) );
+        values.add( DataFactory.pairOf( 0, 0.016 ) );
+        values.add( DataFactory.pairOf( 0, 0.28 ) );
+        values.add( DataFactory.pairOf( 0, 0.024 ) );
+        values.add( DataFactory.pairOf( 0, 0.0 ) );
+        values.add( DataFactory.pairOf( 1, 0.984 ) );
+        values.add( DataFactory.pairOf( 1, 0.952 ) );
+        Metadata meta = MetadataFactory.getMetadata();
+        DiscreteProbabilityPairs input = DataFactory.ofDiscreteProbabilityPairs( values, meta );
 
         //Metadata for the output
-        MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getRawData().size(),
-                                                             metaFac.getDimension(),
-                                                             metaFac.getDimension(),
-                                                             MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE,
-                                                             MetricConstants.MAIN );
+        MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( input.getRawData().size(),
+                                                                     MetadataFactory.getDimension(),
+                                                                     MetadataFactory.getDimension(),
+                                                                     MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE,
+                                                                     MetricConstants.MAIN );
 
         //Check the results       
         DoubleScoreOutput actual = rocScore.apply( input );
-        DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 0.75, m1 );
+        DoubleScoreOutput expected = DataFactory.ofDoubleScoreOutput( 0.75, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -161,9 +150,9 @@ public final class RelativeOperatingCharacteristicScoreTest
                     actual.equals( expected ) );
 
         //Check against a baseline
-        DiscreteProbabilityPairs inputBase = outF.ofDiscreteProbabilityPairs( values, values, meta, meta );
+        DiscreteProbabilityPairs inputBase = DataFactory.ofDiscreteProbabilityPairs( values, values, meta, meta );
         DoubleScoreOutput actualBase = rocScore.apply( inputBase );
-        DoubleScoreOutput expectedBase = outF.ofDoubleScoreOutput( 0.0, m1 );
+        DoubleScoreOutput expectedBase = DataFactory.ofDoubleScoreOutput( 0.0, m1 );
         assertTrue( "Actual: " + actualBase.getData()
                     + ". Expected: "
                     + expectedBase.getData()
@@ -180,38 +169,36 @@ public final class RelativeOperatingCharacteristicScoreTest
     public void testApplyWithNoOccurrences() throws MetricParameterException
     {
         //Generate some data
-        final DataFactory outF = DefaultDataFactory.getInstance();
-        final MetadataFactory metaFac = outF.getMetadataFactory();
         final List<PairOfDoubles> values = new ArrayList<>();
-        values.add( outF.pairOf( 0, 0.928 ) );
-        values.add( outF.pairOf( 0, 0.576 ) );
-        values.add( outF.pairOf( 0, 0.008 ) );
-        values.add( outF.pairOf( 0, 0.944 ) );
-        values.add( outF.pairOf( 0, 0.832 ) );
-        values.add( outF.pairOf( 0, 0.816 ) );
-        values.add( outF.pairOf( 0, 0.136 ) );
-        values.add( outF.pairOf( 0, 0.584 ) );
-        values.add( outF.pairOf( 0, 0.032 ) );
-        values.add( outF.pairOf( 0, 0.016 ) );
-        values.add( outF.pairOf( 0, 0.28 ) );
-        values.add( outF.pairOf( 0, 0.024 ) );
-        values.add( outF.pairOf( 0, 0.0 ) );
-        values.add( outF.pairOf( 0, 0.984 ) );
-        values.add( outF.pairOf( 0, 0.952 ) );
-        Metadata meta = metaFac.getMetadata();
+        values.add( DataFactory.pairOf( 0, 0.928 ) );
+        values.add( DataFactory.pairOf( 0, 0.576 ) );
+        values.add( DataFactory.pairOf( 0, 0.008 ) );
+        values.add( DataFactory.pairOf( 0, 0.944 ) );
+        values.add( DataFactory.pairOf( 0, 0.832 ) );
+        values.add( DataFactory.pairOf( 0, 0.816 ) );
+        values.add( DataFactory.pairOf( 0, 0.136 ) );
+        values.add( DataFactory.pairOf( 0, 0.584 ) );
+        values.add( DataFactory.pairOf( 0, 0.032 ) );
+        values.add( DataFactory.pairOf( 0, 0.016 ) );
+        values.add( DataFactory.pairOf( 0, 0.28 ) );
+        values.add( DataFactory.pairOf( 0, 0.024 ) );
+        values.add( DataFactory.pairOf( 0, 0.0 ) );
+        values.add( DataFactory.pairOf( 0, 0.984 ) );
+        values.add( DataFactory.pairOf( 0, 0.952 ) );
+        Metadata meta = MetadataFactory.getMetadata();
 
-        DiscreteProbabilityPairs input = outF.ofDiscreteProbabilityPairs( values, meta );
+        DiscreteProbabilityPairs input = DataFactory.ofDiscreteProbabilityPairs( values, meta );
 
         //Metadata for the output
-        final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getRawData().size(),
-                                                                   metaFac.getDimension(),
-                                                                   metaFac.getDimension(),
-                                                                   MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE,
-                                                                   MetricConstants.MAIN );
+        final MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( input.getRawData().size(),
+                                                                           MetadataFactory.getDimension(),
+                                                                           MetadataFactory.getDimension(),
+                                                                           MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE,
+                                                                           MetricConstants.MAIN );
 
         //Check the results       
         DoubleScoreOutput actual = rocScore.apply( input );
-        DoubleScoreOutput expected = outF.ofDoubleScoreOutput( Double.NaN, m1 );
+        DoubleScoreOutput expected = DataFactory.ofDoubleScoreOutput( Double.NaN, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -229,7 +216,7 @@ public final class RelativeOperatingCharacteristicScoreTest
     {
         // Generate empty data
         DiscreteProbabilityPairs input =
-                outF.ofDiscreteProbabilityPairs( Arrays.asList(), outF.getMetadataFactory().getMetadata() );
+                DataFactory.ofDiscreteProbabilityPairs( Arrays.asList(), MetadataFactory.getMetadata() );
 
         DoubleScoreOutput actual = rocScore.apply( input );
 
@@ -308,13 +295,15 @@ public final class RelativeOperatingCharacteristicScoreTest
     {
         EnsemblePairs pairs = MetricTestDataFactory.getEnsemblePairsOne();
 
-        Threshold threshold = outF.ofThreshold( outF.ofOneOrTwoDoubles( 3.0 ),
-                                                Operator.GREATER,
-                                                ThresholdDataType.LEFT );
+        Threshold threshold = DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( 3.0 ),
+                                                       Operator.GREATER,
+                                                       ThresholdDataType.LEFT );
 
-        BiFunction<PairOfDoubleAndVectorOfDoubles, Threshold, PairOfDoubles> mapper = outF.getSlicer()::toDiscreteProbabilityPair;
+        BiFunction<PairOfDoubleAndVectorOfDoubles, Threshold, PairOfDoubles> mapper =
+                Slicer::toDiscreteProbabilityPair;
 
-        DiscreteProbabilityPairs transPairs = outF.getSlicer().toDiscreteProbabilityPairs( pairs, threshold, mapper );
+        DiscreteProbabilityPairs transPairs =
+                Slicer.toDiscreteProbabilityPairs( pairs, threshold, mapper );
 
         assertTrue( rocScore.apply( transPairs )
                             .getMetadata()

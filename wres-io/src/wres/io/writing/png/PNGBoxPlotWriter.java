@@ -30,8 +30,6 @@ import wres.vis.ChartEngineFactory;
  * Helps write charts comprising {@link BoxPlotOutput} to a file in Portable Network Graphics (PNG) format.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 1.0
  */
 
 public class PNGBoxPlotWriter extends PNGWriter

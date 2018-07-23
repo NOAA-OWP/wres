@@ -2,10 +2,11 @@ package wres.engine.statistics.metric.singlevalued;
 
 import java.util.Objects;
 
-import wres.datamodel.Dimension;
+import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
+import wres.datamodel.metadata.Dimension;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
@@ -59,19 +60,18 @@ public class RootMeanSquareError extends DoubleErrorScore<SingleValuedPairs>
     public DoubleScoreOutput aggregate( DoubleScoreOutput output )
     {
         final MetricOutputMetadata metIn = output.getMetadata();
-        final MetadataFactory f = getDataFactory().getMetadataFactory();
-        
+
         // Set the output dimension
         Dimension outputDimension = metIn.getDimension();
 
-        MetricOutputMetadata meta = f.getOutputMetadata( metIn.getSampleSize(),
-                                                         outputDimension,
-                                                         metIn.getDimension(),
-                                                         this.getID(),
-                                                         MetricConstants.MAIN,
-                                                         metIn.getIdentifier(),
-                                                         metIn.getTimeWindow() );
-        return getDataFactory().ofDoubleScoreOutput( Math.sqrt( output.getData() / metIn.getSampleSize() ), meta );
+        MetricOutputMetadata meta = MetadataFactory.getOutputMetadata( metIn.getSampleSize(),
+                                                                       outputDimension,
+                                                                       metIn.getDimension(),
+                                                                       this.getID(),
+                                                                       MetricConstants.MAIN,
+                                                                       metIn.getIdentifier(),
+                                                                       metIn.getTimeWindow() );
+        return DataFactory.ofDoubleScoreOutput( Math.sqrt( output.getData() / metIn.getSampleSize() ), meta );
     }
 
     @Override
@@ -115,7 +115,7 @@ public class RootMeanSquareError extends DoubleErrorScore<SingleValuedPairs>
     private RootMeanSquareError( final RootMeanSquareErrorBuilder builder ) throws MetricParameterException
     {
         super( builder.setErrorFunction( FunctionFactory.squareError() ) );
-        sse = MetricFactory.getInstance( this.getDataFactory() ).ofSumOfSquareError();
+        sse = MetricFactory.getInstance().ofSumOfSquareError();
     }
 
 }

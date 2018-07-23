@@ -18,9 +18,9 @@ import wres.config.ProjectConfigException;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
+import wres.datamodel.Slicer;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.MapKey;
@@ -98,7 +98,7 @@ public class CommaSeparatedScoreWriter<T extends ScoreOutput<?, T>> extends Comm
             {
                 throw new CommaSeparatedWriteException( "While writing comma separated output: ", e );
             }
-            
+
         }
 
     }
@@ -122,7 +122,7 @@ public class CommaSeparatedScoreWriter<T extends ScoreOutput<?, T>> extends Comm
         // Loop across scores
         for ( Map.Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<T>> m : output.entrySet() )
         {
-            
+
             // As many outputs as secondary thresholds if secondary thresholds are defined
             // and the output type is OutputTypeSelection.THRESHOLD_LEAD.
             List<MetricOutputMapByTimeAndThreshold<T>> allOutputs = new ArrayList<>();
@@ -130,7 +130,9 @@ public class CommaSeparatedScoreWriter<T extends ScoreOutput<?, T>> extends Comm
                  && !m.getValue().setOfThresholdTwo().isEmpty() )
             {
                 // Slice by threshold two
-                m.getValue().setOfThresholdTwo().forEach( next -> allOutputs.add( m.getValue().filterByThresholdTwo( next ) ) );
+                m.getValue()
+                 .setOfThresholdTwo()
+                 .forEach( next -> allOutputs.add( m.getValue().filterByThresholdTwo( next ) ) );
             }
             // One output only
             else
@@ -154,7 +156,7 @@ public class CommaSeparatedScoreWriter<T extends ScoreOutput<?, T>> extends Comm
 
                 // Write the output
                 String append = null;
-                
+
                 // Secondary threshold? If yes, only, one as this was sliced above
                 if ( !nextOutput.setOfThresholdTwo().isEmpty() )
                 {
@@ -186,10 +188,7 @@ public class CommaSeparatedScoreWriter<T extends ScoreOutput<?, T>> extends Comm
                                 Format formatter )
     {
         // Slice score by components
-        Map<MetricConstants, MetricOutputMapByTimeAndThreshold<T>> helper =
-                DefaultDataFactory.getInstance()
-                                  .getSlicer()
-                                  .filterByMetricComponent( output );
+        Map<MetricConstants, MetricOutputMapByTimeAndThreshold<T>> helper = Slicer.filterByMetricComponent( output );
 
         String outerName = scoreName.toString();
         List<RowCompareByLeft> returnMe = new ArrayList<>();

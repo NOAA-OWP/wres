@@ -12,7 +12,6 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.DataFactory;
-import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
@@ -35,12 +34,6 @@ public class SafeMetricOutputMultiMapByTimeAndThreshold<S extends MetricOutput<?
 {
 
     /**
-     * Output factory.
-     */
-
-    private static final DataFactory dataFactory = DefaultDataFactory.getInstance();
-
-    /**
      * The store of results.
      */
 
@@ -55,7 +48,7 @@ public class SafeMetricOutputMultiMapByTimeAndThreshold<S extends MetricOutput<?
     @Override
     public MetricOutputMapByTimeAndThreshold<S> get( final MetricConstants metricID )
     {
-        return store.get( dataFactory.getMapKey( metricID ) );
+        return store.get( DataFactory.getMapKey( metricID ) );
     }
 
     @Override
@@ -152,7 +145,7 @@ public class SafeMetricOutputMultiMapByTimeAndThreshold<S extends MetricOutput<?
             result.forEach( ( key, value ) -> {
                 final MetricOutputMetadata d = value.getMetadata();
                 final MapKey<MetricConstants> check =
-                        dataFactory.getMapKey( d.getMetricID() );
+                        DataFactory.getMapKey( d.getMetricID() );
                 //Safe put
                 final SafeMetricOutputMapByTimeAndThreshold.SafeMetricOutputMapByTimeAndThresholdBuilder<S> addMe =
                         new SafeMetricOutputMapByTimeAndThreshold.SafeMetricOutputMapByTimeAndThresholdBuilder<>();

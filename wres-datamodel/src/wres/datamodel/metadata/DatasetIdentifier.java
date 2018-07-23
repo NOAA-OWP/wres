@@ -1,4 +1,4 @@
-package wres.datamodel;
+package wres.datamodel.metadata;
 
 import java.util.Objects;
 
@@ -9,8 +9,6 @@ import wres.datamodel.outputs.MetricOutput;
  * A class that uniquely identifies a {@link MetricInput} or a {@link MetricOutput} to a user.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 
 public interface DatasetIdentifier

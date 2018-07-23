@@ -2,15 +2,10 @@ package wres.datamodel.metadata;
 
 import java.util.Objects;
 
-import wres.datamodel.DatasetIdentifier;
-import wres.datamodel.Dimension;
-
 /**
  * A class that stores the metadata associated with metric data (inputs and outputs).
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 public interface Metadata
 {

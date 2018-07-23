@@ -2,7 +2,6 @@ package wres.datamodel.metadata;
 
 import java.util.Objects;
 
-import wres.datamodel.Dimension;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.outputs.MetricOutput;
 

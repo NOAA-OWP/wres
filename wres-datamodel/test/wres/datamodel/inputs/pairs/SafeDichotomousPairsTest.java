@@ -9,13 +9,11 @@ import java.util.List;
 import org.junit.Test;
 
 import wres.datamodel.DataFactory;
-import wres.datamodel.DefaultDataFactory;
-import wres.datamodel.Location;
 import wres.datamodel.VectorOfBooleans;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.SafeDichotomousPairs;
 import wres.datamodel.inputs.pairs.SafeDichotomousPairs.DichotomousPairsBuilder;
-import wres.datamodel.metadata.DefaultMetadataFactory;
+import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 
@@ -23,8 +21,6 @@ import wres.datamodel.metadata.MetadataFactory;
  * Tests the {@link SafeDichotomousPairs}.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 public final class SafeDichotomousPairsTest
 {
@@ -39,32 +35,34 @@ public final class SafeDichotomousPairsTest
         final List<VectorOfBooleans> values = new ArrayList<>();
 
         final DichotomousPairsBuilder b = new DichotomousPairsBuilder();
-        final DataFactory d = DefaultDataFactory.getInstance();
-        for(int i = 0; i < 10; i++)
+
+        for ( int i = 0; i < 10; i++ )
         {
-            values.add(d.vectorOf(new boolean[]{true, true}));
+            values.add( DataFactory.vectorOf( new boolean[] { true, true } ) );
         }
 
-        final MetadataFactory metaFac = DefaultMetadataFactory.getInstance();
-        final Location location = metaFac.getLocation( "DRRC2" );
-        final Metadata meta = metaFac.getMetadata(metaFac.getDimension(),
-                                                  metaFac.getDatasetIdentifier(location, "SQIN", "HEFS"));
+        final Location location = MetadataFactory.getLocation( "DRRC2" );
+        final Metadata meta = MetadataFactory.getMetadata( MetadataFactory.getDimension(),
+                                                           MetadataFactory.getDatasetIdentifier( location,
+                                                                                                 "SQIN",
+                                                                                                 "HEFS" ) );
 
-        final DichotomousPairs p = (DichotomousPairs)b.addData(values).setMetadata(meta).build();
+        final DichotomousPairs p = (DichotomousPairs) b.addData( values ).setMetadata( meta ).build();
 
         //Check category count
-        assertTrue("Unexpected category count on inputs [2," + p.getCategoryCount() + "].", p.getCategoryCount() == 2);
+        assertTrue( "Unexpected category count on inputs [2," + p.getCategoryCount() + "].",
+                    p.getCategoryCount() == 2 );
 
         //Check the exceptions 
         //Too many categories
         try
         {
             values.clear();
-            values.add(d.vectorOf(new boolean[]{true, false, false, true, false, false}));
-            b.addData(values).build();
-            fail("Expected a checked exception on invalid inputs.");
+            values.add( DataFactory.vectorOf( new boolean[] { true, false, false, true, false, false } ) );
+            b.addData( values ).build();
+            fail( "Expected a checked exception on invalid inputs." );
         }
-        catch(final Exception e)
+        catch ( final Exception e )
         {
 
         }
@@ -72,12 +70,12 @@ public final class SafeDichotomousPairsTest
         try
         {
             values.clear();
-            values.add(d.vectorOf(new boolean[]{true, false, true, false}));
-            b.addData(values).build();
+            values.add( DataFactory.vectorOf( new boolean[] { true, false, true, false } ) );
+            b.addData( values ).build();
         }
-        catch(final Exception e)
+        catch ( final Exception e )
         {
-            fail("Unexpected exception on valid inputs.");
+            fail( "Unexpected exception on valid inputs." );
         }
 
     }

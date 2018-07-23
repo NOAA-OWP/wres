@@ -63,11 +63,11 @@ public class BoxPlotErrorByForecast extends BoxPlot
         double[] sorted = pair.getItemTwo();
         Arrays.sort( sorted );
         double[] sortedErrors = Arrays.stream( sorted ).map( x -> x - pair.getItemOne() ).toArray();
-        DataFactory dFac = getDataFactory();
-        Slicer slicer = dFac.getSlicer();
+
         //Compute the quantiles
-        double[] box = Arrays.stream( probs ).map( slicer.getQuantileFunction( sortedErrors ) ).toArray();
-        return dFac.pairOf( domainMapper.applyAsDouble( dFac.vectorOf( sorted ) ), box );
+        double[] box =
+                Arrays.stream( probs ).map( Slicer.getQuantileFunction( sortedErrors ) ).toArray();
+        return DataFactory.pairOf( domainMapper.applyAsDouble( DataFactory.vectorOf( sorted ) ), box );
     }
 
     /**
@@ -152,11 +152,13 @@ public class BoxPlotErrorByForecast extends BoxPlot
                 break;
             case ENSEMBLE_MEDIAN:
                 domainMapper =
-                        a -> getDataFactory().getSlicer().getQuantileFunction( a.getDoubles() ).applyAsDouble( 0.5 );
+                        a -> Slicer.getQuantileFunction( a.getDoubles() ).applyAsDouble( 0.5 );
                 break;
             default:
                 throw new MetricParameterException( "Unsupported dimension for the domain axis of the box plot: "
-                                                    + "'" + domainDimension + "'." );
+                                                    + "'"
+                                                    + domainDimension
+                                                    + "'." );
         }
     }
 

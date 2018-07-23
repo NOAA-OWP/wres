@@ -13,7 +13,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.DataFactory;
-import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.inputs.MetricInputException;
@@ -41,18 +40,10 @@ public final class QuantileQuantileDiagramTest
 
     private QuantileQuantileDiagram qqd;
 
-    /**
-     * Instance of a data factory.
-     */
-
-    private DataFactory outF;
-
     @Before
     public void setupBeforeEachTest() throws MetricParameterException
     {
         QuantileQuantileDiagramBuilder b = new QuantileQuantileDiagram.QuantileQuantileDiagramBuilder();
-        this.outF = DefaultDataFactory.getInstance();
-        b.setOutputFactory( outF );
         this.qqd = b.build();
     }
 
@@ -63,19 +54,16 @@ public final class QuantileQuantileDiagramTest
     @Test
     public void testApply()
     {
-        //Metadata for the output
-        MetadataFactory metaFac = outF.getMetadataFactory();
-
         //Generate some data
         final List<PairOfDoubles> values = new ArrayList<>();
         for ( int i = 1; i < 1001; i++ )
         {
             double left = i;
             double right = left;
-            values.add( outF.pairOf( left, right ) );
+            values.add( DataFactory.pairOf( left, right ) );
         }
 
-        final SingleValuedPairs input = outF.ofSingleValuedPairs( values, metaFac.getMetadata() );
+        final SingleValuedPairs input = DataFactory.ofSingleValuedPairs( values, MetadataFactory.getMetadata() );
 
         //Check the results       
         final MultiVectorOutput actual = qqd.apply( input );
@@ -123,7 +111,7 @@ public final class QuantileQuantileDiagramTest
     {
         // Generate empty data
         SingleValuedPairs input =
-                outF.ofSingleValuedPairs( Arrays.asList(), outF.getMetadataFactory().getMetadata() );
+                DataFactory.ofSingleValuedPairs( Arrays.asList(), MetadataFactory.getMetadata() );
 
         MultiVectorOutput actual = qqd.apply( input );
 
