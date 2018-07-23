@@ -2,13 +2,11 @@ package wres.engine.statistics.metric;
 
 import static org.junit.Assert.assertTrue;
 
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.DataFactory;
-import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
@@ -30,25 +28,6 @@ public final class SampleSizeTest
     public final ExpectedException exception = ExpectedException.none();
 
     /**
-     * Output factory.
-     */
-
-    private DataFactory outF;
-
-    /**
-     * Metadata factory.
-     */
-
-    private MetadataFactory metaFac;
-
-    @Before
-    public void setupBeforeEachTest()
-    {
-        outF = DefaultDataFactory.getInstance();
-        metaFac = outF.getMetadataFactory();
-    }
-
-    /**
      * Constructs a {@link SampleSize} and compares the actual result to the expected result. Also, checks the 
      * parameters of the metric.
      * @throws MetricParameterException if the metric could not be constructed
@@ -63,19 +42,18 @@ public final class SampleSizeTest
         final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Metadata for the output
-        final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getRawData().size(),
-                                                                   metaFac.getDimension(),
-                                                                   metaFac.getDimension(),
-                                                                   MetricConstants.SAMPLE_SIZE,
-                                                                   MetricConstants.MAIN );
+        final MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( input.getRawData().size(),
+                                                                           MetadataFactory.getDimension(),
+                                                                           MetadataFactory.getDimension(),
+                                                                           MetricConstants.SAMPLE_SIZE,
+                                                                           MetricConstants.MAIN );
         //Build the metric
         final SampleSizeBuilder<SingleValuedPairs> b = new SampleSize.SampleSizeBuilder<>();
-        b.setOutputFactory( outF );
         final SampleSize<SingleValuedPairs> ss = b.build();
 
         //Check the results
         final DoubleScoreOutput actual = ss.apply( input );
-        final DoubleScoreOutput expected = outF.ofDoubleScoreOutput( input.getRawData().size(), m1 );
+        final DoubleScoreOutput expected = DataFactory.ofDoubleScoreOutput( input.getRawData().size(), m1 );
         assertTrue( "Actual: " + actual.getData().doubleValue()
                     + ". Expected: "
                     + expected.getData().doubleValue()
@@ -100,7 +78,6 @@ public final class SampleSizeTest
     {
         //Build the metric
         final SampleSizeBuilder<SingleValuedPairs> b = new SampleSize.SampleSizeBuilder<>();
-        b.setOutputFactory( outF );
         final SampleSize<SingleValuedPairs> ss = b.build();
 
         exception.expect( MetricInputException.class );

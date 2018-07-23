@@ -2,9 +2,11 @@ package wres.engine.statistics.metric.singlevalued;
 
 import java.util.Objects;
 
+import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
+import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.MetricParameterException;
@@ -38,13 +40,13 @@ public class CoefficientOfDetermination extends CorrelationPearsons
             throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
         }
         MetricOutputMetadata in = output.getMetadata();
-        MetricOutputMetadata meta = getDataFactory().getMetadataFactory().getOutputMetadata( in.getSampleSize(),
+        MetricOutputMetadata meta = MetadataFactory.getOutputMetadata( in.getSampleSize(),
                                                                                              in.getDimension(),
                                                                                              in.getInputDimension(),
                                                                                              MetricConstants.COEFFICIENT_OF_DETERMINATION,
                                                                                              MetricConstants.MAIN,
                                                                                              in.getIdentifier() );
-        return getDataFactory().ofDoubleScoreOutput(Math.pow(output.getData(), 2), meta);
+        return DataFactory.ofDoubleScoreOutput(Math.pow(output.getData(), 2), meta);
     }
 
     @Override

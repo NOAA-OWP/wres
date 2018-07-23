@@ -15,7 +15,8 @@ import wres.datamodel.outputs.MetricOutputException;
  * @author james.brown@hydrosolved.com
  */
 
-public class SafeDurationScoreOutput extends SafeScoreOutput<Duration,DurationScoreOutput> implements DurationScoreOutput
+public class SafeDurationScoreOutput extends SafeScoreOutput<Duration, DurationScoreOutput>
+        implements DurationScoreOutput
 {
 
     /**
@@ -28,7 +29,7 @@ public class SafeDurationScoreOutput extends SafeScoreOutput<Duration,DurationSc
 
     public SafeDurationScoreOutput( final Duration output, final MetricOutputMetadata meta )
     {
-        super(output, meta);
+        super( output, meta );
     }
 
     /**
@@ -41,7 +42,7 @@ public class SafeDurationScoreOutput extends SafeScoreOutput<Duration,DurationSc
 
     public SafeDurationScoreOutput( final Map<MetricConstants, Duration> output, final MetricOutputMetadata meta )
     {
-        super(output, meta);
+        super( output, meta );
     }
 
     /**

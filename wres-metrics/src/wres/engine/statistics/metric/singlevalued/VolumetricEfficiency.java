@@ -2,6 +2,7 @@ package wres.engine.statistics.metric.singlevalued;
 
 import java.util.Objects;
 
+import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
@@ -43,9 +44,9 @@ public class VolumetricEfficiency extends DoubleErrorScore<SingleValuedPairs>
         //Compute the atomic errors in a stream
         if( vO.equals( 0.0 ) )
         {
-            return getDataFactory().ofDoubleScoreOutput( Double.NaN, metOut );
+            return DataFactory.ofDoubleScoreOutput( Double.NaN, metOut );
         }
-        return getDataFactory().ofDoubleScoreOutput( ( vO - vP ) / vO, metOut );
+        return DataFactory.ofDoubleScoreOutput( ( vO - vP ) / vO, metOut );
     }
 
     @Override

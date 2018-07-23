@@ -6,12 +6,10 @@ import java.util.List;
 import org.junit.Test;
 
 import wres.datamodel.DataFactory;
-import wres.datamodel.DefaultDataFactory;
-import wres.datamodel.Location;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.SafeDiscreteProbabilityPairs;
 import wres.datamodel.inputs.pairs.SafeDiscreteProbabilityPairs.DiscreteProbabilityPairsBuilder;
-import wres.datamodel.metadata.DefaultMetadataFactory;
+import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 
@@ -33,18 +31,19 @@ public final class SafeDiscreteProbabilityPairsTest
     public void test1DiscreteProbabilityPairs()
     {
         final List<PairOfDoubles> values = new ArrayList<>();
-        final DataFactory d = DefaultDataFactory.getInstance();
         final DiscreteProbabilityPairsBuilder b = new DiscreteProbabilityPairsBuilder();
 
-        for(int i = 0; i < 10; i++)
+        for ( int i = 0; i < 10; i++ )
         {
-            values.add(d.pairOf(1, 1));
+            values.add( DataFactory.pairOf( 1, 1 ) );
         }
-        final MetadataFactory metaFac = DefaultMetadataFactory.getInstance();
-        final Location location = metaFac.getLocation( "DRRC2" );
-        final Metadata meta = metaFac.getMetadata(metaFac.getDimension(),
-                                                  metaFac.getDatasetIdentifier(location, "SQIN", "HEFS"));
-        b.addData(values).setMetadata(meta).build();
+
+        final Location location = MetadataFactory.getLocation( "DRRC2" );
+        final Metadata meta = MetadataFactory.getMetadata( MetadataFactory.getDimension(),
+                                                           MetadataFactory.getDatasetIdentifier( location,
+                                                                                                 "SQIN",
+                                                                                                 "HEFS" ) );
+        b.addData( values ).setMetadata( meta ).build();
     }
 
 }

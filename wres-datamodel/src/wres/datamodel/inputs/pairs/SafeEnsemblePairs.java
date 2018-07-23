@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.StringJoiner;
 
-import wres.datamodel.DefaultDataFactory;
+import wres.datamodel.DataFactory;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
@@ -71,7 +71,7 @@ public class SafeEnsemblePairs implements EnsemblePairs
         {
             return null;
         }
-        return DefaultDataFactory.getInstance().ofEnsemblePairs( baselineInput, baselineMeta );
+        return DataFactory.ofEnsemblePairs( baselineInput, baselineMeta );
     }
 
     @Override
@@ -179,15 +179,14 @@ public class SafeEnsemblePairs implements EnsemblePairs
     SafeEnsemblePairs( final EnsemblePairsBuilder b )
     {
         //Ensure safe types
-        DefaultDataFactory factory = (DefaultDataFactory) DefaultDataFactory.getInstance();
-        this.mainInput = factory.safePairOfDoubleAndVectorOfDoublesList( b.mainInput );
+        this.mainInput = DataFactory.safePairOfDoubleAndVectorOfDoublesList( b.mainInput );
         this.mainMeta = b.mainMeta;
         this.climatology = b.climatology;
         
         // Baseline data?
         if( Objects.nonNull( b.baselineInput ) )
         {
-            this.baselineInput = factory.safePairOfDoubleAndVectorOfDoublesList( b.baselineInput );
+            this.baselineInput = DataFactory.safePairOfDoubleAndVectorOfDoublesList( b.baselineInput );
         }
         else 
         {

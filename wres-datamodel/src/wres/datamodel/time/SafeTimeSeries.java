@@ -14,7 +14,6 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
-import wres.datamodel.DefaultSlicer;
 import wres.datamodel.Slicer;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.time.Event;
@@ -404,9 +403,6 @@ public class SafeTimeSeries<T> implements TimeSeries<T>
             }
         }
 
-        // Slicer
-        Slicer slicer = DefaultSlicer.getInstance();
-
         //Construct an iterable view of the basis times
         class IterableTimeSeries implements Iterable<TimeSeries<T>>
         {
@@ -434,7 +430,7 @@ public class SafeTimeSeries<T> implements TimeSeries<T>
                         // Iterate
                         Duration nextDuration = iterator.next();
 
-                        return slicer.filterByDuration( new SafeTimeSeries<>( data ),
+                        return Slicer.filterByDuration( new SafeTimeSeries<>( data ),
                                                         isEqual -> isEqual.equals( nextDuration ) );
                     }
 

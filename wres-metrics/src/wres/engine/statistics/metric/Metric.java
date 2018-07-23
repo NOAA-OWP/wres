@@ -3,13 +3,13 @@ package wres.engine.statistics.metric;
 import java.util.Objects;
 import java.util.function.Function;
 
-import wres.datamodel.DataFactory;
-import wres.datamodel.DatasetIdentifier;
-import wres.datamodel.Dimension;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.inputs.MetricInputException;
+import wres.datamodel.metadata.DatasetIdentifier;
+import wres.datamodel.metadata.Dimension;
 import wres.datamodel.metadata.Metadata;
+import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.MetricOutput;
 
@@ -63,15 +63,7 @@ public interface Metric<S extends MetricInput<?>, T extends MetricOutput<?>> ext
      */
 
     boolean hasRealUnits();
-    
-    /**
-     * Returns a {@link DataFactory} for constructing a {@link MetricOutput}.
-     * 
-     * @return a {@link DataFactory}
-     */
 
-    DataFactory getDataFactory();
-    
     /**
      * Implementations should provide a string representation of the {@link Metric}.
      * 
@@ -80,7 +72,7 @@ public interface Metric<S extends MetricInput<?>, T extends MetricOutput<?>> ext
 
     @Override
     String toString();
-    
+
     /**
      * Returns the unique name of the metric, namely the string representation of {@link #getID()}.
      * 
@@ -121,9 +113,9 @@ public interface Metric<S extends MetricInput<?>, T extends MetricOutput<?>> ext
      */
 
     default MetricOutputMetadata getMetadata( final MetricInput<?> input,
-                                      final int sampleSize,
-                                      final MetricConstants componentID,
-                                      final DatasetIdentifier baselineID )
+                                              final int sampleSize,
+                                              final MetricConstants componentID,
+                                              final DatasetIdentifier baselineID )
     {
         if ( this instanceof Collectable )
         {
@@ -141,24 +133,23 @@ public interface Metric<S extends MetricInput<?>, T extends MetricOutput<?>> ext
         }
         else
         {
-            outputDim = getDataFactory().getMetadataFactory().getDimension();
+            outputDim = MetadataFactory.getDimension();
         }
         DatasetIdentifier identifier = metIn.getIdentifier();
         //Add the scenario ID associated with the baseline input
         if ( Objects.nonNull( baselineID ) )
         {
             identifier =
-                    getDataFactory().getMetadataFactory().getDatasetIdentifier( identifier, baselineID.getScenarioID() );
+                    MetadataFactory.getDatasetIdentifier( identifier, baselineID.getScenarioID() );
         }
-        return getDataFactory().getMetadataFactory()
-                          .getOutputMetadata( sampleSize,
-                                              outputDim,
-                                              metIn.getDimension(),
-                                              getID(),
-                                              componentID,
-                                              identifier,
-                                              metIn.getTimeWindow() );
-    }    
+        return MetadataFactory.getOutputMetadata( sampleSize,
+                                                  outputDim,
+                                                  metIn.getDimension(),
+                                                  getID(),
+                                                  componentID,
+                                                  identifier,
+                                                  metIn.getTimeWindow() );
+    }
 
     /**
      * A builder to build a {@link Metric}. Implement this interface when building a {@link Metric}, and hide
@@ -178,15 +169,6 @@ public interface Metric<S extends MetricInput<?>, T extends MetricOutput<?>> ext
          */
 
         Metric<P, Q> build() throws MetricParameterException;
-
-        /**
-         * Sets the {@link DataFactory} for constructing a {@link MetricOutput}.
-         * 
-         * @param dataFactory the {@link DataFactory}
-         * @return the builder
-         */
-
-        MetricBuilder<P, Q> setOutputFactory( final DataFactory dataFactory );
 
     }
 

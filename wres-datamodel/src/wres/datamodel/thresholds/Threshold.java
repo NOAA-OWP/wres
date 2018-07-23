@@ -3,8 +3,8 @@ package wres.datamodel.thresholds;
 import java.util.Objects;
 import java.util.function.DoublePredicate;
 
-import wres.datamodel.Dimension;
 import wres.datamodel.OneOrTwoDoubles;
+import wres.datamodel.metadata.Dimension;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdType;

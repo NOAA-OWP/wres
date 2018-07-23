@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
 
+import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.Slicer;
@@ -47,8 +48,8 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<Ensemble
             throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
         }
         //Slice the data into groups with an equal number of ensemble members
-        Slicer slicer = getDataFactory().getSlicer();
-        Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> sliced = slicer.filterByRightSize( s.getRawData() );
+        Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> sliced =
+                Slicer.filterByRightSize( s.getRawData() );
         //CRPS, currently without decomposition
         //TODO: implement the decomposition
         double[] crps = new double[1];
@@ -60,7 +61,7 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<Ensemble
         crps[0] = FunctionFactory.finiteOrMissing().applyAsDouble( crps[0] / s.getRawData().size() );
         //Metadata
         final MetricOutputMetadata metOut = getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, null );
-        return getDataFactory().ofDoubleScoreOutput( crps[0], metOut );
+        return DataFactory.ofDoubleScoreOutput( crps[0], metOut );
     }
 
     @Override
@@ -123,7 +124,8 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<Ensemble
                 break;
             default:
                 throw new MetricParameterException( "Unsupported decomposition identifier '"
-                                                    + getScoreOutputGroup()+"'." );
+                                                    + getScoreOutputGroup()
+                                                    + "'." );
         }
     }
 

@@ -11,7 +11,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.DataFactory;
-import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
@@ -39,18 +38,6 @@ public final class FrequencyBiasTest
     public final ExpectedException exception = ExpectedException.none();
 
     /**
-     * Output factory.
-     */
-
-    private DataFactory outF;
-
-    /**
-     * Metadata factory.
-     */
-
-    private MetadataFactory metaFac;
-
-    /**
      * Metric factory.
      */
 
@@ -71,16 +58,14 @@ public final class FrequencyBiasTest
     @Before
     public void setUpBeforeEachTest() throws MetricParameterException
     {
-        outF = DefaultDataFactory.getInstance();
-        metaFac = outF.getMetadataFactory();
-        metricFactory = MetricFactory.getInstance( outF );
+        metricFactory = MetricFactory.getInstance();
         fb = metricFactory.ofFrequencyBias();
-        meta = metaFac.getOutputMetadata( 365,
-                                          metaFac.getDimension(),
-                                          metaFac.getDimension(),
+        meta = MetadataFactory.getOutputMetadata( 365,
+                                          MetadataFactory.getDimension(),
+                                          MetadataFactory.getDimension(),
                                           MetricConstants.FREQUENCY_BIAS,
                                           MetricConstants.MAIN,
-                                          metaFac.getDatasetIdentifier( metaFac.getLocation("DRRC2"), "SQIN", "HEFS" ) );
+                                          MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation("DRRC2"), "SQIN", "HEFS" ) );
     }    
     
     /**
@@ -95,7 +80,7 @@ public final class FrequencyBiasTest
 
         //Check the results
         final DoubleScoreOutput actual = fb.apply( input );
-        final DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 1.1428571428571428, meta );
+        final DoubleScoreOutput expected = DataFactory.ofDoubleScoreOutput( 1.1428571428571428, meta );
         assertTrue( "Actual: " + actual.getData().doubleValue()
                     + ". Expected: "
                     + expected.getData().doubleValue()
@@ -112,7 +97,7 @@ public final class FrequencyBiasTest
     {
         // Generate empty data
         DichotomousPairs input =
-                outF.ofDichotomousPairs( Arrays.asList(), outF.getMetadataFactory().getMetadata() );
+                DataFactory.ofDichotomousPairs( Arrays.asList(), MetadataFactory.getMetadata() );
  
         DoubleScoreOutput actual = fb.apply( input );
 

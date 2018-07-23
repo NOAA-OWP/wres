@@ -41,8 +41,8 @@ public class RelativeOperatingCharacteristicDiagram extends Diagram<DiscreteProb
      * Components of the ROC.
      */
 
-    private final MetricCollection<DichotomousPairs, MatrixOutput, DoubleScoreOutput> roc;    
-    
+    private final MetricCollection<DichotomousPairs, MatrixOutput, DoubleScoreOutput> roc;
+
     /**
      * Number of points in the empirical ROC diagram.
      */
@@ -62,46 +62,42 @@ public class RelativeOperatingCharacteristicDiagram extends Diagram<DiscreteProb
         double constant = 1.0 / points;
         double[] pOD = new double[points + 1];
         double[] pOFD = new double[points + 1];
-        
+
         // Initialize arrays
         Arrays.fill( pOD, MissingValues.MISSING_DOUBLE );
         Arrays.fill( pOFD, MissingValues.MISSING_DOUBLE );
-        
-        DataFactory d = getDataFactory();
-        
+
         // Some data to process        
         if ( !s.getRawData().isEmpty() )
         {
-            Slicer slice = d.getSlicer();
-
             for ( int i = 1; i < points; i++ )
             {
                 double prob = Precision.round( 1.0 - ( i * constant ), 5 );
                 //Compute the PoD/PoFD using the probability threshold to determine whether the event occurred
                 //according to the probability on the RHS
                 MetricOutputMapByMetric<DoubleScoreOutput> out =
-                        roc.apply( slice.toDichotomousPairs( s,
-                                                    in -> d.pairOf( Double.compare( in.getItemOne(),
-                                                                                    1.0 ) == 0,
-                                                                    in.getItemTwo() > prob ) ) );
+                        roc.apply( Slicer.toDichotomousPairs( s,
+                                                             in -> DataFactory.pairOf( Double.compare( in.getItemOne(),
+                                                                                                       1.0 ) == 0,
+                                                                                       in.getItemTwo() > prob ) ) );
                 //Store
                 pOD[i] = out.get( MetricConstants.PROBABILITY_OF_DETECTION ).getData();
                 pOFD[i] = out.get( MetricConstants.PROBABILITY_OF_FALSE_DETECTION ).getData();
             }
-            
+
             //Set the lower and upper margins to (0.0, 0.0) and (1.0, 1.0), respectively            
             pOD[0] = 0.0;
-            pOFD[0] = 0.0;            
+            pOFD[0] = 0.0;
             pOD[points] = 1.0;
             pOFD[points] = 1.0;
         }
-        
+
         //Set the results
         Map<MetricDimension, double[]> output = new EnumMap<>( MetricDimension.class );
         output.put( MetricDimension.PROBABILITY_OF_DETECTION, pOD );
         output.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, pOFD );
         final MetricOutputMetadata metOut = getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, null );
-        return d.ofMultiVectorOutput( output, metOut );
+        return DataFactory.ofMultiVectorOutput( output, metOut );
     }
 
     @Override
@@ -114,15 +110,14 @@ public class RelativeOperatingCharacteristicDiagram extends Diagram<DiscreteProb
     public boolean hasRealUnits()
     {
         return false;
-    }    
-    
+    }
+
     /**
      * A {@link MetricBuilder} to build the metric.
      */
 
     public static class RelativeOperatingCharacteristicBuilder
-            extends
-            DiagramBuilder<DiscreteProbabilityPairs, MultiVectorOutput>
+            implements MetricBuilder<DiscreteProbabilityPairs, MultiVectorOutput>
     {
 
         @Override
@@ -143,10 +138,10 @@ public class RelativeOperatingCharacteristicDiagram extends Diagram<DiscreteProb
     private RelativeOperatingCharacteristicDiagram( final RelativeOperatingCharacteristicBuilder builder )
             throws MetricParameterException
     {
-        super( builder );
-        roc = MetricFactory.getInstance( getDataFactory() )
-                .ofDichotomousScoreCollection( MetricConstants.PROBABILITY_OF_DETECTION,
-                                                MetricConstants.PROBABILITY_OF_FALSE_DETECTION );
+        super();
+        roc = MetricFactory.getInstance()
+                           .ofDichotomousScoreCollection( MetricConstants.PROBABILITY_OF_DETECTION,
+                                                          MetricConstants.PROBABILITY_OF_FALSE_DETECTION );
         //Set the default points
         points = 10;
     }

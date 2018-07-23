@@ -1,22 +1,19 @@
 package wres.datamodel.metadata;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.StringJoiner;
 
-import wres.datamodel.DatasetIdentifier;
-import wres.datamodel.Dimension;
-import wres.datamodel.Location;
 import wres.datamodel.MetricConstants;
 
 /**
  * A factory class for producing metadata.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 
-public interface MetadataFactory
+public final class MetadataFactory
 {
 
     /**
@@ -25,9 +22,9 @@ public interface MetadataFactory
      * @return a {@link Metadata} object
      */
 
-    default Metadata getMetadata()
+    public static Metadata getMetadata()
     {
-        return getMetadata( getDimension() );
+        return MetadataFactory.getMetadata( getDimension() );
     }
 
     /**
@@ -37,9 +34,9 @@ public interface MetadataFactory
      * @return a {@link Metadata} object
      */
 
-    default Metadata getMetadata( final Dimension dim )
+    public static Metadata getMetadata( final Dimension dim )
     {
-        return getMetadata( dim, null, null );
+        return MetadataFactory.getMetadata( dim, null, null );
     }
 
     /**
@@ -50,9 +47,9 @@ public interface MetadataFactory
      * @return a {@link Metadata} object
      */
 
-    default Metadata getMetadata( final Dimension dim, final DatasetIdentifier identifier )
+    public static Metadata getMetadata( final Dimension dim, final DatasetIdentifier identifier )
     {
-        return getMetadata( dim, identifier, null );
+        return MetadataFactory.getMetadata( dim, identifier, null );
     }
 
     /**
@@ -63,9 +60,9 @@ public interface MetadataFactory
      * @return a {@link Metadata} object
      */
 
-    default Metadata getMetadata( final Metadata input, final Dimension dim )
+    public static Metadata getMetadata( final Metadata input, final Dimension dim )
     {
-        return getMetadata( dim, input.getIdentifier(), input.getTimeWindow() );
+        return MetadataFactory.getMetadata( dim, input.getIdentifier(), input.getTimeWindow() );
     }
 
     /**
@@ -76,10 +73,10 @@ public interface MetadataFactory
      * @return a {@link Metadata} object
      */
 
-    default Metadata getMetadata( final Metadata input, final TimeWindow timeWindow )
+    public static Metadata getMetadata( final Metadata input, final TimeWindow timeWindow )
     {
-        return getMetadata( input.getDimension(), input.getIdentifier(), timeWindow );
-    } 
+        return MetadataFactory.getMetadata( input.getDimension(), input.getIdentifier(), timeWindow );
+    }
 
     /**
      * Returns a dataset identifier.
@@ -89,9 +86,9 @@ public interface MetadataFactory
      * @return a dataset identifier
      */
 
-    default DatasetIdentifier getDatasetIdentifier( final Location geospatialID, final String variableID )
+    public static DatasetIdentifier getDatasetIdentifier( final Location geospatialID, final String variableID )
     {
-        return getDatasetIdentifier( geospatialID, variableID, null, null );
+        return MetadataFactory.getDatasetIdentifier( geospatialID, variableID, null, null );
     }
 
     /**
@@ -103,11 +100,11 @@ public interface MetadataFactory
      * @return a dataset identifier
      */
 
-    default DatasetIdentifier getDatasetIdentifier( final Location geospatialID,
-                                                    final String variableID,
-                                                    final String scenarioID )
+    public static DatasetIdentifier getDatasetIdentifier( final Location geospatialID,
+                                                          final String variableID,
+                                                          final String scenarioID )
     {
-        return getDatasetIdentifier( geospatialID, variableID, scenarioID, null );
+        return MetadataFactory.getDatasetIdentifier( geospatialID, variableID, scenarioID, null );
     }
 
     /**
@@ -118,12 +115,12 @@ public interface MetadataFactory
      * @return a dataset identifier
      */
 
-    default DatasetIdentifier getDatasetIdentifier( DatasetIdentifier identifier, String baselineScenarioID )
+    public static DatasetIdentifier getDatasetIdentifier( DatasetIdentifier identifier, String baselineScenarioID )
     {
-        return getDatasetIdentifier( identifier.getGeospatialID(),
-                                     identifier.getVariableID(),
-                                     identifier.getScenarioID(),
-                                     baselineScenarioID );
+        return MetadataFactory.getDatasetIdentifier( identifier.getGeospatialID(),
+                                                     identifier.getVariableID(),
+                                                     identifier.getScenarioID(),
+                                                     baselineScenarioID );
     }
 
     /**
@@ -137,12 +134,18 @@ public interface MetadataFactory
      * @return a {@link MetricOutputMetadata} object
      */
 
-    default MetricOutputMetadata getOutputMetadata( final int sampleSize,
-                                                    final Dimension outputDim,
-                                                    final Dimension inputDim,
-                                                    final MetricConstants metricID )
+    public static MetricOutputMetadata getOutputMetadata( final int sampleSize,
+                                                          final Dimension outputDim,
+                                                          final Dimension inputDim,
+                                                          final MetricConstants metricID )
     {
-        return getOutputMetadata( sampleSize, outputDim, inputDim, metricID, MetricConstants.MAIN, null, null );
+        return MetadataFactory.getOutputMetadata( sampleSize,
+                                                  outputDim,
+                                                  inputDim,
+                                                  metricID,
+                                                  MetricConstants.MAIN,
+                                                  null,
+                                                  null );
     }
 
     /**
@@ -157,13 +160,13 @@ public interface MetadataFactory
      * @return a {@link MetricOutputMetadata} object
      */
 
-    default MetricOutputMetadata getOutputMetadata( final int sampleSize,
-                                                    final Dimension outputDim,
-                                                    final Dimension inputDim,
-                                                    final MetricConstants metricID,
-                                                    final MetricConstants componentID )
+    public static MetricOutputMetadata getOutputMetadata( final int sampleSize,
+                                                          final Dimension outputDim,
+                                                          final Dimension inputDim,
+                                                          final MetricConstants metricID,
+                                                          final MetricConstants componentID )
     {
-        return getOutputMetadata( sampleSize, outputDim, inputDim, metricID, componentID, null, null );
+        return MetadataFactory.getOutputMetadata( sampleSize, outputDim, inputDim, metricID, componentID, null, null );
     }
 
     /**
@@ -179,21 +182,21 @@ public interface MetadataFactory
      * @return a {@link MetricOutputMetadata} object
      */
 
-    default MetricOutputMetadata getOutputMetadata( final int sampleSize,
-                                                    final Dimension outputDim,
-                                                    final Metadata metadata,
-                                                    final MetricConstants metricID,
-                                                    final MetricConstants componentID )
+    public static MetricOutputMetadata getOutputMetadata( final int sampleSize,
+                                                          final Dimension outputDim,
+                                                          final Metadata metadata,
+                                                          final MetricConstants metricID,
+                                                          final MetricConstants componentID )
     {
         Objects.requireNonNull( metadata,
                                 "Specify a non-null source of input metadata from which to build the output metadata." );
-        return getOutputMetadata( sampleSize,
-                                  outputDim,
-                                  metadata.getDimension(),
-                                  metricID,
-                                  componentID,
-                                  metadata.getIdentifier(),
-                                  metadata.getTimeWindow() );
+        return MetadataFactory.getOutputMetadata( sampleSize,
+                                                  outputDim,
+                                                  metadata.getDimension(),
+                                                  metricID,
+                                                  componentID,
+                                                  metadata.getIdentifier(),
+                                                  metadata.getTimeWindow() );
     }
 
     /**
@@ -210,14 +213,20 @@ public interface MetadataFactory
      * @return a {@link MetricOutputMetadata} object
      */
 
-    default MetricOutputMetadata getOutputMetadata( final int sampleSize,
-                                                    final Dimension outputDim,
-                                                    final Dimension inputDim,
-                                                    final MetricConstants metricID,
-                                                    final MetricConstants componentID,
-                                                    final DatasetIdentifier identifier )
+    public static MetricOutputMetadata getOutputMetadata( final int sampleSize,
+                                                          final Dimension outputDim,
+                                                          final Dimension inputDim,
+                                                          final MetricConstants metricID,
+                                                          final MetricConstants componentID,
+                                                          final DatasetIdentifier identifier )
     {
-        return getOutputMetadata( sampleSize, outputDim, inputDim, metricID, componentID, identifier, null );
+        return MetadataFactory.getOutputMetadata( sampleSize,
+                                                  outputDim,
+                                                  inputDim,
+                                                  metricID,
+                                                  componentID,
+                                                  identifier,
+                                                  null );
     }
 
     /**
@@ -228,16 +237,16 @@ public interface MetadataFactory
      * @return a {@link MetricOutputMetadata} object
      */
 
-    default MetricOutputMetadata getOutputMetadata( final MetricOutputMetadata source,
-                                                    final MetricConstants componentID )
+    public static MetricOutputMetadata getOutputMetadata( final MetricOutputMetadata source,
+                                                          final MetricConstants componentID )
     {
-        return getOutputMetadata( source.getSampleSize(),
-                                  source.getDimension(),
-                                  source.getInputDimension(),
-                                  source.getMetricID(),
-                                  componentID,
-                                  source.getIdentifier(),
-                                  source.getTimeWindow() );
+        return MetadataFactory.getOutputMetadata( source.getSampleSize(),
+                                                  source.getDimension(),
+                                                  source.getInputDimension(),
+                                                  source.getMetricID(),
+                                                  componentID,
+                                                  source.getIdentifier(),
+                                                  source.getTimeWindow() );
     }
 
     /**
@@ -248,15 +257,16 @@ public interface MetadataFactory
      * @return a {@link MetricOutputMetadata} object
      */
 
-    default MetricOutputMetadata getOutputMetadata( final MetricOutputMetadata source, final TimeWindow timeWindow )
+    public static MetricOutputMetadata getOutputMetadata( final MetricOutputMetadata source,
+                                                          final TimeWindow timeWindow )
     {
-        return getOutputMetadata( source.getSampleSize(),
-                                  source.getDimension(),
-                                  source.getInputDimension(),
-                                  source.getMetricID(),
-                                  source.getMetricComponentID(),
-                                  source.getIdentifier(),
-                                  timeWindow );
+        return MetadataFactory.getOutputMetadata( source.getSampleSize(),
+                                                  source.getDimension(),
+                                                  source.getInputDimension(),
+                                                  source.getMetricID(),
+                                                  source.getMetricComponentID(),
+                                                  source.getIdentifier(),
+                                                  timeWindow );
     }
 
     /**
@@ -267,16 +277,16 @@ public interface MetadataFactory
      * @return a {@link MetricOutputMetadata} object
      */
 
-    default MetricOutputMetadata getOutputMetadata( final MetricOutputMetadata source,
-                                                    final int sampleSize )
+    public static MetricOutputMetadata getOutputMetadata( final MetricOutputMetadata source,
+                                                          final int sampleSize )
     {
-        return getOutputMetadata( sampleSize,
-                                  source.getDimension(),
-                                  source.getInputDimension(),
-                                  source.getMetricID(),
-                                  source.getMetricComponentID(),
-                                  source.getIdentifier(),
-                                  source.getTimeWindow() );
+        return MetadataFactory.getOutputMetadata( sampleSize,
+                                                  source.getDimension(),
+                                                  source.getInputDimension(),
+                                                  source.getMetricID(),
+                                                  source.getMetricComponentID(),
+                                                  source.getIdentifier(),
+                                                  source.getTimeWindow() );
     }
 
     /**
@@ -289,7 +299,10 @@ public interface MetadataFactory
      * @return a {@link Metadata} object
      */
 
-    Metadata getMetadata( final Dimension dim, final DatasetIdentifier identifier, TimeWindow timeWindow );
+    public static Metadata getMetadata( final Dimension dim, final DatasetIdentifier identifier, TimeWindow timeWindow )
+    {
+        return new MetadataImpl( dim, identifier, timeWindow );
+    }
 
     /**
      * Builds a default {@link MetricOutputMetadata} with a prescribed sample size, a {@link Dimension} for the output
@@ -306,13 +319,101 @@ public interface MetadataFactory
      * @return a {@link MetricOutputMetadata} object
      */
 
-    MetricOutputMetadata getOutputMetadata( final int sampleSize,
-                                            final Dimension outputDim,
-                                            final Dimension inputDim,
-                                            final MetricConstants metricID,
-                                            final MetricConstants componentID,
-                                            final DatasetIdentifier identifier,
-                                            final TimeWindow timeWindow );
+    public static MetricOutputMetadata getOutputMetadata( final int sampleSize,
+                                                          final Dimension outputDim,
+                                                          final Dimension inputDim,
+                                                          final MetricConstants metricID,
+                                                          final MetricConstants componentID,
+                                                          final DatasetIdentifier identifier,
+                                                          final TimeWindow timeWindow )
+    {
+        class MetricOutputMetadataImpl extends MetadataImpl implements MetricOutputMetadata
+        {
+
+            private MetricOutputMetadataImpl()
+            {
+                super( outputDim, identifier, timeWindow );
+            }
+
+            @Override
+            public MetricConstants getMetricID()
+            {
+                return metricID;
+            }
+
+            @Override
+            public MetricConstants getMetricComponentID()
+            {
+                return componentID;
+            }
+
+            @Override
+            public Dimension getInputDimension()
+            {
+                return inputDim;
+            }
+
+            @Override
+            public int getSampleSize()
+            {
+                return sampleSize;
+            }
+
+            @Override
+            public boolean minimumEquals( final MetricOutputMetadata o )
+            {
+                return o.getMetricID() == getMetricID()
+                       && o.getMetricComponentID() == getMetricComponentID()
+                       && o.getDimension().equals( getDimension() )
+                       && o.getInputDimension().equals( getInputDimension() );
+            }
+
+            @Override
+            public boolean equals( final Object o )
+            {
+                if ( ! ( o instanceof MetricOutputMetadata ) )
+                {
+                    return false;
+                }
+                final MetricOutputMetadata p = ( (MetricOutputMetadata) o );
+                boolean returnMe = super.equals( o ) && p.getSampleSize() == getSampleSize()
+                                   && p.getInputDimension().equals( getInputDimension() );
+                return returnMe && p.getMetricID() == getMetricID()
+                       && p.getMetricComponentID() == getMetricComponentID();
+            }
+
+            @Override
+            public int hashCode()
+            {
+                return Objects.hash( super.hashCode(),
+                                     getSampleSize(),
+                                     getMetricID(),
+                                     getMetricComponentID(),
+                                     getInputDimension() );
+            }
+
+            @Override
+            public String toString()
+            {
+                String start = super.toString();
+                start = start.substring( 0, start.length() - 1 ); // Remove bookend char, ']'
+                final StringBuilder b = new StringBuilder( start );
+                b.append( "," )
+                 .append( inputDim )
+                 .append( "," )
+                 .append( sampleSize )
+                 .append( "," )
+                 .append( metricID )
+                 .append( "," )
+                 .append( componentID )
+                 .append( "]" );
+                return b.toString();
+            }
+
+        }
+
+        return new MetricOutputMetadataImpl();
+    }
 
     /**
      * Returns a dataset identifier.
@@ -324,10 +425,13 @@ public interface MetadataFactory
      * @return a dataset identifier
      */
 
-    DatasetIdentifier getDatasetIdentifier( final Location geospatialID,
-                                            final String variableID,
-                                            final String scenarioID,
-                                            final String baselineScenarioID );
+    public static DatasetIdentifier getDatasetIdentifier( final Location geospatialID,
+                                                          final String variableID,
+                                                          final String scenarioID,
+                                                          final String baselineScenarioID )
+    {
+        return new DatasetIdentifierImpl( geospatialID, variableID, scenarioID, baselineScenarioID );
+    }
 
     /**
      * Returns a location
@@ -339,11 +443,14 @@ public interface MetadataFactory
      * @param gageId And optional identifier for a gage (may be null)
      * @return A location
      */
-    Location getLocation(final Long vectorIdentifier,
-                         final String locationName,
-                         final Float longitude,
-                         final Float latitude,
-                         final String gageId);
+    public static Location getLocation( final Long vectorIdentifier,
+                                        final String locationName,
+                                        final Float longitude,
+                                        final Float latitude,
+                                        final String gageId )
+    {
+        return new LocationImpl( vectorIdentifier, locationName, longitude, latitude, gageId );
+    }
 
     /**
      * Returns a location
@@ -351,9 +458,9 @@ public interface MetadataFactory
      * @param latitude An optional latitudinal coordinate for a location (may be null)
      * @return A location
      */
-    default Location getLocation(final Float longitude, final Float latitude)
+    public static Location getLocation( final Float longitude, final Float latitude )
     {
-        return this.getLocation( null, null, longitude, latitude, null );
+        return MetadataFactory.getLocation( null, null, longitude, latitude, null );
     }
 
     /**
@@ -361,9 +468,9 @@ public interface MetadataFactory
      * @param locationName An optional name for a location (may be null)
      * @return A location
      */
-    default Location getLocation(final String locationName)
+    public static Location getLocation( final String locationName )
     {
-        return this.getLocation( null, locationName, null, null, null );
+        return MetadataFactory.getLocation( null, locationName, null, null, null );
     }
 
     /**
@@ -371,9 +478,9 @@ public interface MetadataFactory
      * @param vectorIdentifier An optional vector identifier for a location (may be null)
      * @return A location
      */
-    default Location getLocation(final Long vectorIdentifier)
+    public static Location getLocation( final Long vectorIdentifier )
     {
-        return this.getLocation( vectorIdentifier, null, null, null, null );
+        return MetadataFactory.getLocation( vectorIdentifier, null, null, null, null );
     }
 
     /**
@@ -382,7 +489,10 @@ public interface MetadataFactory
      * @return a {@link Dimension}
      */
 
-    Dimension getDimension();
+    public static Dimension getDimension()
+    {
+        return getDimension( "DIMENSIONLESS" );
+    }
 
     /**
      * Returns a {@link Dimension} with a named dimension and {@link Dimension#hasDimension()} that returns false if the
@@ -393,8 +503,66 @@ public interface MetadataFactory
      * @throws MetadataException if the input string is null
      */
 
-    Dimension getDimension( final String dimension );
-    
+    public static Dimension getDimension( final String dimension )
+    {
+        class DimensionImpl implements Dimension
+        {
+            /**
+             * The dimension.
+             */
+            private final String dimension;
+
+            public DimensionImpl( final String dimension )
+            {
+                if ( Objects.isNull( dimension ) )
+                {
+                    throw new MetadataException( "Specify a non-null dimension string." );
+                }
+                this.dimension = dimension;
+            }
+
+            @Override
+            public boolean hasDimension()
+            {
+                return !"DIMENSIONLESS".equals( dimension );
+            }
+
+            @Override
+            public String getDimension()
+            {
+                return dimension;
+            }
+
+            @Override
+            public boolean equals( final Object o )
+            {
+                return o instanceof Dimension && ( (Dimension) o ).hasDimension() == hasDimension()
+                       && ( (Dimension) o ).getDimension().equals( getDimension() );
+            }
+
+            @Override
+            public int hashCode()
+            {
+                return Objects.hash( hasDimension(), dimension );
+            }
+
+            @Override
+            public String toString()
+            {
+                return getDimension();
+            }
+
+            @Override
+            public int compareTo( Dimension o )
+            {
+                Objects.requireNonNull( o, "Specify a non-null dimension to compare with this dimension." );
+
+                return dimension.compareTo( o.getDimension() );
+            }
+        }
+        return new DimensionImpl( dimension );
+    }
+
     /**
      * Finds the union of the input, based on the {@link TimeWindow}. All components of the input must be equal, 
      * except the {@link TimeWindow}, otherwise an exception is thrown. See also {@link TimeWindow#unionOf(List)}.
@@ -403,7 +571,410 @@ public interface MetadataFactory
      * @return the union of the input
      * @throws MetadataException if the input is invalid
      */
-    
-    Metadata unionOf( List<Metadata> input );
+
+    public static Metadata unionOf( List<Metadata> input )
+    {
+        String nulLString = "Cannot find the union of null metadata.";
+        if ( Objects.isNull( input ) )
+        {
+            throw new MetadataException( nulLString );
+        }
+        if ( input.isEmpty() )
+        {
+            throw new MetadataException( "Cannot find the union of empty input." );
+        }
+        List<TimeWindow> unionWindow = new ArrayList<>();
+        Metadata test = input.get( 0 );
+        for ( Metadata next : input )
+        {
+            if ( Objects.isNull( next ) )
+            {
+                throw new MetadataException( nulLString );
+            }
+            if ( !next.equalsWithoutTimeWindow( test ) )
+            {
+                throw new MetadataException( "Only the time window can differ when finding the union of metadata." );
+            }
+            if ( next.hasTimeWindow() )
+            {
+                unionWindow.add( next.getTimeWindow() );
+            }
+        }
+        if ( !unionWindow.isEmpty() )
+        {
+            test = getMetadata( test, TimeWindow.unionOf( unionWindow ) );
+        }
+        return test;
+    }
+
+    /**
+     * Default implementation of {@link Metadata}.
+     */
+
+    private static class MetadataImpl implements Metadata
+    {
+        private final Dimension dim;
+        private final DatasetIdentifier identifier;
+        private final TimeWindow timeWindow;
+
+        private MetadataImpl( final Dimension dim, final DatasetIdentifier identifier, final TimeWindow timeWindow )
+        {
+            if ( Objects.isNull( dim ) )
+            {
+                throw new MetadataException( "Specify a non-null dimension from which to construct the metadata." );
+            }
+            this.dim = dim;
+            this.identifier = identifier;
+            this.timeWindow = timeWindow;
+        }
+
+        @Override
+        public Dimension getDimension()
+        {
+            return dim;
+        }
+
+        @Override
+        public DatasetIdentifier getIdentifier()
+        {
+            return identifier;
+        }
+
+        @Override
+        public TimeWindow getTimeWindow()
+        {
+            return timeWindow;
+        }
+
+        @Override
+        public boolean equals( final Object o )
+        {
+            if ( ! ( o instanceof Metadata ) )
+            {
+                return false;
+            }
+            final Metadata p = (Metadata) o;
+            boolean returnMe = equalsWithoutTimeWindow( p ) && hasTimeWindow() == p.hasTimeWindow();
+            if ( hasTimeWindow() )
+            {
+                returnMe = returnMe && getTimeWindow().equals( p.getTimeWindow() );
+            }
+            return returnMe;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return Objects.hash( getDimension(), hasIdentifier(), hasTimeWindow(), getIdentifier(), getTimeWindow() );
+        }
+
+        @Override
+        public String toString()
+        {
+            final StringBuilder b = new StringBuilder();
+            if ( hasIdentifier() )
+            {
+                String appendMe = identifier.toString();
+                appendMe = appendMe.replaceAll( "]", "," );
+                b.append( appendMe );
+            }
+            else
+            {
+                b.append( "[" );
+            }
+            if ( hasTimeWindow() )
+            {
+                b.append( timeWindow ).append( "," );
+            }
+            b.append( dim ).append( "]" );
+            return b.toString();
+        }
+
+    }
+
+    /**
+     * Default implementation of {@link DatasetIdentifier}.
+     */
+
+    private static class DatasetIdentifierImpl implements DatasetIdentifier
+    {
+
+        final Location geospatialID;
+        final String variableID;
+        final String scenarioID;
+        final String baselineScenarioID;
+
+        private DatasetIdentifierImpl( final Location geospatialID,
+                                       final String variableID,
+                                       final String scenarioID,
+                                       final String baselineScenarioID )
+        {
+            this.geospatialID = geospatialID;
+            this.variableID = variableID;
+            this.scenarioID = scenarioID;
+            this.baselineScenarioID = baselineScenarioID;
+        }
+
+        @Override
+        public Location getGeospatialID()
+        {
+            return geospatialID;
+        }
+
+        @Override
+        public String getVariableID()
+        {
+            return variableID;
+        }
+
+        @Override
+        public String getScenarioID()
+        {
+            return scenarioID;
+        }
+
+        @Override
+        public String getScenarioIDForBaseline()
+        {
+            return baselineScenarioID;
+        }
+
+        @Override
+        public String toString()
+        {
+            final StringJoiner b = new StringJoiner( ",", "[", "]" );
+            if ( hasGeospatialID() )
+            {
+                b.add( getGeospatialID().toString() );
+            }
+            if ( hasVariableID() )
+            {
+                b.add( getVariableID() );
+            }
+            if ( hasScenarioID() )
+            {
+                b.add( getScenarioID() );
+            }
+            if ( hasScenarioIDForBaseline() )
+            {
+                b.add( getScenarioIDForBaseline() );
+            }
+            return b.toString();
+        }
+
+        @Override
+        public boolean equals( final Object o )
+        {
+            if ( ! ( o instanceof DatasetIdentifier ) )
+            {
+                return false;
+            }
+            final DatasetIdentifier check = (DatasetIdentifier) o;
+            boolean returnMe = hasGeospatialID() == check.hasGeospatialID()
+                               && hasVariableID() == check.hasVariableID()
+                               && hasScenarioID() == check.hasScenarioID()
+                               && hasScenarioIDForBaseline() == check.hasScenarioIDForBaseline();
+            if ( hasGeospatialID() )
+            {
+                returnMe = returnMe && getGeospatialID().equals( check.getGeospatialID() );
+            }
+            if ( hasVariableID() )
+            {
+                returnMe = returnMe && getVariableID().equals( check.getVariableID() );
+            }
+            if ( hasScenarioID() )
+            {
+                returnMe = returnMe && getScenarioID().equals( check.getScenarioID() );
+            }
+            if ( hasScenarioIDForBaseline() )
+            {
+                returnMe = returnMe && getScenarioIDForBaseline().equals( check.getScenarioIDForBaseline() );
+            }
+            return returnMe;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return Objects.hash( getGeospatialID(), getVariableID(), getScenarioID(), getScenarioIDForBaseline() );
+        }
+    }
+
+    /**
+     * Default implementation of {@link Location}
+     */
+
+    private static class LocationImpl implements Location
+    {
+        private final Long vectorIdentifier;
+        private final String locationName;
+        private final Float longitude;
+        private final Float latitude;
+        private final String gageId;
+
+        private LocationImpl( final Long vectorIdentifier,
+                              final String locationName,
+                              final Float longitude,
+                              final Float latitude,
+                              final String gageId )
+        {
+            this.vectorIdentifier = vectorIdentifier;
+            this.locationName = locationName;
+            this.longitude = longitude;
+            this.latitude = latitude;
+            this.gageId = gageId;
+        }
+
+        @Override
+        public Long getVectorIdentifier()
+        {
+            return this.vectorIdentifier;
+        }
+
+        @Override
+        public String getLocationName()
+        {
+            return this.locationName;
+        }
+
+        @Override
+        public Float getLongitude()
+        {
+            return this.longitude;
+        }
+
+        @Override
+        public Float getLatitude()
+        {
+            return this.latitude;
+        }
+
+        @Override
+        public String getGageId()
+        {
+            return this.gageId;
+        }
+
+        @Override
+        public String toString()
+        {
+            if ( this.hasLocationName() )
+            {
+                return this.locationName;
+            }
+
+            if ( this.hasGageId() )
+            {
+                return this.gageId;
+            }
+
+            if ( this.hasVectorIdentifier() )
+            {
+                return this.vectorIdentifier.toString();
+            }
+
+            if ( this.hasCoordinates() )
+            {
+                String coordinates = "" + Math.abs( this.getLongitude() );
+
+                if ( this.getLongitude() < 0 )
+                {
+                    coordinates += "W";
+                }
+                else
+                {
+                    coordinates += "E";
+                }
+
+                coordinates += " " + Math.abs( this.getLatitude() );
+
+                if ( this.getLatitude() < 0 )
+                {
+                    coordinates += "S";
+                }
+                else
+                {
+                    coordinates += "N";
+                }
+
+                return coordinates;
+            }
+
+            return "Unknown";
+        }
+
+        @Override
+        public boolean equals( Object obj )
+        {
+            if ( obj instanceof Location )
+            {
+                Location other = (Location) obj;
+
+                boolean locationsEqual = true;
+                boolean vectorIDsEqual = true;
+                boolean gageIDsEqual = true;
+                boolean coordinatesEqual = true;
+
+                if ( this.hasLocationName() && other.hasLocationName() )
+                {
+                    locationsEqual = this.getLocationName().equalsIgnoreCase( other.getLocationName() );
+                }
+                else if ( this.hasLocationName() || other.hasLocationName() )
+                {
+                    return false;
+                }
+
+                if ( this.hasVectorIdentifier() && other.hasVectorIdentifier() )
+                {
+                    vectorIDsEqual = this.getVectorIdentifier().equals( other.getVectorIdentifier() );
+                }
+                else if ( this.hasVectorIdentifier() || other.hasVectorIdentifier() )
+                {
+                    return false;
+                }
+
+                if ( this.hasGageId() && other.hasGageId() )
+                {
+                    gageIDsEqual = this.getGageId().equalsIgnoreCase( other.getGageId() );
+                }
+                else if ( this.hasGageId() || other.hasGageId() )
+                {
+                    return false;
+                }
+
+                if ( this.hasCoordinates() && other.hasCoordinates() )
+                {
+                    coordinatesEqual = this.getLatitude().equals( other.getLatitude() ) &&
+                                       this.getLongitude().equals( other.getLongitude() );
+                }
+                else if ( this.hasCoordinates() || other.hasCoordinates() )
+                {
+                    return false;
+                }
+
+                return locationsEqual && vectorIDsEqual && gageIDsEqual && coordinatesEqual;
+            }
+
+            return false;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return Objects.hash( this.locationName,
+                                 this.gageId,
+                                 this.vectorIdentifier,
+                                 this.longitude,
+                                 this.latitude );
+        }
+    }
+
+    /**
+     * No argument constructor.
+     */
+
+    private MetadataFactory()
+    {
+    }
 
 }

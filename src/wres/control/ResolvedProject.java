@@ -12,7 +12,6 @@ import wres.config.ProjectConfigPlus;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
-import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.thresholds.ThresholdsByMetric;
@@ -162,10 +161,8 @@ class ResolvedProject
     int getThresholdCount( MetricOutputGroup outGroup )
     {
         // Obtain the union of internal and external thresholds
-        DataFactory thresholdFactory = DefaultDataFactory.getInstance();
         ThresholdsByMetric thresholds =
                 MetricConfigHelper.getThresholdsFromConfig( this.getProjectConfig(),
-                                                            thresholdFactory,
                                                             externalThresholds.values() );
         // Filter the thresholds if required
         if( Objects.nonNull( outGroup ) )

@@ -8,12 +8,14 @@ import java.util.Objects;
 
 import org.apache.commons.lang3.tuple.Pair;
 
-import wres.datamodel.Dimension;
+import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
+import wres.datamodel.metadata.Dimension;
 import wres.datamodel.metadata.Metadata;
+import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.PairedOutput;
 import wres.datamodel.time.TimeSeries;
@@ -70,16 +72,16 @@ public class TimeToPeakRelativeError extends TimingError
 
         // Create output metadata with the identifier of the statistic as the component identifier
         Metadata in = s.getMetadata();
-        Dimension outputDimension = getDataFactory().getMetadataFactory().getDimension( "DURATION IN RELATIVE HOURS" );
-        MetricOutputMetadata meta = getDataFactory().getMetadataFactory().getOutputMetadata( s.getBasisTimes().size(),
-                                                                                             outputDimension,
-                                                                                             in.getDimension(),
-                                                                                             this.getID(),
-                                                                                             MetricConstants.MAIN,
-                                                                                             in.getIdentifier(),
-                                                                                             in.getTimeWindow() );
+        Dimension outputDimension = MetadataFactory.getDimension( "DURATION IN RELATIVE HOURS" );
+        MetricOutputMetadata meta = MetadataFactory.getOutputMetadata( s.getBasisTimes().size(),
+                                                                       outputDimension,
+                                                                       in.getDimension(),
+                                                                       this.getID(),
+                                                                       MetricConstants.MAIN,
+                                                                       in.getIdentifier(),
+                                                                       in.getTimeWindow() );
 
-        return this.getDataFactory().ofPairedOutput( returnMe, meta );
+        return DataFactory.ofPairedOutput( returnMe, meta );
     }
 
     @Override

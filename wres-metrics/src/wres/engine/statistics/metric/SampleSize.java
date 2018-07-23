@@ -2,6 +2,7 @@ package wres.engine.statistics.metric;
 
 import java.util.Objects;
 
+import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInput;
@@ -23,7 +24,7 @@ class SampleSize<S extends MetricInput<?>> extends OrdinaryScore<S, DoubleScoreO
         {
             throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
         }
-        return getDataFactory().ofDoubleScoreOutput( s.getRawData().size(),
+        return DataFactory.ofDoubleScoreOutput( s.getRawData().size(),
                                                getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, null ) );
     }
 
@@ -61,7 +62,7 @@ class SampleSize<S extends MetricInput<?>> extends OrdinaryScore<S, DoubleScoreO
      * A {@link MetricBuilder} to build the metric.
      */
 
-    static class SampleSizeBuilder<S extends MetricInput<?>> extends OrdinaryScoreBuilder<S, DoubleScoreOutput>
+    static class SampleSizeBuilder<S extends MetricInput<?>> implements MetricBuilder<S, DoubleScoreOutput>
     {
         @Override
         public SampleSize<S> build() throws MetricParameterException
@@ -79,7 +80,7 @@ class SampleSize<S extends MetricInput<?>> extends OrdinaryScore<S, DoubleScoreO
 
     private SampleSize( final SampleSizeBuilder<S> builder ) throws MetricParameterException
     {
-        super( builder );
+        super();
     }
 
 }

@@ -11,7 +11,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.DataFactory;
-import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
@@ -36,18 +35,6 @@ public final class ContingencyTableScoreTest
     public final ExpectedException exception = ExpectedException.none();
 
     /**
-     * Output factory.
-     */
-
-    private DataFactory outF;
-
-    /**
-     * Metadata factory.
-     */
-
-    private MetadataFactory metaFac;
-
-    /**
      * Metric factory.
      */
 
@@ -68,15 +55,13 @@ public final class ContingencyTableScoreTest
     @Before
     public void setupBeforeEachTest() throws MetricParameterException
     {
-        outF = DefaultDataFactory.getInstance();
-        metaFac = outF.getMetadataFactory();
-        metricFactory = MetricFactory.getInstance( outF );
+        metricFactory = MetricFactory.getInstance();
         cs = metricFactory.ofThreatScore();
-        meta = metaFac.getOutputMetadata( 365,
-                                          metaFac.getDimension(),
-                                          metaFac.getDimension(),
-                                          MetricConstants.CONTINGENCY_TABLE,
-                                          MetricConstants.MAIN );
+        meta = MetadataFactory.getOutputMetadata( 365,
+                                                  MetadataFactory.getDimension(),
+                                                  MetadataFactory.getDimension(),
+                                                  MetricConstants.CONTINGENCY_TABLE,
+                                                  MetricConstants.MAIN );
     }
 
     /**
@@ -89,8 +74,8 @@ public final class ContingencyTableScoreTest
     public void testHasRealUnits()
     {
         assertFalse( "The Critical Success Index should not have real units.", cs.hasRealUnits() );
-    }    
-    
+    }
+
     /**
      * Checks that a {@link ContingencyTableScore} accepts input with the correct shape.
      * @throws MetricInputException if the input is not accepted
@@ -100,11 +85,11 @@ public final class ContingencyTableScoreTest
     public void testContingencyTableScoreAcceptsCorrectInput()
     {
         final double[][] benchmark = new double[][] { { 82.0, 38.0 }, { 23.0, 222.0 } };
-        final MatrixOutput expected = outF.ofMatrixOutput( benchmark, meta );
+        final MatrixOutput expected = DataFactory.ofMatrixOutput( benchmark, meta );
 
         cs.is2x2ContingencyTable( expected, cs );
     }
-    
+
     /**
      * Checks that input with the correct shape is accepted for a table of arbitrary size.
      * @throws MetricInputException if the input is not accepted
@@ -114,94 +99,98 @@ public final class ContingencyTableScoreTest
     public void testContingencyTableScoreAcceptsCorrectInputForLargeTable()
     {
         final double[][] benchmark = new double[][] { { 82.0, 38.0 }, { 23.0, 222.0 } };
-        final MatrixOutput expected = outF.ofMatrixOutput( benchmark, meta );
+        final MatrixOutput expected = DataFactory.ofMatrixOutput( benchmark, meta );
 
         cs.isContingencyTable( expected, cs );
-    }    
-    
+    }
+
     /**
      * Checks that {@link ContingencyTableScore#getCollectionOf()} returns {@link MetricConstants#CONTINGENCY_TABLE}.
      */
-    
+
     @Test
     public void testGetCollectionOf()
     {
         assertTrue( cs.getCollectionOf() == MetricConstants.CONTINGENCY_TABLE );
     }
-    
+
     /**
      * Compares the output from {@link ContingencyTableScore#getInputForAggregation(wres.datamodel.inputs.pairs.MulticategoryPairs)} 
      * against a benchmark.
      */
-    
+
     @Test
     public void testGetCollectionInput()
-    {       
+    {
         final DichotomousPairs input = MetricTestDataFactory.getDichotomousPairsOne();
-        
+
         //Metadata for the output
         final MetricOutputMetadata m1 =
-                metaFac.getOutputMetadata( input.getRawData().size(),
-                                           metaFac.getDimension(),
-                                           metaFac.getDimension(),
-                                           MetricConstants.CONTINGENCY_TABLE,
-                                           MetricConstants.MAIN,
-                                           metaFac.getDatasetIdentifier( metaFac.getLocation("DRRC2"), "SQIN", "HEFS" ) );
-        
-        
+                MetadataFactory.getOutputMetadata( input.getRawData().size(),
+                                                   MetadataFactory.getDimension(),
+                                                   MetadataFactory.getDimension(),
+                                                   MetricConstants.CONTINGENCY_TABLE,
+                                                   MetricConstants.MAIN,
+                                                   MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation( "DRRC2" ),
+                                                                                         "SQIN",
+                                                                                         "HEFS" ) );
+
+
         final double[][] benchmark = new double[][] { { 82.0, 38.0 }, { 23.0, 222.0 } };
-        final MatrixOutput expected = outF.ofMatrixOutput( benchmark,
-                                                           Arrays.asList( MetricDimension.TRUE_POSITIVES,
-                                                                          MetricDimension.FALSE_POSITIVES,
-                                                                          MetricDimension.FALSE_NEGATIVES,
-                                                                          MetricDimension.TRUE_NEGATIVES ),
-                                                           m1 );
+        final MatrixOutput expected = DataFactory.ofMatrixOutput( benchmark,
+                                                                  Arrays.asList( MetricDimension.TRUE_POSITIVES,
+                                                                                 MetricDimension.FALSE_POSITIVES,
+                                                                                 MetricDimension.FALSE_NEGATIVES,
+                                                                                 MetricDimension.TRUE_NEGATIVES ),
+                                                                  m1 );
 
         final MatrixOutput actual = cs.getInputForAggregation( input );
-        
+
         assertTrue( "Unexpected result for the contingency table.", actual.equals( expected ) );
-    }        
+    }
 
     /**
      * Checks that {@link ContingencyTableScore#isDecomposable()} returns <code>false</code>.
      */
-    
+
     @Test
     public void testIsDecomposableReturnsFalse()
     {
         assertFalse( cs.isDecomposable() );
     }
-    
+
     /**
      * Checks that {@link ContingencyTableScore#getScoreOutputGroup()} returns {@link ScoreOutputGroup#NONE}.
      */
-    
+
     @Test
     public void testGetScoreOutputGroupReturnsNone()
     {
-        assertTrue( cs.getScoreOutputGroup() ==  ScoreOutputGroup.NONE );
-    }    
-    
+        assertTrue( cs.getScoreOutputGroup() == ScoreOutputGroup.NONE );
+    }
+
     /**
      * Checks the output from {@link ContingencyTableScore#getMetadata(MatrixOutput)} against a benchmark.
      */
-    
+
     @Test
     public void testGetMetadataReturnsExpectedOutput()
     {
         final DichotomousPairs input = MetricTestDataFactory.getDichotomousPairsOne();
-        
+
         final MetricOutputMetadata expected =
-                metaFac.getOutputMetadata( input.getRawData().size(),
-                                           metaFac.getDimension(),
-                                           metaFac.getDimension(),
-                                           MetricConstants.THREAT_SCORE,
-                                           MetricConstants.MAIN,
-                                           metaFac.getDatasetIdentifier( metaFac.getLocation("DRRC2"), "SQIN", "HEFS" ) );
-        
-        assertTrue( cs.getMetadata( cs.getInputForAggregation( input ) ).equals( expected ) );       
-    }    
-    
+                MetadataFactory.getOutputMetadata( input.getRawData().size(),
+                                                   MetadataFactory.getDimension(),
+                                                   MetadataFactory.getDimension(),
+                                                   MetricConstants.THREAT_SCORE,
+                                                   MetricConstants.MAIN,
+                                                   MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation( "DRRC2" ),
+                                                                                         "SQIN",
+                                                                                         "HEFS" ) );
+
+        assertTrue( cs.getMetadata( cs.getInputForAggregation( input ) ).equals( expected ) );
+    }
+
     /**
      * Checks for an exception on null input.
      */
@@ -253,7 +242,7 @@ public final class ContingencyTableScoreTest
         exception.expectMessage( "Expected an intermediate result with a 2x2 square matrix when computing the "
                                  + "'THREAT SCORE': [1, 1]." );
 
-        cs.is2x2ContingencyTable( outF.ofMatrixOutput( new double[][] { { 1.0 } }, meta ), cs );
+        cs.is2x2ContingencyTable( DataFactory.ofMatrixOutput( new double[][] { { 1.0 } }, meta ), cs );
     }
 
     /**
@@ -267,8 +256,8 @@ public final class ContingencyTableScoreTest
         exception.expectMessage( "Expected an intermediate result with a 2x2 square matrix when computing the "
                                  + "'THREAT SCORE': [2, 3]." );
 
-        cs.is2x2ContingencyTable( outF.ofMatrixOutput( new double[][] { { 1.0, 1.0, 1.0 }, { 1.0, 1.0, 1.0 } },
-                                                       meta ),
+        cs.is2x2ContingencyTable( DataFactory.ofMatrixOutput( new double[][] { { 1.0, 1.0, 1.0 }, { 1.0, 1.0, 1.0 } },
+                                                              meta ),
                                   cs );
     }
 
@@ -283,8 +272,8 @@ public final class ContingencyTableScoreTest
         exception.expectMessage( "Expected an intermediate result with a square matrix when computing the "
                                  + "'THREAT SCORE': [2, 3]." );
 
-        cs.isContingencyTable( outF.ofMatrixOutput( new double[][] { { 1.0, 1.0, 1.0 }, { 1.0, 1.0, 1.0 } },
-                                                    meta ),
+        cs.isContingencyTable( DataFactory.ofMatrixOutput( new double[][] { { 1.0, 1.0, 1.0 }, { 1.0, 1.0, 1.0 } },
+                                                           meta ),
                                cs );
     }
 
@@ -298,7 +287,7 @@ public final class ContingencyTableScoreTest
         exception.expect( MetricInputException.class );
         exception.expectMessage( "Specify non-null input to the 'THREAT SCORE'." );
 
-        cs.is2x2ContingencyTable( outF.ofMatrixOutput( new double[][] { { 1.0 } }, meta ), null );
+        cs.is2x2ContingencyTable( DataFactory.ofMatrixOutput( new double[][] { { 1.0 } }, meta ), null );
     }
 
     /**
@@ -311,7 +300,8 @@ public final class ContingencyTableScoreTest
         exception.expect( MetricInputException.class );
         exception.expectMessage( "Specify non-null input to the 'THREAT SCORE'." );
 
-        cs.isContingencyTable( outF.ofMatrixOutput( new double[][] { { 1.0, 1.0 }, { 1.0, 1.0 } }, meta ), null );
+        cs.isContingencyTable( DataFactory.ofMatrixOutput( new double[][] { { 1.0, 1.0 }, { 1.0, 1.0 } }, meta ),
+                               null );
     }
 
 }

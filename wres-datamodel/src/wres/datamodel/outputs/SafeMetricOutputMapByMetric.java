@@ -11,7 +11,7 @@ import java.util.SortedMap;
 import java.util.StringJoiner;
 import java.util.TreeMap;
 
-import wres.datamodel.DefaultDataFactory;
+import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.outputs.MapKey;
 import wres.datamodel.outputs.MetricOutput;
@@ -47,7 +47,7 @@ public class SafeMetricOutputMapByMetric<T extends MetricOutput<?>> implements M
     @Override
     public T get( final MetricConstants metricID )
     {
-        return get( DefaultDataFactory.getInstance().getMapKey( metricID ) );
+        return get( DataFactory.getMapKey( metricID ) );
     }
 
     @Override

@@ -11,7 +11,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.DataFactory;
-import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
@@ -41,18 +40,10 @@ public final class BiasFractionTest
 
     private BiasFraction biasFraction;
 
-    /**
-     * Instance of a data factory.
-     */
-
-    private DataFactory outF;
-
     @Before
     public void setupBeforeEachTest() throws MetricParameterException
     {
         BiasFractionBuilder b = new BiasFraction.BiasFractionBuilder();
-        this.outF = DefaultDataFactory.getInstance();
-        b.setOutputFactory( outF );
         this.biasFraction = b.build();
     }
 
@@ -67,15 +58,14 @@ public final class BiasFractionTest
         SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Metadata for the output
-        MetadataFactory metaFac = outF.getMetadataFactory();
-        MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getRawData().size(),
-                                                                   metaFac.getDimension(),
-                                                                   metaFac.getDimension(),
+        MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( input.getRawData().size(),
+                                                                   MetadataFactory.getDimension(),
+                                                                   MetadataFactory.getDimension(),
                                                                    MetricConstants.BIAS_FRACTION,
                                                                    MetricConstants.MAIN );
         //Check the results
         DoubleScoreOutput actual = biasFraction.apply( input );
-        DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 0.056796297974534414, m1 );
+        DoubleScoreOutput expected = DataFactory.ofDoubleScoreOutput( 0.056796297974534414, m1 );
         assertTrue( "Actual: " + actual.getData().doubleValue()
                     + ". Expected: "
                     + expected.getData().doubleValue()
@@ -92,7 +82,7 @@ public final class BiasFractionTest
     {
         // Generate empty data
         DiscreteProbabilityPairs input =
-                outF.ofDiscreteProbabilityPairs( Arrays.asList(), outF.getMetadataFactory().getMetadata() );
+                DataFactory.ofDiscreteProbabilityPairs( Arrays.asList(), MetadataFactory.getMetadata() );
  
         DoubleScoreOutput actual = biasFraction.apply( input );
 

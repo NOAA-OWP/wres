@@ -13,7 +13,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.DataFactory;
-import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
@@ -42,18 +41,10 @@ public final class ContinousRankedProbabilityScoreTest
 
     private ContinuousRankedProbabilityScore crps;
 
-    /**
-     * Instance of a data factory.
-     */
-
-    private DataFactory outF;
-
     @Before
     public void setupBeforeEachTest() throws MetricParameterException
     {
         CRPSBuilder b = new CRPSBuilder();
-        this.outF = DefaultDataFactory.getInstance();
-        b.setOutputFactory( outF );
         b.setDecompositionID( ScoreOutputGroup.NONE );
         this.crps = b.build();
     }
@@ -67,26 +58,25 @@ public final class ContinousRankedProbabilityScoreTest
     public void testApplyWithNoMissings()
     {
         //Generate some data
-        MetadataFactory metaFac = outF.getMetadataFactory();
         List<PairOfDoubleAndVectorOfDoubles> pairs = new ArrayList<>();
-        pairs.add( outF.pairOf( 25.7, new double[] { 23, 43, 45, 23, 54 } ) );
-        pairs.add( outF.pairOf( 21.4, new double[] { 19, 16, 57, 23, 9 } ) );
-        pairs.add( outF.pairOf( 32.1, new double[] { 23, 54, 23, 12, 32 } ) );
-        pairs.add( outF.pairOf( 47, new double[] { 12, 54, 23, 54, 78 } ) );
-        pairs.add( outF.pairOf( 12.1, new double[] { 9, 8, 5, 6, 12 } ) );
-        pairs.add( outF.pairOf( 43, new double[] { 23, 12, 12, 34, 10 } ) );
-        EnsemblePairs input = outF.ofEnsemblePairs( pairs, metaFac.getMetadata() );
+        pairs.add( DataFactory.pairOf( 25.7, new double[] { 23, 43, 45, 23, 54 } ) );
+        pairs.add( DataFactory.pairOf( 21.4, new double[] { 19, 16, 57, 23, 9 } ) );
+        pairs.add( DataFactory.pairOf( 32.1, new double[] { 23, 54, 23, 12, 32 } ) );
+        pairs.add( DataFactory.pairOf( 47, new double[] { 12, 54, 23, 54, 78 } ) );
+        pairs.add( DataFactory.pairOf( 12.1, new double[] { 9, 8, 5, 6, 12 } ) );
+        pairs.add( DataFactory.pairOf( 43, new double[] { 23, 12, 12, 34, 10 } ) );
+        EnsemblePairs input = DataFactory.ofEnsemblePairs( pairs, MetadataFactory.getMetadata() );
 
         //Metadata for the output
         MetricOutputMetadata m1 =
-                metaFac.getOutputMetadata( input.getRawData().size(),
-                                           metaFac.getDimension(),
-                                           metaFac.getDimension(),
-                                           MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE,
-                                           MetricConstants.MAIN );
+                MetadataFactory.getOutputMetadata( input.getRawData().size(),
+                                                   MetadataFactory.getDimension(),
+                                                   MetadataFactory.getDimension(),
+                                                   MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE,
+                                                   MetricConstants.MAIN );
         //Check the results       
         final DoubleScoreOutput actual = crps.apply( input );
-        final DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 7.63, m1 );
+        final DoubleScoreOutput expected = DataFactory.ofDoubleScoreOutput( 7.63, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -104,26 +94,25 @@ public final class ContinousRankedProbabilityScoreTest
     {
 
         //Generate some data
-        MetadataFactory metaFac = outF.getMetadataFactory();
         List<PairOfDoubleAndVectorOfDoubles> pairs = new ArrayList<>();
-        pairs.add( outF.pairOf( 25.7, new double[] { 23, 43, 45, 34.2, 23, 54 } ) );
-        pairs.add( outF.pairOf( 21.4, new double[] { 19, 16, 57, 23, 9 } ) );
-        pairs.add( outF.pairOf( 32.1, new double[] { 23, 54, 23, 12, 32, 45.3, 67.1 } ) );
-        pairs.add( outF.pairOf( 47, new double[] { 12, 54, 23, 54 } ) );
-        pairs.add( outF.pairOf( 12, new double[] { 9, 8, 5 } ) );
-        pairs.add( outF.pairOf( 43, new double[] { 23, 12, 12 } ) );
-        EnsemblePairs input = outF.ofEnsemblePairs( pairs, metaFac.getMetadata() );
+        pairs.add( DataFactory.pairOf( 25.7, new double[] { 23, 43, 45, 34.2, 23, 54 } ) );
+        pairs.add( DataFactory.pairOf( 21.4, new double[] { 19, 16, 57, 23, 9 } ) );
+        pairs.add( DataFactory.pairOf( 32.1, new double[] { 23, 54, 23, 12, 32, 45.3, 67.1 } ) );
+        pairs.add( DataFactory.pairOf( 47, new double[] { 12, 54, 23, 54 } ) );
+        pairs.add( DataFactory.pairOf( 12, new double[] { 9, 8, 5 } ) );
+        pairs.add( DataFactory.pairOf( 43, new double[] { 23, 12, 12 } ) );
+        EnsemblePairs input = DataFactory.ofEnsemblePairs( pairs, MetadataFactory.getMetadata() );
 
         //Metadata for the output
         MetricOutputMetadata m1 =
-                metaFac.getOutputMetadata( input.getRawData().size(),
-                                           metaFac.getDimension(),
-                                           metaFac.getDimension(),
-                                           MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE,
-                                           MetricConstants.MAIN );
+                MetadataFactory.getOutputMetadata( input.getRawData().size(),
+                                                   MetadataFactory.getDimension(),
+                                                   MetadataFactory.getDimension(),
+                                                   MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE,
+                                                   MetricConstants.MAIN );
         //Check the results       
         DoubleScoreOutput actual = crps.apply( input );
-        DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 8.734401927437641, m1 );
+        DoubleScoreOutput expected = DataFactory.ofDoubleScoreOutput( 8.734401927437641, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -141,28 +130,27 @@ public final class ContinousRankedProbabilityScoreTest
     public void testApplyObsMissesLow()
     {
         //Generate some data
-        MetadataFactory metaFac = outF.getMetadataFactory();
         List<PairOfDoubleAndVectorOfDoubles> pairs = new ArrayList<>();
-        pairs.add( outF.pairOf( 8, new double[] { 23, 54, 23, 12, 32 } ) );
-        EnsemblePairs input = outF.ofEnsemblePairs( pairs, metaFac.getMetadata() );
+        pairs.add( DataFactory.pairOf( 8, new double[] { 23, 54, 23, 12, 32 } ) );
+        EnsemblePairs input = DataFactory.ofEnsemblePairs( pairs, MetadataFactory.getMetadata() );
 
         //Metadata for the output
         MetricOutputMetadata m1 =
-                metaFac.getOutputMetadata( input.getRawData().size(),
-                                           metaFac.getDimension(),
-                                           metaFac.getDimension(),
-                                           MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE,
-                                           MetricConstants.MAIN );
+                MetadataFactory.getOutputMetadata( input.getRawData().size(),
+                                                   MetadataFactory.getDimension(),
+                                                   MetadataFactory.getDimension(),
+                                                   MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE,
+                                                   MetricConstants.MAIN );
         //Check the results       
         DoubleScoreOutput actual = crps.apply( input );
-        DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 13.36, m1 );
+        DoubleScoreOutput expected = DataFactory.ofDoubleScoreOutput( 13.36, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
                     + ".",
                     actual.equals( expected ) );
     }
-    
+
     /**
      * Compares the output from {@link ContinuousRankedProbabilityScore#apply(EnsemblePairs)} against expected output
      * for a scenario where the observed value overlaps one ensemble member. This exposes a mistake in the Hersbach 
@@ -174,28 +162,27 @@ public final class ContinousRankedProbabilityScoreTest
     {
 
         //Generate some data
-        MetadataFactory metaFac = outF.getMetadataFactory();
         List<PairOfDoubleAndVectorOfDoubles> pairs = new ArrayList<>();
-        pairs.add( outF.pairOf( 32, new double[] { 23, 54, 23, 12, 32 } ) );
-        EnsemblePairs input = outF.ofEnsemblePairs( pairs, metaFac.getMetadata() );
+        pairs.add( DataFactory.pairOf( 32, new double[] { 23, 54, 23, 12, 32 } ) );
+        EnsemblePairs input = DataFactory.ofEnsemblePairs( pairs, MetadataFactory.getMetadata() );
 
         //Metadata for the output
         MetricOutputMetadata m1 =
-                metaFac.getOutputMetadata( input.getRawData().size(),
-                                           metaFac.getDimension(),
-                                           metaFac.getDimension(),
-                                           MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE,
-                                           MetricConstants.MAIN );
+                MetadataFactory.getOutputMetadata( input.getRawData().size(),
+                                                   MetadataFactory.getDimension(),
+                                                   MetadataFactory.getDimension(),
+                                                   MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE,
+                                                   MetricConstants.MAIN );
         //Check the results       
         DoubleScoreOutput actual = crps.apply( input );
-        DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 4.56, m1 );
+        DoubleScoreOutput expected = DataFactory.ofDoubleScoreOutput( 4.56, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
                     + ".",
                     actual.equals( expected ) );
-    }    
-    
+    }
+
 
     /**
      * Validates the output from {@link ContinuousRankedProbabilityScore#apply(EnsemblePairs)} when supplied with no 
@@ -207,7 +194,7 @@ public final class ContinousRankedProbabilityScoreTest
     {
         // Generate empty data
         EnsemblePairs input =
-                outF.ofEnsemblePairs( Arrays.asList(), outF.getMetadataFactory().getMetadata() );
+                DataFactory.ofEnsemblePairs( Arrays.asList(), MetadataFactory.getMetadata() );
 
         DoubleScoreOutput actual = crps.apply( input );
 
@@ -289,7 +276,7 @@ public final class ContinousRankedProbabilityScoreTest
 
         crps.apply( null );
     }
-    
+
     /**
      * Tests for an expected exception on building a {@link ContinuousRankedProbabilityScore} with 
      * an unrecognized decomposition identifier.
@@ -302,7 +289,6 @@ public final class ContinousRankedProbabilityScoreTest
         exception.expect( MetricParameterException.class );
         exception.expectMessage( "Unsupported decomposition identifier 'LBR'." );
         CRPSBuilder b = new CRPSBuilder();
-        b.setOutputFactory( outF );
         b.setDecompositionID( ScoreOutputGroup.LBR );
         b.build();
     }

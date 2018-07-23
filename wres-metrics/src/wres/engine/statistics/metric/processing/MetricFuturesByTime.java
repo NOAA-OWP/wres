@@ -43,12 +43,6 @@ class MetricFuturesByTime
 {
 
     /**
-     * Instance of a {@link DataFactory}
-     */
-
-    private DataFactory dataFactory;
-
-    /**
      * {@link DoubleScoreOutput} results.
      */
 
@@ -99,7 +93,7 @@ class MetricFuturesByTime
     MetricOutputForProjectByTimeAndThreshold getMetricOutput()
     {
         MetricOutputForProjectByTimeAndThresholdBuilder builder =
-                dataFactory.ofMetricOutputForProjectByTimeAndThreshold();
+                DataFactory.ofMetricOutputForProjectByTimeAndThreshold();
 
         //Add outputs for current futures
         doubleScore.forEach( ( key, list ) -> list.forEach( value -> builder.addDoubleScoreOutput( key, value ) ) );
@@ -174,12 +168,6 @@ class MetricFuturesByTime
     {
 
         /**
-         * Instance of a {@link DataFactory}
-         */
-
-        private DataFactory dataFactory;
-
-        /**
          * {@link DoubleScoreOutput} results.
          */
 
@@ -220,19 +208,6 @@ class MetricFuturesByTime
 
         private final ConcurrentMap<Pair<TimeWindow, OneOrTwoThresholds>, List<Future<MetricOutputMapByMetric<MatrixOutput>>>> matrix =
                 new ConcurrentHashMap<>();
-
-        /**
-         * Adds a data factory.
-         * 
-         * @param dataFactory the data factory
-         * @return the builder
-         */
-
-        MetricFuturesByTimeBuilder setDataFactory( DataFactory dataFactory )
-        {
-            this.dataFactory = dataFactory;
-            return this;
-        }
 
         /**
          * Adds a set of future {@link DoubleScoreOutput} to the appropriate internal store.
@@ -468,9 +443,6 @@ class MetricFuturesByTime
 
     private MetricFuturesByTime( MetricFuturesByTimeBuilder builder )
     {
-        Objects.requireNonNull( builder.dataFactory,
-                                "Specify a non-null data factory from which to construct the metric futures." );
-
         // Builder does not allow for overwrites.
         // Thus, putAll is safe in this context.
         doubleScore.putAll( builder.doubleScore );
@@ -479,7 +451,6 @@ class MetricFuturesByTime
         boxplot.putAll( builder.boxplot );
         paired.putAll( builder.paired );
         matrix.putAll( builder.matrix );
-        dataFactory = builder.dataFactory;
     }
 
 }

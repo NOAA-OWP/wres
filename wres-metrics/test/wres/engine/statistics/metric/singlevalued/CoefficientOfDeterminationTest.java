@@ -11,7 +11,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.DataFactory;
-import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
@@ -41,18 +40,10 @@ public final class CoefficientOfDeterminationTest
 
     private CoefficientOfDetermination cod;
 
-    /**
-     * Instance of a data factory.
-     */
-
-    private DataFactory outF;
-
     @Before
     public void setupBeforeEachTest() throws MetricParameterException
     {
         CoefficientOfDeterminationBuilder b = new CoefficientOfDetermination.CoefficientOfDeterminationBuilder();
-        this.outF = DefaultDataFactory.getInstance();
-        b.setOutputFactory( outF );
         this.cod = b.build();
     }
 
@@ -64,17 +55,15 @@ public final class CoefficientOfDeterminationTest
     public void testApply()
     {
         SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
-        
-        MetadataFactory metaFac = outF.getMetadataFactory();
-        MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getRawData().size(),
-                                                                   metaFac.getDimension(),
-                                                                   metaFac.getDimension(),
+        MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( input.getRawData().size(),
+                                                                   MetadataFactory.getDimension(),
+                                                                   MetadataFactory.getDimension(),
                                                                    MetricConstants.COEFFICIENT_OF_DETERMINATION,
                                                                    MetricConstants.MAIN );
 
         //Compute normally
         DoubleScoreOutput actual = cod.apply( input );
-        DoubleScoreOutput expected = outF.ofDoubleScoreOutput( Math.pow( 0.9999999910148981, 2 ), m1 );
+        DoubleScoreOutput expected = DataFactory.ofDoubleScoreOutput( Math.pow( 0.9999999910148981, 2 ), m1 );
         assertTrue( "Actual: " + actual.getData().doubleValue()
                     + ". Expected: "
                     + expected.getData().doubleValue()
@@ -91,7 +80,7 @@ public final class CoefficientOfDeterminationTest
     {
         // Generate empty data
         DiscreteProbabilityPairs input =
-                outF.ofDiscreteProbabilityPairs( Arrays.asList(), outF.getMetadataFactory().getMetadata() );
+                DataFactory.ofDiscreteProbabilityPairs( Arrays.asList(), MetadataFactory.getMetadata() );
  
         DoubleScoreOutput actual = cod.apply( input );
 

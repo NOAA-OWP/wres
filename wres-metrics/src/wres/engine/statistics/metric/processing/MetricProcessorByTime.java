@@ -13,11 +13,10 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import wres.config.MetricConfigException;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.DataFactory;
+import wres.datamodel.Slicer;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
-import wres.datamodel.Slicer;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
@@ -70,7 +69,6 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
     {
         MetricFuturesByTime.MetricFuturesByTimeBuilder builder =
                 new MetricFuturesByTime.MetricFuturesByTimeBuilder();
-        builder.setDataFactory( dataFactory );
         if ( this.hasCachedMetricOutput() )
         {
             for ( MetricFuturesByTime future : futures )
@@ -99,7 +97,6 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
         {
             MetricFuturesByTime.MetricFuturesByTimeBuilder builder =
                     new MetricFuturesByTime.MetricFuturesByTimeBuilder();
-            builder.setDataFactory( dataFactory );
             builder.addFutures( mergeFutures, cacheMe );
             this.futures.add( builder.build() );
         }
@@ -150,15 +147,17 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
 
         if ( outGroup == MetricOutputGroup.DOUBLE_SCORE )
         {
-            futures.addDoubleScoreOutput( key, processDichotomousPairs( input,
-                                                                        dichotomousScalar,
-                                                                        ignoreTheseMetrics ) );
+            futures.addDoubleScoreOutput( key,
+                                          processDichotomousPairs( input,
+                                                                   dichotomousScalar,
+                                                                   ignoreTheseMetrics ) );
         }
         else if ( outGroup == MetricOutputGroup.MATRIX )
         {
-            futures.addMatrixOutput( key, processDichotomousPairs( input,
-                                                                   dichotomousMatrix,
-                                                                   ignoreTheseMetrics ) );
+            futures.addMatrixOutput( key,
+                                     processDichotomousPairs( input,
+                                                              dichotomousMatrix,
+                                                              ignoreTheseMetrics ) );
         }
 
     }
@@ -230,7 +229,6 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
     /**
      * Constructor.
      * 
-     * @param dataFactory the data factory
      * @param config the project configuration
      * @param externalThresholds an optional set of canonical thresholds, may be null
      * @param thresholdExecutor an {@link ExecutorService} for executing thresholds, cannot be null 
@@ -242,15 +240,14 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
      * @throws NullPointerException if a required input is null
      */
 
-    MetricProcessorByTime( final DataFactory dataFactory,
-                           final ProjectConfig config,
+    MetricProcessorByTime( final ProjectConfig config,
                            final ThresholdsByMetric externalThresholds,
                            final ExecutorService thresholdExecutor,
                            final ExecutorService metricExecutor,
                            final Set<MetricOutputGroup> mergeSet )
             throws MetricParameterException
     {
-        super( dataFactory, config, externalThresholds, thresholdExecutor, metricExecutor, mergeSet );
+        super( config, externalThresholds, thresholdExecutor, metricExecutor, mergeSet );
     }
 
     /**
@@ -294,7 +291,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
             {
                 Predicate<PairOfDoubles> filter = MetricProcessorByTime.getFilterForSingleValuedPairs( useMe );
 
-                pairs = dataFactory.getSlicer().filter( input, filter, null );
+                pairs = Slicer.filter( input, filter, null );
 
             }
 
@@ -325,15 +322,17 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
     {
         if ( outGroup == MetricOutputGroup.DOUBLE_SCORE )
         {
-            futures.addDoubleScoreOutput( key, processSingleValuedPairs( input,
-                                                                         singleValuedScore,
-                                                                         ignoreTheseMetrics ) );
+            futures.addDoubleScoreOutput( key,
+                                          processSingleValuedPairs( input,
+                                                                    singleValuedScore,
+                                                                    ignoreTheseMetrics ) );
         }
         else if ( outGroup == MetricOutputGroup.MULTIVECTOR )
         {
-            futures.addMultiVectorOutput( key, processSingleValuedPairs( input,
-                                                                         singleValuedMultiVector,
-                                                                         ignoreTheseMetrics ) );
+            futures.addMultiVectorOutput( key,
+                                          processSingleValuedPairs( input,
+                                                                    singleValuedMultiVector,
+                                                                    ignoreTheseMetrics ) );
         }
     }
 

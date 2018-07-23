@@ -113,25 +113,14 @@ public class MetricFactory
     private static final String UNRECOGNIZED_METRIC_ERROR = "Unrecognized metric for identifier.";
 
     /**
-     * Instance of an {@link DataFactory} for building metric outputs.
-     */
-
-    private DataFactory outputFactory;
-
-    /**
      * Returns an instance of a {@link MetricFactory}.
      * 
-     * @param outputFactory a {@link DataFactory}
      * @return a {@link MetricFactory}
      * @throws NullPointerException if the input is null
      */
 
-    public static MetricFactory getInstance( final DataFactory outputFactory )
+    public static MetricFactory getInstance()
     {
-        Objects.requireNonNull( outputFactory, "Specify a non-null metric output factory to construct the "
-                                               + "metric factory." );
-        INSTANCE.outputFactory = outputFactory;
-
         return INSTANCE;
     }
 
@@ -298,8 +287,7 @@ public class MetricFactory
                                                       final Set<MetricOutputGroup> mergeSet )
                     throws MetricParameterException
     {
-        return new MetricProcessorByTimeSingleValuedPairs( outputFactory,
-                                                           config,
+        return new MetricProcessorByTimeSingleValuedPairs( config,
                                                            externalThresholds,
                                                            thresholdExecutor,
                                                            metricExecutor,
@@ -331,8 +319,7 @@ public class MetricFactory
                                                                                       final Set<MetricOutputGroup> mergeSet )
             throws MetricParameterException
     {
-        return new MetricProcessorByTimeEnsemblePairs( outputFactory,
-                                                       config,
+        return new MetricProcessorByTimeEnsemblePairs( config,
                                                        externalThresholds,
                                                        thresholdExecutor,
                                                        metricExecutor,
@@ -553,7 +540,7 @@ public class MetricFactory
             }
         }
 
-        builder.setOutputFactory( outputFactory ).setExecutorService( executor );
+        builder.setExecutorService( executor );
         return builder.build();
     }
 
@@ -579,7 +566,7 @@ public class MetricFactory
         {
             builder.addMetric( this.ofSingleValuedMultiVector( next ) );
         }
-        builder.setOutputFactory( outputFactory ).setExecutorService( executor );
+        builder.setExecutorService( executor );
         return builder.build();
     }
 
@@ -605,7 +592,7 @@ public class MetricFactory
         {
             builder.addMetric( this.ofDiscreteProbabilityScore( next ) );
         }
-        builder.setOutputFactory( outputFactory ).setExecutorService( executor );
+        builder.setExecutorService( executor );
         return builder.build();
     }
 
@@ -632,7 +619,7 @@ public class MetricFactory
             // All dichotomous scores are collectable
             builder.addCollectable( this.ofDichotomousScore( next ) );
         }
-        builder.setOutputFactory( outputFactory ).setExecutorService( executor );
+        builder.setExecutorService( executor );
         return builder.build();
     }
 
@@ -658,7 +645,7 @@ public class MetricFactory
         {
             builder.addMetric( this.ofDiscreteProbabilityMultiVector( next ) );
         }
-        builder.setOutputFactory( outputFactory ).setExecutorService( executor );
+        builder.setExecutorService( executor );
         return builder.build();
     }
 
@@ -684,7 +671,7 @@ public class MetricFactory
         {
             builder.addMetric( this.ofDichotomousMatrix( next ) );
         }
-        builder.setOutputFactory( outputFactory ).setExecutorService( executor );
+        builder.setExecutorService( executor );
         return builder.build();
     }
 
@@ -710,7 +697,7 @@ public class MetricFactory
         {
             builder.addMetric( this.ofEnsembleScore( next ) );
         }
-        builder.setOutputFactory( outputFactory ).setExecutorService( executor );
+        builder.setExecutorService( executor );
         return builder.build();
     }
 
@@ -736,7 +723,7 @@ public class MetricFactory
         {
             builder.addMetric( this.ofEnsembleMultiVector( next ) );
         }
-        builder.setOutputFactory( outputFactory ).setExecutorService( executor );
+        builder.setExecutorService( executor );
         return builder.build();
     }
 
@@ -762,7 +749,7 @@ public class MetricFactory
         {
             builder.addMetric( this.ofEnsembleBoxPlot( next ) );
         }
-        builder.setOutputFactory( outputFactory ).setExecutorService( executor );
+        builder.setExecutorService( executor );
         return builder.build();
     }
 
@@ -788,7 +775,7 @@ public class MetricFactory
         {
             builder.addMetric( this.ofSingleValuedTimeSeries( next ) );
         }
-        builder.setOutputFactory( outputFactory ).setExecutorService( executor );
+        builder.setExecutorService( executor );
         return builder.build();
     }
 
@@ -1117,7 +1104,7 @@ public class MetricFactory
 
     public BiasFraction ofBiasFraction() throws MetricParameterException
     {
-        return (BiasFraction) new BiasFractionBuilder().setOutputFactory( outputFactory ).build();
+        return (BiasFraction) new BiasFractionBuilder().build();
     }
 
     /**
@@ -1129,8 +1116,7 @@ public class MetricFactory
 
     public BrierScore ofBrierScore() throws MetricParameterException
     {
-        return (BrierScore) new BrierScore.BrierScoreBuilder().setOutputFactory( outputFactory )
-                                                              .build();
+        return (BrierScore) new BrierScore.BrierScoreBuilder().build();
     }
 
     /**
@@ -1142,8 +1128,7 @@ public class MetricFactory
 
     public BrierSkillScore ofBrierSkillScore() throws MetricParameterException
     {
-        return (BrierSkillScore) new BrierSkillScore.BrierSkillScoreBuilder().setOutputFactory( outputFactory )
-                                                                             .build();
+        return (BrierSkillScore) new BrierSkillScore.BrierSkillScoreBuilder().build();
     }
 
     /**
@@ -1155,8 +1140,7 @@ public class MetricFactory
 
     public CoefficientOfDetermination ofCoefficientOfDetermination() throws MetricParameterException
     {
-        return (CoefficientOfDetermination) new CoefficientOfDeterminationBuilder().setOutputFactory( outputFactory )
-                                                                                   .build();
+        return (CoefficientOfDetermination) new CoefficientOfDeterminationBuilder().build();
     }
 
     /**
@@ -1168,8 +1152,7 @@ public class MetricFactory
 
     public ContingencyTable<DichotomousPairs> ofDichotomousContingencyTable() throws MetricParameterException
     {
-        return new ContingencyTable.ContingencyTableBuilder<DichotomousPairs>().setOutputFactory( outputFactory )
-                                                                               .build();
+        return new ContingencyTable.ContingencyTableBuilder<DichotomousPairs>().build();
     }
 
     /**
@@ -1181,8 +1164,7 @@ public class MetricFactory
 
     public CorrelationPearsons ofCorrelationPearsons() throws MetricParameterException
     {
-        return (CorrelationPearsons) new CorrelationPearsonsBuilder().setOutputFactory( outputFactory )
-                                                                     .build();
+        return (CorrelationPearsons) new CorrelationPearsonsBuilder().build();
     }
 
     /**
@@ -1194,8 +1176,7 @@ public class MetricFactory
 
     public ThreatScore ofThreatScore() throws MetricParameterException
     {
-        return (ThreatScore) new ThreatScore.ThreatScoreBuilder().setOutputFactory( outputFactory )
-                                                                 .build();
+        return (ThreatScore) new ThreatScore.ThreatScoreBuilder().build();
     }
 
     /**
@@ -1207,8 +1188,7 @@ public class MetricFactory
 
     public EquitableThreatScore ofEquitableThreatScore() throws MetricParameterException
     {
-        return (EquitableThreatScore) new EquitableThreatScore.EquitableThreatScoreBuilder().setOutputFactory( outputFactory )
-                                                                                            .build();
+        return (EquitableThreatScore) new EquitableThreatScore.EquitableThreatScoreBuilder().build();
     }
 
     /**
@@ -1220,8 +1200,7 @@ public class MetricFactory
 
     public MeanAbsoluteError ofMeanAbsoluteError() throws MetricParameterException
     {
-        return (MeanAbsoluteError) new MeanAbsoluteErrorBuilder().setOutputFactory( outputFactory )
-                                                                 .build();
+        return (MeanAbsoluteError) new MeanAbsoluteErrorBuilder().build();
     }
 
     /**
@@ -1233,7 +1212,7 @@ public class MetricFactory
 
     public MeanError ofMeanError() throws MetricParameterException
     {
-        return (MeanError) new MeanErrorBuilder().setOutputFactory( outputFactory ).build();
+        return (MeanError) new MeanErrorBuilder().build();
     }
 
     /**
@@ -1245,8 +1224,7 @@ public class MetricFactory
 
     public SumOfSquareError<SingleValuedPairs> ofSumOfSquareError() throws MetricParameterException
     {
-        return (SumOfSquareError<SingleValuedPairs>) new SumOfSquareErrorBuilder<>().setOutputFactory( outputFactory )
-                                                                                    .build();
+        return (SumOfSquareError<SingleValuedPairs>) new SumOfSquareErrorBuilder<>().build();
     }
 
     /**
@@ -1258,8 +1236,7 @@ public class MetricFactory
 
     public MeanSquareError<SingleValuedPairs> ofMeanSquareError() throws MetricParameterException
     {
-        return (MeanSquareError<SingleValuedPairs>) new MeanSquareErrorBuilder<>().setOutputFactory( outputFactory )
-                                                                                  .build();
+        return (MeanSquareError<SingleValuedPairs>) new MeanSquareErrorBuilder<>().build();
     }
 
     /**
@@ -1271,8 +1248,7 @@ public class MetricFactory
 
     public MeanSquareErrorSkillScore<SingleValuedPairs> ofMeanSquareErrorSkillScore() throws MetricParameterException
     {
-        return (MeanSquareErrorSkillScore<SingleValuedPairs>) new MeanSquareErrorSkillScoreBuilder<>().setOutputFactory( outputFactory )
-                                                                                                      .build();
+        return (MeanSquareErrorSkillScore<SingleValuedPairs>) new MeanSquareErrorSkillScoreBuilder<>().build();
     }
 
     /**
@@ -1285,8 +1261,7 @@ public class MetricFactory
 
     public <S extends MulticategoryPairs> PeirceSkillScore<S> ofPeirceSkillScore() throws MetricParameterException
     {
-        return (PeirceSkillScore<S>) new PeirceSkillScore.PeirceSkillScoreBuilder<S>().setOutputFactory( outputFactory )
-                                                                                      .build();
+        return (PeirceSkillScore<S>) new PeirceSkillScore.PeirceSkillScoreBuilder<S>().build();
     }
 
     /**
@@ -1298,8 +1273,7 @@ public class MetricFactory
 
     public ProbabilityOfDetection ofProbabilityOfDetection() throws MetricParameterException
     {
-        return (ProbabilityOfDetection) new ProbabilityOfDetection.ProbabilityOfDetectionBuilder().setOutputFactory( outputFactory )
-                                                                                                  .build();
+        return (ProbabilityOfDetection) new ProbabilityOfDetection.ProbabilityOfDetectionBuilder().build();
     }
 
     /**
@@ -1311,8 +1285,7 @@ public class MetricFactory
 
     public ProbabilityOfFalseDetection ofProbabilityOfFalseDetection() throws MetricParameterException
     {
-        return (ProbabilityOfFalseDetection) new ProbabilityOfFalseDetection.ProbabilityOfFalseDetectionBuilder().setOutputFactory( outputFactory )
-                                                                                                                 .build();
+        return (ProbabilityOfFalseDetection) new ProbabilityOfFalseDetection.ProbabilityOfFalseDetectionBuilder().build();
     }
 
     /**
@@ -1324,8 +1297,7 @@ public class MetricFactory
 
     public QuantileQuantileDiagram ofQuantileQuantileDiagram() throws MetricParameterException
     {
-        return (QuantileQuantileDiagram) new QuantileQuantileDiagram.QuantileQuantileDiagramBuilder().setOutputFactory( outputFactory )
-                                                                                                     .build();
+        return (QuantileQuantileDiagram) new QuantileQuantileDiagram.QuantileQuantileDiagramBuilder().build();
     }
 
     /**
@@ -1337,7 +1309,7 @@ public class MetricFactory
 
     public RootMeanSquareError ofRootMeanSquareError() throws MetricParameterException
     {
-        return (RootMeanSquareError) new RootMeanSquareErrorBuilder().setOutputFactory( outputFactory ).build();
+        return (RootMeanSquareError) new RootMeanSquareErrorBuilder().build();
     }
 
     /**
@@ -1349,8 +1321,7 @@ public class MetricFactory
 
     public ReliabilityDiagram ofReliabilityDiagram() throws MetricParameterException
     {
-        return (ReliabilityDiagram) new ReliabilityDiagramBuilder().setOutputFactory( outputFactory )
-                                                                   .build();
+        return (ReliabilityDiagram) new ReliabilityDiagramBuilder().build();
     }
 
     /**
@@ -1362,8 +1333,7 @@ public class MetricFactory
 
     public RelativeOperatingCharacteristicDiagram ofRelativeOperatingCharacteristic() throws MetricParameterException
     {
-        return (RelativeOperatingCharacteristicDiagram) new RelativeOperatingCharacteristicBuilder().setOutputFactory( outputFactory )
-                                                                                                    .build();
+        return (RelativeOperatingCharacteristicDiagram) new RelativeOperatingCharacteristicBuilder().build();
     }
 
     /**
@@ -1375,8 +1345,7 @@ public class MetricFactory
 
     public RelativeOperatingCharacteristicScore ofRelativeOperatingCharacteristicScore() throws MetricParameterException
     {
-        return (RelativeOperatingCharacteristicScore) new RelativeOperatingCharacteristicScoreBuilder().setOutputFactory( outputFactory )
-                                                                                                       .build();
+        return (RelativeOperatingCharacteristicScore) new RelativeOperatingCharacteristicScoreBuilder().build();
     }
 
     /**
@@ -1388,7 +1357,7 @@ public class MetricFactory
 
     public ContinuousRankedProbabilityScore ofContinuousRankedProbabilityScore() throws MetricParameterException
     {
-        return (ContinuousRankedProbabilityScore) new CRPSBuilder().setOutputFactory( outputFactory ).build();
+        return (ContinuousRankedProbabilityScore) new CRPSBuilder().build();
     }
 
     /**
@@ -1401,7 +1370,7 @@ public class MetricFactory
     public ContinuousRankedProbabilitySkillScore ofContinuousRankedProbabilitySkillScore()
             throws MetricParameterException
     {
-        return (ContinuousRankedProbabilitySkillScore) new CRPSSBuilder().setOutputFactory( outputFactory ).build();
+        return (ContinuousRankedProbabilitySkillScore) new CRPSSBuilder().build();
     }
 
     /**
@@ -1413,7 +1382,7 @@ public class MetricFactory
 
     public IndexOfAgreement ofIndexOfAgreement() throws MetricParameterException
     {
-        return (IndexOfAgreement) new IndexOfAgreementBuilder().setOutputFactory( outputFactory ).build();
+        return (IndexOfAgreement) new IndexOfAgreementBuilder().build();
     }
 
     /**
@@ -1425,7 +1394,7 @@ public class MetricFactory
 
     public KlingGuptaEfficiency ofKlingGuptaEfficiency() throws MetricParameterException
     {
-        return (KlingGuptaEfficiency) new KlingGuptaEfficiencyBuilder().setOutputFactory( outputFactory ).build();
+        return (KlingGuptaEfficiency) new KlingGuptaEfficiencyBuilder().build();
     }
 
     /**
@@ -1438,7 +1407,7 @@ public class MetricFactory
 
     public <T extends MetricInput<?>> SampleSize<T> ofSampleSize() throws MetricParameterException
     {
-        return (SampleSize<T>) new SampleSizeBuilder<T>().setOutputFactory( outputFactory ).build();
+        return (SampleSize<T>) new SampleSizeBuilder<T>().build();
     }
 
     /**
@@ -1450,7 +1419,7 @@ public class MetricFactory
 
     public RankHistogram ofRankHistogram() throws MetricParameterException
     {
-        return (RankHistogram) new RankHistogramBuilder().setOutputFactory( outputFactory ).build();
+        return (RankHistogram) new RankHistogramBuilder().build();
     }
 
     /**
@@ -1462,7 +1431,7 @@ public class MetricFactory
 
     public FrequencyBias ofFrequencyBias() throws MetricParameterException
     {
-        return (FrequencyBias) new FrequencyBias.FrequencyBiasBuilder().setOutputFactory( outputFactory ).build();
+        return (FrequencyBias) new FrequencyBias.FrequencyBiasBuilder().build();
     }
 
     /**
@@ -1474,7 +1443,7 @@ public class MetricFactory
 
     public BoxPlotErrorByObserved ofBoxPlotErrorByObserved() throws MetricParameterException
     {
-        return (BoxPlotErrorByObserved) new BoxPlotErrorByObservedBuilder().setOutputFactory( outputFactory ).build();
+        return (BoxPlotErrorByObserved) new BoxPlotErrorByObservedBuilder().build();
     }
 
     /**
@@ -1486,7 +1455,7 @@ public class MetricFactory
 
     public BoxPlotErrorByForecast ofBoxPlotErrorByForecast() throws MetricParameterException
     {
-        return (BoxPlotErrorByForecast) new BoxPlotErrorByForecastBuilder().setOutputFactory( outputFactory ).build();
+        return (BoxPlotErrorByForecast) new BoxPlotErrorByForecastBuilder().build();
     }
 
     /**
@@ -1498,7 +1467,7 @@ public class MetricFactory
 
     public VolumetricEfficiency ofVolumetricEfficiency() throws MetricParameterException
     {
-        return (VolumetricEfficiency) new VolumetricEfficiencyBuilder().setOutputFactory( outputFactory ).build();
+        return (VolumetricEfficiency) new VolumetricEfficiencyBuilder().build();
     }
 
     /**
@@ -1510,7 +1479,7 @@ public class MetricFactory
 
     public TimeToPeakError ofTimeToPeakError() throws MetricParameterException
     {
-        return (TimeToPeakError) new TimeToPeakErrorBuilder().setOutputFactory( outputFactory ).build();
+        return (TimeToPeakError) new TimeToPeakErrorBuilder().build();
     }
 
     /**
@@ -1522,7 +1491,7 @@ public class MetricFactory
 
     public TimeToPeakRelativeError ofTimeToPeakRelativeError() throws MetricParameterException
     {
-        return (TimeToPeakRelativeError) new TimeToPeakRelativeErrorBuilder().setOutputFactory( outputFactory ).build();
+        return (TimeToPeakRelativeError) new TimeToPeakRelativeErrorBuilder().build();
     }
 
     /**
@@ -1542,7 +1511,6 @@ public class MetricFactory
     {
         return new TimingErrorDurationStatisticsBuilder().setStatistics( statistics )
                                                          .setID( identifier )
-                                                         .setOutputFactory( outputFactory )
                                                          .build();
     }
 

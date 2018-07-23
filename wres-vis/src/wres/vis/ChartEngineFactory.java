@@ -40,10 +40,10 @@ import ohd.hseb.hefs.utils.xml.GenericXMLReadingHandlerException;
 import ohd.hseb.hefs.utils.xml.XMLTools;
 import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
+import wres.datamodel.Slicer;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
@@ -294,7 +294,6 @@ public abstract class ChartEngineFactory
      * Constructs a reliability diagram chart.
      * @param inputKeyInstance The key-instance for which to build the plot.  The key is one of potentially multiple keys within the input provided next.
      * @param input The metric output to plot.
-     * @param factory The data factory from which arguments will be identified.
      * @param usedPlotType Name of the resource to load which provides the default template for
      *            chart construction. May be null to use default template identified in static table.
      * @param templateName The name of the template to use based on the plot type.  
@@ -308,7 +307,6 @@ public abstract class ChartEngineFactory
             processReliabilityDiagram(
                                        Object inputKeyInstance,
                                        final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> input,
-                                       final DataFactory factory,
                                        ChartType usedPlotType,
                                        String templateName,
                                        String overrideParametersStr )
@@ -359,7 +357,6 @@ public abstract class ChartEngineFactory
      * Constructs a ROC diagram chart.
      * @param inputKeyInstance The key-instance for which to build the plot.  The key is one of potentially multiple keys within the input provided next.
      * @param input The metric output to plot.
-     * @param factory The data factory from which arguments will be identified.
      * @param usedPlotType Name of the resource to load which provides the default template for
      *            chart construction. May be null to use default template identified in static table.
      * @param templateName The name of the template to use based on the plot type.  
@@ -373,7 +370,6 @@ public abstract class ChartEngineFactory
             processROCDiagram(
                                Object inputKeyInstance,
                                final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> input,
-                               final DataFactory factory,
                                ChartType usedPlotType,
                                String templateName,
                                String overrideParametersStr )
@@ -415,7 +411,6 @@ public abstract class ChartEngineFactory
      * Constructs a QQ diagram chart.
      * @param inputKeyInstance The key-instance for which to build the plot.  The key is one of potentially multiple keys within the input provided next.
      * @param input The metric output to plot.
-     * @param factory The data factory from which arguments will be identified.
      * @param usedPlotType Name of the resource to load which provides the default template for
      *            chart construction. May be null to use default template identified in static table.
      * @param templateName The name of the template to use based on the plot type.  
@@ -429,7 +424,6 @@ public abstract class ChartEngineFactory
             processQQDiagram(
                               Object inputKeyInstance,
                               final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> input,
-                              final DataFactory factory,
                               ChartType usedPlotType,
                               String templateName,
                               String overrideParametersStr )
@@ -473,7 +467,6 @@ public abstract class ChartEngineFactory
      * Constructs a rank histogram chart.
      * @param inputKeyInstance The key-instance for which to build the plot.  The key is one of potentially multiple keys within the input provided next.
      * @param input The metric output to plot.
-     * @param factory The data factory from which arguments will be identified.
      * @param usedPlotType Name of the resource to load which provides the default template for
      *            chart construction. May be null to use default template identified in static table.
      * @param templateName The name of the template to use based on the plot type.  
@@ -487,7 +480,6 @@ public abstract class ChartEngineFactory
             processRankHistogram(
                                   Object inputKeyInstance,
                                   final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> input,
-                                  final DataFactory factory,
                                   ChartType usedPlotType,
                                   String templateName,
                                   String overrideParametersStr )
@@ -531,7 +523,6 @@ public abstract class ChartEngineFactory
     /**Calls the process methods as appropriate for the given plot type.
      * @param config The project configuration.
      * @param input The metric output to plot.
-     * @param factory The data factory from which arguments will be identified.
      * @param userSpecifiedPlotType An optional plot type to generate, where multiple plot types are supported for the
      *            input. May be null.
      * @param userSpecifiedTemplateResourceName Name of the resource to load which provides the default template for
@@ -547,7 +538,6 @@ public abstract class ChartEngineFactory
     public static ConcurrentMap<Object, ChartEngine>
             buildMultiVectorOutputChartEngine( final ProjectConfig config, 
                                                final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> input,
-                                               final DataFactory factory,
                                                final OutputTypeSelection userSpecifiedPlotType,
                                                final String userSpecifiedTemplateResourceName,
                                                final String overrideParametersStr )
@@ -581,7 +571,6 @@ public abstract class ChartEngineFactory
                     engine =
                             processReliabilityDiagram( keyInstance,
                                                        input,
-                                                       factory,
                                                        usedPlotType,
                                                        templateName,
                                                        overrideParametersStr );
@@ -590,7 +579,6 @@ public abstract class ChartEngineFactory
                     engine =
                             processROCDiagram( keyInstance,
                                                input,
-                                               factory,
                                                usedPlotType,
                                                templateName,
                                                overrideParametersStr );
@@ -599,7 +587,6 @@ public abstract class ChartEngineFactory
                     engine =
                             processQQDiagram( keyInstance,
                                               input,
-                                              factory,
                                               usedPlotType,
                                               templateName,
                                               overrideParametersStr );
@@ -608,7 +595,6 @@ public abstract class ChartEngineFactory
                     engine =
                             processRankHistogram( keyInstance,
                                                   input,
-                                                  factory,
                                                   usedPlotType,
                                                   templateName,
                                                   overrideParametersStr );
@@ -733,7 +719,6 @@ public abstract class ChartEngineFactory
      * 
      * @param config The project configuration.
      * @param input The metric output to plot.
-     * @param factory The data factory from which arguments will be identified.
      * @param userSpecifiedPlotType An optional plot type to generate, where multiple plot types are supported for the
      *            input. May be null.
      * @param userSpecifiedTemplateResourceName Name of the resource to load which provides the default template for
@@ -747,7 +732,6 @@ public abstract class ChartEngineFactory
     public static ConcurrentMap<MetricConstants, ChartEngine>
             buildScoreOutputChartEngine( final ProjectConfig config, 
                                          final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> input,
-                                         final DataFactory factory,
                                          final OutputTypeSelection userSpecifiedPlotType,
                                          final String userSpecifiedTemplateResourceName,
                                          final String overrideParametersStr )
@@ -756,15 +740,14 @@ public abstract class ChartEngineFactory
         final ConcurrentMap<MetricConstants, ChartEngine> results = new ConcurrentSkipListMap<>();
 
         final Map<MetricConstants, MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>> slicedInput =
-                factory.getSlicer()
-                       .filterByMetricComponent( input );
+                Slicer.filterByMetricComponent( input );
         for ( final Map.Entry<MetricConstants, MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>> entry : slicedInput.entrySet() )
         {
-            final ChartEngine engine = buildScoreOutputChartEngine( config, 
-                                                                    entry.getValue(),
-                                                                    userSpecifiedPlotType,
-                                                                    userSpecifiedTemplateResourceName,
-                                                                    overrideParametersStr );
+            final ChartEngine engine = buildScoreOutputChartEngineForOneComponent( config,
+                                                                                   entry.getValue(),
+                                                                                   userSpecifiedPlotType,
+                                                                                   userSpecifiedTemplateResourceName,
+                                                                                   overrideParametersStr );
             results.put( entry.getKey(), engine );
         }
         return results;
@@ -787,11 +770,11 @@ public abstract class ChartEngineFactory
      * @throws WRESVisXMLReadingException when reading template fails
      */
     private static ChartEngine
-            buildScoreOutputChartEngine( final ProjectConfig config,
-                                         final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> input,
-                                         final OutputTypeSelection userSpecifiedPlotType,
-                                         final String userSpecifiedTemplateResourceName,
-                                         final String overrideParametersStr )
+            buildScoreOutputChartEngineForOneComponent( final ProjectConfig config,
+                                                        final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> input,
+                                                        final OutputTypeSelection userSpecifiedPlotType,
+                                                        final String userSpecifiedTemplateResourceName,
+                                                        final String overrideParametersStr )
                     throws ChartEngineException, WRESVisXMLReadingException
     {
         //Determine the output type, converting DEFAULT accordingly, and template name.

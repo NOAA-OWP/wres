@@ -10,12 +10,11 @@ import java.util.Objects;
 import org.junit.Test;
 
 import wres.datamodel.DataFactory;
-import wres.datamodel.DefaultDataFactory;
-import wres.datamodel.Location;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.BoxPlotOutput;
@@ -25,7 +24,7 @@ import wres.datamodel.outputs.SafeBoxPlotOutput;
 /**
  * Tests the {@link SafeBoxPlotOutput}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author james.brown@hydrosolveDataFactory.com
  */
 public final class SafeBoxPlotOutputTest
 {
@@ -37,54 +36,59 @@ public final class SafeBoxPlotOutputTest
     @Test
     public void test1Equals()
     {
-        final DataFactory d = DefaultDataFactory.getInstance();
-        final MetadataFactory metaFac = d.getMetadataFactory();
+
         //Build datasets
-        final Location l1 = metaFac.getLocation( "A" );
-        final MetricOutputMetadata m1 = metaFac.getOutputMetadata( 10,
-                                                                   metaFac.getDimension(),
-                                                                   metaFac.getDimension( "CMS" ),
-                                                                   MetricConstants.CONTINGENCY_TABLE,
-                                                                   MetricConstants.MAIN,
-                                                                   metaFac.getDatasetIdentifier( l1, "B", "C" ) );
-        final Location l2 = metaFac.getLocation( "A" );
-        final MetricOutputMetadata m2 = metaFac.getOutputMetadata( 11,
-                                                                   metaFac.getDimension(),
-                                                                   metaFac.getDimension( "CMS" ),
-                                                                   MetricConstants.CONTINGENCY_TABLE,
-                                                                   MetricConstants.MAIN,
-                                                                   metaFac.getDatasetIdentifier( l2, "B", "C" ) );
-        final Location l3 = metaFac.getLocation( "B" );
-        final MetricOutputMetadata m3 = metaFac.getOutputMetadata( 10,
-                                                                   metaFac.getDimension(),
-                                                                   metaFac.getDimension( "CMS" ),
-                                                                   MetricConstants.CONTINGENCY_TABLE,
-                                                                   MetricConstants.MAIN,
-                                                                   metaFac.getDatasetIdentifier( l3, "B", "C" ) );
+        final Location l1 = MetadataFactory.getLocation( "A" );
+        final MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( 10,
+                                                                           MetadataFactory.getDimension(),
+                                                                           MetadataFactory.getDimension( "CMS" ),
+                                                                           MetricConstants.CONTINGENCY_TABLE,
+                                                                           MetricConstants.MAIN,
+                                                                           MetadataFactory.getDatasetIdentifier( l1,
+                                                                                                                 "B",
+                                                                                                                 "C" ) );
+        final Location l2 = MetadataFactory.getLocation( "A" );
+        final MetricOutputMetadata m2 = MetadataFactory.getOutputMetadata( 11,
+                                                                           MetadataFactory.getDimension(),
+                                                                           MetadataFactory.getDimension( "CMS" ),
+                                                                           MetricConstants.CONTINGENCY_TABLE,
+                                                                           MetricConstants.MAIN,
+                                                                           MetadataFactory.getDatasetIdentifier( l2,
+                                                                                                                 "B",
+                                                                                                                 "C" ) );
+        final Location l3 = MetadataFactory.getLocation( "B" );
+        final MetricOutputMetadata m3 = MetadataFactory.getOutputMetadata( 10,
+                                                                           MetadataFactory.getDimension(),
+                                                                           MetadataFactory.getDimension( "CMS" ),
+                                                                           MetricConstants.CONTINGENCY_TABLE,
+                                                                           MetricConstants.MAIN,
+                                                                           MetadataFactory.getDatasetIdentifier( l3,
+                                                                                                                 "B",
+                                                                                                                 "C" ) );
         List<PairOfDoubleAndVectorOfDoubles> mva = new ArrayList<>();
         List<PairOfDoubleAndVectorOfDoubles> mvb = new ArrayList<>();
-        VectorOfDoubles pa = d.vectorOf( new double[] { 0.0, 0.5, 1.0 } );
+        VectorOfDoubles pa = DataFactory.vectorOf( new double[] { 0.0, 0.5, 1.0 } );
         for ( int i = 0; i < 10; i++ )
         {
-            mva.add( d.pairOf( 1, new double[] { 1, 2, 3 } ) );
-            mvb.add( d.pairOf( 1, new double[] { 1, 2, 3 } ) );
+            mva.add( DataFactory.pairOf( 1, new double[] { 1, 2, 3 } ) );
+            mvb.add( DataFactory.pairOf( 1, new double[] { 1, 2, 3 } ) );
         }
         List<PairOfDoubleAndVectorOfDoubles> mvc = new ArrayList<>();
-        VectorOfDoubles pb = d.vectorOf( new double[] { 0.0, 0.25, 0.5, 1.0 } );
+        VectorOfDoubles pb = DataFactory.vectorOf( new double[] { 0.0, 0.25, 0.5, 1.0 } );
         for ( int i = 0; i < 10; i++ )
         {
-            mvc.add( d.pairOf( 1, new double[] { 1, 2, 3, 4 } ) );
+            mvc.add( DataFactory.pairOf( 1, new double[] { 1, 2, 3, 4 } ) );
         }
         List<PairOfDoubleAndVectorOfDoubles> mvd = new ArrayList<>();
         for ( int i = 0; i < 5; i++ )
         {
-            mvd.add( d.pairOf( 1, new double[] { 1, 2, 3, 4 } ) );
+            mvd.add( DataFactory.pairOf( 1, new double[] { 1, 2, 3, 4 } ) );
         }
         List<PairOfDoubleAndVectorOfDoubles> mve = new ArrayList<>();
         for ( int i = 0; i < 5; i++ )
         {
-            mve.add( d.pairOf( 1, new double[] { 2, 3, 4, 5 } ) );
-        }        
+            mve.add( DataFactory.pairOf( 1, new double[] { 2, 3, 4, 5 } ) );
+        }
 
         final BoxPlotOutput q =
                 new SafeBoxPlotOutput( mva, pa, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
@@ -97,15 +101,15 @@ public final class SafeBoxPlotOutputTest
         final BoxPlotOutput u =
                 new SafeBoxPlotOutput( mvc, pb, m1, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
         final BoxPlotOutput v =
-                new SafeBoxPlotOutput( mvc, pb, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR ); 
+                new SafeBoxPlotOutput( mvc, pb, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
         final BoxPlotOutput w =
-                new SafeBoxPlotOutput( mvd, pb, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR ); 
+                new SafeBoxPlotOutput( mvd, pb, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
         final BoxPlotOutput x =
-                new SafeBoxPlotOutput( mvd, pb, m2, MetricDimension.ENSEMBLE_MEAN, MetricDimension.FORECAST_ERROR ); 
+                new SafeBoxPlotOutput( mvd, pb, m2, MetricDimension.ENSEMBLE_MEAN, MetricDimension.FORECAST_ERROR );
         final BoxPlotOutput y =
-                new SafeBoxPlotOutput( mvd, pb, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_VALUE ); 
+                new SafeBoxPlotOutput( mvd, pb, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_VALUE );
         final BoxPlotOutput z =
-                new SafeBoxPlotOutput( mve, pb, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR ); 
+                new SafeBoxPlotOutput( mve, pb, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
         //Conduct comparisons
         assertTrue( "Expected equal outputs.", s.equals( t ) );
         assertTrue( "Expected non-equal outputs.", !s.equals( null ) );
@@ -121,7 +125,7 @@ public final class SafeBoxPlotOutputTest
         assertTrue( "Expected non-equal outputs.", !q.equals( s ) );
         assertTrue( "Expected non-equal outputs.", !q.equals( r ) );
     }
-    
+
     /**
      * Constructs a {@link SafeBoxPlotOutput} and tests for equal hashcodes with another {@link SafeBoxPlotOutput}.
      */
@@ -129,54 +133,59 @@ public final class SafeBoxPlotOutputTest
     @Test
     public void test2Hashcode()
     {
-        final DataFactory d = DefaultDataFactory.getInstance();
-        final MetadataFactory metaFac = d.getMetadataFactory();
+
         //Build datasets
-        final Location l1 = metaFac.getLocation( "A" );
-        final MetricOutputMetadata m1 = metaFac.getOutputMetadata( 10,
-                                                                   metaFac.getDimension(),
-                                                                   metaFac.getDimension( "CMS" ),
-                                                                   MetricConstants.CONTINGENCY_TABLE,
-                                                                   MetricConstants.MAIN,
-                                                                   metaFac.getDatasetIdentifier( l1, "B", "C" ) );
-        final Location l2 = metaFac.getLocation( "A" );
-        final MetricOutputMetadata m2 = metaFac.getOutputMetadata( 11,
-                                                                   metaFac.getDimension(),
-                                                                   metaFac.getDimension( "CMS" ),
-                                                                   MetricConstants.CONTINGENCY_TABLE,
-                                                                   MetricConstants.MAIN,
-                                                                   metaFac.getDatasetIdentifier( l2, "B", "C" ) );
-        final Location l3 = metaFac.getLocation( "B" );
-        final MetricOutputMetadata m3 = metaFac.getOutputMetadata( 10,
-                                                                   metaFac.getDimension(),
-                                                                   metaFac.getDimension( "CMS" ),
-                                                                   MetricConstants.CONTINGENCY_TABLE,
-                                                                   MetricConstants.MAIN,
-                                                                   metaFac.getDatasetIdentifier( l3, "B", "C" ) );
+        final Location l1 = MetadataFactory.getLocation( "A" );
+        final MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( 10,
+                                                                           MetadataFactory.getDimension(),
+                                                                           MetadataFactory.getDimension( "CMS" ),
+                                                                           MetricConstants.CONTINGENCY_TABLE,
+                                                                           MetricConstants.MAIN,
+                                                                           MetadataFactory.getDatasetIdentifier( l1,
+                                                                                                                 "B",
+                                                                                                                 "C" ) );
+        final Location l2 = MetadataFactory.getLocation( "A" );
+        final MetricOutputMetadata m2 = MetadataFactory.getOutputMetadata( 11,
+                                                                           MetadataFactory.getDimension(),
+                                                                           MetadataFactory.getDimension( "CMS" ),
+                                                                           MetricConstants.CONTINGENCY_TABLE,
+                                                                           MetricConstants.MAIN,
+                                                                           MetadataFactory.getDatasetIdentifier( l2,
+                                                                                                                 "B",
+                                                                                                                 "C" ) );
+        final Location l3 = MetadataFactory.getLocation( "B" );
+        final MetricOutputMetadata m3 = MetadataFactory.getOutputMetadata( 10,
+                                                                           MetadataFactory.getDimension(),
+                                                                           MetadataFactory.getDimension( "CMS" ),
+                                                                           MetricConstants.CONTINGENCY_TABLE,
+                                                                           MetricConstants.MAIN,
+                                                                           MetadataFactory.getDatasetIdentifier( l3,
+                                                                                                                 "B",
+                                                                                                                 "C" ) );
         List<PairOfDoubleAndVectorOfDoubles> mva = new ArrayList<>();
         List<PairOfDoubleAndVectorOfDoubles> mvb = new ArrayList<>();
-        VectorOfDoubles pa = d.vectorOf( new double[] { 0.0, 0.5, 1.0 } );
+        VectorOfDoubles pa = DataFactory.vectorOf( new double[] { 0.0, 0.5, 1.0 } );
         for ( int i = 0; i < 10; i++ )
         {
-            mva.add( d.pairOf( 1, new double[] { 1, 2, 3 } ) );
-            mvb.add( d.pairOf( 1, new double[] { 1, 2, 3 } ) );
+            mva.add( DataFactory.pairOf( 1, new double[] { 1, 2, 3 } ) );
+            mvb.add( DataFactory.pairOf( 1, new double[] { 1, 2, 3 } ) );
         }
         List<PairOfDoubleAndVectorOfDoubles> mvc = new ArrayList<>();
-        VectorOfDoubles pb = d.vectorOf( new double[] { 0.0, 0.25, 0.5, 1.0 } );
+        VectorOfDoubles pb = DataFactory.vectorOf( new double[] { 0.0, 0.25, 0.5, 1.0 } );
         for ( int i = 0; i < 10; i++ )
         {
-            mvc.add( d.pairOf( 1, new double[] { 1, 2, 3, 4 } ) );
+            mvc.add( DataFactory.pairOf( 1, new double[] { 1, 2, 3, 4 } ) );
         }
         List<PairOfDoubleAndVectorOfDoubles> mvd = new ArrayList<>();
         for ( int i = 0; i < 5; i++ )
         {
-            mvd.add( d.pairOf( 1, new double[] { 1, 2, 3, 4 } ) );
+            mvd.add( DataFactory.pairOf( 1, new double[] { 1, 2, 3, 4 } ) );
         }
         List<PairOfDoubleAndVectorOfDoubles> mve = new ArrayList<>();
         for ( int i = 0; i < 5; i++ )
         {
-            mve.add( d.pairOf( 1, new double[] { 2, 3, 4, 5 } ) );
-        }        
+            mve.add( DataFactory.pairOf( 1, new double[] { 2, 3, 4, 5 } ) );
+        }
 
         final BoxPlotOutput q =
                 new SafeBoxPlotOutput( mva, pa, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
@@ -189,15 +198,15 @@ public final class SafeBoxPlotOutputTest
         final BoxPlotOutput u =
                 new SafeBoxPlotOutput( mvc, pb, m1, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
         final BoxPlotOutput v =
-                new SafeBoxPlotOutput( mvc, pb, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR ); 
+                new SafeBoxPlotOutput( mvc, pb, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
         final BoxPlotOutput w =
-                new SafeBoxPlotOutput( mvd, pb, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR ); 
+                new SafeBoxPlotOutput( mvd, pb, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
         final BoxPlotOutput x =
-                new SafeBoxPlotOutput( mvd, pb, m2, MetricDimension.ENSEMBLE_MEAN, MetricDimension.FORECAST_ERROR ); 
+                new SafeBoxPlotOutput( mvd, pb, m2, MetricDimension.ENSEMBLE_MEAN, MetricDimension.FORECAST_ERROR );
         final BoxPlotOutput y =
-                new SafeBoxPlotOutput( mvd, pb, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_VALUE ); 
+                new SafeBoxPlotOutput( mvd, pb, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_VALUE );
         final BoxPlotOutput z =
-                new SafeBoxPlotOutput( mve, pb, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR ); 
+                new SafeBoxPlotOutput( mve, pb, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
         //Conduct comparisons
         assertTrue( "Expected equal hashes.", s.hashCode() == t.hashCode() );
         assertTrue( "Expected non-equal hashes.", s.hashCode() != Objects.hash( (Object) null ) );
@@ -212,7 +221,7 @@ public final class SafeBoxPlotOutputTest
         assertTrue( "Expected non-equal hashes.", s.hashCode() != q.hashCode() );
         assertTrue( "Expected non-equal hashes.", q.hashCode() != s.hashCode() );
         assertTrue( "Expected non-equal hashes.", q.hashCode() != r.hashCode() );
-    }    
+    }
 
     /**
      * Constructs a {@link SafeBoxPlotOutput} and checks the {@link SafeBoxPlotOutput#getMetadata()}.
@@ -221,36 +230,39 @@ public final class SafeBoxPlotOutputTest
     @Test
     public void test2GetMetadata()
     {
-        final DataFactory d = DefaultDataFactory.getInstance();
-        final MetadataFactory metaFac = d.getMetadataFactory();
-        final Location l1 = metaFac.getLocation( "A" );
-        final MetricOutputMetadata m1 = metaFac.getOutputMetadata( 10,
-                                                                   metaFac.getDimension(),
-                                                                   metaFac.getDimension( "CMS" ),
-                                                                   MetricConstants.CONTINGENCY_TABLE,
-                                                                   MetricConstants.MAIN,
-                                                                   metaFac.getDatasetIdentifier( l1, "B", "C" ) );
-        final Location l2 = metaFac.getLocation( "B" );
-        final MetricOutputMetadata m2 = metaFac.getOutputMetadata( 10,
-                                                                   metaFac.getDimension(),
-                                                                   metaFac.getDimension( "CMS" ),
-                                                                   MetricConstants.CONTINGENCY_TABLE,
-                                                                   MetricConstants.MAIN,
-                                                                   metaFac.getDatasetIdentifier( l2, "B", "C" ) );
+
+        final Location l1 = MetadataFactory.getLocation( "A" );
+        final MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( 10,
+                                                                           MetadataFactory.getDimension(),
+                                                                           MetadataFactory.getDimension( "CMS" ),
+                                                                           MetricConstants.CONTINGENCY_TABLE,
+                                                                           MetricConstants.MAIN,
+                                                                           MetadataFactory.getDatasetIdentifier( l1,
+                                                                                                                 "B",
+                                                                                                                 "C" ) );
+        final Location l2 = MetadataFactory.getLocation( "B" );
+        final MetricOutputMetadata m2 = MetadataFactory.getOutputMetadata( 10,
+                                                                           MetadataFactory.getDimension(),
+                                                                           MetadataFactory.getDimension( "CMS" ),
+                                                                           MetricConstants.CONTINGENCY_TABLE,
+                                                                           MetricConstants.MAIN,
+                                                                           MetadataFactory.getDatasetIdentifier( l2,
+                                                                                                                 "B",
+                                                                                                                 "C" ) );
         final List<PairOfDoubleAndVectorOfDoubles> values = new ArrayList<>();
         for ( int i = 0; i < 10; i++ )
         {
-            values.add( d.pairOf( 1, new double[] { 1, 2, 3 } ) );
+            values.add( DataFactory.pairOf( 1, new double[] { 1, 2, 3 } ) );
         }
         final SafeBoxPlotOutput q =
                 new SafeBoxPlotOutput( values,
-                                       d.vectorOf( new double[] { 0.1, 0.5, 1.0 } ),
+                                       DataFactory.vectorOf( new double[] { 0.1, 0.5, 1.0 } ),
                                        m1,
                                        MetricDimension.OBSERVED_VALUE,
                                        MetricDimension.FORECAST_ERROR );
         final SafeBoxPlotOutput r =
                 new SafeBoxPlotOutput( values,
-                                       d.vectorOf( new double[] { 0.1, 0.5, 1.0 } ),
+                                       DataFactory.vectorOf( new double[] { 0.1, 0.5, 1.0 } ),
                                        m2,
                                        MetricDimension.OBSERVED_VALUE,
                                        MetricDimension.FORECAST_ERROR );
@@ -264,30 +276,31 @@ public final class SafeBoxPlotOutputTest
     @Test
     public void test3Accessors()
     {
-        final DataFactory d = DefaultDataFactory.getInstance();
-        final MetadataFactory metaFac = d.getMetadataFactory();
-        final Location l1 = metaFac.getLocation( "A" );
-        final MetricOutputMetadata m1 = metaFac.getOutputMetadata( 10,
-                                                                   metaFac.getDimension(),
-                                                                   metaFac.getDimension( "CMS" ),
-                                                                   MetricConstants.CONTINGENCY_TABLE,
-                                                                   MetricConstants.MAIN,
-                                                                   metaFac.getDatasetIdentifier( l1, "B", "C" ) );
+
+        final Location l1 = MetadataFactory.getLocation( "A" );
+        final MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( 10,
+                                                                           MetadataFactory.getDimension(),
+                                                                           MetadataFactory.getDimension( "CMS" ),
+                                                                           MetricConstants.CONTINGENCY_TABLE,
+                                                                           MetricConstants.MAIN,
+                                                                           MetadataFactory.getDatasetIdentifier( l1,
+                                                                                                                 "B",
+                                                                                                                 "C" ) );
         final List<PairOfDoubleAndVectorOfDoubles> values = new ArrayList<>();
         for ( int i = 0; i < 10; i++ )
         {
-            values.add( d.pairOf( 1, new double[] { 1, 2, 3 } ) );
+            values.add( DataFactory.pairOf( 1, new double[] { 1, 2, 3 } ) );
         }
         final SafeBoxPlotOutput q =
                 new SafeBoxPlotOutput( values,
-                                       d.vectorOf( new double[] { 0.1, 0.5, 1.0 } ),
+                                       DataFactory.vectorOf( new double[] { 0.1, 0.5, 1.0 } ),
                                        m1,
                                        MetricDimension.OBSERVED_VALUE,
                                        MetricDimension.FORECAST_ERROR );
         assertTrue( "Expected a list of data.", !q.getData().isEmpty() );
         assertTrue( "Expected an iterator with some elements to iterate.", q.iterator().hasNext() );
         assertTrue( "Unexpected probabilities associated with the box plot data.",
-                    q.getProbabilities().equals( d.vectorOf( new double[] { 0.1, 0.5, 1.0 } ) ) );
+                    q.getProbabilities().equals( DataFactory.vectorOf( new double[] { 0.1, 0.5, 1.0 } ) ) );
         assertTrue( "Expected a domain axis dimension of " + MetricDimension.OBSERVED_VALUE
                     + ".",
                     q.getDomainAxisDimension().equals( MetricDimension.OBSERVED_VALUE ) );
@@ -303,24 +316,25 @@ public final class SafeBoxPlotOutputTest
     @Test
     public void test4Exceptions()
     {
-        final DataFactory d = DefaultDataFactory.getInstance();
-        final MetadataFactory metaFac = d.getMetadataFactory();
-        final Location l1 = metaFac.getLocation( "A" );
-        final MetricOutputMetadata m1 = metaFac.getOutputMetadata( 10,
-                                                                   metaFac.getDimension(),
-                                                                   metaFac.getDimension( "CMS" ),
-                                                                   MetricConstants.CONTINGENCY_TABLE,
-                                                                   MetricConstants.MAIN,
-                                                                   metaFac.getDatasetIdentifier( l1, "B", "C" ) );
+
+        final Location l1 = MetadataFactory.getLocation( "A" );
+        final MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( 10,
+                                                                           MetadataFactory.getDimension(),
+                                                                           MetadataFactory.getDimension( "CMS" ),
+                                                                           MetricConstants.CONTINGENCY_TABLE,
+                                                                           MetricConstants.MAIN,
+                                                                           MetadataFactory.getDatasetIdentifier( l1,
+                                                                                                                 "B",
+                                                                                                                 "C" ) );
         final List<PairOfDoubleAndVectorOfDoubles> values = new ArrayList<>();
         for ( int i = 0; i < 10; i++ )
         {
-            values.add( d.pairOf( 1, new double[] { 1, 2, 3 } ) );
+            values.add( DataFactory.pairOf( 1, new double[] { 1, 2, 3 } ) );
         }
         try
         {
             new SafeBoxPlotOutput( null,
-                                   d.vectorOf( new double[] { 0.1, 0.5, 1.0 } ),
+                                   DataFactory.vectorOf( new double[] { 0.1, 0.5, 1.0 } ),
                                    m1,
                                    MetricDimension.OBSERVED_VALUE,
                                    MetricDimension.FORECAST_ERROR );
@@ -332,7 +346,7 @@ public final class SafeBoxPlotOutputTest
         try
         {
             new SafeBoxPlotOutput( values,
-                                   d.vectorOf( new double[] { 0.1, 0.5, 1.0 } ),
+                                   DataFactory.vectorOf( new double[] { 0.1, 0.5, 1.0 } ),
                                    null,
                                    MetricDimension.OBSERVED_VALUE,
                                    MetricDimension.FORECAST_ERROR );
@@ -356,7 +370,7 @@ public final class SafeBoxPlotOutputTest
         try
         {
             new SafeBoxPlotOutput( values,
-                                   d.vectorOf( new double[] {} ),
+                                   DataFactory.vectorOf( new double[] {} ),
                                    m1,
                                    MetricDimension.OBSERVED_VALUE,
                                    MetricDimension.FORECAST_ERROR );
@@ -368,7 +382,7 @@ public final class SafeBoxPlotOutputTest
         try
         {
             new SafeBoxPlotOutput( values,
-                                   d.vectorOf( new double[] { 5.0, 10.0, 15.0 } ),
+                                   DataFactory.vectorOf( new double[] { 5.0, 10.0, 15.0 } ),
                                    m1,
                                    MetricDimension.OBSERVED_VALUE,
                                    MetricDimension.FORECAST_ERROR );
@@ -380,7 +394,7 @@ public final class SafeBoxPlotOutputTest
         try
         {
             new SafeBoxPlotOutput( values,
-                                   d.vectorOf( new double[] { 5.0, 10.0 } ),
+                                   DataFactory.vectorOf( new double[] { 5.0, 10.0 } ),
                                    m1,
                                    MetricDimension.OBSERVED_VALUE,
                                    MetricDimension.FORECAST_ERROR );
@@ -392,10 +406,10 @@ public final class SafeBoxPlotOutputTest
         try
         {
             final List<PairOfDoubleAndVectorOfDoubles> uneven = new ArrayList<>();
-            uneven.add( d.pairOf( 1.0, new double[] { 1, 2, 3 } ) );
-            uneven.add( d.pairOf( 1.0, new double[] { 1, 2, 3, 4 } ) );
+            uneven.add( DataFactory.pairOf( 1.0, new double[] { 1, 2, 3 } ) );
+            uneven.add( DataFactory.pairOf( 1.0, new double[] { 1, 2, 3, 4 } ) );
             new SafeBoxPlotOutput( uneven,
-                                   d.vectorOf( new double[] { 0.0, 0.5, 1.0 } ),
+                                   DataFactory.vectorOf( new double[] { 0.0, 0.5, 1.0 } ),
                                    m1,
                                    MetricDimension.OBSERVED_VALUE,
                                    MetricDimension.FORECAST_ERROR );
@@ -407,10 +421,10 @@ public final class SafeBoxPlotOutputTest
         try
         {
             final List<PairOfDoubleAndVectorOfDoubles> uneven = new ArrayList<>();
-            uneven.add( d.pairOf( 1.0, new double[] { 1, 2, 3 } ) );
-            uneven.add( d.pairOf( 1.0, new double[] {} ) );
+            uneven.add( DataFactory.pairOf( 1.0, new double[] { 1, 2, 3 } ) );
+            uneven.add( DataFactory.pairOf( 1.0, new double[] {} ) );
             new SafeBoxPlotOutput( uneven,
-                                   d.vectorOf( new double[] { 0.0, 0.5, 1.0 } ),
+                                   DataFactory.vectorOf( new double[] { 0.0, 0.5, 1.0 } ),
                                    m1,
                                    MetricDimension.OBSERVED_VALUE,
                                    MetricDimension.FORECAST_ERROR );
@@ -422,7 +436,7 @@ public final class SafeBoxPlotOutputTest
         try
         {
             new SafeBoxPlotOutput( values,
-                                   d.vectorOf( new double[] { 0.0, -0.5, 1.0 } ),
+                                   DataFactory.vectorOf( new double[] { 0.0, -0.5, 1.0 } ),
                                    m1,
                                    MetricDimension.OBSERVED_VALUE,
                                    MetricDimension.FORECAST_ERROR );
@@ -434,7 +448,7 @@ public final class SafeBoxPlotOutputTest
         try
         {
             new SafeBoxPlotOutput( values,
-                                   d.vectorOf( new double[] { 0.0, 0.5, 1.0 } ),
+                                   DataFactory.vectorOf( new double[] { 0.0, 0.5, 1.0 } ),
                                    m1,
                                    null,
                                    MetricDimension.FORECAST_ERROR );
@@ -446,7 +460,7 @@ public final class SafeBoxPlotOutputTest
         try
         {
             new SafeBoxPlotOutput( values,
-                                   d.vectorOf( new double[] { 0.0, 0.5, 1.0 } ),
+                                   DataFactory.vectorOf( new double[] { 0.0, 0.5, 1.0 } ),
                                    m1,
                                    MetricDimension.OBSERVED_VALUE,
                                    null );

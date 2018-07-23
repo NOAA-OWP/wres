@@ -30,7 +30,6 @@ import wres.config.generated.ThresholdOperator;
 import wres.config.generated.ThresholdType;
 import wres.config.generated.ThresholdsConfig;
 import wres.datamodel.DataFactory;
-import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.engine.statistics.metric.categorical.ContingencyTable;
 import wres.engine.statistics.metric.categorical.EquitableThreatScore;
@@ -74,13 +73,7 @@ import wres.engine.statistics.metric.timeseries.TimingErrorDurationStatistics;
  */
 public final class MetricFactoryTest
 {
-
-    /**
-     * Output factory.
-     */
-
-    private DataFactory outF;
-
+    
     /**
      * Metric factory.
      */
@@ -106,8 +99,7 @@ public final class MetricFactoryTest
     @Before
     public void setupBeforeEachTest()
     {
-        outF = DefaultDataFactory.getInstance();
-        metF = MetricFactory.getInstance( outF );
+        metF = MetricFactory.getInstance();
 
         setMockConfiguration();
     }
@@ -121,12 +113,7 @@ public final class MetricFactoryTest
     @Test
     public void testGetInstance()
     {
-        assertTrue( Objects.nonNull( MetricFactory.getInstance( outF ) ) );
-
-        exception.expect( NullPointerException.class );
-        exception.expectMessage( "Specify a non-null metric output factory to construct the metric factory." );
-
-        MetricFactory.getInstance( null );
+        assertTrue( Objects.nonNull( MetricFactory.getInstance() ) );
     }
 
     /**
