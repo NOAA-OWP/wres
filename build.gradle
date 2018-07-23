@@ -230,6 +230,8 @@ project(':wres-io')
 
         compile group: 'org.liquibase', name: 'liquibase-core', version: '3.5.3'
 
+        compile group: 'com.amazonaws', name: 'aws-java-sdk-s3', version: '1.11.370'
+
         // to use native postgres copy, need this on compile, otherwise runtime
         compile 'org.postgresql:postgresql:42.2.1'
 
