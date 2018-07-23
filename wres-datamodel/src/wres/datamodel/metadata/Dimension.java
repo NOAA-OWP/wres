@@ -1,4 +1,4 @@
-package wres.datamodel;
+package wres.datamodel.metadata;
 
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.outputs.MetricOutput;

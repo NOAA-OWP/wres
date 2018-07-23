@@ -34,6 +34,7 @@ import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairsBuilder;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairsBuilder;
+import wres.datamodel.metadata.Dimension;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
@@ -667,7 +668,7 @@ public final class DataFactory
 
     public static OneOrTwoDoubles ofOneOrTwoDoubles( Double first, Double second )
     {
-        return SafeOneOrTwoDoubles.of( first, second );
+        return OneOrTwoDoubles.of( first, second );
     }
 
     /**
@@ -997,13 +998,13 @@ public final class DataFactory
             @Override
             public VectorOfDoubles getLeft()
             {
-                return SafeVectorOfDoubles.of( left );
+                return VectorOfDoubles.of( left );
             }
 
             @Override
             public VectorOfDoubles getRight()
             {
-                return SafeVectorOfDoubles.of( right );
+                return VectorOfDoubles.of( right );
             }
         };
     }
@@ -1017,7 +1018,7 @@ public final class DataFactory
 
     public static VectorOfDoubles vectorOf( double[] vec )
     {
-        return SafeVectorOfDoubles.of( vec );
+        return VectorOfDoubles.of( vec );
     }
 
     /**
@@ -1029,7 +1030,7 @@ public final class DataFactory
 
     public static VectorOfDoubles vectorOf( Double[] vec )
     {
-        return SafeVectorOfDoubles.of( vec );
+        return VectorOfDoubles.of( vec );
     }
 
     /**
@@ -1041,7 +1042,7 @@ public final class DataFactory
 
     public static VectorOfBooleans vectorOf( boolean[] vec )
     {
-        return SafeVectorOfBooleans.of( vec );
+        return VectorOfBooleans.of( vec );
     }
 
     /**
@@ -1053,7 +1054,7 @@ public final class DataFactory
 
     public static MatrixOfDoubles matrixOf( double[][] vec )
     {
-        return SafeMatrixOfDoubles.of( vec );
+        return MatrixOfDoubles.of( vec );
     }
 
     /**
@@ -1380,7 +1381,7 @@ public final class DataFactory
     {
         return Math.abs( first - second ) < 1.0 / digits;
     }
-    
+
     /**
      * Returns an immutable list that contains a safe type of the input.
      * 
@@ -1429,8 +1430,8 @@ public final class DataFactory
             }
         } );
         return Collections.unmodifiableList( returnMe );
-    }    
-    
+    }
+
     /**
      * Returns an immutable list that contains a safe type of the input.
      * 
@@ -1444,17 +1445,17 @@ public final class DataFactory
                                 "Specify a non-null list of dichotomous inputs from which to create a safe type." );
         List<VectorOfBooleans> returnMe = new ArrayList<>();
         input.forEach( value -> {
-            if ( value instanceof SafeVectorOfBooleans )
+            if ( value instanceof VectorOfBooleans )
             {
                 returnMe.add( value );
             }
             else
             {
-                returnMe.add( SafeVectorOfBooleans.of( value.getBooleans() ) );
+                returnMe.add( VectorOfBooleans.of( value.getBooleans() ) );
             }
         } );
         return Collections.unmodifiableList( returnMe );
-    }    
+    }
 
     /**
      * Returns a safe type of the input.
@@ -1466,30 +1467,13 @@ public final class DataFactory
     public static VectorOfDoubles safeVectorOf( VectorOfDoubles input )
     {
         Objects.requireNonNull( input, "Expected non-null input for the safe vector." );
-        if ( input instanceof SafeVectorOfDoubles )
+        if ( input instanceof VectorOfDoubles )
         {
             return input;
         }
-        return SafeVectorOfDoubles.of( input.getDoubles() );
+        return VectorOfDoubles.of( input.getDoubles() );
     }
 
-    /**
-     * Returns a safe type of the input.
-     * 
-     * @param input the potentially unsafe input
-     * @return a safe implementation of the input
-     */
-
-    public static MatrixOfDoubles safeMatrixOf( MatrixOfDoubles input )
-    {
-        Objects.requireNonNull( input, "Expected non-null input for the safe matrix." );
-        if ( input instanceof SafeMatrixOfDoubles )
-        {
-            return input;
-        }
-        return SafeMatrixOfDoubles.of( input.getDoubles() );
-    }    
-    
     /**
      * Consistent comparison of double arrays, first checks count of elements,
      * next goes through values.
@@ -1503,26 +1487,26 @@ public final class DataFactory
      * @param second the second array
      * @return -1 if first is less than second, 0 if equal, 1 otherwise.
      */
-    public static int compareDoubleArray(final double[] first,
-                                         final double[] second)
+    public static int compareDoubleArray( final double[] first,
+                                          final double[] second )
     {
         // this one has fewer elements
-        if (first.length < second.length)
+        if ( first.length < second.length )
         {
             return -1;
         }
         // this one has more elements
-        else if (first.length > second.length)
+        else if ( first.length > second.length )
         {
             return 1;
         }
         // compare values until we diverge
         else // assumption here is lengths are equal
         {
-            for (int i = 0; i < first.length; i++)
+            for ( int i = 0; i < first.length; i++ )
             {
-                int safeComparisonResult = Double.compare(first[i], second[i]);
-                if (safeComparisonResult != 0)
+                int safeComparisonResult = Double.compare( first[i], second[i] );
+                if ( safeComparisonResult != 0 )
                 {
                     return safeComparisonResult;
                 }
@@ -1530,7 +1514,7 @@ public final class DataFactory
             // all values were equal
             return 0;
         }
-    }     
+    }
 
     /**
      * Default implementation of a pair of booleans.

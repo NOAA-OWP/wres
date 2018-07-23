@@ -17,8 +17,8 @@ import evs.metric.results.MetricResultByThreshold;
 import evs.metric.results.MetricResultKey;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.SafeOneOrTwoDoubles;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
+import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
@@ -93,8 +93,8 @@ public final class DataModelTestDataFactory
                     final double[] constants = f.getParValReal().getConstants();
                     final double[] probConstants = f.getParVal().getConstants();
                     final OneOrTwoThresholds q =
-                            OneOrTwoThresholds.of( DataFactory.ofQuantileThreshold( SafeOneOrTwoDoubles.of( constants[0] ),
-                                                                                    SafeOneOrTwoDoubles.of( probConstants[0] ),
+                            OneOrTwoThresholds.of( DataFactory.ofQuantileThreshold( OneOrTwoDoubles.of( constants[0] ),
+                                                                                    OneOrTwoDoubles.of( probConstants[0] ),
                                                                                     Operator.GREATER,
                                                                                     ThresholdDataType.LEFT ) );
                     final Pair<TimeWindow, OneOrTwoThresholds> key = Pair.of( timeWindow, q );
@@ -154,11 +154,11 @@ public final class DataModelTestDataFactory
 
             // Add first result
             OneOrTwoThresholds first =
-                    OneOrTwoThresholds.of( DataFactory.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 1.0 ),
-                                                                            SafeOneOrTwoDoubles.of( 0.1 ),
+                    OneOrTwoThresholds.of( DataFactory.ofQuantileThreshold( OneOrTwoDoubles.of( 1.0 ),
+                                                                            OneOrTwoDoubles.of( 0.1 ),
                                                                             Operator.GREATER,
                                                                             ThresholdDataType.LEFT ),
-                                           DataFactory.ofThreshold( SafeOneOrTwoDoubles.of( 5.0 ),
+                                           DataFactory.ofThreshold( OneOrTwoDoubles.of( 5.0 ),
                                                                     Operator.GREATER,
                                                                     ThresholdDataType.LEFT ) );
 
@@ -169,11 +169,11 @@ public final class DataModelTestDataFactory
 
             // Add second result
             OneOrTwoThresholds second =
-                    OneOrTwoThresholds.of( DataFactory.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 2.0 ),
-                                                                            SafeOneOrTwoDoubles.of( 0.2 ),
+                    OneOrTwoThresholds.of( DataFactory.ofQuantileThreshold( OneOrTwoDoubles.of( 2.0 ),
+                                                                            OneOrTwoDoubles.of( 0.2 ),
                                                                             Operator.GREATER,
                                                                             ThresholdDataType.LEFT ),
-                                           DataFactory.ofThreshold( SafeOneOrTwoDoubles.of( 5.0 ),
+                                           DataFactory.ofThreshold( OneOrTwoDoubles.of( 5.0 ),
                                                                     Operator.GREATER,
                                                                     ThresholdDataType.LEFT ) );
 
@@ -184,11 +184,11 @@ public final class DataModelTestDataFactory
 
             // Add third result
             OneOrTwoThresholds third =
-                    OneOrTwoThresholds.of( DataFactory.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 3.0 ),
-                                                                            SafeOneOrTwoDoubles.of( 0.3 ),
+                    OneOrTwoThresholds.of( DataFactory.ofQuantileThreshold( OneOrTwoDoubles.of( 3.0 ),
+                                                                            OneOrTwoDoubles.of( 0.3 ),
                                                                             Operator.GREATER,
                                                                             ThresholdDataType.LEFT ),
-                                           DataFactory.ofThreshold( SafeOneOrTwoDoubles.of( 6.0 ),
+                                           DataFactory.ofThreshold( OneOrTwoDoubles.of( 6.0 ),
                                                                     Operator.GREATER,
                                                                     ThresholdDataType.LEFT ) );
 
@@ -255,8 +255,8 @@ public final class DataModelTestDataFactory
                     final double[] constants = f.getParValReal().getConstants();
                     final double[] probConstants = f.getParVal().getConstants();
                     final OneOrTwoThresholds q =
-                            OneOrTwoThresholds.of( DataFactory.ofQuantileThreshold( SafeOneOrTwoDoubles.of( constants[0] ),
-                                                                                    SafeOneOrTwoDoubles.of( probConstants[0] ),
+                            OneOrTwoThresholds.of( DataFactory.ofQuantileThreshold( OneOrTwoDoubles.of( constants[0] ),
+                                                                                    OneOrTwoDoubles.of( probConstants[0] ),
                                                                                     Operator.GREATER,
                                                                                     ThresholdDataType.LEFT ) );
                     final Pair<TimeWindow, OneOrTwoThresholds> key = Pair.of( timeWindow, q );

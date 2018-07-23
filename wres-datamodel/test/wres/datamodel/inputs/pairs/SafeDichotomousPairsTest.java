@@ -9,11 +9,11 @@ import java.util.List;
 import org.junit.Test;
 
 import wres.datamodel.DataFactory;
-import wres.datamodel.Location;
 import wres.datamodel.VectorOfBooleans;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.SafeDichotomousPairs;
 import wres.datamodel.inputs.pairs.SafeDichotomousPairs.DichotomousPairsBuilder;
+import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 

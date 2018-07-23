@@ -1,4 +1,4 @@
-package wres.datamodel;
+package wres.datamodel.metadata;
 
 import java.util.Objects;
 

@@ -9,6 +9,9 @@ import java.util.Arrays;
 
 import org.junit.Test;
 
+import wres.datamodel.metadata.DatasetIdentifier;
+import wres.datamodel.metadata.Dimension;
+import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataException;
 import wres.datamodel.metadata.MetadataFactory;

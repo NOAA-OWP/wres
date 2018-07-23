@@ -5,9 +5,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.StringJoiner;
 
-import wres.datamodel.DatasetIdentifier;
-import wres.datamodel.Dimension;
-import wres.datamodel.Location;
 import wres.datamodel.MetricConstants;
 
 /**

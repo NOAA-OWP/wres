@@ -1261,7 +1261,7 @@ public final class Slicer
                 second = round().apply( second, digits );
             }
         }
-        return DataFactory.ofQuantileThreshold( SafeOneOrTwoDoubles.of( first, second ),
+        return DataFactory.ofQuantileThreshold( OneOrTwoDoubles.of( first, second ),
                                                 threshold.getProbabilities(),
                                                 threshold.getCondition(),
                                                 threshold.getDataType(),

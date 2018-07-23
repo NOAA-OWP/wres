@@ -127,7 +127,7 @@ public final class SlicerTest
         values.add( DataFactory.pairOf( 0, 0.0 / 5.0 ) );
         values.add( DataFactory.pairOf( 1, 1.0 / 5.0 ) );
         double[] expected = new double[] { 1, 1, 1 };
-        Threshold threshold = DataFactory.ofThreshold( SafeOneOrTwoDoubles.of( 0.0 ),
+        Threshold threshold = DataFactory.ofThreshold( OneOrTwoDoubles.of( 0.0 ),
                                                        Operator.GREATER,
                                                        ThresholdDataType.LEFT );
         Metadata meta = MetadataFactory.getMetadata();
@@ -160,7 +160,7 @@ public final class SlicerTest
         values.add( DataFactory.pairOf( 0, new double[] { 1, 2, 3 } ) );
         values.add( DataFactory.pairOf( 1, new double[] { 1, 2, 3 } ) );
         double[] expected = new double[] { 1, 1, 1 };
-        Threshold threshold = DataFactory.ofThreshold( SafeOneOrTwoDoubles.of( 0.0 ),
+        Threshold threshold = DataFactory.ofThreshold( OneOrTwoDoubles.of( 0.0 ),
                                                        Operator.GREATER,
                                                        ThresholdDataType.LEFT );
         Metadata meta = MetadataFactory.getMetadata();
@@ -269,7 +269,7 @@ public final class SlicerTest
         values.add( DataFactory.pairOf( 0, new double[] { 1, 2, 3, 4, 5 } ) );
         values.add( DataFactory.pairOf( 5, new double[] { 1, 1, 6, 6, 50 } ) );
         Metadata meta = MetadataFactory.getMetadata();
-        Threshold threshold = DataFactory.ofThreshold( SafeOneOrTwoDoubles.of( 3.0 ),
+        Threshold threshold = DataFactory.ofThreshold( OneOrTwoDoubles.of( 3.0 ),
                                                        Operator.GREATER,
                                                        ThresholdDataType.LEFT );
         BiFunction<PairOfDoubleAndVectorOfDoubles, Threshold, PairOfDoubles> mapper =
@@ -329,7 +329,7 @@ public final class SlicerTest
         PairOfDoubleAndVectorOfDoubles d = DataFactory.pairOf( 4, new double[] { 4, 4, 4, 4, 4 } );
         PairOfDoubleAndVectorOfDoubles e = DataFactory.pairOf( 0, new double[] { 1, 2, 3, 4, 5 } );
         PairOfDoubleAndVectorOfDoubles f = DataFactory.pairOf( 5, new double[] { 1, 1, 6, 6, 50 } );
-        Threshold threshold = DataFactory.ofThreshold( SafeOneOrTwoDoubles.of( 3.0 ),
+        Threshold threshold = DataFactory.ofThreshold( OneOrTwoDoubles.of( 3.0 ),
                                                        Operator.GREATER,
                                                        ThresholdDataType.LEFT );
         BiFunction<PairOfDoubleAndVectorOfDoubles, Threshold, PairOfDoubles> mapper =
@@ -406,55 +406,55 @@ public final class SlicerTest
         double tF = 8.0 / 11.0;
         double tG = 0.01;
 
-        Threshold testA = DataFactory.ofProbabilityThreshold( SafeOneOrTwoDoubles.of( tA ),
+        Threshold testA = DataFactory.ofProbabilityThreshold( OneOrTwoDoubles.of( tA ),
                                                               Operator.GREATER,
                                                               ThresholdDataType.LEFT );
-        Threshold testB = DataFactory.ofProbabilityThreshold( SafeOneOrTwoDoubles.of( tB ),
+        Threshold testB = DataFactory.ofProbabilityThreshold( OneOrTwoDoubles.of( tB ),
                                                               Operator.LESS,
                                                               ThresholdDataType.LEFT );
-        Threshold testC = DataFactory.ofProbabilityThreshold( SafeOneOrTwoDoubles.of( tC ),
+        Threshold testC = DataFactory.ofProbabilityThreshold( OneOrTwoDoubles.of( tC ),
                                                               Operator.GREATER,
                                                               ThresholdDataType.LEFT );
-        Threshold testD = DataFactory.ofProbabilityThreshold( SafeOneOrTwoDoubles.of( tD ),
+        Threshold testD = DataFactory.ofProbabilityThreshold( OneOrTwoDoubles.of( tD ),
                                                               Operator.GREATER,
                                                               ThresholdDataType.LEFT );
-        Threshold testE = DataFactory.ofProbabilityThreshold( SafeOneOrTwoDoubles.of( tE[0], tE[1] ),
+        Threshold testE = DataFactory.ofProbabilityThreshold( OneOrTwoDoubles.of( tE[0], tE[1] ),
                                                               Operator.BETWEEN,
                                                               ThresholdDataType.LEFT );
-        Threshold testF = DataFactory.ofProbabilityThreshold( SafeOneOrTwoDoubles.of( tF ),
+        Threshold testF = DataFactory.ofProbabilityThreshold( OneOrTwoDoubles.of( tF ),
                                                               Operator.GREATER,
                                                               ThresholdDataType.LEFT );
-        Threshold testG = DataFactory.ofProbabilityThreshold( SafeOneOrTwoDoubles.of( tG ),
+        Threshold testG = DataFactory.ofProbabilityThreshold( OneOrTwoDoubles.of( tG ),
                                                               Operator.GREATER,
                                                               ThresholdDataType.LEFT );
-        Threshold expectedA = DataFactory.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 1.5 ),
-                                                               SafeOneOrTwoDoubles.of( tA ),
+        Threshold expectedA = DataFactory.ofQuantileThreshold( OneOrTwoDoubles.of( 1.5 ),
+                                                               OneOrTwoDoubles.of( tA ),
                                                                Operator.GREATER,
                                                                ThresholdDataType.LEFT );
-        Threshold expectedB = DataFactory.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 17897.2 ),
-                                                               SafeOneOrTwoDoubles.of( tB ),
+        Threshold expectedB = DataFactory.ofQuantileThreshold( OneOrTwoDoubles.of( 17897.2 ),
+                                                               OneOrTwoDoubles.of( tB ),
                                                                Operator.LESS,
                                                                ThresholdDataType.LEFT );
-        Threshold expectedC = DataFactory.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 1647.1818181818185 ),
-                                                               SafeOneOrTwoDoubles.of( tC ),
+        Threshold expectedC = DataFactory.ofQuantileThreshold( OneOrTwoDoubles.of( 1647.1818181818185 ),
+                                                               OneOrTwoDoubles.of( tC ),
                                                                Operator.GREATER,
                                                                ThresholdDataType.LEFT );
-        Threshold expectedD = DataFactory.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 8924.920568373052 ),
-                                                               SafeOneOrTwoDoubles.of( tD ),
+        Threshold expectedD = DataFactory.ofQuantileThreshold( OneOrTwoDoubles.of( 8924.920568373052 ),
+                                                               OneOrTwoDoubles.of( tD ),
                                                                Operator.GREATER,
                                                                ThresholdDataType.LEFT );
-        Threshold expectedE = DataFactory.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 6.3,
+        Threshold expectedE = DataFactory.ofQuantileThreshold( OneOrTwoDoubles.of( 6.3,
                                                                                        433.9 ),
-                                                               SafeOneOrTwoDoubles.of( tE[0],
+                                                               OneOrTwoDoubles.of( tE[0],
                                                                                        tE[1] ),
                                                                Operator.BETWEEN,
                                                                ThresholdDataType.LEFT );
-        Threshold expectedF = DataFactory.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 1.5 ),
-                                                               SafeOneOrTwoDoubles.of( tF ),
+        Threshold expectedF = DataFactory.ofQuantileThreshold( OneOrTwoDoubles.of( 1.5 ),
+                                                               OneOrTwoDoubles.of( tF ),
                                                                Operator.GREATER,
                                                                ThresholdDataType.LEFT );
-        Threshold expectedG = DataFactory.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 1.5 ),
-                                                               SafeOneOrTwoDoubles.of( tG ),
+        Threshold expectedG = DataFactory.ofQuantileThreshold( OneOrTwoDoubles.of( 1.5 ),
+                                                               OneOrTwoDoubles.of( tG ),
                                                                Operator.GREATER,
                                                                ThresholdDataType.LEFT );
 
