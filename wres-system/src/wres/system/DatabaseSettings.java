@@ -2,16 +2,24 @@ package wres.system;
 
 import java.beans.PropertyVetoException;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.InterfaceAddress;
+import java.net.NetworkInterface;
 import java.net.Socket;
+import java.net.SocketException;
 import java.net.URL;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Enumeration;
 import java.util.Map;
 import java.util.Objects;
+import java.util.StringJoiner;
 import java.util.TreeMap;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
@@ -541,7 +549,61 @@ final class DatabaseSettings
     /**
      * Executes the configured Liquibase scripts to keep the database up to date
      */
-    private void buildInstance() throws SQLException
+    private void buildInstance() throws SQLException, IOException
+    {
+        // Make sure that the database exists if the user has the authority to add one
+        this.addDatabase();
+
+        // If this machine already holds a lock on the database, liquibase will
+        // prevent this system from proceeding even though it already holds the lock.
+        // Thus, we need to make sure there aren't any prior locks assigned to it.
+        this.removePriorLocks();
+
+        Database database = null;
+        Liquibase liquibase;
+
+        try (Connection connection = DriverManager.getConnection(this.getConnectionString(), this.username, this.password);  )
+        {
+            database = DatabaseFactory.getInstance().findCorrectDatabaseImplementation( new JdbcConnection( connection));
+            URL changelogURL = this.getClass().getClassLoader().getResource( "database/db.changelog-master.xml" );
+
+            Objects.requireNonNull(changelogURL, "The definition for the WRES data model could not be found.");
+            liquibase = new Liquibase(
+                    "database/db.changelog-master.xml",
+                    new ClassLoaderResourceAccessor(),
+                    database
+            );
+
+            // Liquibase sends a lot of information to its own internal logging system that spits everything out to
+            // stdout at the 'info' level. Changing it to 'severe' (i.e. error) to prevent all of the diagnostic
+            // messaging.
+            liquibase.getLog().setLogLevel( "severe" );
+
+            Contexts contexts = new Contexts(  );
+            LabelExpression expression = new LabelExpression(  );
+            liquibase.update( contexts, expression );
+        }
+        catch (SQLException | LiquibaseException e)
+        {
+            throw new SQLException( "The WRES could not be properly initialized.", e );
+        }
+        finally
+        {
+            if (database != null)
+            {
+                try
+                {
+                    database.close();
+                }
+                catch ( DatabaseException e )
+                {
+                    LOGGER.debug( "The liquibase database class used to update the database could not be closed." );
+                }
+            }
+        }
+    }
+
+    private void addDatabase() throws SQLException
     {
         try
         {
@@ -620,43 +682,68 @@ final class DatabaseSettings
                 statement.close();
             }
         }
+    }
 
-        Database database = null;
-        Liquibase liquibase = null;
-
-        try (Connection connection = DriverManager.getConnection(this.getConnectionString(), this.username, this.password); )
+    private void removePriorLocks() throws SQLException, IOException
+    {
+        try (Connection connection = this.getRawConnection())
         {
-            database = DatabaseFactory.getInstance().findCorrectDatabaseImplementation( new JdbcConnection( connection));
-            URL changelogURL = this.getClass().getClassLoader().getResource( "database/db.changelog-master.xml" );
+            // Determine whether or not the changeloglock exists in the database
+            String script = "SELECT EXISTS (" + System.lineSeparator();
+            script += "    SELECT 1" + System.lineSeparator();
+            script += "    FROM information_schema.tables" + System.lineSeparator();
+            script += "    WHERE table_catalog = '" + this.getDatabaseName() + "'" + System.lineSeparator();
+            script += "        AND table_name = 'databasechangeloglock'" + System.lineSeparator();
+            script += ");";
 
-            Objects.requireNonNull(changelogURL, "The definition for the WRES data model could not be found.");
-            liquibase = new Liquibase(
-                    "database/db.changelog-master.xml",
-                    new ClassLoaderResourceAccessor(),
-                    database
-            );
+            Statement statement = connection.createStatement();
 
-            // Liquibase sends a lot of information to its own internal logging system that spits everything out to
-            // stdout at the 'info' level. Changing it to 'severe' (i.e. error) to prevent all of the diagnostic
-            // messaging.
-            liquibase.getLog().setLogLevel( "severe" );
-            liquibase.update( new Contexts(), new LabelExpression());
-        }
-        catch (SQLException | LiquibaseException e)
-        {
-            throw new SQLException( "The WRES could not be properly initialized.", e );
-        }
-        finally
-        {
-            if (database != null)
+            ResultSet result = statement.executeQuery( script );
+
+            result.next();
+
+            // Get the result from the database to determine whether or not it exists
+            boolean changeLogLockExists = result.getBoolean( 1 );
+
+            // If the change log lock table exists
+            if ( changeLogLockExists )
             {
+                // Collect the address to every interface for the system. Liquibase keeps track of
+                // lock ownership by the address of different lock interfaces
+                ArrayList<String> addresses = new ArrayList<>();
+
                 try
                 {
-                    database.close();
+                    Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+                    for ( NetworkInterface networkInterface : Collections.list( interfaces ) )
+                    {
+                        for ( InterfaceAddress interfaceAddress : networkInterface.getInterfaceAddresses() )
+                        {
+                            String address = interfaceAddress.getAddress().getHostAddress();
+                            addresses.add( address + " (" + address + ")" );
+                        }
+                    }
                 }
-                catch ( DatabaseException e )
+                catch ( SocketException e )
                 {
-                    LOGGER.debug( "The liquibase database class used to update the database could not be closed." );
+                    throw new IOException("Could not determine if this system already holds "
+                                          + "liquibase locks due to I/O miscommunication.", e);
+                }
+
+                // If at least one address was determined...
+                if ( !addresses.isEmpty() )
+                {
+                    // Forcibly remove any prior lock for this system.  Since we know that liquibase
+                    // stores ownership via address, we want to delete any locks that are associated
+                    // with this system, since any possible lock for this system will prevent this
+                    // system (the one that supposedly already owns the lock) from doing its work.
+                    StringJoiner builder = new StringJoiner( ",",
+                                                             "DELETE FROM databasechangeloglock WHERE lockedby = ANY('{",
+                                                             "}');" );
+                    addresses.forEach( builder::add );
+                    statement = connection.createStatement();
+                    statement.execute( builder.toString() );
+                    statement.close();
                 }
             }
         }
