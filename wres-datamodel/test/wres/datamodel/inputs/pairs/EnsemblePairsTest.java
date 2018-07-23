@@ -1,6 +1,5 @@
 package wres.datamodel.inputs.pairs;
 
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -12,43 +11,40 @@ import org.junit.Test;
 import wres.datamodel.DataFactory;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.inputs.pairs.PairOfDoubles;
-import wres.datamodel.inputs.pairs.SafeSingleValuedPairs;
-import wres.datamodel.inputs.pairs.SingleValuedPairs;
-import wres.datamodel.inputs.pairs.SafeSingleValuedPairs.SingleValuedPairsBuilder;
+import wres.datamodel.inputs.pairs.EnsemblePairs;
+import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.inputs.pairs.EnsemblePairs.EnsemblePairsBuilder;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 
 /**
- * Tests the {@link SafeSingleValuedPairs}.
+ * Tests the {@link EnsemblePairs}.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
-public final class SafeSingleValuedPairsTest
+public final class EnsemblePairsTest
 {
 
     /**
-     * Tests the {@link SafeSingleValuedPairs}.
+     * Tests the {@link EnsemblePairs}.
      */
 
     @Test
-    public void test1SingleValuedPairs()
+    public void test1EnsemblePairs()
     {
-        final List<PairOfDoubles> values = new ArrayList<>();
-        final SingleValuedPairsBuilder b = new SingleValuedPairsBuilder();
+        final List<PairOfDoubleAndVectorOfDoubles> values = new ArrayList<>();
+        final EnsemblePairsBuilder b = new EnsemblePairsBuilder();
 
         for ( int i = 0; i < 10; i++ )
         {
-            values.add( DataFactory.pairOf( 1, 1 ) );
+            values.add( DataFactory.pairOf( 1, new double[] { 1, 2, 3, 4 } ) );
         }
         final Metadata meta = MetadataFactory.getMetadata();
-        SingleValuedPairs p = (SingleValuedPairs) b.addData( values ).setMetadata( meta ).build();
+        EnsemblePairs p = (EnsemblePairs) b.addData( values ).setMetadata( meta ).build();
 
         //Check dataset count
-        assertFalse( "Expected a dataset without a baseline [false," + p.hasBaseline() + "].", p.hasBaseline() );
-        p = (SingleValuedPairs) b.addDataForBaseline( values ).setMetadataForBaseline( meta ).build(); //Add another
+        assertTrue( "Expected a dataset without a baseline [false," + p.hasBaseline() + "].", !p.hasBaseline() );
+        p = (EnsemblePairs) b.addDataForBaseline( values ).setMetadataForBaseline( meta ).build(); //Add another
         //Check that a returned dataset contains the expected number of pairs
         assertTrue( "Expected a main dataset with ten pairs [10," + p.getRawData().size() + "].",
                     p.getRawData().size() == 10 );
@@ -65,7 +61,7 @@ public final class SafeSingleValuedPairsTest
         {
             values.clear();
             values.add( null );
-            final SingleValuedPairsBuilder c = new SingleValuedPairsBuilder();
+            final EnsemblePairsBuilder c = new EnsemblePairsBuilder();
             c.addData( values ).setMetadata( meta ).build();
             fail( "Expected a checked exception on invalid inputs: null pair." );
         }
@@ -77,9 +73,9 @@ public final class SafeSingleValuedPairsTest
         try
         {
             values.clear();
-            values.add( DataFactory.pairOf( 1, 1 ) );
+            values.add( DataFactory.pairOf( 1, new double[] { 1 } ) );
             VectorOfDoubles climatology = DataFactory.vectorOf( new double[] { Double.NaN } );
-            final SingleValuedPairsBuilder c = new SingleValuedPairsBuilder();
+            final EnsemblePairsBuilder c = new EnsemblePairsBuilder();
             c.addData( values ).setMetadata( meta ).setClimatology( climatology ).build();
             fail( "Expected a checked exception on invalid inputs: all climatology data missing." );
         }

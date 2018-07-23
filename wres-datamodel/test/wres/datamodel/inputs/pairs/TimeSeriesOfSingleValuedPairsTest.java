@@ -19,10 +19,8 @@ import org.junit.rules.ExpectedException;
 import wres.datamodel.DataFactory;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
-import wres.datamodel.inputs.pairs.SafeTimeSeriesOfSingleValuedPairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
-import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairsBuilder;
-import wres.datamodel.inputs.pairs.SafeTimeSeriesOfSingleValuedPairs.SafeTimeSeriesOfSingleValuedPairsBuilder;
+import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs.TimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.time.Event;
@@ -33,9 +31,9 @@ import wres.datamodel.time.TimeSeries;
  * 
  * @author james.brown@hydrosolved.com
  */
-public final class SafeTimeSeriesOfSingleValuedPairsTest
+public final class TimeSeriesOfSingleValuedPairsTest
 {
-    
+
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
@@ -50,7 +48,7 @@ public final class SafeTimeSeriesOfSingleValuedPairsTest
         List<Event<PairOfDoubles>> first = new ArrayList<>();
         List<Event<PairOfDoubles>> second = new ArrayList<>();
         List<Event<PairOfDoubles>> third = new ArrayList<>();
-        SafeTimeSeriesOfSingleValuedPairsBuilder b = new SafeTimeSeriesOfSingleValuedPairsBuilder();
+        TimeSeriesOfSingleValuedPairsBuilder b = new TimeSeriesOfSingleValuedPairsBuilder();
 
         Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
         first.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), DataFactory.pairOf( 1, 1 ) ) );
@@ -96,7 +94,7 @@ public final class SafeTimeSeriesOfSingleValuedPairsTest
         List<Event<PairOfDoubles>> first = new ArrayList<>();
         List<Event<PairOfDoubles>> second = new ArrayList<>();
         List<Event<PairOfDoubles>> third = new ArrayList<>();
-        SafeTimeSeriesOfSingleValuedPairsBuilder b = new SafeTimeSeriesOfSingleValuedPairsBuilder();
+        TimeSeriesOfSingleValuedPairsBuilder b = new TimeSeriesOfSingleValuedPairsBuilder();
 
         Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
         first.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), DataFactory.pairOf( 1, 1 ) ) );
@@ -142,10 +140,10 @@ public final class SafeTimeSeriesOfSingleValuedPairsTest
         List<Event<PairOfDoubles>> fourth = new ArrayList<>();
         fourth.add( Event.of( Instant.parse( "1985-01-03T03:00:00Z" ), DataFactory.pairOf( 3, 3 ) ) );
         TimeSeriesOfSingleValuedPairs durationCheck =
-                (TimeSeriesOfSingleValuedPairs) new SafeTimeSeriesOfSingleValuedPairsBuilder().addTimeSeriesData( firstBasisTime,
-                                                                                                                  fourth )
-                                                                                              .setMetadata( meta )
-                                                                                              .build();
+                (TimeSeriesOfSingleValuedPairs) new TimeSeriesOfSingleValuedPairsBuilder().addTimeSeriesData( firstBasisTime,
+                                                                                                              fourth )
+                                                                                          .setMetadata( meta )
+                                                                                          .build();
         assertTrue( "Unexpected regular duration for the regular time-series ",
                     Duration.ofHours( 51 ).equals( durationCheck.getRegularDuration() ) );
     }
@@ -159,7 +157,7 @@ public final class SafeTimeSeriesOfSingleValuedPairsTest
     {
         //Build a time-series with two basis times
         List<Event<PairOfDoubles>> values = new ArrayList<>();
-        SafeTimeSeriesOfSingleValuedPairsBuilder b = new SafeTimeSeriesOfSingleValuedPairsBuilder();
+        TimeSeriesOfSingleValuedPairsBuilder b = new TimeSeriesOfSingleValuedPairsBuilder();
 
         Instant basisTime = Instant.parse( "1985-01-01T00:00:00Z" );
         values.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), DataFactory.pairOf( 1, 1 ) ) );
@@ -206,7 +204,7 @@ public final class SafeTimeSeriesOfSingleValuedPairsTest
         List<Event<PairOfDoubles>> second = new ArrayList<>();
         List<Event<PairOfDoubles>> third = new ArrayList<>();
 
-        SafeTimeSeriesOfSingleValuedPairsBuilder b = new SafeTimeSeriesOfSingleValuedPairsBuilder();
+        TimeSeriesOfSingleValuedPairsBuilder b = new TimeSeriesOfSingleValuedPairsBuilder();
 
         Instant basisTime = Instant.parse( "1985-01-01T00:00:00Z" );
         first.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), DataFactory.pairOf( 1, 1 ) ) );
@@ -224,7 +222,7 @@ public final class SafeTimeSeriesOfSingleValuedPairsTest
         TimeSeriesOfSingleValuedPairs ts = b.build();
 
         //Add the first time-series and then append a second and third
-        SafeTimeSeriesOfSingleValuedPairsBuilder c = new SafeTimeSeriesOfSingleValuedPairsBuilder();
+        TimeSeriesOfSingleValuedPairsBuilder c = new TimeSeriesOfSingleValuedPairsBuilder();
         c.addTimeSeries( ts );
 
         second.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), DataFactory.pairOf( 4, 4 ) ) );
@@ -270,12 +268,12 @@ public final class SafeTimeSeriesOfSingleValuedPairsTest
         final Metadata meta = MetadataFactory.getMetadata();
 
         //Check for exceptions on the iterators
-        SafeTimeSeriesOfSingleValuedPairsBuilder d = new SafeTimeSeriesOfSingleValuedPairsBuilder();
+        TimeSeriesOfSingleValuedPairsBuilder d = new TimeSeriesOfSingleValuedPairsBuilder();
         TimeSeriesOfSingleValuedPairs ts =
                 (TimeSeriesOfSingleValuedPairs) d.addTimeSeriesData( firstBasisTime, first )
                                                  .setMetadata( meta )
                                                  .build();
-        
+
         //Iterate
         exception.expect( NoSuchElementException.class );
         Iterator<TimeSeries<PairOfDoubles>> noneSuchBasis = ts.basisTimeIterator().iterator();
@@ -306,7 +304,7 @@ public final class SafeTimeSeriesOfSingleValuedPairsTest
     public void test8ToString()
     {
         List<Event<PairOfDoubles>> values = new ArrayList<>();
-        SafeTimeSeriesOfSingleValuedPairsBuilder b = new SafeTimeSeriesOfSingleValuedPairsBuilder();
+        TimeSeriesOfSingleValuedPairsBuilder b = new TimeSeriesOfSingleValuedPairsBuilder();
 
         Instant basisTime = Instant.parse( "1985-01-01T00:00:00Z" );
         Metadata meta = MetadataFactory.getMetadata();
@@ -339,7 +337,7 @@ public final class SafeTimeSeriesOfSingleValuedPairsTest
         List<Event<List<Event<PairOfDoubles>>>> input = new ArrayList<>();
         input.add( Event.of( basisTime, values ) );
         input.add( Event.of( nextBasisTime, otherValues ) );
-        SafeTimeSeriesOfSingleValuedPairsBuilder a = new SafeTimeSeriesOfSingleValuedPairsBuilder();
+        TimeSeriesOfSingleValuedPairsBuilder a = new TimeSeriesOfSingleValuedPairsBuilder();
         TimeSeriesOfSingleValuedPairs pairs =
                 ( (TimeSeriesOfSingleValuedPairsBuilder) a.addTimeSeriesData( input ).setMetadata( meta ) ).build();
         assertTrue( "Unequal string representation of two time-series that should have an equal representation.",
@@ -358,7 +356,7 @@ public final class SafeTimeSeriesOfSingleValuedPairsTest
         List<Event<PairOfDoubles>> second = new ArrayList<>();
         List<Event<PairOfDoubles>> third = new ArrayList<>();
         List<Event<PairOfDoubles>> fourth = new ArrayList<>();
-        SafeTimeSeriesOfSingleValuedPairsBuilder b = new SafeTimeSeriesOfSingleValuedPairsBuilder();
+        TimeSeriesOfSingleValuedPairsBuilder b = new TimeSeriesOfSingleValuedPairsBuilder();
 
         Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
         first.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), DataFactory.pairOf( 1, 1 ) ) );
@@ -397,7 +395,8 @@ public final class SafeTimeSeriesOfSingleValuedPairsTest
             {
                 assertTrue( "Unexpected pair in lead-time iteration of time-series.",
                             nextPair.getValue()
-                                    .equals( DataFactory.pairOf( expectedOrder[nextIndex], expectedOrder[nextIndex] ) ) );
+                                    .equals( DataFactory.pairOf( expectedOrder[nextIndex],
+                                                                 expectedOrder[nextIndex] ) ) );
                 nextIndex++;
             }
         }
@@ -413,7 +412,7 @@ public final class SafeTimeSeriesOfSingleValuedPairsTest
         //Build a time-series with one basis times and three separate sets of data to append
         List<Event<PairOfDoubles>> first = new ArrayList<>();
 
-        SafeTimeSeriesOfSingleValuedPairsBuilder b = new SafeTimeSeriesOfSingleValuedPairsBuilder();
+        TimeSeriesOfSingleValuedPairsBuilder b = new TimeSeriesOfSingleValuedPairsBuilder();
 
         Instant basisTime = Instant.parse( "1985-01-01T00:00:00Z" );
         first.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), DataFactory.pairOf( 1, 1 ) ) );
@@ -429,12 +428,12 @@ public final class SafeTimeSeriesOfSingleValuedPairsTest
         TimeSeriesOfSingleValuedPairs ts = b.build();
 
         //Add the first time-series and then append a second and third
-        SafeTimeSeriesOfSingleValuedPairsBuilder c = new SafeTimeSeriesOfSingleValuedPairsBuilder();
+        TimeSeriesOfSingleValuedPairsBuilder c = new TimeSeriesOfSingleValuedPairsBuilder();
         c.addTimeSeries( ts );
 
         //Check that climatology has been preserved
         assertTrue( "Failed to perserve climatology when building new time-series.",
                     climatology.equals( c.build().getClimatology() ) );
     }
-    
+
 }

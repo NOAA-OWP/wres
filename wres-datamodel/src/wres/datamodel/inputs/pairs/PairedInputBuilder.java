@@ -10,7 +10,7 @@ import wres.datamodel.metadata.Metadata;
  * 
  * @author james.brown@hydrosolved.com
  */
-public abstract class DefaultMetricInputBuilder<S> implements MetricInputBuilder<S>
+public abstract class PairedInputBuilder<S> implements MetricInputBuilder<S>
 {
 
     /**
@@ -38,7 +38,7 @@ public abstract class DefaultMetricInputBuilder<S> implements MetricInputBuilder
      * @return the builder
      */
 
-    public DefaultMetricInputBuilder<S> setMetadata(Metadata mainMeta)
+    public PairedInputBuilder<S> setMetadata(Metadata mainMeta)
     {
         this.mainMeta = mainMeta;
         return this;
@@ -51,7 +51,7 @@ public abstract class DefaultMetricInputBuilder<S> implements MetricInputBuilder
      * @return the builder
      */
 
-    public DefaultMetricInputBuilder<S> setMetadataForBaseline(Metadata baselineMeta) 
+    public PairedInputBuilder<S> setMetadataForBaseline(Metadata baselineMeta) 
     {
         this.baselineMeta = baselineMeta;
         return this;
@@ -64,7 +64,7 @@ public abstract class DefaultMetricInputBuilder<S> implements MetricInputBuilder
      * @return the builder
      */
 
-    public DefaultMetricInputBuilder<S> setClimatology(VectorOfDoubles climatology) {
+    public PairedInputBuilder<S> setClimatology(VectorOfDoubles climatology) {
         this.climatology = climatology;
         return this;
     }

@@ -25,8 +25,8 @@ import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
-import wres.datamodel.inputs.pairs.SafeTimeSeriesOfEnsemblePairs.SafeTimeSeriesOfEnsemblePairsBuilder;
-import wres.datamodel.inputs.pairs.SafeTimeSeriesOfSingleValuedPairs.SafeTimeSeriesOfSingleValuedPairsBuilder;
+import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs.TimeSeriesOfSingleValuedPairsBuilder;
+import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairs.TimeSeriesOfEnsemblePairsBuilder;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.outputs.DataModelTestDataFactory;
@@ -39,7 +39,7 @@ import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 
 /**
- * Tests the {@link DefaultSlicer}.
+ * Tests the {@link Slicer}.
  * 
  * @author james.brown@hydrosolved.com
  */
@@ -444,9 +444,9 @@ public final class SlicerTest
                                                                Operator.GREATER,
                                                                ThresholdDataType.LEFT );
         Threshold expectedE = DataFactory.ofQuantileThreshold( OneOrTwoDoubles.of( 6.3,
-                                                                                       433.9 ),
+                                                                                   433.9 ),
                                                                OneOrTwoDoubles.of( tE[0],
-                                                                                       tE[1] ),
+                                                                                   tE[1] ),
                                                                Operator.BETWEEN,
                                                                ThresholdDataType.LEFT );
         Threshold expectedF = DataFactory.ofQuantileThreshold( OneOrTwoDoubles.of( 1.5 ),
@@ -667,7 +667,7 @@ public final class SlicerTest
         List<Event<PairOfDoubles>> first = new ArrayList<>();
         List<Event<PairOfDoubles>> second = new ArrayList<>();
         List<Event<PairOfDoubles>> third = new ArrayList<>();
-        SafeTimeSeriesOfSingleValuedPairsBuilder b = new SafeTimeSeriesOfSingleValuedPairsBuilder();
+        TimeSeriesOfSingleValuedPairsBuilder b = new TimeSeriesOfSingleValuedPairsBuilder();
 
         Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
         first.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), DataFactory.pairOf( 1, 10 ) ) );
@@ -786,7 +786,7 @@ public final class SlicerTest
         List<Event<PairOfDoubleAndVectorOfDoubles>> first = new ArrayList<>();
         List<Event<PairOfDoubleAndVectorOfDoubles>> second = new ArrayList<>();
         List<Event<PairOfDoubleAndVectorOfDoubles>> third = new ArrayList<>();
-        SafeTimeSeriesOfEnsemblePairsBuilder b = new SafeTimeSeriesOfEnsemblePairsBuilder();
+        TimeSeriesOfEnsemblePairsBuilder b = new TimeSeriesOfEnsemblePairsBuilder();
 
         Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
         first.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), DataFactory.pairOf( 1, new double[] { 1 } ) ) );
@@ -845,7 +845,7 @@ public final class SlicerTest
         List<Event<PairOfDoubleAndVectorOfDoubles>> first = new ArrayList<>();
         List<Event<PairOfDoubleAndVectorOfDoubles>> second = new ArrayList<>();
         List<Event<PairOfDoubleAndVectorOfDoubles>> third = new ArrayList<>();
-        SafeTimeSeriesOfEnsemblePairsBuilder b = new SafeTimeSeriesOfEnsemblePairsBuilder();
+        TimeSeriesOfEnsemblePairsBuilder b = new TimeSeriesOfEnsemblePairsBuilder();
 
         Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
         first.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), DataFactory.pairOf( 1, new double[] { 1 } ) ) );
@@ -906,7 +906,7 @@ public final class SlicerTest
         List<Event<PairOfDoubles>> first = new ArrayList<>();
         List<Event<PairOfDoubles>> second = new ArrayList<>();
         List<Event<PairOfDoubles>> third = new ArrayList<>();
-        SafeTimeSeriesOfSingleValuedPairsBuilder b = new SafeTimeSeriesOfSingleValuedPairsBuilder();
+        TimeSeriesOfSingleValuedPairsBuilder b = new TimeSeriesOfSingleValuedPairsBuilder();
 
         Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
         first.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), DataFactory.pairOf( 1, 1 ) ) );
@@ -960,7 +960,7 @@ public final class SlicerTest
         List<Event<PairOfDoubles>> first = new ArrayList<>();
         List<Event<PairOfDoubles>> second = new ArrayList<>();
         List<Event<PairOfDoubles>> third = new ArrayList<>();
-        SafeTimeSeriesOfSingleValuedPairsBuilder b = new SafeTimeSeriesOfSingleValuedPairsBuilder();
+        TimeSeriesOfSingleValuedPairsBuilder b = new TimeSeriesOfSingleValuedPairsBuilder();
 
         Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
         first.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), DataFactory.pairOf( 1, 1 ) ) );

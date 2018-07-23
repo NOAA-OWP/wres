@@ -6,15 +6,14 @@ import static org.junit.Assert.assertTrue;
 import org.junit.Test;
 
 import wres.datamodel.inputs.pairs.PairOfDoubles;
-import wres.datamodel.inputs.pairs.SafePairOfDoubles;
 
-public class SafePairOfDoublesTest
+public class PairOfDoublesTest
 {
     @Test
     public void itemOneDifferent()
     {
-        PairOfDoubles firstPair = new SafePairOfDoubles(1.0, 2.0);
-        PairOfDoubles secondPair = new SafePairOfDoubles(3.0, 1.0);
+        PairOfDoubles firstPair = PairOfDoubles.of(1.0, 2.0);
+        PairOfDoubles secondPair = PairOfDoubles.of(3.0, 1.0);
         assertTrue("Expect first pair to be less than second pair",
                 firstPair.compareTo(secondPair) < 0);
         assertTrue("Expect second pair to be more than first pair",
@@ -30,8 +29,8 @@ public class SafePairOfDoublesTest
     @Test
     public void itemOneSameItemTwoDifferent()
     {
-        PairOfDoubles firstPair = new SafePairOfDoubles(1.0, 2.0);
-        PairOfDoubles secondPair = new SafePairOfDoubles(1.0, 3.0);
+        PairOfDoubles firstPair = PairOfDoubles.of(1.0, 2.0);
+        PairOfDoubles secondPair = PairOfDoubles.of(1.0, 3.0);
         assertTrue("Expect first pair to be less than second pair",
                 firstPair.compareTo(secondPair) < 0);
         assertTrue("Expect second pair to be more than first pair",
@@ -47,7 +46,7 @@ public class SafePairOfDoublesTest
     @Test
     public void equalsItself()
     {
-        PairOfDoubles firstPair = new SafePairOfDoubles(1.0, 2.0);
+        PairOfDoubles firstPair = PairOfDoubles.of(1.0, 2.0);
         assertTrue("Expect a pair to equal itself",
                 firstPair.compareTo(firstPair) == 0);
         assertTrue("Expect a pair to equal itself",
@@ -59,7 +58,7 @@ public class SafePairOfDoublesTest
     @Test
     public void notEqualToAnotherType()
     {
-        PairOfDoubles thePair = new SafePairOfDoubles(1.0, 2.0);
+        PairOfDoubles thePair = PairOfDoubles.of(1.0, 2.0);
         Integer iAmAnInteger = 5;
         assertFalse("Expect a pair to not equal another type",
                     thePair.equals(iAmAnInteger));

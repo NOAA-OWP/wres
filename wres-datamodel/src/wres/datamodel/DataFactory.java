@@ -22,18 +22,11 @@ import wres.datamodel.inputs.pairs.MulticategoryPairs;
 import wres.datamodel.inputs.pairs.PairOfBooleans;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
-import wres.datamodel.inputs.pairs.SafeDichotomousPairs;
-import wres.datamodel.inputs.pairs.SafeDiscreteProbabilityPairs;
-import wres.datamodel.inputs.pairs.SafeEnsemblePairs;
-import wres.datamodel.inputs.pairs.SafeMulticategoryPairs;
-import wres.datamodel.inputs.pairs.SafePairOfDoubleAndVectorOfDoubles;
-import wres.datamodel.inputs.pairs.SafePairOfDoubles;
-import wres.datamodel.inputs.pairs.SafeSingleValuedPairs;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairs;
-import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairsBuilder;
+import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairs.TimeSeriesOfEnsemblePairsBuilder;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
-import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairsBuilder;
+import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs.TimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.metadata.Dimension;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
@@ -77,9 +70,6 @@ import wres.datamodel.thresholds.ThresholdsByMetric.ThresholdsByMetricBuilder;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesBuilder;
 import wres.datamodel.time.SafeTimeSeries.SafeTimeSeriesBuilder;
-import wres.datamodel.inputs.pairs.SafeTimeSeriesOfSingleValuedPairs.SafeTimeSeriesOfSingleValuedPairsBuilder;
-import wres.datamodel.inputs.pairs.SafeTimeSeriesOfEnsemblePairs.SafeTimeSeriesOfEnsemblePairsBuilder;;
-
 
 /**
  * A factory class for producing datasets associated with verification metrics.
@@ -778,7 +768,7 @@ public final class DataFactory
                                                          Metadata baselineMeta,
                                                          VectorOfDoubles climatology )
     {
-        SafeSingleValuedPairs.SingleValuedPairsBuilder b = new SafeSingleValuedPairs.SingleValuedPairsBuilder();
+        SingleValuedPairs.SingleValuedPairsBuilder b = new SingleValuedPairs.SingleValuedPairsBuilder();
         return (SingleValuedPairs) b.setMetadata( mainMeta )
                                     .addData( pairs )
                                     .addDataForBaseline( basePairs )
@@ -805,7 +795,7 @@ public final class DataFactory
                                                  Metadata baselineMeta,
                                                  VectorOfDoubles climatology )
     {
-        SafeEnsemblePairs.EnsemblePairsBuilder b = new SafeEnsemblePairs.EnsemblePairsBuilder();
+        EnsemblePairs.EnsemblePairsBuilder b = new EnsemblePairs.EnsemblePairsBuilder();
         return (EnsemblePairs) b.setMetadata( mainMeta )
                                 .addData( pairs )
                                 .addDataForBaseline( basePairs )
@@ -832,8 +822,7 @@ public final class DataFactory
                                                            Metadata baselineMeta,
                                                            VectorOfDoubles climatology )
     {
-        SafeMulticategoryPairs.MulticategoryPairsBuilder b =
-                new SafeMulticategoryPairs.MulticategoryPairsBuilder();
+        MulticategoryPairs.MulticategoryPairsBuilder b = new MulticategoryPairs.MulticategoryPairsBuilder();
         return (MulticategoryPairs) b.addData( pairs )
                                      .setMetadata( mainMeta )
                                      .addDataForBaseline( basePairs )
@@ -860,8 +849,8 @@ public final class DataFactory
                                                                        Metadata baselineMeta,
                                                                        VectorOfDoubles climatology )
     {
-        SafeDiscreteProbabilityPairs.DiscreteProbabilityPairsBuilder b =
-                new SafeDiscreteProbabilityPairs.DiscreteProbabilityPairsBuilder();
+        DiscreteProbabilityPairs.DiscreteProbabilityPairsBuilder b =
+                new DiscreteProbabilityPairs.DiscreteProbabilityPairsBuilder();
         return (DiscreteProbabilityPairs) b.addData( pairs )
                                            .setMetadata( mainMeta )
                                            .addDataForBaseline( basePairs )
@@ -888,7 +877,7 @@ public final class DataFactory
                                                        Metadata baselineMeta,
                                                        VectorOfDoubles climatology )
     {
-        SafeDichotomousPairs.DichotomousPairsBuilder b = new SafeDichotomousPairs.DichotomousPairsBuilder();
+        DichotomousPairs.DichotomousPairsBuilder b = new DichotomousPairs.DichotomousPairsBuilder();
         return (DichotomousPairs) b.addData( pairs )
                                    .setMetadata( mainMeta )
                                    .addDataForBaseline( basePairs )
@@ -915,7 +904,7 @@ public final class DataFactory
                                                                  Metadata baselineMeta,
                                                                  VectorOfDoubles climatology )
     {
-        SafeDichotomousPairs.DichotomousPairsBuilder b = new SafeDichotomousPairs.DichotomousPairsBuilder();
+        DichotomousPairs.DichotomousPairsBuilder b = new DichotomousPairs.DichotomousPairsBuilder();
         b.setDataFromAtomic( pairs ).setMetadata( mainMeta ).setClimatology( climatology );
         return (DichotomousPairs) b.setDataForBaselineFromAtomic( basePairs )
                                    .setMetadataForBaseline( baselineMeta )
@@ -932,7 +921,7 @@ public final class DataFactory
 
     public static PairOfDoubles pairOf( double left, double right )
     {
-        return new SafePairOfDoubles( left, right );
+        return PairOfDoubles.of( left, right );
     }
 
     /**
@@ -945,7 +934,7 @@ public final class DataFactory
 
     public static PairOfBooleans pairOf( boolean left, boolean right )
     {
-        return new SafePairOfBooleans( left, right );
+        return PairOfBooleans.of( left, right );
     }
 
     /**
@@ -958,7 +947,7 @@ public final class DataFactory
 
     public static PairOfDoubleAndVectorOfDoubles pairOf( double left, double[] right )
     {
-        return SafePairOfDoubleAndVectorOfDoubles.of( left, right );
+        return PairOfDoubleAndVectorOfDoubles.of( left, right );
     }
 
     /**
@@ -971,7 +960,7 @@ public final class DataFactory
 
     public static PairOfDoubleAndVectorOfDoubles pairOf( Double left, Double[] right )
     {
-        return SafePairOfDoubleAndVectorOfDoubles.of( left, right );
+        return PairOfDoubleAndVectorOfDoubles.of( left, right );
     }
 
     /**
@@ -1304,7 +1293,7 @@ public final class DataFactory
 
     public static TimeSeriesOfSingleValuedPairsBuilder ofTimeSeriesOfSingleValuedPairsBuilder()
     {
-        return new SafeTimeSeriesOfSingleValuedPairsBuilder();
+        return new TimeSeriesOfSingleValuedPairsBuilder();
     }
 
     /**
@@ -1315,7 +1304,7 @@ public final class DataFactory
 
     public static TimeSeriesOfEnsemblePairsBuilder ofTimeSeriesOfEnsemblePairsBuilder()
     {
-        return new SafeTimeSeriesOfEnsemblePairsBuilder();
+        return new TimeSeriesOfEnsemblePairsBuilder();
     }
 
     /**
@@ -1395,13 +1384,13 @@ public final class DataFactory
                                 "Specify a non-null list of single-valued pairs from which to create a safe type." );
         List<PairOfDoubles> returnMe = new ArrayList<>();
         input.forEach( value -> {
-            if ( value instanceof SafePairOfDoubles )
+            if ( value instanceof PairOfDoubles )
             {
                 returnMe.add( value );
             }
             else
             {
-                returnMe.add( new SafePairOfDoubles( value.getItemOne(), value.getItemTwo() ) );
+                returnMe.add( PairOfDoubles.of( value.getItemOne(), value.getItemTwo() ) );
             }
         } );
         return Collections.unmodifiableList( returnMe );
@@ -1420,13 +1409,13 @@ public final class DataFactory
         Objects.requireNonNull( input, "Specify a non-null list of ensemble pairs from which to create a safe type." );
         List<PairOfDoubleAndVectorOfDoubles> returnMe = new ArrayList<>();
         input.forEach( value -> {
-            if ( value instanceof SafePairOfDoubleAndVectorOfDoubles )
+            if ( value instanceof PairOfDoubleAndVectorOfDoubles )
             {
                 returnMe.add( value );
             }
             else
             {
-                returnMe.add( SafePairOfDoubleAndVectorOfDoubles.of( value.getItemOne(), value.getItemTwo() ) );
+                returnMe.add( PairOfDoubleAndVectorOfDoubles.of( value.getItemOne(), value.getItemTwo() ) );
             }
         } );
         return Collections.unmodifiableList( returnMe );
@@ -1515,59 +1504,6 @@ public final class DataFactory
             return 0;
         }
     }
-
-    /**
-     * Default implementation of a pair of booleans.
-     */
-
-    private static class SafePairOfBooleans implements PairOfBooleans
-    {
-        private final boolean left;
-        private final boolean right;
-
-        /**
-         * Construct.
-         * 
-         * @param left the left
-         * @param right the right
-         */
-
-        private SafePairOfBooleans( boolean left, boolean right )
-        {
-            this.left = left;
-            this.right = right;
-        }
-
-        @Override
-        public boolean getItemOne()
-        {
-            return left;
-        }
-
-        @Override
-        public boolean getItemTwo()
-        {
-            return right;
-        }
-
-        @Override
-        public boolean equals( Object o )
-        {
-            if ( ! ( o instanceof SafePairOfBooleans ) )
-            {
-                return false;
-            }
-            SafePairOfBooleans b = (SafePairOfBooleans) o;
-            return b.getItemOne() == getItemOne() && b.getItemTwo() == getItemTwo();
-        }
-
-        @Override
-        public int hashCode()
-        {
-            return Boolean.hashCode( getItemOne() ) + Boolean.hashCode( getItemTwo() );
-        }
-
-    };
 
     /**
      * Default implementation of a {@link MapKey}.
