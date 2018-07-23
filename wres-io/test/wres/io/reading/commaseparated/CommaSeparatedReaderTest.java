@@ -15,7 +15,7 @@ import org.junit.Test;
 import wres.config.FeaturePlus;
 import wres.config.generated.Feature;
 import wres.datamodel.DataFactory;
-import wres.datamodel.Dimension;
+import wres.datamodel.metadata.Dimension;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;

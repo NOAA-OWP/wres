@@ -12,8 +12,8 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
 import wres.datamodel.DataFactory;
-import wres.datamodel.Location;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.MetricOutputException;

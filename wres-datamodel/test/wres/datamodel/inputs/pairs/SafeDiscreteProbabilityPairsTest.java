@@ -6,10 +6,10 @@ import java.util.List;
 import org.junit.Test;
 
 import wres.datamodel.DataFactory;
-import wres.datamodel.Location;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.SafeDiscreteProbabilityPairs;
 import wres.datamodel.inputs.pairs.SafeDiscreteProbabilityPairs.DiscreteProbabilityPairsBuilder;
+import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 

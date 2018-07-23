@@ -2,9 +2,8 @@ package wres.datamodel.thresholds;
 
 import java.util.Objects;
 
-import wres.datamodel.Dimension;
 import wres.datamodel.OneOrTwoDoubles;
-import wres.datamodel.SafeOneOrTwoDoubles;
+import wres.datamodel.metadata.Dimension;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
@@ -21,13 +20,13 @@ public class SafeThreshold implements Threshold
      * The real values or null.
      */
 
-    private final SafeOneOrTwoDoubles values;
+    private final OneOrTwoDoubles values;
 
     /**
      * The probability values or null.
      */
 
-    private final SafeOneOrTwoDoubles probabilities;
+    private final OneOrTwoDoubles probabilities;
 
     /**
      * The threshold condition.
@@ -500,7 +499,7 @@ public class SafeThreshold implements Threshold
         final OneOrTwoDoubles localValues = builder.values;
         if ( Objects.nonNull( localValues ) )
         {
-            this.values = SafeOneOrTwoDoubles.of( localValues.first(), localValues.second() );
+            this.values = OneOrTwoDoubles.of( localValues.first(), localValues.second() );
         }
         else
         {
@@ -511,7 +510,7 @@ public class SafeThreshold implements Threshold
         final OneOrTwoDoubles localProbabilities = builder.probabilities;
         if ( Objects.nonNull( localProbabilities ) )
         {
-            this.probabilities = SafeOneOrTwoDoubles.of( localProbabilities.first(), localProbabilities.second() );
+            this.probabilities = OneOrTwoDoubles.of( localProbabilities.first(), localProbabilities.second() );
         }
         else
         {

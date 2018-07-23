@@ -14,7 +14,6 @@ import java.util.List;
 import java.util.Objects;
 
 import wres.datamodel.DataFactory;
-import wres.datamodel.Location;
 import wres.datamodel.VectorOfBooleans;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
@@ -25,6 +24,7 @@ import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairsBuilder;
+import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.ReferenceTime;

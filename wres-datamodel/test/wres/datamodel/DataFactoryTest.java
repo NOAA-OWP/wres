@@ -16,6 +16,7 @@ import wres.datamodel.inputs.pairs.PairOfBooleans;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
@@ -231,13 +232,13 @@ public final class DataFactoryTest
         Pair<TimeWindow, Threshold> first = Pair.of( DataFactory.ofTimeWindow( Instant.MIN,
                                                                                Instant.MAX,
                                                                                ReferenceTime.ISSUE_TIME ),
-                                                     DataFactory.ofThreshold( SafeOneOrTwoDoubles.of( 1.0 ),
+                                                     DataFactory.ofThreshold( OneOrTwoDoubles.of( 1.0 ),
                                                                               Operator.GREATER,
                                                                               ThresholdDataType.LEFT ) );
         Pair<TimeWindow, Threshold> second = Pair.of( DataFactory.ofTimeWindow( Instant.MIN,
                                                                                 Instant.MAX,
                                                                                 ReferenceTime.ISSUE_TIME ),
-                                                      DataFactory.ofThreshold( SafeOneOrTwoDoubles.of( 1.0 ),
+                                                      DataFactory.ofThreshold( OneOrTwoDoubles.of( 1.0 ),
                                                                                Operator.GREATER,
                                                                                ThresholdDataType.LEFT ) );
         assertTrue( "Expected equality.",
@@ -247,7 +248,7 @@ public final class DataFactoryTest
         Pair<TimeWindow, Threshold> third = Pair.of( DataFactory.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                                                Instant.MAX,
                                                                                ReferenceTime.ISSUE_TIME ),
-                                                     DataFactory.ofThreshold( SafeOneOrTwoDoubles.of( 1.0 ),
+                                                     DataFactory.ofThreshold( OneOrTwoDoubles.of( 1.0 ),
                                                                               Operator.GREATER,
                                                                               ThresholdDataType.LEFT ) );
         assertTrue( "Expected greater than.", third.compareTo( first ) > 0 );
@@ -257,7 +258,7 @@ public final class DataFactoryTest
         Pair<TimeWindow, Threshold> fourth = Pair.of( DataFactory.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                                                 Instant.parse( "1986-01-01T00:00:00Z" ),
                                                                                 ReferenceTime.ISSUE_TIME ),
-                                                      DataFactory.ofThreshold( SafeOneOrTwoDoubles.of( 1.0 ),
+                                                      DataFactory.ofThreshold( OneOrTwoDoubles.of( 1.0 ),
                                                                                Operator.GREATER,
                                                                                ThresholdDataType.LEFT ) );
         assertTrue( "Expected greater than.", third.compareTo( fourth ) > 0 );
@@ -267,7 +268,7 @@ public final class DataFactoryTest
         Pair<TimeWindow, Threshold> fifth = Pair.of( DataFactory.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                                                Instant.parse( "1986-01-01T00:00:00Z" ),
                                                                                ReferenceTime.VALID_TIME ),
-                                                     DataFactory.ofThreshold( SafeOneOrTwoDoubles.of( 1.0 ),
+                                                     DataFactory.ofThreshold( OneOrTwoDoubles.of( 1.0 ),
                                                                               Operator.GREATER,
                                                                               ThresholdDataType.LEFT ) );
         assertTrue( "Expected greater than.", fourth.compareTo( fifth ) > 0 );
@@ -277,7 +278,7 @@ public final class DataFactoryTest
         Pair<TimeWindow, Threshold> sixth = Pair.of( DataFactory.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                                                Instant.parse( "1986-01-01T00:00:00Z" ),
                                                                                ReferenceTime.VALID_TIME ),
-                                                     DataFactory.ofThreshold( SafeOneOrTwoDoubles.of( 0.0 ),
+                                                     DataFactory.ofThreshold( OneOrTwoDoubles.of( 0.0 ),
                                                                               Operator.GREATER,
                                                                               ThresholdDataType.LEFT ) );
         assertTrue( "Expected greater than.", fifth.compareTo( sixth ) > 0 );
@@ -305,19 +306,19 @@ public final class DataFactoryTest
         Pair<TimeWindow, Threshold> zeroeth = Pair.of( DataFactory.ofTimeWindow( Instant.MIN,
                                                                                  Instant.MAX,
                                                                                  ReferenceTime.ISSUE_TIME ),
-                                                       DataFactory.ofThreshold( SafeOneOrTwoDoubles.of( 1.0 ),
+                                                       DataFactory.ofThreshold( OneOrTwoDoubles.of( 1.0 ),
                                                                                 Operator.GREATER,
                                                                                 ThresholdDataType.LEFT ) );
         Pair<TimeWindow, Threshold> first = Pair.of( DataFactory.ofTimeWindow( Instant.MIN,
                                                                                Instant.MAX,
                                                                                ReferenceTime.ISSUE_TIME ),
-                                                     DataFactory.ofThreshold( SafeOneOrTwoDoubles.of( 1.0 ),
+                                                     DataFactory.ofThreshold( OneOrTwoDoubles.of( 1.0 ),
                                                                               Operator.GREATER,
                                                                               ThresholdDataType.LEFT ) );
         Pair<TimeWindow, Threshold> second = Pair.of( DataFactory.ofTimeWindow( Instant.MIN,
                                                                                 Instant.MAX,
                                                                                 ReferenceTime.ISSUE_TIME ),
-                                                      DataFactory.ofThreshold( SafeOneOrTwoDoubles.of( 1.0 ),
+                                                      DataFactory.ofThreshold( OneOrTwoDoubles.of( 1.0 ),
                                                                                Operator.GREATER,
                                                                                ThresholdDataType.LEFT ) );
         //Reflexive
@@ -337,7 +338,7 @@ public final class DataFactoryTest
         Pair<TimeWindow, Threshold> third = Pair.of( DataFactory.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                                                Instant.MAX,
                                                                                ReferenceTime.ISSUE_TIME ),
-                                                     DataFactory.ofThreshold( SafeOneOrTwoDoubles.of( 1.0 ),
+                                                     DataFactory.ofThreshold( OneOrTwoDoubles.of( 1.0 ),
                                                                               Operator.GREATER,
                                                                               ThresholdDataType.LEFT ) );
         assertTrue( "Expected inequality.", !third.equals( first ) );
@@ -345,7 +346,7 @@ public final class DataFactoryTest
         Pair<TimeWindow, Threshold> fourth = Pair.of( DataFactory.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                                                 Instant.parse( "1986-01-01T00:00:00Z" ),
                                                                                 ReferenceTime.ISSUE_TIME ),
-                                                      DataFactory.ofThreshold( SafeOneOrTwoDoubles.of( 1.0 ),
+                                                      DataFactory.ofThreshold( OneOrTwoDoubles.of( 1.0 ),
                                                                                Operator.GREATER,
                                                                                ThresholdDataType.LEFT ) );
         assertTrue( "Expected inequality.", !third.equals( fourth ) );
@@ -353,7 +354,7 @@ public final class DataFactoryTest
         Pair<TimeWindow, Threshold> fifth = Pair.of( DataFactory.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                                                Instant.parse( "1986-01-01T00:00:00Z" ),
                                                                                ReferenceTime.VALID_TIME ),
-                                                     DataFactory.ofThreshold( SafeOneOrTwoDoubles.of( 1.0 ),
+                                                     DataFactory.ofThreshold( OneOrTwoDoubles.of( 1.0 ),
                                                                               Operator.GREATER,
                                                                               ThresholdDataType.LEFT ) );
         assertTrue( "Expected inequality.", !fourth.equals( fifth ) );
@@ -361,7 +362,7 @@ public final class DataFactoryTest
         Pair<TimeWindow, Threshold> sixth = Pair.of( DataFactory.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                                                Instant.parse( "1986-01-01T00:00:00Z" ),
                                                                                ReferenceTime.VALID_TIME ),
-                                                     DataFactory.ofThreshold( SafeOneOrTwoDoubles.of( 0.0 ),
+                                                     DataFactory.ofThreshold( OneOrTwoDoubles.of( 0.0 ),
                                                                               Operator.GREATER,
                                                                               ThresholdDataType.LEFT ) );
         assertTrue( "Expected inequality.", !fifth.equals( sixth ) );
