@@ -7,9 +7,9 @@ import java.util.Objects;
 import java.util.function.DoubleUnaryOperator;
 
 import wres.datamodel.DataFactory;
-import wres.datamodel.DefaultSlicer;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
+import wres.datamodel.Slicer;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.MetricOutputMetadata;
@@ -47,12 +47,12 @@ public class QuantileQuantileDiagram extends Diagram<SingleValuedPairs, MultiVec
         double[] predictedQ = new double[probCount];
 
         //Get the ordered data
-        double[] sortedLeft = DefaultSlicer.getInstance().getLeftSide( s );
-        double[] sortedRight = DefaultSlicer.getInstance().getRightSide( s );
+        double[] sortedLeft = Slicer.getLeftSide( s );
+        double[] sortedRight = Slicer.getRightSide( s );
         Arrays.sort( sortedLeft );
         Arrays.sort( sortedRight );
-        DoubleUnaryOperator qLeft = DefaultSlicer.getInstance().getQuantileFunction( sortedLeft );
-        DoubleUnaryOperator qRight = DefaultSlicer.getInstance().getQuantileFunction( sortedRight );
+        DoubleUnaryOperator qLeft = Slicer.getQuantileFunction( sortedLeft );
+        DoubleUnaryOperator qRight = Slicer.getQuantileFunction( sortedRight );
 
         //Compute the order statistics
         for ( int i = 0; i < probCount; i++ )

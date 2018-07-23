@@ -826,7 +826,7 @@ public final class Operations {
 
     /**
      * Calls functions used to set up the system for future use
-     * @throws SQLException
+     * @throws SQLException when WRES cannot access the database
      */
     public static void install() throws SQLException
     {

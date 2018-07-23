@@ -40,10 +40,10 @@ import ohd.hseb.hefs.utils.xml.GenericXMLReadingHandlerException;
 import ohd.hseb.hefs.utils.xml.XMLTools;
 import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.DefaultSlicer;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
+import wres.datamodel.Slicer;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
@@ -740,8 +740,7 @@ public abstract class ChartEngineFactory
         final ConcurrentMap<MetricConstants, ChartEngine> results = new ConcurrentSkipListMap<>();
 
         final Map<MetricConstants, MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>> slicedInput =
-                DefaultSlicer.getInstance()
-                       .filterByMetricComponent( input );
+                Slicer.filterByMetricComponent( input );
         for ( final Map.Entry<MetricConstants, MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>> entry : slicedInput.entrySet() )
         {
             final ChartEngine engine = buildScoreOutputChartEngineForOneComponent( config,

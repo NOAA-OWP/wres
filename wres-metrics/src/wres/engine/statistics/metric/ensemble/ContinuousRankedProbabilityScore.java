@@ -7,9 +7,9 @@ import java.util.Objects;
 import java.util.function.BiConsumer;
 
 import wres.datamodel.DataFactory;
-import wres.datamodel.DefaultSlicer;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
+import wres.datamodel.Slicer;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
@@ -49,7 +49,7 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<Ensemble
         }
         //Slice the data into groups with an equal number of ensemble members
         Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> sliced =
-                DefaultSlicer.getInstance().filterByRightSize( s.getRawData() );
+                Slicer.filterByRightSize( s.getRawData() );
         //CRPS, currently without decomposition
         //TODO: implement the decomposition
         double[] crps = new double[1];

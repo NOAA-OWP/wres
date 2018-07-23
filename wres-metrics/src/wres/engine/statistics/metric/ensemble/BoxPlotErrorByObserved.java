@@ -3,9 +3,9 @@ package wres.engine.statistics.metric.ensemble;
 import java.util.Arrays;
 
 import wres.datamodel.DataFactory;
-import wres.datamodel.DefaultSlicer;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
+import wres.datamodel.Slicer;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.outputs.BoxPlotOutput;
@@ -45,7 +45,7 @@ public class BoxPlotErrorByObserved extends BoxPlot
         double[] sortedErrors = Arrays.stream( pair.getItemTwo() ).map( x -> x - pair.getItemOne() ).sorted().toArray();
         //Compute the quantiles
         double[] box =
-                Arrays.stream( probs ).map( DefaultSlicer.getInstance().getQuantileFunction( sortedErrors ) ).toArray();
+                Arrays.stream( probs ).map( Slicer.getQuantileFunction( sortedErrors ) ).toArray();
         return DataFactory.pairOf( pair.getItemOne(), box );
     }
 

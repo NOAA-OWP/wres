@@ -8,7 +8,6 @@ import java.util.Objects;
 import org.apache.commons.math3.util.Precision;
 
 import wres.datamodel.DataFactory;
-import wres.datamodel.DefaultSlicer;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.MissingValues;
@@ -71,15 +70,13 @@ public class RelativeOperatingCharacteristicDiagram extends Diagram<DiscreteProb
         // Some data to process        
         if ( !s.getRawData().isEmpty() )
         {
-            Slicer slice = DefaultSlicer.getInstance();
-
             for ( int i = 1; i < points; i++ )
             {
                 double prob = Precision.round( 1.0 - ( i * constant ), 5 );
                 //Compute the PoD/PoFD using the probability threshold to determine whether the event occurred
                 //according to the probability on the RHS
                 MetricOutputMapByMetric<DoubleScoreOutput> out =
-                        roc.apply( slice.toDichotomousPairs( s,
+                        roc.apply( Slicer.toDichotomousPairs( s,
                                                              in -> DataFactory.pairOf( Double.compare( in.getItemOne(),
                                                                                                        1.0 ) == 0,
                                                                                        in.getItemTwo() > prob ) ) );

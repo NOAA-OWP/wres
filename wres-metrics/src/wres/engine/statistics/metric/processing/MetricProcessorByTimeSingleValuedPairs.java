@@ -21,7 +21,6 @@ import wres.config.MetricConfigException;
 import wres.config.ProjectConfigs;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
-import wres.datamodel.DefaultSlicer;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
@@ -84,9 +83,6 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
         TimeWindow timeWindow = input.getMetadata().getTimeWindow();
         Objects.requireNonNull( timeWindow, "Expected a non-null time window in the input metadata." );
 
-        //Slicer
-        Slicer slicer = DefaultSlicer.getInstance();
-
         //Remove missing values, except for ordered input, such as time-series
         SingleValuedPairs inputNoMissing = input;
 
@@ -97,7 +93,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                 throw new MetricCalculationException( " The project configuration includes time-series metrics. "
                                                       + "Expected a time-series of single-valued pairs as input." );
             }
-            inputNoMissing = slicer.filter( input, Slicer.leftAndRight( ADMISSABLE_DATA ), ADMISSABLE_DATA );
+            inputNoMissing = Slicer.filter( input, Slicer.leftAndRight( ADMISSABLE_DATA ), ADMISSABLE_DATA );
         }
 
         //Metric futures 
@@ -389,7 +385,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                     pair -> DataFactory.pairOf( useMe.test( pair.getItemOne() ),
                                                 useMe.test( pair.getItemTwo() ) );
             //Transform the pairs
-            DichotomousPairs transformed = DefaultSlicer.getInstance().toDichotomousPairs( input, mapper );
+            DichotomousPairs transformed = Slicer.toDichotomousPairs( input, mapper );
 
             processDichotomousPairs( Pair.of( timeWindow, OneOrTwoThresholds.of( useMe ) ),
                                      transformed,
@@ -441,7 +437,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                 Predicate<TimeSeries<PairOfDoubles>> filter =
                         MetricProcessorByTime.getFilterForTimeSeriesOfSingleValuedPairs( useMe );
 
-                pairs = DefaultSlicer.getInstance().filter( input, filter, null );
+                pairs = Slicer.filter( input, filter, null );
             }
             else
             {

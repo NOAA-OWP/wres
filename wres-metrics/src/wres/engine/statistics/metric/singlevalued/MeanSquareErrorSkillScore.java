@@ -4,9 +4,9 @@ import java.util.Objects;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.DatasetIdentifier;
-import wres.datamodel.DefaultSlicer;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
+import wres.datamodel.Slicer;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
@@ -64,8 +64,7 @@ public class MeanSquareErrorSkillScore<S extends SingleValuedPairs> extends Deco
             else
             {
                 double meanLeft =
-                        FunctionFactory.mean().applyAsDouble( DataFactory.vectorOf( DefaultSlicer.getInstance()
-                                                                                                 .getLeftSide( s ) ) );
+                        FunctionFactory.mean().applyAsDouble( DataFactory.vectorOf( Slicer.getLeftSide( s ) ) );
                 for ( PairOfDoubles next : s.getRawData() )
                 {
                     denominator += Math.pow( next.getItemOne() - meanLeft, 2 );

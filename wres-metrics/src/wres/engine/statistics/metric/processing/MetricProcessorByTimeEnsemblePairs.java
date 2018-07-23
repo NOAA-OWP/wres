@@ -18,7 +18,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import wres.config.MetricConfigException;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
-import wres.datamodel.DefaultSlicer;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
@@ -124,13 +123,10 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         //Metric futures 
         MetricFuturesByTimeBuilder futures = new MetricFuturesByTimeBuilder();
 
-        //Slicer
-        Slicer slicer = DefaultSlicer.getInstance();
-
         //Remove missing values. 
         //TODO: when time-series metrics are supported, leave missings in place for time-series
         EnsemblePairs inputNoMissing =
-                slicer.filter( input, slicer.leftAndEachOfRight( ADMISSABLE_DATA ), ADMISSABLE_DATA );
+                Slicer.filter( input, Slicer.leftAndEachOfRight( ADMISSABLE_DATA ), ADMISSABLE_DATA );
 
         //Process the metrics that consume ensemble pairs
         if ( hasMetrics( MetricInputGroup.ENSEMBLE ) )
@@ -142,7 +138,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         if ( hasMetrics( MetricInputGroup.SINGLE_VALUED ) )
         {
             //Derive the single-valued pairs from the ensemble pairs using the configured mapper
-            SingleValuedPairs singleValued = slicer.toSingleValuedPairs( inputNoMissing, toSingleValues );
+            SingleValuedPairs singleValued = Slicer.toSingleValuedPairs( inputNoMissing, toSingleValues );
             processSingleValuedPairs( timeWindow, singleValued, futures );
         }
 
@@ -260,7 +256,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                                                    Arrays.stream( in.getItemTwo() ).average().getAsDouble() );
 
         //Construct the default mapper from ensembles to probabilities: this is not currently configurable
-        toDiscreteProbabilities = DefaultSlicer.getInstance()::toDiscreteProbabilityPair;
+        toDiscreteProbabilities = Slicer::toDiscreteProbabilityPair;
 
         // Finalize validation now all required parameters are available
         // This is also called by the constructor of the superclass, but local parameters must be validated too
@@ -427,7 +423,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                 Predicate<PairOfDoubleAndVectorOfDoubles> filter =
                         MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( useMe );
 
-                pairs = DefaultSlicer.getInstance().filter( input, filter, null );
+                pairs = Slicer.filter( input, filter, null );
             }
 
             processEnsemblePairs( Pair.of( timeWindow, OneOrTwoThresholds.of( useMe ) ),
@@ -563,10 +559,9 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
             Threshold useMe = addQuantilesToThreshold( threshold, sorted );
 
             // Transform the pairs
-            DiscreteProbabilityPairs transformed = DefaultSlicer.getInstance()
-                                                                .toDiscreteProbabilityPairs( input,
-                                                                                             useMe,
-                                                                                             toDiscreteProbabilities );
+            DiscreteProbabilityPairs transformed = Slicer.toDiscreteProbabilityPairs( input,
+                                                                                      useMe,
+                                                                                      toDiscreteProbabilities );
 
             processDiscreteProbabilityPairs( Pair.of( timeWindow, OneOrTwoThresholds.of( useMe ) ),
                                              transformed,
@@ -693,10 +688,9 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
             Threshold outerThreshold = addQuantilesToThreshold( threshold, sorted );
 
             // Transform the pairs to probabilities first
-            DiscreteProbabilityPairs transformed = DefaultSlicer.getInstance()
-                                                                .toDiscreteProbabilityPairs( input,
-                                                                                             outerThreshold,
-                                                                                             toDiscreteProbabilities );
+            DiscreteProbabilityPairs transformed = Slicer.toDiscreteProbabilityPairs( input,
+                                                                                      outerThreshold,
+                                                                                      toDiscreteProbabilities );
 
             // Find the union of classifiers across all metrics   
             Set<Threshold> classifiers = filteredByInner.union();
@@ -722,7 +716,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                         pair -> DataFactory.pairOf( innerThreshold.test( pair.getItemOne() ),
                                                     innerThreshold.test( pair.getItemTwo() ) );
                 //Transform the pairs
-                DichotomousPairs dichotomous = DefaultSlicer.getInstance().toDichotomousPairs( transformed, mapper );
+                DichotomousPairs dichotomous = Slicer.toDichotomousPairs( transformed, mapper );
                 processDichotomousPairs( nextKey, dichotomous, futures, outGroup, unionToIgnore );
             }
         }

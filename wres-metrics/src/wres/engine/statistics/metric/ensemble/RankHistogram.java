@@ -12,10 +12,10 @@ import java.util.function.BiConsumer;
 import java.util.stream.IntStream;
 
 import wres.datamodel.DataFactory;
-import wres.datamodel.DefaultSlicer;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.MissingValues;
+import wres.datamodel.Slicer;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
@@ -63,7 +63,7 @@ public class RankHistogram extends Diagram<EnsemblePairs, MultiVectorOutput>
 
             //Acquire subsets in case of missing data
             Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> sliced =
-                    DefaultSlicer.getInstance().filterByRightSize( s.getRawData() );
+                    Slicer.filterByRightSize( s.getRawData() );
             //Find the subset with the most elements
             Optional<List<PairOfDoubleAndVectorOfDoubles>> useMe =
                     sliced.values().stream().max( Comparator.comparingInt( List::size ) );

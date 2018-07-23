@@ -13,11 +13,10 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import wres.config.MetricConfigException;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.DefaultSlicer;
+import wres.datamodel.Slicer;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
-import wres.datamodel.Slicer;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
@@ -148,15 +147,17 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
 
         if ( outGroup == MetricOutputGroup.DOUBLE_SCORE )
         {
-            futures.addDoubleScoreOutput( key, processDichotomousPairs( input,
-                                                                        dichotomousScalar,
-                                                                        ignoreTheseMetrics ) );
+            futures.addDoubleScoreOutput( key,
+                                          processDichotomousPairs( input,
+                                                                   dichotomousScalar,
+                                                                   ignoreTheseMetrics ) );
         }
         else if ( outGroup == MetricOutputGroup.MATRIX )
         {
-            futures.addMatrixOutput( key, processDichotomousPairs( input,
-                                                                   dichotomousMatrix,
-                                                                   ignoreTheseMetrics ) );
+            futures.addMatrixOutput( key,
+                                     processDichotomousPairs( input,
+                                                              dichotomousMatrix,
+                                                              ignoreTheseMetrics ) );
         }
 
     }
@@ -290,7 +291,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
             {
                 Predicate<PairOfDoubles> filter = MetricProcessorByTime.getFilterForSingleValuedPairs( useMe );
 
-                pairs = DefaultSlicer.getInstance().filter( input, filter, null );
+                pairs = Slicer.filter( input, filter, null );
 
             }
 
@@ -321,15 +322,17 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
     {
         if ( outGroup == MetricOutputGroup.DOUBLE_SCORE )
         {
-            futures.addDoubleScoreOutput( key, processSingleValuedPairs( input,
-                                                                         singleValuedScore,
-                                                                         ignoreTheseMetrics ) );
+            futures.addDoubleScoreOutput( key,
+                                          processSingleValuedPairs( input,
+                                                                    singleValuedScore,
+                                                                    ignoreTheseMetrics ) );
         }
         else if ( outGroup == MetricOutputGroup.MULTIVECTOR )
         {
-            futures.addMultiVectorOutput( key, processSingleValuedPairs( input,
-                                                                         singleValuedMultiVector,
-                                                                         ignoreTheseMetrics ) );
+            futures.addMultiVectorOutput( key,
+                                          processSingleValuedPairs( input,
+                                                                    singleValuedMultiVector,
+                                                                    ignoreTheseMetrics ) );
         }
     }
 
