@@ -6,7 +6,7 @@ import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.metadata.Metadata;
 
 /**
- * A builder for a {@link MetricInput} with associated {@link Metadata}.
+ * A builder for a {@link MetricInput}.
  * 
  * @author james.brown@hydrosolved.com
  */

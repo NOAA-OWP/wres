@@ -3,7 +3,6 @@ package wres.datamodel.inputs.pairs;
 import org.junit.Test;
 
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
-import wres.datamodel.inputs.pairs.SafePairOfDoubleAndVectorOfDoubles;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -11,7 +10,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by jesse on 7/17/17.
  */
-public class SafePairOfDoubleAndVectorOfDoublesTest
+public class PairOfDoubleAndVectorOfDoublesTest
 {
     @Test
     public void fancyPairWithEqualValuesIsEqualTest()
@@ -19,9 +18,9 @@ public class SafePairOfDoubleAndVectorOfDoublesTest
         double[] firstArr = {1.0, 2.0};
         double[] secondArr = {1.0, 2.0};
         PairOfDoubleAndVectorOfDoubles firstPair =
-                SafePairOfDoubleAndVectorOfDoubles.of(3.0, firstArr);
+                PairOfDoubleAndVectorOfDoubles.of(3.0, firstArr);
         PairOfDoubleAndVectorOfDoubles secondPair =
-                SafePairOfDoubleAndVectorOfDoubles.of(3.0, secondArr);
+                PairOfDoubleAndVectorOfDoubles.of(3.0, secondArr);
         assertTrue("Expect pairs to be equal",
                    firstPair.compareTo(secondPair) == 0);
         assertTrue("Expect pairs to be equal",
@@ -39,9 +38,9 @@ public class SafePairOfDoubleAndVectorOfDoublesTest
     {
         double[] emptyArr = {};
         PairOfDoubleAndVectorOfDoubles firstPair =
-                SafePairOfDoubleAndVectorOfDoubles.of(1.0, emptyArr);
+                PairOfDoubleAndVectorOfDoubles.of(1.0, emptyArr);
         PairOfDoubleAndVectorOfDoubles secondPair =
-                SafePairOfDoubleAndVectorOfDoubles.of(2.0, emptyArr);
+                PairOfDoubleAndVectorOfDoubles.of(2.0, emptyArr);
         assertTrue("Expect first pair to be less than second",
                    firstPair.compareTo(secondPair) < 0);
         assertTrue("Expect second pair to be more than first",
@@ -60,9 +59,9 @@ public class SafePairOfDoubleAndVectorOfDoublesTest
         double[] emptyArr = {};
         double[] nonEmptyArr = {1.0};
         PairOfDoubleAndVectorOfDoubles emptyPair =
-                SafePairOfDoubleAndVectorOfDoubles.of(2.0, emptyArr);
+                PairOfDoubleAndVectorOfDoubles.of(2.0, emptyArr);
         PairOfDoubleAndVectorOfDoubles nonEmptyPair =
-                SafePairOfDoubleAndVectorOfDoubles.of(2.0, nonEmptyArr);
+                PairOfDoubleAndVectorOfDoubles.of(2.0, nonEmptyArr);
         assertTrue("Expect empty array pair to be less than nonEmpty",
                    emptyPair.compareTo(nonEmptyPair) < 0);
         assertTrue("Expect nonEmpty array pair to be more than empty",
@@ -81,9 +80,9 @@ public class SafePairOfDoubleAndVectorOfDoublesTest
         double[] firstArr = {1.0, 2.0};
         double[] secondArr = {1.0, 3.0};
         PairOfDoubleAndVectorOfDoubles firstPair =
-                SafePairOfDoubleAndVectorOfDoubles.of(4.0, firstArr);
+                PairOfDoubleAndVectorOfDoubles.of(4.0, firstArr);
         PairOfDoubleAndVectorOfDoubles secondPair =
-                SafePairOfDoubleAndVectorOfDoubles.of(4.0, secondArr);
+                PairOfDoubleAndVectorOfDoubles.of(4.0, secondArr);
         assertTrue("Expect first array pair to be less than second",
                    firstPair.compareTo(secondPair) < 0);
         assertTrue("Expect second array pair to be more than first",
@@ -101,7 +100,7 @@ public class SafePairOfDoubleAndVectorOfDoublesTest
     {
         double[] firstArr = {1.0, 2.0};
         PairOfDoubleAndVectorOfDoubles firstPair =
-                SafePairOfDoubleAndVectorOfDoubles.of(4.0, firstArr);
+                PairOfDoubleAndVectorOfDoubles.of(4.0, firstArr);
         assertTrue("Expect a pair to equal itself",
                    firstPair.compareTo(firstPair) == 0);
         assertTrue("Expect a pair to equal itself",
@@ -115,7 +114,7 @@ public class SafePairOfDoubleAndVectorOfDoublesTest
     {
         double[] theArr = {1.0, 2.0};
         PairOfDoubleAndVectorOfDoubles thePair =
-                SafePairOfDoubleAndVectorOfDoubles.of(3.0, theArr);
+                PairOfDoubleAndVectorOfDoubles.of(3.0, theArr);
         Integer notAPair = 4;
         assertFalse("Expect a fancyPair to not equal a non-fancyPair",
                     thePair.equals(notAPair));

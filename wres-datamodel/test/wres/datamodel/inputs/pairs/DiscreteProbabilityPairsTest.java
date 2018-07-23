@@ -7,24 +7,21 @@ import org.junit.Test;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
-import wres.datamodel.inputs.pairs.SafeDiscreteProbabilityPairs;
-import wres.datamodel.inputs.pairs.SafeDiscreteProbabilityPairs.DiscreteProbabilityPairsBuilder;
+import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs.DiscreteProbabilityPairsBuilder;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 
 /**
- * Tests the {@link SafeDiscreteProbabilityPairs}.
+ * Tests the {@link DiscreteProbabilityPairs}.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
-public final class SafeDiscreteProbabilityPairsTest
+public final class DiscreteProbabilityPairsTest
 {
 
     /**
-     * Tests the {@link SafeDiscreteProbabilityPairs}.
+     * Tests the {@link DiscreteProbabilityPairs}.
      */
 
     @Test

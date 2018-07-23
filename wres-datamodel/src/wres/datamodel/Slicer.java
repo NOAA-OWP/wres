@@ -27,13 +27,11 @@ import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.PairOfBooleans;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
-import wres.datamodel.inputs.pairs.SafeTimeSeriesOfEnsemblePairs.SafeTimeSeriesOfEnsemblePairsBuilder;
-import wres.datamodel.inputs.pairs.SafeTimeSeriesOfSingleValuedPairs.SafeTimeSeriesOfSingleValuedPairsBuilder;
+import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairs.TimeSeriesOfEnsemblePairsBuilder;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairs;
-import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairsBuilder;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
-import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairsBuilder;
+import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs.TimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.ScoreOutput;
@@ -676,7 +674,7 @@ public final class Slicer
 
         Objects.requireNonNull( condition, NULL_PREDICATE_EXCEPTION );
 
-        TimeSeriesOfSingleValuedPairsBuilder builder = DataFactory.ofTimeSeriesOfSingleValuedPairsBuilder();
+        TimeSeriesOfSingleValuedPairsBuilder builder = new TimeSeriesOfSingleValuedPairsBuilder();
 
         // Set the metadata explicitly in case of an empty slice
         builder.setMetadata( input.getMetadata() );
@@ -736,7 +734,7 @@ public final class Slicer
 
         //Iterate through the durations and append to the builder
         //Throw an exception if attempting to construct an irregular time-series
-        TimeSeriesOfSingleValuedPairsBuilder builder = new SafeTimeSeriesOfSingleValuedPairsBuilder();
+        TimeSeriesOfSingleValuedPairsBuilder builder = new TimeSeriesOfSingleValuedPairsBuilder();
 
         // Set the metadata explicitly in case of an empty slice
         builder.setMetadata( input.getMetadata() );
@@ -768,7 +766,7 @@ public final class Slicer
 
         Objects.requireNonNull( basisTime, NULL_PREDICATE_EXCEPTION );
 
-        SafeTimeSeriesOfSingleValuedPairsBuilder builder = new SafeTimeSeriesOfSingleValuedPairsBuilder();
+        TimeSeriesOfSingleValuedPairsBuilder builder = new TimeSeriesOfSingleValuedPairsBuilder();
 
         // Set the metadata explicitly in case of an empty slice
         builder.setMetadata( input.getMetadata() );
@@ -804,7 +802,7 @@ public final class Slicer
 
         //Iterate through the durations and append to the builder
         //Throw an exception if attempting to construct an irregular time-series
-        TimeSeriesOfEnsemblePairsBuilder builder = new SafeTimeSeriesOfEnsemblePairsBuilder();
+        TimeSeriesOfEnsemblePairsBuilder builder = new TimeSeriesOfEnsemblePairsBuilder();
 
         // Set the metadata explicitly in case of an empty slice
         builder.setMetadata( input.getMetadata() );
@@ -866,7 +864,7 @@ public final class Slicer
 
         Objects.requireNonNull( basisTime, NULL_PREDICATE_EXCEPTION );
 
-        TimeSeriesOfEnsemblePairsBuilder builder = new SafeTimeSeriesOfEnsemblePairsBuilder();
+        TimeSeriesOfEnsemblePairsBuilder builder = new TimeSeriesOfEnsemblePairsBuilder();
 
         // Set the metadata explicitly in case of an empty slice
         builder.setMetadata( input.getMetadata() );
@@ -901,8 +899,8 @@ public final class Slicer
         Objects.requireNonNull( traceIndex, NULL_PREDICATE_EXCEPTION );
 
         //Build a single-valued time-series with the trace at index currentTrace
-        SafeTimeSeriesOfEnsemblePairsBuilder builder =
-                new SafeTimeSeriesOfEnsemblePairsBuilder();
+        TimeSeriesOfEnsemblePairsBuilder builder =
+                new TimeSeriesOfEnsemblePairsBuilder();
         builder.setMetadata( input.getMetadata() );
 
         //Iterate through the basis times
