@@ -1,4 +1,4 @@
-package wres.datamodel;
+package wres.datamodel.metadata;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -9,6 +9,8 @@ import java.util.Arrays;
 
 import org.junit.Test;
 
+import wres.datamodel.DataFactory;
+import wres.datamodel.MetricConstants;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.Dimension;
 import wres.datamodel.metadata.Location;
@@ -572,12 +574,12 @@ public final class MetadataFactoryTest
         Location lp9 = MetadataFactory.getLocation( "DRRC2" );
         DatasetIdentifier p9 = MetadataFactory.getDatasetIdentifier( lp9, null, null );
 
-        DatasetIdentifier p10 = MetadataFactory.getDatasetIdentifier( null, null, null );
+        DatasetIdentifier p10 = MetadataFactory.getDatasetIdentifier( null, "VAR", null );
 
         assertFalse( "Unexpected equality between two dataset identifier instances.", p9.equals( p10 ) );
 
         DatasetIdentifier p11 = MetadataFactory.getDatasetIdentifier( null, "SQIN", null );
-        DatasetIdentifier p12 = MetadataFactory.getDatasetIdentifier( null, null, null );
+        DatasetIdentifier p12 = MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation( "AB" ), null, null );
 
         assertFalse( "Unexpected equality between two dataset identifier instances.", p11.equals( p12 ) );
 
@@ -667,10 +669,10 @@ public final class MetadataFactoryTest
         assertFalse( "Unexpected equality between two dataset identifier hashcodes.", p7.hashCode() == p8.hashCode() );
         Location lp9 = MetadataFactory.getLocation("DRRC2");
         DatasetIdentifier p9 = MetadataFactory.getDatasetIdentifier( lp9, null, null );
-        DatasetIdentifier p10 = MetadataFactory.getDatasetIdentifier( null, null, null );
+        DatasetIdentifier p10 = MetadataFactory.getDatasetIdentifier( null, "SQIN", null );
         assertFalse( "Unexpected equality between two dataset identifier hashcodes.", p9.hashCode() == p10.hashCode() );
         DatasetIdentifier p11 = MetadataFactory.getDatasetIdentifier( null, "SQIN", null );
-        DatasetIdentifier p12 = MetadataFactory.getDatasetIdentifier( null, null, null );
+        DatasetIdentifier p12 = MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation("LOC"), null, null );
         assertFalse( "Unexpected equality between two dataset identifier hashcodes.",
                      p11.hashCode() == p12.hashCode() );
         // Unequal scenario identifiers for baseline
