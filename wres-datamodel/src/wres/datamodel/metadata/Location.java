@@ -52,6 +52,7 @@ public class Location
      * @param latitude the optional latitude
      * @param gageId the optional gage identifier
      * @throws NullPointerException if only one of the two coordinates is null or all inputs are null
+     * @return a location instance
      */
 
     public static Location of( Long vectorIdentifier,
