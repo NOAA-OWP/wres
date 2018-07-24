@@ -25,6 +25,19 @@ public class Dimension implements Comparable<Dimension>
     private final String dimension; 
 
     /**
+     * Returns an instance from the input.
+     * 
+     * @param dimension the dimension
+     * @throws NullPointerException if the input is null
+     * @return a dimension instance
+     */
+
+    public static Dimension of( String dimension )
+    {
+        return new Dimension( dimension );
+    }
+
+    /**
      * Returns true if the metric data has an explicit dimension, false if it is dimensionless.
      * 
      * @return true if the metric data has an explicit dimension, false otherwise
@@ -44,18 +57,6 @@ public class Dimension implements Comparable<Dimension>
     public String getDimension()
     {
         return dimension;
-    }
-
-    /**
-     * Returns an instance from the input.
-     * 
-     * @param dimension the dimension
-     * @throws NullPointerException if the input is null
-     */
-
-    public static Dimension of( String dimension )
-    {
-        return new Dimension( dimension );
     }
     
     @Override

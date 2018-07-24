@@ -34,6 +34,7 @@ public class Metadata
      * @param identifier an optional dataset identifier
      * @param timeWindow an optional time window
      * @throws NullPointerException if the dimension is null
+     * @return a metadata instance
      */
 
     public static Metadata of( Dimension dimension, DatasetIdentifier identifier, TimeWindow timeWindow )
