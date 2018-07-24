@@ -34,8 +34,6 @@ import java.util.StringJoiner;
  * 
  * <p>This class is immutable and thread-safe.</p>
  * 
- * @version 0.1
- * @since 0.2
  * @author james.brown@hydrosolved.com
  */
 
