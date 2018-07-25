@@ -9,22 +9,21 @@ import org.junit.Test;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.metadata.MetadataFactory;
-import wres.datamodel.thresholds.SafeThreshold;
 import wres.datamodel.thresholds.Threshold;
-import wres.datamodel.thresholds.SafeThreshold.ThresholdBuilder;
+import wres.datamodel.thresholds.Threshold.ThresholdBuilder;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 
 /**
- * Tests the {@link SafeThreshold}. 
+ * Tests the {@link Threshold}. 
  * 
  * @author james.brown@hydrosolved.com
  */
-public final class SafeThresholdTest
+public final class ThresholdTest
 {
 
     /**
-     * Tests {@link SafeThreshold#hashCode()}.
+     * Tests {@link Threshold#hashCode()}.
      */
 
     @Test
@@ -147,7 +146,7 @@ public final class SafeThresholdTest
     }
 
     /**
-     * Tests {@link SafeThreshold#compareTo(Threshold)}.
+     * Tests {@link Threshold#compareTo(Threshold)}.
      */
 
     @Test
@@ -382,7 +381,7 @@ public final class SafeThresholdTest
     }
 
     /**
-     * Tests {@link SafeThreshold#equals(Object)}.
+     * Tests {@link Threshold#equals(Object)}.
      */
 
     @Test
@@ -568,7 +567,7 @@ public final class SafeThresholdTest
     }
 
     /**
-     * Tests the accessors to {@link SafeThreshold}.
+     * Tests the accessors to {@link Threshold}.
      */
 
     @Test
@@ -591,7 +590,7 @@ public final class SafeThresholdTest
     }
 
     /**
-     * Tests the {@link SafeThreshold#toString()}.
+     * Tests the {@link Threshold#toString()}.
      */
 
     @Test
@@ -710,7 +709,7 @@ public final class SafeThresholdTest
     }
 
     /**
-     * Tests the {@link SafeThreshold#toStringSafe()}.
+     * Tests the {@link Threshold#toStringSafe()}.
      */
 
     @Test
@@ -730,7 +729,7 @@ public final class SafeThresholdTest
     }
 
     /**
-     * Tests the {@link SafeThreshold#toStringWithoutUnits()}.
+     * Tests the {@link Threshold#toStringWithoutUnits()}.
      */
 
     @Test
@@ -753,7 +752,7 @@ public final class SafeThresholdTest
     }
 
     /**
-     * Tests the {@link SafeThreshold#test(Double)}.
+     * Tests the {@link Threshold#test(Double)}.
      */
 
     @Test
@@ -828,7 +827,7 @@ public final class SafeThresholdTest
     }
 
     /**
-     * Tests the {@link SafeThreshold#isFinite()}.
+     * Tests the {@link Threshold#isFinite()}.
      */
 
     @Test
@@ -883,7 +882,7 @@ public final class SafeThresholdTest
     }
 
     /**
-     * Tests for exceptional cases associated with the construction and user of a {@link SafeThreshold}.
+     * Tests for exceptional cases associated with the construction and user of a {@link Threshold}.
      */
 
     @Test
