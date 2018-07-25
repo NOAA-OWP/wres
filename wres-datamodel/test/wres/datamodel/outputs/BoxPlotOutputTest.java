@@ -19,18 +19,17 @@ import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.outputs.MetricOutputException;
-import wres.datamodel.outputs.SafeBoxPlotOutput;
 
 /**
- * Tests the {@link SafeBoxPlotOutput}.
+ * Tests the {@link BoxPlotOutput}.
  * 
  * @author james.brown@hydrosolveDataFactory.com
  */
-public final class SafeBoxPlotOutputTest
+public final class BoxPlotOutputTest
 {
 
     /**
-     * Constructs a {@link SafeBoxPlotOutput} and tests for equality with another {@link SafeBoxPlotOutput}.
+     * Constructs a {@link BoxPlotOutput} and tests for equality with another {@link BoxPlotOutput}.
      */
 
     @Test
@@ -91,25 +90,25 @@ public final class SafeBoxPlotOutputTest
         }
 
         final BoxPlotOutput q =
-                new SafeBoxPlotOutput( mva, pa, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
+                BoxPlotOutput.of( mva, pa, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
         final BoxPlotOutput r =
-                new SafeBoxPlotOutput( mvb, pa, m3, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
+                BoxPlotOutput.of( mvb, pa, m3, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
         final BoxPlotOutput s =
-                new SafeBoxPlotOutput( mva, pa, m1, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
+                BoxPlotOutput.of( mva, pa, m1, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
         final BoxPlotOutput t =
-                new SafeBoxPlotOutput( mvb, pa, m1, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
+                BoxPlotOutput.of( mvb, pa, m1, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
         final BoxPlotOutput u =
-                new SafeBoxPlotOutput( mvc, pb, m1, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
+                BoxPlotOutput.of( mvc, pb, m1, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
         final BoxPlotOutput v =
-                new SafeBoxPlotOutput( mvc, pb, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
+                BoxPlotOutput.of( mvc, pb, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
         final BoxPlotOutput w =
-                new SafeBoxPlotOutput( mvd, pb, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
+                BoxPlotOutput.of( mvd, pb, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
         final BoxPlotOutput x =
-                new SafeBoxPlotOutput( mvd, pb, m2, MetricDimension.ENSEMBLE_MEAN, MetricDimension.FORECAST_ERROR );
+                BoxPlotOutput.of( mvd, pb, m2, MetricDimension.ENSEMBLE_MEAN, MetricDimension.FORECAST_ERROR );
         final BoxPlotOutput y =
-                new SafeBoxPlotOutput( mvd, pb, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_VALUE );
+                BoxPlotOutput.of( mvd, pb, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_VALUE );
         final BoxPlotOutput z =
-                new SafeBoxPlotOutput( mve, pb, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
+                BoxPlotOutput.of( mve, pb, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
         //Conduct comparisons
         assertTrue( "Expected equal outputs.", s.equals( t ) );
         assertTrue( "Expected non-equal outputs.", !s.equals( null ) );
@@ -127,7 +126,7 @@ public final class SafeBoxPlotOutputTest
     }
 
     /**
-     * Constructs a {@link SafeBoxPlotOutput} and tests for equal hashcodes with another {@link SafeBoxPlotOutput}.
+     * Constructs a {@link BoxPlotOutput} and tests for equal hashcodes with another {@link BoxPlotOutput}.
      */
 
     @Test
@@ -188,25 +187,25 @@ public final class SafeBoxPlotOutputTest
         }
 
         final BoxPlotOutput q =
-                new SafeBoxPlotOutput( mva, pa, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
+                BoxPlotOutput.of( mva, pa, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
         final BoxPlotOutput r =
-                new SafeBoxPlotOutput( mvb, pa, m3, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
+                BoxPlotOutput.of( mvb, pa, m3, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
         final BoxPlotOutput s =
-                new SafeBoxPlotOutput( mva, pa, m1, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
+                BoxPlotOutput.of( mva, pa, m1, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
         final BoxPlotOutput t =
-                new SafeBoxPlotOutput( mvb, pa, m1, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
+                BoxPlotOutput.of( mvb, pa, m1, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
         final BoxPlotOutput u =
-                new SafeBoxPlotOutput( mvc, pb, m1, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
+                BoxPlotOutput.of( mvc, pb, m1, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
         final BoxPlotOutput v =
-                new SafeBoxPlotOutput( mvc, pb, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
+                BoxPlotOutput.of( mvc, pb, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
         final BoxPlotOutput w =
-                new SafeBoxPlotOutput( mvd, pb, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
+                BoxPlotOutput.of( mvd, pb, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
         final BoxPlotOutput x =
-                new SafeBoxPlotOutput( mvd, pb, m2, MetricDimension.ENSEMBLE_MEAN, MetricDimension.FORECAST_ERROR );
+                BoxPlotOutput.of( mvd, pb, m2, MetricDimension.ENSEMBLE_MEAN, MetricDimension.FORECAST_ERROR );
         final BoxPlotOutput y =
-                new SafeBoxPlotOutput( mvd, pb, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_VALUE );
+                BoxPlotOutput.of( mvd, pb, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_VALUE );
         final BoxPlotOutput z =
-                new SafeBoxPlotOutput( mve, pb, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
+                BoxPlotOutput.of( mve, pb, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
         //Conduct comparisons
         assertTrue( "Expected equal hashes.", s.hashCode() == t.hashCode() );
         assertTrue( "Expected non-equal hashes.", s.hashCode() != Objects.hash( (Object) null ) );
@@ -224,7 +223,7 @@ public final class SafeBoxPlotOutputTest
     }
 
     /**
-     * Constructs a {@link SafeBoxPlotOutput} and checks the {@link SafeBoxPlotOutput#getMetadata()}.
+     * Constructs a {@link BoxPlotOutput} and checks the {@link BoxPlotOutput#getMetadata()}.
      */
 
     @Test
@@ -254,14 +253,14 @@ public final class SafeBoxPlotOutputTest
         {
             values.add( DataFactory.pairOf( 1, new double[] { 1, 2, 3 } ) );
         }
-        final SafeBoxPlotOutput q =
-                new SafeBoxPlotOutput( values,
+        final BoxPlotOutput q =
+                BoxPlotOutput.of( values,
                                        DataFactory.vectorOf( new double[] { 0.1, 0.5, 1.0 } ),
                                        m1,
                                        MetricDimension.OBSERVED_VALUE,
                                        MetricDimension.FORECAST_ERROR );
-        final SafeBoxPlotOutput r =
-                new SafeBoxPlotOutput( values,
+        final BoxPlotOutput r =
+                BoxPlotOutput.of( values,
                                        DataFactory.vectorOf( new double[] { 0.1, 0.5, 1.0 } ),
                                        m2,
                                        MetricDimension.OBSERVED_VALUE,
@@ -270,7 +269,7 @@ public final class SafeBoxPlotOutputTest
     }
 
     /**
-     * Constructs a {@link SafeBoxPlotOutput} and checks the accessor methods for correct operation.
+     * Constructs a {@link BoxPlotOutput} and checks the accessor methods for correct operation.
      */
 
     @Test
@@ -291,8 +290,8 @@ public final class SafeBoxPlotOutputTest
         {
             values.add( DataFactory.pairOf( 1, new double[] { 1, 2, 3 } ) );
         }
-        final SafeBoxPlotOutput q =
-                new SafeBoxPlotOutput( values,
+        final BoxPlotOutput q =
+                BoxPlotOutput.of( values,
                                        DataFactory.vectorOf( new double[] { 0.1, 0.5, 1.0 } ),
                                        m1,
                                        MetricDimension.OBSERVED_VALUE,
@@ -310,7 +309,7 @@ public final class SafeBoxPlotOutputTest
     }
 
     /**
-     * Attempts to construct a {@link SafeBoxPlotOutput} and checks for exceptions on invalid inputs.
+     * Attempts to construct a {@link BoxPlotOutput} and checks for exceptions on invalid inputs.
      */
 
     @Test
@@ -333,7 +332,7 @@ public final class SafeBoxPlotOutputTest
         }
         try
         {
-            new SafeBoxPlotOutput( null,
+            BoxPlotOutput.of( null,
                                    DataFactory.vectorOf( new double[] { 0.1, 0.5, 1.0 } ),
                                    m1,
                                    MetricDimension.OBSERVED_VALUE,
@@ -345,7 +344,7 @@ public final class SafeBoxPlotOutputTest
         }
         try
         {
-            new SafeBoxPlotOutput( values,
+            BoxPlotOutput.of( values,
                                    DataFactory.vectorOf( new double[] { 0.1, 0.5, 1.0 } ),
                                    null,
                                    MetricDimension.OBSERVED_VALUE,
@@ -357,7 +356,7 @@ public final class SafeBoxPlotOutputTest
         }
         try
         {
-            new SafeBoxPlotOutput( values,
+            BoxPlotOutput.of( values,
                                    null,
                                    m1,
                                    MetricDimension.OBSERVED_VALUE,
@@ -369,7 +368,7 @@ public final class SafeBoxPlotOutputTest
         }
         try
         {
-            new SafeBoxPlotOutput( values,
+            BoxPlotOutput.of( values,
                                    DataFactory.vectorOf( new double[] {} ),
                                    m1,
                                    MetricDimension.OBSERVED_VALUE,
@@ -381,7 +380,7 @@ public final class SafeBoxPlotOutputTest
         }
         try
         {
-            new SafeBoxPlotOutput( values,
+            BoxPlotOutput.of( values,
                                    DataFactory.vectorOf( new double[] { 5.0, 10.0, 15.0 } ),
                                    m1,
                                    MetricDimension.OBSERVED_VALUE,
@@ -393,7 +392,7 @@ public final class SafeBoxPlotOutputTest
         }
         try
         {
-            new SafeBoxPlotOutput( values,
+            BoxPlotOutput.of( values,
                                    DataFactory.vectorOf( new double[] { 5.0, 10.0 } ),
                                    m1,
                                    MetricDimension.OBSERVED_VALUE,
@@ -408,7 +407,7 @@ public final class SafeBoxPlotOutputTest
             final List<PairOfDoubleAndVectorOfDoubles> uneven = new ArrayList<>();
             uneven.add( DataFactory.pairOf( 1.0, new double[] { 1, 2, 3 } ) );
             uneven.add( DataFactory.pairOf( 1.0, new double[] { 1, 2, 3, 4 } ) );
-            new SafeBoxPlotOutput( uneven,
+            BoxPlotOutput.of( uneven,
                                    DataFactory.vectorOf( new double[] { 0.0, 0.5, 1.0 } ),
                                    m1,
                                    MetricDimension.OBSERVED_VALUE,
@@ -423,7 +422,7 @@ public final class SafeBoxPlotOutputTest
             final List<PairOfDoubleAndVectorOfDoubles> uneven = new ArrayList<>();
             uneven.add( DataFactory.pairOf( 1.0, new double[] { 1, 2, 3 } ) );
             uneven.add( DataFactory.pairOf( 1.0, new double[] {} ) );
-            new SafeBoxPlotOutput( uneven,
+            BoxPlotOutput.of( uneven,
                                    DataFactory.vectorOf( new double[] { 0.0, 0.5, 1.0 } ),
                                    m1,
                                    MetricDimension.OBSERVED_VALUE,
@@ -435,7 +434,7 @@ public final class SafeBoxPlotOutputTest
         }
         try
         {
-            new SafeBoxPlotOutput( values,
+            BoxPlotOutput.of( values,
                                    DataFactory.vectorOf( new double[] { 0.0, -0.5, 1.0 } ),
                                    m1,
                                    MetricDimension.OBSERVED_VALUE,
@@ -447,7 +446,7 @@ public final class SafeBoxPlotOutputTest
         }
         try
         {
-            new SafeBoxPlotOutput( values,
+            BoxPlotOutput.of( values,
                                    DataFactory.vectorOf( new double[] { 0.0, 0.5, 1.0 } ),
                                    m1,
                                    null,
@@ -459,7 +458,7 @@ public final class SafeBoxPlotOutputTest
         }
         try
         {
-            new SafeBoxPlotOutput( values,
+            BoxPlotOutput.of( values,
                                    DataFactory.vectorOf( new double[] { 0.0, 0.5, 1.0 } ),
                                    m1,
                                    MetricDimension.OBSERVED_VALUE,

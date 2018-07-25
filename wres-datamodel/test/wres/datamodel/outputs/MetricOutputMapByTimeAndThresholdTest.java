@@ -24,23 +24,22 @@ import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
-import wres.datamodel.outputs.SafeMetricOutputMapByTimeAndThreshold;
-import wres.datamodel.outputs.SafeMetricOutputMapByTimeAndThreshold.SafeMetricOutputMapByTimeAndThresholdBuilder;
+import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold.MetricOutputMapByTimeAndThresholdBuilder;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 
 /**
- * Tests the {@link SafeMetricOutputMapByTimeAndThreshold}.
+ * Tests the {@link MetricOutputMapByTimeAndThreshold}.
  * 
  * @author james.brown@hydrosolved.com
  */
-public final class SafeMetricOutputMapByTimeAndThresholdTest
+public final class MetricOutputMapByTimeAndThresholdTest
 {
 
     /**
-     * Constructs a {@link SafeMetricOutputMapByTimeAndThreshold} and slices the map, testing for equality against a
+     * Constructs a {@link MetricOutputMapByTimeAndThreshold} and slices the map, testing for equality against a
      * benchmark.
      */
 
@@ -135,7 +134,7 @@ public final class SafeMetricOutputMapByTimeAndThresholdTest
     }
 
     /**
-     * Tests {@link SafeMetricOutputMapByTimeAndThreshold#setOfTimeWindowKeyByLeadTime()}.
+     * Tests {@link MetricOutputMapByTimeAndThreshold#setOfTimeWindowKeyByLeadTime()}.
      */
 
     @Test
@@ -192,8 +191,8 @@ public final class SafeMetricOutputMapByTimeAndThresholdTest
     }
 
     /**
-     * Constructs a {@link SafeMetricOutputMapByTimeAndThreshold} and tests the 
-     * {@link SafeMetricOutputMapByTimeAndThreshold#setOfThresholdOne()} for equality against a benchmark.
+     * Constructs a {@link MetricOutputMapByTimeAndThreshold} and tests the 
+     * {@link MetricOutputMapByTimeAndThreshold#setOfThresholdOne()} for equality against a benchmark.
      */
 
     @Test
@@ -297,8 +296,8 @@ public final class SafeMetricOutputMapByTimeAndThresholdTest
     }
 
     /**
-     * Constructs a {@link SafeMetricOutputMapByTimeAndThreshold} and slices the map by 
-     * {@link SafeMetricOutputMapByTimeAndThreshold#filterByThresholdOne(Threshold)}, testing for equality against a
+     * Constructs a {@link MetricOutputMapByTimeAndThreshold} and slices the map by 
+     * {@link MetricOutputMapByTimeAndThreshold#filterByThresholdOne(Threshold)}, testing for equality against a
      * benchmark.
      */
 
@@ -373,8 +372,8 @@ public final class SafeMetricOutputMapByTimeAndThresholdTest
     }
 
     /**
-     * Constructs a {@link SafeMetricOutputMapByTimeAndThreshold} and tests the 
-     * {@link SafeMetricOutputMapByTimeAndThreshold#setOfThresholdTwo()} for equality against a benchmark.
+     * Constructs a {@link MetricOutputMapByTimeAndThreshold} and tests the 
+     * {@link MetricOutputMapByTimeAndThreshold#setOfThresholdTwo()} for equality against a benchmark.
      */
 
     @Test
@@ -396,8 +395,8 @@ public final class SafeMetricOutputMapByTimeAndThresholdTest
     }
 
     /**
-     * Constructs a {@link SafeMetricOutputMapByTimeAndThreshold} and slices the map by 
-     * {@link SafeMetricOutputMapByTimeAndThreshold#filterByThresholdTwo(Threshold)}, testing for equality against a
+     * Constructs a {@link MetricOutputMapByTimeAndThreshold} and slices the map by 
+     * {@link MetricOutputMapByTimeAndThreshold#filterByThresholdTwo(Threshold)}, testing for equality against a
      * benchmark.
      */
 
@@ -413,8 +412,8 @@ public final class SafeMetricOutputMapByTimeAndThresholdTest
                                                                        Operator.GREATER,
                                                                        ThresholdDataType.LEFT ) );
 
-        SafeMetricOutputMapByTimeAndThresholdBuilder<DoubleScoreOutput> benchmarkOne =
-                new SafeMetricOutputMapByTimeAndThreshold.SafeMetricOutputMapByTimeAndThresholdBuilder<>();
+        MetricOutputMapByTimeAndThresholdBuilder<DoubleScoreOutput> benchmarkOne =
+                new MetricOutputMapByTimeAndThreshold.MetricOutputMapByTimeAndThresholdBuilder<>();
 
         //Metadata
         Location location = MetadataFactory.getLocation( "DRRC2" );
@@ -477,8 +476,8 @@ public final class SafeMetricOutputMapByTimeAndThresholdTest
                                                                        Operator.GREATER,
                                                                        ThresholdDataType.LEFT ) );
 
-        SafeMetricOutputMapByTimeAndThresholdBuilder<DoubleScoreOutput> benchmarkTwo =
-                new SafeMetricOutputMapByTimeAndThreshold.SafeMetricOutputMapByTimeAndThresholdBuilder<>();
+        MetricOutputMapByTimeAndThresholdBuilder<DoubleScoreOutput> benchmarkTwo =
+                new MetricOutputMapByTimeAndThreshold.MetricOutputMapByTimeAndThresholdBuilder<>();
 
         //Iterate through the lead times
         for ( int leadTime : leadTimes )

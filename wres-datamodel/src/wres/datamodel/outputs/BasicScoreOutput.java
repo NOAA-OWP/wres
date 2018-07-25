@@ -23,7 +23,7 @@ import wres.datamodel.outputs.ScoreOutput;
  * @author james.brown@hydrosolved.com
  */
 
-abstract class SafeScoreOutput<T,U extends ScoreOutput<T,?>> implements ScoreOutput<T,U>
+abstract class BasicScoreOutput<T,U extends ScoreOutput<T,?>> implements ScoreOutput<T,U>
 {
 
     /**
@@ -75,11 +75,11 @@ abstract class SafeScoreOutput<T,U extends ScoreOutput<T,?>> implements ScoreOut
     @Override
     public boolean equals( final Object o )
     {
-        if ( ! ( o instanceof SafeScoreOutput ) )
+        if ( ! ( o instanceof BasicScoreOutput ) )
         {
             return false;
         }
-        final SafeScoreOutput<?,?> v = (SafeScoreOutput<?,?>) o;
+        final BasicScoreOutput<?,?> v = (BasicScoreOutput<?,?>) o;
         boolean start = meta.equals( v.getMetadata() );
         if ( !start )
         {
@@ -179,7 +179,7 @@ abstract class SafeScoreOutput<T,U extends ScoreOutput<T,?>> implements ScoreOut
      * @throws MetricOutputException if any of the inputs are invalid
      */
 
-    SafeScoreOutput( final T output, final MetricOutputMetadata meta )
+    BasicScoreOutput( final T output, final MetricOutputMetadata meta )
     {
         // Allow a null score, but not null metadata
         if ( Objects.isNull( meta ) )
@@ -207,7 +207,7 @@ abstract class SafeScoreOutput<T,U extends ScoreOutput<T,?>> implements ScoreOut
      * @throws MetricOutputException if any of the inputs are invalid
      */
 
-    SafeScoreOutput( final Map<MetricConstants, T> output, final MetricOutputMetadata meta )
+    BasicScoreOutput( final Map<MetricConstants, T> output, final MetricOutputMetadata meta )
     {
         this.output = new EnumMap<>( MetricConstants.class );
         this.output.putAll( output );
@@ -240,7 +240,7 @@ abstract class SafeScoreOutput<T,U extends ScoreOutput<T,?>> implements ScoreOut
      * @throws MetricOutputException if any of the inputs are invalid
      */
 
-    SafeScoreOutput( final T[] output, final ScoreOutputGroup template, final MetricOutputMetadata meta )
+    BasicScoreOutput( final T[] output, final ScoreOutputGroup template, final MetricOutputMetadata meta )
     {
         this.output = new EnumMap<>( MetricConstants.class );
         this.meta = meta;

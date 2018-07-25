@@ -13,8 +13,6 @@ import wres.datamodel.MetricConstants;
  * @param <T> the raw type of the score
  * @param <U> the score component type
  * @author james.brown@hydrosolved.com
- * @version 0.2
- * @since 0.1
  */
 
 public interface ScoreOutput<T, U extends ScoreOutput<T, ?>> extends MetricOutput<T>, Iterable<Pair<MetricConstants, T>>

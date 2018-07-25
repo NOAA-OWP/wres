@@ -48,17 +48,8 @@ import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold.MetricOutputMultiMapByTimeAndThresholdBuilder;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.PairedOutput;
-import wres.datamodel.outputs.SafeBoxPlotOutput;
-import wres.datamodel.outputs.SafeDoubleScoreOutput;
-import wres.datamodel.outputs.SafeDurationScoreOutput;
-import wres.datamodel.outputs.SafeMatrixOutput;
-import wres.datamodel.outputs.SafeMetricOutputForProjectByTimeAndThreshold;
-import wres.datamodel.outputs.SafeMetricOutputMapByMetric.SafeMetricOutputMapByMetricBuilder;
-import wres.datamodel.outputs.SafeMetricOutputMapByTimeAndThreshold;
-import wres.datamodel.outputs.SafeMetricOutputMapByTimeAndThreshold.SafeMetricOutputMapByTimeAndThresholdBuilder;
-import wres.datamodel.outputs.SafeMetricOutputMultiMapByTimeAndThreshold.SafeMetricOutputMultiMapByTimeAndThresholdBuilder;
-import wres.datamodel.outputs.SafeMultiVectorOutput;
-import wres.datamodel.outputs.SafePairedOutput;
+import wres.datamodel.outputs.MetricOutputMapByMetric.MetricOutputMapByMetricBuilder;
+import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold.MetricOutputMapByTimeAndThresholdBuilder;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.SafeThreshold;
 import wres.datamodel.thresholds.SafeThresholdsByMetric.SafeThresholdsByMetricBuilder;
@@ -1057,7 +1048,7 @@ public final class DataFactory
 
     public static DoubleScoreOutput ofDoubleScoreOutput( double output, MetricOutputMetadata meta )
     {
-        return new SafeDoubleScoreOutput( output, meta );
+        return DoubleScoreOutput.of( output, meta );
     }
 
     /**
@@ -1071,7 +1062,7 @@ public final class DataFactory
     public static DoubleScoreOutput ofDoubleScoreOutput( Map<MetricConstants, Double> output,
                                                          MetricOutputMetadata meta )
     {
-        return new SafeDoubleScoreOutput( output, meta );
+        return DoubleScoreOutput.of( output, meta );
     }
 
     /**
@@ -1087,7 +1078,7 @@ public final class DataFactory
                                                          ScoreOutputGroup template,
                                                          MetricOutputMetadata meta )
     {
-        return new SafeDoubleScoreOutput( output, template, meta );
+        return DoubleScoreOutput.of( output, template, meta );
     }
 
     /**
@@ -1104,7 +1095,7 @@ public final class DataFactory
         Objects.requireNonNull( output, "Specify a non-null map of inputs." );
         EnumMap<MetricDimension, VectorOfDoubles> map = new EnumMap<>( MetricDimension.class );
         output.forEach( ( key, value ) -> map.put( key, vectorOf( value ) ) );
-        return new SafeMultiVectorOutput( map, meta );
+        return MultiVectorOutput.of( map, meta );
     }
 
     /**
@@ -1121,7 +1112,7 @@ public final class DataFactory
                                                MetricOutputMetadata meta )
     {
         Objects.requireNonNull( output, "Specify a non-null array of inputs." );
-        return new SafeMatrixOutput( matrixOf( output ), names, meta );
+        return MatrixOutput.of( matrixOf( output ), names, meta );
     }
 
     /**
@@ -1142,7 +1133,7 @@ public final class DataFactory
                                                  MetricDimension domainAxisDimension,
                                                  MetricDimension rangeAxisDimension )
     {
-        return new SafeBoxPlotOutput( output, probabilities, meta, domainAxisDimension, rangeAxisDimension );
+        return BoxPlotOutput.of( output, probabilities, meta, domainAxisDimension, rangeAxisDimension );
     }
 
     /**
@@ -1159,7 +1150,7 @@ public final class DataFactory
     public static <S, T> PairedOutput<S, T> ofPairedOutput( List<Pair<S, T>> output,
                                                             MetricOutputMetadata meta )
     {
-        return new SafePairedOutput<>( output, meta );
+        return PairedOutput.of( output, meta );
     }
 
     /**
@@ -1173,7 +1164,7 @@ public final class DataFactory
 
     public static DurationScoreOutput ofDurationScoreOutput( Duration output, MetricOutputMetadata meta )
     {
-        return new SafeDurationScoreOutput( output, meta );
+        return DurationScoreOutput.of( output, meta );
     }
 
     /**
@@ -1187,7 +1178,7 @@ public final class DataFactory
     public static DurationScoreOutput ofDurationScoreOutput( Map<MetricConstants, Duration> output,
                                                              MetricOutputMetadata meta )
     {
-        return new SafeDurationScoreOutput( output, meta );
+        return DurationScoreOutput.of( output, meta );
     }
 
     /**
@@ -1200,7 +1191,7 @@ public final class DataFactory
 
     public static <S extends Comparable<S>> MapKey<S> getMapKey( S key )
     {
-        return new DefaultMapKey<>( key );
+        return MapKey.of( key );
     }
 
     /**
@@ -1215,8 +1206,8 @@ public final class DataFactory
             ofMetricOutputMapByTimeAndThreshold( Map<Pair<TimeWindow, OneOrTwoThresholds>, T> input )
     {
         Objects.requireNonNull( input, "Specify a non-null map of inputs by lead time and threshold." );
-        final SafeMetricOutputMapByTimeAndThresholdBuilder<T> builder =
-                new SafeMetricOutputMapByTimeAndThresholdBuilder<>();
+        final MetricOutputMapByTimeAndThresholdBuilder<T> builder =
+                new MetricOutputMapByTimeAndThresholdBuilder<>();
         input.forEach( builder::put );
         return builder.build();
     }
@@ -1235,11 +1226,11 @@ public final class DataFactory
             ofMetricOutputMultiMapByTimeAndThreshold( Map<Pair<TimeWindow, OneOrTwoThresholds>, List<MetricOutputMapByMetric<T>>> input )
     {
         Objects.requireNonNull( input, "Specify a non-null map of inputs by threshold." );
-        final SafeMetricOutputMultiMapByTimeAndThresholdBuilder<T> builder =
-                new SafeMetricOutputMultiMapByTimeAndThresholdBuilder<>();
+        final MetricOutputMultiMapByTimeAndThresholdBuilder<T> builder =
+                new MetricOutputMultiMapByTimeAndThresholdBuilder<>();
         input.forEach( ( key, value ) -> {
             //Merge the outputs for different metrics
-            final SafeMetricOutputMapByMetricBuilder<T> mBuilder = new SafeMetricOutputMapByMetricBuilder<>();
+            final MetricOutputMapByMetricBuilder<T> mBuilder = new MetricOutputMapByMetricBuilder<>();
             value.forEach( mBuilder::put );
             builder.put( key, mBuilder.build() );
         } );
@@ -1258,7 +1249,7 @@ public final class DataFactory
     public static <T extends MetricOutput<?>> MetricOutputMultiMapByTimeAndThresholdBuilder<T>
             ofMetricOutputMultiMapByTimeAndThresholdBuilder()
     {
-        return new SafeMetricOutputMultiMapByTimeAndThresholdBuilder<>();
+        return new MetricOutputMultiMapByTimeAndThresholdBuilder<>();
     }
 
     /**
@@ -1270,7 +1261,7 @@ public final class DataFactory
 
     public static MetricOutputForProjectByTimeAndThresholdBuilder ofMetricOutputForProjectByTimeAndThreshold()
     {
-        return new SafeMetricOutputForProjectByTimeAndThreshold.SafeMetricOutputForProjectByTimeAndThresholdBuilder();
+        return new MetricOutputForProjectByTimeAndThreshold.MetricOutputForProjectByTimeAndThresholdBuilder();
     }
 
     /**
@@ -1319,7 +1310,7 @@ public final class DataFactory
             ofMetricOutputMapByMetric( Map<MetricConstants, T> input )
     {
         Objects.requireNonNull( input, "Specify a non-null list of inputs." );
-        final SafeMetricOutputMapByMetricBuilder<T> builder = new SafeMetricOutputMapByMetricBuilder<>();
+        final MetricOutputMapByMetricBuilder<T> builder = new MetricOutputMapByMetricBuilder<>();
         input.forEach( ( key, value ) -> builder.put( DataFactory.getMapKey( key ), value ) );
         return builder.build();
     }
@@ -1336,8 +1327,8 @@ public final class DataFactory
             combine( List<MetricOutputMapByTimeAndThreshold<T>> input )
     {
         Objects.requireNonNull( input, "Specify a non-null map of inputs to combine." );
-        final SafeMetricOutputMapByTimeAndThreshold.SafeMetricOutputMapByTimeAndThresholdBuilder<T> builder =
-                new SafeMetricOutputMapByTimeAndThreshold.SafeMetricOutputMapByTimeAndThresholdBuilder<>();
+        final MetricOutputMapByTimeAndThreshold.MetricOutputMapByTimeAndThresholdBuilder<T> builder =
+                new MetricOutputMapByTimeAndThreshold.MetricOutputMapByTimeAndThresholdBuilder<>();
         //If the input contains time windows, find the union of them
         List<TimeWindow> windows = new ArrayList<>();
         for ( MetricOutputMapByTimeAndThreshold<T> next : input )
@@ -1502,63 +1493,6 @@ public final class DataFactory
             }
             // all values were equal
             return 0;
-        }
-    }
-
-    /**
-     * Default implementation of a {@link MapKey}.
-     */
-
-    private static class DefaultMapKey<S extends Comparable<S>> implements MapKey<S>
-    {
-
-        /**
-         * The map key.
-         */
-
-        private final S key;
-
-        DefaultMapKey( S key )
-        {
-            Objects.requireNonNull( key, "Specify a non-null map key." );
-            this.key = key;
-        }
-
-        @Override
-        public int compareTo( final MapKey<S> o )
-        {
-            //Compare the keys
-            Objects.requireNonNull( o, "Specify a non-null map key for comparison." );
-            return getKey().compareTo( o.getKey() );
-        }
-
-        @Override
-        public boolean equals( Object o )
-        {
-            if ( ! ( o instanceof DefaultMapKey ) )
-            {
-                return false;
-            }
-            DefaultMapKey<?> check = (DefaultMapKey<?>) o;
-            return key.equals( check.key );
-        }
-
-        @Override
-        public int hashCode()
-        {
-            return Objects.hashCode( key );
-        }
-
-        @Override
-        public S getKey()
-        {
-            return key;
-        }
-
-        @Override
-        public String toString()
-        {
-            return "[" + getKey() + "]";
         }
     }
 

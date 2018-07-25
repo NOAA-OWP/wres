@@ -8,12 +8,10 @@ import org.apache.commons.lang3.tuple.Pair;
  * A sorted map of {@link MetricOutput} stored against a {@link Pair} key.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 
-public interface MetricOutputMapWithBiKey<S,T,U extends MetricOutput<?>>
-extends MetricOutputMap<Pair<S, T>, U>
+public interface MetricOutputMapWithBiKey<S, T, U extends MetricOutput<?>>
+        extends MetricOutputMap<Pair<S, T>, U>
 {
 
     /**
@@ -23,9 +21,9 @@ extends MetricOutputMap<Pair<S, T>, U>
      * @return a submap whose keys meet the condition
      * @throws MetricOutputException if no mappings match the input logic
      */
-    
-    MetricOutputMapWithBiKey<S,T,U> filterByFirstKey(S key);
-    
+
+    MetricOutputMapWithBiKey<S, T, U> filterByFirstKey( S key );
+
     /**
      * Returns a submap whose entries correspond to the second key in the {@link Pair}.
      *
@@ -33,24 +31,24 @@ extends MetricOutputMap<Pair<S, T>, U>
      * @return a submap whose keys meet the condition
      * @throws MetricOutputException if no mappings match the input logic
      */
-    
-    MetricOutputMapWithBiKey<S,T,U> filterBySecondKey(T key);    
-    
+
+    MetricOutputMapWithBiKey<S, T, U> filterBySecondKey( T key );
+
     /**
      * Returns a set view of the first key in the {@link Pair}.
      * 
      * @return a view of first key
      */
-    
+
     Set<S> setOfFirstKey();
-    
+
     /**
      * Returns a set view of the second key in the {@link Pair}.
      * 
      * @return a view of the second key
      */
-    
-    Set<T> setOfSecondKey();    
-    
+
+    Set<T> setOfSecondKey();
+
 
 }
