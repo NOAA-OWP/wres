@@ -13,7 +13,7 @@ import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.time.Event;
-import wres.datamodel.time.SafeTimeSeries;
+import wres.datamodel.time.BasicTimeSeries;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesBuilder;
 import wres.datamodel.time.TimeSeriesHelper;
@@ -30,13 +30,13 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements TimeSeri
      * Instance of base class for a time-series of pairs.
      */
 
-    private final SafeTimeSeries<PairOfDoubleAndVectorOfDoubles> main;
+    private final BasicTimeSeries<PairOfDoubleAndVectorOfDoubles> main;
 
     /**
      * Instance of base class for a time-series of baseline pairs.
      */
 
-    private final SafeTimeSeries<PairOfDoubleAndVectorOfDoubles> baseline;
+    private final BasicTimeSeries<PairOfDoubleAndVectorOfDoubles> baseline;
 
     @Override
     public TimeSeriesOfEnsemblePairs getBaselineData()
@@ -349,11 +349,11 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements TimeSeri
     TimeSeriesOfEnsemblePairs( final TimeSeriesOfEnsemblePairsBuilder b )
     {
         super( b );
-        this.main = SafeTimeSeries.of( b.data );
+        this.main = BasicTimeSeries.of( b.data );
         // Baseline data?
         if ( this.hasBaseline() )
         {
-            this.baseline = SafeTimeSeries.of( b.baselineData );
+            this.baseline = BasicTimeSeries.of( b.baselineData );
         }
         else
         {

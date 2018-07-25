@@ -13,7 +13,7 @@ import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.time.Event;
-import wres.datamodel.time.SafeTimeSeries;
+import wres.datamodel.time.BasicTimeSeries;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesBuilder;
 import wres.datamodel.time.TimeSeriesHelper;
@@ -30,13 +30,13 @@ public class TimeSeriesOfSingleValuedPairs extends SingleValuedPairs implements 
      * Instance of base class for a time-series of pairs.
      */
 
-    private final SafeTimeSeries<PairOfDoubles> main;
+    private final BasicTimeSeries<PairOfDoubles> main;
 
     /**
      * Instance of base class for a baseline time-series of pairs.
      */
 
-    private final SafeTimeSeries<PairOfDoubles> baseline;
+    private final BasicTimeSeries<PairOfDoubles> baseline;
 
     @Override
     public TimeSeriesOfSingleValuedPairs getBaselineData()
@@ -347,11 +347,11 @@ public class TimeSeriesOfSingleValuedPairs extends SingleValuedPairs implements 
     TimeSeriesOfSingleValuedPairs( final TimeSeriesOfSingleValuedPairsBuilder b )
     {
         super( b );
-        this.main = SafeTimeSeries.of( b.data );
+        this.main = BasicTimeSeries.of( b.data );
         // Baseline data?
         if ( this.hasBaseline() )
         {
-            this.baseline = SafeTimeSeries.of( b.baselineData );
+            this.baseline = BasicTimeSeries.of( b.baselineData );
         }
         else
         {

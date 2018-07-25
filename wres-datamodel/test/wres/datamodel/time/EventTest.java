@@ -11,13 +11,11 @@ import org.junit.Test;
 import wres.datamodel.time.Event;
 
 /**
- * Tests the default implementation of an {@link Event} returned by {@link Event#of(Instant, Object)}.
+ * Tests the {@link Event}.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
-public final class DefaultEventTest
+public final class EventTest
 {
 
     /**
