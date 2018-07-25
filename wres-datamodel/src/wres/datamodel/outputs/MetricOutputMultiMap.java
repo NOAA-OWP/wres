@@ -11,8 +11,6 @@ import wres.datamodel.MetricConstants;
  * included to support construction on-the-fly from inputs of {@link MetricOutputMap}.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 
 public interface MetricOutputMultiMap<T extends MetricOutput<?>>

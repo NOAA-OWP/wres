@@ -1,20 +1,39 @@
 package wres.datamodel.outputs;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+import java.util.SortedMap;
+import java.util.StringJoiner;
+import java.util.TreeMap;
+import java.util.Map.Entry;
 
+import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 
 /**
  * A sorted map of {@link MetricOutput} stored by metric identifier.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 
-public interface MetricOutputMapByMetric<T extends MetricOutput<?>>
-        extends MetricOutputMap<MapKey<MetricConstants>, T>
+public class MetricOutputMapByMetric<T extends MetricOutput<?>>
+        implements MetricOutputMap<MapKey<MetricConstants>, T>
 {
+    /**
+     * Underlying store.
+     */
+
+    private final TreeMap<MapKey<MetricConstants>, T> store;
+
+    /**
+     * Internal array of map keys.
+     */
+
+    private final List<MapKey<MetricConstants>> internal;
 
     /**
      * Convenience method that returns the {@link MetricOutput} associated with the specified metric 
@@ -24,12 +43,13 @@ public interface MetricOutputMapByMetric<T extends MetricOutput<?>>
      * @return the output for the specified key or null
      */
 
-    default T get( MapKey<MetricConstants> metricID )
+    public T get( MapKey<MetricConstants> metricID )
     {
-        Objects.requireNonNull( metricID, "Specify a non-null map key.");
-        return get(metricID.getKey());
+        Objects.requireNonNull( metricID, "Specify a non-null map key." );
+
+        return store.get( metricID );
     }
-    
+
     /**
      * Convenience method that returns the {@link MetricOutput} associated with the specified metric 
      * identifier.
@@ -38,6 +58,202 @@ public interface MetricOutputMapByMetric<T extends MetricOutput<?>>
      * @return the output for the specified key or null
      */
 
-    T get( MetricConstants metricID );
+    public T get( final MetricConstants metricID )
+    {
+        return get( DataFactory.getMapKey( metricID ) );
+    }
+
+    @Override
+    public MapKey<MetricConstants> getKey( final int index )
+    {
+        return internal.get( index );
+    }
+
+    @Override
+    public T getValue( final int index )
+    {
+        return get( getKey( index ) );
+    }
+
+    @Override
+    public boolean containsKey( final MapKey<MetricConstants> key )
+    {
+        return store.containsKey( key );
+    }
+
+    @Override
+    public boolean containsValue( T value )
+    {
+        return store.containsValue( value );
+    }
+
+    @Override
+    public Collection<T> values()
+    {
+        return Collections.unmodifiableCollection( store.values() );
+    }
+
+    @Override
+    public Set<MapKey<MetricConstants>> keySet()
+    {
+        return Collections.unmodifiableSet( store.keySet() );
+    }
+
+    @Override
+    public Set<Entry<MapKey<MetricConstants>, T>> entrySet()
+    {
+        return Collections.unmodifiableSet( store.entrySet() );
+    }
+
+    @Override
+    public int size()
+    {
+        return store.size();
+    }
+
+    @Override
+    public SortedMap<MapKey<MetricConstants>, T> subMap( MapKey<MetricConstants> fromKey,
+                                                         MapKey<MetricConstants> toKey )
+    {
+        return (SortedMap<MapKey<MetricConstants>, T>) Collections.unmodifiableMap( store.subMap( fromKey,
+                                                                                                  toKey ) );
+    }
+
+    @Override
+    public SortedMap<MapKey<MetricConstants>, T> headMap( MapKey<MetricConstants> toKey )
+    {
+        return (SortedMap<MapKey<MetricConstants>, T>) Collections.unmodifiableMap( store.headMap( toKey ) );
+    }
+
+    @Override
+    public SortedMap<MapKey<MetricConstants>, T> tailMap( MapKey<MetricConstants> fromKey )
+    {
+        return (SortedMap<MapKey<MetricConstants>, T>) Collections.unmodifiableMap( store.tailMap( fromKey ) );
+    }
+
+    @Override
+    public MapKey<MetricConstants> firstKey()
+    {
+        return store.firstKey();
+    }
+
+    @Override
+    public MapKey<MetricConstants> lastKey()
+    {
+        return store.lastKey();
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( ! ( o instanceof MetricOutputMapByMetric ) )
+        {
+            return false;
+        }
+        return store.equals( ( (MetricOutputMapByMetric<?>) o ).store );
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hashCode( store );
+    }
+
+    @Override
+    public String toString()
+    {
+        StringJoiner joiner = new StringJoiner( ",", "[", "]" );
+        this.forEach( ( key, value ) -> joiner.add( value.toString() ) );
+        return joiner.toString();
+    }
+
+    /**
+     * Builds the immutable mapping.
+     *
+     * @param <T> the metric output
+     */
+
+    public static class MetricOutputMapByMetricBuilder<T extends MetricOutput<?>>
+    {
+
+        private final TreeMap<MapKey<MetricConstants>, T> store = new TreeMap<>();
+
+        /**
+         * Adds a mapping to the store.
+         * 
+         * @param key the key
+         * @param value the value
+         * @return the builder
+         * @throws MetricOutputException if the input already exists in this store
+         */
+
+        public MetricOutputMapByMetricBuilder<T> put( final MapKey<MetricConstants> key, final T value )
+        {
+            if ( store.containsKey( key ) )
+            {
+                throw new MetricOutputException( "While attempting to add a '" + key.getKey()
+                                                 + "' to a store that already "
+                                                 + "contains one." );
+            }
+            store.put( key, value );
+            return this;
+        }
+
+        /**
+         * Adds an existing {@link MetricOutputMapByMetric} to the store.
+         * 
+         * @param map the existing map
+         * @return the builder
+         * @throws MetricOutputException if one or more of the inputs already exist in this store
+         */
+
+        public MetricOutputMapByMetricBuilder<T> put( MetricOutputMapByMetric<T> map )
+        {
+            map.forEach( this::put );
+            return this;
+        }
+
+        /**
+         * Return the mapping.
+         * 
+         * @return the mapping
+         */
+
+        public MetricOutputMapByMetric<T> build()
+        {
+            return new MetricOutputMapByMetric<>( this );
+        }
+
+    }
+
+    /**
+     * Hidden constructor.
+     * 
+     * @param builder the builder
+     * @throws MetricOutputException if any of the inputs are invalid
+     */
+
+    private MetricOutputMapByMetric( final MetricOutputMapByMetricBuilder<T> builder )
+    {
+        store = new TreeMap<>();
+        store.putAll( builder.store );
+        internal = new ArrayList<>( store.keySet() );
+
+        //Bounds checks
+        if ( store.isEmpty() )
+        {
+            throw new MetricOutputException( "Specify one or more <key,value> mappings to build the map." );
+        }
+        store.forEach( ( key, value ) -> {
+            if ( Objects.isNull( key ) )
+            {
+                throw new MetricOutputException( "Cannot prescribe a null key for the input map." );
+            }
+            if ( Objects.isNull( value ) )
+            {
+                throw new MetricOutputException( "Cannot prescribe a null value for the input map." );
+            }
+        } );
+    }
 
 }
