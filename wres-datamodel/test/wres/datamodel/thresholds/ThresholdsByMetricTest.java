@@ -17,25 +17,24 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
-import wres.datamodel.thresholds.SafeThresholdsByMetric;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdsByMetric;
-import wres.datamodel.thresholds.SafeThresholdsByMetric.SafeThresholdsByMetricBuilder;
+import wres.datamodel.thresholds.ThresholdsByMetric.ThresholdsByMetricBuilder;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdGroup;
 
 /**
- * Tests the {@link SafeThresholdsByMetric}.
+ * Tests the {@link ThresholdsByMetric}.
  * 
  * @author james.brown@hydrosolved.com
  */
 
-public class SafeThresholdsByMetricTest
+public class ThresholdsByMetricTest
 {
 
     /**
-     * Tests the {@link SafeThresholdsByMetric#getThresholds(wres.datamodel.ThresholdsByMetric.ThresholdGroup)}.
+     * Tests the {@link ThresholdsByMetric#getThresholds(wres.datamodel.ThresholdsByMetric.ThresholdGroup)}.
      */
 
     @Test
@@ -97,7 +96,7 @@ public class SafeThresholdsByMetricTest
     }
 
     /**
-     * Tests the {@link SafeThresholdsByMetric#hasType(ThresholdGroup)}.
+     * Tests the {@link ThresholdsByMetric#hasType(ThresholdGroup)}.
      */
 
     @Test
@@ -124,7 +123,7 @@ public class SafeThresholdsByMetricTest
     }
 
     /**
-     * Tests the {@link SafeThresholdsByMetric#union()}.
+     * Tests the {@link ThresholdsByMetric#union()}.
      */
 
     @Test
@@ -161,7 +160,7 @@ public class SafeThresholdsByMetricTest
     }
 
     /**
-     * Tests the {@link SafeThresholdsByMetric#unionForThisMetric(MetricConstants)}.
+     * Tests the {@link ThresholdsByMetric#unionForThisMetric(MetricConstants)}.
      */
 
     @Test
@@ -200,7 +199,7 @@ public class SafeThresholdsByMetricTest
     }
 
     /**
-     * Tests the {@link SafeThresholdsByMetric#unionForTheseTypes(ThresholdGroup...)}.
+     * Tests the {@link ThresholdsByMetric#unionForTheseTypes(ThresholdGroup...)}.
      */
 
     @Test
@@ -236,7 +235,7 @@ public class SafeThresholdsByMetricTest
     }
 
     /**
-     * Tests the {@link SafeThresholdsByMetric#unionForThisMetricAndTheseTypes(MetricConstants, ThresholdGroup...)}.
+     * Tests the {@link ThresholdsByMetric#unionForThisMetricAndTheseTypes(MetricConstants, ThresholdGroup...)}.
      */
 
     @Test
@@ -276,7 +275,7 @@ public class SafeThresholdsByMetricTest
     }
 
     /**
-     * Tests the {@link SafeThresholdsByMetric#unionWithThisStore(ThresholdsByMetric)}.
+     * Tests the {@link ThresholdsByMetric#unionWithThisStore(ThresholdsByMetric)}.
      */
 
     @Test
@@ -339,7 +338,7 @@ public class SafeThresholdsByMetricTest
     }
 
     /**
-     * Tests the {@link SafeThresholdsByMetric#unionOfOneOrTwoThresholds()}.
+     * Tests the {@link ThresholdsByMetric#unionOfOneOrTwoThresholds()}.
      */
 
     @Test
@@ -381,7 +380,7 @@ public class SafeThresholdsByMetricTest
     }
 
     /**
-     * Tests the {@link SafeThresholdsByMetric#getThresholdTypes()}.
+     * Tests the {@link ThresholdsByMetric#getThresholdTypes()}.
      */
 
     @Test
@@ -403,7 +402,7 @@ public class SafeThresholdsByMetricTest
     }
 
     /**
-     * Tests the {@link SafeThresholdsByMetric#getThresholdTypesForThisMetric(MetricConstants)}.
+     * Tests the {@link ThresholdsByMetric#getThresholdTypesForThisMetric(MetricConstants)}.
      */
 
     @Test
@@ -423,7 +422,7 @@ public class SafeThresholdsByMetricTest
     }
 
     /**
-     * Tests the {@link SafeThresholdsByMetric#hasTheseMetricsForThisThreshold(Threshold)}.
+     * Tests the {@link ThresholdsByMetric#hasTheseMetricsForThisThreshold(Threshold)}.
      */
 
     @Test
@@ -451,7 +450,7 @@ public class SafeThresholdsByMetricTest
     }
 
     /**
-     * Tests the {@link SafeThresholdsByMetric#doesNotHaveTheseMetricsForThisThreshold(Threshold)}.
+     * Tests the {@link ThresholdsByMetric#doesNotHaveTheseMetricsForThisThreshold(Threshold)}.
      */
 
     @Test
@@ -480,7 +479,7 @@ public class SafeThresholdsByMetricTest
     }
 
     /**
-     * Tests the {@link SafeThresholdsByMetric#hasThresholdsForTheseMetrics()}.
+     * Tests the {@link ThresholdsByMetric#hasThresholdsForTheseMetrics()}.
      */
 
     @Test
@@ -495,7 +494,7 @@ public class SafeThresholdsByMetricTest
     }
 
     /**
-     * Tests the {@link SafeThresholdsByMetric#filterByType(ThresholdGroup...)}.
+     * Tests the {@link ThresholdsByMetric#filterByType(ThresholdGroup...)}.
      */
 
     @Test
@@ -529,7 +528,7 @@ public class SafeThresholdsByMetricTest
     }
 
     /**
-     * Tests the {@link SafeThresholdsByMetric#filterByGroup(wres.datamodel.MetricConstants.MetricInputGroup)}.
+     * Tests the {@link ThresholdsByMetric#filterByGroup(wres.datamodel.MetricConstants.MetricInputGroup)}.
      */
 
     @Test
@@ -571,7 +570,7 @@ public class SafeThresholdsByMetricTest
     }
 
     /**
-     * Tests the {@link SafeThresholdsByMetric#getOneOrTwoThresholds().
+     * Tests the {@link ThresholdsByMetric#getOneOrTwoThresholds().
      */
 
     @Test
@@ -616,7 +615,7 @@ public class SafeThresholdsByMetricTest
     private ThresholdsByMetric getDefaultContainerOne()
     {
 
-        SafeThresholdsByMetricBuilder builder = new SafeThresholdsByMetricBuilder();
+        ThresholdsByMetricBuilder builder = new ThresholdsByMetricBuilder();
 
         // Probability thresholds
         Map<MetricConstants, Set<Threshold>> probabilities = new HashMap<>();
@@ -668,7 +667,7 @@ public class SafeThresholdsByMetricTest
     private ThresholdsByMetric getDefaultContainerTwo()
     {
 
-        SafeThresholdsByMetricBuilder builder = new SafeThresholdsByMetricBuilder();
+        ThresholdsByMetricBuilder builder = new ThresholdsByMetricBuilder();
 
         // Probability thresholds
         Map<MetricConstants, Set<Threshold>> probabilities = new HashMap<>();
@@ -690,7 +689,7 @@ public class SafeThresholdsByMetricTest
     private ThresholdsByMetric getDefaultContainerThree()
     {
 
-        SafeThresholdsByMetricBuilder builder = new SafeThresholdsByMetricBuilder();
+        ThresholdsByMetricBuilder builder = new ThresholdsByMetricBuilder();
 
         // Probability thresholds
         Map<MetricConstants, Set<Threshold>> values = new HashMap<>();
@@ -712,7 +711,7 @@ public class SafeThresholdsByMetricTest
     private ThresholdsByMetric getDefaultContainerFour()
     {
 
-        SafeThresholdsByMetricBuilder builder = new SafeThresholdsByMetricBuilder();
+        ThresholdsByMetricBuilder builder = new ThresholdsByMetricBuilder();
 
         // Probability thresholds
         Map<MetricConstants, Set<Threshold>> probabilities = new HashMap<>();

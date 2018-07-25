@@ -51,13 +51,11 @@ import wres.datamodel.outputs.PairedOutput;
 import wres.datamodel.outputs.MetricOutputMapByMetric.MetricOutputMapByMetricBuilder;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold.MetricOutputMapByTimeAndThresholdBuilder;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
-import wres.datamodel.thresholds.SafeThreshold;
-import wres.datamodel.thresholds.SafeThresholdsByMetric.SafeThresholdsByMetricBuilder;
+import wres.datamodel.thresholds.ThresholdsByMetric.ThresholdsByMetricBuilder;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.thresholds.ThresholdsByMetric;
-import wres.datamodel.thresholds.ThresholdsByMetric.ThresholdsByMetricBuilder;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesBuilder;
 import wres.datamodel.time.SafeTimeSeries.SafeTimeSeriesBuilder;
@@ -669,12 +667,12 @@ public final class DataFactory
                                          String label,
                                          Dimension units )
     {
-        return new SafeThreshold.ThresholdBuilder().setValues( values )
-                                                   .setCondition( condition )
-                                                   .setDataType( dataType )
-                                                   .setLabel( label )
-                                                   .setUnits( units )
-                                                   .build();
+        return new Threshold.ThresholdBuilder().setValues( values )
+                                               .setCondition( condition )
+                                               .setDataType( dataType )
+                                               .setLabel( label )
+                                               .setUnits( units )
+                                               .build();
     }
 
     /**
@@ -694,12 +692,12 @@ public final class DataFactory
                                                     String label,
                                                     Dimension units )
     {
-        return new SafeThreshold.ThresholdBuilder().setProbabilities( probabilities )
-                                                   .setCondition( condition )
-                                                   .setDataType( dataType )
-                                                   .setLabel( label )
-                                                   .setUnits( units )
-                                                   .build();
+        return new Threshold.ThresholdBuilder().setProbabilities( probabilities )
+                                               .setCondition( condition )
+                                               .setDataType( dataType )
+                                               .setLabel( label )
+                                               .setUnits( units )
+                                               .build();
     }
 
     /**
@@ -721,13 +719,13 @@ public final class DataFactory
                                                  String label,
                                                  Dimension units )
     {
-        return new SafeThreshold.ThresholdBuilder().setValues( values )
-                                                   .setProbabilities( probabilities )
-                                                   .setCondition( condition )
-                                                   .setDataType( dataType )
-                                                   .setLabel( label )
-                                                   .setUnits( units )
-                                                   .build();
+        return new Threshold.ThresholdBuilder().setValues( values )
+                                               .setProbabilities( probabilities )
+                                               .setCondition( condition )
+                                               .setDataType( dataType )
+                                               .setLabel( label )
+                                               .setUnits( units )
+                                               .build();
     }
 
     /**
@@ -738,7 +736,7 @@ public final class DataFactory
 
     public static ThresholdsByMetricBuilder ofThresholdsByMetricBuilder()
     {
-        return new SafeThresholdsByMetricBuilder();
+        return new ThresholdsByMetricBuilder();
     }
 
     /**
