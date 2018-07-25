@@ -39,7 +39,7 @@ import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdType;
 import wres.datamodel.time.Event;
-import wres.datamodel.time.SafeTimeSeries;
+import wres.datamodel.time.BasicTimeSeries;
 import wres.datamodel.time.TimeSeries;
 
 /**
@@ -845,7 +845,7 @@ public final class Slicer
                 }
             }
         }
-        return SafeTimeSeries.of( returnMe );
+        return BasicTimeSeries.of( returnMe );
     }
 
     /**

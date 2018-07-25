@@ -20,12 +20,12 @@ import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 
 /**
- * Base class for an immutable implementation of a (possibly irregular) time-series.
+ * Immutable base class for a time-series.
  * 
  * @param <T> the type of time-series data
  * @author james.brown@hydrosolved.com
  */
-public class SafeTimeSeries<T> implements TimeSeries<T>
+public class BasicTimeSeries<T> implements TimeSeries<T>
 {
 
     /**
@@ -73,17 +73,16 @@ public class SafeTimeSeries<T> implements TimeSeries<T>
      * @return a time-series
      */
 
-    public static <T> SafeTimeSeries<T> of( List<Event<List<Event<T>>>> timeSeries )
+    public static <T> BasicTimeSeries<T> of( List<Event<List<Event<T>>>> timeSeries )
     {
-        return new SafeTimeSeries<>( timeSeries );
+        return new BasicTimeSeries<>( timeSeries );
     }
 
-
     /**
-     * A default builder to build a time-series incrementally. Also see {@link SafeTimeSeries#of(List)}.
+     * A default builder to build a time-series incrementally. Also see {@link BasicTimeSeries#of(List)}.
      */
 
-    public static class SafeTimeSeriesBuilder<T> implements TimeSeriesBuilder<T>
+    public static class BasicTimeSeriesBuilder<T> implements TimeSeriesBuilder<T>
     {
 
         /**
@@ -93,16 +92,16 @@ public class SafeTimeSeries<T> implements TimeSeries<T>
         private List<Event<List<Event<T>>>> data = new ArrayList<>();
 
         @Override
-        public SafeTimeSeriesBuilder<T> addTimeSeriesData( List<Event<List<Event<T>>>> timeSeries )
+        public BasicTimeSeriesBuilder<T> addTimeSeriesData( List<Event<List<Event<T>>>> timeSeries )
         {
             data.addAll( timeSeries );
             return this;
         }
 
         @Override
-        public SafeTimeSeries<T> build()
+        public BasicTimeSeries<T> build()
         {
-            return new SafeTimeSeries<>( this );
+            return new BasicTimeSeries<>( this );
         }
 
     }    
@@ -221,7 +220,7 @@ public class SafeTimeSeries<T> implements TimeSeries<T>
      * @throws MetricInputException if one or more inputs is invalid
      */
 
-    SafeTimeSeries( final SafeTimeSeriesBuilder<T> builder )
+    BasicTimeSeries( final BasicTimeSeriesBuilder<T> builder )
     {
         this( builder.data );
     }    
@@ -236,16 +235,16 @@ public class SafeTimeSeries<T> implements TimeSeries<T>
      * @throws MetricInputException if one or more inputs is invalid
      */
 
-    SafeTimeSeries( final List<Event<List<Event<T>>>> data )
+    BasicTimeSeries( final List<Event<List<Event<T>>>> data )
     {
 
         // Sets and validates
         this.data = TimeSeriesHelper.getImmutableTimeSeries( data );
 
         // Set the iterators
-        this.basisTimeIterator = SafeTimeSeries.getBasisTimeIterator( data );
+        this.basisTimeIterator = BasicTimeSeries.getBasisTimeIterator( data );
 
-        this.durationIterator = SafeTimeSeries.getDurationIterator( data );
+        this.durationIterator = BasicTimeSeries.getDurationIterator( data );
 
         // Set the durations
         this.durations = new TreeSet<>();
@@ -263,7 +262,7 @@ public class SafeTimeSeries<T> implements TimeSeries<T>
         this.basisTimes = this.data.stream().map( Event::getTime ).collect( Collectors.toList() );
 
         // Set the time iterator
-        this.timeIterator = SafeTimeSeries.getTimeIterator( this.data, eventCount );
+        this.timeIterator = BasicTimeSeries.getTimeIterator( this.data, eventCount );
     }
 
     /**
@@ -369,7 +368,7 @@ public class SafeTimeSeries<T> implements TimeSeries<T>
                         List<Event<List<Event<T>>>> events = Arrays.asList( data.get( returned ) );
 
                         returned++;
-                        return new SafeTimeSeries<>( events );
+                        return new BasicTimeSeries<>( events );
                     }
 
                     @Override
@@ -430,7 +429,7 @@ public class SafeTimeSeries<T> implements TimeSeries<T>
                         // Iterate
                         Duration nextDuration = iterator.next();
 
-                        return Slicer.filterByDuration( new SafeTimeSeries<>( data ),
+                        return Slicer.filterByDuration( new BasicTimeSeries<>( data ),
                                                         isEqual -> isEqual.equals( nextDuration ) );
                     }
 

@@ -58,7 +58,7 @@ import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesBuilder;
-import wres.datamodel.time.SafeTimeSeries.SafeTimeSeriesBuilder;
+import wres.datamodel.time.BasicTimeSeries.BasicTimeSeriesBuilder;
 
 /**
  * A factory class for producing datasets associated with verification metrics.
@@ -1271,7 +1271,7 @@ public final class DataFactory
 
     public static <T> TimeSeriesBuilder<T> ofTimeSeriesBuilder()
     {
-        return new SafeTimeSeriesBuilder<>();
+        return new BasicTimeSeriesBuilder<>();
     }
 
     /**

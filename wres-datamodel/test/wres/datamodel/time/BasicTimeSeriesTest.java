@@ -22,16 +22,16 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.time.Event;
-import wres.datamodel.time.SafeTimeSeries;
+import wres.datamodel.time.BasicTimeSeries;
 import wres.datamodel.time.TimeSeries;
-import wres.datamodel.time.SafeTimeSeries.SafeTimeSeriesBuilder;
+import wres.datamodel.time.BasicTimeSeries.BasicTimeSeriesBuilder;
 
 /**
- * Tests the {@link SafeTimeSeries}.
+ * Tests the {@link BasicTimeSeries}.
  * 
  * @author james.brown@hydrosolved.com
  */
-public final class SafeTimeSeriesTest
+public final class BasicTimeSeriesTest
 {
 
     @Rule
@@ -41,13 +41,13 @@ public final class SafeTimeSeriesTest
      * Default time-series for testing.
      */
 
-    private SafeTimeSeries<Double> defaultTimeSeries;
+    private BasicTimeSeries<Double> defaultTimeSeries;
 
 
     @Before
     public void setUpBeforeEachTest()
     {
-        SafeTimeSeriesBuilder<Double> b = new SafeTimeSeriesBuilder<>();
+        BasicTimeSeriesBuilder<Double> b = new BasicTimeSeriesBuilder<>();
         List<Event<Double>> first = new ArrayList<>();
         Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
         first.add( Event.of( Instant.parse( "1985-01-02T00:00:00Z" ), 1.0 ) );
@@ -57,13 +57,13 @@ public final class SafeTimeSeriesTest
         second.add( Event.of( Instant.parse( "1985-01-04T00:00:00Z" ), 3.0 ) );
         second.add( Event.of( Instant.parse( "1985-01-05T00:00:00Z" ), 4.0 ) );
 
-        defaultTimeSeries = (SafeTimeSeries<Double>) b.addTimeSeriesData( firstBasisTime, first )
-                                                      .addTimeSeriesData( secondBasisTime, second )
-                                                      .build();
+        defaultTimeSeries = (BasicTimeSeries<Double>) b.addTimeSeriesData( firstBasisTime, first )
+                                                       .addTimeSeriesData( secondBasisTime, second )
+                                                       .build();
     }
 
     /**
-     * Test {@link SafeTimeSeries#timeIterator()}.
+     * Test {@link BasicTimeSeries#timeIterator()}.
      */
 
     @Test
@@ -84,7 +84,7 @@ public final class SafeTimeSeriesTest
     }
 
     /**
-     * Test {@link SafeTimeSeries#durationIterator()}.
+     * Test {@link BasicTimeSeries#durationIterator()}.
      */
 
     @Test
@@ -103,7 +103,7 @@ public final class SafeTimeSeriesTest
     }
 
     /**
-     * Test {@link SafeTimeSeries#basisTimeIterator()}.
+     * Test {@link BasicTimeSeries#basisTimeIterator()}.
      */
 
     @Test
@@ -122,7 +122,7 @@ public final class SafeTimeSeriesTest
     }
 
     /**
-     * Test {@link SafeTimeSeries#getEarliestBasisTime()}.
+     * Test {@link BasicTimeSeries#getEarliestBasisTime()}.
      */
 
     @Test
@@ -132,7 +132,7 @@ public final class SafeTimeSeriesTest
     }
 
     /**
-     * Test {@link SafeTimeSeries#getLatestBasisTime()}.
+     * Test {@link BasicTimeSeries#getLatestBasisTime()}.
      */
 
     @Test
@@ -142,7 +142,7 @@ public final class SafeTimeSeriesTest
     }
 
     /**
-     * Test {@link SafeTimeSeries#getRawData()}.
+     * Test {@link BasicTimeSeries#getRawData()}.
      */
 
     @Test
@@ -165,7 +165,7 @@ public final class SafeTimeSeriesTest
     }
 
     /**
-     * Confirms that the {@link SafeTimeSeries#getRawData()} returns an immutable outer container.
+     * Confirms that the {@link BasicTimeSeries#getRawData()} returns an immutable outer container.
      */
 
     @Test
@@ -180,7 +180,7 @@ public final class SafeTimeSeriesTest
     }
 
     /**
-     * Confirms that the {@link SafeTimeSeries#getRawData()} returns immutable inner containers.
+     * Confirms that the {@link BasicTimeSeries#getRawData()} returns immutable inner containers.
      */
 
     @Test
@@ -194,7 +194,7 @@ public final class SafeTimeSeriesTest
     }
 
     /**
-     * Tests {@link SafeTimeSeries#isRegular()}.
+     * Tests {@link BasicTimeSeries#isRegular()}.
      */
 
     @Test
@@ -204,7 +204,7 @@ public final class SafeTimeSeriesTest
     }
 
     /**
-     * Tests {@link SafeTimeSeries#toString()}.
+     * Tests {@link BasicTimeSeries#toString()}.
      */
 
     @Test
@@ -220,7 +220,7 @@ public final class SafeTimeSeriesTest
     }
 
     /**
-     * Tests {@link SafeTimeSeries#getRegularDuration()}.
+     * Tests {@link BasicTimeSeries#getRegularDuration()}.
      */
 
     @Test
@@ -228,7 +228,7 @@ public final class SafeTimeSeriesTest
     {
         //Build a time-series with one basis time
         List<Event<PairOfDoubles>> first = new ArrayList<>();
-        SafeTimeSeriesBuilder<PairOfDoubles> b = new SafeTimeSeriesBuilder<>();
+        BasicTimeSeriesBuilder<PairOfDoubles> b = new BasicTimeSeriesBuilder<>();
         Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
         first.add( Event.of( Instant.parse( "1985-01-02T00:00:00Z" ), DataFactory.pairOf( 1, 1 ) ) );
 
@@ -244,7 +244,7 @@ public final class SafeTimeSeriesTest
         first.add( Event.of( Instant.parse( "1985-01-04T00:00:00Z" ), DataFactory.pairOf( 3, 3 ) ) );
         first.add( Event.of( Instant.parse( "1985-01-05T00:00:00Z" ), DataFactory.pairOf( 4, 4 ) ) );
 
-        SafeTimeSeriesBuilder<PairOfDoubles> c = new SafeTimeSeriesBuilder<>();
+        BasicTimeSeriesBuilder<PairOfDoubles> c = new BasicTimeSeriesBuilder<>();
         TimeSeries<PairOfDoubles> tsSecond = c.addTimeSeriesData( firstBasisTime, first )
                                               .build();
         assertTrue( "Expected a regular time-series with a duration of '" + benchmark
@@ -253,7 +253,7 @@ public final class SafeTimeSeriesTest
 
         //Add an irregular timestep and check for null output
         first.add( Event.of( Instant.parse( "1985-01-07T00:00:00Z" ), DataFactory.pairOf( 4, 4 ) ) );
-        SafeTimeSeriesBuilder<PairOfDoubles> d = new SafeTimeSeriesBuilder<>();
+        BasicTimeSeriesBuilder<PairOfDoubles> d = new BasicTimeSeriesBuilder<>();
         TimeSeries<PairOfDoubles> tsThird = d.addTimeSeriesData( firstBasisTime, first )
                                              .build();
         assertTrue( "Expected an irregular time-series.",
@@ -261,7 +261,7 @@ public final class SafeTimeSeriesTest
     }
 
     /**
-     * Tests {@link SafeTimeSeries#hasMultipleTimeSeries()}.
+     * Tests {@link BasicTimeSeries#hasMultipleTimeSeries()}.
      */
 
     @Test
@@ -269,7 +269,7 @@ public final class SafeTimeSeriesTest
     {
         //Build a time-series with one basis time
         List<Event<PairOfDoubles>> values = new ArrayList<>();
-        SafeTimeSeriesBuilder<PairOfDoubles> b = new SafeTimeSeriesBuilder<>();
+        BasicTimeSeriesBuilder<PairOfDoubles> b = new BasicTimeSeriesBuilder<>();
         Instant basisTime = Instant.parse( "1985-01-01T00:00:00Z" );
         values.add( Event.of( Instant.parse( "1985-01-02T00:00:00Z" ), DataFactory.pairOf( 1, 1 ) ) );
 
@@ -285,7 +285,7 @@ public final class SafeTimeSeriesTest
     }
 
     /**
-     * Tests {@link SafeTimeSeries#getBasisTimes()}.
+     * Tests {@link BasicTimeSeries#getBasisTimes()}.
      */
 
     @Test
@@ -293,7 +293,7 @@ public final class SafeTimeSeriesTest
     {
         //Build a time-series with two basis times
         List<Event<PairOfDoubles>> values = new ArrayList<>();
-        SafeTimeSeriesBuilder<PairOfDoubles> b = new SafeTimeSeriesBuilder<>();
+        BasicTimeSeriesBuilder<PairOfDoubles> b = new BasicTimeSeriesBuilder<>();
         Instant basisTime = Instant.parse( "1985-01-01T00:00:00Z" );
         values.add( Event.of( Instant.parse( "1985-01-02T00:00:00Z" ), DataFactory.pairOf( 1, 1 ) ) );
         b.addTimeSeriesData( basisTime, values );
@@ -314,7 +314,7 @@ public final class SafeTimeSeriesTest
     }
 
     /**
-     * Tests the {@link SafeTimeSeries#getDurations()} method.
+     * Tests the {@link BasicTimeSeries#getDurations()} method.
      */
 
     @Test
@@ -322,7 +322,7 @@ public final class SafeTimeSeriesTest
     {
         //Build a time-series with two basis times
         List<Event<PairOfDoubles>> values = new ArrayList<>();
-        SafeTimeSeriesBuilder<PairOfDoubles> b = new SafeTimeSeriesBuilder<>();
+        BasicTimeSeriesBuilder<PairOfDoubles> b = new BasicTimeSeriesBuilder<>();
         Instant basisTime = Instant.parse( "1985-01-01T00:00:00Z" );
         values.add( Event.of( Instant.parse( "1985-01-02T00:00:00Z" ), DataFactory.pairOf( 1, 1 ) ) );
         values.add( Event.of( Instant.parse( "1985-01-03T00:00:00Z" ), DataFactory.pairOf( 2, 2 ) ) );
@@ -341,7 +341,7 @@ public final class SafeTimeSeriesTest
     }
 
     /**
-     * Confirms that the {@link SafeTimeSeries#timeIterator()} throws an iteration exception when expected.
+     * Confirms that the {@link BasicTimeSeries#timeIterator()} throws an iteration exception when expected.
      */
 
     @Test
@@ -356,7 +356,7 @@ public final class SafeTimeSeriesTest
     }
 
     /**
-     * Confirms that the {@link SafeTimeSeries#basisTimeIterator()} throws an iteration exception when expected.
+     * Confirms that the {@link BasicTimeSeries#basisTimeIterator()} throws an iteration exception when expected.
      */
 
     @Test
@@ -371,7 +371,7 @@ public final class SafeTimeSeriesTest
     }
 
     /**
-     * Confirms that the {@link SafeTimeSeries#durationIterator()} throws an iteration exception when expected.
+     * Confirms that the {@link BasicTimeSeries#durationIterator()} throws an iteration exception when expected.
      */
 
     @Test
@@ -386,7 +386,7 @@ public final class SafeTimeSeriesTest
     }
 
     /**
-     * Confirms that the {@link SafeTimeSeries#timeIterator()} throws an exception when attempting to mutate the 
+     * Confirms that the {@link BasicTimeSeries#timeIterator()} throws an exception when attempting to mutate the 
      * time-series.
      */
 
@@ -402,7 +402,7 @@ public final class SafeTimeSeriesTest
     }
 
     /**
-     * Confirms that the {@link SafeTimeSeries#durationIterator()} throws an exception when attempting to mutate the 
+     * Confirms that the {@link BasicTimeSeries#durationIterator()} throws an exception when attempting to mutate the 
      * time-series.
      */
 
@@ -418,7 +418,7 @@ public final class SafeTimeSeriesTest
     }
 
     /**
-     * Confirms that the {@link SafeTimeSeries#basisTimeIterator} throws an exception when attempting to mutate the 
+     * Confirms that the {@link BasicTimeSeries#basisTimeIterator} throws an exception when attempting to mutate the 
      * time-series.
      */
 
@@ -434,7 +434,7 @@ public final class SafeTimeSeriesTest
     }
 
     /**
-     * Confirms an expected exception when constructing a {@link SafeTimeSeries} with null input.
+     * Confirms an expected exception when constructing a {@link BasicTimeSeries} with null input.
      */
 
     @Test
@@ -446,13 +446,13 @@ public final class SafeTimeSeriesTest
         List<Event<Double>> withNulls = new ArrayList<>();
         withNulls.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), 1.0 ) );
         withNulls.add( null );
-        new SafeTimeSeriesBuilder<Double>().addTimeSeriesData( Instant.parse( "1985-01-01T00:00:00Z" ), withNulls )
-                                           .build();
+        new BasicTimeSeriesBuilder<Double>().addTimeSeriesData( Instant.parse( "1985-01-01T00:00:00Z" ), withNulls )
+                                            .build();
 
         exception.expect( MetricInputException.class );
         exception.expectMessage( "Cannot build a time-series with one or more null time-series." );
-        new SafeTimeSeriesBuilder<Double>().addTimeSeriesData( Instant.parse( "1985-01-01T00:00:00Z" ), null )
-                                           .build();
+        new BasicTimeSeriesBuilder<Double>().addTimeSeriesData( Instant.parse( "1985-01-01T00:00:00Z" ), null )
+                                            .build();
 
     }
 
