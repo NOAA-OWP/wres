@@ -42,20 +42,20 @@ public class BoxPlotDiagramXYDataset extends
     @Override
     public Number getX( final int series, final int item )
     {
-        return getPlotData().getData().get( item ).getItemOne();
+        return getPlotData().getData().get( item ).getLeft();
     }
 
     @Override
     public Number getY( final int series, final int item )
     {
-        return getPlotData().getData().get( item ).getItemTwo()[series];
+        return getPlotData().getData().get( item ).getRight()[series];
     }
 
     @Override
     public int getSeriesCount()
     {
         //The prepare method will fail if the data is empty.  So there must be at least one item; hence hard coded 0.
-        return getPlotData().getData().get( 0 ).getItemTwo().length;
+        return getPlotData().getData().get( 0 ).getRight().length;
     }
 
     @Override

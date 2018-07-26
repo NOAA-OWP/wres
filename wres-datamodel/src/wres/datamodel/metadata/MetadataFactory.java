@@ -3,7 +3,6 @@ package wres.datamodel.metadata;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.StringJoiner;
 
 import wres.datamodel.MetricConstants;
 
@@ -301,7 +300,7 @@ public final class MetadataFactory
 
     public static Metadata getMetadata( final Dimension dim, final DatasetIdentifier identifier, TimeWindow timeWindow )
     {
-        return new MetadataImpl( dim, identifier, timeWindow );
+        return Metadata.of( dim, identifier, timeWindow );
     }
 
     /**
@@ -327,92 +326,13 @@ public final class MetadataFactory
                                                           final DatasetIdentifier identifier,
                                                           final TimeWindow timeWindow )
     {
-        class MetricOutputMetadataImpl extends MetadataImpl implements MetricOutputMetadata
-        {
-
-            private MetricOutputMetadataImpl()
-            {
-                super( outputDim, identifier, timeWindow );
-            }
-
-            @Override
-            public MetricConstants getMetricID()
-            {
-                return metricID;
-            }
-
-            @Override
-            public MetricConstants getMetricComponentID()
-            {
-                return componentID;
-            }
-
-            @Override
-            public Dimension getInputDimension()
-            {
-                return inputDim;
-            }
-
-            @Override
-            public int getSampleSize()
-            {
-                return sampleSize;
-            }
-
-            @Override
-            public boolean minimumEquals( final MetricOutputMetadata o )
-            {
-                return o.getMetricID() == getMetricID()
-                       && o.getMetricComponentID() == getMetricComponentID()
-                       && o.getDimension().equals( getDimension() )
-                       && o.getInputDimension().equals( getInputDimension() );
-            }
-
-            @Override
-            public boolean equals( final Object o )
-            {
-                if ( ! ( o instanceof MetricOutputMetadata ) )
-                {
-                    return false;
-                }
-                final MetricOutputMetadata p = ( (MetricOutputMetadata) o );
-                boolean returnMe = super.equals( o ) && p.getSampleSize() == getSampleSize()
-                                   && p.getInputDimension().equals( getInputDimension() );
-                return returnMe && p.getMetricID() == getMetricID()
-                       && p.getMetricComponentID() == getMetricComponentID();
-            }
-
-            @Override
-            public int hashCode()
-            {
-                return Objects.hash( super.hashCode(),
-                                     getSampleSize(),
-                                     getMetricID(),
-                                     getMetricComponentID(),
-                                     getInputDimension() );
-            }
-
-            @Override
-            public String toString()
-            {
-                String start = super.toString();
-                start = start.substring( 0, start.length() - 1 ); // Remove bookend char, ']'
-                final StringBuilder b = new StringBuilder( start );
-                b.append( "," )
-                 .append( inputDim )
-                 .append( "," )
-                 .append( sampleSize )
-                 .append( "," )
-                 .append( metricID )
-                 .append( "," )
-                 .append( componentID )
-                 .append( "]" );
-                return b.toString();
-            }
-
-        }
-
-        return new MetricOutputMetadataImpl();
+        return MetricOutputMetadata.of( sampleSize,
+                                        outputDim,
+                                        inputDim,
+                                        metricID,
+                                        componentID,
+                                        identifier,
+                                        timeWindow );
     }
 
     /**
@@ -430,44 +350,49 @@ public final class MetadataFactory
                                                           final String scenarioID,
                                                           final String baselineScenarioID )
     {
-        return new DatasetIdentifierImpl( geospatialID, variableID, scenarioID, baselineScenarioID );
+        return DatasetIdentifier.of( geospatialID, variableID, scenarioID, baselineScenarioID );
     }
 
     /**
-     * Returns a location
+     * Returns a location.
      *
      * @param vectorIdentifier An optional identifier for vector locations (may be null)
      * @param locationName An optional name for a location (may be null)
      * @param longitude An optional longitudinal coordinate for a location (may be null)
      * @param latitude An optional latitudinal coordinate for a location (may be null)
      * @param gageId And optional identifier for a gage (may be null)
-     * @return A location
+     * @return a location
      */
+
     public static Location getLocation( final Long vectorIdentifier,
                                         final String locationName,
                                         final Float longitude,
                                         final Float latitude,
                                         final String gageId )
     {
-        return new LocationImpl( vectorIdentifier, locationName, longitude, latitude, gageId );
+        return Location.of( vectorIdentifier, locationName, longitude, latitude, gageId );
     }
 
     /**
-     * Returns a location
+     * Returns a location.
+     * 
      * @param longitude An optional longitudinal coordinate for a location (may be null)
      * @param latitude An optional latitudinal coordinate for a location (may be null)
-     * @return A location
+     * @return a location
      */
+
     public static Location getLocation( final Float longitude, final Float latitude )
     {
         return MetadataFactory.getLocation( null, null, longitude, latitude, null );
     }
 
     /**
-     * Returns a location
+     * Returns a location.
+     * 
      * @param locationName An optional name for a location (may be null)
-     * @return A location
+     * @return a location
      */
+
     public static Location getLocation( final String locationName )
     {
         return MetadataFactory.getLocation( null, locationName, null, null, null );
@@ -491,7 +416,7 @@ public final class MetadataFactory
 
     public static Dimension getDimension()
     {
-        return getDimension( "DIMENSIONLESS" );
+        return Dimension.of( "DIMENSIONLESS" );
     }
 
     /**
@@ -505,62 +430,7 @@ public final class MetadataFactory
 
     public static Dimension getDimension( final String dimension )
     {
-        class DimensionImpl implements Dimension
-        {
-            /**
-             * The dimension.
-             */
-            private final String dimension;
-
-            public DimensionImpl( final String dimension )
-            {
-                if ( Objects.isNull( dimension ) )
-                {
-                    throw new MetadataException( "Specify a non-null dimension string." );
-                }
-                this.dimension = dimension;
-            }
-
-            @Override
-            public boolean hasDimension()
-            {
-                return !"DIMENSIONLESS".equals( dimension );
-            }
-
-            @Override
-            public String getDimension()
-            {
-                return dimension;
-            }
-
-            @Override
-            public boolean equals( final Object o )
-            {
-                return o instanceof Dimension && ( (Dimension) o ).hasDimension() == hasDimension()
-                       && ( (Dimension) o ).getDimension().equals( getDimension() );
-            }
-
-            @Override
-            public int hashCode()
-            {
-                return Objects.hash( hasDimension(), dimension );
-            }
-
-            @Override
-            public String toString()
-            {
-                return getDimension();
-            }
-
-            @Override
-            public int compareTo( Dimension o )
-            {
-                Objects.requireNonNull( o, "Specify a non-null dimension to compare with this dimension." );
-
-                return dimension.compareTo( o.getDimension() );
-            }
-        }
-        return new DimensionImpl( dimension );
+        return Dimension.of( dimension );
     }
 
     /**
@@ -605,368 +475,6 @@ public final class MetadataFactory
             test = getMetadata( test, TimeWindow.unionOf( unionWindow ) );
         }
         return test;
-    }
-
-    /**
-     * Default implementation of {@link Metadata}.
-     */
-
-    private static class MetadataImpl implements Metadata
-    {
-        private final Dimension dim;
-        private final DatasetIdentifier identifier;
-        private final TimeWindow timeWindow;
-
-        private MetadataImpl( final Dimension dim, final DatasetIdentifier identifier, final TimeWindow timeWindow )
-        {
-            if ( Objects.isNull( dim ) )
-            {
-                throw new MetadataException( "Specify a non-null dimension from which to construct the metadata." );
-            }
-            this.dim = dim;
-            this.identifier = identifier;
-            this.timeWindow = timeWindow;
-        }
-
-        @Override
-        public Dimension getDimension()
-        {
-            return dim;
-        }
-
-        @Override
-        public DatasetIdentifier getIdentifier()
-        {
-            return identifier;
-        }
-
-        @Override
-        public TimeWindow getTimeWindow()
-        {
-            return timeWindow;
-        }
-
-        @Override
-        public boolean equals( final Object o )
-        {
-            if ( ! ( o instanceof Metadata ) )
-            {
-                return false;
-            }
-            final Metadata p = (Metadata) o;
-            boolean returnMe = equalsWithoutTimeWindow( p ) && hasTimeWindow() == p.hasTimeWindow();
-            if ( hasTimeWindow() )
-            {
-                returnMe = returnMe && getTimeWindow().equals( p.getTimeWindow() );
-            }
-            return returnMe;
-        }
-
-        @Override
-        public int hashCode()
-        {
-            return Objects.hash( getDimension(), hasIdentifier(), hasTimeWindow(), getIdentifier(), getTimeWindow() );
-        }
-
-        @Override
-        public String toString()
-        {
-            final StringBuilder b = new StringBuilder();
-            if ( hasIdentifier() )
-            {
-                String appendMe = identifier.toString();
-                appendMe = appendMe.replaceAll( "]", "," );
-                b.append( appendMe );
-            }
-            else
-            {
-                b.append( "[" );
-            }
-            if ( hasTimeWindow() )
-            {
-                b.append( timeWindow ).append( "," );
-            }
-            b.append( dim ).append( "]" );
-            return b.toString();
-        }
-
-    }
-
-    /**
-     * Default implementation of {@link DatasetIdentifier}.
-     */
-
-    private static class DatasetIdentifierImpl implements DatasetIdentifier
-    {
-
-        final Location geospatialID;
-        final String variableID;
-        final String scenarioID;
-        final String baselineScenarioID;
-
-        private DatasetIdentifierImpl( final Location geospatialID,
-                                       final String variableID,
-                                       final String scenarioID,
-                                       final String baselineScenarioID )
-        {
-            this.geospatialID = geospatialID;
-            this.variableID = variableID;
-            this.scenarioID = scenarioID;
-            this.baselineScenarioID = baselineScenarioID;
-        }
-
-        @Override
-        public Location getGeospatialID()
-        {
-            return geospatialID;
-        }
-
-        @Override
-        public String getVariableID()
-        {
-            return variableID;
-        }
-
-        @Override
-        public String getScenarioID()
-        {
-            return scenarioID;
-        }
-
-        @Override
-        public String getScenarioIDForBaseline()
-        {
-            return baselineScenarioID;
-        }
-
-        @Override
-        public String toString()
-        {
-            final StringJoiner b = new StringJoiner( ",", "[", "]" );
-            if ( hasGeospatialID() )
-            {
-                b.add( getGeospatialID().toString() );
-            }
-            if ( hasVariableID() )
-            {
-                b.add( getVariableID() );
-            }
-            if ( hasScenarioID() )
-            {
-                b.add( getScenarioID() );
-            }
-            if ( hasScenarioIDForBaseline() )
-            {
-                b.add( getScenarioIDForBaseline() );
-            }
-            return b.toString();
-        }
-
-        @Override
-        public boolean equals( final Object o )
-        {
-            if ( ! ( o instanceof DatasetIdentifier ) )
-            {
-                return false;
-            }
-            final DatasetIdentifier check = (DatasetIdentifier) o;
-            boolean returnMe = hasGeospatialID() == check.hasGeospatialID()
-                               && hasVariableID() == check.hasVariableID()
-                               && hasScenarioID() == check.hasScenarioID()
-                               && hasScenarioIDForBaseline() == check.hasScenarioIDForBaseline();
-            if ( hasGeospatialID() )
-            {
-                returnMe = returnMe && getGeospatialID().equals( check.getGeospatialID() );
-            }
-            if ( hasVariableID() )
-            {
-                returnMe = returnMe && getVariableID().equals( check.getVariableID() );
-            }
-            if ( hasScenarioID() )
-            {
-                returnMe = returnMe && getScenarioID().equals( check.getScenarioID() );
-            }
-            if ( hasScenarioIDForBaseline() )
-            {
-                returnMe = returnMe && getScenarioIDForBaseline().equals( check.getScenarioIDForBaseline() );
-            }
-            return returnMe;
-        }
-
-        @Override
-        public int hashCode()
-        {
-            return Objects.hash( getGeospatialID(), getVariableID(), getScenarioID(), getScenarioIDForBaseline() );
-        }
-    }
-
-    /**
-     * Default implementation of {@link Location}
-     */
-
-    private static class LocationImpl implements Location
-    {
-        private final Long vectorIdentifier;
-        private final String locationName;
-        private final Float longitude;
-        private final Float latitude;
-        private final String gageId;
-
-        private LocationImpl( final Long vectorIdentifier,
-                              final String locationName,
-                              final Float longitude,
-                              final Float latitude,
-                              final String gageId )
-        {
-            this.vectorIdentifier = vectorIdentifier;
-            this.locationName = locationName;
-            this.longitude = longitude;
-            this.latitude = latitude;
-            this.gageId = gageId;
-        }
-
-        @Override
-        public Long getVectorIdentifier()
-        {
-            return this.vectorIdentifier;
-        }
-
-        @Override
-        public String getLocationName()
-        {
-            return this.locationName;
-        }
-
-        @Override
-        public Float getLongitude()
-        {
-            return this.longitude;
-        }
-
-        @Override
-        public Float getLatitude()
-        {
-            return this.latitude;
-        }
-
-        @Override
-        public String getGageId()
-        {
-            return this.gageId;
-        }
-
-        @Override
-        public String toString()
-        {
-            if ( this.hasLocationName() )
-            {
-                return this.locationName;
-            }
-
-            if ( this.hasGageId() )
-            {
-                return this.gageId;
-            }
-
-            if ( this.hasVectorIdentifier() )
-            {
-                return this.vectorIdentifier.toString();
-            }
-
-            if ( this.hasCoordinates() )
-            {
-                String coordinates = "" + Math.abs( this.getLongitude() );
-
-                if ( this.getLongitude() < 0 )
-                {
-                    coordinates += "W";
-                }
-                else
-                {
-                    coordinates += "E";
-                }
-
-                coordinates += " " + Math.abs( this.getLatitude() );
-
-                if ( this.getLatitude() < 0 )
-                {
-                    coordinates += "S";
-                }
-                else
-                {
-                    coordinates += "N";
-                }
-
-                return coordinates;
-            }
-
-            return "Unknown";
-        }
-
-        @Override
-        public boolean equals( Object obj )
-        {
-            if ( obj instanceof Location )
-            {
-                Location other = (Location) obj;
-
-                boolean locationsEqual = true;
-                boolean vectorIDsEqual = true;
-                boolean gageIDsEqual = true;
-                boolean coordinatesEqual = true;
-
-                if ( this.hasLocationName() && other.hasLocationName() )
-                {
-                    locationsEqual = this.getLocationName().equalsIgnoreCase( other.getLocationName() );
-                }
-                else if ( this.hasLocationName() || other.hasLocationName() )
-                {
-                    return false;
-                }
-
-                if ( this.hasVectorIdentifier() && other.hasVectorIdentifier() )
-                {
-                    vectorIDsEqual = this.getVectorIdentifier().equals( other.getVectorIdentifier() );
-                }
-                else if ( this.hasVectorIdentifier() || other.hasVectorIdentifier() )
-                {
-                    return false;
-                }
-
-                if ( this.hasGageId() && other.hasGageId() )
-                {
-                    gageIDsEqual = this.getGageId().equalsIgnoreCase( other.getGageId() );
-                }
-                else if ( this.hasGageId() || other.hasGageId() )
-                {
-                    return false;
-                }
-
-                if ( this.hasCoordinates() && other.hasCoordinates() )
-                {
-                    coordinatesEqual = this.getLatitude().equals( other.getLatitude() ) &&
-                                       this.getLongitude().equals( other.getLongitude() );
-                }
-                else if ( this.hasCoordinates() || other.hasCoordinates() )
-                {
-                    return false;
-                }
-
-                return locationsEqual && vectorIDsEqual && gageIDsEqual && coordinatesEqual;
-            }
-
-            return false;
-        }
-
-        @Override
-        public int hashCode()
-        {
-            return Objects.hash( this.locationName,
-                                 this.gageId,
-                                 this.vectorIdentifier,
-                                 this.longitude,
-                                 this.latitude );
-        }
     }
 
     /**

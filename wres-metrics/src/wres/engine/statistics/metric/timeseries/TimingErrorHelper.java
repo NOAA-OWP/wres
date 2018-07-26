@@ -8,7 +8,7 @@ import java.util.Random;
 
 import org.apache.commons.lang3.tuple.Pair;
 
-import wres.datamodel.inputs.pairs.PairOfDoubles;
+import wres.datamodel.inputs.pairs.SingleValuedPair;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 
@@ -30,7 +30,7 @@ class TimingErrorHelper
      * @throws NullPointerException if the input is null
      */
 
-    static Pair<Instant, Instant> getTimeToPeak( final TimeSeries<PairOfDoubles> timeSeries, final Random rng )
+    static Pair<Instant, Instant> getTimeToPeak( final TimeSeries<SingleValuedPair> timeSeries, final Random rng )
     {
         Objects.requireNonNull( timeSeries, "Specify a non-null time-series whose time-to-peak error is required." );
 
@@ -43,33 +43,33 @@ class TimingErrorHelper
         double peakRightValue = Double.NEGATIVE_INFINITY;
 
         // Iterate through the pairs to find the peak on each side
-        for ( Event<PairOfDoubles> nextPair : timeSeries.timeIterator() )
+        for ( Event<SingleValuedPair> nextPair : timeSeries.timeIterator() )
         {
             // New peak left
-            if ( Double.compare( nextPair.getValue().getItemOne(), peakLeftValue ) > 0 )
+            if ( Double.compare( nextPair.getValue().getLeft(), peakLeftValue ) > 0 )
             {
-                peakLeftValue = nextPair.getValue().getItemOne();
+                peakLeftValue = nextPair.getValue().getLeft();
                 peakLeftTime = nextPair.getTime();
 
                 // Reset left ties
                 tiesLeft.clear();
             }
             // New tie left
-            else if ( Double.compare( nextPair.getValue().getItemOne(), peakLeftValue ) == 0 )
+            else if ( Double.compare( nextPair.getValue().getLeft(), peakLeftValue ) == 0 )
             {
                 tiesLeft.add( nextPair.getTime() );
             }
 
             // New peak right
-            if ( Double.compare( nextPair.getValue().getItemTwo(), peakRightValue ) > 0 )
+            if ( Double.compare( nextPair.getValue().getRight(), peakRightValue ) > 0 )
             {
-                peakRightValue = nextPair.getValue().getItemTwo();
+                peakRightValue = nextPair.getValue().getRight();
                 peakRightTime = nextPair.getTime();
 
                 // Reset tight ties
                 tiesRight.clear();
             }
-            else if ( Double.compare( nextPair.getValue().getItemTwo(), peakRightValue ) == 0 )
+            else if ( Double.compare( nextPair.getValue().getRight(), peakRightValue ) == 0 )
             {
                 tiesRight.add( nextPair.getTime() );
             }

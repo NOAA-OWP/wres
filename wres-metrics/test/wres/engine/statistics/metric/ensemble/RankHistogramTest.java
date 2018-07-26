@@ -18,7 +18,7 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
-import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.inputs.pairs.EnsemblePair;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.engine.statistics.metric.MetricParameterException;
@@ -64,7 +64,7 @@ public final class RankHistogramTest
     @Test
     public void testApplyWithoutTies() throws MetricParameterException
     {
-        final List<PairOfDoubleAndVectorOfDoubles> values = new ArrayList<>();
+        final List<EnsemblePair> values = new ArrayList<>();
         for ( int i = 0; i < 10000; i++ )
         {
             double left = rng.nextDouble();
@@ -102,7 +102,7 @@ public final class RankHistogramTest
     public void testApplyWithTies()
     {
         //Generate some data using an RNG for a uniform U[0,1] distribution with a fixed seed
-        final List<PairOfDoubleAndVectorOfDoubles> values = new ArrayList<>();
+        final List<EnsemblePair> values = new ArrayList<>();
         values.add( DataFactory.pairOf( 2, new double[] { 1, 2, 2, 2, 4, 5, 6, 7, 8 } ) );
         final EnsemblePairs input = DataFactory.ofEnsemblePairs( values, MetadataFactory.getMetadata() );
 

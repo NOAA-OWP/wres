@@ -9,8 +9,8 @@ import java.util.stream.IntStream;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.VectorOfBooleans;
 import wres.datamodel.inputs.MetricInputException;
+import wres.datamodel.inputs.pairs.MulticategoryPair;
 import wres.datamodel.inputs.pairs.MulticategoryPairs;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.MatrixOutput;
@@ -40,15 +40,23 @@ public class ContingencyTable<S extends MulticategoryPairs> implements Metric<S,
         final int outcomes = s.getCategoryCount();
         final double[][] returnMe = new double[outcomes][outcomes];
         // Function that returns the index within the contingency table to increment
-        final Consumer<VectorOfBooleans> f = a -> {
-            boolean[] b = a.getBooleans();
+        final Consumer<MulticategoryPair> f = a -> {
+            boolean[] left = a.getLeft();
+            boolean[] right = a.getRight();
+            boolean[] compound;
+            
             // Dichotomous event represented as a single outcome: expand
-            if ( b.length == 2 )
+            if ( left.length == 1 )
             {
-                b = new boolean[] { b[0], !b[0], b[1], !b[1] };
+                compound = new boolean[] { left[0], !left[0], right[0], !right[0] };
             }
-            final boolean[] c = b;
-            final int[] index = IntStream.range( 0, c.length ).filter( i -> c[i] ).toArray();
+            else 
+            {
+                compound = new boolean[ left.length + right.length ];
+                System.arraycopy( left, 0, compound, 0, left.length );
+                System.arraycopy( right, 0, compound, left.length, right.length );
+            }
+            final int[] index = IntStream.range( 0, compound.length ).filter( i -> compound[i] ).toArray();
             returnMe[index[1] - outcomes][index[0]] += 1;
         };
         // Increment the count in a serial stream as the lambda is stateful

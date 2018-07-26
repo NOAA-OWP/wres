@@ -11,8 +11,6 @@ import java.util.function.BiConsumer;
  * read-only portion of a {@link SortedMap}.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 
 public interface MetricOutputMap<S extends Comparable<S>, T extends MetricOutput<?>>

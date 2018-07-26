@@ -4,8 +4,6 @@ package wres.datamodel.metadata;
  * An enumeration of reference time systems.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 
 public enum ReferenceTime

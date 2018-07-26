@@ -25,9 +25,8 @@ import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
-import wres.datamodel.outputs.SafeMetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.ScoreOutput;
-import wres.datamodel.outputs.SafeMetricOutputMapByTimeAndThreshold.SafeMetricOutputMapByTimeAndThresholdBuilder;
+import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold.MetricOutputMapByTimeAndThresholdBuilder;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
@@ -51,8 +50,8 @@ public final class DataModelTestDataFactory
     public static MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> getScalarMetricOutputMapByLeadThresholdOne()
     {
 
-        final SafeMetricOutputMapByTimeAndThresholdBuilder<DoubleScoreOutput> builder =
-                new SafeMetricOutputMapByTimeAndThreshold.SafeMetricOutputMapByTimeAndThresholdBuilder<>();
+        final MetricOutputMapByTimeAndThresholdBuilder<DoubleScoreOutput> builder =
+                new MetricOutputMapByTimeAndThreshold.MetricOutputMapByTimeAndThresholdBuilder<>();
         try
         {
             //Create the input file
@@ -128,8 +127,8 @@ public final class DataModelTestDataFactory
     public static MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> getScalarMetricOutputMapByLeadThresholdTwo()
     {
 
-        SafeMetricOutputMapByTimeAndThresholdBuilder<DoubleScoreOutput> builder =
-                new SafeMetricOutputMapByTimeAndThreshold.SafeMetricOutputMapByTimeAndThresholdBuilder<>();
+        MetricOutputMapByTimeAndThresholdBuilder<DoubleScoreOutput> builder =
+                new MetricOutputMapByTimeAndThreshold.MetricOutputMapByTimeAndThresholdBuilder<>();
 
         //Fake metadata
         MetricOutputMetadata meta = MetadataFactory.getOutputMetadata( 1000,
@@ -213,8 +212,8 @@ public final class DataModelTestDataFactory
     public static MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> getVectorMetricOutputMapByLeadThresholdOne()
     {
 
-        final SafeMetricOutputMapByTimeAndThresholdBuilder<DoubleScoreOutput> builder =
-                new SafeMetricOutputMapByTimeAndThreshold.SafeMetricOutputMapByTimeAndThresholdBuilder<>();
+        final MetricOutputMapByTimeAndThresholdBuilder<DoubleScoreOutput> builder =
+                new MetricOutputMapByTimeAndThreshold.MetricOutputMapByTimeAndThresholdBuilder<>();
         try
         {
             //Create the input file

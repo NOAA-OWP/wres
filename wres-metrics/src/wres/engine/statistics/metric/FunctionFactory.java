@@ -19,7 +19,7 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MissingValues;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.inputs.pairs.PairOfDoubles;
+import wres.datamodel.inputs.pairs.SingleValuedPair;
 
 /**
  * A factory class for constructing elementary functions.
@@ -44,38 +44,38 @@ public class FunctionFactory
     private static final Median median = new Median();
 
     /**
-     * Return a function that computes the difference between the second and first entries in a {@link PairOfDoubles}.
+     * Return a function that computes the difference between the second and first entries in a {@link SingleValuedPair}.
      * 
      * @return a function that computes the error
      */
 
     public static DoubleErrorFunction error()
     {
-        return a -> a.getItemTwo() - a.getItemOne();
+        return a -> a.getRight() - a.getLeft();
     }
 
     /**
      * Return a function that computes the absolute difference between the first and second entries in a
-     * {@link PairOfDoubles}.
+     * {@link SingleValuedPair}.
      * 
      * @return a function that computes the absolute error
      */
 
     public static DoubleErrorFunction absError()
     {
-        return a -> Math.abs( a.getItemOne() - a.getItemTwo() );
+        return a -> Math.abs( a.getLeft() - a.getRight() );
     }
 
     /**
      * Return a function that computes the square difference between the first and second entries in a
-     * {@link PairOfDoubles}.
+     * {@link SingleValuedPair}.
      * 
      * @return a function that computes the square error
      */
 
     public static DoubleErrorFunction squareError()
     {
-        return a -> Math.pow( a.getItemOne() - a.getItemTwo(), 2 );
+        return a -> Math.pow( a.getLeft() - a.getRight(), 2 );
     }
 
     /**

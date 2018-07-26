@@ -12,7 +12,7 @@ import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.Slicer;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
-import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.inputs.pairs.EnsemblePair;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.DecomposableScore;
@@ -48,7 +48,7 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<Ensemble
             throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
         }
         //Slice the data into groups with an equal number of ensemble members
-        Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> sliced =
+        Map<Integer, List<EnsemblePair>> sliced =
                 Slicer.filterByRightSize( s.getRawData() );
         //CRPS, currently without decomposition
         //TODO: implement the decomposition
@@ -139,10 +139,10 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<Ensemble
      * @return the mean CRPS, with decomposition if required
      */
 
-    private double[] getSumCRPS( final List<PairOfDoubleAndVectorOfDoubles> pairs )
+    private double[] getSumCRPS( final List<EnsemblePair> pairs )
     {
         //Number of ensemble members
-        int members = pairs.get( 0 ).getItemTwo().length;
+        int members = pairs.get( 0 ).getRight().length;
 
         double totCRPS = 0.0;
 
@@ -151,12 +151,12 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<Ensemble
         for ( int i = 0; i < members + 1; i++ )
         {
             Incrementer incrementer = new Incrementer( i, members );
-            for ( PairOfDoubleAndVectorOfDoubles nextPair : pairs )
+            for ( EnsemblePair nextPair : pairs )
             {
                 //Combine and sort forecast
                 double[] sorted = new double[members + 1];
-                sorted[0] = nextPair.getItemOne();
-                System.arraycopy( nextPair.getItemTwo(), 0, sorted, 1, members );
+                sorted[0] = nextPair.getLeft();
+                System.arraycopy( nextPair.getRight(), 0, sorted, 1, members );
                 Arrays.sort( sorted, 1, members + 1 );
                 //Increment
                 summer.accept( sorted, incrementer );

@@ -31,9 +31,9 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
-import wres.datamodel.inputs.pairs.PairOfDoubles;
-import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairsBuilder;
+import wres.datamodel.inputs.pairs.EnsemblePair;
+import wres.datamodel.inputs.pairs.SingleValuedPair;
+import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs.TimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.Dimension;
 import wres.datamodel.metadata.Location;
@@ -354,8 +354,8 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
 
     private MetricInput createSingleValuedInput(Metadata rightMetadata, Metadata baselineMetadata)
     {
-        List<PairOfDoubles> primary = convertToPairOfDoubles( this.primaryPairs );
-        List<PairOfDoubles> baseline = null;
+        List<SingleValuedPair> primary = convertToPairOfDoubles( this.primaryPairs );
+        List<SingleValuedPair> baseline = null;
 
         if ( this.baselinePairs != null && !this.baselinePairs.isEmpty() )
         {
@@ -374,7 +374,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
     {
         TimeSeriesOfSingleValuedPairsBuilder builder = DataFactory.ofTimeSeriesOfSingleValuedPairsBuilder();
 
-        Map<Instant, List<Event<PairOfDoubles>>> events = this.getSingleValuedEvents( primaryPairs );
+        Map<Instant, List<Event<SingleValuedPair>>> events = this.getSingleValuedEvents( primaryPairs );
         events.forEach( builder::addTimeSeriesData );
         builder.setMetadata( rightMetadata );
 
@@ -416,11 +416,11 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
 
     private MetricInput createEnsembleInput(Metadata rightMetadata, Metadata baselineMetadata)
     {
-        List<PairOfDoubleAndVectorOfDoubles> primary =
+        List<EnsemblePair> primary =
                 InputRetriever.extractRawPairs( this.primaryPairs );
 
 
-        List<PairOfDoubleAndVectorOfDoubles> baseline = null;
+        List<EnsemblePair> baseline = null;
 
         if ( this.baselinePairs != null )
         {
@@ -451,9 +451,9 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         return events;
     }*/
 
-    private Map<Instant, List<Event<PairOfDoubles>>> getSingleValuedEvents(List<ForecastedPair> pairs)
+    private Map<Instant, List<Event<SingleValuedPair>>> getSingleValuedEvents(List<ForecastedPair> pairs)
     {
-        Map<Instant, List<Event<PairOfDoubles>>> events = new TreeMap<>(  );
+        Map<Instant, List<Event<SingleValuedPair>>> events = new TreeMap<>(  );
 
         for (ForecastedPair pair : pairs)
         {
@@ -462,7 +462,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                 events.put( pair.getBasisTime(), new ArrayList<>() );
             }
 
-            for (PairOfDoubles singleValue : pair.getSingleValuedPairs())
+            for (SingleValuedPair singleValue : pair.getSingleValuedPairs())
             {
                 events.get(pair.getBasisTime()).add( Event.of( pair.getValidTime(), singleValue ) );
             }
@@ -475,10 +475,10 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
      * @param pairPairs A set of packaged pairs
      * @return A list of raw pairs contained within the set of packaged pairs
      */
-    private static List<PairOfDoubleAndVectorOfDoubles>
+    private static List<EnsemblePair>
     extractRawPairs( List<ForecastedPair> pairPairs )
     {
-        List<PairOfDoubleAndVectorOfDoubles> result = new ArrayList<>();
+        List<EnsemblePair> result = new ArrayList<>();
 
         for ( ForecastedPair pair : pairPairs )
         {
@@ -509,17 +509,17 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
      * @param multiValuedPairs A set of packaged pairs
      * @return A list of all raw pairs converted into single valued pairs
      */
-    private static List<PairOfDoubles>
+    private static List<SingleValuedPair>
     convertToPairOfDoubles( List<ForecastedPair> multiValuedPairs )
     {
-        List<PairOfDoubles> pairs = new ArrayList<>(  );
+        List<SingleValuedPair> pairs = new ArrayList<>(  );
 
         for ( ForecastedPair pair : multiValuedPairs)
         {
-            for ( double pairedValue : pair.getValues().getItemTwo() )
+            for ( double pairedValue : pair.getValues().getRight() )
             {
                 pairs.add( DataFactory.pairOf( pair.getValues()
-                                                   .getItemOne(),
+                                                   .getLeft(),
                                                pairedValue ) );
             }
         }
@@ -998,9 +998,9 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
 
                 double[] wrappedValue = { convertedValue };
 
-                PairOfDoubleAndVectorOfDoubles pair =
+                EnsemblePair pair =
                         DataFactory.pairOf( primaryPair.getValues()
-                                                       .getItemOne(),
+                                                       .getLeft(),
                                             wrappedValue );
 
                 return new ForecastedPair( primaryPair.getBasisTime(),
@@ -1087,9 +1087,9 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
 
         double[] aggregatedWrapped = { aggregated };
 
-        PairOfDoubleAndVectorOfDoubles pair =
+        EnsemblePair pair =
                 DataFactory.pairOf( primaryPair.getValues()
-                                               .getItemOne(),
+                                               .getLeft(),
                                     aggregatedWrapped );
 
         return new ForecastedPair( primaryPair.getBasisTime(),
@@ -1122,7 +1122,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
     {
         if (!condensedIngestedValue.isEmpty())
         {
-            PairOfDoubleAndVectorOfDoubles pair = this.getPair( condensedIngestedValue );
+            EnsemblePair pair = this.getPair( condensedIngestedValue );
 
             if (pair != null)
             {
@@ -1269,7 +1269,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                                             timeWindow );
     }
 
-    private PairOfDoubleAndVectorOfDoubles getPair(CondensedIngestedValue condensedIngestedValue)
+    private EnsemblePair getPair(CondensedIngestedValue condensedIngestedValue)
             throws IOException, SQLException
     {
         if (condensedIngestedValue.isEmpty())
@@ -1403,11 +1403,11 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
     {
         private final Instant basisTime;
         private final Instant validTime;
-        private final PairOfDoubleAndVectorOfDoubles values;
+        private final EnsemblePair values;
 
         ForecastedPair( Instant basisTime,
                         Instant validTime,
-                        PairOfDoubleAndVectorOfDoubles values )
+                        EnsemblePair values )
         {
             this.basisTime = basisTime;
             this.validTime = validTime;
@@ -1416,7 +1416,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
 
         ForecastedPair( Instant basisTime,
                         int leadHours,
-                        PairOfDoubleAndVectorOfDoubles values )
+                        EnsemblePair values )
         {
             this.basisTime = basisTime;
             Duration leadTime = Duration.ofHours( leadHours );
@@ -1426,7 +1426,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
 
         ForecastedPair( int leadHours,
                         Instant validTime,
-                        PairOfDoubleAndVectorOfDoubles values )
+                        EnsemblePair values )
         {
             Duration leadTime = Duration.ofHours( leadHours );
             this.basisTime = validTime.minus( leadTime );
@@ -1444,19 +1444,19 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             return this.validTime;
         }
 
-        public PairOfDoubleAndVectorOfDoubles getValues()
+        public EnsemblePair getValues()
         {
             return this.values;
         }
 
-        PairOfDoubles[] getSingleValuedPairs()
+        SingleValuedPair[] getSingleValuedPairs()
         {
-            PairOfDoubles[] pairOfDoubles = new PairOfDoubles[this.getValues().getItemTwo().length];
+            SingleValuedPair[] pairOfDoubles = new SingleValuedPair[this.getValues().getRight().length];
 
             for (int i = 0; i < pairOfDoubles.length; ++i)
             {
-                pairOfDoubles[i] = DataFactory.pairOf( this.getValues().getItemOne(),
-                                                       this.getValues().getItemTwo()[i] );
+                pairOfDoubles[i] = DataFactory.pairOf( this.getValues().getLeft(),
+                                                       this.getValues().getRight()[i] );
             }
 
             return pairOfDoubles;
