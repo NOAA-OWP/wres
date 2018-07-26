@@ -19,8 +19,6 @@ import wres.datamodel.MetricConstants.MetricOutputGroup;
  * </p>
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 
 public interface MetricOutputForProject<T extends MetricOutputMultiMap<?>>

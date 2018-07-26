@@ -18,7 +18,7 @@ import wres.datamodel.MetricConstants.MissingValues;
 import wres.datamodel.Slicer;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
-import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.inputs.pairs.EnsemblePair;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.engine.statistics.metric.Diagram;
@@ -62,20 +62,20 @@ public class RankHistogram extends Diagram<EnsemblePairs, MultiVectorOutput>
         {
 
             //Acquire subsets in case of missing data
-            Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> sliced =
+            Map<Integer, List<EnsemblePair>> sliced =
                     Slicer.filterByRightSize( s.getRawData() );
             //Find the subset with the most elements
-            Optional<List<PairOfDoubleAndVectorOfDoubles>> useMe =
+            Optional<List<EnsemblePair>> useMe =
                     sliced.values().stream().max( Comparator.comparingInt( List::size ) );
 
             if ( useMe.isPresent() )
             {
                 //Set the ranked positions as 1:N+1
-                ranks = IntStream.range( 1, useMe.get().get( 0 ).getItemTwo().length + 2 ).asDoubleStream().toArray();
+                ranks = IntStream.range( 1, useMe.get().get( 0 ).getRight().length + 2 ).asDoubleStream().toArray();
                 double[] sumRanks = new double[ranks.length]; //Total falling in each ranked position
 
                 //Compute the sum of ranks
-                BiConsumer<PairOfDoubleAndVectorOfDoubles, double[]> ranker = rankWithTies( rng );
+                BiConsumer<EnsemblePair, double[]> ranker = rankWithTies( rng );
                 useMe.get().forEach( nextPair -> ranker.accept( nextPair, sumRanks ) );
 
                 //Compute relative frequencies
@@ -155,7 +155,7 @@ public class RankHistogram extends Diagram<EnsemblePairs, MultiVectorOutput>
     }
 
     /**
-     * Computes the zero-based rank position of the left-hand side of the {@link PairOfDoubleAndVectorOfDoubles} within
+     * Computes the zero-based rank position of the left-hand side of the {@link EnsemblePair} within
      * the right-hand side. When the right-hand side contains ties, the rank position is assigned randomnly. Increments 
      * the input array by one at the corresponding index.
      * 
@@ -163,13 +163,13 @@ public class RankHistogram extends Diagram<EnsemblePairs, MultiVectorOutput>
      * @return a function that increments the second argument based on the rank position of the observation within the ensemble
      */
 
-    private static BiConsumer<PairOfDoubleAndVectorOfDoubles, double[]> rankWithTies( Random rng )
+    private static BiConsumer<EnsemblePair, double[]> rankWithTies( Random rng )
     {
         final TriConsumer<double[], Double, double[]> containedRanker = getContainedRanker( rng );
         return ( pair, sumRanks ) -> {
             //Sort the RHS
-            double[] sorted = pair.getItemTwo();
-            double obs = pair.getItemOne();
+            double[] sorted = pair.getRight();
+            double obs = pair.getLeft();
             Arrays.sort( sorted );
             //Miss low
             if ( obs < sorted[0] )

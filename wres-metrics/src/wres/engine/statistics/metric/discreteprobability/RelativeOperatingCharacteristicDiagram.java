@@ -77,9 +77,9 @@ public class RelativeOperatingCharacteristicDiagram extends Diagram<DiscreteProb
                 //according to the probability on the RHS
                 MetricOutputMapByMetric<DoubleScoreOutput> out =
                         roc.apply( Slicer.toDichotomousPairs( s,
-                                                             in -> DataFactory.pairOf( Double.compare( in.getItemOne(),
+                                                             in -> DataFactory.pairOf( Double.compare( in.getLeft(),
                                                                                                        1.0 ) == 0,
-                                                                                       in.getItemTwo() > prob ) ) );
+                                                                                       in.getRight() > prob ) ) );
                 //Store
                 pOD[i] = out.get( MetricConstants.PROBABILITY_OF_DETECTION ).getData();
                 pOFD[i] = out.get( MetricConstants.PROBABILITY_OF_FALSE_DETECTION ).getData();

@@ -26,8 +26,8 @@ import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.Slicer;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
-import wres.datamodel.inputs.pairs.PairOfBooleans;
-import wres.datamodel.inputs.pairs.PairOfDoubles;
+import wres.datamodel.inputs.pairs.DichotomousPair;
+import wres.datamodel.inputs.pairs.SingleValuedPair;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.metadata.TimeWindow;
@@ -381,9 +381,9 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
             Set<MetricConstants> ignoreTheseMetrics = filtered.doesNotHaveTheseMetricsForThisThreshold( threshold );
 
             //Define a mapper to convert the single-valued pairs to dichotomous pairs
-            Function<PairOfDoubles, PairOfBooleans> mapper =
-                    pair -> DataFactory.pairOf( useMe.test( pair.getItemOne() ),
-                                                useMe.test( pair.getItemTwo() ) );
+            Function<SingleValuedPair, DichotomousPair> mapper =
+                    pair -> DataFactory.pairOf( useMe.test( pair.getLeft() ),
+                                                useMe.test( pair.getRight() ) );
             //Transform the pairs
             DichotomousPairs transformed = Slicer.toDichotomousPairs( input, mapper );
 
@@ -434,7 +434,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
             // Filter the data if required
             if ( useMe.isFinite() )
             {
-                Predicate<TimeSeries<PairOfDoubles>> filter =
+                Predicate<TimeSeries<SingleValuedPair>> filter =
                         MetricProcessorByTime.getFilterForTimeSeriesOfSingleValuedPairs( useMe );
 
                 pairs = Slicer.filter( input, filter, null );

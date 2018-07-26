@@ -7,7 +7,7 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.Slicer;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
-import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.inputs.pairs.EnsemblePair;
 import wres.datamodel.outputs.BoxPlotOutput;
 import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricCalculationException;
@@ -31,22 +31,22 @@ public class BoxPlotErrorByObserved extends BoxPlot
     }
 
     /**
-     * Creates a box from a {@link PairOfDoubleAndVectorOfDoubles}.
+     * Creates a box from a {@link EnsemblePair}.
      * 
      * @return a box
      * @throws MetricCalculationException if the box cannot be constructed
      */
 
     @Override
-    PairOfDoubleAndVectorOfDoubles getBox( PairOfDoubleAndVectorOfDoubles pair )
+    EnsemblePair getBox( EnsemblePair pair )
     {
         //Get the sorted errors
         double[] probs = probabilities.getDoubles();
-        double[] sortedErrors = Arrays.stream( pair.getItemTwo() ).map( x -> x - pair.getItemOne() ).sorted().toArray();
+        double[] sortedErrors = Arrays.stream( pair.getRight() ).map( x -> x - pair.getLeft() ).sorted().toArray();
         //Compute the quantiles
         double[] box =
                 Arrays.stream( probs ).map( Slicer.getQuantileFunction( sortedErrors ) ).toArray();
-        return DataFactory.pairOf( pair.getItemOne(), box );
+        return DataFactory.pairOf( pair.getLeft(), box );
     }
 
     /**

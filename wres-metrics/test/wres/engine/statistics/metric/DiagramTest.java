@@ -6,9 +6,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import wres.datamodel.MetricConstants;
-import wres.datamodel.inputs.pairs.SingleValuedPairs;
-import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.singlevalued.QuantileQuantileDiagram;
 import wres.engine.statistics.metric.singlevalued.QuantileQuantileDiagram.QuantileQuantileDiagramBuilder;
 

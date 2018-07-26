@@ -19,7 +19,7 @@ import wres.config.generated.DestinationConfig;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.inputs.pairs.EnsemblePair;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
@@ -173,11 +173,11 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedWriter
                 {
                     BoxPlotOutput nextValues = output.get( key );
                     // Add each box
-                    for ( PairOfDoubleAndVectorOfDoubles nextBox : nextValues )
+                    for ( EnsemblePair nextBox : nextValues )
                     {
                         List<Double> data = new ArrayList<>();
-                        data.add( nextBox.getItemOne() );
-                        data.addAll( Arrays.stream( nextBox.getItemTwo() ).boxed().collect( Collectors.toList() ) );
+                        data.add( nextBox.getLeft() );
+                        data.addAll( Arrays.stream( nextBox.getRight() ).boxed().collect( Collectors.toList() ) );
                         CommaSeparatedWriter.addRowToInput( returnMe,
                                                             timeWindow,
                                                             data,

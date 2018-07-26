@@ -18,7 +18,7 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
-import wres.datamodel.inputs.pairs.PairOfDoubles;
+import wres.datamodel.inputs.pairs.SingleValuedPair;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
@@ -104,7 +104,7 @@ public final class ReliabilityDiagramTest
     public void testApplySomeBinsHaveZeroSamples() throws MetricParameterException
     {
         //Generate some data
-        List<PairOfDoubles> data = new ArrayList<>();
+        List<SingleValuedPair> data = new ArrayList<>();
         data.add( DataFactory.pairOf( 1.0, 0.8775510204081632 ) );
         data.add( DataFactory.pairOf( 1.0, 0.6326530612244898 ) );
         data.add( DataFactory.pairOf( 1.0, 0.8163265306122449 ) );

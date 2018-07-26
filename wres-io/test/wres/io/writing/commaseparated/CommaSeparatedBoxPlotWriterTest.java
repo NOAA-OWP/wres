@@ -25,7 +25,7 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.inputs.pairs.EnsemblePair;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
@@ -82,19 +82,19 @@ public class CommaSeparatedBoxPlotWriterTest extends CommaSeparatedWriterTest
 
         DatasetIdentifier datasetIdentifier =
                 MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation( LID ),
-                                              "SQIN",
-                                              "HEFS",
-                                              "ESP" );
+                                                      "SQIN",
+                                                      "HEFS",
+                                                      "ESP" );
 
         MetricOutputMetadata fakeMetadata =
                 MetadataFactory.getOutputMetadata( 1000,
-                                           MetadataFactory.getDimension(),
-                                           MetadataFactory.getDimension( "CMS" ),
-                                           MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
-                                           null,
-                                           datasetIdentifier );
+                                                   MetadataFactory.getDimension(),
+                                                   MetadataFactory.getDimension( "CMS" ),
+                                                   MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
+                                                   null,
+                                                   datasetIdentifier );
 
-        List<PairOfDoubleAndVectorOfDoubles> fakeOutputs = new ArrayList<>();
+        List<EnsemblePair> fakeOutputs = new ArrayList<>();
         VectorOfDoubles probs = DataFactory.vectorOf( new double[] { 0, 0.25, 0.5, 0.75, 1.0 } );
 
         fakeOutputs.add( DataFactory.pairOf( 1, new double[] { 2, 3, 4, 5, 6 } ) );
@@ -104,11 +104,11 @@ public class CommaSeparatedBoxPlotWriterTest extends CommaSeparatedWriterTest
         // Fake output wrapper.
         MetricOutputMapByMetric<BoxPlotOutput> fakeOutputData =
                 DataFactory.ofMetricOutputMapByMetric( Collections.singletonMap( MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
-                                                                                   DataFactory.ofBoxPlotOutput( fakeOutputs,
-                                                                                                                  probs,
-                                                                                                                  fakeMetadata,
-                                                                                                                  MetricDimension.OBSERVED_VALUE,
-                                                                                                                  MetricDimension.FORECAST_ERROR ) ) );
+                                                                                 DataFactory.ofBoxPlotOutput( fakeOutputs,
+                                                                                                              probs,
+                                                                                                              fakeMetadata,
+                                                                                                              MetricDimension.OBSERVED_VALUE,
+                                                                                                              MetricDimension.FORECAST_ERROR ) ) );
         // wrap outputs in future
         Future<MetricOutputMapByMetric<BoxPlotOutput>> outputMapByMetricFuture =
                 CompletableFuture.completedFuture( fakeOutputData );
@@ -118,8 +118,8 @@ public class CommaSeparatedBoxPlotWriterTest extends CommaSeparatedWriterTest
         Pair<TimeWindow, OneOrTwoThresholds> mapKeyByLeadThreshold =
                 Pair.of( timeOne,
                          OneOrTwoThresholds.of( DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
-                                                                           Operator.GREATER,
-                                                                           ThresholdDataType.LEFT ) ) );
+                                                                         Operator.GREATER,
+                                                                         ThresholdDataType.LEFT ) ) );
 
         outputBuilder.addBoxPlotOutput( mapKeyByLeadThreshold,
                                         outputMapByMetricFuture );

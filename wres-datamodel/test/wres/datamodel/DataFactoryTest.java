@@ -12,9 +12,9 @@ import java.util.List;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
-import wres.datamodel.inputs.pairs.PairOfBooleans;
-import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
-import wres.datamodel.inputs.pairs.PairOfDoubles;
+import wres.datamodel.inputs.pairs.DichotomousPair;
+import wres.datamodel.inputs.pairs.EnsemblePair;
+import wres.datamodel.inputs.pairs.SingleValuedPair;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.Metadata;
@@ -47,12 +47,11 @@ public final class DataFactoryTest
         final Location l = MetadataFactory.getLocation( "DRRC2" );
         final Metadata m1 = MetadataFactory.getMetadata( MetadataFactory.getDimension(),
                                                          MetadataFactory.getDatasetIdentifier( l, "SQIN", "HEFS" ) );
-        final List<VectorOfBooleans> input = new ArrayList<>();
-        input.add( DataFactory.vectorOf( new boolean[] { true, false } ) );
+        final List<DichotomousPair> input = new ArrayList<>();
+        input.add( DichotomousPair.of( true, false ) );
         assertNotNull( DataFactory.ofDichotomousPairs( input, m1 ) );
-        assertNotNull( DataFactory.ofMulticategoryPairs( input, m1 ) );
 
-        final List<PairOfDoubles> dInput = new ArrayList<>();
+        final List<SingleValuedPair> dInput = new ArrayList<>();
         dInput.add( DataFactory.pairOf( 0.0, 1.0 ) );
         final Location l2 = MetadataFactory.getLocation( "DRRC2" );
         final Metadata m2 = MetadataFactory.getMetadata( MetadataFactory.getDimension(),
@@ -65,7 +64,7 @@ public final class DataFactoryTest
         assertNotNull( DataFactory.ofSingleValuedPairs( dInput, m3 ) );
         assertNotNull( DataFactory.ofSingleValuedPairs( dInput, dInput, m2, m3, null ) );
 
-        final List<PairOfDoubleAndVectorOfDoubles> eInput = new ArrayList<>();
+        final List<EnsemblePair> eInput = new ArrayList<>();
         eInput.add( DataFactory.pairOf( 0.0, new double[] { 1.0, 2.0 } ) );
         assertNotNull( DataFactory.ofEnsemblePairs( eInput, m3 ) );
         assertNotNull( DataFactory.ofEnsemblePairs( eInput, eInput, m2, m3, null ) );
@@ -75,10 +74,10 @@ public final class DataFactoryTest
     public void pairOfTest()
     {
         //Reference the constant member for a concrete instance of the factory
-        final PairOfDoubles tuple = DataFactory.pairOf( 1.0, 2.0 );
+        final SingleValuedPair tuple = DataFactory.pairOf( 1.0, 2.0 );
         assertNotNull( tuple );
-        assertEquals( 1.0, tuple.getItemOne(), THRESHOLD );
-        assertEquals( 2.0, tuple.getItemTwo(), THRESHOLD );
+        assertEquals( 1.0, tuple.getLeft(), THRESHOLD );
+        assertEquals( 2.0, tuple.getRight(), THRESHOLD );
     }
 
     @Test
@@ -121,11 +120,11 @@ public final class DataFactoryTest
     public void pairOfDoubleAndVectorOfDoublesTest()
     {
         final double[] arrOne = { 2.0, 3.0 };
-        final PairOfDoubleAndVectorOfDoubles tuple = DataFactory.pairOf( 1.0, arrOne );
+        final EnsemblePair tuple = DataFactory.pairOf( 1.0, arrOne );
         assertNotNull( tuple );
-        assertEquals( 1.0, tuple.getItemOne(), THRESHOLD );
-        assertEquals( 2.0, tuple.getItemTwo()[0], THRESHOLD );
-        assertEquals( 3.0, tuple.getItemTwo()[1], THRESHOLD );
+        assertEquals( 1.0, tuple.getLeft(), THRESHOLD );
+        assertEquals( 2.0, tuple.getRight()[0], THRESHOLD );
+        assertEquals( 3.0, tuple.getRight()[1], THRESHOLD );
         // check that toString() does not throw exception and is not null
         assertNotNull( tuple.toString() );
     }
@@ -134,29 +133,29 @@ public final class DataFactoryTest
     public void pairOfDoubleAndVectorOfDoublesMutationTest()
     {
         final double[] arrOne = { 2.0, 3.0 };
-        final PairOfDoubleAndVectorOfDoubles tuple = DataFactory.pairOf( 1.0, arrOne );
+        final EnsemblePair tuple = DataFactory.pairOf( 1.0, arrOne );
         arrOne[0] = 4.0;
         arrOne[1] = 5.0;
         assertNotNull( tuple );
-        assertEquals( 1.0, tuple.getItemOne(), THRESHOLD );
-        assertEquals( 2.0, tuple.getItemTwo()[0], THRESHOLD );
-        assertEquals( 3.0, tuple.getItemTwo()[1], THRESHOLD );
+        assertEquals( 1.0, tuple.getLeft(), THRESHOLD );
+        assertEquals( 2.0, tuple.getRight()[0], THRESHOLD );
+        assertEquals( 3.0, tuple.getRight()[1], THRESHOLD );
     }
 
     @Test
     public void pairOfDoubleAndVectorOfDoublesUsingBoxedMutationTest()
     {
         final Double[] arrOne = { 2.0, 3.0 };
-        final PairOfDoubleAndVectorOfDoubles tuple = DataFactory.pairOf( 1.0, arrOne );
+        final EnsemblePair tuple = DataFactory.pairOf( 1.0, arrOne );
         assertNotNull( tuple );
 
         // mutate the original array
         arrOne[0] = 4.0;
         arrOne[1] = 5.0;
 
-        assertEquals( 1.0, tuple.getItemOne(), THRESHOLD );
-        assertEquals( 2.0, tuple.getItemTwo()[0], THRESHOLD );
-        assertEquals( 3.0, tuple.getItemTwo()[1], THRESHOLD );
+        assertEquals( 1.0, tuple.getLeft(), THRESHOLD );
+        assertEquals( 2.0, tuple.getRight()[0], THRESHOLD );
+        assertEquals( 3.0, tuple.getRight()[1], THRESHOLD );
         // check that toString() does not throw exception and is not null
         assertNotNull( tuple.toString() );
     }
@@ -188,9 +187,9 @@ public final class DataFactoryTest
     {
         final boolean one = true;
         final boolean two = false;
-        final PairOfBooleans bools = DataFactory.pairOf( one, two );
-        assertEquals( true, bools.getItemOne() );
-        assertEquals( false, bools.getItemTwo() );
+        final DichotomousPair bools = DataFactory.pairOf( one, two );
+        assertEquals( true, bools.getLeft() );
+        assertEquals( false, bools.getRight() );
     }
 
     @Test
@@ -198,18 +197,18 @@ public final class DataFactoryTest
     {
         boolean one = true;
         boolean two = false;
-        final PairOfBooleans bools = DataFactory.pairOf( one, two );
+        final DichotomousPair bools = DataFactory.pairOf( one, two );
         one = false;
         two = true;
-        assertEquals( true, bools.getItemOne() );
-        assertEquals( false, bools.getItemTwo() );
+        assertEquals( true, bools.getLeft() );
+        assertEquals( false, bools.getRight() );
     }
 
     @Test
     public void pairOfDoubleAndVectorOfDoubleToStringTest()
     {
         double[] arr = { 123456.0, 78910.0, 111213.0 };
-        PairOfDoubleAndVectorOfDoubles p = DataFactory.pairOf( 141516.0, arr );
+        EnsemblePair p = DataFactory.pairOf( 141516.0, arr );
         String result = p.toString();
         assertTrue( "12345 expected to show up in toString: " + result,
                     result.contains( "12345" ) );

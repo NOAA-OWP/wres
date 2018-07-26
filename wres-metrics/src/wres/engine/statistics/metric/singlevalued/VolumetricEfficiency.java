@@ -5,7 +5,7 @@ import java.util.Objects;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.inputs.pairs.PairOfDoubles;
+import wres.datamodel.inputs.pairs.SingleValuedPair;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
@@ -33,10 +33,10 @@ public class VolumetricEfficiency extends DoubleErrorScore<SingleValuedPairs>
         }
         Double vO = 0.0;
         double vP = 0.0;
-        for ( PairOfDoubles nextPair : s.getRawData() )
+        for ( SingleValuedPair nextPair : s.getRawData() )
         {
-            vO += Math.abs( nextPair.getItemOne() );
-            vP += Math.abs( nextPair.getItemOne() - nextPair.getItemTwo() );
+            vO += Math.abs( nextPair.getLeft() );
+            vP += Math.abs( nextPair.getLeft() - nextPair.getRight() );
         }
 
         //Metadata

@@ -16,7 +16,7 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.inputs.pairs.PairOfDoubles;
+import wres.datamodel.inputs.pairs.SingleValuedPair;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.outputs.MultiVectorOutput;
@@ -55,7 +55,7 @@ public final class QuantileQuantileDiagramTest
     public void testApply()
     {
         //Generate some data
-        final List<PairOfDoubles> values = new ArrayList<>();
+        final List<SingleValuedPair> values = new ArrayList<>();
         for ( int i = 1; i < 1001; i++ )
         {
             double left = i;

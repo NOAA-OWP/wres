@@ -11,7 +11,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.inputs.pairs.PairOfDoubles;
+import wres.datamodel.inputs.pairs.SingleValuedPair;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.metadata.Dimension;
 import wres.datamodel.metadata.Metadata;
@@ -43,7 +43,7 @@ public class TimeToPeakError extends TimingError
 
         // Iterate through the time-series by basis time, and find the peaks in left and right
         List<Pair<Instant, Duration>> returnMe = new ArrayList<>();
-        for ( TimeSeries<PairOfDoubles> next : s.basisTimeIterator() )
+        for ( TimeSeries<SingleValuedPair> next : s.basisTimeIterator() )
         {
             Pair<Instant, Instant> peak = TimingErrorHelper.getTimeToPeak( next, this.getRNG() );
             

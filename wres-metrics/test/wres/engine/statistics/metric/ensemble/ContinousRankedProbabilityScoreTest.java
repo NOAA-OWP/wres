@@ -17,7 +17,7 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
-import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.inputs.pairs.EnsemblePair;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
@@ -58,7 +58,7 @@ public final class ContinousRankedProbabilityScoreTest
     public void testApplyWithNoMissings()
     {
         //Generate some data
-        List<PairOfDoubleAndVectorOfDoubles> pairs = new ArrayList<>();
+        List<EnsemblePair> pairs = new ArrayList<>();
         pairs.add( DataFactory.pairOf( 25.7, new double[] { 23, 43, 45, 23, 54 } ) );
         pairs.add( DataFactory.pairOf( 21.4, new double[] { 19, 16, 57, 23, 9 } ) );
         pairs.add( DataFactory.pairOf( 32.1, new double[] { 23, 54, 23, 12, 32 } ) );
@@ -94,7 +94,7 @@ public final class ContinousRankedProbabilityScoreTest
     {
 
         //Generate some data
-        List<PairOfDoubleAndVectorOfDoubles> pairs = new ArrayList<>();
+        List<EnsemblePair> pairs = new ArrayList<>();
         pairs.add( DataFactory.pairOf( 25.7, new double[] { 23, 43, 45, 34.2, 23, 54 } ) );
         pairs.add( DataFactory.pairOf( 21.4, new double[] { 19, 16, 57, 23, 9 } ) );
         pairs.add( DataFactory.pairOf( 32.1, new double[] { 23, 54, 23, 12, 32, 45.3, 67.1 } ) );
@@ -130,7 +130,7 @@ public final class ContinousRankedProbabilityScoreTest
     public void testApplyObsMissesLow()
     {
         //Generate some data
-        List<PairOfDoubleAndVectorOfDoubles> pairs = new ArrayList<>();
+        List<EnsemblePair> pairs = new ArrayList<>();
         pairs.add( DataFactory.pairOf( 8, new double[] { 23, 54, 23, 12, 32 } ) );
         EnsemblePairs input = DataFactory.ofEnsemblePairs( pairs, MetadataFactory.getMetadata() );
 
@@ -162,7 +162,7 @@ public final class ContinousRankedProbabilityScoreTest
     {
 
         //Generate some data
-        List<PairOfDoubleAndVectorOfDoubles> pairs = new ArrayList<>();
+        List<EnsemblePair> pairs = new ArrayList<>();
         pairs.add( DataFactory.pairOf( 32, new double[] { 23, 54, 23, 12, 32 } ) );
         EnsemblePairs input = DataFactory.ofEnsemblePairs( pairs, MetadataFactory.getMetadata() );
 

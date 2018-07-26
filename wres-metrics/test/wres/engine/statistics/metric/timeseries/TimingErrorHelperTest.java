@@ -13,7 +13,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import wres.datamodel.inputs.pairs.PairOfDoubles;
+import wres.datamodel.inputs.pairs.SingleValuedPair;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.time.TimeSeries;
 import wres.engine.statistics.metric.MetricTestDataFactory;
@@ -41,9 +41,9 @@ public final class TimingErrorHelperTest
         // Generate some data
         TimeSeriesOfSingleValuedPairs input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsOne();
 
-        Iterator<TimeSeries<PairOfDoubles>> iterator = input.basisTimeIterator().iterator();
-        TimeSeries<PairOfDoubles> first = iterator.next();
-        TimeSeries<PairOfDoubles> second = iterator.next();
+        Iterator<TimeSeries<SingleValuedPair>> iterator = input.basisTimeIterator().iterator();
+        TimeSeries<SingleValuedPair> first = iterator.next();
+        TimeSeries<SingleValuedPair> second = iterator.next();
 
         //Generate some data using an RNG for a uniform U[0,1] distribution with a fixed seed
         Random r = new Random( 12345678 );

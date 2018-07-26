@@ -6,7 +6,7 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MissingValues;
 import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.inputs.pairs.PairOfDoubles;
+import wres.datamodel.inputs.pairs.SingleValuedPair;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
@@ -45,15 +45,15 @@ public class IndexOfAgreement extends DoubleErrorScore<SingleValuedPairs>
         if ( !s.getRawData().isEmpty() )
         {
             //Compute the average observation
-            double oBar = s.getRawData().stream().mapToDouble( PairOfDoubles::getItemOne ).average().getAsDouble();
+            double oBar = s.getRawData().stream().mapToDouble( SingleValuedPair::getLeft ).average().getAsDouble();
             //Compute the score
             double numerator = 0.0;
             double denominator = 0.0;
-            for ( PairOfDoubles nextPair : s.getRawData() )
+            for ( SingleValuedPair nextPair : s.getRawData() )
             {
-                numerator += Math.pow( Math.abs( nextPair.getItemOne() - nextPair.getItemTwo() ), exponent );
-                denominator += ( Math.abs( nextPair.getItemTwo() - oBar )
-                                 + Math.pow( Math.abs( nextPair.getItemOne() - oBar ), exponent ) );
+                numerator += Math.pow( Math.abs( nextPair.getLeft() - nextPair.getRight() ), exponent );
+                denominator += ( Math.abs( nextPair.getRight() - oBar )
+                                 + Math.pow( Math.abs( nextPair.getLeft() - oBar ), exponent ) );
             }
             returnMe = FunctionFactory.skill().applyAsDouble( numerator, denominator );
         }
