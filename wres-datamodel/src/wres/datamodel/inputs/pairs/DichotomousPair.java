@@ -1,16 +1,14 @@
 package wres.datamodel.inputs.pairs;
 
 /**
- * Immutable pair of primitive boolean values.
+ * An immutable pair of values associated with a dichotomous variable.
  *
- * Requested for metrics
- *
- * @author jesse
  * @author james.brown@hydrosolved.com
  */
 
-public class PairOfBooleans
+public class DichotomousPair
 {
+
     /**
      * The left side.
      */
@@ -31,9 +29,9 @@ public class PairOfBooleans
      * @return a pair of booleans
      */
 
-    public static PairOfBooleans of( boolean left, boolean right )
+    public static DichotomousPair of( boolean left, boolean right )
     {
-        return new PairOfBooleans( left, right );
+        return new DichotomousPair( left, right );
     }
 
     /**
@@ -42,7 +40,7 @@ public class PairOfBooleans
      * @return the left side
      */
 
-    public boolean getItemOne()
+    public boolean getLeft()
     {
         return left;
     }
@@ -53,7 +51,7 @@ public class PairOfBooleans
      * @return the right side
      */
 
-    public boolean getItemTwo()
+    public boolean getRight()
     {
         return right;
     }
@@ -61,18 +59,18 @@ public class PairOfBooleans
     @Override
     public boolean equals( Object o )
     {
-        if ( ! ( o instanceof PairOfBooleans ) )
+        if ( ! ( o instanceof DichotomousPair ) )
         {
             return false;
         }
-        PairOfBooleans b = (PairOfBooleans) o;
-        return b.getItemOne() == getItemOne() && b.getItemTwo() == getItemTwo();
+        DichotomousPair b = (DichotomousPair) o;
+        return b.getLeft() == getLeft() && b.getRight() == getRight();
     }
 
     @Override
     public int hashCode()
     {
-        return Boolean.hashCode( getItemOne() ) + Boolean.hashCode( getItemTwo() );
+        return Boolean.hashCode( getLeft() ) + Boolean.hashCode( getRight() );
     }
 
     /**
@@ -82,7 +80,7 @@ public class PairOfBooleans
      * @param right the right
      */
 
-    private PairOfBooleans( boolean left, boolean right )
+    private DichotomousPair( boolean left, boolean right )
     {
         this.left = left;
         this.right = right;

@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Objects;
 
 import wres.datamodel.DataFactory;
-import wres.datamodel.VectorOfBooleans;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.inputs.MetricInputException;
 
@@ -32,7 +31,8 @@ public class DichotomousPairs extends MulticategoryPairs
         {
             return null;
         }
-        return DataFactory.ofDichotomousPairs( getRawDataForBaseline(), getMetadataForBaseline() );
+        return DataFactory.ofDichotomousPairsFromMulticategoryPairs( getRawDataForBaseline(),
+                                                                     getMetadataForBaseline() );
     }
 
     @Override
@@ -42,7 +42,7 @@ public class DichotomousPairs extends MulticategoryPairs
     }
 
     /**
-     * A {@link PairedInputBuilder} to build the metric input.
+     * A builder to build the metric input.
      */
 
     public static class DichotomousPairsBuilder extends MulticategoryPairsBuilder
@@ -55,38 +55,38 @@ public class DichotomousPairs extends MulticategoryPairs
         }
 
         /**
-         * Convenience method for setting the input data from atomic {@link PairOfBooleans}.
+         * Convenience method for setting the input data from atomic {@link DichotomousPair}.
          * 
          * @param mainInput the main input
          * @return the builder
          */
 
-        public MulticategoryPairsBuilder setDataFromAtomic( final List<PairOfBooleans> mainInput )
+        public MulticategoryPairsBuilder addDichotomousData( final List<DichotomousPair> mainInput )
         {
             if ( Objects.nonNull( mainInput ) )
             {
-                List<VectorOfBooleans> mainIn = new ArrayList<>();
-                mainInput.forEach( pair -> mainIn.add( DataFactory.vectorOf( new boolean[] { pair.getItemOne(),
-                                                                                             pair.getItemTwo() } ) ) );
+                List<MulticategoryPair> mainIn = new ArrayList<>();
+                mainInput.forEach( pair -> mainIn.add( MulticategoryPair.of( new boolean[] { pair.getLeft() },
+                                                                             new boolean[] { pair.getRight() } ) ) );
                 addData( mainIn );
             }
             return this;
         }
 
         /**
-         * Convenience method for setting the input data for the baseline from atomic {@link PairOfBooleans}.
+         * Convenience method for setting the input data for the baseline from atomic {@link DichotomousPair}.
          * 
          * @param baselineInput the baseline input
          * @return the builder
          */
 
-        public MulticategoryPairsBuilder setDataForBaselineFromAtomic( final List<PairOfBooleans> baselineInput )
+        public MulticategoryPairsBuilder addDichotomousDataForBaseline( final List<DichotomousPair> baselineInput )
         {
             if ( Objects.nonNull( baselineInput ) )
             {
-                List<VectorOfBooleans> baseIn = new ArrayList<>();
-                baselineInput.forEach( pair -> baseIn.add( DataFactory.vectorOf( new boolean[] { pair.getItemOne(),
-                                                                                                 pair.getItemTwo() } ) ) );
+                List<MulticategoryPair> baseIn = new ArrayList<>();
+                baselineInput.forEach( pair -> baseIn.add( MulticategoryPair.of( new boolean[] { pair.getLeft() },
+                                                                                 new boolean[] { pair.getRight() } ) ) );
                 addDataForBaseline( baseIn );
             }
             return this;
@@ -105,10 +105,12 @@ public class DichotomousPairs extends MulticategoryPairs
     {
         super( b );
         int count = super.getCategoryCount();
+
         // Allow empty data or two categories
         if ( count > 0 && count != 2 )
         {
-            throw new MetricInputException( "Expected one outcome in the dichotomous input (two or four columns)." );
+            throw new MetricInputException( "Expected one category in the dichotomous input, represented as either "
+                    + "one or two elements." );
         }
     }
 

@@ -12,7 +12,7 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
-import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.inputs.pairs.EnsemblePair;
 import wres.datamodel.inputs.pairs.EnsemblePairs.EnsemblePairsBuilder;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
@@ -32,7 +32,7 @@ public final class EnsemblePairsTest
     @Test
     public void test1EnsemblePairs()
     {
-        final List<PairOfDoubleAndVectorOfDoubles> values = new ArrayList<>();
+        final List<EnsemblePair> values = new ArrayList<>();
         final EnsemblePairsBuilder b = new EnsemblePairsBuilder();
 
         for ( int i = 0; i < 10; i++ )

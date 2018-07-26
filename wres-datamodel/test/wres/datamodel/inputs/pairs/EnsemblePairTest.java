@@ -2,7 +2,7 @@ package wres.datamodel.inputs.pairs;
 
 import org.junit.Test;
 
-import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.inputs.pairs.EnsemblePair;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -10,17 +10,17 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by jesse on 7/17/17.
  */
-public class PairOfDoubleAndVectorOfDoublesTest
+public class EnsemblePairTest
 {
     @Test
     public void fancyPairWithEqualValuesIsEqualTest()
     {
         double[] firstArr = {1.0, 2.0};
         double[] secondArr = {1.0, 2.0};
-        PairOfDoubleAndVectorOfDoubles firstPair =
-                PairOfDoubleAndVectorOfDoubles.of(3.0, firstArr);
-        PairOfDoubleAndVectorOfDoubles secondPair =
-                PairOfDoubleAndVectorOfDoubles.of(3.0, secondArr);
+        EnsemblePair firstPair =
+                EnsemblePair.of(3.0, firstArr);
+        EnsemblePair secondPair =
+                EnsemblePair.of(3.0, secondArr);
         assertTrue("Expect pairs to be equal",
                    firstPair.compareTo(secondPair) == 0);
         assertTrue("Expect pairs to be equal",
@@ -37,10 +37,10 @@ public class PairOfDoubleAndVectorOfDoublesTest
     public void fancyPairFirstValueLessThanSecond()
     {
         double[] emptyArr = {};
-        PairOfDoubleAndVectorOfDoubles firstPair =
-                PairOfDoubleAndVectorOfDoubles.of(1.0, emptyArr);
-        PairOfDoubleAndVectorOfDoubles secondPair =
-                PairOfDoubleAndVectorOfDoubles.of(2.0, emptyArr);
+        EnsemblePair firstPair =
+                EnsemblePair.of(1.0, emptyArr);
+        EnsemblePair secondPair =
+                EnsemblePair.of(2.0, emptyArr);
         assertTrue("Expect first pair to be less than second",
                    firstPair.compareTo(secondPair) < 0);
         assertTrue("Expect second pair to be more than first",
@@ -58,10 +58,10 @@ public class PairOfDoubleAndVectorOfDoublesTest
     {
         double[] emptyArr = {};
         double[] nonEmptyArr = {1.0};
-        PairOfDoubleAndVectorOfDoubles emptyPair =
-                PairOfDoubleAndVectorOfDoubles.of(2.0, emptyArr);
-        PairOfDoubleAndVectorOfDoubles nonEmptyPair =
-                PairOfDoubleAndVectorOfDoubles.of(2.0, nonEmptyArr);
+        EnsemblePair emptyPair =
+                EnsemblePair.of(2.0, emptyArr);
+        EnsemblePair nonEmptyPair =
+                EnsemblePair.of(2.0, nonEmptyArr);
         assertTrue("Expect empty array pair to be less than nonEmpty",
                    emptyPair.compareTo(nonEmptyPair) < 0);
         assertTrue("Expect nonEmpty array pair to be more than empty",
@@ -79,10 +79,10 @@ public class PairOfDoubleAndVectorOfDoublesTest
     {
         double[] firstArr = {1.0, 2.0};
         double[] secondArr = {1.0, 3.0};
-        PairOfDoubleAndVectorOfDoubles firstPair =
-                PairOfDoubleAndVectorOfDoubles.of(4.0, firstArr);
-        PairOfDoubleAndVectorOfDoubles secondPair =
-                PairOfDoubleAndVectorOfDoubles.of(4.0, secondArr);
+        EnsemblePair firstPair =
+                EnsemblePair.of(4.0, firstArr);
+        EnsemblePair secondPair =
+                EnsemblePair.of(4.0, secondArr);
         assertTrue("Expect first array pair to be less than second",
                    firstPair.compareTo(secondPair) < 0);
         assertTrue("Expect second array pair to be more than first",
@@ -99,8 +99,8 @@ public class PairOfDoubleAndVectorOfDoublesTest
     public void fancyPairEqualsItself()
     {
         double[] firstArr = {1.0, 2.0};
-        PairOfDoubleAndVectorOfDoubles firstPair =
-                PairOfDoubleAndVectorOfDoubles.of(4.0, firstArr);
+        EnsemblePair firstPair =
+                EnsemblePair.of(4.0, firstArr);
         assertTrue("Expect a pair to equal itself",
                    firstPair.compareTo(firstPair) == 0);
         assertTrue("Expect a pair to equal itself",
@@ -113,8 +113,8 @@ public class PairOfDoubleAndVectorOfDoublesTest
     public void fancyPairNotEqualToDifferentType()
     {
         double[] theArr = {1.0, 2.0};
-        PairOfDoubleAndVectorOfDoubles thePair =
-                PairOfDoubleAndVectorOfDoubles.of(3.0, theArr);
+        EnsemblePair thePair =
+                EnsemblePair.of(3.0, theArr);
         Integer notAPair = 4;
         assertFalse("Expect a fancyPair to not equal a non-fancyPair",
                     thePair.equals(notAPair));

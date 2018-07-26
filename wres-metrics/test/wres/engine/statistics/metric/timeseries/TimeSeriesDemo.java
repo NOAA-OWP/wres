@@ -9,8 +9,8 @@ import org.junit.Test;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.Slicer;
-import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
-import wres.datamodel.inputs.pairs.PairOfDoubles;
+import wres.datamodel.inputs.pairs.EnsemblePair;
+import wres.datamodel.inputs.pairs.SingleValuedPair;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairs.TimeSeriesOfEnsemblePairsBuilder;
@@ -44,7 +44,7 @@ public class TimeSeriesDemo
                 DataFactory.ofTimeSeriesOfSingleValuedPairsBuilder();
         //Create a regular time-series with an issue date/time, a series of paired values, and a timestep
         Instant firstId = Instant.parse( "1985-01-01T00:00:00Z" );
-        List<Event<PairOfDoubles>> firstValues = new ArrayList<>();
+        List<Event<SingleValuedPair>> firstValues = new ArrayList<>();
         //Add some values
         firstValues.add( Event.of( Instant.parse( "1985-01-01T06:00:00Z" ), DataFactory.pairOf( 1, 2 ) ) );
         firstValues.add( Event.of( Instant.parse( "1985-01-01T12:00:00Z" ), DataFactory.pairOf( 3, 4 ) ) );
@@ -61,7 +61,7 @@ public class TimeSeriesDemo
 
         //Start by simply printing the untimed values using the PairedInput API, since the 
         //TimeSeries is a SingleValuedPairs
-        for ( PairOfDoubles next : timeSeries )
+        for ( SingleValuedPair next : timeSeries )
         {
             if ( printOutput )
             {
@@ -102,7 +102,7 @@ public class TimeSeriesDemo
 //PT6H        
         //Add another atomic time-series to the builder and rebuild
         Instant secondId = Instant.parse( "1985-01-02T00:00:00Z" );
-        List<Event<PairOfDoubles>> secondValues = new ArrayList<>();
+        List<Event<SingleValuedPair>> secondValues = new ArrayList<>();
         //Add some values
         secondValues.add( Event.of( Instant.parse( "1985-01-02T06:00:00Z" ), DataFactory.pairOf( 7, 8 ) ) );
         secondValues.add( Event.of( Instant.parse( "1985-01-02T12:00:00Z" ), DataFactory.pairOf( 9, 10 ) ) );
@@ -123,7 +123,7 @@ public class TimeSeriesDemo
 //1985-01-02T18:00:00Z,11.0,12.0     
 
         //Iterate the atomic time-series unconditionally
-        for ( Event<PairOfDoubles> next : timeSeries.timeIterator() )
+        for ( Event<SingleValuedPair> next : timeSeries.timeIterator() )
         {
             if ( printOutput )
             {
@@ -144,7 +144,7 @@ public class TimeSeriesDemo
 //1985-01-02T18:00:00Z,11.0,12.0        
 
         //Iterate the atomic time-series by issue date/time
-        for ( TimeSeries<PairOfDoubles> next : timeSeries.basisTimeIterator() )
+        for ( TimeSeries<SingleValuedPair> next : timeSeries.basisTimeIterator() )
         {
             if ( printOutput )
             {
@@ -160,7 +160,7 @@ public class TimeSeriesDemo
 //1985-01-02T18:00:00Z,11.0,12.0
 
         //Iterate the atomic time-series by duration
-        for ( TimeSeries<PairOfDoubles> next : timeSeries.durationIterator() )
+        for ( TimeSeries<SingleValuedPair> next : timeSeries.durationIterator() )
         {
             if ( printOutput )
             {
@@ -178,7 +178,7 @@ public class TimeSeriesDemo
 //1985-01-02T18:00:00Z,11.0,12.0        
 
         //Slice the time-series to obtain the atomic time-series with an issue time of 1985-01-02T00:00:00Z
-        TimeSeries<PairOfDoubles> filteredOne =
+        TimeSeries<SingleValuedPair> filteredOne =
                 Slicer.filterByBasisTime( timeSeries, a -> a.equals( Instant.parse( "1985-01-02T00:00:00Z" ) ) );
         if ( printOutput )
         {
@@ -190,7 +190,7 @@ public class TimeSeriesDemo
 //1985-01-02T18:00:00Z,11.0,12.0        
 
         //Slice the time-series to obtain the atomic time-series with a duration of 12 hours only
-        TimeSeries<PairOfDoubles> filteredTwo =
+        TimeSeries<SingleValuedPair> filteredTwo =
                 Slicer.filterByDuration( timeSeries, a -> a.equals( Duration.ofHours( 12 ) ) );
         if ( printOutput )
         {
@@ -216,7 +216,7 @@ public class TimeSeriesDemo
         MeanError me = metFac.ofMeanError();
 
         //Compute the mean error by duration
-        for ( TimeSeries<PairOfDoubles> next : timeSeries.durationIterator() )
+        for ( TimeSeries<SingleValuedPair> next : timeSeries.durationIterator() )
         {
             if ( printOutput )
             {
@@ -229,9 +229,9 @@ public class TimeSeriesDemo
 
         //Build a regular time-series of ensemble pairs and filter to include only a trace index of 0 or 3
         //Build a time-series with three basis times 
-        List<Event<PairOfDoubleAndVectorOfDoubles>> first = new ArrayList<>();
-        List<Event<PairOfDoubleAndVectorOfDoubles>> second = new ArrayList<>();
-        List<Event<PairOfDoubleAndVectorOfDoubles>> third = new ArrayList<>();
+        List<Event<EnsemblePair>> first = new ArrayList<>();
+        List<Event<EnsemblePair>> second = new ArrayList<>();
+        List<Event<EnsemblePair>> third = new ArrayList<>();
         TimeSeriesOfEnsemblePairsBuilder b = DataFactory.ofTimeSeriesOfEnsemblePairsBuilder();
 
         Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
@@ -272,7 +272,7 @@ public class TimeSeriesDemo
                                                                        q -> q.equals( 0 )
                                                                             || q.equals( 3 ) );
         //Print the filtered output by basis time
-        for ( TimeSeries<PairOfDoubleAndVectorOfDoubles> next : regular.basisTimeIterator() )
+        for ( TimeSeries<EnsemblePair> next : regular.basisTimeIterator() )
         {
             if ( printOutput )
             {

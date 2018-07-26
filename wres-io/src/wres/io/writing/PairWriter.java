@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.Feature;
-import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.inputs.pairs.EnsemblePair;
 import wres.io.concurrency.WRESCallable;
 import wres.io.config.ConfigHelper;
 import wres.io.data.details.ProjectDetails;
@@ -45,7 +45,7 @@ public class PairWriter extends WRESCallable<Boolean>
     private final Instant date;
     private final Feature feature;
     private final int windowNum;
-    private final PairOfDoubleAndVectorOfDoubles pair;
+    private final EnsemblePair pair;
     private final boolean isBaseline;
     private final int poolingStep;
     private final ProjectDetails projectDetails;
@@ -59,7 +59,7 @@ public class PairWriter extends WRESCallable<Boolean>
         private final Instant date;
         private final Feature feature;
         private final int leadIteration;
-        private final PairOfDoubleAndVectorOfDoubles pair;
+        private final EnsemblePair pair;
         private final boolean isBaseline;
         private final int poolingStep;
         private final ProjectDetails projectDetails;
@@ -82,7 +82,7 @@ public class PairWriter extends WRESCallable<Boolean>
                          Instant date,
                          Feature feature,
                          Integer windowNum,
-                         PairOfDoubleAndVectorOfDoubles pair,
+                         EnsemblePair pair,
                          Boolean isBaseline,
                          Integer poolingStep,
                          ProjectDetails projectDetails,
@@ -151,7 +151,7 @@ public class PairWriter extends WRESCallable<Boolean>
                                 this.lead);
         }
 
-        public Builder setPair(PairOfDoubleAndVectorOfDoubles pair)
+        public Builder setPair(EnsemblePair pair)
         {
             return new Builder( this.destinationConfig,
                                 this.date,
@@ -286,7 +286,7 @@ public class PairWriter extends WRESCallable<Boolean>
                        Instant date,
                        Feature feature,
                        int windowNum,
-                       PairOfDoubleAndVectorOfDoubles pair,
+                       EnsemblePair pair,
                        boolean isBaseline,
                        int poolingStep,
                        ProjectDetails projectDetails,
@@ -453,7 +453,7 @@ public class PairWriter extends WRESCallable<Boolean>
     private String getLeftValue()
     {
 
-        double leftValue = pair.getItemOne();
+        double leftValue = pair.getLeft();
         String left;
 
         if ( Double.compare( leftValue, Double.NaN ) == 0 )
@@ -474,7 +474,7 @@ public class PairWriter extends WRESCallable<Boolean>
 
     private String getRightValues()
     {
-        double[] rightValues = pair.getItemTwo();
+        double[] rightValues = pair.getRight();
         StringJoiner arrayJoiner = new StringJoiner( DELIMITER );
 
         Arrays.sort( rightValues );

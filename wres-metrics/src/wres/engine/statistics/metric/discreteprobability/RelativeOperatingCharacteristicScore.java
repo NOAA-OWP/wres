@@ -11,7 +11,7 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
-import wres.datamodel.inputs.pairs.PairOfDoubles;
+import wres.datamodel.inputs.pairs.SingleValuedPair;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
@@ -142,9 +142,9 @@ public class RelativeOperatingCharacteristicScore extends OrdinaryScore<Discrete
     {
         //Obtain the predicted probabilities when the event occurred and did not occur
         //Begin by collecting against occurrence/non-occurrence
-        Map<Boolean, List<PairOfDoubles>> mapped = pairs.getRawData()
+        Map<Boolean, List<SingleValuedPair>> mapped = pairs.getRawData()
                                                         .stream()
-                                                        .collect( Collectors.groupingBy( a -> DataFactory.doubleEquals( a.getItemOne(),
+                                                        .collect( Collectors.groupingBy( a -> DataFactory.doubleEquals( a.getLeft(),
                                                                                                                         1.0,
                                                                                                                         7 ) ) );
         if ( mapped.size() != 2 )
@@ -153,10 +153,10 @@ public class RelativeOperatingCharacteristicScore extends OrdinaryScore<Discrete
         }
         //Get the right side by each outcome
         List<Double> byOccurrence =
-                mapped.get( true ).stream().map( PairOfDoubles::getItemTwo ).collect( Collectors.toList() );
+                mapped.get( true ).stream().map( SingleValuedPair::getRight ).collect( Collectors.toList() );
         List<Double> byNonOccurrence = mapped.get( false )
                                              .stream()
-                                             .map( PairOfDoubles::getItemTwo )
+                                             .map( SingleValuedPair::getRight )
                                              .collect( Collectors.toList() );
         //Sort descending
         Collections.sort( byOccurrence, Collections.reverseOrder() );

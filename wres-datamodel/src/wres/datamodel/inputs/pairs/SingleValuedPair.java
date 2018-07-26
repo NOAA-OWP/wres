@@ -11,20 +11,20 @@ import java.util.Objects;
  * @author jesse
  * @author james.brown@hydrosolved.com
  */
-public class PairOfDoubles implements Comparable<PairOfDoubles>
+public class SingleValuedPair implements Comparable<SingleValuedPair>
 {
 
     /**
-     * The first item.
+     * The left side.
      */
 
-    private final double itemOne;
+    private final double left;
 
     /**
-     * The second item.
+     * The right side.
      */
 
-    private final double itemTwo;
+    private final double right;
 
     /**
      * Returns an instance from the input.
@@ -34,43 +34,43 @@ public class PairOfDoubles implements Comparable<PairOfDoubles>
      * @return a pair of booleans
      */
 
-    public static PairOfDoubles of( double left, double right )
+    public static SingleValuedPair of( double left, double right )
     {
-        return new PairOfDoubles( left, right );
+        return new SingleValuedPair( left, right );
     }
 
     /**
-     * Returns the first value, i.e. the obs in the above example.
+     * Returns the left side of the pair.
      * 
-     * @return the first value
+     * @return the left value
      */
 
-    public double getItemOne()
+    public double getLeft()
     {
-        return itemOne;
+        return left;
     }
 
     /**
-     * Returns the second value, i.e. the fcst in the above example.
+     * Returns the right side of the pair.
      * 
-     * @return the second value
+     * @return the right value
      */
 
-    public double getItemTwo()
+    public double getRight()
     {
-        return itemTwo;
+        return right;
     }
 
     @Override
-    public int compareTo( PairOfDoubles other )
+    public int compareTo( SingleValuedPair other )
     {
-        if ( Double.compare( this.getItemOne(), other.getItemOne() ) == 0 )
+        if ( Double.compare( this.getLeft(), other.getLeft() ) == 0 )
         {
-            if ( Double.compare( this.getItemTwo(), other.getItemTwo() ) == 0 )
+            if ( Double.compare( this.getRight(), other.getRight() ) == 0 )
             {
                 return 0;
             }
-            else if ( this.getItemTwo() < other.getItemTwo() )
+            else if ( this.getRight() < other.getRight() )
             {
                 return -1;
             }
@@ -79,7 +79,7 @@ public class PairOfDoubles implements Comparable<PairOfDoubles>
                 return 1;
             }
         }
-        else if ( this.getItemOne() < other.getItemOne() )
+        else if ( this.getLeft() < other.getLeft() )
         {
             return -1;
         }
@@ -92,9 +92,9 @@ public class PairOfDoubles implements Comparable<PairOfDoubles>
     @Override
     public boolean equals( Object other )
     {
-        if ( other instanceof PairOfDoubles )
+        if ( other instanceof SingleValuedPair )
         {
-            PairOfDoubles otherPair = (PairOfDoubles) other;
+            SingleValuedPair otherPair = (SingleValuedPair) other;
             return 0 == this.compareTo( otherPair );
         }
         else
@@ -106,26 +106,26 @@ public class PairOfDoubles implements Comparable<PairOfDoubles>
     @Override
     public int hashCode()
     {
-        return Objects.hash( itemOne, itemTwo );
+        return Objects.hash( left, right );
     }
 
     @Override
     public String toString()
     {
-        return itemOne + "," + itemTwo;
+        return left + "," + right;
     }
-
+    
     /**
      * Hidden constructor.
      * 
-     * @param itemOne the first item
-     * @param itemTwo the second item
+     * @param left the first item
+     * @param right the second item
      */
 
-    private PairOfDoubles( double itemOne, double itemTwo )
+    private SingleValuedPair( double left, double right )
     {
-        this.itemOne = itemOne;
-        this.itemTwo = itemTwo;
+        this.left = left;
+        this.right = right;
     }
 
 }

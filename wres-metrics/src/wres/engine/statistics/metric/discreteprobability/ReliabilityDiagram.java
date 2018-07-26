@@ -16,7 +16,7 @@ import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.MissingValues;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
-import wres.datamodel.inputs.pairs.PairOfDoubles;
+import wres.datamodel.inputs.pairs.SingleValuedPair;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.engine.statistics.metric.Diagram;
@@ -159,7 +159,7 @@ public class ReliabilityDiagram extends Diagram<DiscreteProbabilityPairs, MultiV
      * @param constant the fraction occupied by each bin
      */
 
-    private Consumer<PairOfDoubles>
+    private Consumer<SingleValuedPair>
             getIncrementor( final double[] fProb, final double[] oProb, final double[] samples, final double constant )
     {
         //Consumer that increments the probabilities and sample size
@@ -176,10 +176,10 @@ public class ReliabilityDiagram extends Diagram<DiscreteProbabilityPairs, MultiV
                     lower = -1.0; //Catch forecast probabilities of zero in the first bin
                 }
                 //Establish whether the forecast probability falls inside it
-                if ( pair.getItemTwo() > lower && pair.getItemTwo() <= upper )
+                if ( pair.getRight() > lower && pair.getRight() <= upper )
                 {
-                    fProb[i] += pair.getItemTwo();
-                    oProb[i] += pair.getItemOne();
+                    fProb[i] += pair.getRight();
+                    oProb[i] += pair.getLeft();
                     samples[i] += 1;
                     break;
                 }

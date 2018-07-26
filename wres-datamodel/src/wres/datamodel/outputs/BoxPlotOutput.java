@@ -1,31 +1,31 @@
 package wres.datamodel.outputs;
 
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.StringJoiner;
 
 import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.DataFactory;
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.inputs.pairs.EnsemblePair;
 import wres.datamodel.metadata.MetricOutputMetadata;
 
 /**
- * Immutable store of outputs associated with a box plot. Contains a {@link PairOfDoubleAndVectorOfDoubles} where the 
+ * Immutable store of outputs associated with a box plot. Contains a {@link EnsemblePair} where the 
  * left side is a single value and the right side comprises the "whiskers" (quantiles) associated with a single box.
  * 
  * @author james.brown@hydrosolved.com
  */
 public class BoxPlotOutput
-        implements MetricOutput<List<PairOfDoubleAndVectorOfDoubles>>, Iterable<PairOfDoubleAndVectorOfDoubles>
+        implements MetricOutput<List<EnsemblePair>>, Iterable<EnsemblePair>
 {
 
     /**
      * The boxes in an immutable list.
      */
 
-    private final List<PairOfDoubleAndVectorOfDoubles> output;
+    private final List<EnsemblePair> output;
 
     /**
      * The metadata associated with the output.
@@ -63,7 +63,7 @@ public class BoxPlotOutput
      * @return an instance of the output
      */
 
-    public static BoxPlotOutput of( List<PairOfDoubleAndVectorOfDoubles> output,
+    public static BoxPlotOutput of( List<EnsemblePair> output,
                                     VectorOfDoubles probabilities,
                                     MetricOutputMetadata meta,
                                     MetricDimension domainAxisDimension,
@@ -79,13 +79,13 @@ public class BoxPlotOutput
     }
 
     @Override
-    public List<PairOfDoubleAndVectorOfDoubles> getData()
+    public List<EnsemblePair> getData()
     {
         return output;
     }
 
     @Override
-    public Iterator<PairOfDoubleAndVectorOfDoubles> iterator()
+    public Iterator<EnsemblePair> iterator()
     {
         return output.iterator();
     }
@@ -153,8 +153,8 @@ public class BoxPlotOutput
         {
             return false;
         }
-        Iterator<PairOfDoubleAndVectorOfDoubles> it = iterator();
-        for ( PairOfDoubleAndVectorOfDoubles next : v )
+        Iterator<EnsemblePair> it = iterator();
+        for ( EnsemblePair next : v )
         {
             if ( !next.equals( it.next() ) )
             {
@@ -195,7 +195,7 @@ public class BoxPlotOutput
      * @throws MetricOutputException if any of the inputs are invalid
      */
 
-    private BoxPlotOutput( List<PairOfDoubleAndVectorOfDoubles> output,
+    private BoxPlotOutput( List<EnsemblePair> output,
                            VectorOfDoubles probabilities,
                            MetricOutputMetadata meta,
                            MetricDimension domainAxisDimension,
@@ -226,7 +226,7 @@ public class BoxPlotOutput
         {
             throw new MetricOutputException( "Specify two or more probabilities for the whiskers." );
         }
-        if ( !output.isEmpty() && probabilities.size() != output.get( 0 ).getItemTwo().length )
+        if ( !output.isEmpty() && probabilities.size() != output.get( 0 ).getRight().length )
         {
             throw new MetricOutputException( "The number of probabilities does not match the number of whiskers "
                                              + "associated with each box." );
@@ -237,8 +237,8 @@ public class BoxPlotOutput
         checkEachBox( output );
 
         //Ensure safe types
-        this.output = DataFactory.safePairOfDoubleAndVectorOfDoublesList( output );
-        this.probabilities = DataFactory.safeVectorOf( probabilities );
+        this.output = Collections.unmodifiableList( output );
+        this.probabilities = probabilities;
         this.domainAxisDimension = domainAxisDimension;
         this.rangeAxisDimension = rangeAxisDimension;
         this.meta = meta;
@@ -250,18 +250,18 @@ public class BoxPlotOutput
      * @param boxes the boxes
      */
 
-    private void checkEachBox( List<PairOfDoubleAndVectorOfDoubles> boxes )
+    private void checkEachBox( List<EnsemblePair> boxes )
     {
         if ( !boxes.isEmpty() )
         {
-            int check = boxes.get( 0 ).getItemTwo().length;
-            for ( PairOfDoubleAndVectorOfDoubles next : boxes )
+            int check = boxes.get( 0 ).getRight().length;
+            for ( EnsemblePair next : boxes )
             {
-                if ( next.getItemTwo().length == 0 )
+                if ( next.getRight().length == 0 )
                 {
                     throw new MetricOutputException( "One or more boxes are missing whiskers." );
                 }
-                if ( next.getItemTwo().length != check )
+                if ( next.getRight().length != check )
                 {
                     throw new MetricOutputException( "One or more boxes has a different number of whiskers than "
                                                      + "input probabilities." );

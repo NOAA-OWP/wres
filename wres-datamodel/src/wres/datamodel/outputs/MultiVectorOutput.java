@@ -7,7 +7,6 @@ import java.util.StringJoiner;
 
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.DataFactory;
 import wres.datamodel.VectorOfDoubles;
 
 /**
@@ -129,7 +128,7 @@ public class MultiVectorOutput implements MetricOutput<Map<MetricDimension, Vect
             throw new MetricOutputException( "Specify one or more outputs to store." );
         }
         this.output = new EnumMap<>( MetricDimension.class );
-        output.forEach( ( key, value ) -> this.output.put( key, DataFactory.safeVectorOf( value ) ) );
+        output.forEach( ( key, value ) -> this.output.put( key, value ) );
         this.meta = meta;
     }
 

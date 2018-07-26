@@ -35,7 +35,7 @@ public class BiasFraction extends DoubleErrorScore<SingleValuedPairs>
         DoubleErrorFunction error = FunctionFactory.error();
         s.getRawData().forEach( pair -> {
             left.add( error.applyAsDouble( pair ) );
-            right.add( pair.getItemOne() );
+            right.add( pair.getLeft() );
         } );
         double result = left.sum() / right.sum();
         //Set NaN if not finite
