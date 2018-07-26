@@ -1,6 +1,5 @@
 package wres.io.data.caching;
 
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Map;
 import java.util.Objects;
@@ -9,7 +8,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.io.utilities.Database;
+import wres.io.utilities.DataProvider;
 import wres.io.utilities.ScriptBuilder;
 import wres.util.NotImplementedException;
 
@@ -59,11 +58,11 @@ public final class UnitConversions
             this.fromUnitName = MeasurementUnits.getNameByID( this.fromUnitID );
         }
 
-        private ConversionKey (ResultSet row) throws SQLException
+        private ConversionKey (DataProvider data) throws SQLException
         {
-            String unitName = Database.getValue( row, "unit_name" );
+            String unitName = data.getValue( "unit_name" );
             this.toUnitName = unitName.toLowerCase();
-            this.fromUnitID = Database.getValue( row, "from_unit" );
+            this.fromUnitID = data.getValue( "from_unit" );
             this.fromUnitName = MeasurementUnits.getNameByID( this.fromUnitID );
         }
     }
@@ -170,11 +169,11 @@ public final class UnitConversions
         private final double initialOffset;
         private final double finalOffset;
 
-        Conversion (ResultSet row) throws SQLException
+        Conversion (DataProvider data) throws SQLException
         {
-            this.factor = row.getDouble("factor");
-            this.initialOffset = row.getDouble("initial_offset");
-            this.finalOffset = row.getDouble("final_offset");
+            this.factor = data.getDouble("factor");
+            this.initialOffset = data.getDouble("initial_offset");
+            this.finalOffset = data.getDouble("final_offset");
         }
 
         /**

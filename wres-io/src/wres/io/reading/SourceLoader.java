@@ -96,13 +96,29 @@ public class SourceLoader
                         throw new IllegalArgumentException( "USGS data cannot be used to supply forecasts." );
                     }
 
-                    savingFiles.add( Executor.submit( new IngestSaver( "usgs",
-                                                                            this.projectConfig,
-                                                                            config,
-                                                                            source,
-                                                                            this.projectConfig
-                                                                                    .getPair()
-                                                                                    .getFeature() ) ));
+                    savingFiles.add(
+                            Executor.submit(
+                                    IngestSaver.createTask()
+                                               .withProject( this.projectConfig )
+                                               .withDataSourceConfig( config )
+                                               .withFilePath( "usgs" )
+                                               .build()
+                            )
+                    );
+                    continue;
+                }
+                else if (source.getFormat().equals( Format.S_3 ))
+                {
+                    savingFiles.add(
+                            Executor.submit(
+                                    IngestSaver.createTask()
+                                               .withProject( this.projectConfig )
+                                               .withDataSourceConfig( config )
+                                               .withFilePath( "s3" )
+                                               .withSourceConfig( source )
+                                               .build()
+                            )
+                    );
                     continue;
                 }
 
@@ -299,9 +315,7 @@ public class SourceLoader
      *
      * @param filePath
      * @return Future if task was created, null otherwise.
-     * @throws SQLException if getting specified features fails
      */
-
     private static Future<List<IngestResult>> saveFile( Path filePath,
                                                         DataSourceConfig.Source source,
                                                         DataSourceConfig dataSourceConfig,
@@ -309,9 +323,7 @@ public class SourceLoader
                                                         ProjectConfig projectConfig )
     {
         String absolutePath = filePath.toAbsolutePath().toString();
-        Future<List<IngestResult>> task = null;
-
-        //ProgressMonitor.increment();
+        Future<List<IngestResult>> task;
 
         FileEvaluation checkIngest = shouldIngest( absolutePath,
                                                    source );
@@ -321,21 +333,22 @@ public class SourceLoader
             if (ConfigHelper.isForecast(dataSourceConfig))
             {
                 LOGGER.trace("Loading {} as forecast data...", absolutePath);
-                task = Executor.submit( new IngestSaver( absolutePath,
-                                                         projectConfig,
-                                                         dataSourceConfig,
-                                                         source,
-                                                         specifiedFeatures ) );
             }
             else
             {
-                LOGGER.trace("Loading {} as Observation data...");
-                task = Executor.submit( new IngestSaver( absolutePath,
-                                                         projectConfig,
-                                                         dataSourceConfig,
-                                                         source,
-                                                         specifiedFeatures ));
+                LOGGER.trace("Loading {} as Observation data...", absolutePath);
             }
+
+            task = Executor.submit( IngestSaver.createTask()
+                                               .withFilePath( absolutePath )
+                                               .withProject( projectConfig )
+                                               .withDataSourceConfig( dataSourceConfig )
+                                               .withSourceConfig( source )
+                                               .withFeatures( specifiedFeatures )
+                                               .withHash( checkIngest.getHash() )
+                                               .withProgressMonitoring()
+                                               .build()
+            );
         }
         else
         {
@@ -358,8 +371,6 @@ public class SourceLoader
                 task = null;
             }
         }
-
-        //ProgressMonitor.completeStep();
 
         LOGGER.trace( "saveFile returning task {} for filePath {}",
                       task,

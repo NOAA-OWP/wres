@@ -20,6 +20,7 @@ import wres.config.generated.ProjectConfig;
 import wres.io.config.LeftOrRightOrBaseline;
 import wres.io.data.details.ProjectDetails;
 import wres.io.reading.IngestResult;
+import wres.io.utilities.DataProvider;
 import wres.io.utilities.Database;
 import wres.io.utilities.LRUMap;
 
@@ -207,22 +208,23 @@ public class Projects
         this.initializeDetails();
 
         Connection connection = null;
-        ResultSet projects = null;
 
         try
         {
             connection = Database.getHighPriorityConnection();
             String loadScript = "SELECT * FROM wres.project;";
 
-            projects = Database.getResults(connection, loadScript);
-
-            while (projects.next())
+            try (DataProvider data = Database.getResults( connection, loadScript ))
             {
-                Integer projectId = projects.getInt( "project_id" );
-                Integer inputCode = projects.getInt("input_code");
-                this.getKeyIndex().put(
-                        inputCode,
-                        projectId
+                data.consume(
+                        dataset -> {
+                            Integer projectId = dataset.getInt( "project_id" );
+                            Integer inputCode = dataset.getInt( "input_code" );
+                            this.getKeyIndex().put(
+                                    inputCode,
+                                    projectId
+                            );
+                        }
                 );
             }
 
@@ -235,20 +237,6 @@ public class Projects
         }
         finally
         {
-            if (projects != null)
-            {
-                try
-                {
-                    projects.close();
-                }
-                catch (SQLException error)
-                {
-                    // Exception on close should not affect primary outputs.
-                    LOGGER.warn( "The result set {} containing projects could not be closed.",
-                                 projects, error );
-                }
-            }
-
             if (connection != null)
             {
                 Database.returnHighPriorityConnection(connection);

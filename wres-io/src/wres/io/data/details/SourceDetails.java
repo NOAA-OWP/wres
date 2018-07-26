@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.io.data.details.SourceDetails.SourceKey;
+import wres.io.utilities.DataProvider;
 import wres.io.utilities.Database;
 import wres.io.utilities.ScriptBuilder;
 
@@ -136,7 +137,7 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
 	}
 
 	@Override
-	protected PreparedStatement getInsertSelectStatement( Connection connection )
+	protected ScriptBuilder getInsertSelect()
 			throws SQLException
 	{
 	    List<Object> args = new ArrayList<>();
@@ -147,18 +148,18 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
 	    script.addTab().addLine("INSERT INTO wres.Source (path, output_time, lead, hash, is_point_data)");
 	    script.addTab().addLine("SELECT ?, (?)::timestamp without time zone, ?, ?, ?");
 
-	    args.add( this.sourcePath );
-	    args.add(this.outputTime);
-	    args.add(this.lead);
-	    args.add(this.hash);
-	    args.add(this.isPointData);
+        script.addArgument( this.sourcePath );
+        script.addArgument( this.outputTime );
+	    script.addArgument( this.lead );
+	    script.addArgument( this.hash );
+	    script.addArgument( this.isPointData );
 
 	    script.addTab().addLine("WHERE NOT EXISTS (");
 	    script.addTab(  2  ).addLine("SELECT 1");
 	    script.addTab(  2  ).addLine("FROM wres.Source");
 	    script.addTab(  2  ).addLine("WHERE hash = ?");
 
-	    args.add(this.hash);
+	    script.addArgument( this.hash );
 
 	    script.addTab().addLine(")");
 	    script.addTab().addLine("RETURNING source_id");
@@ -172,9 +173,9 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
 	    script.addLine("FROM wres.Source");
 	    script.addLine("WHERE hash = ?;");
 
-	    args.add(this.hash);
+	    script.addArgument( this.hash );
 
-	    return script.getPreparedStatement( connection, args.toArray() );
+	    return script;
 	}
 
 	@Override
@@ -187,8 +188,6 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
     public void save() throws SQLException
     {
         Connection connection = null;
-		ResultSet resultSet = null;
-		PreparedStatement statement = null;
 
 		try
         {
@@ -197,12 +196,11 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
 
             Database.lockTable( connection, "wres.Source" );
 
-            statement = this.getInsertSelectStatement( connection );
-            resultSet = statement.executeQuery();
-            //resultSet = Database.getResults( connection, this.getInsertSelectStatement() );
-
-            this.setID( Database.getValue( resultSet, this.getIDName() ) );
-            this.performedInsert = Database.getValue( resultSet, "wasInserted" );
+            try (DataProvider resultSet = this.getInsertSelect().getData(connection))
+            {
+                this.setID( resultSet.getValue( this.getIDName() ) );
+                this.performedInsert = resultSet.getValue( "wasInserted" );
+            }
 
             connection.commit();
 
@@ -232,32 +230,6 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
         }
         finally
         {
-            if (resultSet != null)
-            {
-                try
-                {
-                    resultSet.close();
-                }
-                catch ( SQLException se )
-                {
-                    // Failure to close should not affect primary outputs.
-                    LOGGER.warn( "Failed to close result set {}.", resultSet, se );
-                }
-            }
-
-            if (statement != null)
-            {
-                try
-                {
-                    statement.close();
-                }
-                catch (SQLException e)
-                {
-                    // Failure to close should not affect primary outputs.
-                    LOGGER.warn( "Failed to close statement {}.", statement, e );
-                }
-            }
-
             if (connection != null)
             {
                 connection.setAutoCommit( true );

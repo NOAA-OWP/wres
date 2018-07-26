@@ -9,6 +9,7 @@ import java.util.concurrent.ConcurrentSkipListMap;
 
 import org.apache.commons.lang3.StringUtils;
 
+import wres.io.utilities.DataProvider;
 import wres.io.utilities.ScriptBuilder;
 
 public class USGSParameters
@@ -78,14 +79,14 @@ public class USGSParameters
             this.aggregation = lineParts[4].replaceAll("\"", "");
         }
 
-        public USGSParameter (ResultSet results) throws SQLException
+        public USGSParameter (DataProvider data) throws SQLException
         {
-            this.name = results.getString("name");
-            this.description = results.getString( "description" );
-            this.parameterCode = results.getString("parameter_code");
-            this.measurementUnit = results.getString("measurement_unit");
-            this.aggregation = results.getString("aggregation");
-            this.measurementUnitID = results.getInt( "measurementunit_id" );
+            this.name = data.getString("name");
+            this.description = data.getString( "description" );
+            this.parameterCode = data.getString("parameter_code");
+            this.measurementUnit = data.getString("measurement_unit");
+            this.aggregation = data.getString("aggregation");
+            this.measurementUnitID = data.getInt( "measurementunit_id" );
         }
 
         private USGSParameter (

@@ -10,6 +10,7 @@ import wres.io.data.caching.UnitConversions;
 import wres.io.data.caching.Variables;
 import wres.io.data.details.ProjectDetails;
 import wres.io.reading.usgs.USGSReader;
+import wres.io.utilities.DataProvider;
 import wres.io.utilities.Database;
 import wres.io.utilities.ScriptBuilder;
 
@@ -50,10 +51,10 @@ class ClimatologyBuilder
             this.endDate = end;
         }
 
-        DateRange(ResultSet resultSet) throws SQLException
+        DateRange(DataProvider data) throws SQLException
         {
-            this.startDate = resultSet.getString( "start_date" );
-            this.endDate = resultSet.getString( "end_date" );
+            this.startDate = data.getString( "start_date" );
+            this.endDate = data.getString( "end_date" );
         }
 
         private final String startDate;
@@ -515,49 +516,50 @@ class ClimatologyBuilder
         script.append(");");
 
         Connection connection = null;
-        ResultSet results = null;
 
         try
         {
             connection = Database.getConnection();
-            results = Database.getResults( connection, script.toString() );
-
-            // Add and convert all retrieved values
-            while ( results.next() )
+            try (DataProvider data = Database.getResults( connection, script.toString() ))
             {
-                Double value = Database.getValue( results, "observed_value" );
-                if ( value == null )
-                {
-                    continue;
-                }
 
-                value = this.getConversion( results.getInt(
-                        "measurementunit_id" ) ).convert( value );
+                // Add and convert all retrieved values
+                while ( data.next() )
+                {
+                    Double value = data.getValue( "observed_value" );
+                    if ( value == null )
+                    {
+                        continue;
+                    }
 
-                if (value < this.projectDetails.getMinimumValue() &&
-                    this.projectDetails.getDefaultMinimumValue() != null)
-                {
+                    value = this.getConversion( data.getInt(
+                            "measurementunit_id" ) ).convert( value );
 
-                    this.addValue( results.getString( "observation_time" ),
-                                   this.projectDetails.getDefaultMinimumValue() );
-                }
-                else if (value > this.projectDetails.getMaximumValue() &&
-                         this.projectDetails.getDefaultMaximumValue() != null)
-                {
-                    this.addValue( results.getString( "observation_time" ),
-                                   this.projectDetails.getDefaultMaximumValue() );
-                }
-                else if ( value >= this.projectDetails.getMinimumValue()
-                     && value <= this.projectDetails.getMaximumValue() )
-                {
-                    this.addValue( results.getString( "observation_time" ),
-                                   value );
-                }
-                else
-                {
-                    LOGGER.debug( "The value {} was not added for the date '{}'",
-                                  value,
-                                  results.getString( "observation_time" ) );
+                    if ( value < this.projectDetails.getMinimumValue() &&
+                         this.projectDetails.getDefaultMinimumValue() != null )
+                    {
+
+                        this.addValue( data.getString( "observation_time" ),
+                                       this.projectDetails.getDefaultMinimumValue() );
+                    }
+                    else if ( value > this.projectDetails.getMaximumValue() &&
+                              this.projectDetails.getDefaultMaximumValue() != null )
+                    {
+                        this.addValue( data.getString( "observation_time" ),
+                                       this.projectDetails.getDefaultMaximumValue() );
+                    }
+                    else if ( value >= this.projectDetails.getMinimumValue()
+                              && value <= this.projectDetails.getMaximumValue() )
+                    {
+                        this.addValue( data.getString( "observation_time" ),
+                                       value );
+                    }
+                    else
+                    {
+                        LOGGER.debug( "The value {} was not added for the date '{}'",
+                                      value,
+                                      data.getString( "observation_time" ) );
+                    }
                 }
             }
         }
@@ -567,19 +569,6 @@ class ClimatologyBuilder
         }
         finally
         {
-            if (results != null)
-            {
-                try
-                {
-                    results.close();
-                }
-                catch ( SQLException e )
-                {
-                    // Exception on close shouldn't change main outputs.
-                    LOGGER.warn( "The result set could not be closed.", e );
-                }
-            }
-
             if (connection != null)
             {
                 Database.returnConnection( connection );
