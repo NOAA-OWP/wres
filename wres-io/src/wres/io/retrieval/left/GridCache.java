@@ -20,6 +20,7 @@ import wres.grid.client.Response;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.UnitConversions;
 import wres.io.data.details.ProjectDetails;
+import wres.io.utilities.DataProvider;
 import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
 import wres.io.utilities.ScriptBuilder;
@@ -167,10 +168,10 @@ class GridCache implements LeftHandCache
         }
     }
 
-    private void addSourceToCache(ResultSet sourceRow) throws SQLException
+    private void addSourceToCache(DataProvider data) throws SQLException
     {
-        LocalDateTime leftTime = Database.getLocalDateTime( sourceRow, "output_time" );
-        this.cachedSources.put( leftTime, sourceRow.getString( "path" ) );
+        LocalDateTime leftTime = data.getLocalDateTime( "output_time" );
+        this.cachedSources.put( leftTime, data.getString( "path" ) );
     }
 
     private final NavigableMap<LocalDateTime, String> cachedSources;

@@ -310,16 +310,16 @@ public class ZippedSource extends BasicSource {
             {
                 stream.write(content);
                 this.savedFiles.add(archivedFileName);
-                ingest = new IngestSaver(archivedFileName,
-                                         this.getProjectConfig(),
-                                         this.getDataSourceConfig(),
-                                         originalSource,
-                                         this.getSpecifiedFeatures());
-
-                ingest.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
 
                 ProgressMonitor.increment();
-                Future<List<IngestResult>> task = Executor.submit( ingest );
+                Future<List<IngestResult>> task = Executor.submit(
+                        IngestSaver.createTask()
+                                   .withFilePath( archivedFileName )
+                                   .withProject( this.getProjectConfig() )
+                                   .withDataSourceConfig( this.getDataSourceConfig() )
+                                   .withProgressMonitoring()
+                                   .build()
+                );
                 this.addIngestTask(task);
             }
         }

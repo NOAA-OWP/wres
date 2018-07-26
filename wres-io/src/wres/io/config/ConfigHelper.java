@@ -222,6 +222,38 @@ public class ConfigHelper
         return false;
     }
 
+    public static boolean usesS3Data(ProjectConfig projectConfig)
+    {
+        for ( DataSourceConfig.Source source : projectConfig.getInputs().getLeft().getSource() )
+        {
+            if (source.getFormat().equals( Format.S_3 ))
+            {
+                return true;
+            }
+        }
+
+        for (DataSourceConfig.Source source : projectConfig.getInputs().getRight().getSource())
+        {
+            if (source.getFormat().equals( Format.S_3 ))
+            {
+                return true;
+            }
+        }
+
+        if (projectConfig.getInputs().getBaseline() != null)
+        {
+            for ( DataSourceConfig.Source source : projectConfig.getInputs().getBaseline().getSource() )
+            {
+                if ( source.getFormat().equals( Format.S_3 ) )
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
     // TODO: Move to Project Details
     // ... or wres-config if useful outside of wres-io
     public static boolean usesNetCDFData( ProjectConfig projectConfig )

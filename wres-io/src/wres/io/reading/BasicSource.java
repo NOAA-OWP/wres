@@ -407,6 +407,7 @@ public abstract class BasicSource
      */
     protected void setHash(byte[] contents)
     {
+        WRESCallable<String> hasher;
         if (contents == null)
         {
             this.getLogger().debug( "A file ('{}') with no contents is being "
@@ -414,27 +415,56 @@ public abstract class BasicSource
                                     this.getFilename() );
         }
 
-        WRESCallable<String> hasher = new WRESCallable<String>()
+        if (this.hash == null)
         {
-            @Override
-            protected String execute() throws Exception
+            hasher = new WRESCallable<String>()
             {
-                return Strings.getMD5Checksum( this.contentsToHash );
-            }
+                @Override
+                protected String execute() throws Exception
+                {
+                    return Strings.getMD5Checksum( this.contentsToHash );
+                }
 
-            @Override
-            protected Logger getLogger()
-            {
-                return null;
-            }
+                @Override
+                protected Logger getLogger()
+                {
+                    return null;
+                }
 
-            private byte[] contentsToHash;
-            WRESCallable<String> init(byte[] contentsToHash)
-            {
-                this.contentsToHash = contentsToHash;
-                return this;
-            }
-        }.init( contents );
+                private byte[] contentsToHash;
+
+                WRESCallable<String> init( byte[] contentsToHash )
+                {
+                    this.contentsToHash = contentsToHash;
+                    return this;
+                }
+            }.init( contents );
+        }
+        else
+        {
+            hasher = new WRESCallable<String>() {
+                @Override
+                protected String execute() throws Exception
+                {
+                    return this.hash;
+                }
+
+                @Override
+                protected Logger getLogger()
+                {
+                    return null;
+                }
+
+                WRESCallable<String> init(String hash)
+                {
+                    this.hash = hash;
+                    return this;
+                }
+
+                private String hash;
+            }.init( this.hash );
+        }
+        
         this.futureHash = Executor.submitHighPriorityTask( hasher );
     }
 
@@ -444,31 +474,67 @@ public abstract class BasicSource
      */
     protected void setHash()
     {
-        WRESCallable<String> hasher = new WRESCallable<String>() {
-            @Override
-            protected String execute() throws Exception
+        WRESCallable<String> hasher;
+        if (this.hash == null)
+        {
+            hasher = new WRESCallable<String>()
             {
-                return Strings.getMD5Checksum( this.fileNameToHash );
-            }
+                @Override
+                protected String execute() throws Exception
+                {
+                    return Strings.getMD5Checksum( this.fileNameToHash );
+                }
 
-            @Override
-            protected Logger getLogger()
-            {
-                return null;
-            }
+                @Override
+                protected Logger getLogger()
+                {
+                    return null;
+                }
 
-            private String fileNameToHash;
-            WRESCallable<String> init(String fileNameToHash)
-            {
-                this.fileNameToHash = fileNameToHash;
-                return this;
-            }
-        }.init( this.getFilename() );
+                private String fileNameToHash;
+
+                WRESCallable<String> init( String fileNameToHash )
+                {
+                    this.fileNameToHash = fileNameToHash;
+                    return this;
+                }
+            }.init( this.getFilename() );
+        }
+        else
+        {
+            hasher = new WRESCallable<String>() {
+                @Override
+                protected String execute() throws Exception
+                {
+                    return this.hash;
+                }
+
+                @Override
+                protected Logger getLogger()
+                {
+                    return null;
+                }
+
+                WRESCallable<String> init(String hash)
+                {
+                    this.hash = hash;
+                    return this;
+                }
+
+                private String hash;
+            }.init( this.hash );
+        }
         this.futureHash = Executor.submitHighPriorityTask( hasher );
+    }
+
+    public void setHash(String hash)
+    {
+        this.hash = hash;
     }
 
     /**
      * Determines if the source was already ingested into the database
+     * TODO: Is this really necessary?
      * @param contentHash The hash of the contents to look for
      * @return Whether or not the indicated data lies within the database
      * @throws SQLException Thrown if an error occurs while communicating with
@@ -480,6 +546,7 @@ public abstract class BasicSource
     {
         Objects.requireNonNull( contentHash );
 
+        // TODO: Convert to ScriptBuilder
         StringBuilder script = new StringBuilder();
 
         script.append("SELECT EXISTS (").append(NEWLINE);

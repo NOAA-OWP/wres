@@ -6,9 +6,13 @@ import java.io.StringReader;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.sql.Connection;
+import java.sql.Date;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -31,14 +35,6 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import liquibase.Contexts;
-import liquibase.LabelExpression;
-import liquibase.Liquibase;
-import liquibase.database.DatabaseFactory;
-import liquibase.database.jvm.JdbcConnection;
-import liquibase.exception.DatabaseException;
-import liquibase.exception.LiquibaseException;
-import liquibase.resource.ClassLoaderResourceAccessor;
 import org.postgresql.PGConnection;
 import org.postgresql.copy.CopyManager;
 import org.slf4j.Logger;
@@ -55,7 +51,6 @@ import wres.io.reading.IngestResult;
 import wres.system.ProgressMonitor;
 import wres.system.SystemSettings;
 import wres.util.FormattedStopwatch;
-import wres.util.NotImplementedException;
 import wres.util.Strings;
 import wres.util.functional.ExceptionalConsumer;
 import wres.util.functional.ExceptionalFunction;
@@ -220,7 +215,7 @@ public final class Database {
         LinkedList<Future<?>> indexTasks = new LinkedList<>();
 
         Connection connection = null;
-        ResultSet indexes = null;
+        DataProvider indexes = null;
 
         FormattedStopwatch watch = null;
 
@@ -278,17 +273,7 @@ public final class Database {
         {
             if (indexes != null)
             {
-                try
-                {
-                    indexes.close();
-                }
-                catch ( SQLException e )
-                {
-                    // Exception on close should not affect primary outputs.
-                    LOGGER.warn( "The result set containing the collection of "
-                                 + "indexes could not be closed",
-                                 e );
-                }
+                indexes.close();
             }
 
             if (connection != null)
@@ -686,6 +671,83 @@ public final class Database {
     }
 
     /**
+     * Executes the passed in query in the current thread
+     * @param query The query to execute
+     * @throws SQLException Thrown if an error occurred while attempting to
+     * communicate with the database
+     */
+    public static void execute(final String query, Collection<Object[]> parameters) throws SQLException
+    {
+        Connection connection = null;
+        PreparedStatement statement = null;
+        Timer timer = null;
+
+        LOGGER.trace( "{}{}{}", NEWLINE, query, NEWLINE );
+
+        try
+        {
+            if (LOGGER.isDebugEnabled())
+            {
+                timer = Database.createScriptTimer( query );
+            }
+
+            connection = getConnection();
+            statement = connection.prepareStatement(query);
+
+            for (Object[] statementValues : parameters)
+            {
+                int addedParameters = 0;
+                for (; addedParameters < statementValues.length; ++addedParameters)
+                {
+                    statement.setObject(addedParameters + 1, statementValues[addedParameters]);
+                }
+
+                while (addedParameters < statement.getParameterMetaData().getParameterCount())
+                {
+                    statement.setObject(addedParameters + 1, null);
+                    addedParameters++;
+                }
+
+                statement.addBatch();
+            }
+
+            statement.executeBatch();
+
+            if (LOGGER.isDebugEnabled() && timer != null)
+            {
+                timer.cancel();
+            }
+        }
+        catch (SQLException error)
+        {
+            String message = query;
+            if (query.length() > 1000)
+            {
+                message = query.substring( 0, 1000 );
+            }
+
+            LOGGER.error( "The following SQL call failed:{}{}",
+                          NEWLINE,
+                          message,
+                          error );
+            throw error;
+        }
+        finally
+        {
+            if (statement != null)
+            {
+                statement.close();
+            }
+
+            if (connection != null)
+            {
+                connection.setAutoCommit( true );
+                returnConnection(connection);
+            }
+        }
+    }
+
+    /**
      * Sends a copy statement to the indicated table within the database
      * @param table_definition The definition of a table and its columns (i.e.
      *                         "table_1 (column_1, column_2, column_3)"
@@ -911,74 +973,6 @@ public final class Database {
 	}
 
     /**
-     * Converts either a database Timestamp, epoch seconds (represented by an
-     * Integer, Long, or Double), or text into an Instant
-     * @param resultSet The resultSet containing the data to convert
-     * @param fieldName The field that holds the value to convert
-     * @return An Instant in time
-     * @throws SQLException Thrown if the column for the field name doesn't exist
-     * @throws SQLException Thrown if the data type held in the field cannot
-     * be converted to an instant
-     */
-	public static Instant getInstant(ResultSet resultSet, String fieldName)
-            throws SQLException
-    {
-        Instant result;
-
-        if (!Database.hasColumn( resultSet, fieldName ))
-        {
-            throw new SQLException( "The field '" + fieldName + "' is not "
-                                    + "present in the result set. An instant "
-                                    + "cannot be created." );
-        }
-
-        // Jump to the first row if the jump hasn't already been made
-        if (resultSet.isBeforeFirst())
-        {
-            resultSet.next();
-        }
-
-        // Timestamps are interpretted as strings in order to avoid the 'help'
-		// that JDBC provides by converting timestamps to local times and
-		// applying daylight savings changes
-        if (resultSet.getObject( fieldName ) instanceof String ||
-			resultSet.getObject( fieldName ) instanceof java.sql.Timestamp)
-        {
-            result = Instant.parse( resultSet.getString( fieldName )
-                                             .replace( " ", "T" )
-                                             .concat( "Z" )
-            );
-        }
-        else if (resultSet.getObject( fieldName ) instanceof Integer)
-        {
-			result = Instant.ofEpochSecond( resultSet.getInt( fieldName ) );
-        }
-        else if (resultSet.getObject( fieldName ) instanceof Long)
-        {
-			result = Instant.ofEpochSecond( resultSet.getLong( fieldName ) );
-        }
-        else if (resultSet.getObject( fieldName ) instanceof Double)
-        {
-			Double epochSeconds = (Double)resultSet.getObject( fieldName );
-			result = Instant.ofEpochSecond( epochSeconds.longValue() );
-        }
-        else
-        {
-            throw new SQLException( "The column type for '" +
-                                    fieldName +
-                                    "' cannot be converted into an Instance." );
-        }
-
-        return result;
-    }
-
-    public static LocalDateTime getLocalDateTime(ResultSet resultSet, String fieldName) throws SQLException
-	{
-		Instant instant = Database.getInstant( resultSet, fieldName );
-		return instant.atOffset( ZoneOffset.UTC ).toLocalDateTime();
-	}
-
-    /**
      * Retrieves results from the database over a high priority connection and
      * consumes the results
      * @param script The script used to retrieve the results
@@ -986,37 +980,21 @@ public final class Database {
      * @throws SQLException Thrown if the retrieval script fails
      * @throws SQLException Thrown if the consumer function fails
      */
-	static void highPriorityConsume(String script, ExceptionalConsumer<ResultSet, SQLException> rowConsumer)
+	static void highPriorityConsume(String script, ExceptionalConsumer<DataProvider, SQLException> rowConsumer)
             throws SQLException
     {
         Connection connection = null;
-        ResultSet resultSet = null;
 
         try
         {
             connection = Database.getHighPriorityConnection();
-            resultSet = Database.getResults( connection, script );
-
-            while (resultSet.next())
+            try (DataProvider data = Database.getResults( connection, script ))
             {
-                rowConsumer.accept( resultSet );
+                data.consume( rowConsumer );
             }
         }
         finally
         {
-            if (resultSet != null)
-            {
-                try
-                {
-                    resultSet.close();
-                }
-                catch (SQLException closeException)
-                {
-                    LOGGER.debug("The result set used for interpretation could "
-                                 + "not be closed.", closeException);
-                }
-            }
-
             if (connection != null)
             {
                 Database.returnHighPriorityConnection( connection );
@@ -1024,36 +1002,19 @@ public final class Database {
         }
     }
 
-    public static void consume(String script, ExceptionalConsumer<ResultSet, SQLException> rowConsumer) throws SQLException
+    public static void consume(String script, ExceptionalConsumer<DataProvider, SQLException> rowConsumer) throws SQLException
     {
         Connection connection = null;
-        ResultSet resultSet = null;
-
         try
         {
             connection = Database.getConnection();
-            resultSet = Database.getResults( connection, script );
-
-            while (resultSet.next())
+            try ( DataProvider data = Database.getResults( connection, script ) )
             {
-                rowConsumer.accept( resultSet );
+                data.consume( rowConsumer );
             }
         }
         finally
         {
-            if (resultSet != null)
-            {
-                try
-                {
-                    resultSet.close();
-                }
-                catch (SQLException closeException)
-                {
-                    LOGGER.debug("The result set used for consumption could "
-                                 + "not be closed.", closeException);
-                }
-            }
-
             if (connection != null)
             {
                 Database.returnConnection( connection );
@@ -1062,14 +1023,13 @@ public final class Database {
     }
 
     static <U> List<U> interpret( String query,
-                                  ExceptionalFunction<ResultSet, U, SQLException> interpretor,
+                                  ExceptionalFunction<DataProvider, U, SQLException> interpretor,
                                   boolean priorityIsHigh)
             throws SQLException
     {
         List<U> result = new ArrayList<>();
 
         Connection connection = null;
-        ResultSet resultSet = null;
 
         try
         {
@@ -1082,28 +1042,13 @@ public final class Database {
                 connection = Database.getConnection();
             }
 
-            resultSet = Database.getResults( connection, query );
-
-            while (resultSet.next())
+            try (DataProvider data = Database.getResults( connection, query ))
             {
-                result.add(interpretor.call( resultSet ));
+                result.addAll( data.interpret( interpretor ) );
             }
         }
         finally
         {
-            if (resultSet != null)
-            {
-                try
-                {
-                    resultSet.close();
-                }
-                catch (SQLException closeException)
-                {
-                    LOGGER.debug("The result set used for interpretation could "
-                                 + "not be closed.", closeException);
-                }
-            }
-
             if (connection != null && priorityIsHigh)
             {
                 Database.returnHighPriorityConnection( connection );
@@ -1322,6 +1267,11 @@ public final class Database {
 		}
 	}
 
+	public static DataProvider getData( String query ) throws SQLException
+    {
+        return Database.getData(query, false);
+    }
+
     /**
      * Stores all values from a query in a format divorced from any connections
      * to the database
@@ -1336,50 +1286,38 @@ public final class Database {
      * @return All data resulting from the query
      * @throws SQLException Thrown if the query fails
      */
-	public static DataSet getDataSet(String query) throws SQLException
+	public static DataProvider getData( String query, boolean highPriority) throws SQLException
 	{
+		DataProvider dataSet;
 		Connection connection = null;
-		ResultSet resultSet = null;
-		DataSet dataSet;
-		Timer scriptTimer = null;
 
 		try
-		{
-		    if (LOGGER.isDebugEnabled())
+        {
+            if (highPriority)
             {
-                scriptTimer = Database.createScriptTimer( query );
+                connection = Database.getHighPriorityConnection();
+            }
+            else
+            {
+                connection = Database.getConnection();
             }
 
-			connection = Database.getConnection();
-			resultSet = Database.getResults( connection, query );
-
-			if (LOGGER.isDebugEnabled() && scriptTimer != null)
+            try ( DataProvider resultSet = Database.getResults( connection, query ) )
             {
-                scriptTimer.cancel();
+                dataSet = DataSetProvider.from( resultSet );
             }
-
-			dataSet = new DataSet( resultSet );
-		}
-		finally
-		{
-			if (resultSet != null)
-			{
-			    try
-                {
-                    resultSet.close();
-                }
-                catch ( SQLException se )
-                {
-                    // Exception on close should not affect primary outputs.
-                    LOGGER.warn( "Could not close result set {}.", resultSet, se );
-                }
-			}
-
-			if (connection != null)
-			{
-				Database.returnConnection( connection );
-			}
-		}
+        }
+        finally
+        {
+            if (connection != null && highPriority)
+            {
+                Database.returnHighPriorityConnection( connection );
+            }
+            else
+            {
+                Database.returnConnection( connection );
+            }
+        }
 
 		return dataSet;
 	}
@@ -1415,14 +1353,17 @@ public final class Database {
         }
 
 		Connection connection = null;
-		ResultSet results;
         List<String> sql = new ArrayList<>();
 
-        String optionalVacuum = "";
+        final String optionalVacuum;
 
         if (vacuum)
         {
             optionalVacuum = "VACUUM ";
+        }
+        else
+        {
+            optionalVacuum = "";
         }
 
 		LOGGER.info("Analyzing data for efficient execution...");
@@ -1442,12 +1383,10 @@ public final class Database {
                     + NEWLINE +
                     "     AND relkind = 'r';";
 
-            results = getResults( connection, script );
-
-            while (results.next())
-            {
-            	sql.add(optionalVacuum + results.getString( "alyze" ));
-            }
+            Database.consume(
+                    script,
+                    provider -> sql.add(optionalVacuum + provider.getString( "alyze" ))
+            );
 
         }
         finally
@@ -1645,7 +1584,7 @@ public final class Database {
      * @return The results of the query
      * @throws SQLException Any issue caused by running the query in the database
      */
-    public static ResultSet getResults(final Connection connection, String query) throws SQLException
+    public static DataProvider getResults(final Connection connection, String query) throws SQLException
     {
         if (LOGGER.isTraceEnabled())
         {
@@ -1654,7 +1593,7 @@ public final class Database {
             LOGGER.trace("");
         }
 
-        ResultSet results;
+        DataProvider results;
         Statement statement = connection.createStatement();
 		statement.setFetchSize(SystemSettings.fetchSize());
 
@@ -1667,7 +1606,7 @@ public final class Database {
 				timer = Database.createScriptTimer( query );
 			}
 
-			results = statement.executeQuery(query);
+			results = new SQLDataProvider( statement.executeQuery( query) );
 
 			if (LOGGER.isDebugEnabled() && timer != null)
 			{
@@ -1694,6 +1633,128 @@ public final class Database {
 		}
 
         return results;
+    }
+
+    /**
+     * Creates set of results from the given query through the given connection
+     *
+     * @param connection The connection used to connect to the database
+     * @param query The text for the query to call
+     * @return The results of the query
+     * @throws SQLException Any issue caused by running the query in the database
+     */
+    public static DataProvider getResults(final Connection connection, String query, Object[] parameters) throws SQLException
+    {
+        if (LOGGER.isTraceEnabled())
+        {
+            LOGGER.trace( "" );
+            LOGGER.trace(query);
+            LOGGER.trace("");
+        }
+
+        DataProvider results;
+        PreparedStatement statement = null;
+
+        try
+        {
+            statement = connection.prepareStatement( query );
+
+            int addedParameters = 0;
+            for (; addedParameters < parameters.length; ++addedParameters)
+            {
+                statement.setObject( addedParameters + 1, parameters[addedParameters] );
+            }
+
+            while (addedParameters < statement.getParameterMetaData().getParameterCount())
+            {
+                statement.setObject( addedParameters + 1, null );
+                addedParameters++;
+            }
+
+            Timer timer = null;
+
+            if (LOGGER.isDebugEnabled())
+            {
+                timer = Database.createScriptTimer( query );
+            }
+
+            results = new SQLDataProvider( statement.executeQuery() );
+
+            if (LOGGER.isDebugEnabled() && timer != null)
+            {
+                timer.cancel();
+            }
+
+        }
+        catch (SQLException error)
+        {
+            if (statement != null && !statement.isClosed())
+            {
+                try
+                {
+                    statement.close();
+                }
+                catch ( SQLException se )
+                {
+                    // Exception on close should not affect primary outputs.
+                    LOGGER.warn( "Failed to close statement {}.", statement, se );
+                }
+            }
+            LOGGER.error( "The following SQL query failed:{}{}", NEWLINE, query, error );
+            throw error;
+        }
+
+        return results;
+    }
+
+    /**
+     * Creates set of results from the given query through the given connection
+     *
+     * @param query The text for the query to call
+     * @return The results of the query
+     * @throws SQLException Any issue caused by running the query in the database
+     */
+    public static DataProvider getResults(String query, Object[] parameters, boolean highPriority) throws SQLException
+    {
+        if (LOGGER.isTraceEnabled())
+        {
+            LOGGER.trace( "" );
+            LOGGER.trace(query);
+            LOGGER.trace("");
+        }
+
+        Connection connection = null;
+        DataProvider output = null;
+
+        try
+        {
+            if (highPriority)
+            {
+                connection = Database.getHighPriorityConnection();
+            }
+            else
+            {
+                connection = Database.getConnection();
+            }
+
+            try (DataProvider results = Database.getResults( connection, query, parameters ))
+            {
+                output = DataSetProvider.from( results );
+            }
+        }
+        finally
+        {
+            if (connection != null && highPriority)
+            {
+                Database.returnHighPriorityConnection( connection );
+            }
+            else
+            {
+                Database.returnConnection( connection );
+            }
+        }
+
+        return output;
     }
 
     /**
@@ -1746,14 +1807,9 @@ public final class Database {
 		builder.append("TRUNCATE wres.Source RESTART IDENTITY CASCADE;").append(NEWLINE);
 		builder.append("TRUNCATE wres.TimeSeries RESTART IDENTITY CASCADE;").append(NEWLINE);
 		builder.append("TRUNCATE wres.Variable RESTART IDENTITY CASCADE;").append(NEWLINE);
-		builder.append("DELETE FROM wres.VariableFeature VF").append(NEWLINE);
-		builder.append("WHERE EXISTS(").append(NEWLINE);
-		builder.append("    SELECT 1").append(NEWLINE);
-		builder.append("    FROM wres.Feature F").append(NEWLINE);
-		builder.append("    WHERE F.feature_id = VF.feature_id").append(NEWLINE);
-		builder.append(");").append(NEWLINE);
-		builder.append("DELETE FROM wres.Ensemble E").append(NEWLINE);
-		builder.append("WHERE E.ensemble_id > 1;").append(NEWLINE);
+		builder.append("TRUNCATE wres.VariableFeature RESTART IDENTITY CASCADE;").append(NEWLINE);
+		builder.append("TRUNCATE wres.Ensemble RESTART IDENTITY CASCADE;");
+		builder.append("INSERT INTO wres.Ensemble(ensemble_name) VALUES ('default');");
 		builder.append("TRUNCATE wres.Project RESTART IDENTITY CASCADE;").append(NEWLINE);
 		builder.append("TRUNCATE wres.ProjectSource RESTART IDENTITY CASCADE;").append(NEWLINE);
 
@@ -1848,7 +1904,6 @@ public final class Database {
         final long BACKOFF_MULTIPLIER = 2;
         long backoff = BACKOFF_START_MILLIS;
         Connection connection;
-        ResultSet resultSet;
 
         try
         {
@@ -1857,40 +1912,42 @@ public final class Database {
             do
             {
                 connection = SystemSettings.getRawDatabaseConnection();
-                resultSet = Database.getResults( connection, TRY_LOCK_SCRIPT );
-                boolean successfullyLocked = false;
 
-                if (resultSet.next())
+                try (DataProvider  resultSet = Database.getResults( connection, TRY_LOCK_SCRIPT ))
                 {
-                    successfullyLocked = Database.getValue( resultSet, RESULT_COLUMN );
-                }
+                    boolean successfullyLocked = false;
 
-                if ( successfullyLocked )
-                {
-                    Database.setAdvisoryLockConnection( connection );
-                    resultSet.close();
-                    LOGGER.info( "Successfully acquired database change privileges." );
-                    break;
-                }
-                else
-                {
-
-                    backoff = backoff * BACKOFF_MULTIPLIER;
-
-                    shouldTryAgain =  START_TIME_MILLIS + MUTATION_LOCK_WAIT_MS
-                                      >= System.currentTimeMillis() + backoff;
-
-                    if ( shouldTryAgain )
+                    if ( resultSet.next() )
                     {
-                        LOGGER.info( "Waiting for another WRES process to finish modifying the database..." );
-                        Thread.sleep( backoff );
+                        successfullyLocked = resultSet.getValue( RESULT_COLUMN );
+                    }
+
+                    if ( successfullyLocked )
+                    {
+                        Database.setAdvisoryLockConnection( connection );
+                        LOGGER.info( "Successfully acquired database change privileges." );
+                        break;
                     }
                     else
                     {
-                        throw new IOException( "Another wres process is taking "
-                                               + "a while. Gave up trying to "
-                                               + "start ingest. Wait a bit "
-                                               + "and try again." );
+
+                        backoff = backoff * BACKOFF_MULTIPLIER;
+
+                        shouldTryAgain = START_TIME_MILLIS + MUTATION_LOCK_WAIT_MS
+                                         >= System.currentTimeMillis() + backoff;
+
+                        if ( shouldTryAgain )
+                        {
+                            LOGGER.info( "Waiting for another WRES process to finish modifying the database..." );
+                            Thread.sleep( backoff );
+                        }
+                        else
+                        {
+                            throw new IOException( "Another wres process is taking "
+                                                   + "a while. Gave up trying to "
+                                                   + "start ingest. Wait a bit "
+                                                   + "and try again." );
+                        }
                     }
                 }
             }

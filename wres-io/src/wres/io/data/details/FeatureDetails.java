@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.generated.CoordinateSelection;
 import wres.config.generated.Feature;
+import wres.io.utilities.DataProvider;
 import wres.io.utilities.Database;
 import wres.io.utilities.ScriptBuilder;
 import wres.util.Strings;
@@ -65,7 +66,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
         this.setGageID( key.gageID );
     }
 
-    public FeatureDetails( ResultSet row) throws SQLException
+    public FeatureDetails( DataProvider row) throws SQLException
     {
         this.update( row );
     }
@@ -105,56 +106,56 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
     }
 
     @Override
-    protected void update( ResultSet row ) throws SQLException
+    protected void update( DataProvider row ) throws SQLException
     {
-        if (Database.hasColumn( row, "comid" ))
+        if ( row.hasColumn( "comid" ))
         {
-            this.setComid( Database.getValue( row, "comid" ) );
+            this.setComid( row.getValue( "comid" ) );
         }
 
-        if (Database.hasColumn( row, "lid" ))
+        if (row.hasColumn( "lid" ))
         {
-            this.setLid( Database.getValue( row, "lid") );
+            this.setLid( row.getValue("lid") );
         }
 
-        if (Database.hasColumn( row, "gage_id" ))
+        if (row.hasColumn("gage_id" ))
         {
-            this.setGageID( Database.getValue( row, "gage_id" ) );
+            this.setGageID( row.getValue("gage_id" ) );
         }
 
-        if (Database.hasColumn( row, "region" ))
+        if (row.hasColumn("region" ))
         {
-            this.setRegion( Database.getValue( row, "region" ) );
+            this.setRegion( row.getValue("region" ) );
         }
 
-        if (Database.hasColumn( row, "st" ))
+        if (row.hasColumn("state" ))
         {
-            this.setState( Database.getValue(row, "st") );
+            this.setState( row.getValue("state") );
         }
 
-        if (Database.hasColumn( row, "huc" ))
+        if (row.hasColumn("huc" ))
         {
-            this.setHuc( Database.getValue(row, "huc") );
+            this.setHuc( row.getValue("huc") );
         }
 
-        if (Database.hasColumn( row, "feature_name" ))
+        if (row.hasColumn("feature_name" ))
         {
-            this.setFeatureName( Database.getValue( row, "feature_name" ) );
+            this.setFeatureName( row.getValue("feature_name" ) );
         }
 
-        if (Database.hasColumn( row, "latitude" ))
+        if (row.hasColumn("latitude" ))
         {
-            this.setLatitude( Database.getValue(row, "latitude") );
+            this.setLatitude( row.getValue("latitude") );
         }
 
-        if (Database.hasColumn( row, "longitude" ))
+        if (row.hasColumn("longitude" ))
         {
-            this.setLongitude( Database.getValue( row, "longitude" ) );
+            this.setLongitude( row.getValue("longitude" ) );
         }
 
-        if (Database.hasColumn( row, this.getIDName() ))
+        if (row.hasColumn(this.getIDName() ))
         {
-            this.setID( Database.getValue( row, this.getIDName() ) );
+            this.setID( row.getValue(this.getIDName() ) );
         }
     }
 	
@@ -381,25 +382,21 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
     }
 
     @Override
-    protected PreparedStatement getInsertSelectStatement( Connection connection)
+    protected ScriptBuilder getInsertSelect()
             throws SQLException
     {
-        List<Object> arguments = new ArrayList<>();
         ScriptBuilder script = new ScriptBuilder(  );
-
-        script.addLine( this.getInsert( arguments ) );
+        script = this.addInsert( script );
         script.addLine();
         script.addLine("UNION");
         script.addLine();
-        script.add(this.getSelect( arguments ));
+        script = this.addSelect(script);
 
-        return script.getPreparedStatement( connection, arguments );
+        return script;
     }
 
-    private String getInsert(final List<Object> args)
+    private ScriptBuilder addInsert(final ScriptBuilder script)
     {
-        ScriptBuilder script = new ScriptBuilder(  );
-
         // Keeps track of whether or not a field has been added.
         // When true, there needs to be a comma to separate the upcoming field
         // from the previous field, along with a newline
@@ -552,7 +549,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
         {
             script.addTab(2).add("?");
 
-            args.add(this.getComid());
+            script.addArgument(this.getComid());
 
             // A value has now been added
             lineAdded = true;
@@ -572,7 +569,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
             }
 
             script.addTab(2).add("?");
-            args.add( this.getLid() );
+            script.addArgument( this.getLid() );
         }
 
         if (this.getGageID() != null)
@@ -590,7 +587,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
 
 
             script.addTab(2).add("?");
-            args.add(this.getGageID());
+            script.addArgument(this.getGageID());
         }
 
         if ( this.getRegion() != null)
@@ -607,7 +604,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
             }
 
             script.addTab(2).add("?");
-            args.add(this.getRegion());
+            script.addArgument(this.getRegion());
         }
 
         if (this.getState() != null)
@@ -624,7 +621,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
             }
 
             script.addTab(2).add("?");
-            args.add(this.getState());
+            script.addArgument(this.getState());
         }
 
         if (this.getHuc() != null)
@@ -641,7 +638,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
             }
 
             script.addTab(2).add("?");
-            args.add(this.getHuc());
+            script.addArgument(this.getHuc());
         }
 
         if (this.getFeatureName() != null)
@@ -658,7 +655,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
             }
 
             script.addTab(2).add("?");
-            args.add(this.getFeatureName());
+            script.addArgument(this.getFeatureName());
         }
 
         if (this.getLatitude() != null)
@@ -675,7 +672,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
             }
 
             script.addTab(2).add("?");
-            args.add(this.getLatitude());
+            script.addArgument(this.getLatitude());
         }
 
         if (this.getLongitude() != null)
@@ -687,7 +684,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
             }
 
             script.addTab(2).add("?");
-            args.add(this.getLongitude());
+            script.addArgument(this.getLongitude());
         }
 
         script.addLine();
@@ -703,7 +700,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
         if (this.getComid() != null)
         {
             script.add("comid = ?");
-            args.add( this.getComid() );
+            script.addArgument( this.getComid() );
 
             // A clause was added
             lineAdded = true;
@@ -724,7 +721,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
             }
 
             script.add("lid = ?");
-            args.add( this.getLid() );
+            script.addArgument( this.getLid() );
         }
 
         if (Strings.hasValue( this.getGageID() ))
@@ -737,7 +734,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
             }
 
             script.add("gage_id = ?");
-            args.add(this.getGageID());
+            script.addArgument(this.getGageID());
         }
 
         script.addLine();
@@ -756,13 +753,11 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
         script.addLine("SELECT *");
         script.add("FROM new_feature");
 
-        return script.toString();
+        return script;
     }
 
-    private String getSelect(final List<Object> args)
+    private ScriptBuilder addSelect(final ScriptBuilder script)
     {
-        ScriptBuilder script = new ScriptBuilder(  );
-
         script.addLine("SELECT feature_id,");
         script.addTab().addLine("comid,");
         script.addTab().addLine("lid,");
@@ -782,7 +777,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
         if (this.getComid() != null)
         {
             script.add("comid = ?");
-            args.add(this.getComid());
+            script.addArgument(this.getComid());
 
             // A clause was added
             clauseAdded = true;
@@ -803,7 +798,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
             }
 
             script.add("lid = ?");
-            args.add(this.getLid());
+            script.addArgument(this.getLid());
         }
 
         if (Strings.hasValue( this.getGageID() ))
@@ -816,13 +811,13 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
             }
 
             script.add("gage_id = ?");
-            args.add(this.getGageID());
+            script.addArgument(this.getGageID());
         }
 
         script.addLine();
         script.add("LIMIT 1;");
 
-        return script.toString();
+        return script;
     }
 
     @Override

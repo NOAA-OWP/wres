@@ -7,6 +7,7 @@ import java.sql.SQLException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.io.utilities.DataProvider;
 import wres.io.utilities.ScriptBuilder;
 import wres.util.Strings;
 
@@ -77,15 +78,15 @@ public final class MeasurementDetails extends CachedDetail<MeasurementDetails, S
     }
 
 	@Override
-	protected PreparedStatement getInsertSelectStatement( Connection connection )
+	protected ScriptBuilder getInsertSelect()
 			throws SQLException
 	{
 		ScriptBuilder script = new ScriptBuilder(  );
 		script.addLine("SELECT measurementunit_id");
 		script.addLine("FROM wres.MeasurementUnit");
 		script.addLine("WHERE LOWER(unit_name) = LOWER(?);");
-
-		return script.getPreparedStatement( connection, this.unit );
+		script.addArgument( this.unit );
+		return script;
 	}
 
 	@Override

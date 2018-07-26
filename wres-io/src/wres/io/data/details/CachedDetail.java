@@ -7,7 +7,9 @@ import java.sql.SQLException;
 
 import org.slf4j.Logger;
 
+import wres.io.utilities.DataProvider;
 import wres.io.utilities.Database;
+import wres.io.utilities.ScriptBuilder;
 
 /**
  * Describes detail about data from the database that may be accessed through a global cache
@@ -41,12 +43,11 @@ public abstract class CachedDetail<U, V extends Comparable<V>> implements Compar
 	protected abstract void setID( Integer id );
 
     /**
-     * @param connection The connection that the statement will belong to
      * @return A statement that can be used to safely execute an insert and select query
      * @throws SQLException Thrown if the connection and query cannot be used
      * to create the statement
      */
-	protected abstract PreparedStatement getInsertSelectStatement( Connection connection) throws SQLException;
+	protected abstract ScriptBuilder getInsertSelect() throws SQLException;
 
 	protected abstract Object getSaveLock();
 
@@ -55,11 +56,11 @@ public abstract class CachedDetail<U, V extends Comparable<V>> implements Compar
 	 * @param databaseResults Information retrieved from the database
 	 * @throws SQLException Thrown if the requested values couldn't be retrieved from the resultset
 	 */
-	protected void update(ResultSet databaseResults) throws SQLException
+	protected void update(DataProvider databaseResults) throws SQLException
 	{
-		if (Database.hasColumn( databaseResults, this.getIDName() ))
+		if (databaseResults.hasColumn( this.getIDName() ))
 		{
-			this.setID( Database.getValue( databaseResults, this.getIDName() ) );
+			this.setID( databaseResults.getValue( this.getIDName() ));
 		}
 		else
         {
@@ -67,12 +68,12 @@ public abstract class CachedDetail<U, V extends Comparable<V>> implements Compar
         }
 	}
 
-	public CachedDetail(ResultSet resultSet) throws SQLException
+	public CachedDetail(DataProvider resultSet) throws SQLException
 	{
 		this.update( resultSet );
 	}
 
-	public CachedDetail(){}
+	CachedDetail(){}
 
     /**
 	 * Saves the ID of the detail from the database based on the result of the of the insert/select statement
@@ -82,57 +83,15 @@ public abstract class CachedDetail<U, V extends Comparable<V>> implements Compar
 	{
 		synchronized ( this.getSaveLock() )
 		{
-			Connection connection = null;
-			ResultSet results = null;
-            PreparedStatement statement = null;
-			try
+			try (DataProvider results = this.getInsertSelect().getData())
 			{
-				connection = Database.getConnection();
-				statement = this.getInsertSelectStatement( connection );
-				results = statement.executeQuery();
-
-                if (!results.isBeforeFirst())
+                if (results.isEmpty())
                 {
                     throw new SQLException( "No value can be loaded with the key of: " +
                                             this.getKey() );
                 }
 
 				this.update( results );
-			}
-			finally
-			{
-				if ( results != null)
-				{
-				    try
-                    {
-                        results.close();
-                    }
-                    catch( SQLException e )
-                    {
-                        // Failure to close should not affect primary outputs
-                        this.getLogger().warn("Failed to close result set {}.", results, e);
-                    }
-				}
-
-                if ( statement != null)
-                {
-                    try
-                    {
-                        statement.close();
-                    }
-                    catch (SQLException e)
-                    {
-                        // Failure to close should not affect primary outputs
-                        this.getLogger().warn( "Failed to close statement {}.",
-                                               statement,
-                                               e );
-                    }
-                }
-
-				if ( connection != null )
-				{
-					Database.returnConnection( connection );
-				}
 			}
 		}
 	}

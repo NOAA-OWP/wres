@@ -39,7 +39,8 @@ public class NWMSource extends BasicSource
 	@Override
 	public List<IngestResult> save() throws IOException
 	{
-		try ( NetcdfFile source = NetcdfFile.open(getAbsoluteFilename()) )
+        // TODO: Determine handling for the case where the "file" name is actually a URL
+		try ( NetcdfFile source = NetcdfFile.open(this.getFilename()) )
 		{
 			saveNetCDF( source );
 		}
@@ -64,17 +65,30 @@ public class NWMSource extends BasicSource
 		if (var != null)
         {
 			WRESRunnable saver;
-			if (NetCDF.isGridded(var))
+			if (NetCDF.isGridded(var) && this.getHash() == null)
 			{
+			    // TODO: We aren't guaranteed to have a physical file.
+                // If we don't we need to save it for later use
 				saver = new GriddedNWMValueSaver( this.getFilename(),
 												  this.getFutureHash());
 			}
-			else
+			else if(NetCDF.isGridded( var ))
+            {
+                saver = new GriddedNWMValueSaver( this.getFilename(),
+                                                  this.getHash());
+            }
+			else if (this.getHash() == null)
 			{
 				saver = new VectorNWMValueSaver( this.getFilename(),
 												 this.getFutureHash(),
 												 this.dataSourceConfig );
 			}
+			else
+            {
+                saver = new VectorNWMValueSaver( this.getFilename(),
+                                                 this.getHash(),
+                                                 this.dataSourceConfig );
+            }
 
 			saver.setOnRun(ProgressMonitor.onThreadStartHandler());
 			saver.setOnComplete( ProgressMonitor.onThreadCompleteHandler());

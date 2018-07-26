@@ -2,7 +2,6 @@ package wres.io.utilities;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -13,7 +12,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.io.concurrency.SQLExecutor;
-import wres.io.concurrency.StatementRunner;
 import wres.io.concurrency.ValueRetriever;
 import wres.util.functional.ExceptionalConsumer;
 import wres.util.functional.ExceptionalFunction;
@@ -24,6 +22,7 @@ public class ScriptBuilder
     private static final String NEWLINE = System.lineSeparator();
     private final StringBuilder script;
     private boolean isHighPriority = false;
+    private final List<Object> arguments = new ArrayList<>(  );
 
     public ScriptBuilder()
     {
@@ -111,6 +110,11 @@ public class ScriptBuilder
         return addTab(1);
     }
 
+    public void addArgument(final Object argument)
+    {
+        this.arguments.add(argument);
+    }
+
     @Override
     public String toString()
     {
@@ -189,7 +193,16 @@ public class ScriptBuilder
      */
     public void execute() throws SQLException
     {
-        Database.execute( this.toString());
+        if (this.arguments.isEmpty())
+        {
+            Database.execute( this.toString() );
+        }
+        else
+        {
+            List<Object[]> batchArguments = new ArrayList<>(  );
+            batchArguments.add( this.arguments.toArray() );
+            Database.execute( this.toString(), batchArguments );
+        }
     }
 
     /**
@@ -253,8 +266,9 @@ public class ScriptBuilder
      */
     public Future issue(List<Object[]> parameters)
     {
-        StatementRunner runner = new StatementRunner( this.toString(), parameters );
-        return Database.execute( runner );
+        SQLExecutor executor = new SQLExecutor( this.toString() );
+        executor.addBatchArguments( parameters );
+        return Database.execute( executor );
     }
 
     /**
@@ -301,14 +315,37 @@ public class ScriptBuilder
     }
 
     /**
-     * Retrieves a ResultSet for query result streaming
+     * Retrieves the described data through a streaming data provider
      * @param connection The connection that will facilitate the result streaming
-     * @return The ResultSet containing the query results
+     * @return The DataProvider containing the query results
      * @throws SQLException Thrown if the query cannot be executed
      */
-    public ResultSet retrieve( Connection connection) throws SQLException
+    public DataProvider getData( Connection connection) throws SQLException
     {
-        return Database.getResults( connection, this.toString() );
+        if (this.arguments.isEmpty())
+        {
+            return Database.getResults( connection, this.toString() );
+        }
+
+        return Database.getResults( connection, this.toString(), this.arguments.toArray() );
+    }
+
+    public DataProvider getData(Collection<Object> parameters) throws SQLException
+    {
+        return Database.getResults(
+                this.toString(),
+                parameters.toArray(),
+                this.isHighPriority
+        );
+    }
+
+    public DataProvider getData(Object... parameters) throws SQLException
+    {
+        return Database.getResults(
+                this.toString(),
+                parameters,
+                this.isHighPriority
+        );
     }
 
     /**
@@ -325,14 +362,20 @@ public class ScriptBuilder
     }
 
     /**
-     * Retrieves all data from the script and presents it in a structure
-     * divorced from the database itself.
+     * Retrieves the described data in a fully populated data provider
      * @return A DataSet containing all returned values
      * @throws SQLException Thrown if the DataSet could not be created
      */
-    public DataSet getData() throws SQLException
+    public DataProvider getData() throws SQLException
     {
-        return Database.getDataSet( this.toString() );
+        if (this.arguments.isEmpty())
+        {
+            return Database.getData( this.toString(), this.isHighPriority );
+        }
+        else
+        {
+            return Database.getResults(this.toString(), this.arguments.toArray(), this.isHighPriority);
+        }
     }
 
     /**
@@ -345,7 +388,14 @@ public class ScriptBuilder
     public PreparedStatement getPreparedStatement(final Connection connection)
             throws SQLException
     {
-        return connection.prepareStatement( this.toString() );
+        if (this.arguments.isEmpty())
+        {
+            return connection.prepareStatement( this.toString() );
+        }
+        else
+        {
+            return this.getPreparedStatement( connection, this.arguments );
+        }
     }
 
     /**
@@ -439,7 +489,7 @@ public class ScriptBuilder
      * @throws SQLException Thrown if the consumer threw an error
      * @throws SQLException Thrown if the script failed to run properly
      */
-    public void consume(ExceptionalConsumer<ResultSet, SQLException> consumer) throws SQLException
+    public void consume(ExceptionalConsumer<DataProvider, SQLException> consumer) throws SQLException
     {
         if (this.isHighPriority)
         {
@@ -451,9 +501,8 @@ public class ScriptBuilder
         }
     }
 
-    public <U> List<U> interpret( ExceptionalFunction<ResultSet, U, SQLException> interpretor) throws SQLException
+    public <U> List<U> interpret( ExceptionalFunction<DataProvider, U, SQLException> interpretor) throws SQLException
     {
         return Database.interpret( this.toString(), interpretor, this.isHighPriority );
     }
-
 }

@@ -179,7 +179,7 @@ class VectorNWMValueSaver extends WRESRunnable
                          Future<String> futureHash,
                          DataSourceConfig dataSourceConfig)
     {
-        if (filename == null || filename.isEmpty())
+        if (!Strings.hasValue( filename ))
         {
             throw new IllegalArgumentException("The passed filename is either null or empty.");
         }
@@ -191,6 +191,25 @@ class VectorNWMValueSaver extends WRESRunnable
         this.filePath = Paths.get(filename);
         this.futureHash = futureHash;
         this.dataSourceConfig = dataSourceConfig;
+    }
+
+    VectorNWMValueSaver (String filename,
+                         String hash,
+                         DataSourceConfig dataSourceConfig)
+    {
+        if (!Strings.hasValue( filename ))
+        {
+            throw new IllegalArgumentException("The passed filename is either null or empty.");
+        }
+        else if (!Strings.hasValue( hash ))
+        {
+            throw new IllegalArgumentException( "An empty or null hash was passed to the ingestor" );
+        }
+
+        this.filePath = Paths.get(filename);
+        this.hash = hash;
+        this.dataSourceConfig = dataSourceConfig;
+        this.futureHash = null;
     }
 
     /**
@@ -210,7 +229,7 @@ class VectorNWMValueSaver extends WRESRunnable
             catch ( InterruptedException e )
             {
                 String message = "The hashing process for the file '";
-                message += this.filePath.toAbsolutePath().toString();
+                message += this.filePath.toString();
                 message += "' was interrupted and could not be completed.";
                 LOGGER.warn( message );
 
@@ -219,7 +238,7 @@ class VectorNWMValueSaver extends WRESRunnable
             catch ( ExecutionException e )
             {
                 String message = "An error occurred while hashing the file '";
-                message += this.filePath.toAbsolutePath().toString();
+                message += this.filePath.toString();
                 message += "'.";
 
                 throw new IOException( message, e );
@@ -284,7 +303,7 @@ class VectorNWMValueSaver extends WRESRunnable
         {
             // TODO: Modify the cache to do this work
             SourceDetails.SourceKey sourceKey = new SourceDetails.SourceKey(
-                    this.filePath.toAbsolutePath().toString(),
+                    this.filePath.toString(),
                     NetCDF.getReferenceTime( this.getSource() ).toString(),
                     this.getLead(),
                     this.getHash()
@@ -394,7 +413,7 @@ class VectorNWMValueSaver extends WRESRunnable
                 {
                     // Exception on close should not affect primary outputs.
                     LOGGER.warn("Could not close the NetCDF file: '{}'",
-                                 this.filePath.toAbsolutePath().toString(), e );
+                                 this.filePath.toString(), e );
                 }
             }
         }
@@ -853,8 +872,9 @@ class VectorNWMValueSaver extends WRESRunnable
                     Map<Integer, Integer> variableComids =
                             new TreeMap<>();
 
-                    script.consume( ( ResultSet results ) ->
-                                            variableComids.put(results.getInt( keyLabel), results.getInt(valueLabel))
+                    script.consume(
+                            results -> variableComids.put(results.getInt( keyLabel),
+                                                          results.getInt(valueLabel))
                     );
 
                     // Add the populated map to the overall collection
@@ -909,12 +929,17 @@ class VectorNWMValueSaver extends WRESRunnable
         {
             try
             {
-                this.source = NetcdfFile.open(filePath.toAbsolutePath().toString());
+                // The Path class will convert "http://whatever.com" to
+                // "http:/whatever.com", so that needs to be reverted
+                this.source = NetcdfFile.open(
+                        filePath.toString()
+                                .replaceAll( "^http:/", "http://" )
+                                .replaceAll( "^https:/", "https://" ));
             }
             catch ( IOException e )
             {
                 String message = "A file at: '"
-                                 + this.filePath.toAbsolutePath()
+                                 + this.filePath
                                  + "' could not be loaded as a NetCDF file.";
                 throw new IOException( message, e );
             }
