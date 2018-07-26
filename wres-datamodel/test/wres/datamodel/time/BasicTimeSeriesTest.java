@@ -20,7 +20,7 @@ import org.junit.rules.ExpectedException;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.inputs.pairs.PairOfDoubles;
+import wres.datamodel.inputs.pairs.SingleValuedPair;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.BasicTimeSeries;
 import wres.datamodel.time.TimeSeries;
@@ -227,12 +227,12 @@ public final class BasicTimeSeriesTest
     public void testGetRegularDuration()
     {
         //Build a time-series with one basis time
-        List<Event<PairOfDoubles>> first = new ArrayList<>();
-        BasicTimeSeriesBuilder<PairOfDoubles> b = new BasicTimeSeriesBuilder<>();
+        List<Event<SingleValuedPair>> first = new ArrayList<>();
+        BasicTimeSeriesBuilder<SingleValuedPair> b = new BasicTimeSeriesBuilder<>();
         Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
         first.add( Event.of( Instant.parse( "1985-01-02T00:00:00Z" ), DataFactory.pairOf( 1, 1 ) ) );
 
-        TimeSeries<PairOfDoubles> ts = b.addTimeSeriesData( firstBasisTime, first )
+        TimeSeries<SingleValuedPair> ts = b.addTimeSeriesData( firstBasisTime, first )
                                         .build();
         Duration benchmark = Duration.ofDays( 1 );
         assertTrue( "Expected a regular time-series with a duration of '" + benchmark
@@ -244,8 +244,8 @@ public final class BasicTimeSeriesTest
         first.add( Event.of( Instant.parse( "1985-01-04T00:00:00Z" ), DataFactory.pairOf( 3, 3 ) ) );
         first.add( Event.of( Instant.parse( "1985-01-05T00:00:00Z" ), DataFactory.pairOf( 4, 4 ) ) );
 
-        BasicTimeSeriesBuilder<PairOfDoubles> c = new BasicTimeSeriesBuilder<>();
-        TimeSeries<PairOfDoubles> tsSecond = c.addTimeSeriesData( firstBasisTime, first )
+        BasicTimeSeriesBuilder<SingleValuedPair> c = new BasicTimeSeriesBuilder<>();
+        TimeSeries<SingleValuedPair> tsSecond = c.addTimeSeriesData( firstBasisTime, first )
                                               .build();
         assertTrue( "Expected a regular time-series with a duration of '" + benchmark
                     + "'.",
@@ -253,8 +253,8 @@ public final class BasicTimeSeriesTest
 
         //Add an irregular timestep and check for null output
         first.add( Event.of( Instant.parse( "1985-01-07T00:00:00Z" ), DataFactory.pairOf( 4, 4 ) ) );
-        BasicTimeSeriesBuilder<PairOfDoubles> d = new BasicTimeSeriesBuilder<>();
-        TimeSeries<PairOfDoubles> tsThird = d.addTimeSeriesData( firstBasisTime, first )
+        BasicTimeSeriesBuilder<SingleValuedPair> d = new BasicTimeSeriesBuilder<>();
+        TimeSeries<SingleValuedPair> tsThird = d.addTimeSeriesData( firstBasisTime, first )
                                              .build();
         assertTrue( "Expected an irregular time-series.",
                     Objects.isNull( tsThird.getRegularDuration() ) );
@@ -268,8 +268,8 @@ public final class BasicTimeSeriesTest
     public void testHasMultipleTimeSeries()
     {
         //Build a time-series with one basis time
-        List<Event<PairOfDoubles>> values = new ArrayList<>();
-        BasicTimeSeriesBuilder<PairOfDoubles> b = new BasicTimeSeriesBuilder<>();
+        List<Event<SingleValuedPair>> values = new ArrayList<>();
+        BasicTimeSeriesBuilder<SingleValuedPair> b = new BasicTimeSeriesBuilder<>();
         Instant basisTime = Instant.parse( "1985-01-01T00:00:00Z" );
         values.add( Event.of( Instant.parse( "1985-01-02T00:00:00Z" ), DataFactory.pairOf( 1, 1 ) ) );
 
@@ -292,15 +292,15 @@ public final class BasicTimeSeriesTest
     public void testGetBasisTimes()
     {
         //Build a time-series with two basis times
-        List<Event<PairOfDoubles>> values = new ArrayList<>();
-        BasicTimeSeriesBuilder<PairOfDoubles> b = new BasicTimeSeriesBuilder<>();
+        List<Event<SingleValuedPair>> values = new ArrayList<>();
+        BasicTimeSeriesBuilder<SingleValuedPair> b = new BasicTimeSeriesBuilder<>();
         Instant basisTime = Instant.parse( "1985-01-01T00:00:00Z" );
         values.add( Event.of( Instant.parse( "1985-01-02T00:00:00Z" ), DataFactory.pairOf( 1, 1 ) ) );
         b.addTimeSeriesData( basisTime, values );
 
         Instant nextBasisTime = Instant.parse( "1985-01-02T00:00:00Z" );
         b.addTimeSeriesData( nextBasisTime, values );
-        TimeSeries<PairOfDoubles> pairs = b.build();
+        TimeSeries<SingleValuedPair> pairs = b.build();
 
         //Check dataset count
         assertTrue( "Expected a time-series with two basis times.", pairs.getBasisTimes().size() == 2 );
@@ -321,8 +321,8 @@ public final class BasicTimeSeriesTest
     public void testGetDurations()
     {
         //Build a time-series with two basis times
-        List<Event<PairOfDoubles>> values = new ArrayList<>();
-        BasicTimeSeriesBuilder<PairOfDoubles> b = new BasicTimeSeriesBuilder<>();
+        List<Event<SingleValuedPair>> values = new ArrayList<>();
+        BasicTimeSeriesBuilder<SingleValuedPair> b = new BasicTimeSeriesBuilder<>();
         Instant basisTime = Instant.parse( "1985-01-01T00:00:00Z" );
         values.add( Event.of( Instant.parse( "1985-01-02T00:00:00Z" ), DataFactory.pairOf( 1, 1 ) ) );
         values.add( Event.of( Instant.parse( "1985-01-03T00:00:00Z" ), DataFactory.pairOf( 2, 2 ) ) );

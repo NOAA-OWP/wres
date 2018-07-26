@@ -12,7 +12,7 @@ import org.junit.Test;
 import wres.datamodel.DataFactory;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.inputs.pairs.PairOfDoubles;
+import wres.datamodel.inputs.pairs.SingleValuedPair;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.inputs.pairs.SingleValuedPairs.SingleValuedPairsBuilder;
 import wres.datamodel.metadata.Metadata;
@@ -33,7 +33,7 @@ public final class SingleValuedPairsTest
     @Test
     public void test1SingleValuedPairs()
     {
-        final List<PairOfDoubles> values = new ArrayList<>();
+        final List<SingleValuedPair> values = new ArrayList<>();
         final SingleValuedPairsBuilder b = new SingleValuedPairsBuilder();
 
         for ( int i = 0; i < 10; i++ )

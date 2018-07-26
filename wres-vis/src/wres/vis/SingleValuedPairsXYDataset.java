@@ -35,13 +35,13 @@ public class SingleValuedPairsXYDataset extends WRESAbstractXYDataset<SingleValu
     @Override
     public Number getX(final int series, final int item)
     {
-        return getPlotData().getRawData().get(item).getItemOne();
+        return getPlotData().getRawData().get(item).getLeft();
     }
 
     @Override
     public Number getY(final int series, final int item)
     {
-        return getPlotData().getRawData().get(item).getItemTwo();
+        return getPlotData().getRawData().get(item).getRight();
     }
 
     @Override

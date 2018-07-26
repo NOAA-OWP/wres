@@ -13,7 +13,7 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.inputs.pairs.EnsemblePair;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
@@ -64,26 +64,26 @@ public final class BoxPlotOutputTest
                                                                            MetadataFactory.getDatasetIdentifier( l3,
                                                                                                                  "B",
                                                                                                                  "C" ) );
-        List<PairOfDoubleAndVectorOfDoubles> mva = new ArrayList<>();
-        List<PairOfDoubleAndVectorOfDoubles> mvb = new ArrayList<>();
+        List<EnsemblePair> mva = new ArrayList<>();
+        List<EnsemblePair> mvb = new ArrayList<>();
         VectorOfDoubles pa = DataFactory.vectorOf( new double[] { 0.0, 0.5, 1.0 } );
         for ( int i = 0; i < 10; i++ )
         {
             mva.add( DataFactory.pairOf( 1, new double[] { 1, 2, 3 } ) );
             mvb.add( DataFactory.pairOf( 1, new double[] { 1, 2, 3 } ) );
         }
-        List<PairOfDoubleAndVectorOfDoubles> mvc = new ArrayList<>();
+        List<EnsemblePair> mvc = new ArrayList<>();
         VectorOfDoubles pb = DataFactory.vectorOf( new double[] { 0.0, 0.25, 0.5, 1.0 } );
         for ( int i = 0; i < 10; i++ )
         {
             mvc.add( DataFactory.pairOf( 1, new double[] { 1, 2, 3, 4 } ) );
         }
-        List<PairOfDoubleAndVectorOfDoubles> mvd = new ArrayList<>();
+        List<EnsemblePair> mvd = new ArrayList<>();
         for ( int i = 0; i < 5; i++ )
         {
             mvd.add( DataFactory.pairOf( 1, new double[] { 1, 2, 3, 4 } ) );
         }
-        List<PairOfDoubleAndVectorOfDoubles> mve = new ArrayList<>();
+        List<EnsemblePair> mve = new ArrayList<>();
         for ( int i = 0; i < 5; i++ )
         {
             mve.add( DataFactory.pairOf( 1, new double[] { 2, 3, 4, 5 } ) );
@@ -161,26 +161,26 @@ public final class BoxPlotOutputTest
                                                                            MetadataFactory.getDatasetIdentifier( l3,
                                                                                                                  "B",
                                                                                                                  "C" ) );
-        List<PairOfDoubleAndVectorOfDoubles> mva = new ArrayList<>();
-        List<PairOfDoubleAndVectorOfDoubles> mvb = new ArrayList<>();
+        List<EnsemblePair> mva = new ArrayList<>();
+        List<EnsemblePair> mvb = new ArrayList<>();
         VectorOfDoubles pa = DataFactory.vectorOf( new double[] { 0.0, 0.5, 1.0 } );
         for ( int i = 0; i < 10; i++ )
         {
             mva.add( DataFactory.pairOf( 1, new double[] { 1, 2, 3 } ) );
             mvb.add( DataFactory.pairOf( 1, new double[] { 1, 2, 3 } ) );
         }
-        List<PairOfDoubleAndVectorOfDoubles> mvc = new ArrayList<>();
+        List<EnsemblePair> mvc = new ArrayList<>();
         VectorOfDoubles pb = DataFactory.vectorOf( new double[] { 0.0, 0.25, 0.5, 1.0 } );
         for ( int i = 0; i < 10; i++ )
         {
             mvc.add( DataFactory.pairOf( 1, new double[] { 1, 2, 3, 4 } ) );
         }
-        List<PairOfDoubleAndVectorOfDoubles> mvd = new ArrayList<>();
+        List<EnsemblePair> mvd = new ArrayList<>();
         for ( int i = 0; i < 5; i++ )
         {
             mvd.add( DataFactory.pairOf( 1, new double[] { 1, 2, 3, 4 } ) );
         }
-        List<PairOfDoubleAndVectorOfDoubles> mve = new ArrayList<>();
+        List<EnsemblePair> mve = new ArrayList<>();
         for ( int i = 0; i < 5; i++ )
         {
             mve.add( DataFactory.pairOf( 1, new double[] { 2, 3, 4, 5 } ) );
@@ -248,7 +248,7 @@ public final class BoxPlotOutputTest
                                                                            MetadataFactory.getDatasetIdentifier( l2,
                                                                                                                  "B",
                                                                                                                  "C" ) );
-        final List<PairOfDoubleAndVectorOfDoubles> values = new ArrayList<>();
+        final List<EnsemblePair> values = new ArrayList<>();
         for ( int i = 0; i < 10; i++ )
         {
             values.add( DataFactory.pairOf( 1, new double[] { 1, 2, 3 } ) );
@@ -285,7 +285,7 @@ public final class BoxPlotOutputTest
                                                                            MetadataFactory.getDatasetIdentifier( l1,
                                                                                                                  "B",
                                                                                                                  "C" ) );
-        final List<PairOfDoubleAndVectorOfDoubles> values = new ArrayList<>();
+        final List<EnsemblePair> values = new ArrayList<>();
         for ( int i = 0; i < 10; i++ )
         {
             values.add( DataFactory.pairOf( 1, new double[] { 1, 2, 3 } ) );
@@ -325,7 +325,7 @@ public final class BoxPlotOutputTest
                                                                            MetadataFactory.getDatasetIdentifier( l1,
                                                                                                                  "B",
                                                                                                                  "C" ) );
-        final List<PairOfDoubleAndVectorOfDoubles> values = new ArrayList<>();
+        final List<EnsemblePair> values = new ArrayList<>();
         for ( int i = 0; i < 10; i++ )
         {
             values.add( DataFactory.pairOf( 1, new double[] { 1, 2, 3 } ) );
@@ -404,7 +404,7 @@ public final class BoxPlotOutputTest
         }
         try
         {
-            final List<PairOfDoubleAndVectorOfDoubles> uneven = new ArrayList<>();
+            final List<EnsemblePair> uneven = new ArrayList<>();
             uneven.add( DataFactory.pairOf( 1.0, new double[] { 1, 2, 3 } ) );
             uneven.add( DataFactory.pairOf( 1.0, new double[] { 1, 2, 3, 4 } ) );
             BoxPlotOutput.of( uneven,
@@ -419,7 +419,7 @@ public final class BoxPlotOutputTest
         }
         try
         {
-            final List<PairOfDoubleAndVectorOfDoubles> uneven = new ArrayList<>();
+            final List<EnsemblePair> uneven = new ArrayList<>();
             uneven.add( DataFactory.pairOf( 1.0, new double[] { 1, 2, 3 } ) );
             uneven.add( DataFactory.pairOf( 1.0, new double[] {} ) );
             BoxPlotOutput.of( uneven,

@@ -23,20 +23,20 @@ import wres.datamodel.time.TimeSeriesHelper;
  * 
  * @author james.brown@hydrosolved.com
  */
-public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements TimeSeries<PairOfDoubleAndVectorOfDoubles>
+public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements TimeSeries<EnsemblePair>
 {
 
     /**
      * Instance of base class for a time-series of pairs.
      */
 
-    private final BasicTimeSeries<PairOfDoubleAndVectorOfDoubles> main;
+    private final BasicTimeSeries<EnsemblePair> main;
 
     /**
      * Instance of base class for a time-series of baseline pairs.
      */
 
-    private final BasicTimeSeries<PairOfDoubleAndVectorOfDoubles> baseline;
+    private final BasicTimeSeries<EnsemblePair> baseline;
 
     @Override
     public TimeSeriesOfEnsemblePairs getBaselineData()
@@ -51,19 +51,19 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements TimeSeri
     }
 
     @Override
-    public Iterable<Event<PairOfDoubleAndVectorOfDoubles>> timeIterator()
+    public Iterable<Event<EnsemblePair>> timeIterator()
     {
         return main.timeIterator();
     }
 
     @Override
-    public Iterable<TimeSeries<PairOfDoubleAndVectorOfDoubles>> basisTimeIterator()
+    public Iterable<TimeSeries<EnsemblePair>> basisTimeIterator()
     {
         return main.basisTimeIterator();
     }
 
     @Override
-    public Iterable<TimeSeries<PairOfDoubleAndVectorOfDoubles>> durationIterator()
+    public Iterable<TimeSeries<EnsemblePair>> durationIterator()
     {
         return main.durationIterator();
     }
@@ -117,24 +117,24 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements TimeSeri
     }
 
     /**
-     * A {@link PairedInputBuilder} to build the metric input.
+     * A builder to build the metric input.
      */
 
     public static class TimeSeriesOfEnsemblePairsBuilder extends EnsemblePairsBuilder
-            implements TimeSeriesBuilder<PairOfDoubleAndVectorOfDoubles>
+            implements TimeSeriesBuilder<EnsemblePair>
     {
 
         /**
          * The raw data.
          */
 
-        private List<Event<List<Event<PairOfDoubleAndVectorOfDoubles>>>> data = new ArrayList<>();
+        private List<Event<List<Event<EnsemblePair>>>> data = new ArrayList<>();
 
         /**
          * The raw data for the baseline
          */
 
-        private List<Event<List<Event<PairOfDoubleAndVectorOfDoubles>>>> baselineData = null;
+        private List<Event<List<Event<EnsemblePair>>>> baselineData = null;
 
         /**
          * Adds an atomic time-series to the builder.
@@ -145,7 +145,7 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements TimeSeri
          */
 
         public TimeSeriesOfEnsemblePairsBuilder addTimeSeriesData( Instant basisTime,
-                                                                   List<Event<PairOfDoubleAndVectorOfDoubles>> values )
+                                                                   List<Event<EnsemblePair>> values )
         {
             TimeSeriesBuilder.super.addTimeSeriesData( basisTime, values );
             return this;
@@ -160,9 +160,9 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements TimeSeri
          */
 
         public TimeSeriesOfEnsemblePairsBuilder addTimeSeriesDataForBaseline( Instant basisTime,
-                                                                              List<Event<PairOfDoubleAndVectorOfDoubles>> values )
+                                                                              List<Event<EnsemblePair>> values )
         {
-            List<Event<List<Event<PairOfDoubleAndVectorOfDoubles>>>> input = new ArrayList<>();
+            List<Event<List<Event<EnsemblePair>>>> input = new ArrayList<>();
             input.add( Event.of( basisTime, values ) );
             return addTimeSeriesDataForBaseline( input );
         }
@@ -176,7 +176,7 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements TimeSeri
          * @throws NullPointerException if the input is null
          */
 
-        public TimeSeriesOfEnsemblePairsBuilder addTimeSeries( TimeSeries<PairOfDoubleAndVectorOfDoubles> timeSeries )
+        public TimeSeriesOfEnsemblePairsBuilder addTimeSeries( TimeSeries<EnsemblePair> timeSeries )
         {
             TimeSeriesBuilder.super.addTimeSeries( timeSeries );
             return this;
@@ -192,14 +192,14 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements TimeSeri
          */
 
         public TimeSeriesOfEnsemblePairsBuilder
-                addTimeSeriesForBaseline( TimeSeries<PairOfDoubleAndVectorOfDoubles> timeSeries )
+                addTimeSeriesForBaseline( TimeSeries<EnsemblePair> timeSeries )
         {
             Objects.requireNonNull( timeSeries, "Specify non-null time-series input." );
 
-            for ( TimeSeries<PairOfDoubleAndVectorOfDoubles> next : timeSeries.basisTimeIterator() )
+            for ( TimeSeries<EnsemblePair> next : timeSeries.basisTimeIterator() )
             {
                 Instant basisTime = next.getEarliestBasisTime();
-                List<Event<PairOfDoubleAndVectorOfDoubles>> values = new ArrayList<>();
+                List<Event<EnsemblePair>> values = new ArrayList<>();
                 next.timeIterator().forEach( values::add );
                 this.addTimeSeriesDataForBaseline( basisTime, values );
             }
@@ -215,9 +215,9 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements TimeSeri
          */
 
         public TimeSeriesOfEnsemblePairsBuilder
-                addTimeSeriesData( List<Event<List<Event<PairOfDoubleAndVectorOfDoubles>>>> values )
+                addTimeSeriesData( List<Event<List<Event<EnsemblePair>>>> values )
         {
-            List<Event<List<Event<PairOfDoubleAndVectorOfDoubles>>>> sorted = TimeSeriesHelper.sort( values );
+            List<Event<List<Event<EnsemblePair>>>> sorted = TimeSeriesHelper.sort( values );
             data.addAll( sorted );
             addData( TimeSeriesHelper.unwrap( sorted ) );
             return this;
@@ -231,7 +231,7 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements TimeSeri
          */
 
         public TimeSeriesOfEnsemblePairsBuilder
-                addTimeSeriesDataForBaseline( List<Event<List<Event<PairOfDoubleAndVectorOfDoubles>>>> values )
+                addTimeSeriesDataForBaseline( List<Event<List<Event<EnsemblePair>>>> values )
         {
             if ( Objects.nonNull( values ) )
             {
@@ -239,7 +239,7 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements TimeSeri
                 {
                     this.baselineData = new ArrayList<>();
                 }
-                List<Event<List<Event<PairOfDoubleAndVectorOfDoubles>>>> sorted = TimeSeriesHelper.sort( values );
+                List<Event<List<Event<EnsemblePair>>>> sorted = TimeSeriesHelper.sort( values );
                 this.baselineData.addAll( sorted );
                 this.addDataForBaseline( TimeSeriesHelper.unwrap( sorted ) );
             }
@@ -257,11 +257,11 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements TimeSeri
         public TimeSeriesOfEnsemblePairsBuilder
                 addTimeSeries( TimeSeriesOfEnsemblePairs timeSeries )
         {
-            for ( TimeSeries<PairOfDoubleAndVectorOfDoubles> a : timeSeries.basisTimeIterator() )
+            for ( TimeSeries<EnsemblePair> a : timeSeries.basisTimeIterator() )
             {
-                List<Event<PairOfDoubleAndVectorOfDoubles>> nextSource = new ArrayList<>();
+                List<Event<EnsemblePair>> nextSource = new ArrayList<>();
 
-                for ( Event<PairOfDoubleAndVectorOfDoubles> nextEvent : a.timeIterator() )
+                for ( Event<EnsemblePair> nextEvent : a.timeIterator() )
                 {
                     nextSource.add( nextEvent );
                 }
@@ -299,11 +299,11 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements TimeSeri
 
         public TimeSeriesOfEnsemblePairsBuilder addTimeSeriesForBaseline( TimeSeriesOfEnsemblePairs timeSeries )
         {
-            for ( TimeSeries<PairOfDoubleAndVectorOfDoubles> a : timeSeries.basisTimeIterator() )
+            for ( TimeSeries<EnsemblePair> a : timeSeries.basisTimeIterator() )
             {
-                List<Event<PairOfDoubleAndVectorOfDoubles>> nextSource = new ArrayList<>();
+                List<Event<EnsemblePair>> nextSource = new ArrayList<>();
 
-                for ( Event<PairOfDoubleAndVectorOfDoubles> nextEvent : a.timeIterator() )
+                for ( Event<EnsemblePair> nextEvent : a.timeIterator() )
                 {
                     nextSource.add( nextEvent );
                 }

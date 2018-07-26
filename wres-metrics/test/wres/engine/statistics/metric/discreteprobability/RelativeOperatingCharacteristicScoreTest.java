@@ -21,8 +21,8 @@ import wres.datamodel.Slicer;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
-import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
-import wres.datamodel.inputs.pairs.PairOfDoubles;
+import wres.datamodel.inputs.pairs.EnsemblePair;
+import wres.datamodel.inputs.pairs.SingleValuedPair;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
@@ -68,7 +68,7 @@ public final class RelativeOperatingCharacteristicScoreTest
     public void testApplyWithTies()
     {
         //Generate some data
-        final List<PairOfDoubles> values = new ArrayList<>();
+        final List<SingleValuedPair> values = new ArrayList<>();
         values.add( DataFactory.pairOf( 0, 0.8 ) );
         values.add( DataFactory.pairOf( 0, 0.8 ) );
         values.add( DataFactory.pairOf( 0, 0.0 ) );
@@ -114,7 +114,7 @@ public final class RelativeOperatingCharacteristicScoreTest
     public void testApplyWithoutTies()
     {
         //Generate some data
-        final List<PairOfDoubles> values = new ArrayList<>();
+        final List<SingleValuedPair> values = new ArrayList<>();
         values.add( DataFactory.pairOf( 0, 0.928 ) );
         values.add( DataFactory.pairOf( 0, 0.576 ) );
         values.add( DataFactory.pairOf( 0, 0.008 ) );
@@ -169,7 +169,7 @@ public final class RelativeOperatingCharacteristicScoreTest
     public void testApplyWithNoOccurrences() throws MetricParameterException
     {
         //Generate some data
-        final List<PairOfDoubles> values = new ArrayList<>();
+        final List<SingleValuedPair> values = new ArrayList<>();
         values.add( DataFactory.pairOf( 0, 0.928 ) );
         values.add( DataFactory.pairOf( 0, 0.576 ) );
         values.add( DataFactory.pairOf( 0, 0.008 ) );
@@ -299,7 +299,7 @@ public final class RelativeOperatingCharacteristicScoreTest
                                                        Operator.GREATER,
                                                        ThresholdDataType.LEFT );
 
-        BiFunction<PairOfDoubleAndVectorOfDoubles, Threshold, PairOfDoubles> mapper =
+        BiFunction<EnsemblePair, Threshold, SingleValuedPair> mapper =
                 Slicer::toDiscreteProbabilityPair;
 
         DiscreteProbabilityPairs transPairs =

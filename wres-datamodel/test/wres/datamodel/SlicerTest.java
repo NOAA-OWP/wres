@@ -19,9 +19,9 @@ import org.junit.rules.ExpectedException;
 
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
-import wres.datamodel.inputs.pairs.PairOfBooleans;
-import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
-import wres.datamodel.inputs.pairs.PairOfDoubles;
+import wres.datamodel.inputs.pairs.DichotomousPair;
+import wres.datamodel.inputs.pairs.EnsemblePair;
+import wres.datamodel.inputs.pairs.SingleValuedPair;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
@@ -56,7 +56,7 @@ public final class SlicerTest
     @Test
     public void testGetLeftSideSingleValued()
     {
-        final List<PairOfDoubles> values = new ArrayList<>();
+        final List<SingleValuedPair> values = new ArrayList<>();
         values.add( DataFactory.pairOf( 0, 3.0 / 5.0 ) );
         values.add( DataFactory.pairOf( 0, 1.0 / 5.0 ) );
         values.add( DataFactory.pairOf( 1, 2.0 / 5.0 ) );
@@ -77,7 +77,7 @@ public final class SlicerTest
     @Test
     public void testGetLeftSideEnsemble()
     {
-        final List<PairOfDoubleAndVectorOfDoubles> values = new ArrayList<>();
+        final List<EnsemblePair> values = new ArrayList<>();
         values.add( DataFactory.pairOf( 0, new double[] { 1, 2, 3 } ) );
         values.add( DataFactory.pairOf( 0, new double[] { 1, 2, 3 } ) );
         values.add( DataFactory.pairOf( 1, new double[] { 1, 2, 3 } ) );
@@ -98,7 +98,7 @@ public final class SlicerTest
     @Test
     public void testGetRightSide()
     {
-        final List<PairOfDoubles> values = new ArrayList<>();
+        final List<SingleValuedPair> values = new ArrayList<>();
         values.add( DataFactory.pairOf( 0, 3.0 / 5.0 ) );
         values.add( DataFactory.pairOf( 0, 1.0 / 5.0 ) );
         values.add( DataFactory.pairOf( 1, 2.0 / 5.0 ) );
@@ -119,7 +119,7 @@ public final class SlicerTest
     @Test
     public void testFilterSingleValuedPairsByLeft()
     {
-        final List<PairOfDoubles> values = new ArrayList<>();
+        final List<SingleValuedPair> values = new ArrayList<>();
         values.add( DataFactory.pairOf( 0, 3.0 / 5.0 ) );
         values.add( DataFactory.pairOf( 0, 1.0 / 5.0 ) );
         values.add( DataFactory.pairOf( 1, 2.0 / 5.0 ) );
@@ -152,7 +152,7 @@ public final class SlicerTest
     @Test
     public void testFilterEnsemblePairsByLeft()
     {
-        final List<PairOfDoubleAndVectorOfDoubles> values = new ArrayList<>();
+        final List<EnsemblePair> values = new ArrayList<>();
         values.add( DataFactory.pairOf( 0, new double[] { 1, 2, 3 } ) );
         values.add( DataFactory.pairOf( 0, new double[] { 1, 2, 3 } ) );
         values.add( DataFactory.pairOf( 1, new double[] { 1, 2, 3 } ) );
@@ -185,7 +185,7 @@ public final class SlicerTest
     @Test
     public void testTransformEnsemblePairsToSingleValuedPairs()
     {
-        final List<PairOfDoubleAndVectorOfDoubles> values = new ArrayList<>();
+        final List<EnsemblePair> values = new ArrayList<>();
         values.add( DataFactory.pairOf( 0, new double[] { 1, 2, 3, 4, 5 } ) );
         values.add( DataFactory.pairOf( 0, new double[] { 6, 7, 8, 9, 10 } ) );
         values.add( DataFactory.pairOf( 1, new double[] { 11, 12, 13, 14, 15 } ) );
@@ -194,8 +194,8 @@ public final class SlicerTest
         values.add( DataFactory.pairOf( 1, new double[] { 26, 27, 28, 29, 30 } ) );
         Metadata meta = MetadataFactory.getMetadata();
         EnsemblePairs input = DataFactory.ofEnsemblePairs( values, values, meta, meta, null );
-        Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles> mapper = ( in ) -> {
-            return DataFactory.pairOf( in.getItemOne(), Arrays.stream( in.getItemTwo() ).average().getAsDouble() );
+        Function<EnsemblePair, SingleValuedPair> mapper = ( in ) -> {
+            return DataFactory.pairOf( in.getLeft(), Arrays.stream( in.getRight() ).average().getAsDouble() );
         };
         double[] expected = new double[] { 3.0, 8.0, 13.0, 18.0, 23.0, 28.0 };
         //Test without baseline
@@ -216,7 +216,7 @@ public final class SlicerTest
     @Test
     public void testTransformSingleValuedPairsToDichotomousPairs()
     {
-        final List<PairOfDoubles> values = new ArrayList<>();
+        final List<SingleValuedPair> values = new ArrayList<>();
         values.add( DataFactory.pairOf( 0, 3.0 / 5.0 ) );
         values.add( DataFactory.pairOf( 0, 1.0 / 5.0 ) );
         values.add( DataFactory.pairOf( 1, 2.0 / 5.0 ) );
@@ -224,18 +224,18 @@ public final class SlicerTest
         values.add( DataFactory.pairOf( 0, 0.0 / 5.0 ) );
         values.add( DataFactory.pairOf( 1, 1.0 / 5.0 ) );
         Metadata meta = MetadataFactory.getMetadata();
-        Function<PairOfDoubles, PairOfBooleans> mapper = ( in ) -> {
-            return DataFactory.pairOf( in.getItemOne() > 0, in.getItemTwo() > 0 );
+        Function<SingleValuedPair, DichotomousPair> mapper = ( in ) -> {
+            return DataFactory.pairOf( in.getLeft() > 0, in.getRight() > 0 );
         };
-        final List<PairOfBooleans> expectedValues = new ArrayList<>();
+        final List<DichotomousPair> expectedValues = new ArrayList<>();
         expectedValues.add( DataFactory.pairOf( false, true ) );
         expectedValues.add( DataFactory.pairOf( false, true ) );
         expectedValues.add( DataFactory.pairOf( true, true ) );
         expectedValues.add( DataFactory.pairOf( true, true ) );
         expectedValues.add( DataFactory.pairOf( false, false ) );
         expectedValues.add( DataFactory.pairOf( true, true ) );
-        DichotomousPairs expectedNoBase = DataFactory.ofDichotomousPairsFromAtomic( expectedValues, meta );
-        DichotomousPairs expectedBase = DataFactory.ofDichotomousPairsFromAtomic( expectedValues,
+        DichotomousPairs expectedNoBase = DataFactory.ofDichotomousPairs( expectedValues, meta );
+        DichotomousPairs expectedBase = DataFactory.ofDichotomousPairs( expectedValues,
                                                                                   expectedValues,
                                                                                   meta,
                                                                                   meta,
@@ -261,7 +261,7 @@ public final class SlicerTest
     @Test
     public void testTransformEnsemblePairsToDiscreteProbabilityPairs()
     {
-        final List<PairOfDoubleAndVectorOfDoubles> values = new ArrayList<>();
+        final List<EnsemblePair> values = new ArrayList<>();
         values.add( DataFactory.pairOf( 3, new double[] { 1, 2, 3, 4, 5 } ) );
         values.add( DataFactory.pairOf( 0, new double[] { 1, 2, 2, 3, 3 } ) );
         values.add( DataFactory.pairOf( 3, new double[] { 3, 3, 3, 3, 3 } ) );
@@ -272,7 +272,7 @@ public final class SlicerTest
         Threshold threshold = DataFactory.ofThreshold( OneOrTwoDoubles.of( 3.0 ),
                                                        Operator.GREATER,
                                                        ThresholdDataType.LEFT );
-        BiFunction<PairOfDoubleAndVectorOfDoubles, Threshold, PairOfDoubles> mapper =
+        BiFunction<EnsemblePair, Threshold, SingleValuedPair> mapper =
                 Slicer::toDiscreteProbabilityPair;
         double[] expectedLeft = new double[] { 0.0, 0.0, 0.0, 1.0, 0.0, 1.0 };
         double[] expectedRight = new double[] { 2.0 / 5.0, 0.0 / 5.0, 0.0 / 5.0, 5.0 / 5.0, 2.0 / 5.0, 3.0 / 5.0 };
@@ -317,22 +317,22 @@ public final class SlicerTest
     }
 
     /**
-     * Tests the {@link Slicer#toDiscreteProbabilityPair(PairOfDoubleAndVectorOfDoubles, Threshold)}.
+     * Tests the {@link Slicer#toDiscreteProbabilityPair(EnsemblePair, Threshold)}.
      */
 
     @Test
     public void testTransformEnsemblePairToDiscreteProbabilityPair()
     {
-        PairOfDoubleAndVectorOfDoubles a = DataFactory.pairOf( 3, new double[] { 1, 2, 3, 4, 5 } );
-        PairOfDoubleAndVectorOfDoubles b = DataFactory.pairOf( 0, new double[] { 1, 2, 2, 3, 3 } );
-        PairOfDoubleAndVectorOfDoubles c = DataFactory.pairOf( 3, new double[] { 3, 3, 3, 3, 3 } );
-        PairOfDoubleAndVectorOfDoubles d = DataFactory.pairOf( 4, new double[] { 4, 4, 4, 4, 4 } );
-        PairOfDoubleAndVectorOfDoubles e = DataFactory.pairOf( 0, new double[] { 1, 2, 3, 4, 5 } );
-        PairOfDoubleAndVectorOfDoubles f = DataFactory.pairOf( 5, new double[] { 1, 1, 6, 6, 50 } );
+        EnsemblePair a = DataFactory.pairOf( 3, new double[] { 1, 2, 3, 4, 5 } );
+        EnsemblePair b = DataFactory.pairOf( 0, new double[] { 1, 2, 2, 3, 3 } );
+        EnsemblePair c = DataFactory.pairOf( 3, new double[] { 3, 3, 3, 3, 3 } );
+        EnsemblePair d = DataFactory.pairOf( 4, new double[] { 4, 4, 4, 4, 4 } );
+        EnsemblePair e = DataFactory.pairOf( 0, new double[] { 1, 2, 3, 4, 5 } );
+        EnsemblePair f = DataFactory.pairOf( 5, new double[] { 1, 1, 6, 6, 50 } );
         Threshold threshold = DataFactory.ofThreshold( OneOrTwoDoubles.of( 3.0 ),
                                                        Operator.GREATER,
                                                        ThresholdDataType.LEFT );
-        BiFunction<PairOfDoubleAndVectorOfDoubles, Threshold, PairOfDoubles> mapper =
+        BiFunction<EnsemblePair, Threshold, SingleValuedPair> mapper =
                 Slicer::toDiscreteProbabilityPair;
         assertTrue( "The transformed pair does not match the benchmark",
                     mapper.apply( a, threshold ).equals( DataFactory.pairOf( 0.0, 2.0 / 5.0 ) ) );
@@ -483,19 +483,19 @@ public final class SlicerTest
     }
 
     /**
-     * Tests the {@link Slicer#ofSingleValuedPairMapper(PairOfDoubleAndVectorOfDoubles)}.
+     * Tests the {@link Slicer#ofSingleValuedPairMapper(EnsemblePair)}.
      */
 
     @Test
     public void testTransformPair()
     {
-        PairOfDoubleAndVectorOfDoubles a = DataFactory.pairOf( 3, new double[] { 1, 2, 3, 4, 5 } );
-        PairOfDoubleAndVectorOfDoubles b = DataFactory.pairOf( 0, new double[] { 1, 2, 2, 3, 3 } );
-        PairOfDoubleAndVectorOfDoubles c = DataFactory.pairOf( 3, new double[] { 3, 3, 3, 3, 3 } );
-        PairOfDoubleAndVectorOfDoubles d = DataFactory.pairOf( 4, new double[] { 4, 4, 4, 4, 4 } );
-        PairOfDoubleAndVectorOfDoubles e = DataFactory.pairOf( 0, new double[] { 1, 2, 3, 4, 5 } );
-        PairOfDoubleAndVectorOfDoubles f = DataFactory.pairOf( 5, new double[] { 1, 1, 6, 6, 50 } );
-        Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles> mapper =
+        EnsemblePair a = DataFactory.pairOf( 3, new double[] { 1, 2, 3, 4, 5 } );
+        EnsemblePair b = DataFactory.pairOf( 0, new double[] { 1, 2, 2, 3, 3 } );
+        EnsemblePair c = DataFactory.pairOf( 3, new double[] { 3, 3, 3, 3, 3 } );
+        EnsemblePair d = DataFactory.pairOf( 4, new double[] { 4, 4, 4, 4, 4 } );
+        EnsemblePair e = DataFactory.pairOf( 0, new double[] { 1, 2, 3, 4, 5 } );
+        EnsemblePair f = DataFactory.pairOf( 5, new double[] { 1, 1, 6, 6, 50 } );
+        Function<EnsemblePair, SingleValuedPair> mapper =
                 Slicer.ofSingleValuedPairMapper( vector -> vector[0] );
         assertTrue( "The transformed pair does not match the benchmark",
                     mapper.apply( a ).equals( DataFactory.pairOf( 3, 1 ) ) );
@@ -518,7 +518,7 @@ public final class SlicerTest
     @Test
     public void testFilterByRight()
     {
-        List<PairOfDoubleAndVectorOfDoubles> input = new ArrayList<>();
+        List<EnsemblePair> input = new ArrayList<>();
         input.add( DataFactory.pairOf( 1, new double[] { 1, 2, 3 } ) );
         input.add( DataFactory.pairOf( 1, new double[] { 1, 2, 3 } ) );
         input.add( DataFactory.pairOf( 1, new double[] { 1, 2, 3 } ) );
@@ -532,7 +532,7 @@ public final class SlicerTest
         input.add( DataFactory.pairOf( 3, new double[] { 1, 2, 3, 4, 5, 6 } ) );
         input.add( DataFactory.pairOf( 3, new double[] { 1, 2, 3, 4, 5, 6 } ) );
         //Slice
-        Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> sliced = Slicer.filterByRightSize( input );
+        Map<Integer, List<EnsemblePair>> sliced = Slicer.filterByRightSize( input );
         //Check the results
         assertTrue( "Expected three slices of data.", sliced.size() == 3 );
         assertTrue( "Expected the first slice to contain three pairs.", sliced.get( 3 ).size() == 3 );
@@ -566,7 +566,7 @@ public final class SlicerTest
     @Test
     public void testFilterSingleValuedPairs()
     {
-        List<PairOfDoubles> values = new ArrayList<>();
+        List<SingleValuedPair> values = new ArrayList<>();
         values.add( DataFactory.pairOf( 1, 2.0 / 5.0 ) );
         values.add( DataFactory.pairOf( 1, 3.0 / 5.0 ) );
         values.add( DataFactory.pairOf( 1, 1.0 / 5.0 ) );
@@ -574,7 +574,7 @@ public final class SlicerTest
         values.add( DataFactory.pairOf( 0, Double.NaN ) );
         values.add( DataFactory.pairOf( Double.NaN, 0 ) );
 
-        List<PairOfDoubles> expectedValues = new ArrayList<>();
+        List<SingleValuedPair> expectedValues = new ArrayList<>();
         expectedValues.add( DataFactory.pairOf( 1, 2.0 / 5.0 ) );
         expectedValues.add( DataFactory.pairOf( 1, 3.0 / 5.0 ) );
         expectedValues.add( DataFactory.pairOf( 1, 1.0 / 5.0 ) );
@@ -614,7 +614,7 @@ public final class SlicerTest
     @Test
     public void testFilterEnsemblePairs()
     {
-        final List<PairOfDoubleAndVectorOfDoubles> values = new ArrayList<>();
+        final List<EnsemblePair> values = new ArrayList<>();
         values.add( DataFactory.pairOf( 0, new double[] { 1, 2, 3 } ) );
         values.add( DataFactory.pairOf( 0, new double[] { 1, 2, 3 } ) );
         values.add( DataFactory.pairOf( 0, new double[] { 1, 2, 3 } ) );
@@ -622,7 +622,7 @@ public final class SlicerTest
         values.add( DataFactory.pairOf( 0, new double[] { Double.NaN, Double.NaN, Double.NaN } ) );
         values.add( DataFactory.pairOf( 0, new double[] { Double.NaN, 2, 3, Double.NaN } ) );
 
-        List<PairOfDoubleAndVectorOfDoubles> expectedValues = new ArrayList<>();
+        List<EnsemblePair> expectedValues = new ArrayList<>();
         expectedValues.add( DataFactory.pairOf( 0, new double[] { 1, 2, 3 } ) );
         expectedValues.add( DataFactory.pairOf( 0, new double[] { 1, 2, 3 } ) );
         expectedValues.add( DataFactory.pairOf( 0, new double[] { 1, 2, 3 } ) );
@@ -664,9 +664,9 @@ public final class SlicerTest
     public void testFilterTimeSeriesOfSingleValuedPairs()
     {
         //Build a time-series with three basis times 
-        List<Event<PairOfDoubles>> first = new ArrayList<>();
-        List<Event<PairOfDoubles>> second = new ArrayList<>();
-        List<Event<PairOfDoubles>> third = new ArrayList<>();
+        List<Event<SingleValuedPair>> first = new ArrayList<>();
+        List<Event<SingleValuedPair>> second = new ArrayList<>();
+        List<Event<SingleValuedPair>> third = new ArrayList<>();
         TimeSeriesOfSingleValuedPairsBuilder b = new TimeSeriesOfSingleValuedPairsBuilder();
 
         Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
@@ -708,9 +708,9 @@ public final class SlicerTest
                                Slicer.anyOfLeftInTimeSeriesOfSingleValuedPairs( value -> value > 3 ),
                                clim -> clim > 0 );
 
-        List<Event<PairOfDoubles>> secondData = new ArrayList<>();
+        List<Event<SingleValuedPair>> secondData = new ArrayList<>();
         secondResult.timeIterator().forEach( secondData::add );
-        List<Event<PairOfDoubles>> secondBenchmark = new ArrayList<>();
+        List<Event<SingleValuedPair>> secondBenchmark = new ArrayList<>();
         secondBenchmark.addAll( second );
         secondBenchmark.addAll( third );
 
@@ -729,9 +729,9 @@ public final class SlicerTest
                                Slicer.anyOfLeftAndAnyOfRightInTimeSeriesOfSingleValuedPairs( value -> value > 7 ),
                                null );
 
-        List<Event<PairOfDoubles>> thirdData = new ArrayList<>();
+        List<Event<SingleValuedPair>> thirdData = new ArrayList<>();
         thirdResult.timeIterator().forEach( thirdData::add );
-        List<Event<PairOfDoubles>> thirdBenchmark = new ArrayList<>();
+        List<Event<SingleValuedPair>> thirdBenchmark = new ArrayList<>();
         thirdBenchmark.addAll( third );
 
         assertTrue( "The filtered time-series does not match the benchmark.",
@@ -756,7 +756,7 @@ public final class SlicerTest
                                Slicer.anyOfLeftInTimeSeriesOfSingleValuedPairs( value -> value > 4 ),
                                clim -> clim > 0 );
 
-        List<Event<PairOfDoubles>> fifthData = new ArrayList<>();
+        List<Event<SingleValuedPair>> fifthData = new ArrayList<>();
         fifthResult.timeIterator().forEach( fifthData::add );
 
         // Same as second benchmark for main data
@@ -764,9 +764,9 @@ public final class SlicerTest
                     fifthData.equals( secondBenchmark ) );
 
         // Baseline data
-        List<Event<PairOfDoubles>> fifthDataBase = new ArrayList<>();
+        List<Event<SingleValuedPair>> fifthDataBase = new ArrayList<>();
         fifthResult.getBaselineData().timeIterator().forEach( fifthDataBase::add );
-        List<Event<PairOfDoubles>> fifthBenchmarkBase = new ArrayList<>();
+        List<Event<SingleValuedPair>> fifthBenchmarkBase = new ArrayList<>();
         fifthBenchmarkBase.addAll( second );
 
         assertTrue( "The filtered time-series does not match the benchmark.",
@@ -783,9 +783,9 @@ public final class SlicerTest
     public void testFilterEnsembleTimeSeriesByBasisTime()
     {
         //Build a time-series with three basis times 
-        List<Event<PairOfDoubleAndVectorOfDoubles>> first = new ArrayList<>();
-        List<Event<PairOfDoubleAndVectorOfDoubles>> second = new ArrayList<>();
-        List<Event<PairOfDoubleAndVectorOfDoubles>> third = new ArrayList<>();
+        List<Event<EnsemblePair>> first = new ArrayList<>();
+        List<Event<EnsemblePair>> second = new ArrayList<>();
+        List<Event<EnsemblePair>> third = new ArrayList<>();
         TimeSeriesOfEnsemblePairsBuilder b = new TimeSeriesOfEnsemblePairsBuilder();
 
         Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
@@ -809,7 +809,7 @@ public final class SlicerTest
                                              .setMetadata( meta )
                                              .build();
         //Iterate and test
-        TimeSeries<PairOfDoubleAndVectorOfDoubles> filtered =
+        TimeSeries<EnsemblePair> filtered =
                 Slicer.filterByBasisTime( ts, a -> a.equals( secondBasisTime ) );
         assertTrue( "Unexpected number of issue times in the filtered time-series.",
                     filtered.getBasisTimes().size() == 1 );
@@ -842,9 +842,9 @@ public final class SlicerTest
     public void testFilterEnsembleTimeSeriesByDuration()
     {
         //Build a time-series with three basis times 
-        List<Event<PairOfDoubleAndVectorOfDoubles>> first = new ArrayList<>();
-        List<Event<PairOfDoubleAndVectorOfDoubles>> second = new ArrayList<>();
-        List<Event<PairOfDoubleAndVectorOfDoubles>> third = new ArrayList<>();
+        List<Event<EnsemblePair>> first = new ArrayList<>();
+        List<Event<EnsemblePair>> second = new ArrayList<>();
+        List<Event<EnsemblePair>> third = new ArrayList<>();
         TimeSeriesOfEnsemblePairsBuilder b = new TimeSeriesOfEnsemblePairsBuilder();
 
         Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
@@ -903,9 +903,9 @@ public final class SlicerTest
     public void testFilterSingleValuedTimeSeriesByBasisTime()
     {
         //Build a time-series with three basis times 
-        List<Event<PairOfDoubles>> first = new ArrayList<>();
-        List<Event<PairOfDoubles>> second = new ArrayList<>();
-        List<Event<PairOfDoubles>> third = new ArrayList<>();
+        List<Event<SingleValuedPair>> first = new ArrayList<>();
+        List<Event<SingleValuedPair>> second = new ArrayList<>();
+        List<Event<SingleValuedPair>> third = new ArrayList<>();
         TimeSeriesOfSingleValuedPairsBuilder b = new TimeSeriesOfSingleValuedPairsBuilder();
 
         Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
@@ -929,7 +929,7 @@ public final class SlicerTest
                                                  .setMetadata( meta )
                                                  .build();
         //Iterate and test
-        TimeSeries<PairOfDoubles> filtered = Slicer.filterByBasisTime( ts, a -> a.equals( secondBasisTime ) );
+        TimeSeries<SingleValuedPair> filtered = Slicer.filterByBasisTime( ts, a -> a.equals( secondBasisTime ) );
         assertTrue( "Unexpected number of issue times in the filtered time-series.",
                     filtered.getBasisTimes().size() == 1 );
         assertTrue( "Unexpected issue time in the filtered time-series.",
@@ -957,9 +957,9 @@ public final class SlicerTest
     public void testSingleValuedTimeSeriesByDuration()
     {
         //Build a time-series with three basis times 
-        List<Event<PairOfDoubles>> first = new ArrayList<>();
-        List<Event<PairOfDoubles>> second = new ArrayList<>();
-        List<Event<PairOfDoubles>> third = new ArrayList<>();
+        List<Event<SingleValuedPair>> first = new ArrayList<>();
+        List<Event<SingleValuedPair>> second = new ArrayList<>();
+        List<Event<SingleValuedPair>> third = new ArrayList<>();
         TimeSeriesOfSingleValuedPairsBuilder b = new TimeSeriesOfSingleValuedPairsBuilder();
 
         Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );

@@ -25,9 +25,9 @@ import wres.datamodel.Slicer;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
-import wres.datamodel.inputs.pairs.PairOfBooleans;
-import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
-import wres.datamodel.inputs.pairs.PairOfDoubles;
+import wres.datamodel.inputs.pairs.DichotomousPair;
+import wres.datamodel.inputs.pairs.EnsemblePair;
+import wres.datamodel.inputs.pairs.SingleValuedPair;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
@@ -105,13 +105,13 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
      * Default function that maps between ensemble pairs and single-valued pairs.
      */
 
-    private final Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles> toSingleValues;
+    private final Function<EnsemblePair, SingleValuedPair> toSingleValues;
 
     /**
      * Function to map between ensemble pairs and discrete probabilities.
      */
 
-    private final BiFunction<PairOfDoubleAndVectorOfDoubles, Threshold, PairOfDoubles> toDiscreteProbabilities;
+    private final BiFunction<EnsemblePair, Threshold, SingleValuedPair> toDiscreteProbabilities;
 
     @Override
     public MetricOutputForProjectByTimeAndThreshold apply( EnsemblePairs input )
@@ -252,8 +252,8 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         }
 
         //Construct the default mapper from ensembles to single-values: this is not currently configurable
-        toSingleValues = in -> DataFactory.pairOf( in.getItemOne(),
-                                                   Arrays.stream( in.getItemTwo() ).average().getAsDouble() );
+        toSingleValues = in -> DataFactory.pairOf( in.getLeft(),
+                                                   Arrays.stream( in.getRight() ).average().getAsDouble() );
 
         //Construct the default mapper from ensembles to probabilities: this is not currently configurable
         toDiscreteProbabilities = Slicer::toDiscreteProbabilityPair;
@@ -272,11 +272,11 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
      * @throws NullPointerException if the {@link Threshold#getDataType()} is null
      */
 
-    static Predicate<PairOfDoubleAndVectorOfDoubles> getFilterForEnsemblePairs( Threshold input )
+    static Predicate<EnsemblePair> getFilterForEnsemblePairs( Threshold input )
     {
         ThresholdConstants.ThresholdDataType type = input.getDataType();
 
-        Predicate<PairOfDoubleAndVectorOfDoubles> returnMe = null;
+        Predicate<EnsemblePair> returnMe = null;
 
         switch ( type )
         {
@@ -420,7 +420,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
             //Filter the pairs if required
             if ( threshold.isFinite() )
             {
-                Predicate<PairOfDoubleAndVectorOfDoubles> filter =
+                Predicate<EnsemblePair> filter =
                         MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( useMe );
 
                 pairs = Slicer.filter( input, filter, null );
@@ -712,9 +712,9 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                 Pair<TimeWindow, OneOrTwoThresholds> nextKey = Pair.of( timeWindow, compound );
 
                 //Define a mapper to convert the discrete probability pairs to dichotomous pairs
-                Function<PairOfDoubles, PairOfBooleans> mapper =
-                        pair -> DataFactory.pairOf( innerThreshold.test( pair.getItemOne() ),
-                                                    innerThreshold.test( pair.getItemTwo() ) );
+                Function<SingleValuedPair, DichotomousPair> mapper =
+                        pair -> DataFactory.pairOf( innerThreshold.test( pair.getLeft() ),
+                                                    innerThreshold.test( pair.getRight() ) );
                 //Transform the pairs
                 DichotomousPairs dichotomous = Slicer.toDichotomousPairs( transformed, mapper );
                 processDichotomousPairs( nextKey, dichotomous, futures, outGroup, unionToIgnore );

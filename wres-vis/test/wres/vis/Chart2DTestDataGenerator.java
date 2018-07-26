@@ -27,7 +27,7 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.inputs.pairs.EnsemblePair;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
@@ -647,7 +647,7 @@ public abstract class Chart2DTestDataGenerator
             //Thresholds in the first row
             VectorOfDoubles probabilities = DataFactory.vectorOf( Arrays.copyOfRange( bp[0], 1, bp[0].length ) );
             //Boxes in the remaining rows
-            final List<PairOfDoubleAndVectorOfDoubles> output = new ArrayList<>();
+            final List<EnsemblePair> output = new ArrayList<>();
             for ( double[] next : bp )
             {
                 if ( Double.compare( next[0], -999 ) != 0 )
@@ -718,7 +718,7 @@ public abstract class Chart2DTestDataGenerator
             //Thresholds in the first row
             VectorOfDoubles probabilities = DataFactory.vectorOf( Arrays.copyOfRange( bp[0], 1, bp[0].length ) );
             //Boxes in the remaining rows
-            final List<PairOfDoubleAndVectorOfDoubles> output = new ArrayList<>();
+            final List<EnsemblePair> output = new ArrayList<>();
             for ( double[] next : bp )
             {
                 if ( Double.compare( next[0], -999 ) != 0 )

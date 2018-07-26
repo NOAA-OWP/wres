@@ -19,7 +19,7 @@ import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
-import wres.datamodel.inputs.pairs.PairOfDoubles;
+import wres.datamodel.inputs.pairs.SingleValuedPair;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.MatrixOutput;
@@ -170,9 +170,9 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
      * @return the predicate for filtering pairs
      */
 
-    static Predicate<PairOfDoubles> getFilterForSingleValuedPairs( Threshold input )
+    static Predicate<SingleValuedPair> getFilterForSingleValuedPairs( Threshold input )
     {
-        Predicate<PairOfDoubles> returnMe = null;
+        Predicate<SingleValuedPair> returnMe = null;
 
         switch ( input.getDataType() )
         {
@@ -202,9 +202,9 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
      * @return the predicate for filtering pairs
      */
 
-    static Predicate<TimeSeries<PairOfDoubles>> getFilterForTimeSeriesOfSingleValuedPairs( Threshold input )
+    static Predicate<TimeSeries<SingleValuedPair>> getFilterForTimeSeriesOfSingleValuedPairs( Threshold input )
     {
-        Predicate<TimeSeries<PairOfDoubles>> returnMe = null;
+        Predicate<TimeSeries<SingleValuedPair>> returnMe = null;
 
         switch ( input.getDataType() )
         {
@@ -289,7 +289,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
             // Filter the data if required
             if ( useMe.isFinite() )
             {
-                Predicate<PairOfDoubles> filter = MetricProcessorByTime.getFilterForSingleValuedPairs( useMe );
+                Predicate<SingleValuedPair> filter = MetricProcessorByTime.getFilterForSingleValuedPairs( useMe );
 
                 pairs = Slicer.filter( input, filter, null );
 

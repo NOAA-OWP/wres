@@ -30,7 +30,7 @@ public class DiscreteProbabilityPairs extends SingleValuedPairs
     }
 
     /**
-     * A {@link PairedInputBuilder} to build the metric input.
+     * A builder to build the metric input.
      */
 
     public static class DiscreteProbabilityPairsBuilder extends SingleValuedPairsBuilder

@@ -8,8 +8,6 @@ import java.util.List;
 
 import org.junit.Test;
 
-import wres.datamodel.DataFactory;
-import wres.datamodel.VectorOfBooleans;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.DichotomousPairs.DichotomousPairsBuilder;
 import wres.datamodel.metadata.Location;
@@ -31,13 +29,13 @@ public final class DichotomousPairsTest
     @Test
     public void test1DichotomousPairs()
     {
-        final List<VectorOfBooleans> values = new ArrayList<>();
+        final List<DichotomousPair> values = new ArrayList<>();
 
         final DichotomousPairsBuilder b = new DichotomousPairsBuilder();
 
         for ( int i = 0; i < 10; i++ )
         {
-            values.add( DataFactory.vectorOf( new boolean[] { true, true } ) );
+            values.add( DichotomousPair.of( true, true ) );
         }
 
         final Location location = MetadataFactory.getLocation( "DRRC2" );
@@ -46,7 +44,7 @@ public final class DichotomousPairsTest
                                                                                                  "SQIN",
                                                                                                  "HEFS" ) );
 
-        final DichotomousPairs p = (DichotomousPairs) b.addData( values ).setMetadata( meta ).build();
+        final DichotomousPairs p = (DichotomousPairs) b.addDichotomousData( values ).setMetadata( meta ).build();
 
         //Check category count
         assertTrue( "Unexpected category count on inputs [2," + p.getCategoryCount() + "].",
@@ -56,21 +54,23 @@ public final class DichotomousPairsTest
         //Too many categories
         try
         {
-            values.clear();
-            values.add( DataFactory.vectorOf( new boolean[] { true, false, false, true, false, false } ) );
-            b.addData( values ).build();
+            final DichotomousPairsBuilder c = new DichotomousPairsBuilder();
+            final List<MulticategoryPair> multiValues = new ArrayList<>();
+            multiValues.add( MulticategoryPair.of( new boolean[] { true, false, false },
+                                                   new boolean[] { true, false, false } ) );
+            c.setMetadata( meta ).addData( multiValues ).build();
             fail( "Expected a checked exception on invalid inputs." );
         }
         catch ( final Exception e )
         {
-
         }
         //Valid data
         try
         {
-            values.clear();
-            values.add( DataFactory.vectorOf( new boolean[] { true, false, true, false } ) );
-            b.addData( values ).build();
+            final DichotomousPairsBuilder c = new DichotomousPairsBuilder();
+            final List<MulticategoryPair> multiValues = new ArrayList<>();
+            multiValues.add( MulticategoryPair.of( new boolean[] { true, false }, new boolean[] { true, false } ) );
+            c.setMetadata( meta ).addData( multiValues ).build();
         }
         catch ( final Exception e )
         {

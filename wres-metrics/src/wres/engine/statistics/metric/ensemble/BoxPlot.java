@@ -12,7 +12,7 @@ import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
-import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.inputs.pairs.EnsemblePair;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.BoxPlotOutput;
 import wres.engine.statistics.metric.Diagram;
@@ -41,14 +41,14 @@ abstract class BoxPlot
     final VectorOfDoubles probabilities;
 
     /**
-     * Creates a box from a {@link PairOfDoubleAndVectorOfDoubles}.
+     * Creates a box from a {@link EnsemblePair}.
      * 
      * @param pair the pair
      * @return a box
      * @throws MetricCalculationException if the box cannot be constructed
      */
 
-    abstract PairOfDoubleAndVectorOfDoubles getBox( PairOfDoubleAndVectorOfDoubles pair );
+    abstract EnsemblePair getBox( EnsemblePair pair );
 
     /**
      * Returns the dimension associated with the left side of the pairing, i.e. the value against which each box is
@@ -75,9 +75,9 @@ abstract class BoxPlot
         {
             throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
         }
-        List<PairOfDoubleAndVectorOfDoubles> boxes = new ArrayList<>();
+        List<EnsemblePair> boxes = new ArrayList<>();
         //Create each box
-        for ( PairOfDoubleAndVectorOfDoubles next : s )
+        for ( EnsemblePair next : s )
         {
             boxes.add( getBox( next ) );
         }

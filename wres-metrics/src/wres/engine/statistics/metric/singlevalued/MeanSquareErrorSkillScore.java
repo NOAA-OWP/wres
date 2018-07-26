@@ -7,7 +7,7 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.Slicer;
 import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.inputs.pairs.PairOfDoubles;
+import wres.datamodel.inputs.pairs.SingleValuedPair;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.MetricOutputMetadata;
@@ -65,9 +65,9 @@ public class MeanSquareErrorSkillScore<S extends SingleValuedPairs> extends Deco
             {
                 double meanLeft =
                         FunctionFactory.mean().applyAsDouble( DataFactory.vectorOf( Slicer.getLeftSide( s ) ) );
-                for ( PairOfDoubles next : s.getRawData() )
+                for ( SingleValuedPair next : s.getRawData() )
                 {
-                    denominator += Math.pow( next.getItemOne() - meanLeft, 2 );
+                    denominator += Math.pow( next.getLeft() - meanLeft, 2 );
                 }
             }
             result = FunctionFactory.skill().applyAsDouble( numerator, denominator );

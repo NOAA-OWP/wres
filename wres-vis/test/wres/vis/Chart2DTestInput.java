@@ -17,7 +17,7 @@ import ohd.hseb.charter.ChartTools;
 import ohd.hseb.charter.datasource.XYChartDataSourceException;
 
 import wres.datamodel.DataFactory;
-import wres.datamodel.inputs.pairs.PairOfDoubles;
+import wres.datamodel.inputs.pairs.SingleValuedPair;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
@@ -29,7 +29,7 @@ public class Chart2DTestInput extends TestCase
     {
         final Random rand = new Random(0L);
 
-        final List<PairOfDoubles> values = new ArrayList<>();
+        final List<SingleValuedPair> values = new ArrayList<>();
         for (int i = 0; i < 100; i ++)
         {
             values.add(DataFactory.pairOf(rand.nextGaussian(), rand.nextGaussian()));
@@ -69,7 +69,7 @@ public class Chart2DTestInput extends TestCase
     public static void main( final String[] args ) throws ChartEngineException, IOException
     {
         //Construct some single-valued pairs
-        final List<PairOfDoubles> values = new ArrayList<>();
+        final List<SingleValuedPair> values = new ArrayList<>();
         values.add(DataFactory.pairOf(22.9, 22.8));
         values.add(DataFactory.pairOf(75.2, 80));
         values.add(DataFactory.pairOf(63.2, 65));

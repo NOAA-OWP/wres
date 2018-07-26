@@ -36,7 +36,7 @@ import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
-import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.inputs.pairs.EnsemblePair;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.DoubleScoreOutput;
@@ -97,7 +97,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                                                                               condition,
                                                                                                               ThresholdDataType.RIGHT_MEAN ) ) );
         // Check that average works        
-        PairOfDoubleAndVectorOfDoubles pair = DataFactory.pairOf( 1.0, new double[] { 1.5, 2.0 } );
+        EnsemblePair pair = DataFactory.pairOf( 1.0, new double[] { 1.5, 2.0 } );
 
         assertTrue( MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( DataFactory.ofThreshold( doubles,
                                                                                                            condition,
