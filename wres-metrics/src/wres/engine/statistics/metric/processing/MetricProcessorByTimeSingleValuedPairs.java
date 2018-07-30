@@ -171,7 +171,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
         {
             MetricConstants[] timingErrorMetrics = this.getMetrics( MetricInputGroup.SINGLE_VALUED_TIME_SERIES,
                                                                     MetricOutputGroup.PAIRED );
-            this.timeSeries = metricFactory.ofSingleValuedTimeSeriesCollection( metricExecutor,
+            this.timeSeries = MetricFactory.ofSingleValuedTimeSeriesCollection( metricExecutor,
                                                                                 timingErrorMetrics );
             //Summary statistics
             Map<MetricConstants, TimingErrorDurationStatistics> localStatistics =
@@ -192,7 +192,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                     MetricConstants identifier = MetricFactory.ofSummaryStatisticsForTimingErrorMetric( nextMetric );
 
                     TimingErrorDurationStatistics stats =
-                            this.metricFactory.ofTimingErrorDurationStatistics( identifier, ts );
+                            MetricFactory.ofTimingErrorDurationStatistics( identifier, ts );
 
                     localStatistics.put( nextMetric, stats );
                 }

@@ -31,8 +31,7 @@ public final class MetricTest
                                  + "PEARSON CORRELATION COEFFICIENT"
                                  + "': build the metadata in the implementing class." );
 
-        MetricFactory.getInstance()
-                     .ofCorrelationPearsons()
+        MetricFactory.ofCorrelationPearsons()
                      .getMetadata( MetricTestDataFactory.getSingleValuedPairsOne(),
                                    1,
                                    MetricConstants.MAIN,

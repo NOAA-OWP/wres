@@ -115,7 +115,7 @@ public class RootMeanSquareError extends DoubleErrorScore<SingleValuedPairs>
     private RootMeanSquareError( final RootMeanSquareErrorBuilder builder ) throws MetricParameterException
     {
         super( builder.setErrorFunction( FunctionFactory.squareError() ) );
-        sse = MetricFactory.getInstance().ofSumOfSquareError();
+        sse = MetricFactory.ofSumOfSquareError();
     }
 
 }

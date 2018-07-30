@@ -131,7 +131,7 @@ public class MeanSquareErrorSkillScore extends DecomposableScore<SingleValuedPai
             throws MetricParameterException
     {
         super( builder );
-        sse = MetricFactory.getInstance().ofSumOfSquareError();
+        sse = MetricFactory.ofSumOfSquareError();
     }
 
 }

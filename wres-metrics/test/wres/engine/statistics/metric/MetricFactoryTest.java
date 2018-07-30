@@ -29,7 +29,6 @@ import wres.config.generated.ThresholdDataType;
 import wres.config.generated.ThresholdOperator;
 import wres.config.generated.ThresholdType;
 import wres.config.generated.ThresholdsConfig;
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.engine.statistics.metric.categorical.ContingencyTable;
 import wres.engine.statistics.metric.categorical.EquitableThreatScore;
@@ -73,12 +72,6 @@ import wres.engine.statistics.metric.timeseries.TimingErrorDurationStatistics;
  */
 public final class MetricFactoryTest
 {
-    
-    /**
-     * Metric factory.
-     */
-
-    private MetricFactory metF;
 
     /**
      * Mocked single-valued configuration.
@@ -99,21 +92,7 @@ public final class MetricFactoryTest
     @Before
     public void setupBeforeEachTest()
     {
-        metF = MetricFactory.getInstance();
-
         setMockConfiguration();
-    }
-
-
-    /**
-     * Tests the {@link MetricFactory#getInstance(DataFactory)}.
-     * 
-     */
-
-    @Test
-    public void testGetInstance()
-    {
-        assertTrue( Objects.nonNull( MetricFactory.getInstance() ) );
     }
 
     /**
@@ -123,23 +102,23 @@ public final class MetricFactoryTest
     @Test
     public void testOfSingleValuedScore() throws MetricParameterException
     {
-        assertTrue( metF.ofSingleValuedScore( MetricConstants.BIAS_FRACTION ) instanceof BiasFraction );
-        assertTrue( metF.ofSingleValuedScore( MetricConstants.MEAN_ABSOLUTE_ERROR ) instanceof MeanAbsoluteError );
-        assertTrue( metF.ofSingleValuedScore( MetricConstants.MEAN_ERROR ) instanceof MeanError );
-        assertTrue( metF.ofSingleValuedScore( MetricConstants.ROOT_MEAN_SQUARE_ERROR ) instanceof RootMeanSquareError );
-        assertTrue( metF.ofSingleValuedScore( MetricConstants.PEARSON_CORRELATION_COEFFICIENT ) instanceof CorrelationPearsons );
-        assertTrue( metF.ofSingleValuedScore( MetricConstants.COEFFICIENT_OF_DETERMINATION ) instanceof CoefficientOfDetermination );
-        assertTrue( metF.ofSingleValuedScore( MetricConstants.INDEX_OF_AGREEMENT ) instanceof IndexOfAgreement );
-        assertTrue( metF.ofSingleValuedScore( MetricConstants.SAMPLE_SIZE ) instanceof SampleSize );
-        assertTrue( metF.ofSingleValuedScore( MetricConstants.MEAN_SQUARE_ERROR ) instanceof MeanSquareError );
-        assertTrue( metF.ofSingleValuedScore( MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE ) instanceof MeanSquareErrorSkillScore );
-        assertTrue( metF.ofSingleValuedScore( MetricConstants.KLING_GUPTA_EFFICIENCY ) instanceof KlingGuptaEfficiency );
-        assertTrue( metF.ofSingleValuedScore( MetricConstants.SUM_OF_SQUARE_ERROR ) instanceof SumOfSquareError );
+        assertTrue( MetricFactory.ofSingleValuedScore( MetricConstants.BIAS_FRACTION ) instanceof BiasFraction );
+        assertTrue( MetricFactory.ofSingleValuedScore( MetricConstants.MEAN_ABSOLUTE_ERROR ) instanceof MeanAbsoluteError );
+        assertTrue( MetricFactory.ofSingleValuedScore( MetricConstants.MEAN_ERROR ) instanceof MeanError );
+        assertTrue( MetricFactory.ofSingleValuedScore( MetricConstants.ROOT_MEAN_SQUARE_ERROR ) instanceof RootMeanSquareError );
+        assertTrue( MetricFactory.ofSingleValuedScore( MetricConstants.PEARSON_CORRELATION_COEFFICIENT ) instanceof CorrelationPearsons );
+        assertTrue( MetricFactory.ofSingleValuedScore( MetricConstants.COEFFICIENT_OF_DETERMINATION ) instanceof CoefficientOfDetermination );
+        assertTrue( MetricFactory.ofSingleValuedScore( MetricConstants.INDEX_OF_AGREEMENT ) instanceof IndexOfAgreement );
+        assertTrue( MetricFactory.ofSingleValuedScore( MetricConstants.SAMPLE_SIZE ) instanceof SampleSize );
+        assertTrue( MetricFactory.ofSingleValuedScore( MetricConstants.MEAN_SQUARE_ERROR ) instanceof MeanSquareError );
+        assertTrue( MetricFactory.ofSingleValuedScore( MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE ) instanceof MeanSquareErrorSkillScore );
+        assertTrue( MetricFactory.ofSingleValuedScore( MetricConstants.KLING_GUPTA_EFFICIENCY ) instanceof KlingGuptaEfficiency );
+        assertTrue( MetricFactory.ofSingleValuedScore( MetricConstants.SUM_OF_SQUARE_ERROR ) instanceof SumOfSquareError );
 
         // Unrecognized metric
         exception.expect( IllegalArgumentException.class );
         exception.expectMessage( "Unrecognized metric for identifier. 'MAIN'." );
-        metF.ofSingleValuedScore( MetricConstants.MAIN );
+        MetricFactory.ofSingleValuedScore( MetricConstants.MAIN );
     }
 
     /**
@@ -149,15 +128,15 @@ public final class MetricFactoryTest
     @Test
     public void testOfSingleValuedScoreCollectable() throws MetricParameterException
     {
-        assertTrue( metF.ofSingleValuedScoreCollectable( MetricConstants.ROOT_MEAN_SQUARE_ERROR ) instanceof RootMeanSquareError );
-        assertTrue( metF.ofSingleValuedScoreCollectable( MetricConstants.PEARSON_CORRELATION_COEFFICIENT ) instanceof CorrelationPearsons );
-        assertTrue( metF.ofSingleValuedScoreCollectable( MetricConstants.COEFFICIENT_OF_DETERMINATION ) instanceof CoefficientOfDetermination );
-        assertTrue( metF.ofSingleValuedScoreCollectable( MetricConstants.MEAN_SQUARE_ERROR ) instanceof MeanSquareError );
+        assertTrue( MetricFactory.ofSingleValuedScoreCollectable( MetricConstants.ROOT_MEAN_SQUARE_ERROR ) instanceof RootMeanSquareError );
+        assertTrue( MetricFactory.ofSingleValuedScoreCollectable( MetricConstants.PEARSON_CORRELATION_COEFFICIENT ) instanceof CorrelationPearsons );
+        assertTrue( MetricFactory.ofSingleValuedScoreCollectable( MetricConstants.COEFFICIENT_OF_DETERMINATION ) instanceof CoefficientOfDetermination );
+        assertTrue( MetricFactory.ofSingleValuedScoreCollectable( MetricConstants.MEAN_SQUARE_ERROR ) instanceof MeanSquareError );
 
         // Unrecognized metric
         exception.expect( IllegalArgumentException.class );
         exception.expectMessage( "Unrecognized metric for identifier. 'MAIN'." );
-        metF.ofSingleValuedScoreCollectable( MetricConstants.MAIN );
+        MetricFactory.ofSingleValuedScoreCollectable( MetricConstants.MAIN );
     }
 
     /**
@@ -167,14 +146,14 @@ public final class MetricFactoryTest
     @Test
     public void testOfDiscreteProbabilityScore() throws MetricParameterException
     {
-        assertTrue( metF.ofDiscreteProbabilityScore( MetricConstants.BRIER_SCORE ) instanceof BrierScore );
-        assertTrue( metF.ofDiscreteProbabilityScore( MetricConstants.BRIER_SKILL_SCORE ) instanceof BrierSkillScore );
-        assertTrue( metF.ofDiscreteProbabilityScore( MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE ) instanceof RelativeOperatingCharacteristicScore );
+        assertTrue( MetricFactory.ofDiscreteProbabilityScore( MetricConstants.BRIER_SCORE ) instanceof BrierScore );
+        assertTrue( MetricFactory.ofDiscreteProbabilityScore( MetricConstants.BRIER_SKILL_SCORE ) instanceof BrierSkillScore );
+        assertTrue( MetricFactory.ofDiscreteProbabilityScore( MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE ) instanceof RelativeOperatingCharacteristicScore );
 
         // Unrecognized metric
         exception.expect( IllegalArgumentException.class );
         exception.expectMessage( "Unrecognized metric for identifier. 'MAIN'." );
-        metF.ofDiscreteProbabilityScore( MetricConstants.MAIN );
+        MetricFactory.ofDiscreteProbabilityScore( MetricConstants.MAIN );
     }
 
     /**
@@ -184,16 +163,16 @@ public final class MetricFactoryTest
     @Test
     public void testOfDichotomousScore() throws MetricParameterException
     {
-        assertTrue( metF.ofDichotomousScore( MetricConstants.THREAT_SCORE ) instanceof ThreatScore );
-        assertTrue( metF.ofDichotomousScore( MetricConstants.EQUITABLE_THREAT_SCORE ) instanceof EquitableThreatScore );
-        assertTrue( metF.ofDichotomousScore( MetricConstants.PEIRCE_SKILL_SCORE ) instanceof PeirceSkillScore );
-        assertTrue( metF.ofDichotomousScore( MetricConstants.PROBABILITY_OF_DETECTION ) instanceof ProbabilityOfDetection );
-        assertTrue( metF.ofDichotomousScore( MetricConstants.PROBABILITY_OF_FALSE_DETECTION ) instanceof ProbabilityOfFalseDetection );
+        assertTrue( MetricFactory.ofDichotomousScore( MetricConstants.THREAT_SCORE ) instanceof ThreatScore );
+        assertTrue( MetricFactory.ofDichotomousScore( MetricConstants.EQUITABLE_THREAT_SCORE ) instanceof EquitableThreatScore );
+        assertTrue( MetricFactory.ofDichotomousScore( MetricConstants.PEIRCE_SKILL_SCORE ) instanceof PeirceSkillScore );
+        assertTrue( MetricFactory.ofDichotomousScore( MetricConstants.PROBABILITY_OF_DETECTION ) instanceof ProbabilityOfDetection );
+        assertTrue( MetricFactory.ofDichotomousScore( MetricConstants.PROBABILITY_OF_FALSE_DETECTION ) instanceof ProbabilityOfFalseDetection );
 
         // Unrecognized metric
         exception.expect( IllegalArgumentException.class );
         exception.expectMessage( "Unrecognized metric for identifier. 'MAIN'." );
-        metF.ofDichotomousScore( MetricConstants.MAIN );
+        MetricFactory.ofDichotomousScore( MetricConstants.MAIN );
     }
 
     /**
@@ -203,12 +182,12 @@ public final class MetricFactoryTest
     @Test
     public void testOfMulticategoryScore() throws MetricParameterException
     {
-        assertTrue( metF.ofMulticategoryScore( MetricConstants.PEIRCE_SKILL_SCORE ) instanceof PeirceSkillScore );
+        assertTrue( MetricFactory.ofMulticategoryScore( MetricConstants.PEIRCE_SKILL_SCORE ) instanceof PeirceSkillScore );
 
         // Unrecognized metric
         exception.expect( IllegalArgumentException.class );
         exception.expectMessage( "Unrecognized metric for identifier. 'MAIN'." );
-        metF.ofMulticategoryScore( MetricConstants.MAIN );
+        MetricFactory.ofMulticategoryScore( MetricConstants.MAIN );
     }
 
     /**
@@ -218,14 +197,14 @@ public final class MetricFactoryTest
     @Test
     public void testOfEnsembleScore() throws MetricParameterException
     {
-        assertTrue( metF.ofEnsembleScore( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE ) instanceof ContinuousRankedProbabilityScore );
-        assertTrue( metF.ofEnsembleScore( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE ) instanceof ContinuousRankedProbabilitySkillScore );
-        assertTrue( metF.ofEnsembleScore( MetricConstants.SAMPLE_SIZE ) instanceof SampleSize );
+        assertTrue( MetricFactory.ofEnsembleScore( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE ) instanceof ContinuousRankedProbabilityScore );
+        assertTrue( MetricFactory.ofEnsembleScore( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE ) instanceof ContinuousRankedProbabilitySkillScore );
+        assertTrue( MetricFactory.ofEnsembleScore( MetricConstants.SAMPLE_SIZE ) instanceof SampleSize );
 
         // Unrecognized metric
         exception.expect( IllegalArgumentException.class );
         exception.expectMessage( "Unrecognized metric for identifier. 'MAIN'." );
-        metF.ofEnsembleScore( MetricConstants.MAIN );
+        MetricFactory.ofEnsembleScore( MetricConstants.MAIN );
     }
 
     /**
@@ -235,12 +214,12 @@ public final class MetricFactoryTest
     @Test
     public void testOfMulticategoryMatrix() throws MetricParameterException
     {
-        assertTrue( metF.ofDichotomousMatrix( MetricConstants.CONTINGENCY_TABLE ) instanceof ContingencyTable );
+        assertTrue( MetricFactory.ofDichotomousMatrix( MetricConstants.CONTINGENCY_TABLE ) instanceof ContingencyTable );
 
         // Unrecognized metric
         exception.expect( IllegalArgumentException.class );
         exception.expectMessage( "Unrecognized metric for identifier. 'MAIN'." );
-        metF.ofDichotomousMatrix( MetricConstants.MAIN );
+        MetricFactory.ofDichotomousMatrix( MetricConstants.MAIN );
     }
 
     /**
@@ -250,12 +229,12 @@ public final class MetricFactoryTest
     @Test
     public void testOfSingleValuedMultiVector() throws MetricParameterException
     {
-        assertTrue( metF.ofSingleValuedMultiVector( MetricConstants.QUANTILE_QUANTILE_DIAGRAM ) instanceof QuantileQuantileDiagram );
+        assertTrue( MetricFactory.ofSingleValuedMultiVector( MetricConstants.QUANTILE_QUANTILE_DIAGRAM ) instanceof QuantileQuantileDiagram );
 
         // Unrecognized metric
         exception.expect( IllegalArgumentException.class );
         exception.expectMessage( "Unrecognized metric for identifier. 'MAIN'." );
-        metF.ofSingleValuedMultiVector( MetricConstants.MAIN );
+        MetricFactory.ofSingleValuedMultiVector( MetricConstants.MAIN );
     }
 
     /**
@@ -265,13 +244,13 @@ public final class MetricFactoryTest
     @Test
     public void testOfDiscreteProbabilityMultiVector() throws MetricParameterException
     {
-        assertTrue( metF.ofDiscreteProbabilityMultiVector( MetricConstants.RELIABILITY_DIAGRAM ) instanceof ReliabilityDiagram );
-        assertTrue( metF.ofDiscreteProbabilityMultiVector( MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM ) instanceof RelativeOperatingCharacteristicDiagram );
+        assertTrue( MetricFactory.ofDiscreteProbabilityMultiVector( MetricConstants.RELIABILITY_DIAGRAM ) instanceof ReliabilityDiagram );
+        assertTrue( MetricFactory.ofDiscreteProbabilityMultiVector( MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM ) instanceof RelativeOperatingCharacteristicDiagram );
 
         // Unrecognized metric
         exception.expect( IllegalArgumentException.class );
         exception.expectMessage( "Unrecognized metric for identifier. 'MAIN'." );
-        metF.ofDiscreteProbabilityMultiVector( MetricConstants.MAIN );
+        MetricFactory.ofDiscreteProbabilityMultiVector( MetricConstants.MAIN );
     }
 
     /**
@@ -281,12 +260,12 @@ public final class MetricFactoryTest
     @Test
     public void testOfEnsembleMultiVector() throws MetricParameterException
     {
-        assertTrue( metF.ofEnsembleMultiVector( MetricConstants.RANK_HISTOGRAM ) instanceof RankHistogram );
+        assertTrue( MetricFactory.ofEnsembleMultiVector( MetricConstants.RANK_HISTOGRAM ) instanceof RankHistogram );
 
         // Unrecognized metric
         exception.expect( IllegalArgumentException.class );
         exception.expectMessage( "Unrecognized metric for identifier. 'MAIN'." );
-        metF.ofEnsembleMultiVector( MetricConstants.MAIN );
+        MetricFactory.ofEnsembleMultiVector( MetricConstants.MAIN );
     }
 
     /**
@@ -296,13 +275,13 @@ public final class MetricFactoryTest
     @Test
     public void testOfEnsembleBoxPlot() throws MetricParameterException
     {
-        assertTrue( metF.ofEnsembleBoxPlot( MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE ) instanceof BoxPlotErrorByObserved );
-        assertTrue( metF.ofEnsembleBoxPlot( MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE ) instanceof BoxPlotErrorByForecast );
+        assertTrue( MetricFactory.ofEnsembleBoxPlot( MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE ) instanceof BoxPlotErrorByObserved );
+        assertTrue( MetricFactory.ofEnsembleBoxPlot( MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE ) instanceof BoxPlotErrorByForecast );
 
         // Unrecognized metric
         exception.expect( IllegalArgumentException.class );
         exception.expectMessage( "Unrecognized metric for identifier. 'MAIN'." );
-        metF.ofEnsembleBoxPlot( MetricConstants.MAIN );
+        MetricFactory.ofEnsembleBoxPlot( MetricConstants.MAIN );
     }
 
     /**
@@ -312,13 +291,13 @@ public final class MetricFactoryTest
     @Test
     public void testSingleValuedTimeSeries() throws MetricParameterException
     {
-        assertTrue( metF.ofSingleValuedTimeSeries( MetricConstants.TIME_TO_PEAK_ERROR ) instanceof TimeToPeakError );
-        assertTrue( metF.ofSingleValuedTimeSeries( MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR ) instanceof TimeToPeakRelativeError );
+        assertTrue( MetricFactory.ofSingleValuedTimeSeries( MetricConstants.TIME_TO_PEAK_ERROR ) instanceof TimeToPeakError );
+        assertTrue( MetricFactory.ofSingleValuedTimeSeries( MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR ) instanceof TimeToPeakRelativeError );
 
         // Unrecognized metric
         exception.expect( IllegalArgumentException.class );
         exception.expectMessage( "Unrecognized metric for identifier. 'MAIN'." );
-        metF.ofSingleValuedTimeSeries( MetricConstants.MAIN );
+        MetricFactory.ofSingleValuedTimeSeries( MetricConstants.MAIN );
     }
 
     /**
@@ -328,7 +307,7 @@ public final class MetricFactoryTest
     @Test
     public void testOfSingleValuedScoreCollection() throws MetricParameterException
     {
-        assertTrue( Objects.nonNull( metF.ofSingleValuedScoreCollection( MetricConstants.MEAN_ABSOLUTE_ERROR ) ) );
+        assertTrue( Objects.nonNull( MetricFactory.ofSingleValuedScoreCollection( MetricConstants.MEAN_ABSOLUTE_ERROR ) ) );
     }
 
     /**
@@ -338,7 +317,7 @@ public final class MetricFactoryTest
     @Test
     public void testOfDiscreteProbabilityVectorCollection() throws MetricParameterException
     {
-        assertTrue( Objects.nonNull( metF.ofDiscreteProbabilityScoreCollection( MetricConstants.BRIER_SCORE ) ) );
+        assertTrue( Objects.nonNull( MetricFactory.ofDiscreteProbabilityScoreCollection( MetricConstants.BRIER_SCORE ) ) );
     }
 
     /**
@@ -348,8 +327,8 @@ public final class MetricFactoryTest
     @Test
     public void testOfDichotomousScoreCollection() throws MetricParameterException
     {
-        assertTrue( Objects.nonNull( metF.ofDichotomousScoreCollection( MetricConstants.THREAT_SCORE ) ) );
-        assertTrue( Objects.nonNull( metF.ofDichotomousScoreCollection( MetricConstants.FREQUENCY_BIAS ) ) );
+        assertTrue( Objects.nonNull( MetricFactory.ofDichotomousScoreCollection( MetricConstants.THREAT_SCORE ) ) );
+        assertTrue( Objects.nonNull( MetricFactory.ofDichotomousScoreCollection( MetricConstants.FREQUENCY_BIAS ) ) );
     }
 
     /**
@@ -359,7 +338,7 @@ public final class MetricFactoryTest
     @Test
     public void testOfSingleValuedMultiVectorCollection() throws MetricParameterException
     {
-        assertTrue( Objects.nonNull( metF.ofSingleValuedMultiVectorCollection( MetricConstants.QUANTILE_QUANTILE_DIAGRAM ) ) );
+        assertTrue( Objects.nonNull( MetricFactory.ofSingleValuedMultiVectorCollection( MetricConstants.QUANTILE_QUANTILE_DIAGRAM ) ) );
     }
 
     /**
@@ -369,8 +348,8 @@ public final class MetricFactoryTest
     @Test
     public void testOfDiscreteProbabilityMultiVectorCollection() throws MetricParameterException
     {
-        assertTrue( Objects.nonNull( metF.ofDiscreteProbabilityMultiVectorCollection( MetricConstants.RELIABILITY_DIAGRAM ) ) );
-        assertTrue( Objects.nonNull( metF.ofDiscreteProbabilityMultiVectorCollection( MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM ) ) );
+        assertTrue( Objects.nonNull( MetricFactory.ofDiscreteProbabilityMultiVectorCollection( MetricConstants.RELIABILITY_DIAGRAM ) ) );
+        assertTrue( Objects.nonNull( MetricFactory.ofDiscreteProbabilityMultiVectorCollection( MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM ) ) );
     }
 
     /**
@@ -380,7 +359,7 @@ public final class MetricFactoryTest
     @Test
     public void testOfMulticategoryMatrixCollection() throws MetricParameterException
     {
-        assertTrue( Objects.nonNull( metF.ofDichotomousMatrixCollection( MetricConstants.CONTINGENCY_TABLE ) ) );
+        assertTrue( Objects.nonNull( MetricFactory.ofDichotomousMatrixCollection( MetricConstants.CONTINGENCY_TABLE ) ) );
     }
 
     /**
@@ -390,9 +369,9 @@ public final class MetricFactoryTest
     @Test
     public void testOfEnsembleScoreCollection() throws MetricParameterException
     {
-        assertTrue( Objects.nonNull( metF.ofEnsembleScoreCollection( MetricConstants.SAMPLE_SIZE ) ) );
-        assertTrue( Objects.nonNull( metF.ofEnsembleScoreCollection( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE ) ) );
-        assertTrue( Objects.nonNull( metF.ofEnsembleScoreCollection( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE ) ) );
+        assertTrue( Objects.nonNull( MetricFactory.ofEnsembleScoreCollection( MetricConstants.SAMPLE_SIZE ) ) );
+        assertTrue( Objects.nonNull( MetricFactory.ofEnsembleScoreCollection( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE ) ) );
+        assertTrue( Objects.nonNull( MetricFactory.ofEnsembleScoreCollection( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE ) ) );
     }
 
     /**
@@ -402,7 +381,7 @@ public final class MetricFactoryTest
     @Test
     public void testOfEnsembleMultiVectorCollection() throws MetricParameterException
     {
-        assertTrue( Objects.nonNull( metF.ofEnsembleMultiVectorCollection( MetricConstants.RANK_HISTOGRAM ) ) );
+        assertTrue( Objects.nonNull( MetricFactory.ofEnsembleMultiVectorCollection( MetricConstants.RANK_HISTOGRAM ) ) );
     }
 
     /**
@@ -412,8 +391,8 @@ public final class MetricFactoryTest
     @Test
     public void testOfEnsembleBoxPlotCollection() throws MetricParameterException
     {
-        assertTrue( Objects.nonNull( metF.ofEnsembleBoxPlotCollection( MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE ) ) );
-        assertTrue( Objects.nonNull( metF.ofEnsembleBoxPlotCollection( MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE ) ) );
+        assertTrue( Objects.nonNull( MetricFactory.ofEnsembleBoxPlotCollection( MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE ) ) );
+        assertTrue( Objects.nonNull( MetricFactory.ofEnsembleBoxPlotCollection( MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE ) ) );
     }
 
     /**
@@ -423,8 +402,8 @@ public final class MetricFactoryTest
     @Test
     public void testOfSingleValuedTimeSeriesCollection() throws MetricParameterException
     {
-        assertTrue( Objects.nonNull( metF.ofSingleValuedTimeSeriesCollection( MetricConstants.TIME_TO_PEAK_ERROR ) ) );
-        assertTrue( Objects.nonNull( metF.ofSingleValuedTimeSeriesCollection( MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR ) ) );
+        assertTrue( Objects.nonNull( MetricFactory.ofSingleValuedTimeSeriesCollection( MetricConstants.TIME_TO_PEAK_ERROR ) ) );
+        assertTrue( Objects.nonNull( MetricFactory.ofSingleValuedTimeSeriesCollection( MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR ) ) );
     }
 
     /**
@@ -447,7 +426,7 @@ public final class MetricFactoryTest
     @Test
     public void testOfTimingErrorDurationStatistics() throws MetricParameterException
     {
-        assertTrue( metF.ofTimingErrorDurationStatistics( MetricConstants.TIME_TO_PEAK_ERROR,
+        assertTrue( MetricFactory.ofTimingErrorDurationStatistics( MetricConstants.TIME_TO_PEAK_ERROR,
                                                           Collections.singleton( MetricConstants.MEAN ) ) instanceof TimingErrorDurationStatistics );
     }
 
@@ -460,7 +439,7 @@ public final class MetricFactoryTest
     @Test
     public void testOfMetricProcessorByProject() throws MetricParameterException
     {
-        assertTrue( metF.ofMetricProcessorForProject( mockSingleValued,
+        assertTrue( MetricFactory.ofMetricProcessorForProject( mockSingleValued,
                                                       null,
                                                       ForkJoinPool.commonPool(),
                                                       ForkJoinPool.commonPool() ) instanceof MetricProcessorForProject );
@@ -474,7 +453,7 @@ public final class MetricFactoryTest
     @Test
     public void testOfMetricProcessorByTimeSingleValuedPairs() throws MetricParameterException
     {
-        assertTrue( metF.ofMetricProcessorByTimeSingleValuedPairs( mockSingleValued,
+        assertTrue( MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( mockSingleValued,
                                                                    null ) instanceof MetricProcessorByTimeSingleValuedPairs );
     }
 
@@ -487,7 +466,7 @@ public final class MetricFactoryTest
     @Test
     public void testOfMetricProcessorByTimeEnsemblePairs() throws MetricParameterException
     {
-        assertTrue( metF.ofMetricProcessorByTimeEnsemblePairs( mockEnsemble,
+        assertTrue( MetricFactory.ofMetricProcessorByTimeEnsemblePairs( mockEnsemble,
                                                                null ) instanceof MetricProcessorByTimeEnsemblePairs );
     }
 
@@ -502,7 +481,7 @@ public final class MetricFactoryTest
     public void testOfMetricProcessorByTimeSingleValuedPairsWithExternalThresholds()
             throws IOException, MetricParameterException
     {
-        assertTrue( metF.ofMetricProcessorByTimeSingleValuedPairs( mockSingleValued,
+        assertTrue( MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( mockSingleValued,
                                                                    null,
                                                                    null ) instanceof MetricProcessorByTimeSingleValuedPairs );
     }
@@ -517,7 +496,7 @@ public final class MetricFactoryTest
     public void testOfMetricProcessorByTimeEnsemblePairsWithExternalThresholds()
             throws MetricParameterException
     {
-        assertTrue( metF.ofMetricProcessorByTimeEnsemblePairs( mockEnsemble,
+        assertTrue( MetricFactory.ofMetricProcessorByTimeEnsemblePairs( mockEnsemble,
                                                                null,
                                                                null ) instanceof MetricProcessorByTimeEnsemblePairs );
     }

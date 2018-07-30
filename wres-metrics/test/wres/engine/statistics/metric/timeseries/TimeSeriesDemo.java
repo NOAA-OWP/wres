@@ -212,8 +212,7 @@ public class TimeSeriesDemo
 //1985-01-02T12:00:00Z,9.0,10.0
 
         //Compute a verification metric for the TimeSeries, recalling that the TimeSeries is a SingleValuedPairs 
-        MetricFactory metFac = MetricFactory.getInstance();
-        MeanError me = metFac.ofMeanError();
+        MeanError me = MetricFactory.ofMeanError();
 
         //Compute the mean error by duration
         for ( TimeSeries<SingleValuedPair> next : timeSeries.durationIterator() )

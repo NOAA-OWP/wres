@@ -35,12 +35,6 @@ public final class ContingencyTableScoreTest
     public final ExpectedException exception = ExpectedException.none();
 
     /**
-     * Metric factory.
-     */
-
-    private MetricFactory metricFactory;
-
-    /**
      * Score used for testing. 
      */
 
@@ -55,8 +49,7 @@ public final class ContingencyTableScoreTest
     @Before
     public void setupBeforeEachTest() throws MetricParameterException
     {
-        metricFactory = MetricFactory.getInstance();
-        cs = metricFactory.ofThreatScore();
+        cs = MetricFactory.ofThreatScore();
         meta = MetadataFactory.getOutputMetadata( 365,
                                                   MetadataFactory.getDimension(),
                                                   MetadataFactory.getDimension(),

@@ -45,6 +45,7 @@ import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricCollection;
+import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.config.MetricConfigHelper;
 import wres.engine.statistics.metric.processing.MetricFuturesByTime.MetricFuturesByTimeBuilder;
@@ -196,7 +197,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         if ( hasMetrics( MetricInputGroup.DISCRETE_PROBABILITY, MetricOutputGroup.DOUBLE_SCORE ) )
         {
             discreteProbabilityScore =
-                    metricFactory.ofDiscreteProbabilityScoreCollection( metricExecutor,
+                    MetricFactory.ofDiscreteProbabilityScoreCollection( metricExecutor,
                                                                         this.getMetrics( MetricInputGroup.DISCRETE_PROBABILITY,
                                                                                          MetricOutputGroup.DOUBLE_SCORE ) );
         }
@@ -208,7 +209,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         if ( hasMetrics( MetricInputGroup.DISCRETE_PROBABILITY, MetricOutputGroup.MULTIVECTOR ) )
         {
             discreteProbabilityMultiVector =
-                    metricFactory.ofDiscreteProbabilityMultiVectorCollection( metricExecutor,
+                    MetricFactory.ofDiscreteProbabilityMultiVectorCollection( metricExecutor,
                                                                               this.getMetrics( MetricInputGroup.DISCRETE_PROBABILITY,
                                                                                                MetricOutputGroup.MULTIVECTOR ) );
         }
@@ -219,7 +220,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         //Ensemble input, score output
         if ( hasMetrics( MetricInputGroup.ENSEMBLE, MetricOutputGroup.DOUBLE_SCORE ) )
         {
-            ensembleScore = metricFactory.ofEnsembleScoreCollection( metricExecutor,
+            ensembleScore = MetricFactory.ofEnsembleScoreCollection( metricExecutor,
                                                                      this.getMetrics( MetricInputGroup.ENSEMBLE,
                                                                                       MetricOutputGroup.DOUBLE_SCORE ) );
         }
@@ -231,7 +232,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         //Ensemble input, multi-vector output
         if ( hasMetrics( MetricInputGroup.ENSEMBLE, MetricOutputGroup.MULTIVECTOR ) )
         {
-            ensembleMultiVector = metricFactory.ofEnsembleMultiVectorCollection( metricExecutor,
+            ensembleMultiVector = MetricFactory.ofEnsembleMultiVectorCollection( metricExecutor,
                                                                                  this.getMetrics( MetricInputGroup.ENSEMBLE,
                                                                                                   MetricOutputGroup.MULTIVECTOR ) );
         }
@@ -242,7 +243,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         //Ensemble input, box-plot output
         if ( hasMetrics( MetricInputGroup.ENSEMBLE, MetricOutputGroup.BOXPLOT ) )
         {
-            ensembleBoxPlot = metricFactory.ofEnsembleBoxPlotCollection( metricExecutor,
+            ensembleBoxPlot = MetricFactory.ofEnsembleBoxPlotCollection( metricExecutor,
                                                                          this.getMetrics( MetricInputGroup.ENSEMBLE,
                                                                                           MetricOutputGroup.BOXPLOT ) );
         }

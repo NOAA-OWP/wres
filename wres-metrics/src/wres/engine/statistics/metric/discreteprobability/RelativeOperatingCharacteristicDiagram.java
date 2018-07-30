@@ -140,8 +140,7 @@ public class RelativeOperatingCharacteristicDiagram extends Diagram<DiscreteProb
             throws MetricParameterException
     {
         super();
-        roc = MetricFactory.getInstance()
-                           .ofDichotomousScoreCollection( MetricConstants.PROBABILITY_OF_DETECTION,
+        roc = MetricFactory.ofDichotomousScoreCollection( MetricConstants.PROBABILITY_OF_DETECTION,
                                                           MetricConstants.PROBABILITY_OF_FALSE_DETECTION );
         //Set the default points
         points = 10;

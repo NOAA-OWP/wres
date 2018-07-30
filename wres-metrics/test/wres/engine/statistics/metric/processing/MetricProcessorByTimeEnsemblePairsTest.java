@@ -122,8 +122,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
     {
         String configPath = "testinput/metricProcessorEnsemblePairsByTimeTest/testApplyWithoutThresholds.xml";
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-        MetricProcessorByTime<EnsemblePairs> processor = MetricFactory.getInstance()
-                                                                      .ofMetricProcessorByTimeEnsemblePairs( config,
+        MetricProcessorByTime<EnsemblePairs> processor = MetricFactory.ofMetricProcessorByTimeEnsemblePairs( config,
                                                                                                              null );
         MetricOutputForProjectByTimeAndThreshold results =
                 processor.apply( MetricTestDataFactory.getEnsemblePairsOne() );
@@ -181,8 +180,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processor =
-                MetricFactory.getInstance()
-                             .ofMetricProcessorByTimeEnsemblePairs( config,
+                MetricFactory.ofMetricProcessorByTimeEnsemblePairs( config,
                                                                     MetricOutputGroup.set() );
         processor.apply( MetricTestDataFactory.getEnsemblePairsOne() );
         //Obtain the results
@@ -398,9 +396,9 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                    null,
                                    null );
 
-        MetricProcessorByTime<EnsemblePairs> processor = MetricFactory.getInstance()
-                                                                      .ofMetricProcessorByTimeEnsemblePairs( mockedConfig,
-                                                                                                             Collections.singleton( MetricOutputGroup.DOUBLE_SCORE ) );
+        MetricProcessorByTime<EnsemblePairs> processor =
+                MetricFactory.ofMetricProcessorByTimeEnsemblePairs( mockedConfig,
+                                                                    Collections.singleton( MetricOutputGroup.DOUBLE_SCORE ) );
 
         processor.apply( MetricTestDataFactory.getEnsemblePairsOne() );
 
@@ -437,8 +435,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processor =
-                MetricFactory.getInstance()
-                             .ofMetricProcessorByTimeEnsemblePairs( config,
+                MetricFactory.ofMetricProcessorByTimeEnsemblePairs( config,
                                                                     Collections.singleton( MetricOutputGroup.DOUBLE_SCORE ) );
         processor.apply( MetricTestDataFactory.getEnsemblePairsOne() );
 
@@ -634,8 +631,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         exception.expect( NullPointerException.class );
         exception.expectMessage( "Expected non-null input to the metric processor." );
         MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processor =
-                MetricFactory.getInstance()
-                             .ofMetricProcessorByTimeEnsemblePairs( new ProjectConfig( null,
+                MetricFactory.ofMetricProcessorByTimeEnsemblePairs( new ProjectConfig( null,
                                                                                        null,
                                                                                        null,
                                                                                        null,
@@ -664,8 +660,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                    Arrays.asList( new MetricConfig( null, null, MetricConfigName.BRIER_SCORE ) ),
                                    null );
         MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processor =
-                MetricFactory.getInstance()
-                             .ofMetricProcessorByTimeEnsemblePairs( new ProjectConfig( null,
+                MetricFactory.ofMetricProcessorByTimeEnsemblePairs( new ProjectConfig( null,
                                                                                        null,
                                                                                        Arrays.asList( metrics ),
                                                                                        null,
@@ -711,8 +706,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
 
 
         MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processor =
-                MetricFactory.getInstance()
-                             .ofMetricProcessorByTimeEnsemblePairs( mockedConfig,
+                MetricFactory.ofMetricProcessorByTimeEnsemblePairs( mockedConfig,
                                                                     Collections.singleton( MetricOutputGroup.DOUBLE_SCORE ) );
         processor.apply( MetricTestDataFactory.getEnsemblePairsThree() );
     }
@@ -744,8 +738,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                    null );
 
         MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processor =
-                MetricFactory.getInstance()
-                             .ofMetricProcessorByTimeEnsemblePairs( mockedConfig,
+                MetricFactory.ofMetricProcessorByTimeEnsemblePairs( mockedConfig,
                                                                     Collections.singleton( MetricOutputGroup.DOUBLE_SCORE ) );
         processor.apply( MetricTestDataFactory.getEnsemblePairsThree() );
     }
@@ -784,8 +777,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                    null,
                                    null );
 
-        MetricFactory.getInstance()
-                     .ofMetricProcessorByTimeEnsemblePairs( mockedConfig,
+        MetricFactory.ofMetricProcessorByTimeEnsemblePairs( mockedConfig,
                                                             Collections.singleton( MetricOutputGroup.DOUBLE_SCORE ) );
     }
 
@@ -823,8 +815,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                    null,
                                    null );
 
-        MetricFactory.getInstance()
-                     .ofMetricProcessorByTimeEnsemblePairs( mockedConfig,
+        MetricFactory.ofMetricProcessorByTimeEnsemblePairs( mockedConfig,
                                                             Collections.singleton( MetricOutputGroup.DOUBLE_SCORE ) );
     }
 
@@ -843,8 +834,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processor =
-                MetricFactory.getInstance()
-                             .ofMetricProcessorByTimeEnsemblePairs( config,
+                MetricFactory.ofMetricProcessorByTimeEnsemblePairs( config,
                                                                     MetricOutputGroup.set() );
         //Check for the expected number of metrics
         //One fewer than total, as sample size appears in both ensemble and single-valued
@@ -874,8 +864,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processor =
-                MetricFactory.getInstance()
-                             .ofMetricProcessorByTimeEnsemblePairs( config,
+                MetricFactory.ofMetricProcessorByTimeEnsemblePairs( config,
                                                                     MetricOutputGroup.set() );
         processor.apply( MetricTestDataFactory.getEnsemblePairsOneWithMissings() );
 
@@ -1075,8 +1064,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processor =
-                MetricFactory.getInstance()
-                             .ofMetricProcessorByTimeEnsemblePairs( config, MetricOutputGroup.set() );
+                MetricFactory.ofMetricProcessorByTimeEnsemblePairs( config, MetricOutputGroup.set() );
         processor.apply( MetricTestDataFactory.getEnsemblePairsTwo() );
         //Obtain the results
         MetricOutputMultiMapByTimeAndThreshold<MatrixOutput> results = processor.getCachedMetricOutput()
@@ -1206,8 +1194,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processor =
-                MetricFactory.getInstance()
-                             .ofMetricProcessorByTimeEnsemblePairs( config, MetricOutputGroup.set() );
+                MetricFactory.ofMetricProcessorByTimeEnsemblePairs( config, MetricOutputGroup.set() );
         processor.apply( MetricTestDataFactory.getEnsemblePairsFour() );
 
         //Obtain the results

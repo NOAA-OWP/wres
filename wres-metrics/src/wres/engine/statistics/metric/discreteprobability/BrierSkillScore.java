@@ -107,7 +107,7 @@ public class BrierSkillScore extends BrierScore
     {
         super( builder );
 
-        msess = MetricFactory.getInstance().ofMeanSquareErrorSkillScore();
+        msess = MetricFactory.ofMeanSquareErrorSkillScore();
     }
 
 }
