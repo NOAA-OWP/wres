@@ -20,7 +20,6 @@ import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
-import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.singlevalued.MeanError;
 
@@ -212,7 +211,7 @@ public class TimeSeriesDemo
 //1985-01-02T12:00:00Z,9.0,10.0
 
         //Compute a verification metric for the TimeSeries, recalling that the TimeSeries is a SingleValuedPairs 
-        MeanError me = MetricFactory.ofMeanError();
+        MeanError me = MeanError.of();
 
         //Compute the mean error by duration
         for ( TimeSeries<SingleValuedPair> next : timeSeries.durationIterator() )

@@ -1,11 +1,11 @@
 package wres.engine.statistics.metric.ensemble;
 
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import java.util.Random;
 
 import org.junit.Before;
@@ -22,7 +22,6 @@ import wres.datamodel.inputs.pairs.EnsemblePair;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.engine.statistics.metric.MetricParameterException;
-import wres.engine.statistics.metric.ensemble.RankHistogram.RankHistogramBuilder;
 
 /**
  * Tests the {@link RankHistogram}.
@@ -50,10 +49,8 @@ public final class RankHistogramTest
     @Before
     public void setupBeforeEachTest() throws MetricParameterException
     {
-        RankHistogramBuilder b = new RankHistogramBuilder();
-        rng = new Random( 12345678 );
-        b.setRNGForTies( rng );
-        this.rh = b.build();
+        this.rng = new Random( 12345678 );
+        this.rh = RankHistogram.of( this.rng );
     }
 
     /**
@@ -186,8 +183,7 @@ public final class RankHistogramTest
     @Test
     public void testConstructionWithoutRNG() throws MetricParameterException
     {
-        RankHistogramBuilder b = new RankHistogramBuilder();
-        assertTrue( Objects.nonNull( b.build() ) );
+        assertNotNull( RankHistogram.of() );
     }
 
 }

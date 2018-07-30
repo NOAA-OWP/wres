@@ -26,7 +26,7 @@ public class VectorOfDoubles implements Comparable<VectorOfDoubles>
      * @return the vector of doubles
      */
 
-    public static VectorOfDoubles of( final double[] doubles )
+    public static VectorOfDoubles of( final double... doubles )
     {
         return new VectorOfDoubles( doubles );
     }

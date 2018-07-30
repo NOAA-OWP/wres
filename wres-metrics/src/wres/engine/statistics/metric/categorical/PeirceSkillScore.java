@@ -8,7 +8,6 @@ import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MatrixOutput;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricCalculationException;
-import wres.engine.statistics.metric.MetricParameterException;
 
 /**
  * The Peirce Skill Score is a categorical measure of the average accuracy of a predictand for a multi-category event,
@@ -20,6 +19,18 @@ import wres.engine.statistics.metric.MetricParameterException;
  */
 public class PeirceSkillScore<S extends MulticategoryPairs> extends ContingencyTableScore<S>
 {
+    
+    /**
+     * Returns an instance.
+     * 
+     * @param<S> the paired input type
+     * @return an instance
+     */
+    
+    public static <S extends MulticategoryPairs> PeirceSkillScore<S> of()
+    {
+        return new PeirceSkillScore<>();
+    } 
 
     @Override
     public DoubleScoreOutput apply( final S s )
@@ -96,29 +107,10 @@ public class PeirceSkillScore<S extends MulticategoryPairs> extends ContingencyT
     }
 
     /**
-     * A {@link MetricBuilder} to build the dichotomous metric.
-     */
-
-    public static class PeirceSkillScoreBuilder<S extends MulticategoryPairs>
-            implements MetricBuilder<S, DoubleScoreOutput>
-    {
-
-        @Override
-        public PeirceSkillScore<S> build() throws MetricParameterException
-        {
-            return new PeirceSkillScore<>( this );
-        }
-
-    }
-
-    /**
      * Hidden constructor.
-     * 
-     * @param builder the builder
-     * @throws MetricParameterException if one or more parameters is invalid 
      */
 
-    private PeirceSkillScore( final PeirceSkillScoreBuilder<S> builder ) throws MetricParameterException
+    private PeirceSkillScore()
     {
         super();
     }

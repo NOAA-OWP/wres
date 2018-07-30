@@ -5,10 +5,8 @@ import java.util.Arrays;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.Slicer;
-import wres.datamodel.inputs.pairs.EnsemblePairs;
+import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.inputs.pairs.EnsemblePair;
-import wres.datamodel.outputs.BoxPlotOutput;
-import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricParameterException;
 
@@ -22,6 +20,30 @@ import wres.engine.statistics.metric.MetricParameterException;
 
 public class BoxPlotErrorByObserved extends BoxPlot
 {
+
+    /**
+     * Returns an instance.
+     * 
+     * @return an instance
+     */
+
+    public static BoxPlotErrorByObserved of()
+    {
+        return new BoxPlotErrorByObserved();
+    }
+
+    /**
+     * Returns an instance.
+     * 
+     * @param probabilities the probabilities
+     * @throws MetricParameterException if the parameters are incorrect
+     * @return an instance
+     */
+
+    public static BoxPlotErrorByObserved of( VectorOfDoubles probabilities ) throws MetricParameterException
+    {
+        return new BoxPlotErrorByObserved( probabilities );
+    }
 
     @Override
     public MetricConstants getID()
@@ -75,28 +97,24 @@ public class BoxPlotErrorByObserved extends BoxPlot
     }
 
     /**
-     * Builder for the {@link BoxPlotErrorByObserved}
+     * Hidden constructor.
      */
 
-    public static class BoxPlotErrorByObservedBuilder extends BoxPlotBuilder
+    private BoxPlotErrorByObserved()
     {
-        @Override
-        public Metric<EnsemblePairs, BoxPlotOutput> build() throws MetricParameterException
-        {
-            return new BoxPlotErrorByObserved( this );
-        }
+        super();
     }
 
     /**
      * Hidden constructor.
      * 
-     * @param builder the builder
+     * @param probabilities the probabilities
      * @throws MetricParameterException if the parameters are incorrect
      */
 
-    private BoxPlotErrorByObserved( BoxPlotErrorByObservedBuilder builder ) throws MetricParameterException
+    private BoxPlotErrorByObserved( VectorOfDoubles probabilities ) throws MetricParameterException
     {
-        super( builder );
+        super( probabilities );
     }
 
 }

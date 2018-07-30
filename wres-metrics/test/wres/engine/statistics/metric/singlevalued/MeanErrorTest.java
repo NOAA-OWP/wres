@@ -20,7 +20,6 @@ import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
-import wres.engine.statistics.metric.singlevalued.MeanError.MeanErrorBuilder;
 
 /**
  * Tests the {@link MeanError}.
@@ -42,8 +41,7 @@ public final class MeanErrorTest
     @Before
     public void setupBeforeEachTest() throws MetricParameterException
     {
-        MeanErrorBuilder b = new MeanError.MeanErrorBuilder();
-        this.meanError = b.build();
+        this.meanError = MeanError.of();
     }
 
     /**

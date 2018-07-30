@@ -25,7 +25,6 @@ import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
-import wres.engine.statistics.metric.discreteprobability.ReliabilityDiagram.ReliabilityDiagramBuilder;
 
 /**
  * Tests the {@link ReliabilityDiagram}.
@@ -47,8 +46,7 @@ public final class ReliabilityDiagramTest
     @Before
     public void setupBeforeEachTest() throws MetricParameterException
     {
-        ReliabilityDiagramBuilder b = new ReliabilityDiagramBuilder();
-        this.rel = b.build();
+        this.rel = ReliabilityDiagram.of();
     }
 
     /**

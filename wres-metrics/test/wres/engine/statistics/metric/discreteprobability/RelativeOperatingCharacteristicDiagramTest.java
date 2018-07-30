@@ -21,8 +21,6 @@ import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
-import wres.engine.statistics.metric.discreteprobability.RelativeOperatingCharacteristicDiagram.RelativeOperatingCharacteristicBuilder;
-
 /**
  * Tests the {@link RelativeOperatingCharacteristicDiagram}.
  * 
@@ -43,8 +41,7 @@ public final class RelativeOperatingCharacteristicDiagramTest
     @Before
     public void setupBeforeEachTest() throws MetricParameterException
     {
-        RelativeOperatingCharacteristicBuilder b = new RelativeOperatingCharacteristicBuilder();
-        this.roc = b.build();
+        this.roc = RelativeOperatingCharacteristicDiagram.of();
     }
 
     /**

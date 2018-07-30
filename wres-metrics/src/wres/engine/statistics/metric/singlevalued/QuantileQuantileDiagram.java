@@ -29,11 +29,28 @@ public class QuantileQuantileDiagram extends Diagram<SingleValuedPairs, MultiVec
 {
 
     /**
+     * The default number of probabilities at which to compute the order statistics.
+     */
+    
+    private static final int DEFAULT_PROBABILITY_COUNT = 1000;
+    
+    /**
      * The number of probabilities at which to compute the order statistics.
      */
 
     private final int probCount;
 
+    /**
+     * Returns an instance.
+     * 
+     * @return an instance
+     */
+    
+    public static QuantileQuantileDiagram of()
+    {
+        return new QuantileQuantileDiagram();
+    }
+    
     @Override
     public MultiVectorOutput apply( SingleValuedPairs s )
     {
@@ -83,31 +100,32 @@ public class QuantileQuantileDiagram extends Diagram<SingleValuedPairs, MultiVec
     }
 
     /**
-     * A {@link MetricBuilder} to build the metric.
+     * Hidden constructor.
      */
 
-    public static class QuantileQuantileDiagramBuilder implements MetricBuilder<SingleValuedPairs, MultiVectorOutput>
+    private QuantileQuantileDiagram()
     {
+        super();
 
-        @Override
-        public QuantileQuantileDiagram build() throws MetricParameterException
-        {
-            return new QuantileQuantileDiagram( this );
-        }
-
+        this.probCount = DEFAULT_PROBABILITY_COUNT;
     }
-
+    
     /**
      * Hidden constructor.
      * 
-     * @param builder the builder
-     * @throws MetricParameterException if one or more parameters is invalid 
+     * @param probCount the number of probabilities to use
+     * @throws MetricParameterException if the probCount is less than one
      */
 
-    private QuantileQuantileDiagram( final QuantileQuantileDiagramBuilder builder ) throws MetricParameterException
+    private QuantileQuantileDiagram( int probCount ) throws MetricParameterException
     {
         super();
-        //Set the number of thresholds to 1000
-        probCount = 1000;
+        
+        if( probCount < 1 )
+        {
+            throw new MetricParameterException( "Specify a probability count greater than zero.");
+        }
+        
+        this.probCount = probCount;
     }
 }

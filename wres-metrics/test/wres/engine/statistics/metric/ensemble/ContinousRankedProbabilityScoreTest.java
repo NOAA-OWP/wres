@@ -22,7 +22,6 @@ import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.MetricParameterException;
-import wres.engine.statistics.metric.ensemble.ContinuousRankedProbabilityScore.CRPSBuilder;
 
 /**
  * Tests the {@link ContinuousRankedProbabilityScore}.
@@ -44,9 +43,7 @@ public final class ContinousRankedProbabilityScoreTest
     @Before
     public void setupBeforeEachTest() throws MetricParameterException
     {
-        CRPSBuilder b = new CRPSBuilder();
-        b.setDecompositionID( ScoreOutputGroup.NONE );
-        this.crps = b.build();
+        this.crps = ContinuousRankedProbabilityScore.of();
     }
 
     /**
@@ -288,9 +285,8 @@ public final class ContinousRankedProbabilityScoreTest
     {
         exception.expect( MetricParameterException.class );
         exception.expectMessage( "Unsupported decomposition identifier 'LBR'." );
-        CRPSBuilder b = new CRPSBuilder();
-        b.setDecompositionID( ScoreOutputGroup.LBR );
-        b.build();
+
+        ContinuousRankedProbabilityScore.of( ScoreOutputGroup.LBR );
     }
 
 }

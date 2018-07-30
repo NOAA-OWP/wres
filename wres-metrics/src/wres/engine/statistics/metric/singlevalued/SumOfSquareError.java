@@ -5,6 +5,7 @@ import java.util.Objects;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MissingValues;
+import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.DatasetIdentifier;
@@ -27,6 +28,17 @@ public class SumOfSquareError extends DecomposableScore<SingleValuedPairs>
         implements Collectable<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput>
 {
 
+    /**
+     * Returns an instance.
+     * 
+     * @return an instance
+     */
+    
+    public static SumOfSquareError of()
+    {
+        return new SumOfSquareError();
+    }
+    
     @Override
     public DoubleScoreOutput apply( SingleValuedPairs s )
     {
@@ -98,21 +110,6 @@ public class SumOfSquareError extends DecomposableScore<SingleValuedPairs>
     }
 
     /**
-     * A {@link MetricBuilder} to build the metric.
-     */
-
-    public static class SumOfSquareErrorBuilder extends DecomposableScoreBuilder<SingleValuedPairs>
-    {
-
-        @Override
-        public SumOfSquareError build() throws MetricParameterException
-        {
-            return new SumOfSquareError( this );
-        }
-
-    }
-
-    /**
      * Returns the {@link MetricOutputMetadata} associated with the score.
      * 
      * @param input the input
@@ -149,14 +146,23 @@ public class SumOfSquareError extends DecomposableScore<SingleValuedPairs>
 
     /**
      * Hidden constructor.
+     */
+
+    SumOfSquareError()
+    {
+        super();
+    }
+    
+    /**
+     * Hidden constructor.
      * 
-     * @param builder the builder
+     * @param decompositionId the decomposition identifier
      * @throws MetricParameterException if one or more parameters is invalid 
      */
 
-    SumOfSquareError( final SumOfSquareErrorBuilder builder ) throws MetricParameterException
+    SumOfSquareError( ScoreOutputGroup decompositionId ) throws MetricParameterException
     {
-        super( builder );
+        super( decompositionId );
     }
 
 }

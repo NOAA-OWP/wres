@@ -25,7 +25,6 @@ import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
-import wres.engine.statistics.metric.singlevalued.VolumetricEfficiency.VolumetricEfficiencyBuilder;
 
 /**
  * Tests the {@link VolumetricEfficiency}.
@@ -47,8 +46,7 @@ public final class VolumetricEfficiencyTest
     @Before
     public void setupBeforeEachTest() throws MetricParameterException
     {
-        VolumetricEfficiencyBuilder b = new VolumetricEfficiency.VolumetricEfficiencyBuilder();
-        this.ve = b.build();
+        this.ve = VolumetricEfficiency.of();
     }
 
     /**

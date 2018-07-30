@@ -42,7 +42,7 @@ public final class ContingencyTableTest
     @Before
     public void setupBeforeEachTest() throws MetricParameterException
     {
-        table = new ContingencyTable.ContingencyTableBuilder<>().build();
+        table = ContingencyTable.of();
     }
 
     /**

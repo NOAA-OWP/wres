@@ -4,6 +4,7 @@ import java.util.Objects;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.Dimension;
@@ -24,6 +25,17 @@ import wres.engine.statistics.metric.MetricParameterException;
 public class MeanSquareError extends SumOfSquareError
 {
 
+    /**
+     * Returns an instance.
+     * 
+     * @return an instance
+     */
+    
+    public static MeanSquareError of()
+    {
+        return new MeanSquareError();
+    }
+    
     @Override
     public DoubleScoreOutput apply( final SingleValuedPairs s )
     {
@@ -83,32 +95,24 @@ public class MeanSquareError extends SumOfSquareError
     }
 
     /**
-     * A {@link MetricBuilder} to build the metric.
+     * Hidden constructor.
      */
 
-    public static class MeanSquareErrorBuilder
-            extends
-            SumOfSquareErrorBuilder
+    MeanSquareError()
     {
-
-        @Override
-        public MeanSquareError build() throws MetricParameterException
-        {
-            return new MeanSquareError( this );
-        }
-
+        super();
     }
-
+    
     /**
      * Hidden constructor.
      * 
-     * @param builder the builder
+     * @param decompositionId the decomposition identifier
      * @throws MetricParameterException if one or more parameters is invalid 
      */
 
-    protected MeanSquareError( final MeanSquareErrorBuilder builder ) throws MetricParameterException
+    MeanSquareError( ScoreOutputGroup decompositionId ) throws MetricParameterException
     {
-        super( builder );
+        super( decompositionId );
     }
 
 }

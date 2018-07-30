@@ -18,10 +18,8 @@ import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
-import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
-import wres.engine.statistics.metric.singlevalued.MeanSquareError.MeanSquareErrorBuilder;
 
 /**
  * Tests the {@link MeanSquareError}.
@@ -43,8 +41,7 @@ public final class MeanSquareErrorTest
     @Before
     public void setupBeforeEachTest() throws MetricParameterException
     {
-        MeanSquareErrorBuilder b = new MeanSquareError.MeanSquareErrorBuilder();
-        this.mse = b.build();
+        this.mse = MeanSquareError.of();
     }
 
     /**
@@ -142,22 +139,6 @@ public final class MeanSquareErrorTest
         exception.expectMessage( "Specify non-null input to the 'MEAN SQUARE ERROR'." );
 
         mse.apply( null );
-    }
-
-    /**
-     * Tests for an expected exception on building a {@link MeanSquareError} with 
-     * an unrecognized decomposition identifier.
-     * @throws MetricParameterException if the metric could not be built for an unexpected reason
-     */
-
-    @Test
-    public void testApplyExceptionOnUnsupportedDecomposition() throws MetricParameterException
-    {
-        exception.expect( MetricCalculationException.class );
-        exception.expectMessage( "Decomposition is not currently implemented for the 'MEAN SQUARE ERROR'." );
-        MeanSquareErrorBuilder b = new MeanSquareErrorBuilder();
-        b.setDecompositionID( ScoreOutputGroup.CR );
-        b.build().apply( MetricTestDataFactory.getSingleValuedPairsOne() );
     }
 
     /**

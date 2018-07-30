@@ -20,7 +20,6 @@ import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
-import wres.engine.statistics.metric.discreteprobability.BrierSkillScore.BrierSkillScoreBuilder;
 
 /**
  * Tests the {@link BrierSkillScore}.
@@ -42,9 +41,7 @@ public final class BrierSkillScoreTest
     @Before
     public void setupBeforeEachTest() throws MetricParameterException
     {
-        BrierSkillScoreBuilder b = new BrierSkillScore.BrierSkillScoreBuilder();
-        b.setDecompositionID( ScoreOutputGroup.NONE );
-        this.brierSkillScore = b.build();
+        this.brierSkillScore = BrierSkillScore.of();
     }
 
     /**

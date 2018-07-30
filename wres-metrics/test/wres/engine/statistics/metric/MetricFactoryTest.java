@@ -5,7 +5,6 @@ import static org.junit.Assert.assertTrue;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ForkJoinPool;
@@ -63,7 +62,6 @@ import wres.engine.statistics.metric.singlevalued.RootMeanSquareError;
 import wres.engine.statistics.metric.singlevalued.SumOfSquareError;
 import wres.engine.statistics.metric.timeseries.TimeToPeakError;
 import wres.engine.statistics.metric.timeseries.TimeToPeakRelativeError;
-import wres.engine.statistics.metric.timeseries.TimingErrorDurationStatistics;
 
 /**
  * Tests the {@link MetricFactory}.
@@ -419,18 +417,6 @@ public final class MetricFactoryTest
     }
 
     /**
-     * Tests the {@link MetricFactory#ofTimingErrorDurationStatistics(MetricConstants, java.util.Set)}.
-     * @throws MetricParameterException if the metric construction fails 
-     */
-
-    @Test
-    public void testOfTimingErrorDurationStatistics() throws MetricParameterException
-    {
-        assertTrue( MetricFactory.ofTimingErrorDurationStatistics( MetricConstants.TIME_TO_PEAK_ERROR,
-                                                          Collections.singleton( MetricConstants.MEAN ) ) instanceof TimingErrorDurationStatistics );
-    }
-
-    /**
      * Tests the {@link MetricFactory#ofMetricProcessorForProject(ProjectConfig,
      * wres.datamodel.ThresholdsByMetric, java.util.concurrent.ExecutorService, java.util.concurrent.ExecutorService)}. 
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
@@ -440,9 +426,9 @@ public final class MetricFactoryTest
     public void testOfMetricProcessorByProject() throws MetricParameterException
     {
         assertTrue( MetricFactory.ofMetricProcessorForProject( mockSingleValued,
-                                                      null,
-                                                      ForkJoinPool.commonPool(),
-                                                      ForkJoinPool.commonPool() ) instanceof MetricProcessorForProject );
+                                                               null,
+                                                               ForkJoinPool.commonPool(),
+                                                               ForkJoinPool.commonPool() ) instanceof MetricProcessorForProject );
     }
 
     /**
@@ -454,7 +440,7 @@ public final class MetricFactoryTest
     public void testOfMetricProcessorByTimeSingleValuedPairs() throws MetricParameterException
     {
         assertTrue( MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( mockSingleValued,
-                                                                   null ) instanceof MetricProcessorByTimeSingleValuedPairs );
+                                                                            null ) instanceof MetricProcessorByTimeSingleValuedPairs );
     }
 
     /**
@@ -467,7 +453,7 @@ public final class MetricFactoryTest
     public void testOfMetricProcessorByTimeEnsemblePairs() throws MetricParameterException
     {
         assertTrue( MetricFactory.ofMetricProcessorByTimeEnsemblePairs( mockEnsemble,
-                                                               null ) instanceof MetricProcessorByTimeEnsemblePairs );
+                                                                        null ) instanceof MetricProcessorByTimeEnsemblePairs );
     }
 
     /**
@@ -482,8 +468,8 @@ public final class MetricFactoryTest
             throws IOException, MetricParameterException
     {
         assertTrue( MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( mockSingleValued,
-                                                                   null,
-                                                                   null ) instanceof MetricProcessorByTimeSingleValuedPairs );
+                                                                            null,
+                                                                            null ) instanceof MetricProcessorByTimeSingleValuedPairs );
     }
 
     /**
@@ -497,8 +483,8 @@ public final class MetricFactoryTest
             throws MetricParameterException
     {
         assertTrue( MetricFactory.ofMetricProcessorByTimeEnsemblePairs( mockEnsemble,
-                                                               null,
-                                                               null ) instanceof MetricProcessorByTimeEnsemblePairs );
+                                                                        null,
+                                                                        null ) instanceof MetricProcessorByTimeEnsemblePairs );
     }
 
     /**
@@ -565,7 +551,7 @@ public final class MetricFactoryTest
                                                                                       null,
                                                                                       null,
                                                                                       null,
-                                                                                      null) ) ),
+                                                                                      null ) ) ),
                                    null,
                                    null );
     }

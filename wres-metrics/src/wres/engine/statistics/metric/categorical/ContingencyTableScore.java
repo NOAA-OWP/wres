@@ -13,9 +13,7 @@ import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MatrixOutput;
 import wres.engine.statistics.metric.Collectable;
 import wres.engine.statistics.metric.Metric;
-import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.OrdinaryScore;
-import wres.engine.statistics.metric.categorical.ContingencyTable.ContingencyTableBuilder;
 
 /**
  * A generic implementation of an error score that applies to the components of a {@link ContingencyTable}.
@@ -153,15 +151,12 @@ abstract class ContingencyTableScore<S extends MulticategoryPairs> extends Ordin
 
     /**
      * Hidden constructor.
-     * 
-     * @throws MetricParameterException if one or more parameters is invalid
      */
 
-    ContingencyTableScore() throws MetricParameterException
+    ContingencyTableScore()
     {
         super();
-        ContingencyTableBuilder<S> ct = new ContingencyTableBuilder<>();
-        table = ct.build();
+        table = new ContingencyTable<>();
     }
 
 }

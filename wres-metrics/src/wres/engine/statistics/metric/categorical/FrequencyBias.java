@@ -6,7 +6,6 @@ import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MatrixOutput;
 import wres.engine.statistics.metric.FunctionFactory;
-import wres.engine.statistics.metric.MetricParameterException;
 
 /**
  * Measures the predicted fraction of occurrences against the observed fraction of occurrences. A ratio of 1.0 
@@ -16,6 +15,17 @@ import wres.engine.statistics.metric.MetricParameterException;
  */
 public class FrequencyBias extends ContingencyTableScore<DichotomousPairs>
 {
+    
+    /**
+     * Returns an instance.
+     * 
+     * @return an instance
+     */
+    
+    public static FrequencyBias of()
+    {
+        return new FrequencyBias();
+    }    
 
     @Override
     public DoubleScoreOutput apply( final DichotomousPairs s )
@@ -47,26 +57,10 @@ public class FrequencyBias extends ContingencyTableScore<DichotomousPairs>
     }
 
     /**
-     * A {@link MetricBuilder} to build the metric.
-     */
-
-    public static class FrequencyBiasBuilder implements MetricBuilder<DichotomousPairs, DoubleScoreOutput>
-    {
-        @Override
-        public FrequencyBias build() throws MetricParameterException
-        {
-            return new FrequencyBias( this );
-        }
-    }
-
-    /**
      * Hidden constructor.
-     * 
-     * @param builder the builder.
-     * @throws MetricParameterException if one or more parameters is invalid
      */
 
-    private FrequencyBias( final FrequencyBiasBuilder builder ) throws MetricParameterException
+    private FrequencyBias()
     {
         super();
     }

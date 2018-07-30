@@ -26,7 +26,6 @@ import wres.datamodel.outputs.PairedOutput;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.engine.statistics.metric.singlevalued.SumOfSquareError;
-import wres.engine.statistics.metric.timeseries.TimeToPeakError.TimeToPeakErrorBuilder;
 
 /**
  * Tests the {@link TimeToPeakError}.
@@ -48,13 +47,7 @@ public final class TimeToPeakErrorTest
     @Before
     public void setupBeforeEachTest() throws MetricParameterException
     {
-        TimeToPeakErrorBuilder b = new TimeToPeakErrorBuilder();
-        
-        // Seeded RNG to resolve ties consistently
-        Random resolveTies = new Random( 123456789 );
-        b.setRNGForTies( resolveTies );
-        
-        ttp = b.build();
+        ttp = TimeToPeakError.of( new Random( 123456789 ) );
     }
     
     /**
@@ -124,22 +117,6 @@ public final class TimeToPeakErrorTest
         exception.expect( MetricInputException.class );
 
         ttp.apply( null );
-    }
-    
-    /**
-     * Tests for an expected exception on attempting to build a {@link TimeToPeakError} with a null 
-     * builder.
-     * @throws MetricParameterException if the test fails unexpectedly
-     */
-
-    @Test
-    public void testBuildThrowsExceptionOnNullBuilder() throws MetricParameterException
-    {
-        // Null input to apply
-        exception.expect( MetricParameterException.class );
-        exception.expectMessage( "Cannot construct the metric with a null builder." );
-
-        new TimeToPeakError( null );
     }
     
 //  /**

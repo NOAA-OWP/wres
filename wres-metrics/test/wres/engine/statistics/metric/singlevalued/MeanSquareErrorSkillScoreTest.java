@@ -22,10 +22,8 @@ import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.DoubleScoreOutput;
-import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
-import wres.engine.statistics.metric.singlevalued.MeanSquareErrorSkillScore.MeanSquareErrorSkillScoreBuilder;
 
 /**
  * Tests the {@link MeanSquareErrorSkillScoreSkillScore}.
@@ -47,9 +45,7 @@ public final class MeanSquareErrorSkillScoreTest
     @Before
     public void setupBeforeEachTest() throws MetricParameterException
     {
-        MeanSquareErrorSkillScoreBuilder b =
-                new MeanSquareErrorSkillScore.MeanSquareErrorSkillScoreBuilder();
-        this.msess = b.build();
+        this.msess = MeanSquareErrorSkillScore.of();
     }
 
     /**
@@ -218,22 +214,6 @@ public final class MeanSquareErrorSkillScoreTest
         exception.expectMessage( "Specify non-null input to the 'MEAN SQUARE ERROR SKILL SCORE'." );
 
         msess.apply( null );
-    }
-
-    /**
-     * Tests for an expected exception on building a {@link MeanSquareErrorSkillScore} with
-     * an unrecognized decomposition identifier.
-     * @throws MetricParameterException if the metric could not be built for an unexpected reason
-     */
-
-    @Test
-    public void testApplyExceptionOnUnsupportedDecomposition() throws MetricParameterException
-    {
-        exception.expect( MetricCalculationException.class );
-        exception.expectMessage( "Decomposition is not currently implemented for the 'MEAN SQUARE ERROR SKILL SCORE'." );
-        MeanSquareErrorSkillScoreBuilder b = new MeanSquareErrorSkillScoreBuilder();
-        b.setDecompositionID( ScoreOutputGroup.CR );
-        b.build().apply( MetricTestDataFactory.getSingleValuedPairsOne() );
     }
 
 }

@@ -27,7 +27,6 @@ import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
 import wres.engine.statistics.metric.MetricParameterException;
-import wres.engine.statistics.metric.ensemble.BoxPlotErrorByForecast.BoxPlotErrorByForecastBuilder;
 
 /**
  * Tests the {@link BoxPlotErrorByForecast}.
@@ -49,10 +48,7 @@ public final class BoxPlotErrorByForecastTest
     @Before
     public void setupBeforeEachTest() throws MetricParameterException
     {
-        BoxPlotErrorByForecastBuilder b = new BoxPlotErrorByForecastBuilder();
-        b.setDomainDimension( MetricDimension.ENSEMBLE_MEAN );
-        b.setProbabilities( VectorOfDoubles.of( new double[] { 0.0, 0.25, 0.5, 0.75, 1.0 } ) );
-        this.bpe = (BoxPlotErrorByForecast) b.build();
+        this.bpe = BoxPlotErrorByForecast.of();
     }
 
     /**
@@ -93,7 +89,7 @@ public final class BoxPlotErrorByForecastTest
         expectedBoxes.add( expectedBox );
         BoxPlotOutput expected = DataFactory.ofBoxPlotOutput( expectedBoxes,
                                                               VectorOfDoubles.of( new double[] { 0.0, 0.25, 0.5, 0.75,
-                                                                                                   1.0 } ),
+                                                                                                 1.0 } ),
                                                               m1,
                                                               MetricDimension.ENSEMBLE_MEAN,
                                                               MetricDimension.FORECAST_ERROR );
@@ -135,10 +131,8 @@ public final class BoxPlotErrorByForecastTest
                                                                            window );
 
         //Build the metric
-        final BoxPlotErrorByForecastBuilder b = new BoxPlotErrorByForecast.BoxPlotErrorByForecastBuilder();
-        b.setDomainDimension( MetricDimension.ENSEMBLE_MEDIAN );
-        b.setProbabilities( VectorOfDoubles.of( new double[] { 0.0, 0.25, 0.5, 0.75, 1.0 } ) );
-        BoxPlotErrorByForecast bpe = (BoxPlotErrorByForecast) b.build();
+        BoxPlotErrorByForecast bpe = BoxPlotErrorByForecast.of( MetricDimension.ENSEMBLE_MEDIAN,
+                                                                VectorOfDoubles.of( 0.0, 0.25, 0.5, 0.75, 1.0 ) );
 
         //Compute normally
         final BoxPlotOutput actual = bpe.apply( input );
@@ -147,8 +141,7 @@ public final class BoxPlotErrorByForecastTest
         List<EnsemblePair> expectedBoxes = new ArrayList<>();
         expectedBoxes.add( expectedBox );
         BoxPlotOutput expected = DataFactory.ofBoxPlotOutput( expectedBoxes,
-                                                              VectorOfDoubles.of( new double[] { 0.0, 0.25, 0.5, 0.75,
-                                                                                                   1.0 } ),
+                                                              VectorOfDoubles.of( 0.0, 0.25, 0.5, 0.75, 1.0 ),
                                                               m1,
                                                               MetricDimension.ENSEMBLE_MEDIAN,
                                                               MetricDimension.FORECAST_ERROR );
@@ -226,11 +219,7 @@ public final class BoxPlotErrorByForecastTest
         exception.expectMessage( "Cannot build the box plot of forecast errors by forecast value without a dimension "
                                  + "for the domain axis" );
 
-        BoxPlotErrorByForecastBuilder b = new BoxPlotErrorByForecast.BoxPlotErrorByForecastBuilder();
-
-        //Test for construction with a null domain dimension
-        b.setDomainDimension( null );
-        b.build();
+        BoxPlotErrorByForecast.of( null, VectorOfDoubles.of( 0.0, 1.0 ) );
     }
 
     /**
@@ -246,11 +235,7 @@ public final class BoxPlotErrorByForecastTest
         exception.expect( MetricParameterException.class );
         exception.expectMessage( "Unsupported dimension for the domain axis of the box plot: 'FALSE NEGATIVES'." );
 
-        BoxPlotErrorByForecastBuilder b = new BoxPlotErrorByForecast.BoxPlotErrorByForecastBuilder();
-
-        //Test for construction with a null domain dimension
-        b.setDomainDimension( MetricDimension.FALSE_NEGATIVES );
-        b.build();
+        BoxPlotErrorByForecast.of( MetricDimension.FALSE_NEGATIVES, VectorOfDoubles.of( 0.0, 1.0 ) );
     }
 
 }

@@ -4,6 +4,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import wres.datamodel.MetricConstants;
+import wres.engine.statistics.metric.singlevalued.CorrelationPearsons;
 
 /**
  * Tests the {@link Metric}.
@@ -31,7 +32,7 @@ public final class MetricTest
                                  + "PEARSON CORRELATION COEFFICIENT"
                                  + "': build the metadata in the implementing class." );
 
-        MetricFactory.ofCorrelationPearsons()
+        CorrelationPearsons.of()
                      .getMetadata( MetricTestDataFactory.getSingleValuedPairsOne(),
                                    1,
                                    MetricConstants.MAIN,

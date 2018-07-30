@@ -10,8 +10,6 @@ import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
-import wres.engine.statistics.metric.MetricFactory;
-import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.singlevalued.MeanSquareErrorSkillScore;
 
 /**
@@ -32,6 +30,17 @@ public class BrierSkillScore extends BrierScore
 
     private final MeanSquareErrorSkillScore msess;
 
+    /**
+     * Returns an instance.
+     * 
+     * @return an instance
+     */
+    
+    public static BrierSkillScore of()
+    {
+        return new BrierSkillScore();
+    }  
+    
     @Override
     public DoubleScoreOutput apply( DiscreteProbabilityPairs s )
     {
@@ -82,32 +91,14 @@ public class BrierSkillScore extends BrierScore
     }
 
     /**
-     * A {@link MetricBuilder} to build the metric.
-     */
-
-    public static class BrierSkillScoreBuilder extends BrierScoreBuilder
-    {
-
-        @Override
-        public BrierSkillScore build() throws MetricParameterException
-        {
-            return new BrierSkillScore( this );
-        }
-
-    }
-
-    /**
      * Hidden constructor.
-     * 
-     * @param builder the builder
-     * @throws MetricParameterException if one or more parameters is invalid
      */
 
-    private BrierSkillScore( final BrierSkillScoreBuilder builder ) throws MetricParameterException
+    private BrierSkillScore()
     {
-        super( builder );
+        super();
 
-        msess = MetricFactory.ofMeanSquareErrorSkillScore();
+        msess = MeanSquareErrorSkillScore.of();
     }
 
 }

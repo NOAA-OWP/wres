@@ -17,14 +17,15 @@ public class Metadata
     private final Dimension dimension;
 
     /**
-     * The dataset identifier.
+     * An optional dataset identifier, may be null.
      */
 
     private final DatasetIdentifier identifier;
 
     /**
-     * The time window associated with the data.
+     * An optional time window associated with the data, may be null.
      */
+
     private final TimeWindow timeWindow;
 
     /**
@@ -50,10 +51,10 @@ public class Metadata
             return false;
         }
         final Metadata p = (Metadata) o;
-        boolean returnMe = equalsWithoutTimeWindow( p ) && hasTimeWindow() == p.hasTimeWindow();
+        boolean returnMe = this.equalsWithoutTimeWindow( p ) && this.hasTimeWindow() == p.hasTimeWindow();
         if ( hasTimeWindow() )
         {
-            returnMe = returnMe && getTimeWindow().equals( p.getTimeWindow() );
+            returnMe = returnMe && this.getTimeWindow().equals( p.getTimeWindow() );
         }
         return returnMe;
     }

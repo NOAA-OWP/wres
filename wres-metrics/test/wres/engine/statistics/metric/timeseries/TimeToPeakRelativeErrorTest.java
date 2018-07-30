@@ -23,7 +23,6 @@ import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.PairedOutput;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
-import wres.engine.statistics.metric.timeseries.TimeToPeakRelativeError.TimeToPeakRelativeErrorBuilder;
 
 /**
  * Tests the {@link TimeToPeakRelativeError}.
@@ -63,8 +62,7 @@ public final class TimeToPeakRelativeErrorTest
                                                                                                  "Streamflow" ),
                                                                    window );
         // Build the metric
-        final TimeToPeakRelativeErrorBuilder b = new TimeToPeakRelativeErrorBuilder();
-        final TimeToPeakRelativeError ttp = b.build();
+        TimeToPeakRelativeError ttp = TimeToPeakRelativeError.of();
 
         // Check the parameters
         assertTrue( "Unexpected name for the Time-to-Peak Relative Error.",
@@ -92,13 +90,11 @@ public final class TimeToPeakRelativeErrorTest
     @Test
     public void testApplyThrowsExceptionOnNullInput() throws MetricParameterException
     {
-        //Build the metric
-        final TimeToPeakRelativeErrorBuilder b = new TimeToPeakRelativeErrorBuilder();
-        final TimeToPeakRelativeError ttp = b.build();
-
         //Check the exceptions
         exception.expect( MetricInputException.class );
-
+        
+        TimeToPeakRelativeError ttp = TimeToPeakRelativeError.of();
+        
         ttp.apply( null );
     }
 

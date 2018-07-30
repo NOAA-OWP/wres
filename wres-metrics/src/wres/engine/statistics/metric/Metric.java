@@ -25,10 +25,6 @@ import wres.datamodel.outputs.MetricOutput;
  * coordinate, missing values may be used to retain (relative) position. Such metrics are uniquely aware of missing 
  * values. In other cases, missing values should be removed upfront.
  * </p>
- * <p>
- * In order to build a metric, implement the inner class {@link MetricBuilder} and validate the parameters in a hidden
- * constructor.
- * </p>
  * 
  * @author james.brown@hydrosolved.com
  */
@@ -149,27 +145,6 @@ public interface Metric<S extends MetricInput<?>, T extends MetricOutput<?>> ext
                                                   componentID,
                                                   identifier,
                                                   metIn.getTimeWindow() );
-    }
-
-    /**
-     * A builder to build a {@link Metric}. Implement this interface when building a {@link Metric}, and hide
-     * the constructor. Add setters to set the parameters of the metric, as required, prior to building. For thread
-     * safety, validate the parameters using the hidden constructor of the {@link Metric}, i.e. do not validate the
-     * parameters in the {@link MetricBuilder} before construction.
-     */
-
-    public interface MetricBuilder<P extends MetricInput<?>, Q extends MetricOutput<?>>
-    {
-
-        /**
-         * Build the {@link Metric}.
-         * 
-         * @return a {@link Metric}
-         * @throws MetricParameterException if one or more parameters is incorrect
-         */
-
-        Metric<P, Q> build() throws MetricParameterException;
-
     }
 
 }

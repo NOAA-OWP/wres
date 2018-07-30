@@ -22,7 +22,6 @@ import wres.datamodel.inputs.pairs.EnsemblePair;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.engine.statistics.metric.Diagram;
-import wres.engine.statistics.metric.MetricParameterException;
 
 /**
  * <p>Computes the probability (as a relative fraction) that the observation falls between any two ranked ensemble 
@@ -46,6 +45,29 @@ public class RankHistogram extends Diagram<EnsemblePairs, MultiVectorOutput>
 
     private Random rng;
 
+    /**
+     * Returns an instance.
+     * 
+     * @return an instance
+     */
+
+    public static RankHistogram of()
+    {
+        return new RankHistogram();
+    }
+    
+    /**
+     * Returns an instance.
+     * 
+     * @param rng the random number generator for ties
+     * @return an instance
+     */
+
+    public static RankHistogram of( Random rng )
+    {
+        return new RankHistogram( rng );
+    }
+    
     @Override
     public MultiVectorOutput apply( EnsemblePairs s )
     {
@@ -104,53 +126,32 @@ public class RankHistogram extends Diagram<EnsemblePairs, MultiVectorOutput>
     }
 
     /**
-     * A {@link MetricBuilder} to build the metric.
+     * Hidden constructor.
      */
 
-    public static class RankHistogramBuilder implements MetricBuilder<EnsemblePairs, MultiVectorOutput>
+    private RankHistogram()
     {
-        /**
-         * Random number generator to assign ties randomly.
-         */
-
-        private Random rng;
-
-        @Override
-        public RankHistogram build() throws MetricParameterException
-        {
-            return new RankHistogram( this );
-        }
-
-        /**
-         * Optionally, assign a random number generator for resolving ties.
-         * 
-         * @param rng the random number generator
-         * @return the builder
-         */
-        RankHistogramBuilder setRNGForTies( Random rng )
-        {
-            this.rng = rng;
-            return this;
-        }
+        super();
+        this.rng = new Random();
     }
-
+    
     /**
      * Hidden constructor.
      * 
-     * @param builder the builder
-     * @throws MetricParameterException if one or more parameters is invalid 
+     * @param rng the random number generator for ties
      */
 
-    private RankHistogram( final RankHistogramBuilder builder ) throws MetricParameterException
+    private RankHistogram( Random rng )
     {
         super();
-        if ( Objects.nonNull( builder.rng ) )
+        
+        if ( Objects.nonNull( rng ) )
         {
-            rng = builder.rng;
+            this.rng = rng;
         }
         else
         {
-            rng = new Random();
+            this.rng = new Random();
         }
     }
 

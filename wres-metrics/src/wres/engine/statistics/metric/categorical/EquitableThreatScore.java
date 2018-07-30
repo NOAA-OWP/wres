@@ -6,7 +6,6 @@ import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MatrixOutput;
 import wres.engine.statistics.metric.FunctionFactory;
-import wres.engine.statistics.metric.MetricParameterException;
 
 /**
  * The Equitable Threat Score (ETS) is a dichotomous measure of the fraction of all predicted outcomes that occurred
@@ -17,6 +16,17 @@ import wres.engine.statistics.metric.MetricParameterException;
 public class EquitableThreatScore extends ContingencyTableScore<DichotomousPairs>
 {
 
+    /**
+     * Returns an instance.
+     * 
+     * @return an instance
+     */
+    
+    public static EquitableThreatScore of()
+    {
+        return new EquitableThreatScore();
+    }
+    
     @Override
     public DoubleScoreOutput apply( final DichotomousPairs s )
     {
@@ -49,28 +59,10 @@ public class EquitableThreatScore extends ContingencyTableScore<DichotomousPairs
     }
 
     /**
-     * A {@link MetricBuilder} to build the metric.
-     */
-
-    public static class EquitableThreatScoreBuilder implements MetricBuilder<DichotomousPairs, DoubleScoreOutput>
-    {
-
-        @Override
-        public EquitableThreatScore build() throws MetricParameterException
-        {
-            return new EquitableThreatScore( this );
-        }
-
-    }
-
-    /**
      * Hidden constructor.
-     * 
-     * @param builder the builder.
-     * @throws MetricParameterException if one or more parameters is invalid
      */
 
-    private EquitableThreatScore( final EquitableThreatScoreBuilder builder ) throws MetricParameterException
+    private EquitableThreatScore()
     {
         super();
     }

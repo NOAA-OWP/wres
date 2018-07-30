@@ -20,7 +20,6 @@ import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
-import wres.engine.statistics.metric.singlevalued.MeanAbsoluteError.MeanAbsoluteErrorBuilder;
 
 /**
  * Tests the {@link MeanAbsoluteError}.
@@ -42,8 +41,7 @@ public final class MeanAbsoluteErrorTest
     @Before
     public void setupBeforeEachTest() throws MetricParameterException
     {
-        MeanAbsoluteErrorBuilder b = new MeanAbsoluteError.MeanAbsoluteErrorBuilder();
-        this.mae = b.build();
+        this.mae = MeanAbsoluteError.of();
     }
 
     /**
