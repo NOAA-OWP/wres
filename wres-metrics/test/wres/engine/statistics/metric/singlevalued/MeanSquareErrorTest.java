@@ -14,7 +14,6 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
@@ -39,12 +38,12 @@ public final class MeanSquareErrorTest
      * Default instance of a {@link MeanSquareError}.
      */
 
-    private MeanSquareError<SingleValuedPairs> mse;
+    private MeanSquareError mse;
 
     @Before
     public void setupBeforeEachTest() throws MetricParameterException
     {
-        MeanSquareErrorBuilder<SingleValuedPairs> b = new MeanSquareError.MeanSquareErrorBuilder<>();
+        MeanSquareErrorBuilder b = new MeanSquareError.MeanSquareErrorBuilder();
         this.mse = b.build();
     }
 
@@ -60,10 +59,10 @@ public final class MeanSquareErrorTest
 
         //Metadata for the output
         MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( input.getRawData().size(),
-                                                             MetadataFactory.getDimension(),
-                                                             MetadataFactory.getDimension(),
-                                                             MetricConstants.MEAN_SQUARE_ERROR,
-                                                             MetricConstants.MAIN );
+                                                                     MetadataFactory.getDimension(),
+                                                                     MetadataFactory.getDimension(),
+                                                                     MetricConstants.MEAN_SQUARE_ERROR,
+                                                                     MetricConstants.MAIN );
         //Check the results
         final DoubleScoreOutput actual = mse.apply( input );
         final DoubleScoreOutput expected = DataFactory.ofDoubleScoreOutput( 400003.929, m1 );
@@ -82,8 +81,8 @@ public final class MeanSquareErrorTest
     public void testApplyWithNoData()
     {
         // Generate empty data
-        DiscreteProbabilityPairs input =
-                DataFactory.ofDiscreteProbabilityPairs( Arrays.asList(), MetadataFactory.getMetadata() );
+        SingleValuedPairs input =
+                DataFactory.ofSingleValuedPairs( Arrays.asList(), MetadataFactory.getMetadata() );
 
         DoubleScoreOutput actual = mse.apply( input );
 
@@ -156,7 +155,7 @@ public final class MeanSquareErrorTest
     {
         exception.expect( MetricCalculationException.class );
         exception.expectMessage( "Decomposition is not currently implemented for the 'MEAN SQUARE ERROR'." );
-        MeanSquareErrorBuilder<SingleValuedPairs> b = new MeanSquareErrorBuilder<>();
+        MeanSquareErrorBuilder b = new MeanSquareErrorBuilder();
         b.setDecompositionID( ScoreOutputGroup.CR );
         b.build().apply( MetricTestDataFactory.getSingleValuedPairsOne() );
     }
@@ -171,8 +170,8 @@ public final class MeanSquareErrorTest
     {
         exception.expect( MetricInputException.class );
         exception.expectMessage( "Specify non-null input to the 'MEAN SQUARE ERROR'." );
-        
+
         mse.aggregate( null );
-    }  
-    
+    }
+
 }

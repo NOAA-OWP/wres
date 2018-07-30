@@ -19,10 +19,10 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.Slicer;
 import wres.datamodel.inputs.MetricInputException;
+import wres.datamodel.inputs.pairs.DiscreteProbabilityPair;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.EnsemblePair;
-import wres.datamodel.inputs.pairs.SingleValuedPair;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
@@ -68,22 +68,22 @@ public final class RelativeOperatingCharacteristicScoreTest
     public void testApplyWithTies()
     {
         //Generate some data
-        final List<SingleValuedPair> values = new ArrayList<>();
-        values.add( DataFactory.pairOf( 0, 0.8 ) );
-        values.add( DataFactory.pairOf( 0, 0.8 ) );
-        values.add( DataFactory.pairOf( 0, 0.0 ) );
-        values.add( DataFactory.pairOf( 1, 1.0 ) );
-        values.add( DataFactory.pairOf( 1, 1.0 ) );
-        values.add( DataFactory.pairOf( 1, 0.6 ) );
-        values.add( DataFactory.pairOf( 0, 0.4 ) );
-        values.add( DataFactory.pairOf( 1, 0.8 ) );
-        values.add( DataFactory.pairOf( 1, 0.0 ) );
-        values.add( DataFactory.pairOf( 0, 0.0 ) );
-        values.add( DataFactory.pairOf( 0, 0.2 ) );
-        values.add( DataFactory.pairOf( 0, 0.0 ) );
-        values.add( DataFactory.pairOf( 0, 0.0 ) );
-        values.add( DataFactory.pairOf( 1, 1.0 ) );
-        values.add( DataFactory.pairOf( 1, 1.0 ) );
+        final List<DiscreteProbabilityPair> values = new ArrayList<>();
+        values.add( DiscreteProbabilityPair.of( 0, 0.8 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.8 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.0 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 1.0 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 1.0 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.6 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.4 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.8 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.0 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.0 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.0 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.0 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 1.0 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 1.0 ) );
 
         final DiscreteProbabilityPairs input =
                 DataFactory.ofDiscreteProbabilityPairs( values, MetadataFactory.getMetadata() );
@@ -114,22 +114,22 @@ public final class RelativeOperatingCharacteristicScoreTest
     public void testApplyWithoutTies()
     {
         //Generate some data
-        final List<SingleValuedPair> values = new ArrayList<>();
-        values.add( DataFactory.pairOf( 0, 0.928 ) );
-        values.add( DataFactory.pairOf( 0, 0.576 ) );
-        values.add( DataFactory.pairOf( 0, 0.008 ) );
-        values.add( DataFactory.pairOf( 1, 0.944 ) );
-        values.add( DataFactory.pairOf( 1, 0.832 ) );
-        values.add( DataFactory.pairOf( 1, 0.816 ) );
-        values.add( DataFactory.pairOf( 0, 0.136 ) );
-        values.add( DataFactory.pairOf( 1, 0.584 ) );
-        values.add( DataFactory.pairOf( 1, 0.032 ) );
-        values.add( DataFactory.pairOf( 0, 0.016 ) );
-        values.add( DataFactory.pairOf( 0, 0.28 ) );
-        values.add( DataFactory.pairOf( 0, 0.024 ) );
-        values.add( DataFactory.pairOf( 0, 0.0 ) );
-        values.add( DataFactory.pairOf( 1, 0.984 ) );
-        values.add( DataFactory.pairOf( 1, 0.952 ) );
+        final List<DiscreteProbabilityPair> values = new ArrayList<>();
+        values.add( DiscreteProbabilityPair.of( 0, 0.928 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.576 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.008 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.944 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.832 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.816 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.136 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.584 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.032 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.016 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.28 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.024 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.0 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.984 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.952 ) );
         Metadata meta = MetadataFactory.getMetadata();
         DiscreteProbabilityPairs input = DataFactory.ofDiscreteProbabilityPairs( values, meta );
 
@@ -169,22 +169,22 @@ public final class RelativeOperatingCharacteristicScoreTest
     public void testApplyWithNoOccurrences() throws MetricParameterException
     {
         //Generate some data
-        final List<SingleValuedPair> values = new ArrayList<>();
-        values.add( DataFactory.pairOf( 0, 0.928 ) );
-        values.add( DataFactory.pairOf( 0, 0.576 ) );
-        values.add( DataFactory.pairOf( 0, 0.008 ) );
-        values.add( DataFactory.pairOf( 0, 0.944 ) );
-        values.add( DataFactory.pairOf( 0, 0.832 ) );
-        values.add( DataFactory.pairOf( 0, 0.816 ) );
-        values.add( DataFactory.pairOf( 0, 0.136 ) );
-        values.add( DataFactory.pairOf( 0, 0.584 ) );
-        values.add( DataFactory.pairOf( 0, 0.032 ) );
-        values.add( DataFactory.pairOf( 0, 0.016 ) );
-        values.add( DataFactory.pairOf( 0, 0.28 ) );
-        values.add( DataFactory.pairOf( 0, 0.024 ) );
-        values.add( DataFactory.pairOf( 0, 0.0 ) );
-        values.add( DataFactory.pairOf( 0, 0.984 ) );
-        values.add( DataFactory.pairOf( 0, 0.952 ) );
+        final List<DiscreteProbabilityPair> values = new ArrayList<>();
+        values.add( DiscreteProbabilityPair.of( 0, 0.928 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.576 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.008 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.944 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.832 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.816 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.136 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.584 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.032 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.016 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.28 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.024 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.0 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.984 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.952 ) );
         Metadata meta = MetadataFactory.getMetadata();
 
         DiscreteProbabilityPairs input = DataFactory.ofDiscreteProbabilityPairs( values, meta );
@@ -299,7 +299,7 @@ public final class RelativeOperatingCharacteristicScoreTest
                                                        Operator.GREATER,
                                                        ThresholdDataType.LEFT );
 
-        BiFunction<EnsemblePair, Threshold, SingleValuedPair> mapper =
+        BiFunction<EnsemblePair, Threshold, DiscreteProbabilityPair> mapper =
                 Slicer::toDiscreteProbabilityPair;
 
         DiscreteProbabilityPairs transPairs =

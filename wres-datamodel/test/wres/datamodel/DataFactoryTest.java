@@ -13,6 +13,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
 import wres.datamodel.inputs.pairs.DichotomousPair;
+import wres.datamodel.inputs.pairs.DiscreteProbabilityPair;
 import wres.datamodel.inputs.pairs.EnsemblePair;
 import wres.datamodel.inputs.pairs.SingleValuedPair;
 import wres.datamodel.metadata.MetadataFactory;
@@ -51,8 +52,8 @@ public final class DataFactoryTest
         input.add( DichotomousPair.of( true, false ) );
         assertNotNull( DataFactory.ofDichotomousPairs( input, m1 ) );
 
-        final List<SingleValuedPair> dInput = new ArrayList<>();
-        dInput.add( DataFactory.pairOf( 0.0, 1.0 ) );
+        final List<DiscreteProbabilityPair> dInput = new ArrayList<>();
+        dInput.add( DiscreteProbabilityPair.of( 0.0, 1.0 ) );
         final Location l2 = MetadataFactory.getLocation( "DRRC2" );
         final Metadata m2 = MetadataFactory.getMetadata( MetadataFactory.getDimension(),
                                                          MetadataFactory.getDatasetIdentifier( l2, "SQIN", "HEFS" ) );
@@ -61,8 +62,12 @@ public final class DataFactoryTest
                                                          MetadataFactory.getDatasetIdentifier( l3, "SQIN", "ESP" ) );
         assertNotNull( DataFactory.ofDiscreteProbabilityPairs( dInput, m2 ) );
         assertNotNull( DataFactory.ofDiscreteProbabilityPairs( dInput, dInput, m2, m3, null ) );
-        assertNotNull( DataFactory.ofSingleValuedPairs( dInput, m3 ) );
-        assertNotNull( DataFactory.ofSingleValuedPairs( dInput, dInput, m2, m3, null ) );
+
+        final List<SingleValuedPair> dInputSingleValued = new ArrayList<>();
+        dInputSingleValued.add( SingleValuedPair.of( 0.0, 1.0 ) );
+
+        assertNotNull( DataFactory.ofSingleValuedPairs( dInputSingleValued, m3 ) );
+        assertNotNull( DataFactory.ofSingleValuedPairs( dInputSingleValued, dInputSingleValued, m2, m3, null ) );
 
         final List<EnsemblePair> eInput = new ArrayList<>();
         eInput.add( DataFactory.pairOf( 0.0, new double[] { 1.0, 2.0 } ) );
@@ -158,28 +163,6 @@ public final class DataFactoryTest
         assertEquals( 3.0, tuple.getRight()[1], THRESHOLD );
         // check that toString() does not throw exception and is not null
         assertNotNull( tuple.toString() );
-    }
-
-    @Test
-    public void vectorOfBooleanTest()
-    {
-        final boolean[] arrOne = { false, true };
-        final VectorOfBooleans vec = DataFactory.vectorOf( arrOne );
-        assertEquals( false, vec.getBooleans()[0] );
-        assertEquals( true, vec.getBooleans()[1] );
-    }
-
-    @Test
-    public void vectorOfBooleanMutationTest()
-    {
-        final boolean[] arrOne = { false, true };
-        final VectorOfBooleans vec = DataFactory.vectorOf( arrOne );
-        // mutate the values in the original array
-        arrOne[0] = true;
-        arrOne[1] = false;
-        // despite mutation, we should get the same result back
-        assertEquals( false, vec.getBooleans()[0] );
-        assertEquals( true, vec.getBooleans()[1] );
     }
 
     @Test
