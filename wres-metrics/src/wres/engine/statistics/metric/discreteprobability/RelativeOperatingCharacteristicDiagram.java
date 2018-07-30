@@ -13,6 +13,7 @@ import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.MissingValues;
 import wres.datamodel.Slicer;
 import wres.datamodel.inputs.MetricInputException;
+import wres.datamodel.inputs.pairs.DichotomousPair;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.metadata.MetricOutputMetadata;
@@ -77,7 +78,7 @@ public class RelativeOperatingCharacteristicDiagram extends Diagram<DiscreteProb
                 //according to the probability on the RHS
                 MetricOutputMapByMetric<DoubleScoreOutput> out =
                         roc.apply( Slicer.toDichotomousPairs( s,
-                                                             in -> DataFactory.pairOf( Double.compare( in.getLeft(),
+                                                             in -> DichotomousPair.of( Double.compare( in.getLeft(),
                                                                                                        1.0 ) == 0,
                                                                                        in.getRight() > prob ) ) );
                 //Store

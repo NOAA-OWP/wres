@@ -32,7 +32,7 @@ public class Chart2DTestInput extends TestCase
         final List<SingleValuedPair> values = new ArrayList<>();
         for (int i = 0; i < 100; i ++)
         {
-            values.add(DataFactory.pairOf(rand.nextGaussian(), rand.nextGaussian()));
+            values.add(SingleValuedPair.of(rand.nextGaussian(), rand.nextGaussian()));
         }
 
         final Metadata meta = MetadataFactory.getMetadata(MetadataFactory.getDimension("CMS"),
@@ -70,16 +70,16 @@ public class Chart2DTestInput extends TestCase
     {
         //Construct some single-valued pairs
         final List<SingleValuedPair> values = new ArrayList<>();
-        values.add(DataFactory.pairOf(22.9, 22.8));
-        values.add(DataFactory.pairOf(75.2, 80));
-        values.add(DataFactory.pairOf(63.2, 65));
-        values.add(DataFactory.pairOf(29, 30));
-        values.add(DataFactory.pairOf(5, 2));
-        values.add(DataFactory.pairOf(2.1, 3.1));
-        values.add(DataFactory.pairOf(35000, 37000));
-        values.add(DataFactory.pairOf(8, 7));
-        values.add(DataFactory.pairOf(12, 12));
-        values.add(DataFactory.pairOf(93, 94));
+        values.add(SingleValuedPair.of(22.9, 22.8));
+        values.add(SingleValuedPair.of(75.2, 80));
+        values.add(SingleValuedPair.of(63.2, 65));
+        values.add(SingleValuedPair.of(29, 30));
+        values.add(SingleValuedPair.of(5, 2));
+        values.add(SingleValuedPair.of(2.1, 3.1));
+        values.add(SingleValuedPair.of(35000, 37000));
+        values.add(SingleValuedPair.of(8, 7));
+        values.add(SingleValuedPair.of(12, 12));
+        values.add(SingleValuedPair.of(93, 94));
 
         final Metadata meta = MetadataFactory.getMetadata(MetadataFactory.getDimension("CMS"),
                                                  MetadataFactory.getDatasetIdentifier(MetadataFactory.getLocation("DRRC2"), "SQIN", "HEFS"));

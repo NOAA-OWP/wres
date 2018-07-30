@@ -71,18 +71,6 @@ public final class DataFactory
 {
 
     /**
-     * Returns an instance of {@link OneOrTwoDoubles}.
-     * 
-     * @param first the first value
-     * @return a composition of doubles
-     */
-
-    public static OneOrTwoDoubles ofOneOrTwoDoubles( Double first )
-    {
-        return DataFactory.ofOneOrTwoDoubles( first, null );
-    }
-
-    /**
      * Convenience method that returns a {@link Pair} to map a {@link MetricOutput} by {@link TimeWindow} and
      * {@link OneOrTwoThresholds}.
      * 
@@ -607,19 +595,6 @@ public final class DataFactory
     }
 
     /**
-     * Returns an instance of {@link OneOrTwoDoubles}.
-     * 
-     * @param first the first value, which is required
-     * @param second the second value, which is optional
-     * @return a composition of doubles
-     */
-
-    public static OneOrTwoDoubles ofOneOrTwoDoubles( Double first, Double second )
-    {
-        return OneOrTwoDoubles.of( first, second );
-    }
-
-    /**
      * Returns {@link Threshold} from the specified input.
      * 
      * @param values the threshold values
@@ -870,58 +845,6 @@ public final class DataFactory
     }
 
     /**
-     * Return a {@link SingleValuedPair} from two double values.
-     * 
-     * @param left the left value
-     * @param right the right value
-     * @return the pair
-     */
-
-    public static SingleValuedPair pairOf( double left, double right )
-    {
-        return SingleValuedPair.of( left, right );
-    }
-
-    /**
-     * Return a {@link DichotomousPair} from two boolean values.
-     * 
-     * @param left the first value
-     * @param right the second value
-     * @return the pair
-     */
-
-    public static DichotomousPair pairOf( boolean left, boolean right )
-    {
-        return DichotomousPair.of( left, right );
-    }
-
-    /**
-     * Return a {@link EnsemblePair} from a double value and a double vector of values.
-     * 
-     * @param left the first value
-     * @param right the second value
-     * @return the pair
-     */
-
-    public static EnsemblePair pairOf( double left, double[] right )
-    {
-        return EnsemblePair.of( left, right );
-    }
-
-    /**
-     * Return a {@link EnsemblePair} from a double value and a double vector of values.
-     * 
-     * @param left the first value
-     * @param right the second value
-     * @return the pair
-     */
-
-    public static EnsemblePair pairOf( Double left, Double[] right )
-    {
-        return EnsemblePair.of( left, right );
-    }
-
-    /**
      * Return a {@link Pair} from two double vectors.
      * 
      * @param left the first value
@@ -954,42 +877,6 @@ public final class DataFactory
                 return VectorOfDoubles.of( right );
             }
         };
-    }
-
-    /**
-     * Return a {@link VectorOfDoubles} from a vector of doubles
-     * 
-     * @param vec the vector of doubles
-     * @return the vector
-     */
-
-    public static VectorOfDoubles vectorOf( double[] vec )
-    {
-        return VectorOfDoubles.of( vec );
-    }
-
-    /**
-     * Return a {@link VectorOfDoubles} from a vector of doubles
-     * 
-     * @param vec the vector of doubles
-     * @return the vector
-     */
-
-    public static VectorOfDoubles vectorOf( Double[] vec )
-    {
-        return VectorOfDoubles.of( vec );
-    }
-
-    /**
-     * Return a {@link MatrixOfDoubles} from a double array
-     * 
-     * @param vec the vector of booleans
-     * @return the vector
-     */
-
-    public static MatrixOfDoubles matrixOf( double[][] vec )
-    {
-        return MatrixOfDoubles.of( vec );
     }
 
     /**
@@ -1049,7 +936,7 @@ public final class DataFactory
     {
         Objects.requireNonNull( output, "Specify a non-null map of inputs." );
         EnumMap<MetricDimension, VectorOfDoubles> map = new EnumMap<>( MetricDimension.class );
-        output.forEach( ( key, value ) -> map.put( key, vectorOf( value ) ) );
+        output.forEach( ( key, value ) -> map.put( key, VectorOfDoubles.of( value ) ) );
         return MultiVectorOutput.of( map, meta );
     }
 
@@ -1067,7 +954,7 @@ public final class DataFactory
                                                MetricOutputMetadata meta )
     {
         Objects.requireNonNull( output, "Specify a non-null array of inputs." );
-        return MatrixOutput.of( matrixOf( output ), names, meta );
+        return MatrixOutput.of( MatrixOfDoubles.of( output ), names, meta );
     }
 
     /**
@@ -1134,19 +1021,6 @@ public final class DataFactory
                                                              MetricOutputMetadata meta )
     {
         return DurationScoreOutput.of( output, meta );
-    }
-
-    /**
-     * Returns a {@link MapKey} to map a {@link MetricOutput} by an elementary key.
-     * 
-     * @param <S> the type of key
-     * @param key the key
-     * @return a map key
-     */
-
-    public static <S extends Comparable<S>> MapKey<S> getMapKey( S key )
-    {
-        return MapKey.of( key );
     }
 
     /**
@@ -1266,7 +1140,7 @@ public final class DataFactory
     {
         Objects.requireNonNull( input, "Specify a non-null list of inputs." );
         final MetricOutputMapByMetricBuilder<T> builder = new MetricOutputMapByMetricBuilder<>();
-        input.forEach( ( key, value ) -> builder.put( DataFactory.getMapKey( key ), value ) );
+        input.forEach( ( key, value ) -> builder.put( MapKey.of( key ), value ) );
         return builder.build();
     }
 

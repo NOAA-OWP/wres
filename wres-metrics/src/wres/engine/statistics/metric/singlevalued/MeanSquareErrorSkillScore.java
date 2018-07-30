@@ -6,6 +6,7 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.Slicer;
+import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPair;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
@@ -64,7 +65,7 @@ public class MeanSquareErrorSkillScore extends DecomposableScore<SingleValuedPai
             else
             {
                 double meanLeft =
-                        FunctionFactory.mean().applyAsDouble( DataFactory.vectorOf( Slicer.getLeftSide( s ) ) );
+                        FunctionFactory.mean().applyAsDouble( VectorOfDoubles.of( Slicer.getLeftSide( s ) ) );
                 for ( SingleValuedPair next : s.getRawData() )
                 {
                     denominator += Math.pow( next.getLeft() - meanLeft, 2 );

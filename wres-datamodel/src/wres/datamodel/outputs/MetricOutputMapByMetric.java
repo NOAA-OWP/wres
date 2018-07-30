@@ -11,7 +11,6 @@ import java.util.StringJoiner;
 import java.util.TreeMap;
 import java.util.Map.Entry;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 
 /**
@@ -60,7 +59,7 @@ public class MetricOutputMapByMetric<T extends MetricOutput<?>>
 
     public T get( final MetricConstants metricID )
     {
-        return get( DataFactory.getMapKey( metricID ) );
+        return get( MapKey.of( metricID ) );
     }
 
     @Override

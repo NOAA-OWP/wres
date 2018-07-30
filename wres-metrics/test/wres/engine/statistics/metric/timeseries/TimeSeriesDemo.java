@@ -46,9 +46,9 @@ public class TimeSeriesDemo
         Instant firstId = Instant.parse( "1985-01-01T00:00:00Z" );
         List<Event<SingleValuedPair>> firstValues = new ArrayList<>();
         //Add some values
-        firstValues.add( Event.of( Instant.parse( "1985-01-01T06:00:00Z" ), DataFactory.pairOf( 1, 2 ) ) );
-        firstValues.add( Event.of( Instant.parse( "1985-01-01T12:00:00Z" ), DataFactory.pairOf( 3, 4 ) ) );
-        firstValues.add( Event.of( Instant.parse( "1985-01-01T18:00:00Z" ), DataFactory.pairOf( 5, 6 ) ) );
+        firstValues.add( Event.of( Instant.parse( "1985-01-01T06:00:00Z" ), SingleValuedPair.of( 1, 2 ) ) );
+        firstValues.add( Event.of( Instant.parse( "1985-01-01T12:00:00Z" ), SingleValuedPair.of( 3, 4 ) ) );
+        firstValues.add( Event.of( Instant.parse( "1985-01-01T18:00:00Z" ), SingleValuedPair.of( 5, 6 ) ) );
 
         //Create some default metadata for the time-series
         Metadata metaData = MetadataFactory.getMetadata();
@@ -104,9 +104,9 @@ public class TimeSeriesDemo
         Instant secondId = Instant.parse( "1985-01-02T00:00:00Z" );
         List<Event<SingleValuedPair>> secondValues = new ArrayList<>();
         //Add some values
-        secondValues.add( Event.of( Instant.parse( "1985-01-02T06:00:00Z" ), DataFactory.pairOf( 7, 8 ) ) );
-        secondValues.add( Event.of( Instant.parse( "1985-01-02T12:00:00Z" ), DataFactory.pairOf( 9, 10 ) ) );
-        secondValues.add( Event.of( Instant.parse( "1985-01-02T18:00:00Z" ), DataFactory.pairOf( 11, 12 ) ) );
+        secondValues.add( Event.of( Instant.parse( "1985-01-02T06:00:00Z" ), SingleValuedPair.of( 7, 8 ) ) );
+        secondValues.add( Event.of( Instant.parse( "1985-01-02T12:00:00Z" ), SingleValuedPair.of( 9, 10 ) ) );
+        secondValues.add( Event.of( Instant.parse( "1985-01-02T18:00:00Z" ), SingleValuedPair.of( 11, 12 ) ) );
         //Build the atomic time-series
         timeSeries = builder.addTimeSeriesData( secondId, secondValues ).build();
 
@@ -236,25 +236,25 @@ public class TimeSeriesDemo
 
         Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
         first.add( Event.of( Instant.parse( "1985-01-02T00:00:00Z" ),
-                             DataFactory.pairOf( 1, new double[] { 1, 2, 3, 4, 5 } ) ) );
+                             EnsemblePair.of( 1, new double[] { 1, 2, 3, 4, 5 } ) ) );
         first.add( Event.of( Instant.parse( "1985-01-03T00:00:00Z" ),
-                             DataFactory.pairOf( 2, new double[] { 1, 2, 3, 4, 5 } ) ) );
+                             EnsemblePair.of( 2, new double[] { 1, 2, 3, 4, 5 } ) ) );
         first.add( Event.of( Instant.parse( "1985-01-04T00:00:00Z" ),
-                             DataFactory.pairOf( 3, new double[] { 1, 2, 3, 4, 5 } ) ) );
+                             EnsemblePair.of( 3, new double[] { 1, 2, 3, 4, 5 } ) ) );
         Instant secondBasisTime = Instant.parse( "1985-01-02T00:00:00Z" );
         second.add( Event.of( Instant.parse( "1985-01-03T06:00:00Z" ),
-                              DataFactory.pairOf( 4, new double[] { 6, 7, 8, 9, 10 } ) ) );
+                              EnsemblePair.of( 4, new double[] { 6, 7, 8, 9, 10 } ) ) );
         second.add( Event.of( Instant.parse( "1985-01-04T06:00:00Z" ),
-                              DataFactory.pairOf( 5, new double[] { 6, 7, 8, 9, 10 } ) ) );
+                              EnsemblePair.of( 5, new double[] { 6, 7, 8, 9, 10 } ) ) );
         second.add( Event.of( Instant.parse( "1985-01-05T06:00:00Z" ),
-                              DataFactory.pairOf( 6, new double[] { 6, 7, 8, 9, 10 } ) ) );
+                              EnsemblePair.of( 6, new double[] { 6, 7, 8, 9, 10 } ) ) );
         Instant thirdBasisTime = Instant.parse( "1985-01-03T00:00:00Z" );
         third.add( Event.of( Instant.parse( "1985-01-01T04:00:00Z" ),
-                             DataFactory.pairOf( 7, new double[] { 11, 12, 13, 14, 15 } ) ) );
+                             EnsemblePair.of( 7, new double[] { 11, 12, 13, 14, 15 } ) ) );
         third.add( Event.of( Instant.parse( "1985-01-01T05:00:00Z" ),
-                             DataFactory.pairOf( 8, new double[] { 11, 12, 13, 14, 15 } ) ) );
+                             EnsemblePair.of( 8, new double[] { 11, 12, 13, 14, 15 } ) ) );
         third.add( Event.of( Instant.parse( "1985-01-01T06:00:00Z" ),
-                             DataFactory.pairOf( 9, new double[] { 11, 12, 13, 14, 15 } ) ) );
+                             EnsemblePair.of( 9, new double[] { 11, 12, 13, 14, 15 } ) ) );
 
         //Build some metadata
         Metadata meta = MetadataFactory.getMetadata();

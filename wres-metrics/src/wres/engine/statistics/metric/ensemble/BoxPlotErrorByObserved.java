@@ -2,7 +2,6 @@ package wres.engine.statistics.metric.ensemble;
 
 import java.util.Arrays;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.Slicer;
@@ -46,7 +45,7 @@ public class BoxPlotErrorByObserved extends BoxPlot
         //Compute the quantiles
         double[] box =
                 Arrays.stream( probs ).map( Slicer.getQuantileFunction( sortedErrors ) ).toArray();
-        return DataFactory.pairOf( pair.getLeft(), box );
+        return EnsemblePair.of( pair.getLeft(), box );
     }
 
     /**

@@ -73,7 +73,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
     @Test
     public void testGetFilterForEnsemblePairs()
     {
-        OneOrTwoDoubles doubles = DataFactory.ofOneOrTwoDoubles( 1.0 );
+        OneOrTwoDoubles doubles = OneOrTwoDoubles.of( 1.0 );
         Operator condition = Operator.GREATER;
         assertNotNull( MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( DataFactory.ofThreshold( doubles,
                                                                                                               condition,
@@ -97,7 +97,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                                                                               condition,
                                                                                                               ThresholdDataType.RIGHT_MEAN ) ) );
         // Check that average works        
-        EnsemblePair pair = DataFactory.pairOf( 1.0, new double[] { 1.5, 2.0 } );
+        EnsemblePair pair = EnsemblePair.of( 1.0, new double[] { 1.5, 2.0 } );
 
         assertTrue( MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( DataFactory.ofThreshold( doubles,
                                                                                                            condition,
@@ -1089,13 +1089,13 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                          ReferenceTime.VALID_TIME,
                                                          Duration.ofHours( 24 ) );
         // Exceeds 50.0 with occurrences > 0.05
-        MatrixOfDoubles expectedFirst = DataFactory.matrixOf( new double[][] { { 40.0, 32.0 }, { 2.0, 91.0 } } );
+        MatrixOfDoubles expectedFirst = MatrixOfDoubles.of( new double[][] { { 40.0, 32.0 }, { 2.0, 91.0 } } );
         Pair<TimeWindow, OneOrTwoThresholds> first =
                 Pair.of( expectedWindow,
-                         OneOrTwoThresholds.of( DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( 50.0 ),
+                         OneOrTwoThresholds.of( DataFactory.ofThreshold( OneOrTwoDoubles.of( 50.0 ),
                                                                          Operator.GREATER,
                                                                          ThresholdDataType.LEFT ),
-                                                DataFactory.ofProbabilityThreshold( DataFactory.ofOneOrTwoDoubles( 0.05 ),
+                                                DataFactory.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.05 ),
                                                                                     Operator.GREATER,
                                                                                     ThresholdDataType.LEFT ) ) );
 
@@ -1105,13 +1105,13 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                  .getData() ) );
 
         // Exceeds 50.0 with occurrences > 0.25
-        MatrixOfDoubles expectedSecond = DataFactory.matrixOf( new double[][] { { 39.0, 17.0 }, { 3.0, 106.0 } } );
+        MatrixOfDoubles expectedSecond = MatrixOfDoubles.of( new double[][] { { 39.0, 17.0 }, { 3.0, 106.0 } } );
         Pair<TimeWindow, OneOrTwoThresholds> second =
                 Pair.of( expectedWindow,
-                         OneOrTwoThresholds.of( DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( 50.0 ),
+                         OneOrTwoThresholds.of( DataFactory.ofThreshold( OneOrTwoDoubles.of( 50.0 ),
                                                                          Operator.GREATER,
                                                                          ThresholdDataType.LEFT ),
-                                                DataFactory.ofProbabilityThreshold( DataFactory.ofOneOrTwoDoubles( 0.25 ),
+                                                DataFactory.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.25 ),
                                                                                     Operator.GREATER,
                                                                                     ThresholdDataType.LEFT ) ) );
 
@@ -1121,13 +1121,13 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                   .getData() ) );
 
         // Exceeds 50.0 with occurrences > 0.5
-        MatrixOfDoubles expectedThird = DataFactory.matrixOf( new double[][] { { 39.0, 15.0 }, { 3.0, 108.0 } } );
+        MatrixOfDoubles expectedThird = MatrixOfDoubles.of( new double[][] { { 39.0, 15.0 }, { 3.0, 108.0 } } );
         Pair<TimeWindow, OneOrTwoThresholds> third =
                 Pair.of( expectedWindow,
-                         OneOrTwoThresholds.of( DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( 50.0 ),
+                         OneOrTwoThresholds.of( DataFactory.ofThreshold( OneOrTwoDoubles.of( 50.0 ),
                                                                          Operator.GREATER,
                                                                          ThresholdDataType.LEFT ),
-                                                DataFactory.ofProbabilityThreshold( DataFactory.ofOneOrTwoDoubles( 0.5 ),
+                                                DataFactory.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.5 ),
                                                                                     Operator.GREATER,
                                                                                     ThresholdDataType.LEFT ) ) );
 
@@ -1137,13 +1137,13 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                  .getData() ) );
 
         // Exceeds 50.0 with occurrences > 0.75
-        MatrixOfDoubles expectedFourth = DataFactory.matrixOf( new double[][] { { 37.0, 14.0 }, { 5.0, 109.0 } } );
+        MatrixOfDoubles expectedFourth = MatrixOfDoubles.of( new double[][] { { 37.0, 14.0 }, { 5.0, 109.0 } } );
         Pair<TimeWindow, OneOrTwoThresholds> fourth =
                 Pair.of( expectedWindow,
-                         OneOrTwoThresholds.of( DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( 50.0 ),
+                         OneOrTwoThresholds.of( DataFactory.ofThreshold( OneOrTwoDoubles.of( 50.0 ),
                                                                          Operator.GREATER,
                                                                          ThresholdDataType.LEFT ),
-                                                DataFactory.ofProbabilityThreshold( DataFactory.ofOneOrTwoDoubles( 0.75 ),
+                                                DataFactory.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.75 ),
                                                                                     Operator.GREATER,
                                                                                     ThresholdDataType.LEFT ) ) );
 
@@ -1153,13 +1153,13 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                   .getData() ) );
 
         // Exceeds 50.0 with occurrences > 0.9
-        MatrixOfDoubles expectedFifth = DataFactory.matrixOf( new double[][] { { 37.0, 11.0 }, { 5.0, 112.0 } } );
+        MatrixOfDoubles expectedFifth = MatrixOfDoubles.of( new double[][] { { 37.0, 11.0 }, { 5.0, 112.0 } } );
         Pair<TimeWindow, OneOrTwoThresholds> fifth =
                 Pair.of( expectedWindow,
-                         OneOrTwoThresholds.of( DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( 50.0 ),
+                         OneOrTwoThresholds.of( DataFactory.ofThreshold( OneOrTwoDoubles.of( 50.0 ),
                                                                          Operator.GREATER,
                                                                          ThresholdDataType.LEFT ),
-                                                DataFactory.ofProbabilityThreshold( DataFactory.ofOneOrTwoDoubles( 0.9 ),
+                                                DataFactory.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.9 ),
                                                                                     Operator.GREATER,
                                                                                     ThresholdDataType.LEFT ) ) );
 
@@ -1169,13 +1169,13 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                  .getData() ) );
 
         // Exceeds 50.0 with occurrences > 0.95
-        MatrixOfDoubles expectedSixth = DataFactory.matrixOf( new double[][] { { 36.0, 10.0 }, { 6.0, 113.0 } } );
+        MatrixOfDoubles expectedSixth = MatrixOfDoubles.of( new double[][] { { 36.0, 10.0 }, { 6.0, 113.0 } } );
         Pair<TimeWindow, OneOrTwoThresholds> sixth =
                 Pair.of( expectedWindow,
-                         OneOrTwoThresholds.of( DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( 50.0 ),
+                         OneOrTwoThresholds.of( DataFactory.ofThreshold( OneOrTwoDoubles.of( 50.0 ),
                                                                          Operator.GREATER,
                                                                          ThresholdDataType.LEFT ),
-                                                DataFactory.ofProbabilityThreshold( DataFactory.ofOneOrTwoDoubles( 0.95 ),
+                                                DataFactory.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.95 ),
                                                                                     Operator.GREATER,
                                                                                     ThresholdDataType.LEFT ) ) );
 

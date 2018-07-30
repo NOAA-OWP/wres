@@ -17,6 +17,7 @@ import org.junit.rules.ExpectedException;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
+import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.Slicer;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPair;
@@ -295,7 +296,7 @@ public final class RelativeOperatingCharacteristicScoreTest
     {
         EnsemblePairs pairs = MetricTestDataFactory.getEnsemblePairsOne();
 
-        Threshold threshold = DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( 3.0 ),
+        Threshold threshold = DataFactory.ofThreshold( OneOrTwoDoubles.of( 3.0 ),
                                                        Operator.GREATER,
                                                        ThresholdDataType.LEFT );
 

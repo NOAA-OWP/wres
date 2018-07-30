@@ -24,6 +24,7 @@ import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MetadataFactory;
@@ -117,7 +118,7 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTest
         // Fake lead time and threshold
         Pair<TimeWindow, OneOrTwoThresholds> mapKeyByLeadThreshold =
                 DataFactory.ofMapKeyByTimeThreshold( timeOne,
-                                                     DataFactory.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
+                                                     OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                      Operator.GREATER,
                                                      ThresholdDataType.LEFT );
 
@@ -234,7 +235,7 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTest
         // Fake lead time and threshold
         Pair<TimeWindow, OneOrTwoThresholds> mapKeyByLeadThreshold =
                 DataFactory.ofMapKeyByTimeThreshold( timeOne,
-                                                     DataFactory.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
+                                                     OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                      Operator.GREATER,
                                                      ThresholdDataType.LEFT );
 
@@ -323,7 +324,7 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTest
         // Fake lead time and threshold
         Pair<TimeWindow, OneOrTwoThresholds> mapKeyByLeadThreshold =
                 DataFactory.ofMapKeyByTimeThreshold( timeOne,
-                                                     DataFactory.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
+                                                     OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                      Operator.GREATER,
                                                      ThresholdDataType.LEFT );
 
@@ -333,7 +334,7 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTest
         // Add the data for another threshold at the same time
         Pair<TimeWindow, OneOrTwoThresholds> mapKeyByLeadThresholdTwo =
                 DataFactory.ofMapKeyByTimeThreshold( timeOne,
-                                                     DataFactory.ofOneOrTwoDoubles( 23.0 ),
+                                                     OneOrTwoDoubles.of( 23.0 ),
                                                      Operator.GREATER,
                                                      ThresholdDataType.LEFT );
 
@@ -344,7 +345,7 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTest
         TimeWindow timeTwo = TimeWindow.of( Instant.MIN, Instant.MAX, ReferenceTime.VALID_TIME, Duration.ofHours( 2 ) );
         Pair<TimeWindow, OneOrTwoThresholds> mapKeyByLeadThresholdThree =
                 DataFactory.ofMapKeyByTimeThreshold( timeTwo,
-                                                     DataFactory.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
+                                                     OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                      Operator.GREATER,
                                                      ThresholdDataType.LEFT );
         outputBuilder.addDoubleScoreOutput( mapKeyByLeadThresholdThree,

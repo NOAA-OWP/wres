@@ -21,6 +21,8 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
+import wres.datamodel.OneOrTwoDoubles;
+import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
@@ -98,7 +100,7 @@ public final class MetricFuturesByTimeTest
     {
         key = Pair.of( TimeWindow.of( Instant.parse( "1985-05-01T12:00:00Z" ),
                                       Instant.parse( "1985-05-03T12:00:00Z" ) ),
-                       OneOrTwoThresholds.of( DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( 1.0 ),
+                       OneOrTwoThresholds.of( DataFactory.ofThreshold( OneOrTwoDoubles.of( 1.0 ),
                                                                        Operator.GREATER,
                                                                        ThresholdDataType.LEFT ) ) );
         MetricFuturesByTimeBuilder builder = new MetricFuturesByTimeBuilder();
@@ -107,8 +109,8 @@ public final class MetricFuturesByTimeTest
         boxplot =
                 Collections.singletonMap( MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
                                           DataFactory.ofBoxPlotOutput( Arrays.asList(),
-                                                                       DataFactory.vectorOf( new double[] { 0.1,
-                                                                                                            0.9 } ),
+                                                                       VectorOfDoubles.of( new double[] { 0.1,
+                                                                                                          0.9 } ),
                                                                        MetadataFactory.getOutputMetadata( 1,
                                                                                                           MetadataFactory.getDimension(),
                                                                                                           MetadataFactory.getDimension(),
@@ -293,7 +295,7 @@ public final class MetricFuturesByTimeTest
         // Create a new key
         Pair<TimeWindow, OneOrTwoThresholds> key = Pair.of( TimeWindow.of( Instant.parse( "1985-05-01T12:00:00Z" ),
                                                                            Instant.parse( "1985-05-03T12:00:00Z" ) ),
-                                                            OneOrTwoThresholds.of( DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( 2.0 ),
+                                                            OneOrTwoThresholds.of( DataFactory.ofThreshold( OneOrTwoDoubles.of( 2.0 ),
                                                                                                             Operator.GREATER,
                                                                                                             ThresholdDataType.LEFT ) ) );
 

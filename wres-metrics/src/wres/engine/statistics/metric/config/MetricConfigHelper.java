@@ -28,6 +28,7 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
+import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.metadata.Dimension;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.thresholds.Threshold;
@@ -407,17 +408,17 @@ public final class MetricConfigHelper
             {
                 if ( areProbs )
                 {
-                    returnMe.add( DataFactory.ofProbabilityThreshold( DataFactory.ofOneOrTwoDoubles( addMe.get( i ),
-                                                                                                     addMe.get( i
-                                                                                                                + 1 ) ),
+                    returnMe.add( DataFactory.ofProbabilityThreshold( OneOrTwoDoubles.of( addMe.get( i ),
+                                                                                          addMe.get( i
+                                                                                                     + 1 ) ),
                                                                       oper,
                                                                       dataType,
                                                                       units ) );
                 }
                 else
                 {
-                    returnMe.add( DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( addMe.get( i ),
-                                                                                          addMe.get( i + 1 ) ),
+                    returnMe.add( DataFactory.ofThreshold( OneOrTwoDoubles.of( addMe.get( i ),
+                                                                               addMe.get( i + 1 ) ),
                                                            oper,
                                                            dataType,
                                                            units ) );
@@ -429,14 +430,14 @@ public final class MetricConfigHelper
         {
             if ( areProbs )
             {
-                addMe.forEach( threshold -> returnMe.add( DataFactory.ofProbabilityThreshold( DataFactory.ofOneOrTwoDoubles( threshold ),
+                addMe.forEach( threshold -> returnMe.add( DataFactory.ofProbabilityThreshold( OneOrTwoDoubles.of( threshold ),
                                                                                               oper,
                                                                                               dataType,
                                                                                               units ) ) );
             }
             else
             {
-                addMe.forEach( threshold -> returnMe.add( DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( threshold ),
+                addMe.forEach( threshold -> returnMe.add( DataFactory.ofThreshold( OneOrTwoDoubles.of( threshold ),
                                                                                    oper,
                                                                                    dataType,
                                                                                    units ) ) );
@@ -476,7 +477,7 @@ public final class MetricConfigHelper
         Set<Threshold> returnMe = new HashSet<>();
 
         Threshold allData =
-                DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
+                DataFactory.ofThreshold( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                          Operator.GREATER,
                                          ThresholdConstants.ThresholdDataType.LEFT_AND_RIGHT );
 

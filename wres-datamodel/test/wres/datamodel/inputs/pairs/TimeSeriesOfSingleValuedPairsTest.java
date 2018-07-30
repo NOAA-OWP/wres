@@ -16,7 +16,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.inputs.pairs.SingleValuedPair;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
@@ -51,17 +50,17 @@ public final class TimeSeriesOfSingleValuedPairsTest
         TimeSeriesOfSingleValuedPairsBuilder b = new TimeSeriesOfSingleValuedPairsBuilder();
 
         Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
-        first.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), DataFactory.pairOf( 1, 1 ) ) );
-        first.add( Event.of( Instant.parse( "1985-01-01T02:00:00Z" ), DataFactory.pairOf( 2, 2 ) ) );
-        first.add( Event.of( Instant.parse( "1985-01-01T03:00:00Z" ), DataFactory.pairOf( 3, 3 ) ) );
+        first.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), SingleValuedPair.of( 1, 1 ) ) );
+        first.add( Event.of( Instant.parse( "1985-01-01T02:00:00Z" ), SingleValuedPair.of( 2, 2 ) ) );
+        first.add( Event.of( Instant.parse( "1985-01-01T03:00:00Z" ), SingleValuedPair.of( 3, 3 ) ) );
         Instant secondBasisTime = Instant.parse( "1985-01-02T00:00:00Z" );
-        second.add( Event.of( Instant.parse( "1985-01-02T01:00:00Z" ), DataFactory.pairOf( 4, 4 ) ) );
-        second.add( Event.of( Instant.parse( "1985-01-02T02:00:00Z" ), DataFactory.pairOf( 5, 5 ) ) );
-        second.add( Event.of( Instant.parse( "1985-01-02T03:00:00Z" ), DataFactory.pairOf( 6, 6 ) ) );
+        second.add( Event.of( Instant.parse( "1985-01-02T01:00:00Z" ), SingleValuedPair.of( 4, 4 ) ) );
+        second.add( Event.of( Instant.parse( "1985-01-02T02:00:00Z" ), SingleValuedPair.of( 5, 5 ) ) );
+        second.add( Event.of( Instant.parse( "1985-01-02T03:00:00Z" ), SingleValuedPair.of( 6, 6 ) ) );
         Instant thirdBasisTime = Instant.parse( "1985-01-03T00:00:00Z" );
-        third.add( Event.of( Instant.parse( "1985-01-03T01:00:00Z" ), DataFactory.pairOf( 7, 7 ) ) );
-        third.add( Event.of( Instant.parse( "1985-01-03T02:00:00Z" ), DataFactory.pairOf( 8, 8 ) ) );
-        third.add( Event.of( Instant.parse( "1985-01-03T03:00:00Z" ), DataFactory.pairOf( 9, 9 ) ) );
+        third.add( Event.of( Instant.parse( "1985-01-03T01:00:00Z" ), SingleValuedPair.of( 7, 7 ) ) );
+        third.add( Event.of( Instant.parse( "1985-01-03T02:00:00Z" ), SingleValuedPair.of( 8, 8 ) ) );
+        third.add( Event.of( Instant.parse( "1985-01-03T03:00:00Z" ), SingleValuedPair.of( 9, 9 ) ) );
         final Metadata meta = MetadataFactory.getMetadata();
         TimeSeriesOfSingleValuedPairs ts =
                 (TimeSeriesOfSingleValuedPairs) b.addTimeSeriesData( firstBasisTime, first )
@@ -77,7 +76,7 @@ public final class TimeSeriesOfSingleValuedPairsTest
             for ( Event<SingleValuedPair> nextPair : next.timeIterator() )
             {
                 assertTrue( "Unexpected pair in basis-time iteration of time-series.",
-                            nextPair.getValue().equals( DataFactory.pairOf( nextValue, nextValue ) ) );
+                            nextPair.getValue().equals( SingleValuedPair.of( nextValue, nextValue ) ) );
                 nextValue++;
             }
         }
@@ -97,17 +96,17 @@ public final class TimeSeriesOfSingleValuedPairsTest
         TimeSeriesOfSingleValuedPairsBuilder b = new TimeSeriesOfSingleValuedPairsBuilder();
 
         Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
-        first.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), DataFactory.pairOf( 1, 1 ) ) );
-        first.add( Event.of( Instant.parse( "1985-01-01T02:00:00Z" ), DataFactory.pairOf( 2, 2 ) ) );
-        first.add( Event.of( Instant.parse( "1985-01-01T03:00:00Z" ), DataFactory.pairOf( 3, 3 ) ) );
+        first.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), SingleValuedPair.of( 1, 1 ) ) );
+        first.add( Event.of( Instant.parse( "1985-01-01T02:00:00Z" ), SingleValuedPair.of( 2, 2 ) ) );
+        first.add( Event.of( Instant.parse( "1985-01-01T03:00:00Z" ), SingleValuedPair.of( 3, 3 ) ) );
         Instant secondBasisTime = Instant.parse( "1985-01-02T00:00:00Z" );
-        second.add( Event.of( Instant.parse( "1985-01-02T01:00:00Z" ), DataFactory.pairOf( 1, 1 ) ) );
-        second.add( Event.of( Instant.parse( "1985-01-02T02:00:00Z" ), DataFactory.pairOf( 2, 2 ) ) );
-        second.add( Event.of( Instant.parse( "1985-01-02T03:00:00Z" ), DataFactory.pairOf( 3, 3 ) ) );
+        second.add( Event.of( Instant.parse( "1985-01-02T01:00:00Z" ), SingleValuedPair.of( 1, 1 ) ) );
+        second.add( Event.of( Instant.parse( "1985-01-02T02:00:00Z" ), SingleValuedPair.of( 2, 2 ) ) );
+        second.add( Event.of( Instant.parse( "1985-01-02T03:00:00Z" ), SingleValuedPair.of( 3, 3 ) ) );
         Instant thirdBasisTime = Instant.parse( "1985-01-03T00:00:00Z" );
-        third.add( Event.of( Instant.parse( "1985-01-03T01:00:00Z" ), DataFactory.pairOf( 1, 1 ) ) );
-        third.add( Event.of( Instant.parse( "1985-01-03T02:00:00Z" ), DataFactory.pairOf( 2, 2 ) ) );
-        third.add( Event.of( Instant.parse( "1985-01-03T03:00:00Z" ), DataFactory.pairOf( 3, 3 ) ) );
+        third.add( Event.of( Instant.parse( "1985-01-03T01:00:00Z" ), SingleValuedPair.of( 1, 1 ) ) );
+        third.add( Event.of( Instant.parse( "1985-01-03T02:00:00Z" ), SingleValuedPair.of( 2, 2 ) ) );
+        third.add( Event.of( Instant.parse( "1985-01-03T03:00:00Z" ), SingleValuedPair.of( 3, 3 ) ) );
         Metadata meta = MetadataFactory.getMetadata();
         //Add the time-series, with only one for baseline
         TimeSeriesOfSingleValuedPairs ts =
@@ -128,7 +127,7 @@ public final class TimeSeriesOfSingleValuedPairsTest
             for ( Event<SingleValuedPair> nextPair : next.timeIterator() )
             {
                 assertTrue( "Unexpected pair in lead-time iteration of time-series.",
-                            nextPair.getValue().equals( DataFactory.pairOf( nextValue, nextValue ) ) );
+                            nextPair.getValue().equals( SingleValuedPair.of( nextValue, nextValue ) ) );
             }
             //Three time-series
             assertTrue( "Unexpected number of time-series in dataset.",
@@ -138,7 +137,7 @@ public final class TimeSeriesOfSingleValuedPairsTest
 
         //Check the regular duration of a time-series with one duration
         List<Event<SingleValuedPair>> fourth = new ArrayList<>();
-        fourth.add( Event.of( Instant.parse( "1985-01-03T03:00:00Z" ), DataFactory.pairOf( 3, 3 ) ) );
+        fourth.add( Event.of( Instant.parse( "1985-01-03T03:00:00Z" ), SingleValuedPair.of( 3, 3 ) ) );
         TimeSeriesOfSingleValuedPairs durationCheck =
                 (TimeSeriesOfSingleValuedPairs) new TimeSeriesOfSingleValuedPairsBuilder().addTimeSeriesData( firstBasisTime,
                                                                                                               fourth )
@@ -160,9 +159,9 @@ public final class TimeSeriesOfSingleValuedPairsTest
         TimeSeriesOfSingleValuedPairsBuilder b = new TimeSeriesOfSingleValuedPairsBuilder();
 
         Instant basisTime = Instant.parse( "1985-01-01T00:00:00Z" );
-        values.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), DataFactory.pairOf( 1, 1 ) ) );
-        values.add( Event.of( Instant.parse( "1985-01-01T02:00:00Z" ), DataFactory.pairOf( 2, 2 ) ) );
-        values.add( Event.of( Instant.parse( "1985-01-01T03:00:00Z" ), DataFactory.pairOf( 3, 3 ) ) );
+        values.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), SingleValuedPair.of( 1, 1 ) ) );
+        values.add( Event.of( Instant.parse( "1985-01-01T02:00:00Z" ), SingleValuedPair.of( 2, 2 ) ) );
+        values.add( Event.of( Instant.parse( "1985-01-01T03:00:00Z" ), SingleValuedPair.of( 3, 3 ) ) );
         Metadata meta = MetadataFactory.getMetadata();
         b.addTimeSeriesData( basisTime, values ).setMetadata( meta );
         //Check dataset dimensions
@@ -186,7 +185,7 @@ public final class TimeSeriesOfSingleValuedPairsTest
             for ( Event<SingleValuedPair> nextPair : next.timeIterator() )
             {
                 assertTrue( "Unexpected pair in lead-time iteration of baseline time-series.",
-                            nextPair.getValue().equals( DataFactory.pairOf( nextValue, nextValue ) ) );
+                            nextPair.getValue().equals( SingleValuedPair.of( nextValue, nextValue ) ) );
                 nextValue++;
             }
         }
@@ -207,11 +206,11 @@ public final class TimeSeriesOfSingleValuedPairsTest
         TimeSeriesOfSingleValuedPairsBuilder b = new TimeSeriesOfSingleValuedPairsBuilder();
 
         Instant basisTime = Instant.parse( "1985-01-01T00:00:00Z" );
-        first.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), DataFactory.pairOf( 1, 1 ) ) );
-        first.add( Event.of( Instant.parse( "1985-01-01T02:00:00Z" ), DataFactory.pairOf( 2, 2 ) ) );
-        first.add( Event.of( Instant.parse( "1985-01-01T03:00:00Z" ), DataFactory.pairOf( 3, 3 ) ) );
+        first.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), SingleValuedPair.of( 1, 1 ) ) );
+        first.add( Event.of( Instant.parse( "1985-01-01T02:00:00Z" ), SingleValuedPair.of( 2, 2 ) ) );
+        first.add( Event.of( Instant.parse( "1985-01-01T03:00:00Z" ), SingleValuedPair.of( 3, 3 ) ) );
         Metadata meta = MetadataFactory.getMetadata();
-        VectorOfDoubles climatology = DataFactory.vectorOf( new double[] { 1, 2, 3 } );
+        VectorOfDoubles climatology = VectorOfDoubles.of( new double[] { 1, 2, 3 } );
         b.addTimeSeriesData( basisTime, first )
          .addTimeSeriesDataForBaseline( basisTime, first )
          .setMetadata( meta )
@@ -225,12 +224,12 @@ public final class TimeSeriesOfSingleValuedPairsTest
         TimeSeriesOfSingleValuedPairsBuilder c = new TimeSeriesOfSingleValuedPairsBuilder();
         c.addTimeSeries( ts );
 
-        second.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), DataFactory.pairOf( 4, 4 ) ) );
-        second.add( Event.of( Instant.parse( "1985-01-01T02:00:00Z" ), DataFactory.pairOf( 5, 5 ) ) );
-        second.add( Event.of( Instant.parse( "1985-01-01T03:00:00Z" ), DataFactory.pairOf( 6, 6 ) ) );
-        third.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), DataFactory.pairOf( 7, 7 ) ) );
-        third.add( Event.of( Instant.parse( "1985-01-01T02:00:00Z" ), DataFactory.pairOf( 8, 8 ) ) );
-        third.add( Event.of( Instant.parse( "1985-01-01T03:00:00Z" ), DataFactory.pairOf( 9, 9 ) ) );
+        second.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), SingleValuedPair.of( 4, 4 ) ) );
+        second.add( Event.of( Instant.parse( "1985-01-01T02:00:00Z" ), SingleValuedPair.of( 5, 5 ) ) );
+        second.add( Event.of( Instant.parse( "1985-01-01T03:00:00Z" ), SingleValuedPair.of( 6, 6 ) ) );
+        third.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), SingleValuedPair.of( 7, 7 ) ) );
+        third.add( Event.of( Instant.parse( "1985-01-01T02:00:00Z" ), SingleValuedPair.of( 8, 8 ) ) );
+        third.add( Event.of( Instant.parse( "1985-01-01T03:00:00Z" ), SingleValuedPair.of( 9, 9 ) ) );
         c.addTimeSeriesData( basisTime, second )
          .addTimeSeriesData( basisTime, third )
          .addTimeSeriesDataForBaseline( basisTime, second )
@@ -247,7 +246,7 @@ public final class TimeSeriesOfSingleValuedPairsTest
         for ( Event<SingleValuedPair> nextPair : tsAppend.timeIterator() )
         {
             assertTrue( "Unexpected pair in lead-time iteration of baseline time-series.",
-                        nextPair.getValue().equals( DataFactory.pairOf( nextValue, nextValue ) ) );
+                        nextPair.getValue().equals( SingleValuedPair.of( nextValue, nextValue ) ) );
             nextValue++;
         }
     }
@@ -262,9 +261,9 @@ public final class TimeSeriesOfSingleValuedPairsTest
         List<Event<SingleValuedPair>> first = new ArrayList<>();
 
         Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
-        first.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), DataFactory.pairOf( 1, 1 ) ) );
-        first.add( Event.of( Instant.parse( "1985-01-01T02:00:00Z" ), DataFactory.pairOf( 2, 2 ) ) );
-        first.add( Event.of( Instant.parse( "1985-01-01T03:00:00Z" ), DataFactory.pairOf( 3, 3 ) ) );
+        first.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), SingleValuedPair.of( 1, 1 ) ) );
+        first.add( Event.of( Instant.parse( "1985-01-01T02:00:00Z" ), SingleValuedPair.of( 2, 2 ) ) );
+        first.add( Event.of( Instant.parse( "1985-01-01T03:00:00Z" ), SingleValuedPair.of( 3, 3 ) ) );
         final Metadata meta = MetadataFactory.getMetadata();
 
         //Check for exceptions on the iterators
@@ -312,7 +311,7 @@ public final class TimeSeriesOfSingleValuedPairsTest
         for ( int i = 0; i < 5; i++ )
         {
             values.add( Event.of( Instant.parse( "1985-01-01T" + String.format( "%02d", i ) + ":00:00Z" ),
-                                  DataFactory.pairOf( 1, 1 ) ) );
+                                  SingleValuedPair.of( 1, 1 ) ) );
             joiner.add( "(1985-01-01T" + String.format( "%02d", i ) + ":00:00Z" + "," + "1.0,1.0)" );
         }
         b.addTimeSeriesData( basisTime, values ).setMetadata( meta );
@@ -326,7 +325,7 @@ public final class TimeSeriesOfSingleValuedPairsTest
         for ( int i = 0; i < 5; i++ )
         {
             otherValues.add( Event.of( Instant.parse( "1985-01-02T" + String.format( "%02d", i ) + ":00:00Z" ),
-                                       DataFactory.pairOf( 1, 1 ) ) );
+                                       SingleValuedPair.of( 1, 1 ) ) );
             joiner.add( "(1985-01-02T" + String.format( "%02d", i ) + ":00:00Z" + "," + "1.0,1.0)" );
         }
         b.addTimeSeriesData( nextBasisTime, otherValues );
@@ -359,21 +358,21 @@ public final class TimeSeriesOfSingleValuedPairsTest
         TimeSeriesOfSingleValuedPairsBuilder b = new TimeSeriesOfSingleValuedPairsBuilder();
 
         Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
-        first.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), DataFactory.pairOf( 1, 1 ) ) );
-        first.add( Event.of( Instant.parse( "1985-01-01T08:00:00Z" ), DataFactory.pairOf( 2, 2 ) ) );
-        first.add( Event.of( Instant.parse( "1985-01-01T09:00:00Z" ), DataFactory.pairOf( 3, 3 ) ) );
+        first.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), SingleValuedPair.of( 1, 1 ) ) );
+        first.add( Event.of( Instant.parse( "1985-01-01T08:00:00Z" ), SingleValuedPair.of( 2, 2 ) ) );
+        first.add( Event.of( Instant.parse( "1985-01-01T09:00:00Z" ), SingleValuedPair.of( 3, 3 ) ) );
         Instant secondBasisTime = Instant.parse( "1985-01-02T00:00:00Z" );
-        second.add( Event.of( Instant.parse( "1985-01-02T02:00:00Z" ), DataFactory.pairOf( 4, 4 ) ) );
-        second.add( Event.of( Instant.parse( "1985-01-02T04:00:00Z" ), DataFactory.pairOf( 5, 5 ) ) );
-        second.add( Event.of( Instant.parse( "1985-01-02T06:00:00Z" ), DataFactory.pairOf( 6, 6 ) ) );
+        second.add( Event.of( Instant.parse( "1985-01-02T02:00:00Z" ), SingleValuedPair.of( 4, 4 ) ) );
+        second.add( Event.of( Instant.parse( "1985-01-02T04:00:00Z" ), SingleValuedPair.of( 5, 5 ) ) );
+        second.add( Event.of( Instant.parse( "1985-01-02T06:00:00Z" ), SingleValuedPair.of( 6, 6 ) ) );
         Instant thirdBasisTime = Instant.parse( "1985-01-03T00:00:00Z" );
-        third.add( Event.of( Instant.parse( "1985-01-03T01:00:00Z" ), DataFactory.pairOf( 7, 7 ) ) );
-        third.add( Event.of( Instant.parse( "1985-01-03T08:00:00Z" ), DataFactory.pairOf( 8, 8 ) ) );
-        third.add( Event.of( Instant.parse( "1985-01-03T09:00:00Z" ), DataFactory.pairOf( 9, 9 ) ) );
+        third.add( Event.of( Instant.parse( "1985-01-03T01:00:00Z" ), SingleValuedPair.of( 7, 7 ) ) );
+        third.add( Event.of( Instant.parse( "1985-01-03T08:00:00Z" ), SingleValuedPair.of( 8, 8 ) ) );
+        third.add( Event.of( Instant.parse( "1985-01-03T09:00:00Z" ), SingleValuedPair.of( 9, 9 ) ) );
         Instant fourthBasisTime = Instant.parse( "1985-01-04T00:00:00Z" );
-        fourth.add( Event.of( Instant.parse( "1985-01-04T02:00:00Z" ), DataFactory.pairOf( 10, 10 ) ) );
-        fourth.add( Event.of( Instant.parse( "1985-01-04T04:00:00Z" ), DataFactory.pairOf( 11, 11 ) ) );
-        fourth.add( Event.of( Instant.parse( "1985-01-04T06:00:00Z" ), DataFactory.pairOf( 12, 12 ) ) );
+        fourth.add( Event.of( Instant.parse( "1985-01-04T02:00:00Z" ), SingleValuedPair.of( 10, 10 ) ) );
+        fourth.add( Event.of( Instant.parse( "1985-01-04T04:00:00Z" ), SingleValuedPair.of( 11, 11 ) ) );
+        fourth.add( Event.of( Instant.parse( "1985-01-04T06:00:00Z" ), SingleValuedPair.of( 12, 12 ) ) );
         Metadata meta = MetadataFactory.getMetadata();
         //Add the time-series, with only one for baseline
         TimeSeriesOfSingleValuedPairs ts =
@@ -395,7 +394,7 @@ public final class TimeSeriesOfSingleValuedPairsTest
             {
                 assertTrue( "Unexpected pair in lead-time iteration of time-series.",
                             nextPair.getValue()
-                                    .equals( DataFactory.pairOf( expectedOrder[nextIndex],
+                                    .equals( SingleValuedPair.of( expectedOrder[nextIndex],
                                                                  expectedOrder[nextIndex] ) ) );
                 nextIndex++;
             }
@@ -415,11 +414,11 @@ public final class TimeSeriesOfSingleValuedPairsTest
         TimeSeriesOfSingleValuedPairsBuilder b = new TimeSeriesOfSingleValuedPairsBuilder();
 
         Instant basisTime = Instant.parse( "1985-01-01T00:00:00Z" );
-        first.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), DataFactory.pairOf( 1, 1 ) ) );
-        first.add( Event.of( Instant.parse( "1985-01-01T02:00:00Z" ), DataFactory.pairOf( 2, 2 ) ) );
-        first.add( Event.of( Instant.parse( "1985-01-01T03:00:00Z" ), DataFactory.pairOf( 3, 3 ) ) );
+        first.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), SingleValuedPair.of( 1, 1 ) ) );
+        first.add( Event.of( Instant.parse( "1985-01-01T02:00:00Z" ), SingleValuedPair.of( 2, 2 ) ) );
+        first.add( Event.of( Instant.parse( "1985-01-01T03:00:00Z" ), SingleValuedPair.of( 3, 3 ) ) );
         Metadata meta = MetadataFactory.getMetadata();
-        VectorOfDoubles climatology = DataFactory.vectorOf( new double[] { 1, 2, 3 } );
+        VectorOfDoubles climatology = VectorOfDoubles.of( new double[] { 1, 2, 3 } );
         b.addTimeSeriesData( basisTime, first )
          .setMetadata( meta )
          .setClimatology( climatology );

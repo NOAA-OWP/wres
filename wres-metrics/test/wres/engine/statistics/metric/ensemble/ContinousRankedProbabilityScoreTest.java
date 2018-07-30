@@ -59,12 +59,12 @@ public final class ContinousRankedProbabilityScoreTest
     {
         //Generate some data
         List<EnsemblePair> pairs = new ArrayList<>();
-        pairs.add( DataFactory.pairOf( 25.7, new double[] { 23, 43, 45, 23, 54 } ) );
-        pairs.add( DataFactory.pairOf( 21.4, new double[] { 19, 16, 57, 23, 9 } ) );
-        pairs.add( DataFactory.pairOf( 32.1, new double[] { 23, 54, 23, 12, 32 } ) );
-        pairs.add( DataFactory.pairOf( 47, new double[] { 12, 54, 23, 54, 78 } ) );
-        pairs.add( DataFactory.pairOf( 12.1, new double[] { 9, 8, 5, 6, 12 } ) );
-        pairs.add( DataFactory.pairOf( 43, new double[] { 23, 12, 12, 34, 10 } ) );
+        pairs.add( EnsemblePair.of( 25.7, new double[] { 23, 43, 45, 23, 54 } ) );
+        pairs.add( EnsemblePair.of( 21.4, new double[] { 19, 16, 57, 23, 9 } ) );
+        pairs.add( EnsemblePair.of( 32.1, new double[] { 23, 54, 23, 12, 32 } ) );
+        pairs.add( EnsemblePair.of( 47, new double[] { 12, 54, 23, 54, 78 } ) );
+        pairs.add( EnsemblePair.of( 12.1, new double[] { 9, 8, 5, 6, 12 } ) );
+        pairs.add( EnsemblePair.of( 43, new double[] { 23, 12, 12, 34, 10 } ) );
         EnsemblePairs input = DataFactory.ofEnsemblePairs( pairs, MetadataFactory.getMetadata() );
 
         //Metadata for the output
@@ -95,12 +95,12 @@ public final class ContinousRankedProbabilityScoreTest
 
         //Generate some data
         List<EnsemblePair> pairs = new ArrayList<>();
-        pairs.add( DataFactory.pairOf( 25.7, new double[] { 23, 43, 45, 34.2, 23, 54 } ) );
-        pairs.add( DataFactory.pairOf( 21.4, new double[] { 19, 16, 57, 23, 9 } ) );
-        pairs.add( DataFactory.pairOf( 32.1, new double[] { 23, 54, 23, 12, 32, 45.3, 67.1 } ) );
-        pairs.add( DataFactory.pairOf( 47, new double[] { 12, 54, 23, 54 } ) );
-        pairs.add( DataFactory.pairOf( 12, new double[] { 9, 8, 5 } ) );
-        pairs.add( DataFactory.pairOf( 43, new double[] { 23, 12, 12 } ) );
+        pairs.add( EnsemblePair.of( 25.7, new double[] { 23, 43, 45, 34.2, 23, 54 } ) );
+        pairs.add( EnsemblePair.of( 21.4, new double[] { 19, 16, 57, 23, 9 } ) );
+        pairs.add( EnsemblePair.of( 32.1, new double[] { 23, 54, 23, 12, 32, 45.3, 67.1 } ) );
+        pairs.add( EnsemblePair.of( 47, new double[] { 12, 54, 23, 54 } ) );
+        pairs.add( EnsemblePair.of( 12, new double[] { 9, 8, 5 } ) );
+        pairs.add( EnsemblePair.of( 43, new double[] { 23, 12, 12 } ) );
         EnsemblePairs input = DataFactory.ofEnsemblePairs( pairs, MetadataFactory.getMetadata() );
 
         //Metadata for the output
@@ -131,7 +131,7 @@ public final class ContinousRankedProbabilityScoreTest
     {
         //Generate some data
         List<EnsemblePair> pairs = new ArrayList<>();
-        pairs.add( DataFactory.pairOf( 8, new double[] { 23, 54, 23, 12, 32 } ) );
+        pairs.add( EnsemblePair.of( 8, new double[] { 23, 54, 23, 12, 32 } ) );
         EnsemblePairs input = DataFactory.ofEnsemblePairs( pairs, MetadataFactory.getMetadata() );
 
         //Metadata for the output
@@ -163,7 +163,7 @@ public final class ContinousRankedProbabilityScoreTest
 
         //Generate some data
         List<EnsemblePair> pairs = new ArrayList<>();
-        pairs.add( DataFactory.pairOf( 32, new double[] { 23, 54, 23, 12, 32 } ) );
+        pairs.add( EnsemblePair.of( 32, new double[] { 23, 54, 23, 12, 32 } ) );
         EnsemblePairs input = DataFactory.ofEnsemblePairs( pairs, MetadataFactory.getMetadata() );
 
         //Metadata for the output
