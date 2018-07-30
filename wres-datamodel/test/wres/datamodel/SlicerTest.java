@@ -18,6 +18,8 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.inputs.pairs.DichotomousPairs;
+import wres.datamodel.inputs.pairs.DiscreteProbabilityPair;
+import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.DichotomousPair;
 import wres.datamodel.inputs.pairs.EnsemblePair;
@@ -236,10 +238,10 @@ public final class SlicerTest
         expectedValues.add( DataFactory.pairOf( true, true ) );
         DichotomousPairs expectedNoBase = DataFactory.ofDichotomousPairs( expectedValues, meta );
         DichotomousPairs expectedBase = DataFactory.ofDichotomousPairs( expectedValues,
-                                                                                  expectedValues,
-                                                                                  meta,
-                                                                                  meta,
-                                                                                  null );
+                                                                        expectedValues,
+                                                                        meta,
+                                                                        meta,
+                                                                        null );
 
         //Test without baseline
         DichotomousPairs actualNoBase =
@@ -272,48 +274,35 @@ public final class SlicerTest
         Threshold threshold = DataFactory.ofThreshold( OneOrTwoDoubles.of( 3.0 ),
                                                        Operator.GREATER,
                                                        ThresholdDataType.LEFT );
-        BiFunction<EnsemblePair, Threshold, SingleValuedPair> mapper =
+        BiFunction<EnsemblePair, Threshold, DiscreteProbabilityPair> mapper =
                 Slicer::toDiscreteProbabilityPair;
-        double[] expectedLeft = new double[] { 0.0, 0.0, 0.0, 1.0, 0.0, 1.0 };
-        double[] expectedRight = new double[] { 2.0 / 5.0, 0.0 / 5.0, 0.0 / 5.0, 5.0 / 5.0, 2.0 / 5.0, 3.0 / 5.0 };
+
+        List<DiscreteProbabilityPair> expectedPairs = new ArrayList<>();
+        expectedPairs.add( DiscreteProbabilityPair.of( 0.0, 2.0 / 5.0 ) );
+        expectedPairs.add( DiscreteProbabilityPair.of( 0.0, 0.0 / 5.0 ) );
+        expectedPairs.add( DiscreteProbabilityPair.of( 0.0, 0.0 / 5.0 ) );
+        expectedPairs.add( DiscreteProbabilityPair.of( 1.0, 5.0 / 5.0 ) );
+        expectedPairs.add( DiscreteProbabilityPair.of( 0.0, 2.0 / 5.0 ) );
+        expectedPairs.add( DiscreteProbabilityPair.of( 1.0, 3.0 / 5.0 ) );
 
         //Test without baseline
-        double[] actualNoBaseLeft =
-                Slicer.getLeftSide( Slicer.toDiscreteProbabilityPairs( DataFactory.ofEnsemblePairs( values, meta ),
-                                                                       threshold,
-                                                                       mapper ) );
-        double[] actualNoBaseRight =
-                Slicer.getRightSide( Slicer.toDiscreteProbabilityPairs( DataFactory.ofEnsemblePairs( values, meta ),
-                                                                        threshold,
-                                                                        mapper ) );
+        DiscreteProbabilityPairs sliced =
+                Slicer.toDiscreteProbabilityPairs( DataFactory.ofEnsemblePairs( values, meta ),
+                                                   threshold,
+                                                   mapper );
+
         assertTrue( "The transformed test data does not match the benchmark.",
-                    Arrays.equals( actualNoBaseLeft, expectedLeft ) );
-        assertTrue( "The transformed test data does not match the benchmark.",
-                    Arrays.equals( actualNoBaseRight, expectedRight ) );
+                    sliced.getRawData().equals( expectedPairs ) );
 
         //Test baseline
-        double[] actualBaseLeft =
-                Slicer.getLeftSide( Slicer.toDiscreteProbabilityPairs( DataFactory.ofEnsemblePairs( values,
-                                                                                                    values,
-                                                                                                    meta,
-                                                                                                    meta,
-                                                                                                    null ),
-                                                                       threshold,
-                                                                       mapper )
-                                          .getBaselineData() );
-        double[] actualBaseRight =
-                Slicer.getRightSide( Slicer.toDiscreteProbabilityPairs( DataFactory.ofEnsemblePairs( values,
-                                                                                                     values,
-                                                                                                     meta,
-                                                                                                     meta,
-                                                                                                     null ),
-                                                                        threshold,
-                                                                        mapper )
-                                           .getBaselineData() );
+        DiscreteProbabilityPairs slicedWithBaseline =
+                Slicer.toDiscreteProbabilityPairs( DataFactory.ofEnsemblePairs( values, values, meta, meta ),
+                                                   threshold,
+                                                   mapper );
         assertTrue( "The transformed test data does not match the benchmark.",
-                    Arrays.equals( actualBaseLeft, expectedLeft ) );
+                    slicedWithBaseline.getRawData().equals( expectedPairs ) );
         assertTrue( "The transformed test data does not match the benchmark.",
-                    Arrays.equals( actualBaseRight, expectedRight ) );
+                    slicedWithBaseline.getRawDataForBaseline().equals( expectedPairs ) );
     }
 
     /**

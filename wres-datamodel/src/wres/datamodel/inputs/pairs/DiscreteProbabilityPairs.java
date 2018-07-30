@@ -11,7 +11,7 @@ import wres.datamodel.inputs.MetricInputException;
  * @author james.brown@hydrosolved.com
  */
 
-public class DiscreteProbabilityPairs extends SingleValuedPairs
+public class DiscreteProbabilityPairs extends BasicPairs<DiscreteProbabilityPair>
 {
 
     /**
@@ -33,7 +33,7 @@ public class DiscreteProbabilityPairs extends SingleValuedPairs
      * A builder to build the metric input.
      */
 
-    public static class DiscreteProbabilityPairsBuilder extends SingleValuedPairsBuilder
+    public static class DiscreteProbabilityPairsBuilder extends BasicPairsBuilder<DiscreteProbabilityPair>
     {
 
         @Override

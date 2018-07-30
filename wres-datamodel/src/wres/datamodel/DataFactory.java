@@ -15,6 +15,7 @@ import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
+import wres.datamodel.inputs.pairs.DiscreteProbabilityPair;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.MulticategoryPair;
@@ -296,7 +297,8 @@ public final class DataFactory
      * @return the pairs
      */
 
-    public static DiscreteProbabilityPairs ofDiscreteProbabilityPairs( List<SingleValuedPair> pairs, Metadata meta )
+    public static DiscreteProbabilityPairs ofDiscreteProbabilityPairs( List<DiscreteProbabilityPair> pairs,
+                                                                       Metadata meta )
     {
         return DataFactory.ofDiscreteProbabilityPairs( pairs, null, meta, null, null );
     }
@@ -404,7 +406,7 @@ public final class DataFactory
      * @return the pairs
      */
 
-    public static DiscreteProbabilityPairs ofDiscreteProbabilityPairs( List<SingleValuedPair> pairs,
+    public static DiscreteProbabilityPairs ofDiscreteProbabilityPairs( List<DiscreteProbabilityPair> pairs,
                                                                        Metadata meta,
                                                                        VectorOfDoubles climatology )
     {
@@ -513,8 +515,8 @@ public final class DataFactory
      * @return the pairs
      */
 
-    public static DiscreteProbabilityPairs ofDiscreteProbabilityPairs( List<SingleValuedPair> pairs,
-                                                                       List<SingleValuedPair> basePairs,
+    public static DiscreteProbabilityPairs ofDiscreteProbabilityPairs( List<DiscreteProbabilityPair> pairs,
+                                                                       List<DiscreteProbabilityPair> basePairs,
                                                                        Metadata mainMeta,
                                                                        Metadata baselineMeta )
     {
@@ -799,8 +801,8 @@ public final class DataFactory
      * @return the pairs
      */
 
-    public static DiscreteProbabilityPairs ofDiscreteProbabilityPairs( List<SingleValuedPair> pairs,
-                                                                       List<SingleValuedPair> basePairs,
+    public static DiscreteProbabilityPairs ofDiscreteProbabilityPairs( List<DiscreteProbabilityPair> pairs,
+                                                                       List<DiscreteProbabilityPair> basePairs,
                                                                        Metadata mainMeta,
                                                                        Metadata baselineMeta,
                                                                        VectorOfDoubles climatology )
@@ -979,19 +981,7 @@ public final class DataFactory
     }
 
     /**
-     * Return a {@link VectorOfBooleans} from a vector of booleans
-     * 
-     * @param vec the vector of booleans
-     * @return the vector
-     */
-
-    public static VectorOfBooleans vectorOf( boolean[] vec )
-    {
-        return VectorOfBooleans.of( vec );
-    }
-
-    /**
-     * Return a {@link VectorOfBooleans} from a vector of booleans
+     * Return a {@link MatrixOfDoubles} from a double array
      * 
      * @param vec the vector of booleans
      * @return the vector

@@ -21,11 +21,11 @@ import wres.engine.statistics.metric.MetricParameterException;
  * 
  * @author james.brown@hydrosolved.com
  */
-public class MeanSquareError<S extends SingleValuedPairs> extends SumOfSquareError<S>
+public class MeanSquareError extends SumOfSquareError
 {
 
     @Override
-    public DoubleScoreOutput apply( final S s )
+    public DoubleScoreOutput apply( final SingleValuedPairs s )
     {
         switch ( this.getScoreOutputGroup() )
         {
@@ -86,15 +86,15 @@ public class MeanSquareError<S extends SingleValuedPairs> extends SumOfSquareErr
      * A {@link MetricBuilder} to build the metric.
      */
 
-    public static class MeanSquareErrorBuilder<S extends SingleValuedPairs>
+    public static class MeanSquareErrorBuilder
             extends
-            SumOfSquareErrorBuilder<S>
+            SumOfSquareErrorBuilder
     {
 
         @Override
-        public MeanSquareError<S> build() throws MetricParameterException
+        public MeanSquareError build() throws MetricParameterException
         {
-            return new MeanSquareError<>( this );
+            return new MeanSquareError( this );
         }
 
     }
@@ -106,7 +106,7 @@ public class MeanSquareError<S extends SingleValuedPairs> extends SumOfSquareErr
      * @throws MetricParameterException if one or more parameters is invalid 
      */
 
-    protected MeanSquareError( final MeanSquareErrorBuilder<S> builder ) throws MetricParameterException
+    protected MeanSquareError( final MeanSquareErrorBuilder builder ) throws MetricParameterException
     {
         super( builder );
     }

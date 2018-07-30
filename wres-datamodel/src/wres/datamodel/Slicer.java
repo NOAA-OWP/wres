@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.inputs.pairs.DichotomousPairs;
+import wres.datamodel.inputs.pairs.DiscreteProbabilityPair;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.DichotomousPair;
@@ -233,7 +234,7 @@ public final class Slicer
      */
 
     public static Predicate<EnsemblePair> right( DoublePredicate predicate,
-                                                                   ToDoubleFunction<double[]> transformer )
+                                                 ToDoubleFunction<double[]> transformer )
     {
         Objects.requireNonNull( predicate, "Specify non-null input when slicing by right." );
 
@@ -255,7 +256,7 @@ public final class Slicer
      */
 
     public static Predicate<EnsemblePair> leftAndRight( DoublePredicate predicate,
-                                                                          ToDoubleFunction<double[]> transformer )
+                                                        ToDoubleFunction<double[]> transformer )
     {
         Objects.requireNonNull( predicate, "Specify non-null input when slicing by left and right." );
 
@@ -533,7 +534,8 @@ public final class Slicer
         if ( input.hasBaseline() )
         {
             List<SingleValuedPair> basePairs = input.getRawDataForBaseline();
-            List<SingleValuedPair> basePairsSubset = basePairs.stream().filter( condition ).collect( Collectors.toList() );
+            List<SingleValuedPair> basePairsSubset =
+                    basePairs.stream().filter( condition ).collect( Collectors.toList() );
 
             return DataFactory.ofSingleValuedPairs( mainPairsSubset,
                                                     basePairsSubset,
@@ -1011,7 +1013,7 @@ public final class Slicer
      */
 
     public static List<SingleValuedPair> toSingleValuedPairs( List<EnsemblePair> input,
-                                                           Function<EnsemblePair, SingleValuedPair> mapper )
+                                                              Function<EnsemblePair, SingleValuedPair> mapper )
     {
         Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
 
@@ -1025,14 +1027,15 @@ public final class Slicer
     /**
      * Produces {@link DichotomousPairs} from a {@link SingleValuedPairs} by applying a mapper function to the input.
      * 
+     * @param <T> the type of single-valued pair
      * @param input the {@link SingleValuedPairs} pairs
      * @param mapper the function that maps from {@link SingleValuedPairs} to {@link DichotomousPairs}
      * @return the {@link DichotomousPairs}
      * @throws NullPointerException if either input is null
      */
 
-    public static DichotomousPairs toDichotomousPairs( SingleValuedPairs input,
-                                                       Function<SingleValuedPair, DichotomousPair> mapper )
+    public static <T extends SingleValuedPair> DichotomousPairs toDichotomousPairs( SingleValuedPairs input,
+                                                                                    Function<SingleValuedPair, DichotomousPair> mapper )
     {
         Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
 
@@ -1047,14 +1050,51 @@ public final class Slicer
             List<DichotomousPair> basePairsTransformed = new ArrayList<>();
             basePairs.stream().map( mapper ).forEach( basePairsTransformed::add );
             return DataFactory.ofDichotomousPairs( mainPairsTransformed,
-                                                             basePairsTransformed,
-                                                             input.getMetadata(),
-                                                             input.getMetadataForBaseline(),
-                                                             input.getClimatology() );
+                                                   basePairsTransformed,
+                                                   input.getMetadata(),
+                                                   input.getMetadataForBaseline(),
+                                                   input.getClimatology() );
         }
         return DataFactory.ofDichotomousPairs( mainPairsTransformed,
-                                                         input.getMetadata(),
-                                                         input.getClimatology() );
+                                               input.getMetadata(),
+                                               input.getClimatology() );
+    }
+
+    /**
+     * Produces {@link DichotomousPairs} from a {@link DiscreteProbabilityPairs} by applying a mapper function to the 
+     * input.
+     * 
+     * @param <T> the type of single-valued pair
+     * @param input the {@link SingleValuedPairs} pairs
+     * @param mapper the function that maps from {@link SingleValuedPairs} to {@link DichotomousPairs}
+     * @return the {@link DichotomousPairs}
+     * @throws NullPointerException if either input is null
+     */
+
+    public static <T extends SingleValuedPair> DichotomousPairs toDichotomousPairs( DiscreteProbabilityPairs input,
+                                                                                    Function<DiscreteProbabilityPair, DichotomousPair> mapper )
+    {
+        Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
+
+        Objects.requireNonNull( mapper, NULL_MAPPER_EXCEPTION );
+
+        List<DiscreteProbabilityPair> mainPairs = input.getRawData();
+        List<DichotomousPair> mainPairsTransformed = new ArrayList<>();
+        mainPairs.stream().map( mapper ).forEach( mainPairsTransformed::add );
+        if ( input.hasBaseline() )
+        {
+            List<DiscreteProbabilityPair> basePairs = input.getRawDataForBaseline();
+            List<DichotomousPair> basePairsTransformed = new ArrayList<>();
+            basePairs.stream().map( mapper ).forEach( basePairsTransformed::add );
+            return DataFactory.ofDichotomousPairs( mainPairsTransformed,
+                                                   basePairsTransformed,
+                                                   input.getMetadata(),
+                                                   input.getMetadataForBaseline(),
+                                                   input.getClimatology() );
+        }
+        return DataFactory.ofDichotomousPairs( mainPairsTransformed,
+                                               input.getMetadata(),
+                                               input.getClimatology() );
     }
 
     /**
@@ -1087,6 +1127,31 @@ public final class Slicer
     }
 
     /**
+     * Produces {@link SingleValuedPairs} from a {@link DiscreteProbabilityPairs}.
+     * 
+     * @param input the {@link DiscreteProbabilityPairs}
+     * @return the {@link SingleValuedPairs}
+     * @throws NullPointerException if either input is null
+     */
+
+    public static SingleValuedPairs toSingleValuedPairs( DiscreteProbabilityPairs input )
+    {
+        Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
+
+        if ( input.hasBaseline() )
+        {
+            return DataFactory.ofSingleValuedPairs( new ArrayList<SingleValuedPair>( input.getRawData() ),
+                                                    new ArrayList<SingleValuedPair>( input.getRawDataForBaseline() ),
+                                                    input.getMetadata(),
+                                                    input.getMetadataForBaseline(),
+                                                    input.getClimatology() );
+        }
+        return DataFactory.ofSingleValuedPairs( new ArrayList<SingleValuedPair>( input.getRawData() ),
+                                                input.getMetadata(),
+                                                input.getClimatology() );
+    }
+
+    /**
      * Produces {@link DiscreteProbabilityPairs} from a {@link EnsemblePairs} by applying a mapper function to the input
      * using a prescribed {@link Threshold}. See {@link #toDiscreteProbabilityPair(EnsemblePair, Threshold)}
      * for the mapper.
@@ -1100,19 +1165,19 @@ public final class Slicer
 
     public static DiscreteProbabilityPairs toDiscreteProbabilityPairs( EnsemblePairs input,
                                                                        Threshold threshold,
-                                                                       BiFunction<EnsemblePair, Threshold, SingleValuedPair> mapper )
+                                                                       BiFunction<EnsemblePair, Threshold, DiscreteProbabilityPair> mapper )
     {
         Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
 
         Objects.requireNonNull( mapper, NULL_MAPPER_EXCEPTION );
 
         List<EnsemblePair> mainPairs = input.getRawData();
-        List<SingleValuedPair> mainPairsTransformed = new ArrayList<>();
+        List<DiscreteProbabilityPair> mainPairsTransformed = new ArrayList<>();
         mainPairs.forEach( pair -> mainPairsTransformed.add( mapper.apply( pair, threshold ) ) );
         if ( input.hasBaseline() )
         {
             List<EnsemblePair> basePairs = input.getRawDataForBaseline();
-            List<SingleValuedPair> basePairsTransformed = new ArrayList<>();
+            List<DiscreteProbabilityPair> basePairsTransformed = new ArrayList<>();
             basePairs.forEach( pair -> basePairsTransformed.add( mapper.apply( pair, threshold ) ) );
             return DataFactory.ofDiscreteProbabilityPairs( mainPairsTransformed,
                                                            basePairsTransformed,
@@ -1126,7 +1191,7 @@ public final class Slicer
     }
 
     /**
-     * Converts a {@link EnsemblePair} to a {@link SingleValuedPair} that contains the probabilities that
+     * Converts a {@link EnsemblePair} to a {@link DiscreteProbabilityPair} that contains the probabilities that
      * a discrete event occurs according to the left side and the right side, respectively. The event is represented by
      * a {@link Threshold}.
      * 
@@ -1136,14 +1201,14 @@ public final class Slicer
      * @throws NullPointerException if either input is null
      */
 
-    public static SingleValuedPair toDiscreteProbabilityPair( EnsemblePair pair, Threshold threshold )
+    public static DiscreteProbabilityPair toDiscreteProbabilityPair( EnsemblePair pair, Threshold threshold )
     {
         Objects.requireNonNull( pair, NULL_INPUT_EXCEPTION );
 
         Objects.requireNonNull( threshold, NULL_INPUT_EXCEPTION );
 
         double rhs = Arrays.stream( pair.getRight() ).map( a -> threshold.test( a ) ? 1 : 0 ).average().getAsDouble();
-        return DataFactory.pairOf( threshold.test( pair.getLeft() ) ? 1 : 0, rhs );
+        return DiscreteProbabilityPair.of( threshold.test( pair.getLeft() ) ? 1 : 0, rhs );
     }
 
     /**

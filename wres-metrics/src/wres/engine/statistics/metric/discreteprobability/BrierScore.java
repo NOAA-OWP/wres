@@ -1,8 +1,16 @@
 package wres.engine.statistics.metric.discreteprobability;
 
+import java.util.Objects;
+
+import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.Slicer;
+import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
+import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
+import wres.engine.statistics.metric.DecomposableScore;
+import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.ProbabilityScore;
 import wres.engine.statistics.metric.singlevalued.MeanSquareError;
@@ -21,9 +29,28 @@ import wres.engine.statistics.metric.singlevalued.MeanSquareError;
  * 
  * @author james.brown@hydrosolved.com
  */
-public class BrierScore extends MeanSquareError<DiscreteProbabilityPairs>
+public class BrierScore extends DecomposableScore<DiscreteProbabilityPairs>
         implements ProbabilityScore<DiscreteProbabilityPairs, DoubleScoreOutput>
 {
+
+    /**
+     * Instance of MSE used to compute the BS.
+     */
+    
+    private final MeanSquareError mse;
+    
+    @Override
+    public DoubleScoreOutput apply( DiscreteProbabilityPairs s )
+    {
+        if ( Objects.isNull( s ) )
+        {
+            throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
+        }
+
+        MetricOutputMetadata metOut = getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, null );
+
+        return DataFactory.ofDoubleScoreOutput( mse.apply( Slicer.toSingleValuedPairs( s ) ).getData(), metOut );
+    }
 
     @Override
     public MetricConstants getID()
@@ -59,7 +86,7 @@ public class BrierScore extends MeanSquareError<DiscreteProbabilityPairs>
      * A {@link MetricBuilder} to build the metric.
      */
 
-    public static class BrierScoreBuilder extends MeanSquareErrorBuilder<DiscreteProbabilityPairs>
+    public static class BrierScoreBuilder extends DecomposableScoreBuilder<DiscreteProbabilityPairs>
     {
 
         @Override
@@ -77,9 +104,11 @@ public class BrierScore extends MeanSquareError<DiscreteProbabilityPairs>
      * @throws MetricParameterException if one or more parameters is invalid
      */
 
-    private BrierScore( final BrierScoreBuilder builder ) throws MetricParameterException
+    BrierScore( final BrierScoreBuilder builder ) throws MetricParameterException
     {
         super( builder );
+        
+        mse = MetricFactory.getInstance().ofMeanSquareError();
     }
 
 }

@@ -23,12 +23,12 @@ import wres.engine.statistics.metric.MetricParameterException;
  * 
  * @author james.brown@hydrosolved.com
  */
-public class SumOfSquareError<S extends SingleValuedPairs> extends DecomposableScore<S>
-        implements Collectable<S, DoubleScoreOutput, DoubleScoreOutput>
+public class SumOfSquareError extends DecomposableScore<SingleValuedPairs>
+        implements Collectable<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput>
 {
 
     @Override
-    public DoubleScoreOutput apply( S s )
+    public DoubleScoreOutput apply( SingleValuedPairs s )
     {
         return this.aggregate( this.getInputForAggregation( s ) );
     }
@@ -52,7 +52,7 @@ public class SumOfSquareError<S extends SingleValuedPairs> extends DecomposableS
     }
 
     @Override
-    public DoubleScoreOutput getInputForAggregation( S input )
+    public DoubleScoreOutput getInputForAggregation( SingleValuedPairs input )
     {
         if ( Objects.isNull( input ) )
         {
@@ -101,13 +101,13 @@ public class SumOfSquareError<S extends SingleValuedPairs> extends DecomposableS
      * A {@link MetricBuilder} to build the metric.
      */
 
-    public static class SumOfSquareErrorBuilder<S extends SingleValuedPairs> extends DecomposableScoreBuilder<S>
+    public static class SumOfSquareErrorBuilder extends DecomposableScoreBuilder<SingleValuedPairs>
     {
 
         @Override
-        public SumOfSquareError<S> build() throws MetricParameterException
+        public SumOfSquareError build() throws MetricParameterException
         {
-            return new SumOfSquareError<>( this );
+            return new SumOfSquareError( this );
         }
 
     }
@@ -154,7 +154,7 @@ public class SumOfSquareError<S extends SingleValuedPairs> extends DecomposableS
      * @throws MetricParameterException if one or more parameters is invalid 
      */
 
-    SumOfSquareError( final SumOfSquareErrorBuilder<S> builder ) throws MetricParameterException
+    SumOfSquareError( final SumOfSquareErrorBuilder builder ) throws MetricParameterException
     {
         super( builder );
     }

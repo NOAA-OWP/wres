@@ -5,8 +5,6 @@ import java.util.List;
 
 import org.junit.Test;
 
-import wres.datamodel.DataFactory;
-import wres.datamodel.inputs.pairs.SingleValuedPair;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs.DiscreteProbabilityPairsBuilder;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.Metadata;
@@ -27,12 +25,12 @@ public final class DiscreteProbabilityPairsTest
     @Test
     public void test1DiscreteProbabilityPairs()
     {
-        final List<SingleValuedPair> values = new ArrayList<>();
+        final List<DiscreteProbabilityPair> values = new ArrayList<>();
         final DiscreteProbabilityPairsBuilder b = new DiscreteProbabilityPairsBuilder();
 
         for ( int i = 0; i < 10; i++ )
         {
-            values.add( DataFactory.pairOf( 1, 1 ) );
+            values.add( DiscreteProbabilityPair.of( 1, 1 ) );
         }
 
         final Location location = MetadataFactory.getLocation( "DRRC2" );

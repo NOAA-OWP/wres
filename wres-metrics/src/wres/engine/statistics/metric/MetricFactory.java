@@ -1222,9 +1222,9 @@ public class MetricFactory
      * @throws MetricParameterException if one or more parameter values is incorrect 
      */
 
-    public SumOfSquareError<SingleValuedPairs> ofSumOfSquareError() throws MetricParameterException
+    public SumOfSquareError ofSumOfSquareError() throws MetricParameterException
     {
-        return (SumOfSquareError<SingleValuedPairs>) new SumOfSquareErrorBuilder<>().build();
+        return new SumOfSquareErrorBuilder().build();
     }
 
     /**
@@ -1234,9 +1234,9 @@ public class MetricFactory
      * @throws MetricParameterException if one or more parameter values is incorrect 
      */
 
-    public MeanSquareError<SingleValuedPairs> ofMeanSquareError() throws MetricParameterException
+    public MeanSquareError ofMeanSquareError() throws MetricParameterException
     {
-        return (MeanSquareError<SingleValuedPairs>) new MeanSquareErrorBuilder<>().build();
+        return new MeanSquareErrorBuilder().build();
     }
 
     /**
@@ -1246,9 +1246,9 @@ public class MetricFactory
      * @throws MetricParameterException if one or more parameter values is incorrect
      */
 
-    public MeanSquareErrorSkillScore<SingleValuedPairs> ofMeanSquareErrorSkillScore() throws MetricParameterException
+    public MeanSquareErrorSkillScore ofMeanSquareErrorSkillScore() throws MetricParameterException
     {
-        return (MeanSquareErrorSkillScore<SingleValuedPairs>) new MeanSquareErrorSkillScoreBuilder<>().build();
+        return new MeanSquareErrorSkillScoreBuilder().build();
     }
 
     /**

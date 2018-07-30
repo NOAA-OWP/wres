@@ -24,17 +24,17 @@ import wres.engine.statistics.metric.MetricParameterException;
  * 
  * @author james.brown@hydrosolved.com
  */
-public class MeanSquareErrorSkillScore<S extends SingleValuedPairs> extends DecomposableScore<S>
+public class MeanSquareErrorSkillScore extends DecomposableScore<SingleValuedPairs>
 {
 
     /**
      * Instance if {@link SumOfSquareError}.
      */
 
-    private final SumOfSquareError<SingleValuedPairs> sse;
+    private final SumOfSquareError sse;
 
     @Override
-    public DoubleScoreOutput apply( final S s )
+    public DoubleScoreOutput apply( final SingleValuedPairs s )
     {
         if ( Objects.isNull( s ) )
         {
@@ -106,15 +106,15 @@ public class MeanSquareErrorSkillScore<S extends SingleValuedPairs> extends Deco
      * A {@link MetricBuilder} to build the metric.
      */
 
-    public static class MeanSquareErrorSkillScoreBuilder<S extends SingleValuedPairs>
+    public static class MeanSquareErrorSkillScoreBuilder
             extends
-            DecomposableScoreBuilder<S>
+            DecomposableScoreBuilder<SingleValuedPairs>
     {
 
         @Override
-        public MeanSquareErrorSkillScore<S> build() throws MetricParameterException
+        public MeanSquareErrorSkillScore build() throws MetricParameterException
         {
-            return new MeanSquareErrorSkillScore<>( this );
+            return new MeanSquareErrorSkillScore( this );
         }
 
     }
@@ -126,7 +126,7 @@ public class MeanSquareErrorSkillScore<S extends SingleValuedPairs> extends Deco
      * @throws MetricParameterException if one or more parameters is invalid
      */
 
-    protected MeanSquareErrorSkillScore( final MeanSquareErrorSkillScoreBuilder<S> builder )
+    protected MeanSquareErrorSkillScore( final MeanSquareErrorSkillScoreBuilder builder )
             throws MetricParameterException
     {
         super( builder );

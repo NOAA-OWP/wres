@@ -30,7 +30,7 @@ public class RootMeanSquareError extends DoubleErrorScore<SingleValuedPairs>
      * Instance if {@link SumOfSquareError}.
      */
 
-    private final SumOfSquareError<SingleValuedPairs> sse;
+    private final SumOfSquareError sse;
 
     @Override
     public DoubleScoreOutput apply( final SingleValuedPairs t )

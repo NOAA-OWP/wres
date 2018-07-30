@@ -23,6 +23,7 @@ import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.Slicer;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
+import wres.datamodel.inputs.pairs.DiscreteProbabilityPair;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.DichotomousPair;
@@ -111,7 +112,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
      * Function to map between ensemble pairs and discrete probabilities.
      */
 
-    private final BiFunction<EnsemblePair, Threshold, SingleValuedPair> toDiscreteProbabilities;
+    private final BiFunction<EnsemblePair, Threshold, DiscreteProbabilityPair> toDiscreteProbabilities;
 
     @Override
     public MetricOutputForProjectByTimeAndThreshold apply( EnsemblePairs input )
@@ -712,7 +713,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                 Pair<TimeWindow, OneOrTwoThresholds> nextKey = Pair.of( timeWindow, compound );
 
                 //Define a mapper to convert the discrete probability pairs to dichotomous pairs
-                Function<SingleValuedPair, DichotomousPair> mapper =
+                Function<DiscreteProbabilityPair, DichotomousPair> mapper =
                         pair -> DataFactory.pairOf( innerThreshold.test( pair.getLeft() ),
                                                     innerThreshold.test( pair.getRight() ) );
                 //Transform the pairs
