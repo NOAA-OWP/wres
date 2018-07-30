@@ -23,11 +23,9 @@ import wres.datamodel.outputs.MatrixOutput;
 import wres.engine.statistics.metric.Collectable;
 import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricCalculationException;
-import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.engine.statistics.metric.Score;
-import wres.engine.statistics.metric.categorical.PeirceSkillScore.PeirceSkillScoreBuilder;
 
 /**
  * Tests the {@link PeirceSkillScore}.
@@ -55,7 +53,7 @@ public final class PeirceSkillScoreTest
     @Before
     public void setUpBeforeEachTest() throws MetricParameterException
     {
-        pss = MetricFactory.ofPeirceSkillScore();
+        pss = PeirceSkillScore.of();
         meta = MetadataFactory.getOutputMetadata( 365,
                                                   MetadataFactory.getDimension(),
                                                   MetadataFactory.getDimension(),
@@ -100,8 +98,7 @@ public final class PeirceSkillScoreTest
         //Generate some data
         final MulticategoryPairs input = MetricTestDataFactory.getMulticategoryPairsOne();
 
-        final PeirceSkillScoreBuilder<MulticategoryPairs> b = new PeirceSkillScore.PeirceSkillScoreBuilder<>();
-        final PeirceSkillScore<MulticategoryPairs> ps = b.build();
+        PeirceSkillScore<MulticategoryPairs> ps = PeirceSkillScore.of();
 
         //Check the results
         final DoubleScoreOutput actual = ps.apply( input );

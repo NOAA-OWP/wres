@@ -36,7 +36,16 @@ import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MetricOutput;
 import wres.datamodel.outputs.MetricOutputMapByMetric;
 import wres.engine.statistics.metric.MetricCollection.MetricCollectionBuilder;
+import wres.engine.statistics.metric.categorical.EquitableThreatScore;
+import wres.engine.statistics.metric.categorical.PeirceSkillScore;
+import wres.engine.statistics.metric.categorical.ProbabilityOfDetection;
+import wres.engine.statistics.metric.categorical.ProbabilityOfFalseDetection;
+import wres.engine.statistics.metric.categorical.ThreatScore;
+import wres.engine.statistics.metric.discreteprobability.BrierScore;
+import wres.engine.statistics.metric.discreteprobability.BrierSkillScore;
 import wres.engine.statistics.metric.singlevalued.MeanError;
+import wres.engine.statistics.metric.singlevalued.MeanSquareError;
+import wres.engine.statistics.metric.singlevalued.MeanSquareErrorSkillScore;
 
 /**
  * Tests the {@link MetricCollection}.
@@ -130,11 +139,11 @@ public class MetricCollectionTest
         m.setExecutorService( ForkJoinPool.commonPool() );
 
         //Add some appropriate metrics to the collection     
-        m.addMetric( MetricFactory.ofThreatScore() ); //Should be 0.5734265734265734
-        m.addMetric( MetricFactory.ofProbabilityOfDetection() ); //Should be 0.780952380952381
-        m.addMetric( MetricFactory.ofProbabilityOfFalseDetection() ); //Should be 0.14615384615384616
-        m.addMetric( MetricFactory.ofPeirceSkillScore() ); //Should be 0.6347985347985348
-        m.addMetric( MetricFactory.ofEquitableThreatScore() ); //Should be 0.43768152544513195
+        m.addMetric( ThreatScore.of() ); //Should be 0.5734265734265734
+        m.addMetric( ProbabilityOfDetection.of() ); //Should be 0.780952380952381
+        m.addMetric( ProbabilityOfFalseDetection.of() ); //Should be 0.14615384615384616
+        m.addMetric( PeirceSkillScore.of() ); //Should be 0.6347985347985348
+        m.addMetric( EquitableThreatScore.of() ); //Should be 0.43768152544513195
 
         //Finalize
         final MetricCollection<DichotomousPairs, MetricOutput<?>, DoubleScoreOutput> collection = m.build();
@@ -205,8 +214,8 @@ public class MetricCollectionTest
         n.setExecutorService( ForkJoinPool.commonPool() );
 
         //Add some appropriate metrics to the collection
-        n.addMetric( MetricFactory.ofBrierScore() ); //Should be 0.26
-        n.addMetric( MetricFactory.ofBrierSkillScore() ); //Should be 0.11363636363636376
+        n.addMetric( BrierScore.of() ); //Should be 0.26
+        n.addMetric( BrierSkillScore.of() ); //Should be 0.11363636363636376
 
         //Finalize
         final MetricCollection<DiscreteProbabilityPairs, MetricOutput<?>, DoubleScoreOutput> collection =
@@ -258,8 +267,8 @@ public class MetricCollectionTest
         n.setExecutorService( ForkJoinPool.commonPool() );
 
         //Add some appropriate metrics to the collection
-        n.addMetric( MetricFactory.ofMeanSquareError() ); //Should be 400003.929
-        n.addMetric( MetricFactory.ofMeanSquareErrorSkillScore() ); //Should be 0.8007025335093799
+        n.addMetric( MeanSquareError.of() ); //Should be 400003.929
+        n.addMetric( MeanSquareErrorSkillScore.of() ); //Should be 0.8007025335093799
 
         //Finalize
         final MetricCollection<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput> collection = n.build();
@@ -352,7 +361,7 @@ public class MetricCollectionTest
                 MetricCollectionBuilder.of();
 
         //Add some appropriate metrics to the collection
-        n.addMetric( MetricFactory.ofMeanError() );
+        n.addMetric( MeanError.of() );
 
         //Set an executor
         n.setExecutorService( metricPool );
@@ -386,7 +395,7 @@ public class MetricCollectionTest
         final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         final MetricCollection<SingleValuedPairs, MetricOutput<?>, DoubleScoreOutput> collection =
-                n.addMetric( MetricFactory.ofMeanError() ).setExecutorService( metricPool ).build();
+                n.addMetric( MeanError.of() ).setExecutorService( metricPool ).build();
 
         //Null input
         exception.expect( MetricCalculationException.class );
@@ -415,7 +424,7 @@ public class MetricCollectionTest
         final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         final MetricCollection<SingleValuedPairs, MetricOutput<?>, DoubleScoreOutput> collection =
-                n.addMetric( MetricFactory.ofMeanError() ).setExecutorService( metricPool ).build();
+                n.addMetric( MeanError.of() ).setExecutorService( metricPool ).build();
 
         //Null input
         exception.expect( MetricCalculationException.class );

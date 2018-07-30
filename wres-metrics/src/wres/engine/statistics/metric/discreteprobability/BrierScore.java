@@ -10,8 +10,6 @@ import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.DecomposableScore;
-import wres.engine.statistics.metric.MetricFactory;
-import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.ProbabilityScore;
 import wres.engine.statistics.metric.singlevalued.MeanSquareError;
 
@@ -32,6 +30,17 @@ import wres.engine.statistics.metric.singlevalued.MeanSquareError;
 public class BrierScore extends DecomposableScore<DiscreteProbabilityPairs>
         implements ProbabilityScore<DiscreteProbabilityPairs, DoubleScoreOutput>
 {
+
+    /**
+     * Returns an instance.
+     * 
+     * @return an instance
+     */
+    
+    public static BrierScore of()
+    {
+        return new BrierScore();
+    }   
 
     /**
      * Instance of MSE used to compute the BS.
@@ -83,32 +92,16 @@ public class BrierScore extends DecomposableScore<DiscreteProbabilityPairs>
     }
 
     /**
-     * A {@link MetricBuilder} to build the metric.
-     */
-
-    public static class BrierScoreBuilder extends DecomposableScoreBuilder<DiscreteProbabilityPairs>
-    {
-
-        @Override
-        public BrierScore build() throws MetricParameterException
-        {
-            return new BrierScore( this );
-        }
-
-    }
-
-    /**
      * Hidden constructor.
      * 
-     * @param builder the builder
-     * @throws MetricParameterException if one or more parameters is invalid
+     * @param decompositionId the decomposition identifier
      */
 
-    BrierScore( final BrierScoreBuilder builder ) throws MetricParameterException
+    BrierScore()
     {
-        super( builder );
+        super();
         
-        mse = MetricFactory.ofMeanSquareError();
+        mse = MeanSquareError.of();
     }
 
 }

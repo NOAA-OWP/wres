@@ -20,7 +20,6 @@ import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
-import wres.engine.statistics.metric.singlevalued.CorrelationPearsons.CorrelationPearsonsBuilder;
 
 /**
  * Tests the {@link CorrelationPearsons}.
@@ -42,8 +41,7 @@ public final class CorrelationPearsonsTest
     @Before
     public void setupBeforeEachTest() throws MetricParameterException
     {
-        CorrelationPearsonsBuilder b = new CorrelationPearsons.CorrelationPearsonsBuilder();
-        this.rho = b.build();
+        this.rho = CorrelationPearsons.of();
     }
 
     /**

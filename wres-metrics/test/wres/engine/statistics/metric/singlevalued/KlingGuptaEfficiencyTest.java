@@ -25,7 +25,6 @@ import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
-import wres.engine.statistics.metric.singlevalued.KlingGuptaEfficiency.KlingGuptaEfficiencyBuilder;
 
 /**
  * Tests the {@link KlingGuptaEfficiency}.
@@ -47,8 +46,7 @@ public final class KlingGuptaEfficiencyTest
     @Before
     public void setupBeforeEachTest() throws MetricParameterException
     {
-        KlingGuptaEfficiencyBuilder b = new KlingGuptaEfficiency.KlingGuptaEfficiencyBuilder();
-        this.kge = b.build();
+        this.kge = KlingGuptaEfficiency.of();
     }
 
     /**

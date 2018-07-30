@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Random;
 
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -20,7 +21,6 @@ import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.PairedOutput;
 import wres.datamodel.time.TimeSeries;
 import wres.engine.statistics.metric.Metric;
-import wres.engine.statistics.metric.MetricParameterException;
 
 /**
  * <p>Constructs a {@link Metric} that returns the difference in time between the maximum values recorded in the left
@@ -32,6 +32,29 @@ import wres.engine.statistics.metric.MetricParameterException;
  */
 public class TimeToPeakError extends TimingError
 {
+    
+    /**
+     * Returns an instance.
+     * 
+     * @return an instance
+     */
+    
+    public static TimeToPeakError of()
+    {
+        return new TimeToPeakError();
+    }
+    
+    /**
+     * Returns an instance with a prescribed random number generator for resolving ties.
+     * 
+     * @param rng the random number generator for resolving ties
+     * @return an instance
+     */
+    
+    public static TimeToPeakError of( Random rng )
+    {
+        return new TimeToPeakError( rng );
+    }
 
     @Override
     public PairedOutput<Instant, Duration> apply( TimeSeriesOfSingleValuedPairs s )
@@ -73,32 +96,25 @@ public class TimeToPeakError extends TimingError
     {
         return MetricConstants.TIME_TO_PEAK_ERROR;
     }
-    
-    /**
-     * A {@link MetricBuilder} to build the metric.
-     */
-
-    public static class TimeToPeakErrorBuilder extends TimingErrorBuilder
-    {
-
-        @Override
-        public TimeToPeakError build() throws MetricParameterException
-        {
-            return new TimeToPeakError( this );
-        }
-    }
 
     /**
      * Hidden constructor.
-     * 
-     * @param builder the builder
-     * @throws MetricParameterException if one or more parameters is invalid 
-     * @throws MetricInputException if the input is invalid
      */
 
-    protected TimeToPeakError( final TimeToPeakErrorBuilder builder ) throws MetricParameterException
+    private TimeToPeakError()
     {
-        super( builder );
+        super();
+    } 
+    
+    /**
+     * Hidden constructor.
+     * 
+     * @param rng the random number generator for resolving ties 
+     */
+
+    private TimeToPeakError( Random rng )
+    {
+        super( rng );
     }    
 
 }

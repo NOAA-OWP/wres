@@ -28,7 +28,6 @@ import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
 import wres.engine.statistics.metric.MetricParameterException;
-import wres.engine.statistics.metric.ensemble.BoxPlotErrorByObserved.BoxPlotErrorByObservedBuilder;
 
 /**
  * Tests the {@link BoxPlotErrorByObserved}.
@@ -50,9 +49,7 @@ public final class BoxPlotErrorByObservedTest
     @Before
     public void setupBeforeEachTest() throws MetricParameterException
     {
-        BoxPlotErrorByObservedBuilder b = new BoxPlotErrorByObservedBuilder();
-        b.setProbabilities( VectorOfDoubles.of( new double[] { 0.0, 0.25, 0.5, 0.75, 1.0 } ) );
-        this.bpe = (BoxPlotErrorByObserved) b.build();
+        this.bpe = BoxPlotErrorByObserved.of();
     }
 
     /**
@@ -152,10 +149,7 @@ public final class BoxPlotErrorByObservedTest
     @Test
     public void testConstructionWithTwoProbabilities() throws MetricParameterException
     {
-        BoxPlotErrorByObservedBuilder b = new BoxPlotErrorByObservedBuilder();
-        b.setProbabilities( VectorOfDoubles.of( new double[] { 0.0, 1.0 } ) );
-
-        assertTrue( Objects.nonNull( b.build() ) );
+        assertTrue( Objects.nonNull( BoxPlotErrorByObserved.of( VectorOfDoubles.of( new double[] { 0.0, 1.0 } ) ) ) );
     }
 
     /**
@@ -182,9 +176,7 @@ public final class BoxPlotErrorByObservedTest
         exception.expect( MetricParameterException.class );
         exception.expectMessage( "Specify at least two probabilities for the verification box plot." );
 
-        BoxPlotErrorByObservedBuilder b = new BoxPlotErrorByObserved.BoxPlotErrorByObservedBuilder();
-        b.setProbabilities( VectorOfDoubles.of( new double[] { 0.1 } ) );
-        b.build();
+        BoxPlotErrorByObserved.of( VectorOfDoubles.of( 0.1 ) );
     }
 
     /**
@@ -197,9 +189,7 @@ public final class BoxPlotErrorByObservedTest
         exception.expect( MetricParameterException.class );
         exception.expectMessage( "Specify only valid probabilities within [0,1] from which to construct the box plot." );
 
-        BoxPlotErrorByObservedBuilder b = new BoxPlotErrorByObserved.BoxPlotErrorByObservedBuilder();
-        b.setProbabilities( VectorOfDoubles.of( new double[] { -0.1, 0.0, 0.5 } ) );
-        b.build();
+        BoxPlotErrorByObserved.of( VectorOfDoubles.of( -0.1, 0.0, 0.5 ) );
     }
 
     /**
@@ -212,9 +202,7 @@ public final class BoxPlotErrorByObservedTest
         exception.expect( MetricParameterException.class );
         exception.expectMessage( "Specify only valid probabilities within [0,1] from which to construct the box plot." );
 
-        BoxPlotErrorByObservedBuilder b = new BoxPlotErrorByObserved.BoxPlotErrorByObservedBuilder();
-        b.setProbabilities( VectorOfDoubles.of( new double[] { 0.0, 0.5, 1.5 } ) );
-        b.build();
+        BoxPlotErrorByObserved.of( VectorOfDoubles.of( 0.0, 0.5, 1.5 ) );
     }
 
     /**
@@ -227,9 +215,7 @@ public final class BoxPlotErrorByObservedTest
         exception.expect( MetricParameterException.class );
         exception.expectMessage( "Specify only non-unique probabilities from which to construct the box plot." );
 
-        BoxPlotErrorByObservedBuilder b = new BoxPlotErrorByObserved.BoxPlotErrorByObservedBuilder();
-        b.setProbabilities( VectorOfDoubles.of( new double[] { 0.0, 0.0, 1.0 } ) );
-        b.build();
+        BoxPlotErrorByObserved.of( VectorOfDoubles.of( 0.0, 0.0, 1.0 ) );
     }
 
     /**
@@ -242,21 +228,7 @@ public final class BoxPlotErrorByObservedTest
         exception.expect( MetricParameterException.class );
         exception.expectMessage( "Specify an odd number of probabilities for the verification box plot." );
 
-        BoxPlotErrorByObservedBuilder b = new BoxPlotErrorByObserved.BoxPlotErrorByObservedBuilder();
-        b.setProbabilities( VectorOfDoubles.of( new double[] { 0.0, 0.25, 0.5, 1.0 } ) );
-        b.build();
-    }
-
-    /**
-     * Tests for an expected exception on construction with an even number of probabilities. 
-     */
-
-    @Test
-    public void testForExceptionOnEvenNumberOf() throws MetricParameterException
-    {
-        BoxPlotErrorByObservedBuilder b = new BoxPlotErrorByObserved.BoxPlotErrorByObservedBuilder();
-        b.setProbabilities( VectorOfDoubles.of( new double[] { 0.0, 0.25 } ) );
-        b.build();
+        BoxPlotErrorByObserved.of( VectorOfDoubles.of( 0.0, 0.25, 0.5, 1.0 ) );
     }
 
 }

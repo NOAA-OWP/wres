@@ -20,7 +20,6 @@ import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
-import wres.engine.statistics.metric.discreteprobability.BrierScore.BrierScoreBuilder;
 
 /**
  * Tests the {@link BrierScore}.
@@ -42,9 +41,7 @@ public final class BrierScoreTest
     @Before
     public void setupBeforeEachTest() throws MetricParameterException
     {
-        BrierScoreBuilder b = new BrierScore.BrierScoreBuilder();
-        b.setDecompositionID( ScoreOutputGroup.NONE );
-        this.brierScore = b.build();
+        this.brierScore = BrierScore.of();
     }
 
     /**
@@ -164,23 +161,6 @@ public final class BrierScoreTest
         exception.expectMessage( "Specify non-null input to the 'BRIER SCORE'." );
         
         brierScore.apply( null );
-    }
-    
-    /**
-     * Tests for an expected exception on attempting to build the {@link BrierScore} with a null decomposition
-     * identifier.
-     * @throws MetricParameterException if the metric could not be built for an unexpected reason
-     */
-
-    @Test
-    public void testBuildThrowsExceptionOnNullDecompositionIdentifier() throws MetricParameterException
-    {
-        exception.expect( MetricParameterException.class );
-        exception.expectMessage( "Specify a non-null decomposition identifier." );
-        
-        BrierScoreBuilder b = new BrierScore.BrierScoreBuilder();
-        b.setDecompositionID( null );
-        b.build();
     }
 
 }

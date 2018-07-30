@@ -192,7 +192,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                     MetricConstants identifier = MetricFactory.ofSummaryStatisticsForTimingErrorMetric( nextMetric );
 
                     TimingErrorDurationStatistics stats =
-                            MetricFactory.ofTimingErrorDurationStatistics( identifier, ts );
+                            TimingErrorDurationStatistics.of( identifier, ts );
 
                     localStatistics.put( nextMetric, stats );
                 }

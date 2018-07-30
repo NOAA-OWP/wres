@@ -8,6 +8,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
@@ -15,7 +16,6 @@ import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
-import wres.engine.statistics.metric.singlevalued.MeanError.MeanErrorBuilder;
 
 /**
  * Tests the {@link DoubleErrorScore}.
@@ -37,8 +37,7 @@ public final class DoubleErrorScoreTest
     @Before
     public void setupBeforeEachTest() throws MetricParameterException
     {
-        MeanErrorBuilder b = new MeanError.MeanErrorBuilder();
-        this.score = b.build();
+        this.score = MeanError.of();
     }
     
     /**
@@ -89,15 +88,31 @@ public final class DoubleErrorScoreTest
     @Test
     public void testExceptionOnMissingFunction() throws MetricParameterException
     {     
-        MeanErrorBuilder builder = new MeanErrorBuilder();
-        builder.setErrorFunction( null );
-        MeanError error = builder.build();
-        error.f = null;
+        class ExceptionCheck extends DoubleErrorScore<SingleValuedPairs> {
+
+            @Override
+            public boolean isSkillScore()
+            {
+                return false;
+            }
+
+            @Override
+            public MetricConstants getID()
+            {
+                return MetricConstants.MEAN_ERROR;
+            }
+
+            @Override
+            public boolean hasRealUnits()
+            {
+                return false;
+            }
+        }
         
         exception.expect( MetricCalculationException.class );
         exception.expectMessage( "Override or specify a non-null error function for the 'MEAN ERROR'." );
         
-        error.apply( MetricTestDataFactory.getSingleValuedPairsOne() );
+        new ExceptionCheck().apply( MetricTestDataFactory.getSingleValuedPairsOne() );
     }  
     
     /**

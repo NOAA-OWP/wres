@@ -22,6 +22,7 @@ import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MatrixOutput;
+import wres.engine.statistics.metric.categorical.ThreatScore;
 
 /**
  * Tests the {@link CollectableTask}.
@@ -51,7 +52,7 @@ public final class CollectableTaskTest
         // Tests can run simultaneously, use only 1 (additional) Thread per test
         pairPool = Executors.newFixedThreadPool( 1 );
         //Add some appropriate metrics to the collection
-        m = MetricFactory.ofThreatScore();
+        m = ThreatScore.of();
 
         m1 = MetadataFactory.getOutputMetadata( 100,
                                                 MetadataFactory.getDimension(),

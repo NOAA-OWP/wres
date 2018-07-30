@@ -6,7 +6,6 @@ import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MatrixOutput;
 import wres.engine.statistics.metric.FunctionFactory;
-import wres.engine.statistics.metric.MetricParameterException;
 
 /**
  * The Probability of False Detection (PoD) measures the fraction of observed non-occurrences that were false alarms.
@@ -16,6 +15,17 @@ import wres.engine.statistics.metric.MetricParameterException;
 public class ProbabilityOfFalseDetection extends ContingencyTableScore<DichotomousPairs>
 {
 
+    /**
+     * Returns an instance.
+     * 
+     * @return an instance
+     */
+    
+    public static ProbabilityOfFalseDetection of()
+    {
+        return new ProbabilityOfFalseDetection();
+    }
+    
     @Override
     public DoubleScoreOutput apply( final DichotomousPairs s )
     {
@@ -45,29 +55,10 @@ public class ProbabilityOfFalseDetection extends ContingencyTableScore<Dichotomo
     }
 
     /**
-     * A {@link MetricBuilder} to build the metric.
-     */
-
-    public static class ProbabilityOfFalseDetectionBuilder implements MetricBuilder<DichotomousPairs, DoubleScoreOutput>
-    {
-
-        @Override
-        public ProbabilityOfFalseDetection build() throws MetricParameterException
-        {
-            return new ProbabilityOfFalseDetection( this );
-        }
-
-    }
-
-    /**
      * Hidden constructor.
-     * 
-     * @param builder the builder
-     * @throws MetricParameterException if one or more parameters is invalid 
      */
 
-    private ProbabilityOfFalseDetection( final ProbabilityOfFalseDetectionBuilder builder )
-            throws MetricParameterException
+    private ProbabilityOfFalseDetection()
     {
         super();
     }

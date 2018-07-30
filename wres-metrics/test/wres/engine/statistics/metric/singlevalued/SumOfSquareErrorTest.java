@@ -20,7 +20,6 @@ import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
-import wres.engine.statistics.metric.singlevalued.SumOfSquareError.SumOfSquareErrorBuilder;
 
 /**
  * Tests the {@link SumOfSquareError}.
@@ -42,8 +41,7 @@ public final class SumOfSquareErrorTest
     @Before
     public void setupBeforeEachTest() throws MetricParameterException
     {
-        SumOfSquareErrorBuilder b = new SumOfSquareError.SumOfSquareErrorBuilder();
-        this.sse = b.build();
+        this.sse = SumOfSquareError.of();
     }
 
     /**

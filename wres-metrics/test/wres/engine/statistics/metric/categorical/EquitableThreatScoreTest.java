@@ -21,7 +21,6 @@ import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MatrixOutput;
 import wres.engine.statistics.metric.Collectable;
 import wres.engine.statistics.metric.Metric;
-import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.engine.statistics.metric.Score;
@@ -52,7 +51,7 @@ public final class EquitableThreatScoreTest
     @Before
     public void setUpBeforeEachTest() throws MetricParameterException
     {
-        ets = MetricFactory.ofEquitableThreatScore();
+        ets = EquitableThreatScore.of();
         meta = MetadataFactory.getOutputMetadata( 365,
                                                   MetadataFactory.getDimension(),
                                                   MetadataFactory.getDimension(),

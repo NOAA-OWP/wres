@@ -39,6 +39,12 @@ public class RelativeOperatingCharacteristicDiagram extends Diagram<DiscreteProb
 {
 
     /**
+     * Default number of points in the diagram.
+     */
+
+    private static final int DEFAULT_POINT_COUNT = 10;
+
+    /**
      * Components of the ROC.
      */
 
@@ -49,6 +55,18 @@ public class RelativeOperatingCharacteristicDiagram extends Diagram<DiscreteProb
      */
 
     private final int points;
+
+    /**
+     * Returns an instance.
+     * 
+     * @return an instance
+     * @throws MetricParameterException if the metric cannot be constructed
+     */
+
+    public static RelativeOperatingCharacteristicDiagram of() throws MetricParameterException
+    {
+        return new RelativeOperatingCharacteristicDiagram( DEFAULT_POINT_COUNT );
+    }
 
     @Override
     public MultiVectorOutput apply( final DiscreteProbabilityPairs s )
@@ -78,9 +96,9 @@ public class RelativeOperatingCharacteristicDiagram extends Diagram<DiscreteProb
                 //according to the probability on the RHS
                 MetricOutputMapByMetric<DoubleScoreOutput> out =
                         roc.apply( Slicer.toDichotomousPairs( s,
-                                                             in -> DichotomousPair.of( Double.compare( in.getLeft(),
-                                                                                                       1.0 ) == 0,
-                                                                                       in.getRight() > prob ) ) );
+                                                              in -> DichotomousPair.of( Double.compare( in.getLeft(),
+                                                                                                        1.0 ) == 0,
+                                                                                        in.getRight() > prob ) ) );
                 //Store
                 pOD[i] = out.get( MetricConstants.PROBABILITY_OF_DETECTION ).getData();
                 pOFD[i] = out.get( MetricConstants.PROBABILITY_OF_FALSE_DETECTION ).getData();
@@ -114,36 +132,19 @@ public class RelativeOperatingCharacteristicDiagram extends Diagram<DiscreteProb
     }
 
     /**
-     * A {@link MetricBuilder} to build the metric.
-     */
-
-    public static class RelativeOperatingCharacteristicBuilder
-            implements MetricBuilder<DiscreteProbabilityPairs, MultiVectorOutput>
-    {
-
-        @Override
-        public RelativeOperatingCharacteristicDiagram build() throws MetricParameterException
-        {
-            return new RelativeOperatingCharacteristicDiagram( this );
-        }
-
-    }
-
-    /**
      * Hidden constructor.
      * 
-     * @param builder the builder
-     * @throws MetricParameterException if one or more parameter values is incorrect
+     * @param points the number of points in the diagram
      */
 
-    private RelativeOperatingCharacteristicDiagram( final RelativeOperatingCharacteristicBuilder builder )
+    private RelativeOperatingCharacteristicDiagram( int points )
             throws MetricParameterException
     {
         super();
         roc = MetricFactory.ofDichotomousScoreCollection( MetricConstants.PROBABILITY_OF_DETECTION,
                                                           MetricConstants.PROBABILITY_OF_FALSE_DETECTION );
         //Set the default points
-        points = 10;
+        this.points = points;
     }
 
 }

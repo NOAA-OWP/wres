@@ -20,7 +20,6 @@ import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
-import wres.engine.statistics.metric.singlevalued.CoefficientOfDetermination.CoefficientOfDeterminationBuilder;
 
 /**
  * Tests the {@link CoefficientOfDetermination}.
@@ -42,8 +41,7 @@ public final class CoefficientOfDeterminationTest
     @Before
     public void setupBeforeEachTest() throws MetricParameterException
     {
-        CoefficientOfDeterminationBuilder b = new CoefficientOfDetermination.CoefficientOfDeterminationBuilder();
-        this.cod = b.build();
+        this.cod = CoefficientOfDetermination.of();
     }
 
     /**

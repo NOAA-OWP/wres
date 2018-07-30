@@ -21,6 +21,7 @@ import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
+import wres.engine.statistics.metric.singlevalued.MeanError;
 
 /**
  * Tests the {@link MetricTask}.
@@ -61,7 +62,7 @@ public final class MetricTaskTest
         final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Add some appropriate metrics to the collection
-        final Metric<SingleValuedPairs, DoubleScoreOutput> m = MetricFactory.ofMeanError();
+        final Metric<SingleValuedPairs, DoubleScoreOutput> m = MeanError.of();
 
         // Wrap an input in a future
         final FutureTask<SingleValuedPairs> futureInput =
@@ -104,7 +105,7 @@ public final class MetricTaskTest
     {
 
         // Add some appropriate metrics to the collection
-        final Metric<SingleValuedPairs, DoubleScoreOutput> m = MetricFactory.ofMeanError();
+        final Metric<SingleValuedPairs, DoubleScoreOutput> m = MeanError.of();
 
         final FutureTask<SingleValuedPairs> futureInputNull =
                 new FutureTask<SingleValuedPairs>( new Callable<SingleValuedPairs>()

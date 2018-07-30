@@ -4,6 +4,7 @@ import java.util.Objects;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.metadata.DatasetIdentifier;
@@ -24,12 +25,37 @@ import wres.engine.statistics.metric.MetricParameterException;
 public class ContinuousRankedProbabilitySkillScore extends ContinuousRankedProbabilityScore
 {
 
+    /**
+     * Returns an instance.
+     * 
+     * @return an instance
+     */
+
+    public static ContinuousRankedProbabilitySkillScore of()
+    {
+        return new ContinuousRankedProbabilitySkillScore();
+    }
+
+    /**
+     * Returns an instance.
+     * 
+     * @param decompositionId the decomposition identifier
+     * @return an instance
+     * @throws MetricParameterException if one or more parameters is invalid 
+     */
+
+    public static ContinuousRankedProbabilitySkillScore of( ScoreOutputGroup decompositionId )
+            throws MetricParameterException
+    {
+        return new ContinuousRankedProbabilitySkillScore( decompositionId );
+    }
+
     @Override
     public DoubleScoreOutput apply( EnsemblePairs s )
     {
-        if(Objects.isNull(s))
+        if ( Objects.isNull( s ) )
         {
-            throw new MetricInputException("Specify non-null input to the '"+this+"'.");
+            throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
         }
         if ( !s.hasBaseline() )
         {
@@ -78,28 +104,24 @@ public class ContinuousRankedProbabilitySkillScore extends ContinuousRankedProba
     }
 
     /**
-     * A {@link MetricBuilder} to build the metric.
+     * Hidden constructor.
      */
 
-    public static class CRPSSBuilder extends CRPSBuilder
+    private ContinuousRankedProbabilitySkillScore()
     {
-        @Override
-        public ContinuousRankedProbabilitySkillScore build() throws MetricParameterException
-        {
-            return new ContinuousRankedProbabilitySkillScore( this );
-        }
+        super();
     }
 
     /**
      * Hidden constructor.
      * 
-     * @param builder the builder
-     * @throws MetricParameterException if one or more parameters is invalid
+     * @param decompositionId the decomposition identifier
+     * @throws MetricParameterException if one or more parameters is invalid 
      */
 
-    private ContinuousRankedProbabilitySkillScore( final CRPSSBuilder builder ) throws MetricParameterException
+    private ContinuousRankedProbabilitySkillScore( ScoreOutputGroup decompositionId ) throws MetricParameterException
     {
-        super( builder );
+        super( decompositionId );
     }
 
 }

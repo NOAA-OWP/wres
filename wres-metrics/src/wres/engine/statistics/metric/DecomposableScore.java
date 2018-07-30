@@ -16,10 +16,10 @@ public abstract class DecomposableScore<S extends MetricInput<?>> extends Ordina
 {
 
     /**
-     * The decomposition identifier. See {@link ScoreOutputGroup}.
+     * The decomposition identifier.
      */
 
-    private final ScoreOutputGroup decompositionID;
+    private final ScoreOutputGroup decompositionId;
 
     @Override
     public boolean isDecomposable()
@@ -30,51 +30,38 @@ public abstract class DecomposableScore<S extends MetricInput<?>> extends Ordina
     @Override
     public ScoreOutputGroup getScoreOutputGroup()
     {
-        return decompositionID;
+        return decompositionId;
     }
 
     /**
-     * A {@link MetricBuilder} to build the metric.
+     * Hidden constructor for a score with no decomposition, i.e. {@link ScoreOutputGroup#NONE}.
      */
 
-    public abstract static class DecomposableScoreBuilder<S extends MetricInput<?>>
-            implements MetricBuilder<S, DoubleScoreOutput>
+    protected DecomposableScore()
     {
-        /**
-         * The type of metric decomposition. See {@link ScoreOutputGroup}.
-         */
-
-        private ScoreOutputGroup decompositionID = ScoreOutputGroup.NONE;
-
-        /**
-         * Sets the decomposition identifier.
-         * 
-         * @param decompositionID the decomposition identifier
-         * @return the builder
-         */
-
-        public DecomposableScoreBuilder<S> setDecompositionID( final ScoreOutputGroup decompositionID )
-        {
-            this.decompositionID = decompositionID;
-            return this;
-        }
+        super();
+        
+        this.decompositionId = ScoreOutputGroup.NONE;        
     }
-
+    
     /**
      * Hidden constructor.
      * 
-     * @param builder the builder
+     * @param decompositionId the decomposition identifier
      * @throws MetricParameterException if one or more parameters is invalid
      */
 
-    protected DecomposableScore( final DecomposableScoreBuilder<S> builder ) throws MetricParameterException
+    protected DecomposableScore( ScoreOutputGroup decompositionId ) throws MetricParameterException
     {
         super();
-        this.decompositionID = builder.decompositionID;
-        if ( Objects.isNull( this.decompositionID ) )
+
+        if ( Objects.isNull( decompositionId ) )
         {
             throw new MetricParameterException( "Specify a non-null decomposition identifier." );
         }
+        
+        this.decompositionId = decompositionId;
+        
     }
 
 }

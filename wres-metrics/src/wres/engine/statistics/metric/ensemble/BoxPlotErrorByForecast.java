@@ -8,11 +8,8 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.EnsemblePair;
-import wres.datamodel.outputs.BoxPlotOutput;
 import wres.engine.statistics.metric.FunctionFactory;
-import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricParameterException;
 
@@ -29,6 +26,18 @@ public class BoxPlotErrorByForecast extends BoxPlot
 {
 
     /**
+     * Default dimension for the domain.
+     */
+
+    private static final MetricDimension DEFAULT_DOMAIN_DIMENSION = MetricDimension.ENSEMBLE_MEAN;
+
+    /**
+     * Default domain mappoer function.
+     */
+
+    private static final ToDoubleFunction<VectorOfDoubles> DEFAULT_DOMAIN_MAPPER = FunctionFactory.mean();
+
+    /**
      * The dimension associated with the domain axis, which corresponds to a function that is applied to the 
      * forecast values.
      */
@@ -40,6 +49,32 @@ public class BoxPlotErrorByForecast extends BoxPlot
      */
 
     private final ToDoubleFunction<VectorOfDoubles> domainMapper;
+
+    /**
+     * Returns an instance.
+     * 
+     * @return an instance
+     */
+
+    public static BoxPlotErrorByForecast of()
+    {
+        return new BoxPlotErrorByForecast();
+    }
+
+    /**
+     * Returns an instance.
+     * 
+     * @param domainDimension the domain axis dimension
+     * @param probabilities the probabilities
+     * @throws MetricParameterException if the parameters are incorrect
+     * @return an instance
+     */
+
+    public static BoxPlotErrorByForecast of( MetricDimension domainDimension, VectorOfDoubles probabilities )
+            throws MetricParameterException
+    {
+        return new BoxPlotErrorByForecast( probabilities, domainDimension );
+    }
 
     @Override
     public MetricConstants getID()
@@ -96,54 +131,42 @@ public class BoxPlotErrorByForecast extends BoxPlot
     }
 
     /**
-     * Builder for the {@link BoxPlotErrorByForecast}
+     * Hidden constructor.
+     * 
+     * @param probabilities the probabilities
+     * @param domainDimension the domain axis dimension
      */
 
-    public static class BoxPlotErrorByForecastBuilder extends BoxPlotBuilder
+    private BoxPlotErrorByForecast()
     {
+        super();
 
-        /**
-         * Default dimension for the domain.
-         */
+        this.domainDimension = DEFAULT_DOMAIN_DIMENSION;
 
-        private MetricDimension domainDimension = MetricDimension.ENSEMBLE_MEAN;
-
-        @Override
-        public Metric<EnsemblePairs, BoxPlotOutput> build() throws MetricParameterException
-        {
-            return new BoxPlotErrorByForecast( this );
-        }
-
-        /**
-         * Sets the dimension for the domain axis.
-         * 
-         * @param domainDimension the domain axis dimension
-         * @return the builder
-         */
-        BoxPlotErrorByForecastBuilder setDomainDimension( MetricDimension domainDimension )
-        {
-            this.domainDimension = domainDimension;
-            return this;
-        }
-
+        this.domainMapper = DEFAULT_DOMAIN_MAPPER;
     }
 
     /**
      * Hidden constructor.
      * 
-     * @param builder the builder
+     * @param probabilities the probabilities
+     * @param domainDimension the domain axis dimension
      * @throws MetricParameterException if the parameters are incorrect
      */
 
-    private BoxPlotErrorByForecast( BoxPlotErrorByForecastBuilder builder ) throws MetricParameterException
+    private BoxPlotErrorByForecast( VectorOfDoubles probabilities, MetricDimension domainDimension )
+            throws MetricParameterException
     {
-        super( builder );
-        domainDimension = builder.domainDimension;
+        super( probabilities );
+
         if ( Objects.isNull( domainDimension ) )
         {
             throw new MetricParameterException( "Cannot build the box plot of forecast errors by forecast value without "
                                                 + "a dimension for the domain axis." );
         }
+
+        this.domainDimension = domainDimension;
+
         switch ( domainDimension )
         {
             case ENSEMBLE_MEAN:

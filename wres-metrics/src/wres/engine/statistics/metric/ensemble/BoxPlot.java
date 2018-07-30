@@ -35,6 +35,13 @@ abstract class BoxPlot
 {
 
     /**
+     * Default probabilities.
+     */
+
+    static final VectorOfDoubles DEFAULT_PROBABILITIES =
+            VectorOfDoubles.of( new double[] { 0.0, 0.25, 0.5, 0.75, 1.0 } );
+
+    /**
      * A vector of probabilities that define the quantiles to plot.
      */
 
@@ -96,51 +103,28 @@ abstract class BoxPlot
     }
 
     /**
-     * Builder for the {@link BoxPlot}
+     * Hidden constructor.
      */
 
-    abstract static class BoxPlotBuilder implements MetricBuilder<EnsemblePairs, BoxPlotOutput>
+    BoxPlot()
     {
+        super();
 
-        /**
-         * A vector of probabilities that define the quantiles to plot.
-         */
-
-        private VectorOfDoubles probabilities = null;
-
-        /**
-         * Sets the probabilities associated with the boxes. requires at least two valid probabilities that differ.
-         * 
-         * @param probabilities the probabilities
-         * @return the builder
-         */
-        BoxPlotBuilder setProbabilities( VectorOfDoubles probabilities )
-        {
-            this.probabilities = probabilities;
-            return this;
-        }
+        this.probabilities = DEFAULT_PROBABILITIES;
     }
-
+    
     /**
      * Hidden constructor.
      * 
-     * @param builder the builder
+     * @param probabilities the probabilities
      * @throws MetricParameterException if one or more parameters are invalid
      */
 
-    BoxPlot( final BoxPlotBuilder builder ) throws MetricParameterException
+    BoxPlot( VectorOfDoubles probabilities ) throws MetricParameterException
     {
         super();
+
         //Validate the probabilities
-        if ( Objects.isNull( builder.probabilities ) )
-        {
-            //Add default probabilities
-            probabilities = VectorOfDoubles.of( new double[] { 0.0, 0.25, 0.5, 0.75, 1.0 } );
-        }
-        else
-        {
-            this.probabilities = builder.probabilities;
-        }
         if ( probabilities.size() < 2 )
         {
             throw new MetricParameterException( "Specify at least two probabilities for the verification box plot." );
@@ -152,7 +136,7 @@ abstract class BoxPlot
 
         //Check for invalid or duplicate values
         Set<Double> check = new HashSet<>();
-        for ( double next : this.probabilities.getDoubles() )
+        for ( double next : probabilities.getDoubles() )
         {
             if ( check.contains( next ) )
             {
@@ -166,5 +150,8 @@ abstract class BoxPlot
             }
             check.add( next );
         }
+
+        this.probabilities = probabilities;
+
     }
 }

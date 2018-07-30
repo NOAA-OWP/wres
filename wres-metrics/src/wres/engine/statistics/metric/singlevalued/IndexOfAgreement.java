@@ -11,7 +11,6 @@ import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.FunctionFactory;
-import wres.engine.statistics.metric.MetricParameterException;
 
 /**
  * <p>The {@link IndexOfAgreement} was proposed by Willmot (1981) to measure the errors of the model predictions 
@@ -26,7 +25,24 @@ public class IndexOfAgreement extends DoubleErrorScore<SingleValuedPairs>
 {
 
     /**
-     * Exponent used to calculate the {@link IndexOfAgreement}. 
+     * The default exponent.
+     */
+    
+    private static final double DEFAULT_EXPONENT = 1.0;
+    
+    /**
+     * Returns an instance.
+     * 
+     * @return an instance
+     */
+    
+    public static IndexOfAgreement of()
+    {
+        return new IndexOfAgreement();
+    }
+    
+    /**
+     * Exponent. 
      */
 
     final double exponent;
@@ -83,32 +99,14 @@ public class IndexOfAgreement extends DoubleErrorScore<SingleValuedPairs>
     }
 
     /**
-     * A {@link MetricBuilder} to build the metric.
-     */
-
-    public static class IndexOfAgreementBuilder extends DoubleErrorScoreBuilder<SingleValuedPairs>
-    {
-
-        @Override
-        public IndexOfAgreement build() throws MetricParameterException
-        {
-            return new IndexOfAgreement( this );
-        }
-
-    }
-
-    /**
      * Hidden constructor.
-     * 
-     * @param builder the builder
-     * @throws MetricParameterException if one or more parameters is invalid
      */
 
-    private IndexOfAgreement( final IndexOfAgreementBuilder builder ) throws MetricParameterException
+    private IndexOfAgreement()
     {
-        super( builder );
-        //Default exponent
-        exponent = 1.0;
+        super();
+        
+        this.exponent = DEFAULT_EXPONENT;
     }
 
 }

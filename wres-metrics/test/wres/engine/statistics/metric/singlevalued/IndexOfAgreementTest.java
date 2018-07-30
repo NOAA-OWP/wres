@@ -25,7 +25,6 @@ import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
-import wres.engine.statistics.metric.singlevalued.IndexOfAgreement.IndexOfAgreementBuilder;
 
 /**
  * Tests the {@link IndexOfAgreement}.
@@ -47,8 +46,7 @@ public final class IndexOfAgreementTest
     @Before
     public void setupBeforeEachTest() throws MetricParameterException
     {
-        IndexOfAgreementBuilder b = new IndexOfAgreement.IndexOfAgreementBuilder();
-        this.ioa = b.build();
+        this.ioa = IndexOfAgreement.of();
     }
 
     /**

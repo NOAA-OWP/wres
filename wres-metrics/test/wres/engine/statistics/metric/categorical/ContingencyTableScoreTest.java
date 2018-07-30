@@ -19,7 +19,6 @@ import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.MatrixOutput;
-import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 
@@ -49,7 +48,7 @@ public final class ContingencyTableScoreTest
     @Before
     public void setupBeforeEachTest() throws MetricParameterException
     {
-        cs = MetricFactory.ofThreatScore();
+        cs = ThreatScore.of();
         meta = MetadataFactory.getOutputMetadata( 365,
                                                   MetadataFactory.getDimension(),
                                                   MetadataFactory.getDimension(),

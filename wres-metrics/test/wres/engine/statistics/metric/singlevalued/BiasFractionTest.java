@@ -20,7 +20,6 @@ import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
-import wres.engine.statistics.metric.singlevalued.BiasFraction.BiasFractionBuilder;
 
 /**
  * Tests the {@link BiasFraction}.
@@ -42,8 +41,7 @@ public final class BiasFractionTest
     @Before
     public void setupBeforeEachTest() throws MetricParameterException
     {
-        BiasFractionBuilder b = new BiasFraction.BiasFractionBuilder();
-        this.biasFraction = b.build();
+        this.biasFraction = BiasFraction.of();
     }
 
     /**

@@ -21,7 +21,6 @@ import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.engine.statistics.metric.MetricParameterException;
-import wres.engine.statistics.metric.singlevalued.QuantileQuantileDiagram.QuantileQuantileDiagramBuilder;
 
 /**
  * Tests the {@link QuantileQuantileDiagram}.
@@ -43,8 +42,7 @@ public final class QuantileQuantileDiagramTest
     @Before
     public void setupBeforeEachTest() throws MetricParameterException
     {
-        QuantileQuantileDiagramBuilder b = new QuantileQuantileDiagram.QuantileQuantileDiagramBuilder();
-        this.qqd = b.build();
+        this.qqd = QuantileQuantileDiagram.of();
     }
 
     /**

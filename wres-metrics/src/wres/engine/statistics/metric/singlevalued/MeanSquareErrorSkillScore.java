@@ -16,7 +16,6 @@ import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.DecomposableScore;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricCalculationException;
-import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 
 /**
@@ -28,6 +27,17 @@ import wres.engine.statistics.metric.MetricParameterException;
 public class MeanSquareErrorSkillScore extends DecomposableScore<SingleValuedPairs>
 {
 
+    /**
+     * Returns an instance.
+     * 
+     * @return an instance
+     */
+    
+    public static MeanSquareErrorSkillScore of()
+    {
+        return new MeanSquareErrorSkillScore();
+    }
+    
     /**
      * Instance if {@link SumOfSquareError}.
      */
@@ -104,34 +114,26 @@ public class MeanSquareErrorSkillScore extends DecomposableScore<SingleValuedPai
     }
 
     /**
-     * A {@link MetricBuilder} to build the metric.
+     * Hidden constructor.
      */
 
-    public static class MeanSquareErrorSkillScoreBuilder
-            extends
-            DecomposableScoreBuilder<SingleValuedPairs>
+    private MeanSquareErrorSkillScore()
     {
-
-        @Override
-        public MeanSquareErrorSkillScore build() throws MetricParameterException
-        {
-            return new MeanSquareErrorSkillScore( this );
-        }
-
+        super();
+        sse = SumOfSquareError.of();
     }
-
+    
     /**
-     * Prevent direct construction.
+     * Hidden constructor.
      * 
-     * @param builder the builder
-     * @throws MetricParameterException if one or more parameters is invalid
+     * @param decompositionId the decomposition identifier
+     * @throws MetricParameterException if one or more parameters is invalid 
      */
 
-    protected MeanSquareErrorSkillScore( final MeanSquareErrorSkillScoreBuilder builder )
-            throws MetricParameterException
+    private MeanSquareErrorSkillScore( ScoreOutputGroup decompositionId ) throws MetricParameterException
     {
-        super( builder );
-        sse = MetricFactory.ofSumOfSquareError();
+        super( decompositionId );
+        sse = SumOfSquareError.of();
     }
 
 }

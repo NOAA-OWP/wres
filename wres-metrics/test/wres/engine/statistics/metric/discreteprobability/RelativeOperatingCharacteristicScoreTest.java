@@ -33,7 +33,6 @@ import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
-import wres.engine.statistics.metric.discreteprobability.RelativeOperatingCharacteristicScore.RelativeOperatingCharacteristicScoreBuilder;
 
 /**
  * Tests the {@link RelativeOperatingCharacteristicScore}.
@@ -55,9 +54,7 @@ public final class RelativeOperatingCharacteristicScoreTest
     @Before
     public void setupBeforeEachTest() throws MetricParameterException
     {
-        RelativeOperatingCharacteristicScoreBuilder b =
-                new RelativeOperatingCharacteristicScore.RelativeOperatingCharacteristicScoreBuilder();
-        this.rocScore = b.build();
+        this.rocScore = RelativeOperatingCharacteristicScore.of();
     }
 
     /**
