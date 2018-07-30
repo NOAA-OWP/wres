@@ -61,19 +61,19 @@ public final class ContinousRankedProbabilitySkillScoreTest
     {
         //Generate some data
         List<EnsemblePair> pairs = new ArrayList<>();
-        pairs.add( DataFactory.pairOf( 25.7, new double[] { 23, 43, 45, 23, 54 } ) );
-        pairs.add( DataFactory.pairOf( 21.4, new double[] { 19, 16, 57, 23, 9 } ) );
-        pairs.add( DataFactory.pairOf( 32.1, new double[] { 23, 54, 23, 12, 32 } ) );
-        pairs.add( DataFactory.pairOf( 47, new double[] { 12, 54, 23, 54, 78 } ) );
-        pairs.add( DataFactory.pairOf( 12, new double[] { 9, 8, 5, 6, 12 } ) );
-        pairs.add( DataFactory.pairOf( 43, new double[] { 23, 12, 12, 34, 10 } ) );
+        pairs.add( EnsemblePair.of( 25.7, new double[] { 23, 43, 45, 23, 54 } ) );
+        pairs.add( EnsemblePair.of( 21.4, new double[] { 19, 16, 57, 23, 9 } ) );
+        pairs.add( EnsemblePair.of( 32.1, new double[] { 23, 54, 23, 12, 32 } ) );
+        pairs.add( EnsemblePair.of( 47, new double[] { 12, 54, 23, 54, 78 } ) );
+        pairs.add( EnsemblePair.of( 12, new double[] { 9, 8, 5, 6, 12 } ) );
+        pairs.add( EnsemblePair.of( 43, new double[] { 23, 12, 12, 34, 10 } ) );
         List<EnsemblePair> basePairs = new ArrayList<>();
-        basePairs.add( DataFactory.pairOf( 25.7, new double[] { 20, 43, 45, 23, 94 } ) );
-        basePairs.add( DataFactory.pairOf( 21.4, new double[] { 19, 76, 57, 23, 9 } ) );
-        basePairs.add( DataFactory.pairOf( 32.1, new double[] { 23, 53, 23, 12, 32 } ) );
-        basePairs.add( DataFactory.pairOf( 47, new double[] { 2, 54, 23, 54, 78 } ) );
-        basePairs.add( DataFactory.pairOf( 12.1, new double[] { 9, 18, 5, 6, 12 } ) );
-        basePairs.add( DataFactory.pairOf( 43, new double[] { 23, 12, 12, 39, 10 } ) );
+        basePairs.add( EnsemblePair.of( 25.7, new double[] { 20, 43, 45, 23, 94 } ) );
+        basePairs.add( EnsemblePair.of( 21.4, new double[] { 19, 76, 57, 23, 9 } ) );
+        basePairs.add( EnsemblePair.of( 32.1, new double[] { 23, 53, 23, 12, 32 } ) );
+        basePairs.add( EnsemblePair.of( 47, new double[] { 2, 54, 23, 54, 78 } ) );
+        basePairs.add( EnsemblePair.of( 12.1, new double[] { 9, 18, 5, 6, 12 } ) );
+        basePairs.add( EnsemblePair.of( 43, new double[] { 23, 12, 12, 39, 10 } ) );
         EnsemblePairs input = DataFactory.ofEnsemblePairs( pairs,
                                                            basePairs,
                                                            MetadataFactory.getMetadata(),
@@ -232,7 +232,7 @@ public final class ContinousRankedProbabilitySkillScoreTest
         exception.expect( MetricInputException.class );
         exception.expectMessage( "Specify a non-null baseline for the 'CONTINUOUS RANKED PROBABILITY SKILL SCORE'." );
         List<EnsemblePair> pairs = new ArrayList<>();
-        pairs.add( DataFactory.pairOf( 25.7, new double[] { 23, 43, 45, 23, 54 } ) );
+        pairs.add( EnsemblePair.of( 25.7, new double[] { 23, 43, 45, 23, 54 } ) );
         EnsemblePairs input = DataFactory.ofEnsemblePairs( pairs, MetadataFactory.getMetadata() );
         crpss.apply( input );
     }

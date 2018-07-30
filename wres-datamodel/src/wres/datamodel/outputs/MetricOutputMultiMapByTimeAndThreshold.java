@@ -13,7 +13,6 @@ import java.util.function.BiConsumer;
 
 import org.apache.commons.lang3.tuple.Pair;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
@@ -71,7 +70,7 @@ public class MetricOutputMultiMapByTimeAndThreshold<S extends MetricOutput<?>> i
 
     public MetricOutputMapByTimeAndThreshold<S> get( final MetricConstants metricID )
     {
-        return store.get( DataFactory.getMapKey( metricID ) );
+        return store.get( MapKey.of( metricID ) );
     }
 
     /**
@@ -221,8 +220,7 @@ public class MetricOutputMultiMapByTimeAndThreshold<S extends MetricOutput<?>> i
             }
             result.forEach( ( key, value ) -> {
                 final MetricOutputMetadata d = value.getMetadata();
-                final MapKey<MetricConstants> check =
-                        DataFactory.getMapKey( d.getMetricID() );
+                final MapKey<MetricConstants> check = MapKey.of( d.getMetricID() );
                 //Safe put
                 final MetricOutputMapByTimeAndThreshold.MetricOutputMapByTimeAndThresholdBuilder<S> addMe =
                         new MetricOutputMapByTimeAndThreshold.MetricOutputMapByTimeAndThresholdBuilder<>();

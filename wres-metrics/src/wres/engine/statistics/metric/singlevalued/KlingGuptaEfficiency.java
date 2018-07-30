@@ -72,8 +72,8 @@ public class KlingGuptaEfficiency extends DecomposableScore<SingleValuedPairs>
 
         double result = Double.NaN;
         // Compute the components
-        VectorOfDoubles leftValues = DataFactory.vectorOf( Slicer.getLeftSide( s ) );
-        VectorOfDoubles rightValues = DataFactory.vectorOf( Slicer.getRightSide( s ) );
+        VectorOfDoubles leftValues = VectorOfDoubles.of( Slicer.getLeftSide( s ) );
+        VectorOfDoubles rightValues = VectorOfDoubles.of( Slicer.getRightSide( s ) );
         double rhoVal = rho.apply( s ).getData();
         // Check for finite correlation
         if ( Double.isFinite( rhoVal ) )

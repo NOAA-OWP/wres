@@ -214,9 +214,9 @@ public final class MultiVectorOutputTest
                                                                                                                  "C" ) );
         Map<MetricDimension, VectorOfDoubles> mva = new HashMap<>();
         mva.put( MetricDimension.PROBABILITY_OF_DETECTION,
-                 DataFactory.vectorOf( new double[] { 0.1, 0.2, 0.3, 0.4 } ) );
+                 VectorOfDoubles.of( new double[] { 0.1, 0.2, 0.3, 0.4 } ) );
         mva.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION,
-                 DataFactory.vectorOf( new double[] { 0.1, 0.2, 0.3, 0.4 } ) );
+                 VectorOfDoubles.of( new double[] { 0.1, 0.2, 0.3, 0.4 } ) );
         try
         {
             MultiVectorOutput.of( mva, null );

@@ -2,7 +2,6 @@ package wres.io.retrieval;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
-import wres.datamodel.DataFactory;
 import wres.datamodel.VectorOfDoubles;
 import wres.io.concurrency.WRESCallable;
 import wres.io.config.ConfigHelper;
@@ -373,7 +372,7 @@ class ClimatologyBuilder
                 throw new IOException( "Failed to get scale information.", se );
             }
 
-            this.climatology = DataFactory.vectorOf( aggregatedValues.toArray( new Double[aggregatedValues.size()] ) );
+            this.climatology = VectorOfDoubles.of( aggregatedValues.toArray( new Double[aggregatedValues.size()] ) );
         }
         return this.climatology;
     }

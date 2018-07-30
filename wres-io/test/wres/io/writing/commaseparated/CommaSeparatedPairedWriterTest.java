@@ -23,6 +23,7 @@ import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
@@ -109,7 +110,7 @@ public class CommaSeparatedPairedWriterTest extends CommaSeparatedWriterTest
         // Fake lead time and threshold
         Pair<TimeWindow, OneOrTwoThresholds> mapKeyByLeadThreshold =
                 DataFactory.ofMapKeyByTimeThreshold( timeOne,
-                                                     DataFactory.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
+                                                     OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                      Operator.GREATER,
                                                      ThresholdDataType.LEFT );
 

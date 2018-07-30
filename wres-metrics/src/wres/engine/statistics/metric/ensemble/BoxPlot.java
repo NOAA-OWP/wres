@@ -83,10 +83,10 @@ abstract class BoxPlot
         }
         MetricOutputMetadata metOut = getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, null );
         return DataFactory.ofBoxPlotOutput( boxes,
-                                                 probabilities,
-                                                 metOut,
-                                                 getDomainAxisDimension(),
-                                                 getRangeAxisDimension() );
+                                            probabilities,
+                                            metOut,
+                                            getDomainAxisDimension(),
+                                            getRangeAxisDimension() );
     }
 
     @Override
@@ -135,7 +135,7 @@ abstract class BoxPlot
         if ( Objects.isNull( builder.probabilities ) )
         {
             //Add default probabilities
-            probabilities = DataFactory.vectorOf( new double[]{0.0,0.25,0.5,0.75,1.0} );
+            probabilities = VectorOfDoubles.of( new double[] { 0.0, 0.25, 0.5, 0.75, 1.0 } );
         }
         else
         {
@@ -145,11 +145,11 @@ abstract class BoxPlot
         {
             throw new MetricParameterException( "Specify at least two probabilities for the verification box plot." );
         }
-        if (probabilities.size() > 2 && probabilities.size() % 2 == 0)
+        if ( probabilities.size() > 2 && probabilities.size() % 2 == 0 )
         {
             throw new MetricParameterException( "Specify an odd number of probabilities for the verification box plot." );
         }
-        
+
         //Check for invalid or duplicate values
         Set<Double> check = new HashSet<>();
         for ( double next : this.probabilities.getDoubles() )

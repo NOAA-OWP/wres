@@ -517,7 +517,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         {
             for ( double pairedValue : pair.getValues().getRight() )
             {
-                pairs.add( DataFactory.pairOf( pair.getValues()
+                pairs.add( SingleValuedPair.of( pair.getValues()
                                                    .getLeft(),
                                                pairedValue ) );
             }
@@ -1007,7 +1007,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                 double[] wrappedValue = { convertedValue };
 
                 EnsemblePair pair =
-                        DataFactory.pairOf( primaryPair.getValues()
+                        EnsemblePair.of( primaryPair.getValues()
                                                        .getLeft(),
                                             wrappedValue );
 
@@ -1096,7 +1096,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         double[] aggregatedWrapped = { aggregated };
 
         EnsemblePair pair =
-                DataFactory.pairOf( primaryPair.getValues()
+                EnsemblePair.of( primaryPair.getValues()
                                                .getLeft(),
                                     aggregatedWrapped );
 
@@ -1301,7 +1301,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             return null;
         }
 
-        return DataFactory.pairOf(
+        return EnsemblePair.of(
                 leftAggregation,
                 condensedIngestedValue.getAggregatedValues(
                         this.projectDetails.shouldScale(),
@@ -1467,7 +1467,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
 
             for (int i = 0; i < pairOfDoubles.length; ++i)
             {
-                pairOfDoubles[i] = DataFactory.pairOf( this.getValues().getLeft(),
+                pairOfDoubles[i] = SingleValuedPair.of( this.getValues().getLeft(),
                                                        this.getValues().getRight()[i] );
             }
 

@@ -26,6 +26,7 @@ import evs.metric.results.MetricResultKey;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
+import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.inputs.pairs.EnsemblePair;
 import wres.datamodel.metadata.MetadataFactory;
@@ -65,8 +66,8 @@ public abstract class Chart2DTestDataGenerator
                                  { 0.95, 13685.0 }, { 0.99, 26648.0 } };
         for ( final double[] next : allow )
         {
-            combine.add( full.filterByThreshold( OneOrTwoThresholds.of( DataFactory.ofQuantileThreshold( DataFactory.ofOneOrTwoDoubles( next[1] ),
-                                                                                             DataFactory.ofOneOrTwoDoubles( next[0] ),
+            combine.add( full.filterByThreshold( OneOrTwoThresholds.of( DataFactory.ofQuantileThreshold( OneOrTwoDoubles.of( next[1] ),
+                                                                                             OneOrTwoDoubles.of( next[0] ),
                                                                                              Operator.GREATER, ThresholdDataType.LEFT ) ) ) );
         }
         return DataFactory.combine( combine );
@@ -140,8 +141,8 @@ public abstract class Chart2DTestDataGenerator
                 final DoubleProcedureParameter f = ( DoubleProcedureParameter ) e.next().getKey();
                 final double[] constants = f.getParValReal().getConstants();
                 final double[] probConstants = f.getParVal().getConstants();
-                final Threshold q = DataFactory.ofQuantileThreshold( DataFactory.ofOneOrTwoDoubles( constants[0] ),
-                                                                 DataFactory.ofOneOrTwoDoubles( probConstants[0] ),
+                final Threshold q = DataFactory.ofQuantileThreshold( OneOrTwoDoubles.of( constants[0] ),
+                                                                 OneOrTwoDoubles.of( probConstants[0] ),
                                                                  Operator.GREATER, ThresholdDataType.LEFT );
                 TimeWindow window = TimeWindow.of( Instant.MIN,
                                                    Instant.MAX,
@@ -205,8 +206,8 @@ public abstract class Chart2DTestDataGenerator
                 final DoubleProcedureParameter f = ( DoubleProcedureParameter ) e.next().getKey();
                 final double[] constants = f.getParValReal().getConstants();
                 final double[] probConstants = f.getParVal().getConstants();
-                final Threshold q = DataFactory.ofQuantileThreshold( DataFactory.ofOneOrTwoDoubles( constants[0] ),
-                                                                 DataFactory.ofOneOrTwoDoubles( probConstants[0] ),
+                final Threshold q = DataFactory.ofQuantileThreshold( OneOrTwoDoubles.of( constants[0] ),
+                                                                 OneOrTwoDoubles.of( probConstants[0] ),
                                                                  Operator.GREATER, ThresholdDataType.LEFT );
                 TimeWindow window = TimeWindow.of( Instant.MIN,
                                                    Instant.MAX,
@@ -245,8 +246,8 @@ public abstract class Chart2DTestDataGenerator
                 new double[][] { { 0.1, 858.04 }, { 0.5, 2707.5 }, { 0.9, 9647.0 }, { 0.95, 13685.0 } };
         for ( final double[] next : allow )
         {
-            allowed.add( DataFactory.ofQuantileThreshold( DataFactory.ofOneOrTwoDoubles( next[1] ),
-                                                      DataFactory.ofOneOrTwoDoubles( next[0] ),
+            allowed.add( DataFactory.ofQuantileThreshold( OneOrTwoDoubles.of( next[1] ),
+                                                      OneOrTwoDoubles.of( next[0] ),
                                                       Operator.GREATER, ThresholdDataType.LEFT ) );
         }
 
@@ -291,8 +292,8 @@ public abstract class Chart2DTestDataGenerator
                 final DoubleProcedureParameter f = ( DoubleProcedureParameter ) e.next().getKey();
                 final double[] constants = f.getParValReal().getConstants();
                 final double[] probConstants = f.getParVal().getConstants();
-                final Threshold q = DataFactory.ofQuantileThreshold( DataFactory.ofOneOrTwoDoubles( constants[0] ),
-                                                                 DataFactory.ofOneOrTwoDoubles( probConstants[0] ),
+                final Threshold q = DataFactory.ofQuantileThreshold( OneOrTwoDoubles.of( constants[0] ),
+                                                                 OneOrTwoDoubles.of( probConstants[0] ),
                                                                  Operator.GREATER, ThresholdDataType.LEFT );
                 //Read only selected quantiles
                 if ( allowed.contains( q ) )
@@ -361,8 +362,8 @@ public abstract class Chart2DTestDataGenerator
                 new double[][] { { 0.1, 858.04 }, { 0.5, 2707.5 }, { 0.9, 9647.0 }, { 0.95, 13685.0 } };
         for ( final double[] next : allow )
         {
-            allowed.add( DataFactory.ofQuantileThreshold( DataFactory.ofOneOrTwoDoubles( next[1] ),
-                                                      DataFactory.ofOneOrTwoDoubles( next[0] ),
+            allowed.add( DataFactory.ofQuantileThreshold( OneOrTwoDoubles.of( next[1] ),
+                                                      OneOrTwoDoubles.of( next[0] ),
                                                       Operator.GREATER, ThresholdDataType.LEFT ) );
         }
 
@@ -397,8 +398,8 @@ public abstract class Chart2DTestDataGenerator
                 final DoubleProcedureParameter f = ( DoubleProcedureParameter ) e.next().getKey();
                 final double[] constants = f.getParValReal().getConstants();
                 final double[] probConstants = f.getParVal().getConstants();
-                final Threshold q = DataFactory.ofQuantileThreshold( DataFactory.ofOneOrTwoDoubles( constants[0] ),
-                                                                 DataFactory.ofOneOrTwoDoubles( probConstants[0] ),
+                final Threshold q = DataFactory.ofQuantileThreshold( OneOrTwoDoubles.of( constants[0] ),
+                                                                 OneOrTwoDoubles.of( probConstants[0] ),
                                                                  Operator.GREATER, ThresholdDataType.LEFT );
                 //Read only selected quantiles
                 if ( allowed.contains( q ) )
@@ -492,8 +493,8 @@ public abstract class Chart2DTestDataGenerator
                 final DoubleProcedureParameter f = ( DoubleProcedureParameter ) e.next().getKey();
                 final double[] constants = f.getParValReal().getConstants();
                 final double[] probConstants = f.getParVal().getConstants();
-                final Threshold q = DataFactory.ofQuantileThreshold( DataFactory.ofOneOrTwoDoubles( constants[0] ),
-                                                                 DataFactory.ofOneOrTwoDoubles( probConstants[0] ),
+                final Threshold q = DataFactory.ofQuantileThreshold( OneOrTwoDoubles.of( constants[0] ),
+                                                                 OneOrTwoDoubles.of( probConstants[0] ),
                                                                  Operator.GREATER, ThresholdDataType.LEFT );
                 TimeWindow window = TimeWindow.of( Instant.MIN,
                                                    Instant.MAX,
@@ -567,8 +568,8 @@ public abstract class Chart2DTestDataGenerator
                                                                          windowMeta );
 
         //Single threshold
-        final Threshold threshold = DataFactory.ofQuantileThreshold( DataFactory.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
-                                                                 DataFactory.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
+        final Threshold threshold = DataFactory.ofQuantileThreshold( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                                                                 OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                                  Operator.GREATER, ThresholdDataType.LEFT );
 
         //Iterate through the lead times.
@@ -628,8 +629,8 @@ public abstract class Chart2DTestDataGenerator
                                                                                                            "PRECIPITATION",
                                                                                                            "HEFS" ) );
         //Single threshold
-        final Threshold threshold = DataFactory.ofQuantileThreshold( DataFactory.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
-                                                                 DataFactory.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
+        final Threshold threshold = DataFactory.ofQuantileThreshold( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                                                                 OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                                  Operator.GREATER, ThresholdDataType.LEFT );
 
         //Iterate through the lead times.
@@ -645,14 +646,14 @@ public abstract class Chart2DTestDataGenerator
             final DoubleMatrix2DResult t = ( DoubleMatrix2DResult ) data.getResult( leadTime );
             final double[][] bp = t.getResult().toArray();
             //Thresholds in the first row
-            VectorOfDoubles probabilities = DataFactory.vectorOf( Arrays.copyOfRange( bp[0], 1, bp[0].length ) );
+            VectorOfDoubles probabilities = VectorOfDoubles.of( Arrays.copyOfRange( bp[0], 1, bp[0].length ) );
             //Boxes in the remaining rows
             final List<EnsemblePair> output = new ArrayList<>();
             for ( double[] next : bp )
             {
                 if ( Double.compare( next[0], -999 ) != 0 )
                 {
-                    output.add( DataFactory.pairOf( next[0], Arrays.copyOfRange( next, 1, next.length ) ) );
+                    output.add( EnsemblePair.of( next[0], Arrays.copyOfRange( next, 1, next.length ) ) );
                 }
             }
             final BoxPlotOutput out = DataFactory.ofBoxPlotOutput( output,
@@ -699,8 +700,8 @@ public abstract class Chart2DTestDataGenerator
                                                                                                            "HEFS" ) );
         //Single threshold
         final Threshold threshold =
-                DataFactory.ofQuantileThreshold( DataFactory.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
-                                                   DataFactory.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
+                DataFactory.ofQuantileThreshold( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                                                   OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                    Operator.GREATER, ThresholdDataType.LEFT );
 
         //Iterate through the lead times.
@@ -716,14 +717,14 @@ public abstract class Chart2DTestDataGenerator
             final DoubleMatrix2DResult t = ( DoubleMatrix2DResult ) data.getResult( leadTime );
             final double[][] bp = t.getResult().toArray();
             //Thresholds in the first row
-            VectorOfDoubles probabilities = DataFactory.vectorOf( Arrays.copyOfRange( bp[0], 1, bp[0].length ) );
+            VectorOfDoubles probabilities = VectorOfDoubles.of( Arrays.copyOfRange( bp[0], 1, bp[0].length ) );
             //Boxes in the remaining rows
             final List<EnsemblePair> output = new ArrayList<>();
             for ( double[] next : bp )
             {
                 if ( Double.compare( next[0], -999 ) != 0 )
                 {
-                    output.add( DataFactory.pairOf( next[0], Arrays.copyOfRange( next, 1, next.length ) ) );
+                    output.add( EnsemblePair.of( next[0], Arrays.copyOfRange( next, 1, next.length ) ) );
                 }
             }
             final BoxPlotOutput out = DataFactory.ofBoxPlotOutput( output,
@@ -767,8 +768,8 @@ public abstract class Chart2DTestDataGenerator
         Duration frequency = Duration.ofDays( 30 );
 
         // Threshold
-        final Threshold threshold = DataFactory.ofQuantileThreshold( DataFactory.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
-                                                                 DataFactory.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
+        final Threshold threshold = DataFactory.ofQuantileThreshold( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                                                                 OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                                  Operator.GREATER, ThresholdDataType.LEFT );
 
         // Source data for the outputs
@@ -870,7 +871,7 @@ public abstract class Chart2DTestDataGenerator
         };
         // Build the map
         Threshold threshold =
-                DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ), Operator.GREATER, ThresholdDataType.LEFT );
+                DataFactory.ofThreshold( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ), Operator.GREATER, ThresholdDataType.LEFT );
         for ( int i = 0; i < scores.length; i++ )
         {
             String nextDate = "2017-08-08T" + String.format( "%02d", i ) + ":00:00Z";
@@ -927,7 +928,7 @@ public abstract class Chart2DTestDataGenerator
         // Build and return
         Map<Pair<TimeWindow, OneOrTwoThresholds>, PairedOutput<Instant, Duration>> rawData = new TreeMap<>();
         rawData.put( Pair.of( window,
-                              OneOrTwoThresholds.of( DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
+                              OneOrTwoThresholds.of( DataFactory.ofThreshold( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                                   Operator.GREATER, ThresholdDataType.LEFT ) ) ),
                      DataFactory.ofPairedOutput( input, meta ) );
         return DataFactory.ofMetricOutputMapByTimeAndThreshold( rawData );
@@ -976,7 +977,7 @@ public abstract class Chart2DTestDataGenerator
                                                                window );
         Map<Pair<TimeWindow, OneOrTwoThresholds>, DurationScoreOutput> rawData = new TreeMap<>();
         rawData.put( Pair.of( window,
-                              OneOrTwoThresholds.of( DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
+                              OneOrTwoThresholds.of( DataFactory.ofThreshold( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                                   Operator.GREATER, ThresholdDataType.LEFT ) ) ),
                      DataFactory.ofDurationScoreOutput( returnMe, meta ) );
         return DataFactory.ofMetricOutputMapByTimeAndThreshold( rawData );

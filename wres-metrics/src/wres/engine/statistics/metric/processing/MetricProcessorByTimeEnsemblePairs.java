@@ -17,7 +17,6 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import wres.config.MetricConfigException;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
@@ -253,7 +252,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         }
 
         //Construct the default mapper from ensembles to single-values: this is not currently configurable
-        toSingleValues = in -> DataFactory.pairOf( in.getLeft(),
+        toSingleValues = in -> SingleValuedPair.of( in.getLeft(),
                                                    Arrays.stream( in.getRight() ).average().getAsDouble() );
 
         //Construct the default mapper from ensembles to probabilities: this is not currently configurable
@@ -714,7 +713,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
 
                 //Define a mapper to convert the discrete probability pairs to dichotomous pairs
                 Function<DiscreteProbabilityPair, DichotomousPair> mapper =
-                        pair -> DataFactory.pairOf( innerThreshold.test( pair.getLeft() ),
+                        pair -> DichotomousPair.of( innerThreshold.test( pair.getLeft() ),
                                                     innerThreshold.test( pair.getRight() ) );
                 //Transform the pairs
                 DichotomousPairs dichotomous = Slicer.toDichotomousPairs( transformed, mapper );

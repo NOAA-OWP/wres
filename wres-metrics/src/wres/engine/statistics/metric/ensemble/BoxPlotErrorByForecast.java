@@ -4,7 +4,6 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.ToDoubleFunction;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.Slicer;
@@ -67,7 +66,7 @@ public class BoxPlotErrorByForecast extends BoxPlot
         //Compute the quantiles
         double[] box =
                 Arrays.stream( probs ).map( Slicer.getQuantileFunction( sortedErrors ) ).toArray();
-        return DataFactory.pairOf( domainMapper.applyAsDouble( DataFactory.vectorOf( sorted ) ), box );
+        return EnsemblePair.of( domainMapper.applyAsDouble( VectorOfDoubles.of( sorted ) ), box );
     }
 
     /**

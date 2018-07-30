@@ -59,12 +59,12 @@ public final class SlicerTest
     public void testGetLeftSideSingleValued()
     {
         final List<SingleValuedPair> values = new ArrayList<>();
-        values.add( DataFactory.pairOf( 0, 3.0 / 5.0 ) );
-        values.add( DataFactory.pairOf( 0, 1.0 / 5.0 ) );
-        values.add( DataFactory.pairOf( 1, 2.0 / 5.0 ) );
-        values.add( DataFactory.pairOf( 1, 3.0 / 5.0 ) );
-        values.add( DataFactory.pairOf( 0, 0.0 / 5.0 ) );
-        values.add( DataFactory.pairOf( 1, 1.0 / 5.0 ) );
+        values.add( SingleValuedPair.of( 0, 3.0 / 5.0 ) );
+        values.add( SingleValuedPair.of( 0, 1.0 / 5.0 ) );
+        values.add( SingleValuedPair.of( 1, 2.0 / 5.0 ) );
+        values.add( SingleValuedPair.of( 1, 3.0 / 5.0 ) );
+        values.add( SingleValuedPair.of( 0, 0.0 / 5.0 ) );
+        values.add( SingleValuedPair.of( 1, 1.0 / 5.0 ) );
         double[] expected = new double[] { 0, 0, 1, 1, 0, 1 };
         assertTrue( "The left side of the test data does not match the benchmark.",
                     Arrays.equals( Slicer.getLeftSide( DataFactory.ofSingleValuedPairs( values,
@@ -80,12 +80,12 @@ public final class SlicerTest
     public void testGetLeftSideEnsemble()
     {
         final List<EnsemblePair> values = new ArrayList<>();
-        values.add( DataFactory.pairOf( 0, new double[] { 1, 2, 3 } ) );
-        values.add( DataFactory.pairOf( 0, new double[] { 1, 2, 3 } ) );
-        values.add( DataFactory.pairOf( 1, new double[] { 1, 2, 3 } ) );
-        values.add( DataFactory.pairOf( 1, new double[] { 1, 2, 3 } ) );
-        values.add( DataFactory.pairOf( 0, new double[] { 1, 2, 3 } ) );
-        values.add( DataFactory.pairOf( 1, new double[] { 1, 2, 3 } ) );
+        values.add( EnsemblePair.of( 0, new double[] { 1, 2, 3 } ) );
+        values.add( EnsemblePair.of( 0, new double[] { 1, 2, 3 } ) );
+        values.add( EnsemblePair.of( 1, new double[] { 1, 2, 3 } ) );
+        values.add( EnsemblePair.of( 1, new double[] { 1, 2, 3 } ) );
+        values.add( EnsemblePair.of( 0, new double[] { 1, 2, 3 } ) );
+        values.add( EnsemblePair.of( 1, new double[] { 1, 2, 3 } ) );
         double[] expected = new double[] { 0, 0, 1, 1, 0, 1 };
         assertTrue( "The left side of the test data does not match the benchmark.",
                     Arrays.equals( Slicer.getLeftSide( DataFactory.ofEnsemblePairs( values,
@@ -101,12 +101,12 @@ public final class SlicerTest
     public void testGetRightSide()
     {
         final List<SingleValuedPair> values = new ArrayList<>();
-        values.add( DataFactory.pairOf( 0, 3.0 / 5.0 ) );
-        values.add( DataFactory.pairOf( 0, 1.0 / 5.0 ) );
-        values.add( DataFactory.pairOf( 1, 2.0 / 5.0 ) );
-        values.add( DataFactory.pairOf( 1, 3.0 / 5.0 ) );
-        values.add( DataFactory.pairOf( 0, 0.0 / 5.0 ) );
-        values.add( DataFactory.pairOf( 1, 1.0 / 5.0 ) );
+        values.add( SingleValuedPair.of( 0, 3.0 / 5.0 ) );
+        values.add( SingleValuedPair.of( 0, 1.0 / 5.0 ) );
+        values.add( SingleValuedPair.of( 1, 2.0 / 5.0 ) );
+        values.add( SingleValuedPair.of( 1, 3.0 / 5.0 ) );
+        values.add( SingleValuedPair.of( 0, 0.0 / 5.0 ) );
+        values.add( SingleValuedPair.of( 1, 1.0 / 5.0 ) );
         double[] expected = new double[] { 3.0 / 5.0, 1.0 / 5.0, 2.0 / 5.0, 3.0 / 5.0, 0.0 / 5.0, 1.0 / 5.0 };
         assertTrue( "The right side of the test data does not match the benchmark.",
                     Arrays.equals( Slicer.getRightSide( DataFactory.ofSingleValuedPairs( values,
@@ -122,12 +122,12 @@ public final class SlicerTest
     public void testFilterSingleValuedPairsByLeft()
     {
         final List<SingleValuedPair> values = new ArrayList<>();
-        values.add( DataFactory.pairOf( 0, 3.0 / 5.0 ) );
-        values.add( DataFactory.pairOf( 0, 1.0 / 5.0 ) );
-        values.add( DataFactory.pairOf( 1, 2.0 / 5.0 ) );
-        values.add( DataFactory.pairOf( 1, 3.0 / 5.0 ) );
-        values.add( DataFactory.pairOf( 0, 0.0 / 5.0 ) );
-        values.add( DataFactory.pairOf( 1, 1.0 / 5.0 ) );
+        values.add( SingleValuedPair.of( 0, 3.0 / 5.0 ) );
+        values.add( SingleValuedPair.of( 0, 1.0 / 5.0 ) );
+        values.add( SingleValuedPair.of( 1, 2.0 / 5.0 ) );
+        values.add( SingleValuedPair.of( 1, 3.0 / 5.0 ) );
+        values.add( SingleValuedPair.of( 0, 0.0 / 5.0 ) );
+        values.add( SingleValuedPair.of( 1, 1.0 / 5.0 ) );
         double[] expected = new double[] { 1, 1, 1 };
         Threshold threshold = DataFactory.ofThreshold( OneOrTwoDoubles.of( 0.0 ),
                                                        Operator.GREATER,
@@ -155,12 +155,12 @@ public final class SlicerTest
     public void testFilterEnsemblePairsByLeft()
     {
         final List<EnsemblePair> values = new ArrayList<>();
-        values.add( DataFactory.pairOf( 0, new double[] { 1, 2, 3 } ) );
-        values.add( DataFactory.pairOf( 0, new double[] { 1, 2, 3 } ) );
-        values.add( DataFactory.pairOf( 1, new double[] { 1, 2, 3 } ) );
-        values.add( DataFactory.pairOf( 1, new double[] { 1, 2, 3 } ) );
-        values.add( DataFactory.pairOf( 0, new double[] { 1, 2, 3 } ) );
-        values.add( DataFactory.pairOf( 1, new double[] { 1, 2, 3 } ) );
+        values.add( EnsemblePair.of( 0, new double[] { 1, 2, 3 } ) );
+        values.add( EnsemblePair.of( 0, new double[] { 1, 2, 3 } ) );
+        values.add( EnsemblePair.of( 1, new double[] { 1, 2, 3 } ) );
+        values.add( EnsemblePair.of( 1, new double[] { 1, 2, 3 } ) );
+        values.add( EnsemblePair.of( 0, new double[] { 1, 2, 3 } ) );
+        values.add( EnsemblePair.of( 1, new double[] { 1, 2, 3 } ) );
         double[] expected = new double[] { 1, 1, 1 };
         Threshold threshold = DataFactory.ofThreshold( OneOrTwoDoubles.of( 0.0 ),
                                                        Operator.GREATER,
@@ -188,16 +188,16 @@ public final class SlicerTest
     public void testTransformEnsemblePairsToSingleValuedPairs()
     {
         final List<EnsemblePair> values = new ArrayList<>();
-        values.add( DataFactory.pairOf( 0, new double[] { 1, 2, 3, 4, 5 } ) );
-        values.add( DataFactory.pairOf( 0, new double[] { 6, 7, 8, 9, 10 } ) );
-        values.add( DataFactory.pairOf( 1, new double[] { 11, 12, 13, 14, 15 } ) );
-        values.add( DataFactory.pairOf( 1, new double[] { 16, 17, 18, 19, 20 } ) );
-        values.add( DataFactory.pairOf( 0, new double[] { 21, 22, 23, 24, 25 } ) );
-        values.add( DataFactory.pairOf( 1, new double[] { 26, 27, 28, 29, 30 } ) );
+        values.add( EnsemblePair.of( 0, new double[] { 1, 2, 3, 4, 5 } ) );
+        values.add( EnsemblePair.of( 0, new double[] { 6, 7, 8, 9, 10 } ) );
+        values.add( EnsemblePair.of( 1, new double[] { 11, 12, 13, 14, 15 } ) );
+        values.add( EnsemblePair.of( 1, new double[] { 16, 17, 18, 19, 20 } ) );
+        values.add( EnsemblePair.of( 0, new double[] { 21, 22, 23, 24, 25 } ) );
+        values.add( EnsemblePair.of( 1, new double[] { 26, 27, 28, 29, 30 } ) );
         Metadata meta = MetadataFactory.getMetadata();
         EnsemblePairs input = DataFactory.ofEnsemblePairs( values, values, meta, meta, null );
         Function<EnsemblePair, SingleValuedPair> mapper = ( in ) -> {
-            return DataFactory.pairOf( in.getLeft(), Arrays.stream( in.getRight() ).average().getAsDouble() );
+            return SingleValuedPair.of( in.getLeft(), Arrays.stream( in.getRight() ).average().getAsDouble() );
         };
         double[] expected = new double[] { 3.0, 8.0, 13.0, 18.0, 23.0, 28.0 };
         //Test without baseline
@@ -219,23 +219,23 @@ public final class SlicerTest
     public void testTransformSingleValuedPairsToDichotomousPairs()
     {
         final List<SingleValuedPair> values = new ArrayList<>();
-        values.add( DataFactory.pairOf( 0, 3.0 / 5.0 ) );
-        values.add( DataFactory.pairOf( 0, 1.0 / 5.0 ) );
-        values.add( DataFactory.pairOf( 1, 2.0 / 5.0 ) );
-        values.add( DataFactory.pairOf( 1, 3.0 / 5.0 ) );
-        values.add( DataFactory.pairOf( 0, 0.0 / 5.0 ) );
-        values.add( DataFactory.pairOf( 1, 1.0 / 5.0 ) );
+        values.add( SingleValuedPair.of( 0, 3.0 / 5.0 ) );
+        values.add( SingleValuedPair.of( 0, 1.0 / 5.0 ) );
+        values.add( SingleValuedPair.of( 1, 2.0 / 5.0 ) );
+        values.add( SingleValuedPair.of( 1, 3.0 / 5.0 ) );
+        values.add( SingleValuedPair.of( 0, 0.0 / 5.0 ) );
+        values.add( SingleValuedPair.of( 1, 1.0 / 5.0 ) );
         Metadata meta = MetadataFactory.getMetadata();
         Function<SingleValuedPair, DichotomousPair> mapper = ( in ) -> {
-            return DataFactory.pairOf( in.getLeft() > 0, in.getRight() > 0 );
+            return DichotomousPair.of( in.getLeft() > 0, in.getRight() > 0 );
         };
         final List<DichotomousPair> expectedValues = new ArrayList<>();
-        expectedValues.add( DataFactory.pairOf( false, true ) );
-        expectedValues.add( DataFactory.pairOf( false, true ) );
-        expectedValues.add( DataFactory.pairOf( true, true ) );
-        expectedValues.add( DataFactory.pairOf( true, true ) );
-        expectedValues.add( DataFactory.pairOf( false, false ) );
-        expectedValues.add( DataFactory.pairOf( true, true ) );
+        expectedValues.add( DichotomousPair.of( false, true ) );
+        expectedValues.add( DichotomousPair.of( false, true ) );
+        expectedValues.add( DichotomousPair.of( true, true ) );
+        expectedValues.add( DichotomousPair.of( true, true ) );
+        expectedValues.add( DichotomousPair.of( false, false ) );
+        expectedValues.add( DichotomousPair.of( true, true ) );
         DichotomousPairs expectedNoBase = DataFactory.ofDichotomousPairs( expectedValues, meta );
         DichotomousPairs expectedBase = DataFactory.ofDichotomousPairs( expectedValues,
                                                                         expectedValues,
@@ -264,12 +264,12 @@ public final class SlicerTest
     public void testTransformEnsemblePairsToDiscreteProbabilityPairs()
     {
         final List<EnsemblePair> values = new ArrayList<>();
-        values.add( DataFactory.pairOf( 3, new double[] { 1, 2, 3, 4, 5 } ) );
-        values.add( DataFactory.pairOf( 0, new double[] { 1, 2, 2, 3, 3 } ) );
-        values.add( DataFactory.pairOf( 3, new double[] { 3, 3, 3, 3, 3 } ) );
-        values.add( DataFactory.pairOf( 4, new double[] { 4, 4, 4, 4, 4 } ) );
-        values.add( DataFactory.pairOf( 0, new double[] { 1, 2, 3, 4, 5 } ) );
-        values.add( DataFactory.pairOf( 5, new double[] { 1, 1, 6, 6, 50 } ) );
+        values.add( EnsemblePair.of( 3, new double[] { 1, 2, 3, 4, 5 } ) );
+        values.add( EnsemblePair.of( 0, new double[] { 1, 2, 2, 3, 3 } ) );
+        values.add( EnsemblePair.of( 3, new double[] { 3, 3, 3, 3, 3 } ) );
+        values.add( EnsemblePair.of( 4, new double[] { 4, 4, 4, 4, 4 } ) );
+        values.add( EnsemblePair.of( 0, new double[] { 1, 2, 3, 4, 5 } ) );
+        values.add( EnsemblePair.of( 5, new double[] { 1, 1, 6, 6, 50 } ) );
         Metadata meta = MetadataFactory.getMetadata();
         Threshold threshold = DataFactory.ofThreshold( OneOrTwoDoubles.of( 3.0 ),
                                                        Operator.GREATER,
@@ -312,29 +312,29 @@ public final class SlicerTest
     @Test
     public void testTransformEnsemblePairToDiscreteProbabilityPair()
     {
-        EnsemblePair a = DataFactory.pairOf( 3, new double[] { 1, 2, 3, 4, 5 } );
-        EnsemblePair b = DataFactory.pairOf( 0, new double[] { 1, 2, 2, 3, 3 } );
-        EnsemblePair c = DataFactory.pairOf( 3, new double[] { 3, 3, 3, 3, 3 } );
-        EnsemblePair d = DataFactory.pairOf( 4, new double[] { 4, 4, 4, 4, 4 } );
-        EnsemblePair e = DataFactory.pairOf( 0, new double[] { 1, 2, 3, 4, 5 } );
-        EnsemblePair f = DataFactory.pairOf( 5, new double[] { 1, 1, 6, 6, 50 } );
+        EnsemblePair a = EnsemblePair.of( 3, new double[] { 1, 2, 3, 4, 5 } );
+        EnsemblePair b = EnsemblePair.of( 0, new double[] { 1, 2, 2, 3, 3 } );
+        EnsemblePair c = EnsemblePair.of( 3, new double[] { 3, 3, 3, 3, 3 } );
+        EnsemblePair d = EnsemblePair.of( 4, new double[] { 4, 4, 4, 4, 4 } );
+        EnsemblePair e = EnsemblePair.of( 0, new double[] { 1, 2, 3, 4, 5 } );
+        EnsemblePair f = EnsemblePair.of( 5, new double[] { 1, 1, 6, 6, 50 } );
         Threshold threshold = DataFactory.ofThreshold( OneOrTwoDoubles.of( 3.0 ),
                                                        Operator.GREATER,
                                                        ThresholdDataType.LEFT );
-        BiFunction<EnsemblePair, Threshold, SingleValuedPair> mapper =
+        BiFunction<EnsemblePair, Threshold, DiscreteProbabilityPair> mapper =
                 Slicer::toDiscreteProbabilityPair;
         assertTrue( "The transformed pair does not match the benchmark",
-                    mapper.apply( a, threshold ).equals( DataFactory.pairOf( 0.0, 2.0 / 5.0 ) ) );
+                    mapper.apply( a, threshold ).equals( DiscreteProbabilityPair.of( 0.0, 2.0 / 5.0 ) ) );
         assertTrue( "The transformed pair does not match the benchmark",
-                    mapper.apply( b, threshold ).equals( DataFactory.pairOf( 0.0, 0.0 / 5.0 ) ) );
+                    mapper.apply( b, threshold ).equals( DiscreteProbabilityPair.of( 0.0, 0.0 / 5.0 ) ) );
         assertTrue( "The transfored pair does not match the benchmark",
-                    mapper.apply( c, threshold ).equals( DataFactory.pairOf( 0.0, 0.0 / 5.0 ) ) );
+                    mapper.apply( c, threshold ).equals( DiscreteProbabilityPair.of( 0.0, 0.0 / 5.0 ) ) );
         assertTrue( "The transformed pair does not match the benchmark",
-                    mapper.apply( d, threshold ).equals( DataFactory.pairOf( 1.0, 5.0 / 5.0 ) ) );
+                    mapper.apply( d, threshold ).equals( DiscreteProbabilityPair.of( 1.0, 5.0 / 5.0 ) ) );
         assertTrue( "The transformed pair does not match the benchmark",
-                    mapper.apply( e, threshold ).equals( DataFactory.pairOf( 0.0, 2.0 / 5.0 ) ) );
+                    mapper.apply( e, threshold ).equals( DiscreteProbabilityPair.of( 0.0, 2.0 / 5.0 ) ) );
         assertTrue( "The transformed pair does not match the benchmark",
-                    mapper.apply( f, threshold ).equals( DataFactory.pairOf( 1.0, 3.0 / 5.0 ) ) );
+                    mapper.apply( f, threshold ).equals( DiscreteProbabilityPair.of( 1.0, 3.0 / 5.0 ) ) );
     }
 
     /**
@@ -478,26 +478,26 @@ public final class SlicerTest
     @Test
     public void testTransformPair()
     {
-        EnsemblePair a = DataFactory.pairOf( 3, new double[] { 1, 2, 3, 4, 5 } );
-        EnsemblePair b = DataFactory.pairOf( 0, new double[] { 1, 2, 2, 3, 3 } );
-        EnsemblePair c = DataFactory.pairOf( 3, new double[] { 3, 3, 3, 3, 3 } );
-        EnsemblePair d = DataFactory.pairOf( 4, new double[] { 4, 4, 4, 4, 4 } );
-        EnsemblePair e = DataFactory.pairOf( 0, new double[] { 1, 2, 3, 4, 5 } );
-        EnsemblePair f = DataFactory.pairOf( 5, new double[] { 1, 1, 6, 6, 50 } );
+        EnsemblePair a = EnsemblePair.of( 3, new double[] { 1, 2, 3, 4, 5 } );
+        EnsemblePair b = EnsemblePair.of( 0, new double[] { 1, 2, 2, 3, 3 } );
+        EnsemblePair c = EnsemblePair.of( 3, new double[] { 3, 3, 3, 3, 3 } );
+        EnsemblePair d = EnsemblePair.of( 4, new double[] { 4, 4, 4, 4, 4 } );
+        EnsemblePair e = EnsemblePair.of( 0, new double[] { 1, 2, 3, 4, 5 } );
+        EnsemblePair f = EnsemblePair.of( 5, new double[] { 1, 1, 6, 6, 50 } );
         Function<EnsemblePair, SingleValuedPair> mapper =
                 Slicer.ofSingleValuedPairMapper( vector -> vector[0] );
         assertTrue( "The transformed pair does not match the benchmark",
-                    mapper.apply( a ).equals( DataFactory.pairOf( 3, 1 ) ) );
+                    mapper.apply( a ).equals( SingleValuedPair.of( 3, 1 ) ) );
         assertTrue( "The transformed pair does not match the benchmark",
-                    mapper.apply( b ).equals( DataFactory.pairOf( 0, 1 ) ) );
+                    mapper.apply( b ).equals( SingleValuedPair.of( 0, 1 ) ) );
         assertTrue( "The transfored pair does not match the benchmark",
-                    mapper.apply( c ).equals( DataFactory.pairOf( 3, 3 ) ) );
+                    mapper.apply( c ).equals( SingleValuedPair.of( 3, 3 ) ) );
         assertTrue( "The transformed pair does not match the benchmark",
-                    mapper.apply( d ).equals( DataFactory.pairOf( 4, 4 ) ) );
+                    mapper.apply( d ).equals( SingleValuedPair.of( 4, 4 ) ) );
         assertTrue( "The transformed pair does not match the benchmark",
-                    mapper.apply( e ).equals( DataFactory.pairOf( 0, 1 ) ) );
+                    mapper.apply( e ).equals( SingleValuedPair.of( 0, 1 ) ) );
         assertTrue( "The transformed pair does not match the benchmark",
-                    mapper.apply( f ).equals( DataFactory.pairOf( 5, 1 ) ) );
+                    mapper.apply( f ).equals( SingleValuedPair.of( 5, 1 ) ) );
     }
 
     /**
@@ -508,18 +508,18 @@ public final class SlicerTest
     public void testFilterByRight()
     {
         List<EnsemblePair> input = new ArrayList<>();
-        input.add( DataFactory.pairOf( 1, new double[] { 1, 2, 3 } ) );
-        input.add( DataFactory.pairOf( 1, new double[] { 1, 2, 3 } ) );
-        input.add( DataFactory.pairOf( 1, new double[] { 1, 2, 3 } ) );
-        input.add( DataFactory.pairOf( 2, new double[] { 1, 2, 3, 4, 5 } ) );
-        input.add( DataFactory.pairOf( 2, new double[] { 1, 2, 3, 4, 5 } ) );
-        input.add( DataFactory.pairOf( 2, new double[] { 1, 2, 3, 4, 5 } ) );
-        input.add( DataFactory.pairOf( 2, new double[] { 1, 2, 3, 4, 5 } ) );
-        input.add( DataFactory.pairOf( 2, new double[] { 1, 2, 3, 4, 5 } ) );
-        input.add( DataFactory.pairOf( 3, new double[] { 1, 2, 3, 4, 5, 6 } ) );
-        input.add( DataFactory.pairOf( 3, new double[] { 1, 2, 3, 4, 5, 6 } ) );
-        input.add( DataFactory.pairOf( 3, new double[] { 1, 2, 3, 4, 5, 6 } ) );
-        input.add( DataFactory.pairOf( 3, new double[] { 1, 2, 3, 4, 5, 6 } ) );
+        input.add( EnsemblePair.of( 1, new double[] { 1, 2, 3 } ) );
+        input.add( EnsemblePair.of( 1, new double[] { 1, 2, 3 } ) );
+        input.add( EnsemblePair.of( 1, new double[] { 1, 2, 3 } ) );
+        input.add( EnsemblePair.of( 2, new double[] { 1, 2, 3, 4, 5 } ) );
+        input.add( EnsemblePair.of( 2, new double[] { 1, 2, 3, 4, 5 } ) );
+        input.add( EnsemblePair.of( 2, new double[] { 1, 2, 3, 4, 5 } ) );
+        input.add( EnsemblePair.of( 2, new double[] { 1, 2, 3, 4, 5 } ) );
+        input.add( EnsemblePair.of( 2, new double[] { 1, 2, 3, 4, 5 } ) );
+        input.add( EnsemblePair.of( 3, new double[] { 1, 2, 3, 4, 5, 6 } ) );
+        input.add( EnsemblePair.of( 3, new double[] { 1, 2, 3, 4, 5, 6 } ) );
+        input.add( EnsemblePair.of( 3, new double[] { 1, 2, 3, 4, 5, 6 } ) );
+        input.add( EnsemblePair.of( 3, new double[] { 1, 2, 3, 4, 5, 6 } ) );
         //Slice
         Map<Integer, List<EnsemblePair>> sliced = Slicer.filterByRightSize( input );
         //Check the results
@@ -556,20 +556,20 @@ public final class SlicerTest
     public void testFilterSingleValuedPairs()
     {
         List<SingleValuedPair> values = new ArrayList<>();
-        values.add( DataFactory.pairOf( 1, 2.0 / 5.0 ) );
-        values.add( DataFactory.pairOf( 1, 3.0 / 5.0 ) );
-        values.add( DataFactory.pairOf( 1, 1.0 / 5.0 ) );
-        values.add( DataFactory.pairOf( Double.NaN, Double.NaN ) );
-        values.add( DataFactory.pairOf( 0, Double.NaN ) );
-        values.add( DataFactory.pairOf( Double.NaN, 0 ) );
+        values.add( SingleValuedPair.of( 1, 2.0 / 5.0 ) );
+        values.add( SingleValuedPair.of( 1, 3.0 / 5.0 ) );
+        values.add( SingleValuedPair.of( 1, 1.0 / 5.0 ) );
+        values.add( SingleValuedPair.of( Double.NaN, Double.NaN ) );
+        values.add( SingleValuedPair.of( 0, Double.NaN ) );
+        values.add( SingleValuedPair.of( Double.NaN, 0 ) );
 
         List<SingleValuedPair> expectedValues = new ArrayList<>();
-        expectedValues.add( DataFactory.pairOf( 1, 2.0 / 5.0 ) );
-        expectedValues.add( DataFactory.pairOf( 1, 3.0 / 5.0 ) );
-        expectedValues.add( DataFactory.pairOf( 1, 1.0 / 5.0 ) );
+        expectedValues.add( SingleValuedPair.of( 1, 2.0 / 5.0 ) );
+        expectedValues.add( SingleValuedPair.of( 1, 3.0 / 5.0 ) );
+        expectedValues.add( SingleValuedPair.of( 1, 1.0 / 5.0 ) );
 
-        VectorOfDoubles climatology = DataFactory.vectorOf( new double[] { 1, 2, 3, 4, 5, Double.NaN } );
-        VectorOfDoubles climatologyExpected = DataFactory.vectorOf( new double[] { 1, 2, 3, 4, 5 } );
+        VectorOfDoubles climatology = VectorOfDoubles.of( new double[] { 1, 2, 3, 4, 5, Double.NaN } );
+        VectorOfDoubles climatologyExpected = VectorOfDoubles.of( new double[] { 1, 2, 3, 4, 5 } );
 
         Metadata meta = MetadataFactory.getMetadata();
         SingleValuedPairs pairs = DataFactory.ofSingleValuedPairs( values, values, meta, meta, climatology );
@@ -604,21 +604,21 @@ public final class SlicerTest
     public void testFilterEnsemblePairs()
     {
         final List<EnsemblePair> values = new ArrayList<>();
-        values.add( DataFactory.pairOf( 0, new double[] { 1, 2, 3 } ) );
-        values.add( DataFactory.pairOf( 0, new double[] { 1, 2, 3 } ) );
-        values.add( DataFactory.pairOf( 0, new double[] { 1, 2, 3 } ) );
-        values.add( DataFactory.pairOf( Double.NaN, new double[] { Double.NaN, Double.NaN, Double.NaN } ) );
-        values.add( DataFactory.pairOf( 0, new double[] { Double.NaN, Double.NaN, Double.NaN } ) );
-        values.add( DataFactory.pairOf( 0, new double[] { Double.NaN, 2, 3, Double.NaN } ) );
+        values.add( EnsemblePair.of( 0, new double[] { 1, 2, 3 } ) );
+        values.add( EnsemblePair.of( 0, new double[] { 1, 2, 3 } ) );
+        values.add( EnsemblePair.of( 0, new double[] { 1, 2, 3 } ) );
+        values.add( EnsemblePair.of( Double.NaN, new double[] { Double.NaN, Double.NaN, Double.NaN } ) );
+        values.add( EnsemblePair.of( 0, new double[] { Double.NaN, Double.NaN, Double.NaN } ) );
+        values.add( EnsemblePair.of( 0, new double[] { Double.NaN, 2, 3, Double.NaN } ) );
 
         List<EnsemblePair> expectedValues = new ArrayList<>();
-        expectedValues.add( DataFactory.pairOf( 0, new double[] { 1, 2, 3 } ) );
-        expectedValues.add( DataFactory.pairOf( 0, new double[] { 1, 2, 3 } ) );
-        expectedValues.add( DataFactory.pairOf( 0, new double[] { 1, 2, 3 } ) );
-        expectedValues.add( DataFactory.pairOf( 0, new double[] { 2, 3 } ) );
+        expectedValues.add( EnsemblePair.of( 0, new double[] { 1, 2, 3 } ) );
+        expectedValues.add( EnsemblePair.of( 0, new double[] { 1, 2, 3 } ) );
+        expectedValues.add( EnsemblePair.of( 0, new double[] { 1, 2, 3 } ) );
+        expectedValues.add( EnsemblePair.of( 0, new double[] { 2, 3 } ) );
 
-        VectorOfDoubles climatology = DataFactory.vectorOf( new double[] { 1, 2, 3, 4, 5, Double.NaN } );
-        VectorOfDoubles climatologyExpected = DataFactory.vectorOf( new double[] { 1, 2, 3, 4, 5 } );
+        VectorOfDoubles climatology = VectorOfDoubles.of( new double[] { 1, 2, 3, 4, 5, Double.NaN } );
+        VectorOfDoubles climatologyExpected = VectorOfDoubles.of( new double[] { 1, 2, 3, 4, 5 } );
 
         Metadata meta = MetadataFactory.getMetadata();
         EnsemblePairs pairs = DataFactory.ofEnsemblePairs( values, values, meta, meta, climatology );
@@ -659,19 +659,19 @@ public final class SlicerTest
         TimeSeriesOfSingleValuedPairsBuilder b = new TimeSeriesOfSingleValuedPairsBuilder();
 
         Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
-        first.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), DataFactory.pairOf( 1, 10 ) ) );
-        first.add( Event.of( Instant.parse( "1985-01-01T02:00:00Z" ), DataFactory.pairOf( 2, 11 ) ) );
-        first.add( Event.of( Instant.parse( "1985-01-01T03:00:00Z" ), DataFactory.pairOf( 3, 12 ) ) );
+        first.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), SingleValuedPair.of( 1, 10 ) ) );
+        first.add( Event.of( Instant.parse( "1985-01-01T02:00:00Z" ), SingleValuedPair.of( 2, 11 ) ) );
+        first.add( Event.of( Instant.parse( "1985-01-01T03:00:00Z" ), SingleValuedPair.of( 3, 12 ) ) );
 
         Instant secondBasisTime = Instant.parse( "1985-01-02T00:00:00Z" );
-        second.add( Event.of( Instant.parse( "1985-01-02T01:00:00Z" ), DataFactory.pairOf( 4, 13 ) ) );
-        second.add( Event.of( Instant.parse( "1985-01-02T02:00:00Z" ), DataFactory.pairOf( 5, 14 ) ) );
-        second.add( Event.of( Instant.parse( "1985-01-02T03:00:00Z" ), DataFactory.pairOf( 6, 15 ) ) );
+        second.add( Event.of( Instant.parse( "1985-01-02T01:00:00Z" ), SingleValuedPair.of( 4, 13 ) ) );
+        second.add( Event.of( Instant.parse( "1985-01-02T02:00:00Z" ), SingleValuedPair.of( 5, 14 ) ) );
+        second.add( Event.of( Instant.parse( "1985-01-02T03:00:00Z" ), SingleValuedPair.of( 6, 15 ) ) );
 
         Instant thirdBasisTime = Instant.parse( "1985-01-03T00:00:00Z" );
-        third.add( Event.of( Instant.parse( "1985-01-03T01:00:00Z" ), DataFactory.pairOf( 7, 16 ) ) );
-        third.add( Event.of( Instant.parse( "1985-01-03T02:00:00Z" ), DataFactory.pairOf( 8, 17 ) ) );
-        third.add( Event.of( Instant.parse( "1985-01-03T03:00:00Z" ), DataFactory.pairOf( 9, 18 ) ) );
+        third.add( Event.of( Instant.parse( "1985-01-03T01:00:00Z" ), SingleValuedPair.of( 7, 16 ) ) );
+        third.add( Event.of( Instant.parse( "1985-01-03T02:00:00Z" ), SingleValuedPair.of( 8, 17 ) ) );
+        third.add( Event.of( Instant.parse( "1985-01-03T03:00:00Z" ), SingleValuedPair.of( 9, 18 ) ) );
         Metadata meta = MetadataFactory.getMetadata();
 
         //Add the time-series
@@ -707,8 +707,8 @@ public final class SlicerTest
                     secondData.equals( secondBenchmark ) );
 
         // Add climatology for later
-        VectorOfDoubles climatology = DataFactory.vectorOf( new double[] { 1, 2, 3, 4, 5, Double.NaN } );
-        VectorOfDoubles climatologyExpected = DataFactory.vectorOf( new double[] { 1, 2, 3, 4, 5 } );
+        VectorOfDoubles climatology = VectorOfDoubles.of( new double[] { 1, 2, 3, 4, 5, Double.NaN } );
+        VectorOfDoubles climatologyExpected = VectorOfDoubles.of( new double[] { 1, 2, 3, 4, 5 } );
 
         b.setClimatology( climatology );
 
@@ -778,17 +778,17 @@ public final class SlicerTest
         TimeSeriesOfEnsemblePairsBuilder b = new TimeSeriesOfEnsemblePairsBuilder();
 
         Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
-        first.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), DataFactory.pairOf( 1, new double[] { 1 } ) ) );
-        first.add( Event.of( Instant.parse( "1985-01-01T02:00:00Z" ), DataFactory.pairOf( 2, new double[] { 2 } ) ) );
-        first.add( Event.of( Instant.parse( "1985-01-01T03:00:00Z" ), DataFactory.pairOf( 3, new double[] { 3 } ) ) );
+        first.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), EnsemblePair.of( 1, new double[] { 1 } ) ) );
+        first.add( Event.of( Instant.parse( "1985-01-01T02:00:00Z" ), EnsemblePair.of( 2, new double[] { 2 } ) ) );
+        first.add( Event.of( Instant.parse( "1985-01-01T03:00:00Z" ), EnsemblePair.of( 3, new double[] { 3 } ) ) );
         Instant secondBasisTime = Instant.parse( "1985-01-02T00:00:00Z" );
-        second.add( Event.of( Instant.parse( "1985-01-02T01:00:00Z" ), DataFactory.pairOf( 4, new double[] { 4 } ) ) );
-        second.add( Event.of( Instant.parse( "1985-01-02T02:00:00Z" ), DataFactory.pairOf( 5, new double[] { 5 } ) ) );
-        second.add( Event.of( Instant.parse( "1985-01-02T03:00:00Z" ), DataFactory.pairOf( 6, new double[] { 6 } ) ) );
+        second.add( Event.of( Instant.parse( "1985-01-02T01:00:00Z" ), EnsemblePair.of( 4, new double[] { 4 } ) ) );
+        second.add( Event.of( Instant.parse( "1985-01-02T02:00:00Z" ), EnsemblePair.of( 5, new double[] { 5 } ) ) );
+        second.add( Event.of( Instant.parse( "1985-01-02T03:00:00Z" ), EnsemblePair.of( 6, new double[] { 6 } ) ) );
         Instant thirdBasisTime = Instant.parse( "1985-01-03T00:00:00Z" );
-        third.add( Event.of( Instant.parse( "1985-01-03T01:00:00Z" ), DataFactory.pairOf( 7, new double[] { 7 } ) ) );
-        third.add( Event.of( Instant.parse( "1985-01-03T02:00:00Z" ), DataFactory.pairOf( 8, new double[] { 8 } ) ) );
-        third.add( Event.of( Instant.parse( "1985-01-03T03:00:00Z" ), DataFactory.pairOf( 9, new double[] { 9 } ) ) );
+        third.add( Event.of( Instant.parse( "1985-01-03T01:00:00Z" ), EnsemblePair.of( 7, new double[] { 7 } ) ) );
+        third.add( Event.of( Instant.parse( "1985-01-03T02:00:00Z" ), EnsemblePair.of( 8, new double[] { 8 } ) ) );
+        third.add( Event.of( Instant.parse( "1985-01-03T03:00:00Z" ), EnsemblePair.of( 9, new double[] { 9 } ) ) );
         Metadata meta = MetadataFactory.getMetadata();
         //Add the time-series
         TimeSeriesOfEnsemblePairs ts =
@@ -809,7 +809,7 @@ public final class SlicerTest
                             .iterator()
                             .next()
                             .getValue()
-                            .equals( DataFactory.pairOf( 4, new double[] { 4 } ) ) );
+                            .equals( EnsemblePair.of( 4, new double[] { 4 } ) ) );
 
         //Check for empty output on none filter
         List<Instant> sliced = Slicer.filterByBasisTime( ts, a -> a.equals( Instant.parse( "1985-01-04T00:00:00Z" ) ) )
@@ -837,17 +837,17 @@ public final class SlicerTest
         TimeSeriesOfEnsemblePairsBuilder b = new TimeSeriesOfEnsemblePairsBuilder();
 
         Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
-        first.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), DataFactory.pairOf( 1, new double[] { 1 } ) ) );
-        first.add( Event.of( Instant.parse( "1985-01-01T02:00:00Z" ), DataFactory.pairOf( 2, new double[] { 2 } ) ) );
-        first.add( Event.of( Instant.parse( "1985-01-01T03:00:00Z" ), DataFactory.pairOf( 3, new double[] { 3 } ) ) );
+        first.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), EnsemblePair.of( 1, new double[] { 1 } ) ) );
+        first.add( Event.of( Instant.parse( "1985-01-01T02:00:00Z" ), EnsemblePair.of( 2, new double[] { 2 } ) ) );
+        first.add( Event.of( Instant.parse( "1985-01-01T03:00:00Z" ), EnsemblePair.of( 3, new double[] { 3 } ) ) );
         Instant secondBasisTime = Instant.parse( "1985-01-02T00:00:00Z" );
-        second.add( Event.of( Instant.parse( "1985-01-02T01:00:00Z" ), DataFactory.pairOf( 4, new double[] { 4 } ) ) );
-        second.add( Event.of( Instant.parse( "1985-01-02T02:00:00Z" ), DataFactory.pairOf( 5, new double[] { 5 } ) ) );
-        second.add( Event.of( Instant.parse( "1985-01-02T03:00:00Z" ), DataFactory.pairOf( 6, new double[] { 6 } ) ) );
+        second.add( Event.of( Instant.parse( "1985-01-02T01:00:00Z" ), EnsemblePair.of( 4, new double[] { 4 } ) ) );
+        second.add( Event.of( Instant.parse( "1985-01-02T02:00:00Z" ), EnsemblePair.of( 5, new double[] { 5 } ) ) );
+        second.add( Event.of( Instant.parse( "1985-01-02T03:00:00Z" ), EnsemblePair.of( 6, new double[] { 6 } ) ) );
         Instant thirdBasisTime = Instant.parse( "1985-01-03T00:00:00Z" );
-        third.add( Event.of( Instant.parse( "1985-01-03T01:00:00Z" ), DataFactory.pairOf( 7, new double[] { 7 } ) ) );
-        third.add( Event.of( Instant.parse( "1985-01-03T02:00:00Z" ), DataFactory.pairOf( 8, new double[] { 8 } ) ) );
-        third.add( Event.of( Instant.parse( "1985-01-03T03:00:00Z" ), DataFactory.pairOf( 9, new double[] { 9 } ) ) );
+        third.add( Event.of( Instant.parse( "1985-01-03T01:00:00Z" ), EnsemblePair.of( 7, new double[] { 7 } ) ) );
+        third.add( Event.of( Instant.parse( "1985-01-03T02:00:00Z" ), EnsemblePair.of( 8, new double[] { 8 } ) ) );
+        third.add( Event.of( Instant.parse( "1985-01-03T03:00:00Z" ), EnsemblePair.of( 9, new double[] { 9 } ) ) );
         Metadata meta = MetadataFactory.getMetadata();
         //Add the time-series
         TimeSeriesOfEnsemblePairs ts =
@@ -868,7 +868,7 @@ public final class SlicerTest
                             .iterator()
                             .next()
                             .getValue()
-                            .equals( DataFactory.pairOf( 6, new double[] { 6 } ) ) );
+                            .equals( EnsemblePair.of( 6, new double[] { 6 } ) ) );
 
         //Check for empty output on none filter
         @SuppressWarnings( "unlikely-arg-type" )
@@ -898,17 +898,17 @@ public final class SlicerTest
         TimeSeriesOfSingleValuedPairsBuilder b = new TimeSeriesOfSingleValuedPairsBuilder();
 
         Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
-        first.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), DataFactory.pairOf( 1, 1 ) ) );
-        first.add( Event.of( Instant.parse( "1985-01-01T02:00:00Z" ), DataFactory.pairOf( 2, 2 ) ) );
-        first.add( Event.of( Instant.parse( "1985-01-01T03:00:00Z" ), DataFactory.pairOf( 3, 3 ) ) );
+        first.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), SingleValuedPair.of( 1, 1 ) ) );
+        first.add( Event.of( Instant.parse( "1985-01-01T02:00:00Z" ), SingleValuedPair.of( 2, 2 ) ) );
+        first.add( Event.of( Instant.parse( "1985-01-01T03:00:00Z" ), SingleValuedPair.of( 3, 3 ) ) );
         Instant secondBasisTime = Instant.parse( "1985-01-02T00:00:00Z" );
-        second.add( Event.of( Instant.parse( "1985-01-02T01:00:00Z" ), DataFactory.pairOf( 4, 4 ) ) );
-        second.add( Event.of( Instant.parse( "1985-01-02T02:00:00Z" ), DataFactory.pairOf( 5, 5 ) ) );
-        second.add( Event.of( Instant.parse( "1985-01-02T03:00:00Z" ), DataFactory.pairOf( 6, 6 ) ) );
+        second.add( Event.of( Instant.parse( "1985-01-02T01:00:00Z" ), SingleValuedPair.of( 4, 4 ) ) );
+        second.add( Event.of( Instant.parse( "1985-01-02T02:00:00Z" ), SingleValuedPair.of( 5, 5 ) ) );
+        second.add( Event.of( Instant.parse( "1985-01-02T03:00:00Z" ), SingleValuedPair.of( 6, 6 ) ) );
         Instant thirdBasisTime = Instant.parse( "1985-01-03T00:00:00Z" );
-        third.add( Event.of( Instant.parse( "1985-01-03T01:00:00Z" ), DataFactory.pairOf( 7, 7 ) ) );
-        third.add( Event.of( Instant.parse( "1985-01-03T02:00:00Z" ), DataFactory.pairOf( 8, 8 ) ) );
-        third.add( Event.of( Instant.parse( "1985-01-03T03:00:00Z" ), DataFactory.pairOf( 9, 9 ) ) );
+        third.add( Event.of( Instant.parse( "1985-01-03T01:00:00Z" ), SingleValuedPair.of( 7, 7 ) ) );
+        third.add( Event.of( Instant.parse( "1985-01-03T02:00:00Z" ), SingleValuedPair.of( 8, 8 ) ) );
+        third.add( Event.of( Instant.parse( "1985-01-03T03:00:00Z" ), SingleValuedPair.of( 9, 9 ) ) );
         Metadata meta = MetadataFactory.getMetadata();
         //Add the time-series
         TimeSeriesOfSingleValuedPairs ts =
@@ -924,7 +924,7 @@ public final class SlicerTest
         assertTrue( "Unexpected issue time in the filtered time-series.",
                     filtered.getBasisTimes().get( 0 ).equals( secondBasisTime ) );
         assertTrue( "Unexpected value in the filtered time-series.",
-                    filtered.timeIterator().iterator().next().getValue().equals( DataFactory.pairOf( 4, 4 ) ) );
+                    filtered.timeIterator().iterator().next().getValue().equals( SingleValuedPair.of( 4, 4 ) ) );
 
         //Check for empty output on none filter
         List<Instant> sliced = Slicer.filterByBasisTime( ts, p -> p.equals( Instant.parse( "1985-01-04T00:00:00Z" ) ) )
@@ -952,17 +952,17 @@ public final class SlicerTest
         TimeSeriesOfSingleValuedPairsBuilder b = new TimeSeriesOfSingleValuedPairsBuilder();
 
         Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
-        first.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), DataFactory.pairOf( 1, 1 ) ) );
-        first.add( Event.of( Instant.parse( "1985-01-01T02:00:00Z" ), DataFactory.pairOf( 2, 2 ) ) );
-        first.add( Event.of( Instant.parse( "1985-01-01T03:00:00Z" ), DataFactory.pairOf( 3, 3 ) ) );
+        first.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), SingleValuedPair.of( 1, 1 ) ) );
+        first.add( Event.of( Instant.parse( "1985-01-01T02:00:00Z" ), SingleValuedPair.of( 2, 2 ) ) );
+        first.add( Event.of( Instant.parse( "1985-01-01T03:00:00Z" ), SingleValuedPair.of( 3, 3 ) ) );
         Instant secondBasisTime = Instant.parse( "1985-01-02T00:00:00Z" );
-        second.add( Event.of( Instant.parse( "1985-01-02T01:00:00Z" ), DataFactory.pairOf( 4, 4 ) ) );
-        second.add( Event.of( Instant.parse( "1985-01-02T02:00:00Z" ), DataFactory.pairOf( 5, 5 ) ) );
-        second.add( Event.of( Instant.parse( "1985-01-02T03:00:00Z" ), DataFactory.pairOf( 6, 6 ) ) );
+        second.add( Event.of( Instant.parse( "1985-01-02T01:00:00Z" ), SingleValuedPair.of( 4, 4 ) ) );
+        second.add( Event.of( Instant.parse( "1985-01-02T02:00:00Z" ), SingleValuedPair.of( 5, 5 ) ) );
+        second.add( Event.of( Instant.parse( "1985-01-02T03:00:00Z" ), SingleValuedPair.of( 6, 6 ) ) );
         Instant thirdBasisTime = Instant.parse( "1985-01-03T00:00:00Z" );
-        third.add( Event.of( Instant.parse( "1985-01-03T01:00:00Z" ), DataFactory.pairOf( 7, 7 ) ) );
-        third.add( Event.of( Instant.parse( "1985-01-03T02:00:00Z" ), DataFactory.pairOf( 8, 8 ) ) );
-        third.add( Event.of( Instant.parse( "1985-01-03T03:00:00Z" ), DataFactory.pairOf( 9, 9 ) ) );
+        third.add( Event.of( Instant.parse( "1985-01-03T01:00:00Z" ), SingleValuedPair.of( 7, 7 ) ) );
+        third.add( Event.of( Instant.parse( "1985-01-03T02:00:00Z" ), SingleValuedPair.of( 8, 8 ) ) );
+        third.add( Event.of( Instant.parse( "1985-01-03T03:00:00Z" ), SingleValuedPair.of( 9, 9 ) ) );
         Metadata meta = MetadataFactory.getMetadata();
         //Add the time-series
         TimeSeriesOfSingleValuedPairs ts =
@@ -980,7 +980,7 @@ public final class SlicerTest
         assertTrue( "Unexpected duration in the filtered time-series.",
                     filtered.getDurations().first().equals( Duration.ofHours( 3 ) ) );
         assertTrue( "Unexpected value in the filtered time-series.",
-                    filtered.timeIterator().iterator().next().getValue().equals( DataFactory.pairOf( 6, 6 ) ) );
+                    filtered.timeIterator().iterator().next().getValue().equals( SingleValuedPair.of( 6, 6 ) ) );
 
         //Check for empty output on none filter
         Set<Duration> sliced = Slicer.filterByBasisTime( ts, p -> p.equals( Duration.ofHours( 4 ) ) ).getDurations();

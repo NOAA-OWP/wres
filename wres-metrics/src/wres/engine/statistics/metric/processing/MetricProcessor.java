@@ -18,6 +18,7 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
+import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.Slicer;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
@@ -419,7 +420,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
         //Set the executor for processing thresholds
         this.thresholdExecutor = thresholdExecutor;
 
-        this.allDataThreshold = DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
+        this.allDataThreshold = DataFactory.ofThreshold( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                          Operator.GREATER,
                                                          ThresholdDataType.LEFT_AND_RIGHT );
 

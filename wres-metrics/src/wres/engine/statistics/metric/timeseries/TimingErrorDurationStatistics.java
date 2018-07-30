@@ -73,7 +73,7 @@ public class TimingErrorDurationStatistics implements Function<PairedOutput<Inst
                 // Some loss of precision here, not consequential
                 returnMe.put( nextIdentifier,
                               Duration.ofMillis( (long) statistics.get( nextIdentifier )
-                                                                  .applyAsDouble( DataFactory.vectorOf( input ) ) ) );
+                                                                  .applyAsDouble( VectorOfDoubles.of( input ) ) ) );
             }
             // No data available
             else

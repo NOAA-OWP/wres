@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Objects;
 
 import wres.datamodel.DataFactory;
+import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.inputs.pairs.DichotomousPair;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPair;
@@ -51,16 +52,16 @@ public final class MetricTestDataFactory
     {
         //Construct some single-valued pairs
         final List<SingleValuedPair> values = new ArrayList<>();
-        values.add( DataFactory.pairOf( 22.9, 22.8 ) );
-        values.add( DataFactory.pairOf( 75.2, 80 ) );
-        values.add( DataFactory.pairOf( 63.2, 65 ) );
-        values.add( DataFactory.pairOf( 29, 30 ) );
-        values.add( DataFactory.pairOf( 5, 2 ) );
-        values.add( DataFactory.pairOf( 2.1, 3.1 ) );
-        values.add( DataFactory.pairOf( 35000, 37000 ) );
-        values.add( DataFactory.pairOf( 8, 7 ) );
-        values.add( DataFactory.pairOf( 12, 12 ) );
-        values.add( DataFactory.pairOf( 93, 94 ) );
+        values.add( SingleValuedPair.of( 22.9, 22.8 ) );
+        values.add( SingleValuedPair.of( 75.2, 80 ) );
+        values.add( SingleValuedPair.of( 63.2, 65 ) );
+        values.add( SingleValuedPair.of( 29, 30 ) );
+        values.add( SingleValuedPair.of( 5, 2 ) );
+        values.add( SingleValuedPair.of( 2.1, 3.1 ) );
+        values.add( SingleValuedPair.of( 35000, 37000 ) );
+        values.add( SingleValuedPair.of( 8, 7 ) );
+        values.add( SingleValuedPair.of( 12, 12 ) );
+        values.add( SingleValuedPair.of( 93, 94 ) );
 
         return DataFactory.ofSingleValuedPairs( values, MetadataFactory.getMetadata() );
     }
@@ -75,27 +76,27 @@ public final class MetricTestDataFactory
     {
         //Construct some single-valued pairs
         final List<SingleValuedPair> values = new ArrayList<>();
-        values.add( DataFactory.pairOf( 22.9, 22.8 ) );
-        values.add( DataFactory.pairOf( 75.2, 80 ) );
-        values.add( DataFactory.pairOf( 63.2, 65 ) );
-        values.add( DataFactory.pairOf( 29, 30 ) );
-        values.add( DataFactory.pairOf( 5, 2 ) );
-        values.add( DataFactory.pairOf( 2.1, 3.1 ) );
-        values.add( DataFactory.pairOf( 35000, 37000 ) );
-        values.add( DataFactory.pairOf( 8, 7 ) );
-        values.add( DataFactory.pairOf( 12, 12 ) );
-        values.add( DataFactory.pairOf( 93, 94 ) );
+        values.add( SingleValuedPair.of( 22.9, 22.8 ) );
+        values.add( SingleValuedPair.of( 75.2, 80 ) );
+        values.add( SingleValuedPair.of( 63.2, 65 ) );
+        values.add( SingleValuedPair.of( 29, 30 ) );
+        values.add( SingleValuedPair.of( 5, 2 ) );
+        values.add( SingleValuedPair.of( 2.1, 3.1 ) );
+        values.add( SingleValuedPair.of( 35000, 37000 ) );
+        values.add( SingleValuedPair.of( 8, 7 ) );
+        values.add( SingleValuedPair.of( 12, 12 ) );
+        values.add( SingleValuedPair.of( 93, 94 ) );
         final List<SingleValuedPair> baseline = new ArrayList<>();
-        baseline.add( DataFactory.pairOf( 20.9, 23.8 ) );
-        baseline.add( DataFactory.pairOf( 71.2, 83.2 ) );
-        baseline.add( DataFactory.pairOf( 69.2, 66 ) );
-        baseline.add( DataFactory.pairOf( 20, 30.5 ) );
-        baseline.add( DataFactory.pairOf( 5.8, 2.1 ) );
-        baseline.add( DataFactory.pairOf( 1.1, 3.4 ) );
-        baseline.add( DataFactory.pairOf( 33020, 37500 ) );
-        baseline.add( DataFactory.pairOf( 8.8, 7.1 ) );
-        baseline.add( DataFactory.pairOf( 12.1, 13 ) );
-        baseline.add( DataFactory.pairOf( 93.2, 94.8 ) );
+        baseline.add( SingleValuedPair.of( 20.9, 23.8 ) );
+        baseline.add( SingleValuedPair.of( 71.2, 83.2 ) );
+        baseline.add( SingleValuedPair.of( 69.2, 66 ) );
+        baseline.add( SingleValuedPair.of( 20, 30.5 ) );
+        baseline.add( SingleValuedPair.of( 5.8, 2.1 ) );
+        baseline.add( SingleValuedPair.of( 1.1, 3.4 ) );
+        baseline.add( SingleValuedPair.of( 33020, 37500 ) );
+        baseline.add( SingleValuedPair.of( 8.8, 7.1 ) );
+        baseline.add( SingleValuedPair.of( 12.1, 13 ) );
+        baseline.add( SingleValuedPair.of( 93.2, 94.8 ) );
 
         final Metadata main = MetadataFactory.getMetadata( MetadataFactory.getDimension( "CMS" ),
                                                            MetadataFactory.getDatasetIdentifier( getLocation( "DRRC2" ),
@@ -126,7 +127,7 @@ public final class MetricTestDataFactory
 
         for ( int i = 0; i < 10000; i++ )
         {
-            values.add( DataFactory.pairOf( 5, 10 ) );
+            values.add( SingleValuedPair.of( 5, 10 ) );
         }
 
         final Metadata meta = MetadataFactory.getMetadata( MetadataFactory.getDimension( "CMS" ),
@@ -153,7 +154,7 @@ public final class MetricTestDataFactory
         {
             for ( int j = 0; j < 100; j++ )
             {
-                values.add( DataFactory.pairOf( i + 1, i + 6 ) );
+                values.add( SingleValuedPair.of( i + 1, i + 6 ) );
             }
         }
 
@@ -200,7 +201,7 @@ public final class MetricTestDataFactory
             {
                 double[] doubleValues =
                         Arrays.stream( line.split( "\\s+" ) ).mapToDouble( Double::parseDouble ).toArray();
-                values.add( DataFactory.pairOf( doubleValues[0], doubleValues[1] ) );
+                values.add( SingleValuedPair.of( doubleValues[0], doubleValues[1] ) );
             }
         }
 
@@ -228,7 +229,7 @@ public final class MetricTestDataFactory
         //Construct some single-valued pairs
 
         final List<SingleValuedPair> values = new ArrayList<>();
-        values.add( DataFactory.pairOf( 22.9, 22.8 ) );
+        values.add( SingleValuedPair.of( 22.9, 22.8 ) );
         final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                  Instant.parse( "2010-12-31T11:59:59Z" ),
                                                  ReferenceTime.VALID_TIME,
@@ -282,8 +283,8 @@ public final class MetricTestDataFactory
             {
                 double[] doubleValues =
                         Arrays.stream( line.split( "\\s+" ) ).mapToDouble( Double::parseDouble ).toArray();
-                values.add( DataFactory.pairOf( doubleValues[0],
-                                                Arrays.copyOfRange( doubleValues, 1, doubleValues.length ) ) );
+                values.add( EnsemblePair.of( doubleValues[0],
+                                             Arrays.copyOfRange( doubleValues, 1, doubleValues.length ) ) );
                 climatology.add( doubleValues[0] );
             }
         }
@@ -306,7 +307,7 @@ public final class MetricTestDataFactory
                                             values,
                                             meta,
                                             baseMeta,
-                                            DataFactory.vectorOf( climatology.toArray( new Double[climatology.size()] ) ) );
+                                            VectorOfDoubles.of( climatology.toArray( new Double[climatology.size()] ) ) );
     }
 
     /**
@@ -332,15 +333,15 @@ public final class MetricTestDataFactory
             {
                 double[] doubleValues =
                         Arrays.stream( line.split( "\\s+" ) ).mapToDouble( Double::parseDouble ).toArray();
-                values.add( DataFactory.pairOf( doubleValues[0],
-                                                Arrays.copyOfRange( doubleValues, 1, doubleValues.length ) ) );
+                values.add( EnsemblePair.of( doubleValues[0],
+                                             Arrays.copyOfRange( doubleValues, 1, doubleValues.length ) ) );
                 climatology.add( doubleValues[0] );
             }
         }
         //Add some missing values
         climatology.add( Double.NaN );
-        values.add( DataFactory.pairOf( Double.NaN,
-                                        new double[] { Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN } ) );
+        values.add( EnsemblePair.of( Double.NaN,
+                                     new double[] { Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN } ) );
 
         final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                  Instant.parse( "2010-12-31T11:59:59Z" ),
@@ -362,7 +363,7 @@ public final class MetricTestDataFactory
                                             values,
                                             meta,
                                             baseMeta,
-                                            DataFactory.vectorOf( climatology.toArray( new Double[climatology.size()] ) ) );
+                                            VectorOfDoubles.of( climatology.toArray( new Double[climatology.size()] ) ) );
     }
 
     /**
@@ -387,8 +388,8 @@ public final class MetricTestDataFactory
             {
                 double[] doubleValues =
                         Arrays.stream( line.split( "\\s+" ) ).mapToDouble( Double::parseDouble ).toArray();
-                values.add( DataFactory.pairOf( doubleValues[0],
-                                                Arrays.copyOfRange( doubleValues, 1, doubleValues.length ) ) );
+                values.add( EnsemblePair.of( doubleValues[0],
+                                             Arrays.copyOfRange( doubleValues, 1, doubleValues.length ) ) );
                 climatology.add( doubleValues[0] );
             }
         }
@@ -404,7 +405,7 @@ public final class MetricTestDataFactory
                                                            window );
         return DataFactory.ofEnsemblePairs( values,
                                             meta,
-                                            DataFactory.vectorOf( climatology.toArray( new Double[climatology.size()] ) ) );
+                                            VectorOfDoubles.of( climatology.toArray( new Double[climatology.size()] ) ) );
     }
 
     /**
@@ -418,7 +419,7 @@ public final class MetricTestDataFactory
         //Construct some ensemble pairs
 
         final List<EnsemblePair> values = new ArrayList<>();
-        values.add( DataFactory.pairOf( 22.9, new double[] { 22.8, 23.9 } ) );
+        values.add( EnsemblePair.of( 22.9, new double[] { 22.8, 23.9 } ) );
 
         final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                  Instant.parse( "2010-12-31T11:59:59Z" ),
@@ -1030,17 +1031,17 @@ public final class MetricTestDataFactory
         Instant firstId = Instant.parse( "1985-01-01T00:00:00Z" );
         List<Event<SingleValuedPair>> firstValues = new ArrayList<>();
         // Add some values
-        firstValues.add( Event.of( Instant.parse( "1985-01-01T06:00:00Z" ), DataFactory.pairOf( 1, 1 ) ) );
-        firstValues.add( Event.of( Instant.parse( "1985-01-01T12:00:00Z" ), DataFactory.pairOf( 1, 5 ) ) );
-        firstValues.add( Event.of( Instant.parse( "1985-01-01T18:00:00Z" ), DataFactory.pairOf( 5, 1 ) ) );
+        firstValues.add( Event.of( Instant.parse( "1985-01-01T06:00:00Z" ), SingleValuedPair.of( 1, 1 ) ) );
+        firstValues.add( Event.of( Instant.parse( "1985-01-01T12:00:00Z" ), SingleValuedPair.of( 1, 5 ) ) );
+        firstValues.add( Event.of( Instant.parse( "1985-01-01T18:00:00Z" ), SingleValuedPair.of( 5, 1 ) ) );
 
         // Add another time-series
         Instant secondId = Instant.parse( "1985-01-02T00:00:00Z" );
         List<Event<SingleValuedPair>> secondValues = new ArrayList<>();
         // Add some values
-        secondValues.add( Event.of( Instant.parse( "1985-01-02T06:00:00Z" ), DataFactory.pairOf( 10, 1 ) ) );
-        secondValues.add( Event.of( Instant.parse( "1985-01-02T12:00:00Z" ), DataFactory.pairOf( 1, 1 ) ) );
-        secondValues.add( Event.of( Instant.parse( "1985-01-02T18:00:00Z" ), DataFactory.pairOf( 1, 10 ) ) );
+        secondValues.add( Event.of( Instant.parse( "1985-01-02T06:00:00Z" ), SingleValuedPair.of( 10, 1 ) ) );
+        secondValues.add( Event.of( Instant.parse( "1985-01-02T12:00:00Z" ), SingleValuedPair.of( 1, 1 ) ) );
+        secondValues.add( Event.of( Instant.parse( "1985-01-02T18:00:00Z" ), SingleValuedPair.of( 1, 10 ) ) );
 
         // Create some default metadata for the time-series
         final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
@@ -1074,9 +1075,9 @@ public final class MetricTestDataFactory
         Instant firstId = Instant.parse( "1985-01-01T00:00:00Z" );
         List<Event<SingleValuedPair>> firstValues = new ArrayList<>();
         // Add some values
-        firstValues.add( Event.of( Instant.parse( "1985-01-01T06:00:00Z" ), DataFactory.pairOf( 1, 1 ) ) );
-        firstValues.add( Event.of( Instant.parse( "1985-01-01T12:00:00Z" ), DataFactory.pairOf( 1, 5 ) ) );
-        firstValues.add( Event.of( Instant.parse( "1985-01-01T18:00:00Z" ), DataFactory.pairOf( 5, 1 ) ) );
+        firstValues.add( Event.of( Instant.parse( "1985-01-01T06:00:00Z" ), SingleValuedPair.of( 1, 1 ) ) );
+        firstValues.add( Event.of( Instant.parse( "1985-01-01T12:00:00Z" ), SingleValuedPair.of( 1, 5 ) ) );
+        firstValues.add( Event.of( Instant.parse( "1985-01-01T18:00:00Z" ), SingleValuedPair.of( 5, 1 ) ) );
 
         // Create some default metadata for the time-series
         final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
@@ -1111,9 +1112,9 @@ public final class MetricTestDataFactory
         Instant secondId = Instant.parse( "1985-01-02T00:00:00Z" );
         List<Event<SingleValuedPair>> secondValues = new ArrayList<>();
         // Add some values
-        secondValues.add( Event.of( Instant.parse( "1985-01-02T06:00:00Z" ), DataFactory.pairOf( 10, 1 ) ) );
-        secondValues.add( Event.of( Instant.parse( "1985-01-02T12:00:00Z" ), DataFactory.pairOf( 1, 1 ) ) );
-        secondValues.add( Event.of( Instant.parse( "1985-01-02T18:00:00Z" ), DataFactory.pairOf( 1, 10 ) ) );
+        secondValues.add( Event.of( Instant.parse( "1985-01-02T06:00:00Z" ), SingleValuedPair.of( 10, 1 ) ) );
+        secondValues.add( Event.of( Instant.parse( "1985-01-02T12:00:00Z" ), SingleValuedPair.of( 1, 1 ) ) );
+        secondValues.add( Event.of( Instant.parse( "1985-01-02T18:00:00Z" ), SingleValuedPair.of( 1, 10 ) ) );
 
         // Create some default metadata for the time-series
         final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-02T00:00:00Z" ),
@@ -1175,11 +1176,11 @@ public final class MetricTestDataFactory
         List<Event<SingleValuedPair>> secondValues = new ArrayList<>();
 
         // Add some values
-        secondValues.add( Event.of( Instant.parse( "1985-01-02T06:00:00Z" ), DataFactory.pairOf( 10, 1 ) ) );
-        secondValues.add( Event.of( Instant.parse( "1985-01-02T12:00:00Z" ), DataFactory.pairOf( 1, 1 ) ) );
-        secondValues.add( Event.of( Instant.parse( "1985-01-02T18:00:00Z" ), DataFactory.pairOf( 10, 10 ) ) );
-        secondValues.add( Event.of( Instant.parse( "1985-01-03T00:00:00Z" ), DataFactory.pairOf( 2, 10 ) ) );
-        secondValues.add( Event.of( Instant.parse( "1985-01-03T06:00:00Z" ), DataFactory.pairOf( 4, 7 ) ) );
+        secondValues.add( Event.of( Instant.parse( "1985-01-02T06:00:00Z" ), SingleValuedPair.of( 10, 1 ) ) );
+        secondValues.add( Event.of( Instant.parse( "1985-01-02T12:00:00Z" ), SingleValuedPair.of( 1, 1 ) ) );
+        secondValues.add( Event.of( Instant.parse( "1985-01-02T18:00:00Z" ), SingleValuedPair.of( 10, 10 ) ) );
+        secondValues.add( Event.of( Instant.parse( "1985-01-03T00:00:00Z" ), SingleValuedPair.of( 2, 10 ) ) );
+        secondValues.add( Event.of( Instant.parse( "1985-01-03T06:00:00Z" ), SingleValuedPair.of( 4, 7 ) ) );
 
         // Create some default metadata for the time-series
         final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-02T00:00:00Z" ),

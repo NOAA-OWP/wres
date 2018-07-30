@@ -32,6 +32,7 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
+import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.MetadataFactory;
@@ -426,7 +427,7 @@ public final class MetricProcessorTest
                                                                  MetricOutputGroup.DOUBLE_SCORE );
 
         Threshold firstTest =
-                DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( 0.5 ),
+                DataFactory.ofThreshold( OneOrTwoDoubles.of( 0.5 ),
                                          Operator.GREATER,
                                          ThresholdDataType.LEFT,
                                          MetadataFactory.getDimension( "CMS" ) );
@@ -437,7 +438,7 @@ public final class MetricProcessorTest
                     firstSet.equals( new HashSet<>( Arrays.asList( MetricConstants.MEAN_SQUARE_ERROR,
                                                                    MetricConstants.MEAN_ABSOLUTE_ERROR ) ) ) );
         Threshold secondTest =
-                DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( 0.75 ),
+                DataFactory.ofThreshold( OneOrTwoDoubles.of( 0.75 ),
                                          Operator.GREATER,
                                          ThresholdDataType.LEFT,
                                          MetadataFactory.getDimension( "CMS" ) );
@@ -447,7 +448,7 @@ public final class MetricProcessorTest
                     + "'",
                     secondSet.equals( new HashSet<>( Arrays.asList() ) ) );
         Threshold thirdTest =
-                DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( 0.83 ),
+                DataFactory.ofThreshold( OneOrTwoDoubles.of( 0.83 ),
                                          Operator.GREATER,
                                          ThresholdDataType.LEFT,
                                          MetadataFactory.getDimension( "CMS" ) );
@@ -458,7 +459,7 @@ public final class MetricProcessorTest
                     thirdSet.equals( new HashSet<>( Arrays.asList( MetricConstants.MEAN_SQUARE_ERROR,
                                                                    MetricConstants.MEAN_ABSOLUTE_ERROR ) ) ) );
         Threshold fourthTest =
-                DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( 0.9 ),
+                DataFactory.ofThreshold( OneOrTwoDoubles.of( 0.9 ),
                                          Operator.GREATER,
                                          ThresholdDataType.LEFT,
                                          MetadataFactory.getDimension( "CMS" ) );
@@ -493,7 +494,7 @@ public final class MetricProcessorTest
                 MetricFactory.getInstance()
                              .ofMetricProcessorByTimeEnsemblePairs( config,
                                                                     MetricOutputGroup.set() );
-        Threshold firstTest = DataFactory.ofProbabilityThreshold( DataFactory.ofOneOrTwoDoubles( 0.1 ),
+        Threshold firstTest = DataFactory.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.1 ),
                                                                   Operator.GREATER,
                                                                   ThresholdDataType.LEFT );
 
@@ -508,7 +509,7 @@ public final class MetricProcessorTest
                                                                    MetricConstants.MEAN_SQUARE_ERROR,
                                                                    MetricConstants.BRIER_SCORE ) ) ) );
 
-        Threshold secondTest = DataFactory.ofProbabilityThreshold( DataFactory.ofOneOrTwoDoubles( 0.25 ),
+        Threshold secondTest = DataFactory.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.25 ),
                                                                    Operator.GREATER,
                                                                    ThresholdDataType.LEFT );
         Set<MetricConstants> secondSet =
@@ -519,7 +520,7 @@ public final class MetricProcessorTest
                                                                     MetricConstants.MEAN_SQUARE_ERROR,
                                                                     MetricConstants.BRIER_SCORE ) ) ) );
 
-        Threshold thirdTest = DataFactory.ofProbabilityThreshold( DataFactory.ofOneOrTwoDoubles( 0.5 ),
+        Threshold thirdTest = DataFactory.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.5 ),
                                                                   Operator.GREATER,
                                                                   ThresholdDataType.LEFT );
         Set<MetricConstants> thirdSet =
@@ -530,7 +531,7 @@ public final class MetricProcessorTest
                     thirdSet.equals( new HashSet<>( Arrays.asList( MetricConstants.BRIER_SKILL_SCORE,
                                                                    MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE ) ) ) );
 
-        Threshold fourthTest = DataFactory.ofProbabilityThreshold( DataFactory.ofOneOrTwoDoubles( 0.925 ),
+        Threshold fourthTest = DataFactory.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.925 ),
                                                                    Operator.GREATER,
                                                                    ThresholdDataType.LEFT );
         Set<MetricConstants> fourthSet =
@@ -558,7 +559,7 @@ public final class MetricProcessorTest
                              .ofMetricProcessorByTimeSingleValuedPairs( config,
                                                                         MetricOutputGroup.set() );
 
-        Threshold expected = DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
+        Threshold expected = DataFactory.ofThreshold( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                       Operator.GREATER,
                                                       ThresholdDataType.LEFT_AND_RIGHT );
 

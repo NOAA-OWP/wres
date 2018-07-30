@@ -449,7 +449,7 @@ public final class Slicer
                 //One or more of right meets condition
                 if ( filtered.length > 0 )
                 {
-                    returnMe = DataFactory.pairOf( pair.getLeft(), filtered );
+                    returnMe = EnsemblePair.of( pair.getLeft(), filtered );
                 }
             }
             return returnMe;
@@ -930,7 +930,7 @@ public final class Slicer
                     return null;
                 }
                 rawInput.add( Event.of( next.getTime(),
-                                        DataFactory.pairOf( next.getValue().getLeft(),
+                                        EnsemblePair.of( next.getValue().getLeft(),
                                                             subTraces.toArray( new Double[subTraces.size()] ) ) ) );
             }
             builder.addTimeSeriesData( nextSeries.getEarliestBasisTime(), rawInput );
@@ -1225,7 +1225,7 @@ public final class Slicer
     {
         Objects.requireNonNull( transformer, NULL_INPUT_EXCEPTION );
 
-        return pair -> DataFactory.pairOf( pair.getLeft(), transformer.applyAsDouble( pair.getRight() ) );
+        return pair -> SingleValuedPair.of( pair.getLeft(), transformer.applyAsDouble( pair.getRight() ) );
     }
 
     /**
@@ -1365,7 +1365,7 @@ public final class Slicer
                                   .filter( condition )
                                   .toArray();
 
-        return DataFactory.vectorOf( filtered );
+        return VectorOfDoubles.of( filtered );
     }
 
     /**

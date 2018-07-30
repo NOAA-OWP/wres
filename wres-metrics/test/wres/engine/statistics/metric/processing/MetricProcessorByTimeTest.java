@@ -23,7 +23,7 @@ public final class MetricProcessorByTimeTest
     @Test
     public void testGetFilterForSingleValuedPairs()
     {
-        OneOrTwoDoubles doubles = DataFactory.ofOneOrTwoDoubles( 1.0 );
+        OneOrTwoDoubles doubles = OneOrTwoDoubles.of( 1.0 );
         Operator condition = Operator.GREATER;
         assertNotNull( MetricProcessorByTime.getFilterForSingleValuedPairs( DataFactory.ofThreshold( doubles,
                                                                                                      condition,
@@ -52,7 +52,7 @@ public final class MetricProcessorByTimeTest
     @Test
     public void testGetFilterForTimeSeriesOfSingleValuedPairs()
     {
-        OneOrTwoDoubles doubles = DataFactory.ofOneOrTwoDoubles( 1.0 );
+        OneOrTwoDoubles doubles = OneOrTwoDoubles.of( 1.0 );
         Operator condition = Operator.GREATER;
         assertNotNull( MetricProcessorByTime.getFilterForTimeSeriesOfSingleValuedPairs( DataFactory.ofThreshold( doubles,
                                                                                                                  condition,

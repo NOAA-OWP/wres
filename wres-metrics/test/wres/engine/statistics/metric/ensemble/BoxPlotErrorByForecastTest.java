@@ -16,6 +16,7 @@ import org.junit.rules.ExpectedException;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
+import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.EnsemblePair;
@@ -50,7 +51,7 @@ public final class BoxPlotErrorByForecastTest
     {
         BoxPlotErrorByForecastBuilder b = new BoxPlotErrorByForecastBuilder();
         b.setDomainDimension( MetricDimension.ENSEMBLE_MEAN );
-        b.setProbabilities( DataFactory.vectorOf( new double[] { 0.0, 0.25, 0.5, 0.75, 1.0 } ) );
+        b.setProbabilities( VectorOfDoubles.of( new double[] { 0.0, 0.25, 0.5, 0.75, 1.0 } ) );
         this.bpe = (BoxPlotErrorByForecast) b.build();
     }
 
@@ -63,7 +64,7 @@ public final class BoxPlotErrorByForecastTest
     public void testApplyWithEnsembleMean()
     {
         List<EnsemblePair> values = new ArrayList<>();
-        values.add( DataFactory.pairOf( 0.0, new double[] { 0.0, 20.0, 30.0, 50.0, 100.0 } ) );
+        values.add( EnsemblePair.of( 0.0, new double[] { 0.0, 20.0, 30.0, 50.0, 100.0 } ) );
 
         TimeWindow window = TimeWindow.of( Instant.MIN,
                                            Instant.MAX,
@@ -87,11 +88,11 @@ public final class BoxPlotErrorByForecastTest
         //Compute normally
         final BoxPlotOutput actual = bpe.apply( input );
         final EnsemblePair expectedBox =
-                DataFactory.pairOf( 40.0, new double[] { 0.0, 10, 30.0, 75.0, 100.0 } );
+                EnsemblePair.of( 40.0, new double[] { 0.0, 10, 30.0, 75.0, 100.0 } );
         List<EnsemblePair> expectedBoxes = new ArrayList<>();
         expectedBoxes.add( expectedBox );
         BoxPlotOutput expected = DataFactory.ofBoxPlotOutput( expectedBoxes,
-                                                              DataFactory.vectorOf( new double[] { 0.0, 0.25, 0.5, 0.75,
+                                                              VectorOfDoubles.of( new double[] { 0.0, 0.25, 0.5, 0.75,
                                                                                                    1.0 } ),
                                                               m1,
                                                               MetricDimension.ENSEMBLE_MEAN,
@@ -112,7 +113,7 @@ public final class BoxPlotErrorByForecastTest
     public void testApplyWithEnsembleMedian() throws MetricParameterException
     {
         List<EnsemblePair> values = new ArrayList<>();
-        values.add( DataFactory.pairOf( 0.0, new double[] { 0.0, 20.0, 30.0, 50.0, 100.0 } ) );
+        values.add( EnsemblePair.of( 0.0, new double[] { 0.0, 20.0, 30.0, 50.0, 100.0 } ) );
 
         TimeWindow window = TimeWindow.of( Instant.MIN,
                                            Instant.MAX,
@@ -136,17 +137,17 @@ public final class BoxPlotErrorByForecastTest
         //Build the metric
         final BoxPlotErrorByForecastBuilder b = new BoxPlotErrorByForecast.BoxPlotErrorByForecastBuilder();
         b.setDomainDimension( MetricDimension.ENSEMBLE_MEDIAN );
-        b.setProbabilities( DataFactory.vectorOf( new double[] { 0.0, 0.25, 0.5, 0.75, 1.0 } ) );
+        b.setProbabilities( VectorOfDoubles.of( new double[] { 0.0, 0.25, 0.5, 0.75, 1.0 } ) );
         BoxPlotErrorByForecast bpe = (BoxPlotErrorByForecast) b.build();
 
         //Compute normally
         final BoxPlotOutput actual = bpe.apply( input );
         final EnsemblePair expectedBox =
-                DataFactory.pairOf( 30.0, new double[] { 0.0, 10, 30.0, 75.0, 100.0 } );
+                EnsemblePair.of( 30.0, new double[] { 0.0, 10, 30.0, 75.0, 100.0 } );
         List<EnsemblePair> expectedBoxes = new ArrayList<>();
         expectedBoxes.add( expectedBox );
         BoxPlotOutput expected = DataFactory.ofBoxPlotOutput( expectedBoxes,
-                                                              DataFactory.vectorOf( new double[] { 0.0, 0.25, 0.5, 0.75,
+                                                              VectorOfDoubles.of( new double[] { 0.0, 0.25, 0.5, 0.75,
                                                                                                    1.0 } ),
                                                               m1,
                                                               MetricDimension.ENSEMBLE_MEDIAN,

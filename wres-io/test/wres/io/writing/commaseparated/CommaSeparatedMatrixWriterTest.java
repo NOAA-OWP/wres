@@ -24,6 +24,7 @@ import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
+import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MetadataFactory;
@@ -83,17 +84,17 @@ public class CommaSeparatedMatrixWriterTest extends CommaSeparatedWriterTest
 
         DatasetIdentifier datasetIdentifier =
                 MetadataFactory.getDatasetIdentifier( fakeLocation,
-                                              "SQIN",
-                                              "HEFS",
-                                              "ESP" );
+                                                      "SQIN",
+                                                      "HEFS",
+                                                      "ESP" );
 
         MetricOutputMetadata fakeMetadata =
                 MetadataFactory.getOutputMetadata( 1000,
-                                           MetadataFactory.getDimension(),
-                                           MetadataFactory.getDimension( "CMS" ),
-                                           MetricConstants.CONTINGENCY_TABLE,
-                                           null,
-                                           datasetIdentifier );
+                                                   MetadataFactory.getDimension(),
+                                                   MetadataFactory.getDimension( "CMS" ),
+                                                   MetricConstants.CONTINGENCY_TABLE,
+                                                   null,
+                                                   datasetIdentifier );
 
         double[][] fakeOutputs = new double[][] { { 23, 79 }, { 56, 342 } };
 
@@ -101,12 +102,12 @@ public class CommaSeparatedMatrixWriterTest extends CommaSeparatedWriterTest
         // Fake output wrapper.
         MetricOutputMapByMetric<MatrixOutput> fakeOutputData =
                 DataFactory.ofMetricOutputMapByMetric( Collections.singletonMap( MetricConstants.CONTINGENCY_TABLE,
-                                                                                   DataFactory.ofMatrixOutput( fakeOutputs,
-                                                                                                                 Arrays.asList( MetricDimension.TRUE_POSITIVES,
-                                                                                                                                MetricDimension.FALSE_POSITIVES,
-                                                                                                                                MetricDimension.FALSE_NEGATIVES,
-                                                                                                                                MetricDimension.TRUE_NEGATIVES ),
-                                                                                                                 fakeMetadata ) ) );
+                                                                                 DataFactory.ofMatrixOutput( fakeOutputs,
+                                                                                                             Arrays.asList( MetricDimension.TRUE_POSITIVES,
+                                                                                                                            MetricDimension.FALSE_POSITIVES,
+                                                                                                                            MetricDimension.FALSE_NEGATIVES,
+                                                                                                                            MetricDimension.TRUE_NEGATIVES ),
+                                                                                                             fakeMetadata ) ) );
         // wrap outputs in future
         Future<MetricOutputMapByMetric<MatrixOutput>> outputMapByMetricFuture =
                 CompletableFuture.completedFuture( fakeOutputData );
@@ -115,9 +116,9 @@ public class CommaSeparatedMatrixWriterTest extends CommaSeparatedWriterTest
         // Fake lead time and threshold
         Pair<TimeWindow, OneOrTwoThresholds> mapKeyByLeadThreshold =
                 Pair.of( timeOne,
-                         OneOrTwoThresholds.of( DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
-                                                                           Operator.GREATER,
-                                                                           ThresholdDataType.LEFT ) ) );
+                         OneOrTwoThresholds.of( DataFactory.ofThreshold( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                                                                         Operator.GREATER,
+                                                                         ThresholdDataType.LEFT ) ) );
 
         outputBuilder.addMatrixOutput( mapKeyByLeadThreshold,
                                        outputMapByMetricFuture );

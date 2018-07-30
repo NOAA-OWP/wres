@@ -32,6 +32,7 @@ import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.DurationScoreOutput;
+import wres.datamodel.outputs.MapKey;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMapByMetric;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
@@ -275,7 +276,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                 // Output available
                 if ( this.getCachedMetricOutputInternal()
                          .getPairedOutput()
-                         .containsKey( DataFactory.getMapKey( nextStats.getKey() ) ) )
+                         .containsKey( MapKey.of( nextStats.getKey() ) ) )
                 {
                     // Obtain the paired output
                     MetricOutputMapByTimeAndThreshold<PairedOutput<Instant, Duration>> output =
@@ -382,7 +383,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
 
             //Define a mapper to convert the single-valued pairs to dichotomous pairs
             Function<SingleValuedPair, DichotomousPair> mapper =
-                    pair -> DataFactory.pairOf( useMe.test( pair.getLeft() ),
+                    pair -> DichotomousPair.of( useMe.test( pair.getLeft() ),
                                                 useMe.test( pair.getRight() ) );
             //Transform the pairs
             DichotomousPairs transformed = Slicer.toDichotomousPairs( input, mapper );

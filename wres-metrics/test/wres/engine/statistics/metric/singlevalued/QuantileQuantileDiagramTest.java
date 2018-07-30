@@ -60,7 +60,7 @@ public final class QuantileQuantileDiagramTest
         {
             double left = i;
             double right = left;
-            values.add( DataFactory.pairOf( left, right ) );
+            values.add( SingleValuedPair.of( left, right ) );
         }
 
         final SingleValuedPairs input = DataFactory.ofSingleValuedPairs( values, MetadataFactory.getMetadata() );

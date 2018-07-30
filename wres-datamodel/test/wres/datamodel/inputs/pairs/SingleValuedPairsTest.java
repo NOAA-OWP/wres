@@ -9,7 +9,6 @@ import java.util.List;
 
 import org.junit.Test;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPair;
@@ -38,7 +37,7 @@ public final class SingleValuedPairsTest
 
         for ( int i = 0; i < 10; i++ )
         {
-            values.add( DataFactory.pairOf( 1, 1 ) );
+            values.add( SingleValuedPair.of( 1, 1 ) );
         }
         final Metadata meta = MetadataFactory.getMetadata();
         SingleValuedPairs p = (SingleValuedPairs) b.addData( values ).setMetadata( meta ).build();
@@ -74,8 +73,8 @@ public final class SingleValuedPairsTest
         try
         {
             values.clear();
-            values.add( DataFactory.pairOf( 1, 1 ) );
-            VectorOfDoubles climatology = DataFactory.vectorOf( new double[] { Double.NaN } );
+            values.add( SingleValuedPair.of( 1, 1 ) );
+            VectorOfDoubles climatology = VectorOfDoubles.of( new double[] { Double.NaN } );
             final SingleValuedPairsBuilder c = new SingleValuedPairsBuilder();
             c.addData( values ).setMetadata( meta ).setClimatology( climatology ).build();
             fail( "Expected a checked exception on invalid inputs: all climatology data missing." );

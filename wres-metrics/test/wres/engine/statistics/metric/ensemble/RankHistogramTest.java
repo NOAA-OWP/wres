@@ -73,7 +73,7 @@ public final class RankHistogramTest
             {
                 right[j] = rng.nextDouble();
             }
-            values.add( DataFactory.pairOf( left, right ) );
+            values.add( EnsemblePair.of( left, right ) );
         }
 
         final EnsemblePairs input = DataFactory.ofEnsemblePairs( values, MetadataFactory.getMetadata() );
@@ -103,7 +103,7 @@ public final class RankHistogramTest
     {
         //Generate some data using an RNG for a uniform U[0,1] distribution with a fixed seed
         final List<EnsemblePair> values = new ArrayList<>();
-        values.add( DataFactory.pairOf( 2, new double[] { 1, 2, 2, 2, 4, 5, 6, 7, 8 } ) );
+        values.add( EnsemblePair.of( 2, new double[] { 1, 2, 2, 2, 4, 5, 6, 7, 8 } ) );
         final EnsemblePairs input = DataFactory.ofEnsemblePairs( values, MetadataFactory.getMetadata() );
 
         //Check the results       
