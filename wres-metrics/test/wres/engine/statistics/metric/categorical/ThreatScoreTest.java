@@ -38,12 +38,6 @@ public final class ThreatScoreTest
     public final ExpectedException exception = ExpectedException.none();
 
     /**
-     * Metric factory.
-     */
-
-    private MetricFactory metricFactory;
-
-    /**
      * Score used for testing. 
      */
 
@@ -58,8 +52,7 @@ public final class ThreatScoreTest
     @Before
     public void setUpBeforeEachTest() throws MetricParameterException
     {
-        metricFactory = MetricFactory.getInstance();
-        ts = metricFactory.ofThreatScore();
+        ts = MetricFactory.ofThreatScore();
         meta = MetadataFactory.getOutputMetadata( 365,
                                                   MetadataFactory.getDimension(),
                                                   MetadataFactory.getDimension(),

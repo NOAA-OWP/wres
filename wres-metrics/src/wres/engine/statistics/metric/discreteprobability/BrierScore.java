@@ -108,7 +108,7 @@ public class BrierScore extends DecomposableScore<DiscreteProbabilityPairs>
     {
         super( builder );
         
-        mse = MetricFactory.getInstance().ofMeanSquareError();
+        mse = MetricFactory.ofMeanSquareError();
     }
 
 }

@@ -38,12 +38,6 @@ public final class ProbabilityOfDetectionTest
     public final ExpectedException exception = ExpectedException.none();
 
     /**
-     * Metric factory.
-     */
-
-    private MetricFactory metricFactory;
-
-    /**
      * Score used for testing. 
      */
 
@@ -58,8 +52,7 @@ public final class ProbabilityOfDetectionTest
     @Before
     public void setUpBeforeEachTest() throws MetricParameterException
     {
-        metricFactory = MetricFactory.getInstance();
-        pod = metricFactory.ofProbabilityOfDetection();
+        pod = MetricFactory.ofProbabilityOfDetection();
         meta = MetadataFactory.getOutputMetadata( 365,
                                                   MetadataFactory.getDimension(),
                                                   MetadataFactory.getDimension(),

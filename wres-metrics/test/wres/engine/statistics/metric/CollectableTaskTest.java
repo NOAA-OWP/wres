@@ -36,7 +36,6 @@ public final class CollectableTaskTest
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
-    private MetricFactory metF;
     private ExecutorService pairPool;
     private Collectable<DichotomousPairs, MatrixOutput, DoubleScoreOutput> m;
 
@@ -49,11 +48,10 @@ public final class CollectableTaskTest
     @Before
     public void setupBeforeEachTest() throws MetricParameterException
     {
-        metF = MetricFactory.getInstance();
         // Tests can run simultaneously, use only 1 (additional) Thread per test
         pairPool = Executors.newFixedThreadPool( 1 );
         //Add some appropriate metrics to the collection
-        m = metF.ofThreatScore();
+        m = MetricFactory.ofThreatScore();
 
         m1 = MetadataFactory.getOutputMetadata( 100,
                                                 MetadataFactory.getDimension(),

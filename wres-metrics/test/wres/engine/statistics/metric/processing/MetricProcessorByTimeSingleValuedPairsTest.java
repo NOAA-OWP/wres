@@ -98,8 +98,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
-                MetricFactory.getInstance()
-                             .ofMetricProcessorByTimeSingleValuedPairs( config,
+                MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( config,
                                                                         null,
                                                                         Executors.newSingleThreadExecutor(),
                                                                         Executors.newSingleThreadExecutor(),
@@ -159,8 +158,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
-                MetricFactory.getInstance()
-                             .ofMetricProcessorByTimeSingleValuedPairs( config, MetricOutputGroup.set() );
+                MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( config, MetricOutputGroup.set() );
         SingleValuedPairs pairs = MetricTestDataFactory.getSingleValuedPairsFour();
 
         // Generate results for 10 nominal lead times
@@ -230,8 +228,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/testAllValid.xml";
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
-                MetricFactory.getInstance()
-                             .ofMetricProcessorByTimeSingleValuedPairs( config,
+                MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( config,
                                                                         MetricOutputGroup.set() );
 
         //Check for the expected number of metrics
@@ -268,8 +265,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                    null );
 
         MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
-                MetricFactory.getInstance()
-                             .ofMetricProcessorByTimeSingleValuedPairs( mockedConfig,
+                MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( mockedConfig,
                                                                         MetricOutputGroup.set() );
 
         //Break into two time-series to test sequential calls
@@ -370,8 +366,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                    null );
 
         MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
-                MetricFactory.getInstance()
-                             .ofMetricProcessorByTimeSingleValuedPairs( mockedConfig,
+                MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( mockedConfig,
                                                                         MetricOutputGroup.set() );
 
         //Break into two time-series to test sequential calls
@@ -475,8 +470,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
-                MetricFactory.getInstance()
-                             .ofMetricProcessorByTimeSingleValuedPairs( config,
+                MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( config,
                                                                         MetricOutputGroup.set() );
         TimeSeriesOfSingleValuedPairs pairs = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsOne();
         //Break into two time-series to test sequential calls
@@ -578,8 +572,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
-                MetricFactory.getInstance()
-                             .ofMetricProcessorByTimeSingleValuedPairs( config,
+                MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( config,
                                                                         thresholdsByMetric,
                                                                         MetricOutputGroup.set() );
         SingleValuedPairs pairs = MetricTestDataFactory.getSingleValuedPairsFour();
@@ -656,8 +649,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
-                MetricFactory.getInstance()
-                             .ofMetricProcessorByTimeSingleValuedPairs( config, MetricOutputGroup.set() );
+                MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( config, MetricOutputGroup.set() );
         SingleValuedPairs pairs = MetricTestDataFactory.getSingleValuedPairsSeven();
 
         // Generate results for 10 nominal lead times
@@ -737,8 +729,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
 
         MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
-                MetricFactory.getInstance()
-                             .ofMetricProcessorByTimeSingleValuedPairs( config,
+                MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( config,
                                                                         MetricOutputGroup.set() );
 
         TimeSeriesOfSingleValuedPairs pairs = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsFour();
@@ -800,8 +791,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         exception.expect( NullPointerException.class );
         exception.expectMessage( "Expected non-null input to the metric processor." );
         MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
-                MetricFactory.getInstance()
-                             .ofMetricProcessorByTimeSingleValuedPairs( new ProjectConfig( null,
+                MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( new ProjectConfig( null,
                                                                                            null,
                                                                                            null,
                                                                                            null,
@@ -830,8 +820,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                    Arrays.asList( new MetricConfig( null, null, MetricConfigName.FREQUENCY_BIAS ) ),
                                    null );
         MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
-                MetricFactory.getInstance()
-                             .ofMetricProcessorByTimeSingleValuedPairs( new ProjectConfig( null,
+                MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( new ProjectConfig( null,
                                                                                            null,
                                                                                            Arrays.asList( metrics ),
                                                                                            null,
@@ -878,8 +867,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
 
         MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
-                MetricFactory.getInstance()
-                             .ofMetricProcessorByTimeSingleValuedPairs( mockedConfig,
+                MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( mockedConfig,
                                                                         Collections.singleton( MetricOutputGroup.DOUBLE_SCORE ) );
         processor.apply( MetricTestDataFactory.getSingleValuedPairsSix() );
     }
@@ -913,8 +901,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                    null );
 
         MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
-                MetricFactory.getInstance()
-                             .ofMetricProcessorByTimeSingleValuedPairs( mockedConfig,
+                MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( mockedConfig,
                                                                         Collections.singleton( MetricOutputGroup.DOUBLE_SCORE ) );
         processor.apply( MetricTestDataFactory.getSingleValuedPairsFour() );
     }
@@ -953,8 +940,8 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                    null,
                                    null );
 
-        MetricFactory.getInstance().ofMetricProcessorByTimeSingleValuedPairs( mockedConfig,
-                                                                              null );
+        MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( mockedConfig,
+                                                                null );
     }
 
     /**
@@ -997,8 +984,8 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                    null,
                                    null );
 
-        MetricFactory.getInstance().ofMetricProcessorByTimeSingleValuedPairs( mockedConfig,
-                                                                              null );
+        MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( mockedConfig,
+                                                                null );
     }
 
 

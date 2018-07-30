@@ -49,13 +49,11 @@ public class MetricCollectionTest
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
-    private MetricFactory metF;
     private ExecutorService metricPool;
 
     @Before
     public void setupBeforeEachTest() throws MetricParameterException
     {
-        metF = MetricFactory.getInstance();
         metricPool = Executors.newSingleThreadExecutor();
     }
 
@@ -73,10 +71,10 @@ public class MetricCollectionTest
 
         //Finalize
         final MetricCollection<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput> collection =
-                metF.ofSingleValuedScoreCollection( ForkJoinPool.commonPool(),
-                                                    MetricConstants.MEAN_ERROR,
-                                                    MetricConstants.MEAN_ABSOLUTE_ERROR,
-                                                    MetricConstants.ROOT_MEAN_SQUARE_ERROR );
+                MetricFactory.ofSingleValuedScoreCollection( ForkJoinPool.commonPool(),
+                                                             MetricConstants.MEAN_ERROR,
+                                                             MetricConstants.MEAN_ABSOLUTE_ERROR,
+                                                             MetricConstants.ROOT_MEAN_SQUARE_ERROR );
 
         //Compute them
         final MetricOutputMapByMetric<DoubleScoreOutput> d = collection.apply( input );
@@ -132,11 +130,11 @@ public class MetricCollectionTest
         m.setExecutorService( ForkJoinPool.commonPool() );
 
         //Add some appropriate metrics to the collection     
-        m.addMetric( metF.ofThreatScore() ); //Should be 0.5734265734265734
-        m.addMetric( metF.ofProbabilityOfDetection() ); //Should be 0.780952380952381
-        m.addMetric( metF.ofProbabilityOfFalseDetection() ); //Should be 0.14615384615384616
-        m.addMetric( metF.ofPeirceSkillScore() ); //Should be 0.6347985347985348
-        m.addMetric( metF.ofEquitableThreatScore() ); //Should be 0.43768152544513195
+        m.addMetric( MetricFactory.ofThreatScore() ); //Should be 0.5734265734265734
+        m.addMetric( MetricFactory.ofProbabilityOfDetection() ); //Should be 0.780952380952381
+        m.addMetric( MetricFactory.ofProbabilityOfFalseDetection() ); //Should be 0.14615384615384616
+        m.addMetric( MetricFactory.ofPeirceSkillScore() ); //Should be 0.6347985347985348
+        m.addMetric( MetricFactory.ofEquitableThreatScore() ); //Should be 0.43768152544513195
 
         //Finalize
         final MetricCollection<DichotomousPairs, MetricOutput<?>, DoubleScoreOutput> collection = m.build();
@@ -207,8 +205,8 @@ public class MetricCollectionTest
         n.setExecutorService( ForkJoinPool.commonPool() );
 
         //Add some appropriate metrics to the collection
-        n.addMetric( metF.ofBrierScore() ); //Should be 0.26
-        n.addMetric( metF.ofBrierSkillScore() ); //Should be 0.11363636363636376
+        n.addMetric( MetricFactory.ofBrierScore() ); //Should be 0.26
+        n.addMetric( MetricFactory.ofBrierSkillScore() ); //Should be 0.11363636363636376
 
         //Finalize
         final MetricCollection<DiscreteProbabilityPairs, MetricOutput<?>, DoubleScoreOutput> collection =
@@ -260,8 +258,8 @@ public class MetricCollectionTest
         n.setExecutorService( ForkJoinPool.commonPool() );
 
         //Add some appropriate metrics to the collection
-        n.addMetric( metF.ofMeanSquareError() ); //Should be 400003.929
-        n.addMetric( metF.ofMeanSquareErrorSkillScore() ); //Should be 0.8007025335093799
+        n.addMetric( MetricFactory.ofMeanSquareError() ); //Should be 400003.929
+        n.addMetric( MetricFactory.ofMeanSquareErrorSkillScore() ); //Should be 0.8007025335093799
 
         //Finalize
         final MetricCollection<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput> collection = n.build();
@@ -313,7 +311,7 @@ public class MetricCollectionTest
         n.setExecutorService( ForkJoinPool.commonPool() );
 
         //Add some appropriate metrics to the collection
-        n.addMetric( metF.ofMulticategoryScore( MetricConstants.PEIRCE_SKILL_SCORE ) ); //Should be 0.05057466520850963
+        n.addMetric( MetricFactory.ofMulticategoryScore( MetricConstants.PEIRCE_SKILL_SCORE ) ); //Should be 0.05057466520850963
 
         //Finalize
         final MetricCollection<MulticategoryPairs, MetricOutput<?>, DoubleScoreOutput> collection = n.build();
@@ -354,7 +352,7 @@ public class MetricCollectionTest
                 MetricCollectionBuilder.of();
 
         //Add some appropriate metrics to the collection
-        n.addMetric( metF.ofMeanError() );
+        n.addMetric( MetricFactory.ofMeanError() );
 
         //Set an executor
         n.setExecutorService( metricPool );
@@ -388,7 +386,7 @@ public class MetricCollectionTest
         final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         final MetricCollection<SingleValuedPairs, MetricOutput<?>, DoubleScoreOutput> collection =
-                n.addMetric( metF.ofMeanError() ).setExecutorService( metricPool ).build();
+                n.addMetric( MetricFactory.ofMeanError() ).setExecutorService( metricPool ).build();
 
         //Null input
         exception.expect( MetricCalculationException.class );
@@ -417,7 +415,7 @@ public class MetricCollectionTest
         final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         final MetricCollection<SingleValuedPairs, MetricOutput<?>, DoubleScoreOutput> collection =
-                n.addMetric( metF.ofMeanError() ).setExecutorService( metricPool ).build();
+                n.addMetric( MetricFactory.ofMeanError() ).setExecutorService( metricPool ).build();
 
         //Null input
         exception.expect( MetricCalculationException.class );
@@ -478,7 +476,7 @@ public class MetricCollectionTest
             IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException
     {
         MetricCollection<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput> collection =
-                metF.ofSingleValuedScoreCollection( MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
+                MetricFactory.ofSingleValuedScoreCollection( MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
         Method logStart = collection.getClass().getDeclaredMethod( "logStartOfCalculation", Logger.class );
         logStart.setAccessible( true );
 
@@ -511,7 +509,7 @@ public class MetricCollectionTest
             IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException
     {
         MetricCollection<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput> collection =
-                metF.ofSingleValuedScoreCollection( MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
+                MetricFactory.ofSingleValuedScoreCollection( MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
         Method logEnd = collection.getClass().getDeclaredMethod( "logEndOfCalculation", Logger.class, Map.class );
         logEnd.setAccessible( true );
 
@@ -550,7 +548,7 @@ public class MetricCollectionTest
         exception.expectCause( CoreMatchers.isA( MetricCalculationException.class ) );
 
         MetricCollection<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput> collection =
-                metF.ofSingleValuedScoreCollection( MetricConstants.MEAN_ERROR );
+                MetricFactory.ofSingleValuedScoreCollection( MetricConstants.MEAN_ERROR );
         Method method = collection.getClass().getDeclaredMethod( "apply", MetricInput.class, Set.class );
         method.setAccessible( true );
 
@@ -604,12 +602,12 @@ public class MetricCollectionTest
         //Create a collection of metrics that consume single-valued pairs and produce a scalar output
         //Add some appropriate metrics to the collection
         final MetricCollection<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput> n =
-                metF.ofSingleValuedScoreCollection( ForkJoinPool.commonPool(),
-                                                    MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
-                                                    MetricConstants.COEFFICIENT_OF_DETERMINATION,
-                                                    MetricConstants.SUM_OF_SQUARE_ERROR,
-                                                    MetricConstants.MEAN_SQUARE_ERROR,
-                                                    MetricConstants.ROOT_MEAN_SQUARE_ERROR );
+                MetricFactory.ofSingleValuedScoreCollection( ForkJoinPool.commonPool(),
+                                                             MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
+                                                             MetricConstants.COEFFICIENT_OF_DETERMINATION,
+                                                             MetricConstants.SUM_OF_SQUARE_ERROR,
+                                                             MetricConstants.MEAN_SQUARE_ERROR,
+                                                             MetricConstants.ROOT_MEAN_SQUARE_ERROR );
 
         //Compute them
         final MetricOutputMapByMetric<DoubleScoreOutput> d = n.apply( input );
@@ -679,10 +677,10 @@ public class MetricCollectionTest
 
         //Add some appropriate metrics to the collection
         final MetricCollection<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput> collection =
-                metF.ofSingleValuedScoreCollection( ForkJoinPool.commonPool(),
-                                                    MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
-                                                    MetricConstants.MEAN_SQUARE_ERROR,
-                                                    MetricConstants.COEFFICIENT_OF_DETERMINATION );
+                MetricFactory.ofSingleValuedScoreCollection( ForkJoinPool.commonPool(),
+                                                             MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
+                                                             MetricConstants.MEAN_SQUARE_ERROR,
+                                                             MetricConstants.COEFFICIENT_OF_DETERMINATION );
         //Compute them, ignoring two metrics
         Set<MetricConstants> ignore = new HashSet<>( Arrays.asList( MetricConstants.COEFFICIENT_OF_DETERMINATION,
                                                                     MetricConstants.MEAN_SQUARE_ERROR ) );

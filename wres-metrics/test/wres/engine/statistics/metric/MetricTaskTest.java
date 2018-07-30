@@ -61,8 +61,7 @@ public final class MetricTaskTest
         final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Add some appropriate metrics to the collection
-        final MetricFactory metF = MetricFactory.getInstance();
-        final Metric<SingleValuedPairs, DoubleScoreOutput> m = metF.ofMeanError();
+        final Metric<SingleValuedPairs, DoubleScoreOutput> m = MetricFactory.ofMeanError();
 
         // Wrap an input in a future
         final FutureTask<SingleValuedPairs> futureInput =
@@ -105,8 +104,7 @@ public final class MetricTaskTest
     {
 
         // Add some appropriate metrics to the collection
-        final MetricFactory metF = MetricFactory.getInstance();
-        final Metric<SingleValuedPairs, DoubleScoreOutput> m = metF.ofMeanError();
+        final Metric<SingleValuedPairs, DoubleScoreOutput> m = MetricFactory.ofMeanError();
 
         final FutureTask<SingleValuedPairs> futureInputNull =
                 new FutureTask<SingleValuedPairs>( new Callable<SingleValuedPairs>()

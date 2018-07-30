@@ -38,12 +38,6 @@ public final class FrequencyBiasTest
     public final ExpectedException exception = ExpectedException.none();
 
     /**
-     * Metric factory.
-     */
-
-    private MetricFactory metricFactory;
-
-    /**
      * Score used for testing. 
      */
 
@@ -58,8 +52,7 @@ public final class FrequencyBiasTest
     @Before
     public void setUpBeforeEachTest() throws MetricParameterException
     {
-        metricFactory = MetricFactory.getInstance();
-        fb = metricFactory.ofFrequencyBias();
+        fb = MetricFactory.ofFrequencyBias();
         meta = MetadataFactory.getOutputMetadata( 365,
                                           MetadataFactory.getDimension(),
                                           MetadataFactory.getDimension(),
