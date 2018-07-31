@@ -129,22 +129,24 @@ public interface Metric<S extends MetricInput<?>, T extends MetricOutput<?>> ext
         }
         else
         {
-            outputDim = MetadataFactory.getDimension();
+            outputDim = Dimension.of();
         }
         DatasetIdentifier identifier = metIn.getIdentifier();
         //Add the scenario ID associated with the baseline input
         if ( Objects.nonNull( baselineID ) )
         {
             identifier =
-                    MetadataFactory.getDatasetIdentifier( identifier, baselineID.getScenarioID() );
+                    DatasetIdentifier.of( identifier, baselineID.getScenarioID() );
         }
-        return MetadataFactory.getOutputMetadata( sampleSize,
-                                                  outputDim,
-                                                  metIn.getDimension(),
-                                                  getID(),
-                                                  componentID,
-                                                  identifier,
-                                                  metIn.getTimeWindow() );
+        final Dimension outputDim1 = outputDim;
+        final DatasetIdentifier identifier1 = identifier;
+        return MetricOutputMetadata.of( sampleSize,
+        outputDim1,
+        metIn.getDimension(),
+        getID(),
+        componentID,
+        identifier1,
+        metIn.getTimeWindow() );
     }
 
 }

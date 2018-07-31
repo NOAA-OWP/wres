@@ -14,7 +14,6 @@ import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.EnsemblePair;
 import wres.datamodel.inputs.pairs.EnsemblePairs.EnsemblePairsBuilder;
 import wres.datamodel.metadata.Metadata;
-import wres.datamodel.metadata.MetadataFactory;
 
 /**
  * Tests the {@link EnsemblePairs}.
@@ -38,7 +37,7 @@ public final class EnsemblePairsTest
         {
             values.add( EnsemblePair.of( 1, new double[] { 1, 2, 3, 4 } ) );
         }
-        final Metadata meta = MetadataFactory.getMetadata();
+        final Metadata meta = Metadata.of();
         EnsemblePairs p = (EnsemblePairs) b.addData( values ).setMetadata( meta ).build();
 
         //Check dataset count

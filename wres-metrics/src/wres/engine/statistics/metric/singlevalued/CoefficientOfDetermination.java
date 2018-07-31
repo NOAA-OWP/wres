@@ -6,7 +6,6 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
-import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
 
@@ -50,7 +49,7 @@ public class CoefficientOfDetermination extends CorrelationPearsons
             throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
         }
         MetricOutputMetadata in = output.getMetadata();
-        MetricOutputMetadata meta = MetadataFactory.getOutputMetadata( in.getSampleSize(),
+        MetricOutputMetadata meta = MetricOutputMetadata.of( in.getSampleSize(),
                                                                                              in.getDimension(),
                                                                                              in.getInputDimension(),
                                                                                              MetricConstants.COEFFICIENT_OF_DETERMINATION,

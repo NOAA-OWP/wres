@@ -15,7 +15,9 @@ import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
-import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.metadata.DatasetIdentifier;
+import wres.datamodel.metadata.Dimension;
+import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.MatrixOutput;
 import wres.engine.statistics.metric.MetricParameterException;
@@ -48,9 +50,9 @@ public final class ContingencyTableScoreTest
     public void setupBeforeEachTest() throws MetricParameterException
     {
         cs = ThreatScore.of();
-        meta = MetadataFactory.getOutputMetadata( 365,
-                                                  MetadataFactory.getDimension(),
-                                                  MetadataFactory.getDimension(),
+        meta = MetricOutputMetadata.of( 365,
+                                                  Dimension.of(),
+                                                  Dimension.of(),
                                                   MetricConstants.CONTINGENCY_TABLE,
                                                   MetricConstants.MAIN );
     }
@@ -117,12 +119,12 @@ public final class ContingencyTableScoreTest
 
         //Metadata for the output
         final MetricOutputMetadata m1 =
-                MetadataFactory.getOutputMetadata( input.getRawData().size(),
-                                                   MetadataFactory.getDimension(),
-                                                   MetadataFactory.getDimension(),
+                MetricOutputMetadata.of( input.getRawData().size(),
+                                                   Dimension.of(),
+                                                   Dimension.of(),
                                                    MetricConstants.CONTINGENCY_TABLE,
                                                    MetricConstants.MAIN,
-                                                   MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation( "DRRC2" ),
+                                                   DatasetIdentifier.of( Location.of( "DRRC2" ),
                                                                                          "SQIN",
                                                                                          "HEFS" ) );
 
@@ -170,12 +172,12 @@ public final class ContingencyTableScoreTest
         final DichotomousPairs input = MetricTestDataFactory.getDichotomousPairsOne();
 
         final MetricOutputMetadata expected =
-                MetadataFactory.getOutputMetadata( input.getRawData().size(),
-                                                   MetadataFactory.getDimension(),
-                                                   MetadataFactory.getDimension(),
+                MetricOutputMetadata.of( input.getRawData().size(),
+                                                   Dimension.of(),
+                                                   Dimension.of(),
                                                    MetricConstants.THREAT_SCORE,
                                                    MetricConstants.MAIN,
-                                                   MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation( "DRRC2" ),
+                                                   DatasetIdentifier.of( Location.of( "DRRC2" ),
                                                                                          "SQIN",
                                                                                          "HEFS" ) );
 

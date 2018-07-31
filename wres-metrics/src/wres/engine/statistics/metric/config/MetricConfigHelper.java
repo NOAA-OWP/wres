@@ -29,7 +29,6 @@ import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.metadata.Dimension;
-import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
@@ -192,7 +191,7 @@ public final class MetricConfigHelper
         Dimension units = null;
         if ( Objects.nonNull( projectConfig.getPair() ) && Objects.nonNull( projectConfig.getPair().getUnit() ) )
         {
-            units = MetadataFactory.getDimension( projectConfig.getPair().getUnit() );
+            units = Dimension.of( projectConfig.getPair().getUnit() );
         }
 
         // Builder 

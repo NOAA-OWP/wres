@@ -16,7 +16,6 @@ import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairs.TimeSeriesOfEnsembl
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs.TimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.metadata.Metadata;
-import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.engine.statistics.metric.MetricParameterException;
@@ -48,7 +47,7 @@ public class TimeSeriesDemo
         firstValues.add( Event.of( Instant.parse( "1985-01-01T18:00:00Z" ), SingleValuedPair.of( 5, 6 ) ) );
 
         //Create some default metadata for the time-series
-        Metadata metaData = MetadataFactory.getMetadata();
+        Metadata metaData = Metadata.of();
         //Build the atomic time-series
         TimeSeriesOfSingleValuedPairs timeSeries =
                 (TimeSeriesOfSingleValuedPairs) builder.addTimeSeriesData( firstId, firstValues )
@@ -253,7 +252,7 @@ public class TimeSeriesDemo
                              EnsemblePair.of( 9, new double[] { 11, 12, 13, 14, 15 } ) ) );
 
         //Build some metadata
-        Metadata meta = MetadataFactory.getMetadata();
+        Metadata meta = Metadata.of();
 
         //Build the time-series
         TimeSeriesOfEnsemblePairs ts =

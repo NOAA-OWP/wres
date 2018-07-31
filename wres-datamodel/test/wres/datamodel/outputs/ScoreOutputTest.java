@@ -6,8 +6,9 @@ import org.junit.Test;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.metadata.DatasetIdentifier;
+import wres.datamodel.metadata.Dimension;
 import wres.datamodel.metadata.Location;
-import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.ScoreOutput;
 
@@ -27,31 +28,31 @@ public final class ScoreOutputTest
     @Test
     public void test1Equals()
     {
-        final Location l1 = MetadataFactory.getLocation( "A" );
-        final MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( 10,
-                                                                           MetadataFactory.getDimension(),
-                                                                           MetadataFactory.getDimension( "CMS" ),
+        final Location l1 = Location.of( "A" );
+        final MetricOutputMetadata m1 = MetricOutputMetadata.of( 10,
+                                                                           Dimension.of(),
+                                                                           Dimension.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
                                                                            MetricConstants.MAIN,
-                                                                           MetadataFactory.getDatasetIdentifier( l1,
+                                                                           DatasetIdentifier.of( l1,
                                                                                                                  "B",
                                                                                                                  "C" ) );
-        final Location l2 = MetadataFactory.getLocation( "A" );
-        final MetricOutputMetadata m2 = MetadataFactory.getOutputMetadata( 11,
-                                                                           MetadataFactory.getDimension(),
-                                                                           MetadataFactory.getDimension( "CMS" ),
+        final Location l2 = Location.of( "A" );
+        final MetricOutputMetadata m2 = MetricOutputMetadata.of( 11,
+                                                                           Dimension.of(),
+                                                                           Dimension.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
                                                                            MetricConstants.MAIN,
-                                                                           MetadataFactory.getDatasetIdentifier( l2,
+                                                                           DatasetIdentifier.of( l2,
                                                                                                                  "B",
                                                                                                                  "C" ) );
-        final Location l3 = MetadataFactory.getLocation( "B" );
-        final MetricOutputMetadata m3 = MetadataFactory.getOutputMetadata( 10,
-                                                                           MetadataFactory.getDimension(),
-                                                                           MetadataFactory.getDimension( "CMS" ),
+        final Location l3 = Location.of( "B" );
+        final MetricOutputMetadata m3 = MetricOutputMetadata.of( 10,
+                                                                           Dimension.of(),
+                                                                           Dimension.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
                                                                            MetricConstants.MAIN,
-                                                                           MetadataFactory.getDatasetIdentifier( l3,
+                                                                           DatasetIdentifier.of( l3,
                                                                                                                  "B",
                                                                                                                  "C" ) );
         final ScoreOutput<Double, DoubleScoreOutput> s = DoubleScoreOutput.of( 1.0, m1 );
@@ -76,13 +77,13 @@ public final class ScoreOutputTest
     @Test
     public void test2ToString()
     {
-        final Location l1 = MetadataFactory.getLocation( "A" );
-        final MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( 10,
-                                                                           MetadataFactory.getDimension(),
-                                                                           MetadataFactory.getDimension( "CMS" ),
+        final Location l1 = Location.of( "A" );
+        final MetricOutputMetadata m1 = MetricOutputMetadata.of( 10,
+                                                                           Dimension.of(),
+                                                                           Dimension.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
                                                                            MetricConstants.MAIN,
-                                                                           MetadataFactory.getDatasetIdentifier( l1,
+                                                                           DatasetIdentifier.of( l1,
                                                                                                                  "B",
                                                                                                                  "C" ) );
         final ScoreOutput<Double, DoubleScoreOutput> s = DoubleScoreOutput.of( 1.0, m1 );
@@ -97,22 +98,22 @@ public final class ScoreOutputTest
     @Test
     public void test3GetMetadata()
     {
-        final Location l1 = MetadataFactory.getLocation( "A" );
-        final MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( 10,
-                                                                           MetadataFactory.getDimension(),
-                                                                           MetadataFactory.getDimension( "CMS" ),
+        final Location l1 = Location.of( "A" );
+        final MetricOutputMetadata m1 = MetricOutputMetadata.of( 10,
+                                                                           Dimension.of(),
+                                                                           Dimension.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
                                                                            MetricConstants.MAIN,
-                                                                           MetadataFactory.getDatasetIdentifier( l1,
+                                                                           DatasetIdentifier.of( l1,
                                                                                                                  "B",
                                                                                                                  "C" ) );
-        final Location l2 = MetadataFactory.getLocation( "B" );
-        final MetricOutputMetadata m2 = MetadataFactory.getOutputMetadata( 10,
-                                                                           MetadataFactory.getDimension(),
-                                                                           MetadataFactory.getDimension( "CMS" ),
+        final Location l2 = Location.of( "B" );
+        final MetricOutputMetadata m2 = MetricOutputMetadata.of( 10,
+                                                                           Dimension.of(),
+                                                                           Dimension.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
                                                                            MetricConstants.MAIN,
-                                                                           MetadataFactory.getDatasetIdentifier( l2,
+                                                                           DatasetIdentifier.of( l2,
                                                                                                                  "B",
                                                                                                                  "C" ) );
         final ScoreOutput<Double, DoubleScoreOutput> q = DoubleScoreOutput.of( 1.0, m1 );
@@ -127,31 +128,31 @@ public final class ScoreOutputTest
     @Test
     public void test4HashCode()
     {
-        final Location l1 = MetadataFactory.getLocation( "A" );
-        final MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( 10,
-                                                                           MetadataFactory.getDimension(),
-                                                                           MetadataFactory.getDimension( "CMS" ),
+        final Location l1 = Location.of( "A" );
+        final MetricOutputMetadata m1 = MetricOutputMetadata.of( 10,
+                                                                           Dimension.of(),
+                                                                           Dimension.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
                                                                            MetricConstants.MAIN,
-                                                                           MetadataFactory.getDatasetIdentifier( l1,
+                                                                           DatasetIdentifier.of( l1,
                                                                                                                  "B",
                                                                                                                  "C" ) );
-        final Location l2 = MetadataFactory.getLocation( "A" );
-        final MetricOutputMetadata m2 = MetadataFactory.getOutputMetadata( 10,
-                                                                           MetadataFactory.getDimension(),
-                                                                           MetadataFactory.getDimension( "CMS" ),
+        final Location l2 = Location.of( "A" );
+        final MetricOutputMetadata m2 = MetricOutputMetadata.of( 10,
+                                                                           Dimension.of(),
+                                                                           Dimension.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
                                                                            MetricConstants.MAIN,
-                                                                           MetadataFactory.getDatasetIdentifier( l2,
+                                                                           DatasetIdentifier.of( l2,
                                                                                                                  "B",
                                                                                                                  "C" ) );
-        final Location l3 = MetadataFactory.getLocation( "B" );
-        final MetricOutputMetadata m3 = MetadataFactory.getOutputMetadata( 10,
-                                                                           MetadataFactory.getDimension(),
-                                                                           MetadataFactory.getDimension( "CMS" ),
+        final Location l3 = Location.of( "B" );
+        final MetricOutputMetadata m3 = MetricOutputMetadata.of( 10,
+                                                                           Dimension.of(),
+                                                                           Dimension.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
                                                                            MetricConstants.MAIN,
-                                                                           MetadataFactory.getDatasetIdentifier( l3,
+                                                                           DatasetIdentifier.of( l3,
                                                                                                                  "B",
                                                                                                                  "C" ) );
         final ScoreOutput<Double, DoubleScoreOutput> q = DoubleScoreOutput.of( 1.0, m1 );

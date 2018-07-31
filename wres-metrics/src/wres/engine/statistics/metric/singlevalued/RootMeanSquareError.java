@@ -72,14 +72,15 @@ public class RootMeanSquareError extends DoubleErrorScore<SingleValuedPairs>
 
         // Set the output dimension
         Dimension outputDimension = metIn.getDimension();
+        final Dimension outputDim = outputDimension;
 
-        MetricOutputMetadata meta = MetadataFactory.getOutputMetadata( metIn.getSampleSize(),
-                                                                       outputDimension,
-                                                                       metIn.getDimension(),
-                                                                       this.getID(),
-                                                                       MetricConstants.MAIN,
-                                                                       metIn.getIdentifier(),
-                                                                       metIn.getTimeWindow() );
+        MetricOutputMetadata meta = MetricOutputMetadata.of( metIn.getSampleSize(),
+        outputDim,
+        metIn.getDimension(),
+        this.getID(),
+        MetricConstants.MAIN,
+        metIn.getIdentifier(),
+        metIn.getTimeWindow() );
         return DoubleScoreOutput.of( Math.sqrt( output.getData() / metIn.getSampleSize() ), meta );
     }
 

@@ -93,13 +93,13 @@ public class SumOfSquareError extends DecomposableScore<SingleValuedPairs>
             throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
         }
 
-        MetricOutputMetadata meta = MetadataFactory.getOutputMetadata( output.getMetadata().getSampleSize(),
-                                                                       output.getMetadata().getDimension(),
-                                                                       output.getMetadata().getInputDimension(),
-                                                                       this.getID(),
-                                                                       output.getMetadata().getMetricComponentID(),
-                                                                       output.getMetadata().getIdentifier(),
-                                                                       output.getMetadata().getTimeWindow() );
+        MetricOutputMetadata meta = MetricOutputMetadata.of( output.getMetadata().getSampleSize(),
+        output.getMetadata().getDimension(),
+        output.getMetadata().getInputDimension(),
+        this.getID(),
+        output.getMetadata().getMetricComponentID(),
+        output.getMetadata().getIdentifier(),
+        output.getMetadata().getTimeWindow() );
         return DoubleScoreOutput.of( output.getData(), meta );
     }
 
@@ -124,24 +124,26 @@ public class SumOfSquareError extends DecomposableScore<SingleValuedPairs>
         // Add the baseline scenario identifier
         if ( input.hasBaseline() )
         {
-            identifier = MetadataFactory.getDatasetIdentifier( identifier,
+            identifier = DatasetIdentifier.of( identifier,
                                                                input.getMetadataForBaseline()
                                                                     .getIdentifier()
                                                                     .getScenarioID() );
         }
         // Set the output dimension
-        Dimension outputDimension = MetadataFactory.getDimension();
+        Dimension outputDimension = Dimension.of();
         if ( hasRealUnits() )
         {
             outputDimension = metIn.getDimension();
         }
-        return MetadataFactory.getOutputMetadata( input.getRawData().size(),
-                                                  outputDimension,
-                                                  metIn.getDimension(),
-                                                  this.getID(),
-                                                  MetricConstants.MAIN,
-                                                  identifier,
-                                                  metIn.getTimeWindow() );
+        final Dimension outputDim = outputDimension;
+        final DatasetIdentifier identifier1 = identifier;
+        return MetricOutputMetadata.of( input.getRawData().size(),
+        outputDim,
+        metIn.getDimension(),
+        this.getID(),
+        MetricConstants.MAIN,
+        identifier1,
+        metIn.getTimeWindow() );
     }
 
     /**

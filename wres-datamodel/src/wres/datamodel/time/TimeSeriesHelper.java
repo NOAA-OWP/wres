@@ -11,7 +11,6 @@ import java.util.TreeSet;
 
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.metadata.Metadata;
-import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
@@ -49,7 +48,7 @@ public class TimeSeriesHelper
         if ( input.hasTimeWindow() )
         {
             TimeWindow current = input.getTimeWindow();
-            returnMe = MetadataFactory.getMetadata( returnMe,
+            returnMe = Metadata.of( returnMe,
                                                     TimeWindow.of( earliestTime,
                                                                    latestTime,
                                                                    current.getReferenceTime(),
@@ -78,7 +77,7 @@ public class TimeSeriesHelper
         if ( input.hasTimeWindow() )
         {
             TimeWindow current = input.getTimeWindow();
-            returnMe = MetadataFactory.getMetadata( returnMe,
+            returnMe = Metadata.of( returnMe,
                                                     TimeWindow.of( current.getEarliestTime(),
                                                                    current.getLatestTime(),
                                                                    current.getReferenceTime(),

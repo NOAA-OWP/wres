@@ -26,8 +26,8 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.metadata.DatasetIdentifier;
+import wres.datamodel.metadata.Dimension;
 import wres.datamodel.metadata.Location;
-import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
@@ -64,7 +64,7 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTest
     {
 
         // location id
-        final Location LID = MetadataFactory.getLocation( "DRRC2" );
+        final Location LID = Location.of( "DRRC2" );
 
         MetricOutputForProjectByTimeAndThreshold.MetricOutputForProjectByTimeAndThresholdBuilder outputBuilder =
                 DataFactory.ofMetricOutputForProjectByTimeAndThreshold();
@@ -75,29 +75,26 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTest
         // which requires a datasetidentifier..
 
         DatasetIdentifier datasetIdentifier =
-                MetadataFactory.getDatasetIdentifier( LID,
-                                                      "SQIN",
-                                                      "HEFS",
-                                                      "ESP" );
+                DatasetIdentifier.of( LID, "SQIN", "HEFS", "ESP" );
 
         MetricOutputMetadata fakeMetadataA =
-                MetadataFactory.getOutputMetadata( 1000,
-                                                   MetadataFactory.getDimension(),
-                                                   MetadataFactory.getDimension( "CMS" ),
+                MetricOutputMetadata.of( 1000,
+                                                   Dimension.of(),
+                                                   Dimension.of( "CMS" ),
                                                    MetricConstants.MEAN_SQUARE_ERROR,
                                                    MetricConstants.MAIN,
                                                    datasetIdentifier );
         MetricOutputMetadata fakeMetadataB =
-                MetadataFactory.getOutputMetadata( 1000,
-                                                   MetadataFactory.getDimension(),
-                                                   MetadataFactory.getDimension( "CMS" ),
+                MetricOutputMetadata.of( 1000,
+                                                   Dimension.of(),
+                                                   Dimension.of( "CMS" ),
                                                    MetricConstants.MEAN_ERROR,
                                                    MetricConstants.MAIN,
                                                    datasetIdentifier );
         MetricOutputMetadata fakeMetadataC =
-                MetadataFactory.getOutputMetadata( 1000,
-                                                   MetadataFactory.getDimension(),
-                                                   MetadataFactory.getDimension( "CMS" ),
+                MetricOutputMetadata.of( 1000,
+                                                   Dimension.of(),
+                                                   Dimension.of( "CMS" ),
                                                    MetricConstants.MEAN_ABSOLUTE_ERROR,
                                                    MetricConstants.MAIN,
                                                    datasetIdentifier );
@@ -204,15 +201,12 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTest
         // which requires a datasetidentifier..
 
         DatasetIdentifier datasetIdentifier =
-                MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation( LID ),
-                                                      "SQIN",
-                                                      "HEFS",
-                                                      "ESP" );
+                DatasetIdentifier.of( Location.of( LID ), "SQIN", "HEFS", "ESP" );
 
         MetricOutputMetadata fakeMetadata =
-                MetadataFactory.getOutputMetadata( 1000,
-                                                   MetadataFactory.getDimension(),
-                                                   MetadataFactory.getDimension( "CMS" ),
+                MetricOutputMetadata.of( 1000,
+                                                   Dimension.of(),
+                                                   Dimension.of( "CMS" ),
                                                    MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
                                                    null,
                                                    datasetIdentifier );
@@ -295,15 +289,12 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTest
         // which requires a datasetidentifier..
 
         DatasetIdentifier datasetIdentifier =
-                MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation( LID ),
-                                                      "SQIN",
-                                                      "HEFS",
-                                                      "ESP" );
+                DatasetIdentifier.of( Location.of( LID ), "SQIN", "HEFS", "ESP" );
 
         MetricOutputMetadata fakeMetadataA =
-                MetadataFactory.getOutputMetadata( 1000,
-                                                   MetadataFactory.getDimension(),
-                                                   MetadataFactory.getDimension( "CMS" ),
+                MetricOutputMetadata.of( 1000,
+                                                   Dimension.of(),
+                                                   Dimension.of( "CMS" ),
                                                    MetricConstants.MEAN_SQUARE_ERROR,
                                                    MetricConstants.MAIN,
                                                    datasetIdentifier );

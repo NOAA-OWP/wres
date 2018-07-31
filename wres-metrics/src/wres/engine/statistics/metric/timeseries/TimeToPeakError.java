@@ -79,14 +79,15 @@ public class TimeToPeakError extends TimingError
 
         // Create output metadata with the identifier of the statistic as the component identifier
         Metadata in = s.getMetadata();
-        Dimension outputDimension = MetadataFactory.getDimension( "DURATION" );
-        MetricOutputMetadata meta = MetadataFactory.getOutputMetadata( s.getBasisTimes().size(),
-                                                                                             outputDimension,
-                                                                                             in.getDimension(),
-                                                                                             this.getID(),
-                                                                                             MetricConstants.MAIN,
-                                                                                             in.getIdentifier(),
-                                                                                             in.getTimeWindow() );
+        Dimension outputDimension = Dimension.of( "DURATION" );
+        final Dimension outputDim = outputDimension;
+        MetricOutputMetadata meta = MetricOutputMetadata.of( s.getBasisTimes().size(),
+        outputDim,
+        in.getDimension(),
+        this.getID(),
+        MetricConstants.MAIN,
+        in.getIdentifier(),
+        in.getTimeWindow() );
 
         return PairedOutput.of( returnMe, meta );
     }

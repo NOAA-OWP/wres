@@ -10,9 +10,10 @@ import org.junit.Test;
 
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.DichotomousPairs.DichotomousPairsBuilder;
+import wres.datamodel.metadata.DatasetIdentifier;
+import wres.datamodel.metadata.Dimension;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.Metadata;
-import wres.datamodel.metadata.MetadataFactory;
 
 /**
  * Tests the {@link DichotomousPairs}.
@@ -38,9 +39,9 @@ public final class DichotomousPairsTest
             values.add( DichotomousPair.of( true, true ) );
         }
 
-        final Location location = MetadataFactory.getLocation( "DRRC2" );
-        final Metadata meta = MetadataFactory.getMetadata( MetadataFactory.getDimension(),
-                                                           MetadataFactory.getDatasetIdentifier( location,
+        final Location location = Location.of( "DRRC2" );
+        final Metadata meta = Metadata.of( Dimension.of(),
+                                                           DatasetIdentifier.of( location,
                                                                                                  "SQIN",
                                                                                                  "HEFS" ) );
 

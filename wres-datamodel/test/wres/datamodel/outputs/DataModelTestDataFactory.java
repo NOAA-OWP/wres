@@ -19,7 +19,9 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.OneOrTwoDoubles;
-import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.metadata.DatasetIdentifier;
+import wres.datamodel.metadata.Dimension;
+import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
@@ -63,15 +65,12 @@ public final class DataModelTestDataFactory
             final Iterator<MetricResultKey> d = data.getIterator();
 
             //Metric output metadata: add fake sample sizes as these are not readily available
-            final MetricOutputMetadata meta = MetadataFactory.getOutputMetadata( 1000,
-                                                                                 MetadataFactory.getDimension(),
-                                                                                 MetadataFactory.getDimension( "CMS" ),
+            final MetricOutputMetadata meta = MetricOutputMetadata.of( 1000,
+                                                                                 Dimension.of(),
+                                                                                 Dimension.of( "CMS" ),
                                                                                  MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
                                                                                  MetricConstants.MAIN,
-                                                                                 MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation( "DRRC2" ),
-                                                                                                                       "SQIN",
-                                                                                                                       "HEFS",
-                                                                                                                       "ESP" ) );
+                                                                                 DatasetIdentifier.of( Location.of( "DRRC2" ), "SQIN", "HEFS", "ESP" ) );
 
             //Iterate through the lead times
             while ( d.hasNext() )
@@ -132,15 +131,12 @@ public final class DataModelTestDataFactory
                 new MetricOutputMapByTimeAndThreshold.MetricOutputMapByTimeAndThresholdBuilder<>();
 
         //Fake metadata
-        MetricOutputMetadata meta = MetadataFactory.getOutputMetadata( 1000,
-                                                                       MetadataFactory.getDimension(),
-                                                                       MetadataFactory.getDimension( "CMS" ),
+        MetricOutputMetadata meta = MetricOutputMetadata.of( 1000,
+                                                                       Dimension.of(),
+                                                                       Dimension.of( "CMS" ),
                                                                        MetricConstants.MEAN_ABSOLUTE_ERROR,
                                                                        MetricConstants.MAIN,
-                                                                       MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation( "DRRC2" ),
-                                                                                                             "SQIN",
-                                                                                                             "HEFS",
-                                                                                                             "ESP" ) );
+                                                                       DatasetIdentifier.of( Location.of( "DRRC2" ), "SQIN", "HEFS", "ESP" ) );
 
         int[] leadTimes = new int[] { 1, 2, 3, 4, 5 };
 
@@ -225,15 +221,12 @@ public final class DataModelTestDataFactory
             final Iterator<MetricResultKey> d = data.getIterator();
 
             //Metric output metadata: add fake sample sizes as these are not readily available
-            final MetricOutputMetadata meta = MetadataFactory.getOutputMetadata( 1000,
-                                                                                 MetadataFactory.getDimension(),
-                                                                                 MetadataFactory.getDimension( "CFS" ),
+            final MetricOutputMetadata meta = MetricOutputMetadata.of( 1000,
+                                                                                 Dimension.of(),
+                                                                                 Dimension.of( "CFS" ),
                                                                                  MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
                                                                                  MetricConstants.CR_POT,
-                                                                                 MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation( "NPTP1" ),
-                                                                                                                       "SQIN",
-                                                                                                                       "HEFS",
-                                                                                                                       "ESP" ) );
+                                                                                 DatasetIdentifier.of( Location.of( "NPTP1" ), "SQIN", "HEFS", "ESP" ) );
 
             //Iterate through the lead times
             while ( d.hasNext() )

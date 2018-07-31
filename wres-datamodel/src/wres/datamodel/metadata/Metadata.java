@@ -28,6 +28,69 @@ public class Metadata
 
     private final TimeWindow timeWindow;
 
+
+    /**
+     * Build a {@link Metadata} object with a default {@link Dimension}.
+     * 
+     * @return a {@link Metadata} object
+     */
+
+    public static Metadata of()
+    {
+        return Metadata.of( Dimension.of() );
+    }
+
+    /**
+     * Build a {@link Metadata} object with a sample size and a prescribed {@link Dimension}.
+     * 
+     * @param dim the dimension
+     * @return a {@link Metadata} object
+     */
+
+    public static Metadata of( final Dimension dim )
+    {
+        return Metadata.of( dim, null, null );
+    }
+
+    /**
+     * Build a {@link Metadata} object with a prescribed {@link Dimension} and an optional {@link DatasetIdentifier}.
+     * 
+     * @param dim the dimension
+     * @param identifier an optional dataset identifier (may be null)
+     * @return a {@link Metadata} object
+     */
+
+    public static Metadata of( final Dimension dim, final DatasetIdentifier identifier )
+    {
+        return Metadata.of( dim, identifier, null );
+    }
+
+    /**
+     * Builds a {@link Metadata} from a prescribed input source and a new {@link Dimension}.
+     * 
+     * @param input the source metadata
+     * @param dim the new dimension
+     * @return a {@link Metadata} object
+     */
+
+    public static Metadata of( final Metadata input, final Dimension dim )
+    {
+        return Metadata.of( dim, input.getIdentifier(), input.getTimeWindow() );
+    }
+
+    /**
+     * Builds a {@link Metadata} from a prescribed input source and a new {@link TimeWindow}.
+     * 
+     * @param input the source metadata
+     * @param timeWindow the new time window
+     * @return a {@link Metadata} object
+     */
+
+    public static Metadata of( final Metadata input, final TimeWindow timeWindow )
+    {
+        return Metadata.of( input.getDimension(), input.getIdentifier(), timeWindow );
+    }
+
     /**
      * Returns an instance from the inputs.
      * 
