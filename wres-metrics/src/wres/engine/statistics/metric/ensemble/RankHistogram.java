@@ -11,7 +11,6 @@ import java.util.Random;
 import java.util.function.BiConsumer;
 import java.util.stream.IntStream;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.MissingValues;
@@ -110,7 +109,7 @@ public class RankHistogram extends Diagram<EnsemblePairs, MultiVectorOutput>
         output.put( MetricDimension.RANK_ORDER, ranks );
         output.put( MetricDimension.OBSERVED_RELATIVE_FREQUENCY, relativeFrequencies );
         final MetricOutputMetadata metOut = getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, null );
-        return DataFactory.ofMultiVectorOutput( output, metOut );
+        return MultiVectorOutput.ofMultiVectorOutput( output, metOut );
     }
 
     @Override

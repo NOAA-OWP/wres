@@ -60,7 +60,7 @@ public final class CoefficientOfDeterminationTest
 
         //Compute normally
         DoubleScoreOutput actual = cod.apply( input );
-        DoubleScoreOutput expected = DataFactory.ofDoubleScoreOutput( Math.pow( 0.9999999910148981, 2 ), m1 );
+        DoubleScoreOutput expected = DoubleScoreOutput.of( Math.pow( 0.9999999910148981, 2 ), m1 );
         assertTrue( "Actual: " + actual.getData().doubleValue()
                     + ". Expected: "
                     + expected.getData().doubleValue()
@@ -77,7 +77,7 @@ public final class CoefficientOfDeterminationTest
     {
         // Generate empty data
         SingleValuedPairs input =
-                DataFactory.ofSingleValuedPairs( Arrays.asList(), MetadataFactory.getMetadata() );
+                SingleValuedPairs.of( Arrays.asList(), MetadataFactory.getMetadata() );
  
         DoubleScoreOutput actual = cod.apply( input );
 

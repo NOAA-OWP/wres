@@ -72,7 +72,7 @@ public final class TimingErrorDurationStatisticsTest
                                                                   .apply( peakError.apply( input ) );
         Duration expectedSource = Duration.ofHours( 3 );
         // Expected, which uses identifier of MetricConstants.MAIN for convenience
-        DurationScoreOutput expected = DataFactory.ofDurationScoreOutput( expectedSource, m1 );
+        DurationScoreOutput expected = DurationScoreOutput.of( expectedSource, m1 );
         assertTrue( "Actual: " + actual.getComponent( MetricConstants.MEAN )
                     + ". Expected: "
                     + expected.getData()
@@ -160,7 +160,7 @@ public final class TimingErrorDurationStatisticsTest
         expectedSource.put( MetricConstants.MEAN_ABSOLUTE, expectedMeanAbs );
 
         // Expected, which uses identifier of MetricConstants.MAIN for convenience
-        DurationScoreOutput expected = DataFactory.ofDurationScoreOutput( expectedSource, m1 );
+        DurationScoreOutput expected = DurationScoreOutput.of( expectedSource, m1 );
         assertTrue( "Actual and expected results differ.", actual.equals( expected ) );
     }
 
@@ -203,7 +203,7 @@ public final class TimingErrorDurationStatisticsTest
         expectedSource.put( MetricConstants.MEAN, MetricConstants.MissingValues.MISSING_DURATION );
 
         // Expected, which uses identifier of MetricConstants.MAIN for convenience
-        DurationScoreOutput expected = DataFactory.ofDurationScoreOutput( expectedSource, m1 );
+        DurationScoreOutput expected = DurationScoreOutput.of( expectedSource, m1 );
 
         assertTrue( "Actual and expected results differ.", actual.equals( expected ) );
     }

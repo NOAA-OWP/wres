@@ -61,7 +61,7 @@ public final class CorrelationPearsonsTest
 
         //Compute normally
         final DoubleScoreOutput actual = rho.apply( input );
-        final DoubleScoreOutput expected = DataFactory.ofDoubleScoreOutput( 0.9999999910148981, m1 );
+        final DoubleScoreOutput expected = DoubleScoreOutput.of( 0.9999999910148981, m1 );
         assertTrue( "Actual: " + actual.getData().doubleValue()
                     + ". Expected: "
                     + expected.getData().doubleValue()
@@ -90,7 +90,7 @@ public final class CorrelationPearsonsTest
     {
         // Generate empty data
         SingleValuedPairs input =
-                DataFactory.ofSingleValuedPairs( Arrays.asList(), MetadataFactory.getMetadata() );
+                SingleValuedPairs.of( Arrays.asList(), MetadataFactory.getMetadata() );
  
         DoubleScoreOutput actual = rho.apply( input );
 

@@ -7,7 +7,6 @@ import java.util.Objects;
 
 import org.apache.commons.math3.util.Precision;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.MissingValues;
@@ -116,7 +115,7 @@ public class RelativeOperatingCharacteristicDiagram extends Diagram<DiscreteProb
         output.put( MetricDimension.PROBABILITY_OF_DETECTION, pOD );
         output.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, pOFD );
         final MetricOutputMetadata metOut = getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, null );
-        return DataFactory.ofMultiVectorOutput( output, metOut );
+        return MultiVectorOutput.ofMultiVectorOutput( output, metOut );
     }
 
     @Override

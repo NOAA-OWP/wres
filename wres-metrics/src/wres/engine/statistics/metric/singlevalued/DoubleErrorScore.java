@@ -56,7 +56,7 @@ public abstract class DoubleErrorScore<S extends SingleValuedPairs> extends Ordi
         {
             doubleScore = s.getRawData().stream().mapToDouble( function ).average().getAsDouble();
         }
-        return DataFactory.ofDoubleScoreOutput( doubleScore, metOut );
+        return DoubleScoreOutput.of( doubleScore, metOut );
     }
 
     @Override

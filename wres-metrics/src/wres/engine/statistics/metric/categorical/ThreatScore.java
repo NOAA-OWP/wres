@@ -44,7 +44,7 @@ public class ThreatScore extends ContingencyTableScore<DichotomousPairs>
         final MatrixOutput v = output;
         final double[][] cm = v.getData().getDoubles();
         double result = FunctionFactory.finiteOrMissing().applyAsDouble( cm[0][0] / ( cm[0][0] + cm[0][1] + cm[1][0] ) );
-        return DataFactory.ofDoubleScoreOutput( result, getMetadata( output ) );
+        return DoubleScoreOutput.of( result, getMetadata( output ) );
     }
 
     @Override

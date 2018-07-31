@@ -82,7 +82,7 @@ public class SumOfSquareError extends DecomposableScore<SingleValuedPairs>
         //Metadata
         final MetricOutputMetadata metOut = this.getMetadata( input );
 
-        return DataFactory.ofDoubleScoreOutput( returnMe, metOut );
+        return DoubleScoreOutput.of( returnMe, metOut );
     }
 
     @Override
@@ -100,7 +100,7 @@ public class SumOfSquareError extends DecomposableScore<SingleValuedPairs>
                                                                        output.getMetadata().getMetricComponentID(),
                                                                        output.getMetadata().getIdentifier(),
                                                                        output.getMetadata().getTimeWindow() );
-        return DataFactory.ofDoubleScoreOutput( output.getData(), meta );
+        return DoubleScoreOutput.of( output.getData(), meta );
     }
 
     @Override

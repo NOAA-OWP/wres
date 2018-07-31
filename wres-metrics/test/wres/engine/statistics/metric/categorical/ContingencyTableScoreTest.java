@@ -10,7 +10,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
@@ -77,7 +76,7 @@ public final class ContingencyTableScoreTest
     public void testContingencyTableScoreAcceptsCorrectInput()
     {
         final double[][] benchmark = new double[][] { { 82.0, 38.0 }, { 23.0, 222.0 } };
-        final MatrixOutput expected = DataFactory.ofMatrixOutput( benchmark, meta );
+        final MatrixOutput expected = MatrixOutput.of( benchmark, meta );
 
         cs.is2x2ContingencyTable( expected, cs );
     }
@@ -91,7 +90,7 @@ public final class ContingencyTableScoreTest
     public void testContingencyTableScoreAcceptsCorrectInputForLargeTable()
     {
         final double[][] benchmark = new double[][] { { 82.0, 38.0 }, { 23.0, 222.0 } };
-        final MatrixOutput expected = DataFactory.ofMatrixOutput( benchmark, meta );
+        final MatrixOutput expected = MatrixOutput.of( benchmark, meta );
 
         cs.isContingencyTable( expected, cs );
     }
@@ -129,7 +128,7 @@ public final class ContingencyTableScoreTest
 
 
         final double[][] benchmark = new double[][] { { 82.0, 38.0 }, { 23.0, 222.0 } };
-        final MatrixOutput expected = DataFactory.ofMatrixOutput( benchmark,
+        final MatrixOutput expected = MatrixOutput.of( benchmark,
                                                                   Arrays.asList( MetricDimension.TRUE_POSITIVES,
                                                                                  MetricDimension.FALSE_POSITIVES,
                                                                                  MetricDimension.FALSE_NEGATIVES,
@@ -234,7 +233,7 @@ public final class ContingencyTableScoreTest
         exception.expectMessage( "Expected an intermediate result with a 2x2 square matrix when computing the "
                                  + "'THREAT SCORE': [1, 1]." );
 
-        cs.is2x2ContingencyTable( DataFactory.ofMatrixOutput( new double[][] { { 1.0 } }, meta ), cs );
+        cs.is2x2ContingencyTable( MatrixOutput.of( new double[][] { { 1.0 } }, meta ), cs );
     }
 
     /**
@@ -248,7 +247,7 @@ public final class ContingencyTableScoreTest
         exception.expectMessage( "Expected an intermediate result with a 2x2 square matrix when computing the "
                                  + "'THREAT SCORE': [2, 3]." );
 
-        cs.is2x2ContingencyTable( DataFactory.ofMatrixOutput( new double[][] { { 1.0, 1.0, 1.0 }, { 1.0, 1.0, 1.0 } },
+        cs.is2x2ContingencyTable( MatrixOutput.of( new double[][] { { 1.0, 1.0, 1.0 }, { 1.0, 1.0, 1.0 } },
                                                               meta ),
                                   cs );
     }
@@ -264,7 +263,7 @@ public final class ContingencyTableScoreTest
         exception.expectMessage( "Expected an intermediate result with a square matrix when computing the "
                                  + "'THREAT SCORE': [2, 3]." );
 
-        cs.isContingencyTable( DataFactory.ofMatrixOutput( new double[][] { { 1.0, 1.0, 1.0 }, { 1.0, 1.0, 1.0 } },
+        cs.isContingencyTable( MatrixOutput.of( new double[][] { { 1.0, 1.0, 1.0 }, { 1.0, 1.0, 1.0 } },
                                                            meta ),
                                cs );
     }
@@ -279,7 +278,7 @@ public final class ContingencyTableScoreTest
         exception.expect( MetricInputException.class );
         exception.expectMessage( "Specify non-null input to the 'THREAT SCORE'." );
 
-        cs.is2x2ContingencyTable( DataFactory.ofMatrixOutput( new double[][] { { 1.0 } }, meta ), null );
+        cs.is2x2ContingencyTable( MatrixOutput.of( new double[][] { { 1.0 } }, meta ), null );
     }
 
     /**
@@ -292,7 +291,7 @@ public final class ContingencyTableScoreTest
         exception.expect( MetricInputException.class );
         exception.expectMessage( "Specify non-null input to the 'THREAT SCORE'." );
 
-        cs.isContingencyTable( DataFactory.ofMatrixOutput( new double[][] { { 1.0, 1.0 }, { 1.0, 1.0 } }, meta ),
+        cs.isContingencyTable( MatrixOutput.of( new double[][] { { 1.0, 1.0 }, { 1.0, 1.0 } }, meta ),
                                null );
     }
 

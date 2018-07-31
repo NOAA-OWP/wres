@@ -57,7 +57,7 @@ public class BrierSkillScore extends BrierScore
 
         MetricOutputMetadata metOut = getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, baselineIdentifier );
 
-        return DataFactory.ofDoubleScoreOutput( msess.apply( Slicer.toSingleValuedPairs( s ) ).getData(), metOut );
+        return DoubleScoreOutput.of( msess.apply( Slicer.toSingleValuedPairs( s ) ).getData(), metOut );
     }
 
     @Override

@@ -53,7 +53,7 @@ public class BiasFraction extends DoubleErrorScore<SingleValuedPairs>
         {
             result = Double.NaN;
         }
-        return DataFactory.ofDoubleScoreOutput( result, metOut );
+        return DoubleScoreOutput.of( result, metOut );
     }
 
     @Override

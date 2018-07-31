@@ -80,7 +80,7 @@ public class RootMeanSquareError extends DoubleErrorScore<SingleValuedPairs>
                                                                        MetricConstants.MAIN,
                                                                        metIn.getIdentifier(),
                                                                        metIn.getTimeWindow() );
-        return DataFactory.ofDoubleScoreOutput( Math.sqrt( output.getData() / metIn.getSampleSize() ), meta );
+        return DoubleScoreOutput.of( Math.sqrt( output.getData() / metIn.getSampleSize() ), meta );
     }
 
     @Override

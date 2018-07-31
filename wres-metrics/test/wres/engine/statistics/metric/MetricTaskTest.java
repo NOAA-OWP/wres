@@ -85,7 +85,7 @@ public final class MetricTaskTest
                                                                                 input.getMetadata(),
                                                                                 MetricConstants.MEAN_ERROR,
                                                                                 MetricConstants.MAIN );
-        DoubleScoreOutput benchmark = DataFactory.ofDoubleScoreOutput( 200.55, benchmarkMeta );
+        DoubleScoreOutput benchmark = DoubleScoreOutput.of( 200.55, benchmarkMeta );
 
         assertTrue( benchmark.equals( task.call() ) );
 

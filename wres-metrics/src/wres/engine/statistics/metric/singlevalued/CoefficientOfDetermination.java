@@ -56,7 +56,7 @@ public class CoefficientOfDetermination extends CorrelationPearsons
                                                                                              MetricConstants.COEFFICIENT_OF_DETERMINATION,
                                                                                              MetricConstants.MAIN,
                                                                                              in.getIdentifier() );
-        return DataFactory.ofDoubleScoreOutput(Math.pow(output.getData(), 2), meta);
+        return DoubleScoreOutput.of( Math.pow(output.getData(), 2), meta );
     }
 
     @Override

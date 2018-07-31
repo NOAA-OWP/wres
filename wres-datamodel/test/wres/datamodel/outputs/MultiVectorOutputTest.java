@@ -8,7 +8,6 @@ import java.util.Map;
 
 import org.junit.Test;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.MetricConstants.MetricDimension;
@@ -69,15 +68,15 @@ public final class MultiVectorOutputTest
         mvb.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4 } );
         mvc.put( MetricDimension.PROBABILITY_OF_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4, 0.5 } );
         mvc.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4, 0.5 } );
-        final MultiVectorOutput s = DataFactory.ofMultiVectorOutput( mva, m1 );
-        final MultiVectorOutput t = DataFactory.ofMultiVectorOutput( mvb, m1 );
+        final MultiVectorOutput s = MultiVectorOutput.ofMultiVectorOutput( mva, m1 );
+        final MultiVectorOutput t = MultiVectorOutput.ofMultiVectorOutput( mvb, m1 );
         assertTrue( "Expected equal outputs.", s.equals( t ) );
         assertTrue( "Expected non-equal outputs.", !s.equals( null ) );
         assertTrue( "Expected non-equal outputs.", !s.equals( new Double( 1.0 ) ) );
-        assertTrue( "Expected non-equal outputs.", !s.equals( DataFactory.ofMultiVectorOutput( mvc, m1 ) ) );
-        assertTrue( "Expected non-equal outputs.", !s.equals( DataFactory.ofMultiVectorOutput( mvc, m2 ) ) );
-        final MultiVectorOutput q = DataFactory.ofMultiVectorOutput( mva, m2 );
-        final MultiVectorOutput r = DataFactory.ofMultiVectorOutput( mvb, m3 );
+        assertTrue( "Expected non-equal outputs.", !s.equals( MultiVectorOutput.ofMultiVectorOutput( mvc, m1 ) ) );
+        assertTrue( "Expected non-equal outputs.", !s.equals( MultiVectorOutput.ofMultiVectorOutput( mvc, m2 ) ) );
+        final MultiVectorOutput q = MultiVectorOutput.ofMultiVectorOutput( mva, m2 );
+        final MultiVectorOutput r = MultiVectorOutput.ofMultiVectorOutput( mvb, m3 );
         assertTrue( "Expected equal outputs.", q.equals( q ) );
         assertTrue( "Expected non-equal outputs.", !s.equals( q ) );
         assertTrue( "Expected non-equal outputs.", !q.equals( s ) );
@@ -112,8 +111,8 @@ public final class MultiVectorOutputTest
         Map<MetricDimension, double[]> mva = new HashMap<>();
         mva.put( MetricDimension.PROBABILITY_OF_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4 } );
         mva.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4 } );
-        final MultiVectorOutput q = DataFactory.ofMultiVectorOutput( mva, m1 );
-        final MultiVectorOutput r = DataFactory.ofMultiVectorOutput( mva, m2 );
+        final MultiVectorOutput q = MultiVectorOutput.ofMultiVectorOutput( mva, m1 );
+        final MultiVectorOutput r = MultiVectorOutput.ofMultiVectorOutput( mva, m2 );
         assertTrue( "Expected unequal dimensions.", !q.getMetadata().equals( r.getMetadata() ) );
     }
 
@@ -160,9 +159,9 @@ public final class MultiVectorOutputTest
         mvb.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4 } );
         mvc.put( MetricDimension.PROBABILITY_OF_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4, 0.5 } );
         mvc.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4, 0.5 } );
-        final MultiVectorOutput q = DataFactory.ofMultiVectorOutput( mva, m1 );
-        final MultiVectorOutput r = DataFactory.ofMultiVectorOutput( mvb, m2 );
-        final MultiVectorOutput s = DataFactory.ofMultiVectorOutput( mvc, m3 );
+        final MultiVectorOutput q = MultiVectorOutput.ofMultiVectorOutput( mva, m1 );
+        final MultiVectorOutput r = MultiVectorOutput.ofMultiVectorOutput( mvb, m2 );
+        final MultiVectorOutput s = MultiVectorOutput.ofMultiVectorOutput( mvc, m3 );
         assertTrue( "Expected equal hash codes.", q.hashCode() == r.hashCode() );
         assertTrue( "Expected unequal hash codes.", q.hashCode() != s.hashCode() );
     }
@@ -186,7 +185,7 @@ public final class MultiVectorOutputTest
         Map<MetricDimension, double[]> mva = new HashMap<>();
         mva.put( MetricDimension.PROBABILITY_OF_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4 } );
         mva.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4 } );
-        final MultiVectorOutput s = DataFactory.ofMultiVectorOutput( mva, m1 );
+        final MultiVectorOutput s = MultiVectorOutput.ofMultiVectorOutput( mva, m1 );
         assertTrue( "Expected a " + MetricDimension.PROBABILITY_OF_DETECTION
                     + ".",
                     s.containsKey( MetricDimension.PROBABILITY_OF_DETECTION ) );

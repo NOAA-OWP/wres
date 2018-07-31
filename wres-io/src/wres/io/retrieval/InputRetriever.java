@@ -27,12 +27,13 @@ import wres.config.generated.DestinationConfig;
 import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.TimeScaleConfig;
-import wres.datamodel.DataFactory;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.EnsemblePair;
+import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.SingleValuedPair;
+import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs.TimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.Dimension;
@@ -361,7 +362,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             baseline = convertToPairOfDoubles( this.baselinePairs );
         }
 
-        return DataFactory.ofSingleValuedPairs( primary,
+        return SingleValuedPairs.of( primary,
                                                 baseline,
                                                 rightMetadata,
                                                 baselineMetadata,
@@ -371,7 +372,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
     private MetricInput createSingleValuedTimeSeriesInput(Metadata rightMetadata, Metadata baselineMetadata)
             throws IOException, SQLException
     {
-        TimeSeriesOfSingleValuedPairsBuilder builder = DataFactory.ofTimeSeriesOfSingleValuedPairsBuilder();
+        TimeSeriesOfSingleValuedPairsBuilder builder = new TimeSeriesOfSingleValuedPairsBuilder();
 
         Map<Instant, List<Event<SingleValuedPair>>> events = this.getSingleValuedEvents( primaryPairs );
         events.forEach( builder::addTimeSeriesData );
@@ -426,7 +427,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             baseline = InputRetriever.extractRawPairs( this.baselinePairs );
         }
 
-        return DataFactory.ofEnsemblePairs( primary,
+        return EnsemblePairs.of( primary,
                                             baseline,
                                             rightMetadata,
                                             baselineMetadata,

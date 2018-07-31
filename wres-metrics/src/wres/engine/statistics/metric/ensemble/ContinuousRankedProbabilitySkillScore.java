@@ -70,7 +70,7 @@ public class ContinuousRankedProbabilitySkillScore extends ContinuousRankedProba
         //Metadata
         DatasetIdentifier baselineIdentifier = s.getMetadataForBaseline().getIdentifier();
         MetricOutputMetadata metOut = getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, baselineIdentifier );
-        return DataFactory.ofDoubleScoreOutput( result, metOut );
+        return DoubleScoreOutput.of( result, metOut );
     }
 
     @Override

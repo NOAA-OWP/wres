@@ -24,7 +24,6 @@ import wres.config.generated.ThresholdType;
 import wres.config.generated.ThresholdsConfig;
 import wres.config.generated.TimeSeriesMetricConfig;
 import wres.config.generated.TimeSeriesMetricConfigName;
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
@@ -197,7 +196,7 @@ public final class MetricConfigHelper
         }
 
         // Builder 
-        ThresholdsByMetricBuilder builder = DataFactory.ofThresholdsByMetricBuilder();
+        ThresholdsByMetricBuilder builder = new ThresholdsByMetricBuilder();
 
         // Iterate through the metric groups
         for ( MetricsConfig nextGroup : projectConfig.getMetrics() )
@@ -408,7 +407,7 @@ public final class MetricConfigHelper
             {
                 if ( areProbs )
                 {
-                    returnMe.add( DataFactory.ofProbabilityThreshold( OneOrTwoDoubles.of( addMe.get( i ),
+                    returnMe.add( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( addMe.get( i ),
                                                                                           addMe.get( i
                                                                                                      + 1 ) ),
                                                                       oper,
@@ -417,7 +416,7 @@ public final class MetricConfigHelper
                 }
                 else
                 {
-                    returnMe.add( DataFactory.ofThreshold( OneOrTwoDoubles.of( addMe.get( i ),
+                    returnMe.add( Threshold.of( OneOrTwoDoubles.of( addMe.get( i ),
                                                                                addMe.get( i + 1 ) ),
                                                            oper,
                                                            dataType,
@@ -430,14 +429,14 @@ public final class MetricConfigHelper
         {
             if ( areProbs )
             {
-                addMe.forEach( threshold -> returnMe.add( DataFactory.ofProbabilityThreshold( OneOrTwoDoubles.of( threshold ),
+                addMe.forEach( threshold -> returnMe.add( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( threshold ),
                                                                                               oper,
                                                                                               dataType,
                                                                                               units ) ) );
             }
             else
             {
-                addMe.forEach( threshold -> returnMe.add( DataFactory.ofThreshold( OneOrTwoDoubles.of( threshold ),
+                addMe.forEach( threshold -> returnMe.add( Threshold.of( OneOrTwoDoubles.of( threshold ),
                                                                                    oper,
                                                                                    dataType,
                                                                                    units ) ) );
@@ -477,7 +476,7 @@ public final class MetricConfigHelper
         Set<Threshold> returnMe = new HashSet<>();
 
         Threshold allData =
-                DataFactory.ofThreshold( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                          Operator.GREATER,
                                          ThresholdConstants.ThresholdDataType.LEFT_AND_RIGHT );
 

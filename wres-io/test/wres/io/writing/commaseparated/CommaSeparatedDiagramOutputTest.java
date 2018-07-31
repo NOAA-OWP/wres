@@ -36,6 +36,7 @@ import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMapByMetric;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
+import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 
@@ -103,7 +104,7 @@ public class CommaSeparatedDiagramOutputTest extends CommaSeparatedWriterTest
         // Fake output wrapper.
         MetricOutputMapByMetric<MultiVectorOutput> fakeOutputData =
                 DataFactory.ofMetricOutputMapByMetric( Collections.singletonMap( MetricConstants.RELIABILITY_DIAGRAM,
-                                                                                 DataFactory.ofMultiVectorOutput( fakeOutputs,
+                                                                                 MultiVectorOutput.ofMultiVectorOutput( fakeOutputs,
                                                                                                                   fakeMetadata ) ) );
 
         // wrap outputs in future
@@ -114,7 +115,7 @@ public class CommaSeparatedDiagramOutputTest extends CommaSeparatedWriterTest
         // Fake lead time and threshold
         Pair<TimeWindow, OneOrTwoThresholds> mapKeyByLeadThreshold =
                 Pair.of( timeOne,
-                         OneOrTwoThresholds.of( DataFactory.ofQuantileThreshold( OneOrTwoDoubles.of( 11.94128 ),
+                         OneOrTwoThresholds.of( Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( 11.94128 ),
                                                                                  OneOrTwoDoubles.of( 0.9 ),
                                                                                  Operator.GREATER_EQUAL,
                                                                                  ThresholdDataType.LEFT ) ) );

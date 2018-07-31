@@ -39,7 +39,7 @@ public class ProbabilityOfFalseDetection extends ContingencyTableScore<Dichotomo
         final MatrixOutput v = output;
         final double[][] cm = v.getData().getDoubles();
         double result = FunctionFactory.finiteOrMissing().applyAsDouble( cm[0][1] / ( cm[0][1] + cm[1][1] ) );
-        return DataFactory.ofDoubleScoreOutput( result, getMetadata( output ) );
+        return DoubleScoreOutput.of( result, getMetadata( output ) );
     }
 
     @Override

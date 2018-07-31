@@ -51,7 +51,7 @@ public final class SampleSizeTest
 
         //Check the results
         DoubleScoreOutput actual = ss.apply( input );
-        DoubleScoreOutput expected = DataFactory.ofDoubleScoreOutput( input.getRawData().size(), m1 );
+        DoubleScoreOutput expected = DoubleScoreOutput.of( (double) input.getRawData().size(), m1 );
         assertTrue( "Actual: " + actual.getData().doubleValue()
                     + ". Expected: "
                     + expected.getData().doubleValue()

@@ -43,7 +43,7 @@ public class EquitableThreatScore extends ContingencyTableScore<DichotomousPairs
         final double hitsRandom = ( ( cm[0][0] + cm[1][0] ) * ( cm[0][0] + cm[0][1] ) ) / ( t + cm[1][1] );
         double result =
                 FunctionFactory.finiteOrMissing().applyAsDouble( ( cm[0][0] - hitsRandom ) / ( t - hitsRandom ) );
-        return DataFactory.ofDoubleScoreOutput( result, getMetadata( output ) );
+        return DoubleScoreOutput.of( result, getMetadata( output ) );
     }
 
     @Override

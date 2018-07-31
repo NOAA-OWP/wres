@@ -79,7 +79,7 @@ public class RelativeOperatingCharacteristicScore extends OrdinaryScore<Discrete
         }
         final MetricOutputMetadata metOut =
                 getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, baselineIdentifier );
-        return DataFactory.ofDoubleScoreOutput( rocScore, metOut );
+        return DoubleScoreOutput.of( rocScore, metOut );
     }
 
     @Override

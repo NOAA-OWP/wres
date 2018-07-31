@@ -65,7 +65,7 @@ public final class BrierScoreTest
 
         // Check the results       
         DoubleScoreOutput actual = brierScore.apply( input );
-        DoubleScoreOutput expected = DataFactory.ofDoubleScoreOutput( 0.26, m1 );
+        DoubleScoreOutput expected = DoubleScoreOutput.of( 0.26, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -82,7 +82,7 @@ public final class BrierScoreTest
     {
         // Generate empty data
         DiscreteProbabilityPairs input =
-                DataFactory.ofDiscreteProbabilityPairs( Arrays.asList(), MetadataFactory.getMetadata() );
+                DiscreteProbabilityPairs.of( Arrays.asList(), MetadataFactory.getMetadata() );
  
         DoubleScoreOutput actual = brierScore.apply( input );
 

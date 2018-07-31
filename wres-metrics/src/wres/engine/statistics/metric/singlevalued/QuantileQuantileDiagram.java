@@ -6,7 +6,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.DoubleUnaryOperator;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.Slicer;
@@ -84,7 +83,7 @@ public class QuantileQuantileDiagram extends Diagram<SingleValuedPairs, MultiVec
         output.put( MetricDimension.OBSERVED_QUANTILES, observedQ );
         output.put( MetricDimension.PREDICTED_QUANTILES, predictedQ );
         final MetricOutputMetadata metOut = getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, null );
-        return DataFactory.ofMultiVectorOutput( output, metOut );
+        return MultiVectorOutput.ofMultiVectorOutput( output, metOut );
     }
 
     @Override

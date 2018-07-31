@@ -72,7 +72,7 @@ public final class MeanSquareErrorSkillScoreTest
 
         //Check the results
         final DoubleScoreOutput actual = msess.apply( input );
-        final DoubleScoreOutput expected = DataFactory.ofDoubleScoreOutput( 0.8007025335093799, m1 );
+        final DoubleScoreOutput expected = DoubleScoreOutput.of( 0.8007025335093799, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -109,7 +109,7 @@ public final class MeanSquareErrorSkillScoreTest
 
         //Check the results
         DoubleScoreOutput actual = msess.apply( input );
-        DoubleScoreOutput expected = DataFactory.ofDoubleScoreOutput( 0.7832791707526114, m1 );
+        DoubleScoreOutput expected = DoubleScoreOutput.of( 0.7832791707526114, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -137,7 +137,7 @@ public final class MeanSquareErrorSkillScoreTest
 
         //Check the results
         DoubleScoreOutput actual = msess.apply( input );
-        DoubleScoreOutput expected = DataFactory.ofDoubleScoreOutput( 0.9963647159052861, m1 );
+        DoubleScoreOutput expected = DoubleScoreOutput.of( 0.9963647159052861, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -154,7 +154,7 @@ public final class MeanSquareErrorSkillScoreTest
     {
         // Generate empty data
         SingleValuedPairs input =
-                DataFactory.ofSingleValuedPairs( Arrays.asList(), MetadataFactory.getMetadata() );
+                SingleValuedPairs.of( Arrays.asList(), MetadataFactory.getMetadata() );
 
         DoubleScoreOutput actual = msess.apply( input );
 

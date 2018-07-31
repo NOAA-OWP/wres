@@ -173,7 +173,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                                                      "SQIN",
                                                                                                      "HEFS" ),
                                                                window );
-            processor.apply( DataFactory.ofSingleValuedPairs( pairs.getRawData(), meta ) );
+            processor.apply( SingleValuedPairs.of( pairs.getRawData(), meta ) );
         }
 
         // Validate a subset of the data            
@@ -202,7 +202,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                          Duration.ofHours( 1 ) );
         Pair<TimeWindow, OneOrTwoThresholds> key =
                 Pair.of( expectedWindow,
-                         OneOrTwoThresholds.of( DataFactory.ofThreshold( OneOrTwoDoubles.of( 1.0 ),
+                         OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 1.0 ),
                                                                          Operator.GREATER,
                                                                          ThresholdDataType.LEFT,
                                                                          MetadataFactory.getDimension( "CMS" ) ) ) );
@@ -306,17 +306,17 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                                                            "Streamflow" ),
                                                                      firstWindow );
 
-        PairedOutput<Instant, Duration> expectedErrorsFirst = DataFactory.ofPairedOutput( expectedFirst, m1 );
+        PairedOutput<Instant, Duration> expectedErrorsFirst = PairedOutput.of( expectedFirst, m1 );
         PairedOutput<Instant, Duration> expectedErrorsSecond =
-                DataFactory.ofPairedOutput( expectedSecond, MetadataFactory.getOutputMetadata( m1, secondWindow ) );
+                PairedOutput.of( expectedSecond, MetadataFactory.getOutputMetadata( m1, secondWindow ) );
         Map<Pair<TimeWindow, OneOrTwoThresholds>, PairedOutput<Instant, Duration>> inMap = new HashMap<>();
         inMap.put( Pair.of( firstWindow,
-                            OneOrTwoThresholds.of( DataFactory.ofThreshold( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                            OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                                             Operator.GREATER,
                                                                             ThresholdDataType.LEFT_AND_RIGHT ) ) ),
                    expectedErrorsFirst );
         inMap.put( Pair.of( secondWindow,
-                            OneOrTwoThresholds.of( DataFactory.ofThreshold( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                            OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                                             Operator.GREATER,
                                                                             ThresholdDataType.LEFT_AND_RIGHT ) ) ),
                    expectedErrorsSecond );
@@ -408,30 +408,30 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                                                            "Streamflow" ),
                                                                      firstWindow );
 
-        PairedOutput<Instant, Duration> expectedErrorsFirst = DataFactory.ofPairedOutput( expectedFirst, m1 );
+        PairedOutput<Instant, Duration> expectedErrorsFirst = PairedOutput.of( expectedFirst, m1 );
         PairedOutput<Instant, Duration> expectedErrorsSecond =
-                DataFactory.ofPairedOutput( expectedSecond, MetadataFactory.getOutputMetadata( m1, secondWindow ) );
+                PairedOutput.of( expectedSecond, MetadataFactory.getOutputMetadata( m1, secondWindow ) );
         Map<Pair<TimeWindow, OneOrTwoThresholds>, PairedOutput<Instant, Duration>> inMap = new HashMap<>();
         inMap.put( Pair.of( firstWindow,
-                            OneOrTwoThresholds.of( DataFactory.ofThreshold( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                            OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                                             Operator.GREATER,
                                                                             ThresholdDataType.LEFT_AND_RIGHT ) ) ),
                    expectedErrorsFirst );
 
         inMap.put( Pair.of( firstWindow,
-                            OneOrTwoThresholds.of( DataFactory.ofThreshold( OneOrTwoDoubles.of( 5.0 ),
+                            OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 5.0 ),
                                                                             Operator.GREATER,
                                                                             ThresholdDataType.LEFT_AND_RIGHT ) ) ),
-                   DataFactory.ofPairedOutput( Arrays.asList(), MetadataFactory.getOutputMetadata( m1, 0 ) ) );
+                   PairedOutput.of( Arrays.asList(), MetadataFactory.getOutputMetadata( m1, 0 ) ) );
 
         inMap.put( Pair.of( secondWindow,
-                            OneOrTwoThresholds.of( DataFactory.ofThreshold( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                            OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                                             Operator.GREATER,
                                                                             ThresholdDataType.LEFT_AND_RIGHT ) ) ),
                    expectedErrorsSecond );
 
         inMap.put( Pair.of( secondWindow,
-                            OneOrTwoThresholds.of( DataFactory.ofThreshold( OneOrTwoDoubles.of( 5.0 ),
+                            OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 5.0 ),
                                                                             Operator.GREATER,
                                                                             ThresholdDataType.LEFT_AND_RIGHT ) ) ),
                    expectedErrorsSecond );
@@ -508,10 +508,10 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                             MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation( "A" ),
                                                                                                                   "Streamflow" ),
                                                                             combinedWindow );
-        DurationScoreOutput expectedScoresSource = DataFactory.ofDurationScoreOutput( expectedSource, scoreMeta );
+        DurationScoreOutput expectedScoresSource = DurationScoreOutput.of( expectedSource, scoreMeta );
         Map<Pair<TimeWindow, OneOrTwoThresholds>, DurationScoreOutput> scoreInMap = new HashMap<>();
         scoreInMap.put( Pair.of( combinedWindow,
-                                 OneOrTwoThresholds.of( DataFactory.ofThreshold( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                                 OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                                                  Operator.GREATER,
                                                                                  ThresholdDataType.LEFT_AND_RIGHT ) ) ),
                         expectedScoresSource );
@@ -549,11 +549,11 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         Map<MetricConstants, Set<Threshold>> canonical = new HashMap<>();
 
         Set<Threshold> thresholds =
-                new HashSet<>( Arrays.asList( DataFactory.ofThreshold( OneOrTwoDoubles.of( 0.5 ),
+                new HashSet<>( Arrays.asList( Threshold.of( OneOrTwoDoubles.of( 0.5 ),
                                                                        Operator.GREATER_EQUAL,
                                                                        ThresholdDataType.LEFT ) ) );
 
-        ThresholdsByMetricBuilder builder = DataFactory.ofThresholdsByMetricBuilder();
+        ThresholdsByMetricBuilder builder = new ThresholdsByMetricBuilder();
 
         canonical.put( MetricConstants.MEAN_ERROR, thresholds );
         canonical.put( MetricConstants.PEARSON_CORRELATION_COEFFICIENT, thresholds );
@@ -589,7 +589,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                                                      "SQIN",
                                                                                                      "HEFS" ),
                                                                window );
-            processor.apply( DataFactory.ofSingleValuedPairs( pairs.getRawData(), meta ) );
+            processor.apply( SingleValuedPairs.of( pairs.getRawData(), meta ) );
         }
 
         // Validate a subset of the data            
@@ -618,7 +618,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                          Duration.ofHours( 1 ) );
         Pair<TimeWindow, OneOrTwoThresholds> key =
                 Pair.of( expectedWindow,
-                         OneOrTwoThresholds.of( DataFactory.ofThreshold( OneOrTwoDoubles.of( 0.5 ),
+                         OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 0.5 ),
                                                                          Operator.GREATER_EQUAL,
                                                                          ThresholdDataType.LEFT ) ) );
         assertTrue( "Unexpected results for the contingency table.",
@@ -664,7 +664,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                                                      "SQIN",
                                                                                                      "HEFS" ),
                                                                window );
-            processor.apply( DataFactory.ofSingleValuedPairs( pairs.getRawData(), meta ) );
+            processor.apply( SingleValuedPairs.of( pairs.getRawData(), meta ) );
         }
 
         // Validate a subset of the data            
@@ -693,7 +693,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                          Duration.ofHours( 1 ) );
         Pair<TimeWindow, OneOrTwoThresholds> key =
                 Pair.of( expectedWindow,
-                         OneOrTwoThresholds.of( DataFactory.ofThreshold( OneOrTwoDoubles.of( 1.0 ),
+                         OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 1.0 ),
                                                                          Operator.GREATER,
                                                                          ThresholdDataType.LEFT,
                                                                          MetadataFactory.getDimension( "CMS" ) ) ) );
@@ -760,10 +760,10 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                             MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation( "A" ),
                                                                                                                   "Streamflow" ),
                                                                             combinedWindow );
-        DurationScoreOutput expectedScoresSource = DataFactory.ofDurationScoreOutput( expectedSource, scoreMeta );
+        DurationScoreOutput expectedScoresSource = DurationScoreOutput.of( expectedSource, scoreMeta );
         Map<Pair<TimeWindow, OneOrTwoThresholds>, DurationScoreOutput> scoreInMap = new HashMap<>();
         scoreInMap.put( Pair.of( combinedWindow,
-                                 OneOrTwoThresholds.of( DataFactory.ofThreshold( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                                 OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                                                  Operator.GREATER,
                                                                                  ThresholdDataType.LEFT_AND_RIGHT ) ) ),
                         expectedScoresSource );

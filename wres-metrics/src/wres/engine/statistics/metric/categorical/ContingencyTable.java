@@ -6,7 +6,6 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.inputs.MetricInputException;
@@ -82,7 +81,7 @@ public class ContingencyTable<S extends MulticategoryPairs> implements Metric<S,
                                             MetricDimension.TRUE_NEGATIVES );
         }
         final MetricOutputMetadata metOut = getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, null );
-        return DataFactory.ofMatrixOutput( returnMe, componentNames, metOut );
+        return MatrixOutput.of( returnMe, componentNames, metOut );
     }
 
     @Override

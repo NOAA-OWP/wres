@@ -84,7 +84,7 @@ public final class RelativeOperatingCharacteristicScoreTest
         values.add( DiscreteProbabilityPair.of( 1, 1.0 ) );
 
         final DiscreteProbabilityPairs input =
-                DataFactory.ofDiscreteProbabilityPairs( values, MetadataFactory.getMetadata() );
+                DiscreteProbabilityPairs.of( values, MetadataFactory.getMetadata() );
 
         //Metadata for the output
         final MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( input.getRawData().size(),
@@ -95,7 +95,7 @@ public final class RelativeOperatingCharacteristicScoreTest
 
         //Check the results       
         final DoubleScoreOutput actual = rocScore.apply( input );
-        final DoubleScoreOutput expected = DataFactory.ofDoubleScoreOutput( 0.6785714285714286, m1 );
+        final DoubleScoreOutput expected = DoubleScoreOutput.of( 0.6785714285714286, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -129,7 +129,7 @@ public final class RelativeOperatingCharacteristicScoreTest
         values.add( DiscreteProbabilityPair.of( 1, 0.984 ) );
         values.add( DiscreteProbabilityPair.of( 1, 0.952 ) );
         Metadata meta = MetadataFactory.getMetadata();
-        DiscreteProbabilityPairs input = DataFactory.ofDiscreteProbabilityPairs( values, meta );
+        DiscreteProbabilityPairs input = DiscreteProbabilityPairs.of( values, meta );
 
         //Metadata for the output
         MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( input.getRawData().size(),
@@ -140,7 +140,7 @@ public final class RelativeOperatingCharacteristicScoreTest
 
         //Check the results       
         DoubleScoreOutput actual = rocScore.apply( input );
-        DoubleScoreOutput expected = DataFactory.ofDoubleScoreOutput( 0.75, m1 );
+        DoubleScoreOutput expected = DoubleScoreOutput.of( 0.75, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -148,9 +148,9 @@ public final class RelativeOperatingCharacteristicScoreTest
                     actual.equals( expected ) );
 
         //Check against a baseline
-        DiscreteProbabilityPairs inputBase = DataFactory.ofDiscreteProbabilityPairs( values, values, meta, meta );
+        DiscreteProbabilityPairs inputBase = DiscreteProbabilityPairs.of( values, values, meta, meta );
         DoubleScoreOutput actualBase = rocScore.apply( inputBase );
-        DoubleScoreOutput expectedBase = DataFactory.ofDoubleScoreOutput( 0.0, m1 );
+        DoubleScoreOutput expectedBase = DoubleScoreOutput.of( 0.0, m1 );
         assertTrue( "Actual: " + actualBase.getData()
                     + ". Expected: "
                     + expectedBase.getData()
@@ -185,7 +185,7 @@ public final class RelativeOperatingCharacteristicScoreTest
         values.add( DiscreteProbabilityPair.of( 0, 0.952 ) );
         Metadata meta = MetadataFactory.getMetadata();
 
-        DiscreteProbabilityPairs input = DataFactory.ofDiscreteProbabilityPairs( values, meta );
+        DiscreteProbabilityPairs input = DiscreteProbabilityPairs.of( values, meta );
 
         //Metadata for the output
         final MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( input.getRawData().size(),
@@ -196,7 +196,7 @@ public final class RelativeOperatingCharacteristicScoreTest
 
         //Check the results       
         DoubleScoreOutput actual = rocScore.apply( input );
-        DoubleScoreOutput expected = DataFactory.ofDoubleScoreOutput( Double.NaN, m1 );
+        DoubleScoreOutput expected = DoubleScoreOutput.of( Double.NaN, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -214,7 +214,7 @@ public final class RelativeOperatingCharacteristicScoreTest
     {
         // Generate empty data
         DiscreteProbabilityPairs input =
-                DataFactory.ofDiscreteProbabilityPairs( Arrays.asList(), MetadataFactory.getMetadata() );
+                DiscreteProbabilityPairs.of( Arrays.asList(), MetadataFactory.getMetadata() );
 
         DoubleScoreOutput actual = rocScore.apply( input );
 
@@ -293,7 +293,7 @@ public final class RelativeOperatingCharacteristicScoreTest
     {
         EnsemblePairs pairs = MetricTestDataFactory.getEnsemblePairsOne();
 
-        Threshold threshold = DataFactory.ofThreshold( OneOrTwoDoubles.of( 3.0 ),
+        Threshold threshold = Threshold.of( OneOrTwoDoubles.of( 3.0 ),
                                                        Operator.GREATER,
                                                        ThresholdDataType.LEFT );
 

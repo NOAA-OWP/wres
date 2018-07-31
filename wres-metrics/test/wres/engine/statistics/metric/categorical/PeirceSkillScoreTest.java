@@ -78,7 +78,7 @@ public final class PeirceSkillScoreTest
 
         //Check the results
         final DoubleScoreOutput actual = pss.apply( input );
-        final DoubleScoreOutput expected = DataFactory.ofDoubleScoreOutput( 0.6347985347985348, meta );
+        final DoubleScoreOutput expected = DoubleScoreOutput.of( 0.6347985347985348, meta );
         assertTrue( "Actual: " + actual.getData().doubleValue()
                     + ". Expected: "
                     + expected.getData().doubleValue()
@@ -103,8 +103,7 @@ public final class PeirceSkillScoreTest
         //Check the results
         final DoubleScoreOutput actual = ps.apply( input );
         final DoubleScoreOutput expected =
-                DataFactory.ofDoubleScoreOutput( 0.05057466520850963,
-                                                 MetadataFactory.getOutputMetadata( meta, input.getRawData().size() ) );
+                DoubleScoreOutput.of( 0.05057466520850963, MetadataFactory.getOutputMetadata( meta, input.getRawData().size() ) );
         assertTrue( "Actual: " + actual.getData().doubleValue()
                     + ". Expected: "
                     + expected.getData().doubleValue()
@@ -121,7 +120,7 @@ public final class PeirceSkillScoreTest
     {
         // Generate empty data
         DichotomousPairs input =
-                DataFactory.ofDichotomousPairs( Arrays.asList(), MetadataFactory.getMetadata() );
+                DichotomousPairs.ofDichotomousPairs( Arrays.asList(), MetadataFactory.getMetadata() );
 
         DoubleScoreOutput actual = pss.apply( input );
 
@@ -204,7 +203,7 @@ public final class PeirceSkillScoreTest
                                  + "'"
                                  + pss.getName()
                                  + "': [2, 3]." );
-        pss.aggregate( DataFactory.ofMatrixOutput( new double[][] { { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 } }, meta ) );
+        pss.aggregate( MatrixOutput.of( new double[][] { { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 } }, meta ) );
     }
 
     /**
@@ -220,7 +219,7 @@ public final class PeirceSkillScoreTest
                                  + "must exceed zero when computing the '"
                                  + pss.getName()
                                  + "': 0.0" );
-        pss.aggregate( DataFactory.ofMatrixOutput( new double[][] { { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 },
+        pss.aggregate( MatrixOutput.of( new double[][] { { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 },
                                                                     { 0.0, 0.0, 0.0 } },
                                                    meta ) );
     }

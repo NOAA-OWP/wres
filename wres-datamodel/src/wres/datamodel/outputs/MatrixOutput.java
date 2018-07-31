@@ -44,6 +44,38 @@ public class MatrixOutput implements MetricOutput<MatrixOfDoubles>, Iterable<Dou
      * Construct the output.
      * 
      * @param output the verification output.
+     * @param meta the metadata.
+     * @throws MetricOutputException if any of the inputs are invalid
+     * @return an instance of the output
+     */
+
+    public static MatrixOutput
+            of( final double[][] output, final MetricOutputMetadata meta )
+    {
+        return MatrixOutput.of( MatrixOfDoubles.of( output ), null, meta );
+    }
+    
+    /**
+     * Construct the output.
+     * 
+     * @param output the verification output.
+     * @param names an optional list of named components in row-major order. May be null.
+     * @param meta the metadata.
+     * @throws MetricOutputException if any of the inputs are invalid
+     * @throws NullPointerException if the output matrix is null
+     * @return an instance of the output
+     */
+
+    public static MatrixOutput
+            of( final double[][] output, List<MetricDimension> names, final MetricOutputMetadata meta )
+    {
+        return MatrixOutput.of( MatrixOfDoubles.of( output ), names, meta );
+    }
+    
+    /**
+     * Construct the output.
+     * 
+     * @param output the verification output.
      * @param names an optional list of named components in row-major order. May be null.
      * @param meta the metadata.
      * @throws MetricOutputException if any of the inputs are invalid

@@ -103,9 +103,9 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTest
                                                    datasetIdentifier );
 
         Map<MetricConstants, DoubleScoreOutput> fakeOutputs = new HashMap<>();
-        fakeOutputs.put( MetricConstants.MEAN_SQUARE_ERROR, DataFactory.ofDoubleScoreOutput( 1.0, fakeMetadataA ) );
-        fakeOutputs.put( MetricConstants.MEAN_ERROR, DataFactory.ofDoubleScoreOutput( 2.0, fakeMetadataB ) );
-        fakeOutputs.put( MetricConstants.MEAN_ABSOLUTE_ERROR, DataFactory.ofDoubleScoreOutput( 3.0, fakeMetadataC ) );
+        fakeOutputs.put( MetricConstants.MEAN_SQUARE_ERROR, DoubleScoreOutput.of( 1.0, fakeMetadataA ) );
+        fakeOutputs.put( MetricConstants.MEAN_ERROR, DoubleScoreOutput.of( 2.0, fakeMetadataB ) );
+        fakeOutputs.put( MetricConstants.MEAN_ABSOLUTE_ERROR, DoubleScoreOutput.of( 3.0, fakeMetadataC ) );
 
         // Fake output wrapper.
         MetricOutputMapByMetric<DoubleScoreOutput> fakeOutputData =
@@ -225,8 +225,7 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTest
         // Fake output wrapper.
         MetricOutputMapByMetric<DurationScoreOutput> fakeOutputData =
                 DataFactory.ofMetricOutputMapByMetric( Collections.singletonMap( MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
-                                                                                 DataFactory.ofDurationScoreOutput( fakeOutputs,
-                                                                                                                    fakeMetadata ) ) );
+                                                                                 DurationScoreOutput.of( fakeOutputs, fakeMetadata ) ) );
 
         // wrap outputs in future
         Future<MetricOutputMapByMetric<DurationScoreOutput>> outputMapByMetricFuture =
@@ -311,7 +310,7 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTest
 
         Map<MetricConstants, DoubleScoreOutput> fakeOutputs =
                 Collections.singletonMap( MetricConstants.MEAN_SQUARE_ERROR,
-                                          DataFactory.ofDoubleScoreOutput( 1.0, fakeMetadataA ) );
+                                          DoubleScoreOutput.of( 1.0, fakeMetadataA ) );
 
         // Fake output wrapper.
         MetricOutputMapByMetric<DoubleScoreOutput> fakeOutputData =

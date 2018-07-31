@@ -13,7 +13,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.inputs.pairs.DichotomousPair;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
@@ -63,7 +62,7 @@ public final class MetricTestDataFactory
         values.add( SingleValuedPair.of( 12, 12 ) );
         values.add( SingleValuedPair.of( 93, 94 ) );
 
-        return DataFactory.ofSingleValuedPairs( values, MetadataFactory.getMetadata() );
+        return SingleValuedPairs.of( values, MetadataFactory.getMetadata() );
     }
 
     /**
@@ -106,7 +105,7 @@ public final class MetricTestDataFactory
                                                            MetadataFactory.getDatasetIdentifier( getLocation( "DRRC2" ),
                                                                                                  "SQIN",
                                                                                                  "ESP" ) );
-        return DataFactory.ofSingleValuedPairs( values, baseline, main, base );
+        return SingleValuedPairs.of( values, baseline, main, base );
     }
 
     public static Location getLocation( final String locationId )
@@ -134,7 +133,7 @@ public final class MetricTestDataFactory
                                                            MetadataFactory.getDatasetIdentifier( getLocation( "DRRC2" ),
                                                                                                  "SQIN",
                                                                                                  "HEFS" ) );
-        return DataFactory.ofSingleValuedPairs( values, meta );
+        return SingleValuedPairs.of( values, meta );
     }
 
     /**
@@ -167,7 +166,7 @@ public final class MetricTestDataFactory
                                                                                                  "SQIN",
                                                                                                  "HEFS" ),
                                                            window );
-        return DataFactory.ofSingleValuedPairs( values, meta );
+        return SingleValuedPairs.of( values, meta );
     }
 
     /**
@@ -214,7 +213,7 @@ public final class MetricTestDataFactory
                                                                                                  "QME",
                                                                                                  "NVE" ),
                                                            window );
-        return DataFactory.ofSingleValuedPairs( values, meta );
+        return SingleValuedPairs.of( values, meta );
     }
 
     /**
@@ -238,7 +237,7 @@ public final class MetricTestDataFactory
                                                            MetadataFactory.getDatasetIdentifier( getLocation( "A" ),
                                                                                                  "MAP" ),
                                                            window );
-        return DataFactory.ofSingleValuedPairs( values, meta );
+        return SingleValuedPairs.of( values, meta );
     }
 
     /**
@@ -258,7 +257,7 @@ public final class MetricTestDataFactory
                                                            MetadataFactory.getDatasetIdentifier( getLocation( "DRRC2" ),
                                                                                                  "SQIN",
                                                                                                  "ESP" ) );
-        return DataFactory.ofSingleValuedPairs( Collections.emptyList(), Collections.emptyList(), main, base );
+        return SingleValuedPairs.of( Collections.emptyList(), Collections.emptyList(), main, base );
     }
 
     /**
@@ -303,7 +302,7 @@ public final class MetricTestDataFactory
                                                                                                      "SQIN",
                                                                                                      "ESP" ),
                                                                window );
-        return DataFactory.ofEnsemblePairs( values,
+        return EnsemblePairs.of( values,
                                             values,
                                             meta,
                                             baseMeta,
@@ -359,7 +358,7 @@ public final class MetricTestDataFactory
                                                                                                      "ESP" ),
                                                                window );
 
-        return DataFactory.ofEnsemblePairs( values,
+        return EnsemblePairs.of( values,
                                             values,
                                             meta,
                                             baseMeta,
@@ -403,7 +402,7 @@ public final class MetricTestDataFactory
                                                                                                  "SQIN",
                                                                                                  "HEFS" ),
                                                            window );
-        return DataFactory.ofEnsemblePairs( values,
+        return EnsemblePairs.of( values,
                                             meta,
                                             VectorOfDoubles.of( climatology.toArray( new Double[climatology.size()] ) ) );
     }
@@ -429,7 +428,7 @@ public final class MetricTestDataFactory
                                                            MetadataFactory.getDatasetIdentifier( getLocation( "DRRC2" ),
                                                                                                  "MAP" ),
                                                            window );
-        return DataFactory.ofEnsemblePairs( values, meta );
+        return EnsemblePairs.of( values, meta );
     }
 
     /**
@@ -449,7 +448,7 @@ public final class MetricTestDataFactory
                                                            MetadataFactory.getDatasetIdentifier( getLocation( "DRRC2" ),
                                                                                                  "MAP" ),
                                                            window );
-        return DataFactory.ofEnsemblePairs( Collections.emptyList(), Collections.emptyList(), meta, meta );
+        return EnsemblePairs.of( Collections.emptyList(), Collections.emptyList(), meta, meta );
     }
 
     /**
@@ -488,7 +487,7 @@ public final class MetricTestDataFactory
                                                            MetadataFactory.getDatasetIdentifier( getLocation( "DRRC2" ),
                                                                                                  "SQIN",
                                                                                                  "HEFS" ) );
-        return DataFactory.ofDichotomousPairs( values, meta ); //Construct the pairs
+        return DichotomousPairs.ofDichotomousPairs( values, meta ); //Construct the pairs
     }
 
     /**
@@ -561,7 +560,7 @@ public final class MetricTestDataFactory
                                                            MetadataFactory.getDatasetIdentifier( getLocation( "DRRC2" ),
                                                                                                  "SQIN",
                                                                                                  "HEFS" ) );
-        return DataFactory.ofMulticategoryPairs( values, meta ); //Construct the pairs
+        return MulticategoryPairs.ofMulticategoryPairs( values, meta ); //Construct the pairs
     }
 
     /**
@@ -585,7 +584,7 @@ public final class MetricTestDataFactory
                                                            MetadataFactory.getDatasetIdentifier( getLocation( "DRRC2" ),
                                                                                                  "SQIN",
                                                                                                  "HEFS" ) );
-        return DataFactory.ofDiscreteProbabilityPairs( values, meta );
+        return DiscreteProbabilityPairs.of( values, meta );
     }
 
     /**
@@ -619,7 +618,7 @@ public final class MetricTestDataFactory
                                                            MetadataFactory.getDatasetIdentifier( getLocation( "DRRC2" ),
                                                                                                  "SQIN",
                                                                                                  "ESP" ) );
-        return DataFactory.ofDiscreteProbabilityPairs( values, baseline, main, base );
+        return DiscreteProbabilityPairs.of( values, baseline, main, base );
     }
 
     /**
@@ -990,7 +989,7 @@ public final class MetricTestDataFactory
                                                            MetadataFactory.getDatasetIdentifier( getLocation( "Tampere" ),
                                                                                                  "MAP",
                                                                                                  "FMI" ) );
-        return DataFactory.ofDiscreteProbabilityPairs( values, main );
+        return DiscreteProbabilityPairs.of( values, main );
     }
 
     /**
@@ -1013,7 +1012,7 @@ public final class MetricTestDataFactory
                                                            MetadataFactory.getDatasetIdentifier( getLocation( "DRRC2" ),
                                                                                                  "SQIN",
                                                                                                  "HEFS" ) );
-        return DataFactory.ofDiscreteProbabilityPairs( values, meta );
+        return DiscreteProbabilityPairs.of( values, meta );
     }
 
     /**
@@ -1026,7 +1025,7 @@ public final class MetricTestDataFactory
     {
         // Build an immutable regular time-series of single-valued pairs
         TimeSeriesOfSingleValuedPairsBuilder builder =
-                DataFactory.ofTimeSeriesOfSingleValuedPairsBuilder();
+                new TimeSeriesOfSingleValuedPairsBuilder();
         // Create a regular time-series with an issue date/time, a series of paired values, and a timestep
         Instant firstId = Instant.parse( "1985-01-01T00:00:00Z" );
         List<Event<SingleValuedPair>> firstValues = new ArrayList<>();
@@ -1070,7 +1069,7 @@ public final class MetricTestDataFactory
     {
         // Build an immutable regular time-series of single-valued pairs
         TimeSeriesOfSingleValuedPairsBuilder builder =
-                DataFactory.ofTimeSeriesOfSingleValuedPairsBuilder();
+                new TimeSeriesOfSingleValuedPairsBuilder();
         // Create a regular time-series with an issue date/time, a series of paired values, and a timestep
         Instant firstId = Instant.parse( "1985-01-01T00:00:00Z" );
         List<Event<SingleValuedPair>> firstValues = new ArrayList<>();
@@ -1105,7 +1104,7 @@ public final class MetricTestDataFactory
     {
         // Build an immutable regular time-series of single-valued pairs
         TimeSeriesOfSingleValuedPairsBuilder builder =
-                DataFactory.ofTimeSeriesOfSingleValuedPairsBuilder();
+                new TimeSeriesOfSingleValuedPairsBuilder();
         // Create a regular time-series with an issue date/time, a series of paired values, and a timestep
 
         // Add another time-series
@@ -1142,7 +1141,7 @@ public final class MetricTestDataFactory
     {
         // Build an immutable regular time-series of single-valued pairs
         TimeSeriesOfSingleValuedPairsBuilder builder =
-                DataFactory.ofTimeSeriesOfSingleValuedPairsBuilder();
+                new TimeSeriesOfSingleValuedPairsBuilder();
         // Create a regular time-series with an issue date/time, a series of paired values, and a timestep
 
         // Create some default metadata for the time-series
@@ -1168,7 +1167,7 @@ public final class MetricTestDataFactory
     {
         // Build an immutable regular time-series of single-valued pairs
         TimeSeriesOfSingleValuedPairsBuilder builder =
-                DataFactory.ofTimeSeriesOfSingleValuedPairsBuilder();
+                new TimeSeriesOfSingleValuedPairsBuilder();
         // Create a regular time-series with an issue date/time, a series of paired values, and a timestep
 
         // Add another time-series

@@ -76,7 +76,7 @@ public final class VolumetricEfficiencyTest
                                                                    window );
         //Check the results
         DoubleScoreOutput actual = ve.apply( input );
-        DoubleScoreOutput expected = DataFactory.ofDoubleScoreOutput( 0.657420176533252, m1 );
+        DoubleScoreOutput expected = DoubleScoreOutput.of( 0.657420176533252, m1 );
         assertTrue( "Actual: " + actual.getData().doubleValue()
                     + ". Expected: "
                     + expected.getData().doubleValue()
@@ -93,7 +93,7 @@ public final class VolumetricEfficiencyTest
     {
         // Generate empty data
         SingleValuedPairs input =
-                DataFactory.ofSingleValuedPairs( Arrays.asList(), MetadataFactory.getMetadata() );
+                SingleValuedPairs.of( Arrays.asList(), MetadataFactory.getMetadata() );
  
         DoubleScoreOutput actual = ve.apply( input );
 

@@ -701,8 +701,7 @@ public class MetricCollectionTest
                                                    MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
         MetricOutputMapByMetric<DoubleScoreOutput> expected =
                 DataFactory.ofMetricOutputMapByMetric( Collections.singletonMap( MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
-                                                                                 DataFactory.ofDoubleScoreOutput( 0.9999999910148981,
-                                                                                                                  outM ) ) );
+                                                                                 DoubleScoreOutput.of( 0.9999999910148981, outM ) ) );
         //Check them   
         assertTrue( "Difference between the actual and expected output when ignoring some metrics in the "
                     + "collection.",

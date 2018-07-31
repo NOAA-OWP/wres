@@ -52,7 +52,7 @@ public class PeirceSkillScore<S extends MulticategoryPairs> extends ContingencyT
         {
             double result = FunctionFactory.finiteOrMissing().applyAsDouble( ( cm[0][0] / ( cm[0][0] + cm[1][0] ) )
                                                                              - ( cm[0][1] / ( cm[0][1] + cm[1][1] ) ) );
-            return DataFactory.ofDoubleScoreOutput( result, getMetadata( output ) );
+            return DoubleScoreOutput.of( result, getMetadata( output ) );
         }
 
         //Multicategory predictand
@@ -91,7 +91,7 @@ public class PeirceSkillScore<S extends MulticategoryPairs> extends ContingencyT
         final double nSquared = n * n;
         final double result = FunctionFactory.finiteOrMissing().applyAsDouble( ( ( diag / n ) - ( sumProd / nSquared ) )
                                                                                / ( 1.0 - ( uniProd / nSquared ) ) );
-        return DataFactory.ofDoubleScoreOutput( result, getMetadata( output ) );
+        return DoubleScoreOutput.of( result, getMetadata( output ) );
     }
 
     @Override

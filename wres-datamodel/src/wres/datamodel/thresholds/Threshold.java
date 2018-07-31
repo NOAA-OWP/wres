@@ -67,7 +67,188 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
      */
 
     private final Dimension units;
-    
+
+    /**
+     * Returns {@link Threshold} from the specified input.
+     * 
+     * @param values the values
+     * @param condition the threshold condition
+     * @param dataType the data to which the threshold applies
+     * @return a threshold
+     */
+
+    public static Threshold of( OneOrTwoDoubles values, Operator condition, ThresholdDataType dataType )
+    {
+        return Threshold.of( values, condition, dataType, null, null );
+    }
+
+
+    /**
+     * Returns {@link Threshold} from the specified input.
+     * 
+     * @param values the values
+     * @param condition the threshold condition
+     * @param units the optional units for the threshold values
+     * @param dataType the data to which the threshold applies
+     * @return a threshold
+     */
+
+    public static Threshold of( OneOrTwoDoubles values,
+                                Operator condition,
+                                ThresholdDataType dataType,
+                                Dimension units )
+    {
+        return Threshold.of( values, condition, dataType, null, units );
+    }
+
+    /**
+     * Returns {@link Threshold} from the specified input.
+     * 
+     * @param values the threshold values
+     * @param condition the threshold condition
+     * @param dataType the data to which the threshold applies
+     * @param label an optional label
+     * @param units the optional units for the threshold values
+     * @return a threshold
+     */
+
+    public static Threshold of( OneOrTwoDoubles values,
+                                Operator condition,
+                                ThresholdDataType dataType,
+                                String label,
+                                Dimension units )
+    {
+        return new ThresholdBuilder().setValues( values )
+                                     .setCondition( condition )
+                                     .setDataType( dataType )
+                                     .setLabel( label )
+                                     .setUnits( units )
+                                     .build();
+    }
+
+    /**
+     * Returns {@link Threshold} from the specified input.
+     * 
+     * @param values the values
+     * @param probabilities the probabilities
+     * @param condition the threshold condition
+     * @param dataType the data to which the threshold applies
+     * @return a threshold
+     */
+
+    public static Threshold ofQuantileThreshold( OneOrTwoDoubles values,
+                                                 OneOrTwoDoubles probabilities,
+                                                 Operator condition,
+                                                 ThresholdDataType dataType )
+    {
+        return Threshold.ofQuantileThreshold( values, probabilities, condition, dataType, null, null );
+    }
+
+    /**
+     * Returns a {@link Threshold} from the specified input
+     * 
+     * @param values the value or null
+     * @param probabilities the probabilities or null
+     * @param condition the threshold condition
+     * @param dataType the data to which the threshold applies
+     * @param label an optional label
+     * @param units the optional units for the quantiles
+     * @return a quantile
+     */
+
+    public static Threshold ofQuantileThreshold( OneOrTwoDoubles values,
+                                                 OneOrTwoDoubles probabilities,
+                                                 Operator condition,
+                                                 ThresholdDataType dataType,
+                                                 String label,
+                                                 Dimension units )
+    {
+        return new ThresholdBuilder().setValues( values )
+                                     .setProbabilities( probabilities )
+                                     .setCondition( condition )
+                                     .setDataType( dataType )
+                                     .setLabel( label )
+                                     .setUnits( units )
+                                     .build();
+    }
+
+    /**
+     * Returns {@link Threshold} from the specified input.
+     * 
+     * @param probabilities the probabilities
+     * @param condition the threshold condition
+     * @param dataType the data to which the threshold applies
+     * @return a threshold
+     */
+
+    public static Threshold ofProbabilityThreshold( OneOrTwoDoubles probabilities,
+                                                    Operator condition,
+                                                    ThresholdDataType dataType )
+    {
+        return Threshold.ofProbabilityThreshold( probabilities, condition, dataType, null, null );
+    }
+
+    /**
+     * Returns {@link Threshold} from the specified input.
+     * 
+     * @param probabilities the probabilities
+     * @param condition the threshold condition
+     * @param dataType the data to which the threshold applies
+     * @param units the optional units for the threshold values
+     * @return a threshold
+     */
+
+    public static Threshold ofProbabilityThreshold( OneOrTwoDoubles probabilities,
+                                                    Operator condition,
+                                                    ThresholdDataType dataType,
+                                                    Dimension units )
+    {
+        return Threshold.ofProbabilityThreshold( probabilities, condition, dataType, null, units );
+    }
+
+    /**
+     * Returns {@link Threshold} from the specified input.
+     * 
+     * @param probabilities the probabilities
+     * @param condition the threshold condition
+     * @param dataType the data to which the threshold applies
+     * @param label an optional label
+     * @return a threshold
+     */
+
+    public static Threshold ofProbabilityThreshold( OneOrTwoDoubles probabilities,
+                                                    Operator condition,
+                                                    ThresholdDataType dataType,
+                                                    String label )
+    {
+        return Threshold.ofProbabilityThreshold( probabilities, condition, dataType, label, null );
+    }
+
+    /**
+     * Returns {@link Threshold} from the specified input. Both inputs must be in the unit interval, [0,1].
+     * 
+     * @param probabilities the probabilities
+     * @param condition the threshold condition
+     * @param dataType the data to which the threshold applies
+     * @param label an optional label
+     * @param units an optional set of units to use when deriving quantiles from probability thresholds
+     * @return a threshold
+     */
+
+    public static Threshold ofProbabilityThreshold( OneOrTwoDoubles probabilities,
+                                                    Operator condition,
+                                                    ThresholdDataType dataType,
+                                                    String label,
+                                                    Dimension units )
+    {
+        return new ThresholdBuilder().setProbabilities( probabilities )
+                                     .setCondition( condition )
+                                     .setDataType( dataType )
+                                     .setLabel( label )
+                                     .setUnits( units )
+                                     .build();
+    }
+
     /**
      * Returns <code>true</code> if the threshold contains one or more ordinary (non-probability) values, otherwise
      * <code>false</code>.
@@ -295,7 +476,7 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
         }
         return toString();
     }
-    
+
     @Override
     public boolean equals( final Object o )
     {
@@ -403,7 +584,7 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
         {
             return returnMe;
         }
-        
+
         //Check for status of optional elements
         returnMe = comparePresenceAbsence( o );
 
@@ -431,13 +612,13 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
                 return returnMe;
             }
         }
-        
+
         //Compare data type
         returnMe = this.getDataType().compareTo( o.getDataType() );
         if ( returnMe != 0 )
         {
             return returnMe;
-        }        
+        }
 
         //Compare labels
         if ( hasLabel() )
@@ -497,8 +678,8 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
             default:
                 throw new UnsupportedOperationException( "Unexpected logical condition." );
         }
-    }    
-    
+    }
+
     /**
      * A builder to build the threshold.
      */
@@ -680,7 +861,7 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
 
         //Check the probability
         this.validateProbabilities();
-        
+
         //Check a two-sided threshold
         if ( this.hasBetweenCondition() )
         {
@@ -700,7 +881,7 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
                                                 + "reserved." );
         }
     }
-    
+
     /**
      * Validates the probabilities.  
      * 
@@ -717,18 +898,19 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
                 throw new IllegalArgumentException( "The threshold probability is out of bounds [0,1]: "
                                                     + this.getProbabilities().first() );
             }
-            
+
             // Cannot have LESS_THAN on the lower bound
-            if( Math.abs( this.getProbabilities().first() - 0.0 ) <.00000001 && this.getCondition() == Operator.LESS )
+            if ( Math.abs( this.getProbabilities().first() - 0.0 ) < .00000001 && this.getCondition() == Operator.LESS )
             {
                 throw new IllegalArgumentException( "Cannot apply a threshold operator of '<' to the lower bound "
-                        + "probability of 0.0."); 
+                                                    + "probability of 0.0." );
             }
             // Cannot have GREATER_THAN on the upper bound
-            if( Math.abs( this.getProbabilities().first() - 1.0 ) <.00000001 && this.getCondition() == Operator.GREATER )
+            if ( Math.abs( this.getProbabilities().first() - 1.0 ) < .00000001
+                 && this.getCondition() == Operator.GREATER )
             {
                 throw new IllegalArgumentException( "Cannot apply a threshold operator of '>' to the upper bound "
-                        + "probability of 1.0."); 
+                                                    + "probability of 1.0." );
             }
         }
     }
@@ -773,7 +955,10 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
         if ( this.hasValues() && Objects.nonNull( values.first() ) && values.second() <= values.first() )
         {
             throw new IllegalArgumentException( "The upper threshold must be greater than the lower threshold: ["
-                                                + values.first() + "," + values.second() + "]." );
+                                                + values.first()
+                                                + ","
+                                                + values.second()
+                                                + "]." );
         }
         // Upper bound is less than or equal to lower bound
         if ( this.hasProbabilities() && Objects.nonNull( probabilities.first() )

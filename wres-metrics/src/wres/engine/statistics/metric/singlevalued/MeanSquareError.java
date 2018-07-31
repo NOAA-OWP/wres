@@ -91,7 +91,7 @@ public class MeanSquareError extends SumOfSquareError
         double mse = FunctionFactory.finiteOrMissing()
                                     .applyAsDouble( output.getData() / metIn.getSampleSize() );
 
-        return DataFactory.ofDoubleScoreOutput( mse, meta );
+        return DoubleScoreOutput.of( mse, meta );
     }
 
     /**

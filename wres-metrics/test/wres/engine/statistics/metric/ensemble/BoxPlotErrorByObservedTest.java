@@ -72,7 +72,7 @@ public final class BoxPlotErrorByObservedTest
                                                                                            "MAP" ),
                                                      window );
 
-        EnsemblePairs input = DataFactory.ofEnsemblePairs( values, meta );
+        EnsemblePairs input = EnsemblePairs.of( values, meta );
 
         final MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( input.getRawData().size(),
                                                                            MetadataFactory.getDimension( "MM/DAY" ),
@@ -89,12 +89,8 @@ public final class BoxPlotErrorByObservedTest
                 EnsemblePair.of( 50.0, new double[] { -50.0, -37.5, 0.0, 37.5, 50.0 } );
         List<EnsemblePair> expectedBoxes = new ArrayList<>();
         expectedBoxes.add( expectedBox );
-        BoxPlotOutput expected = DataFactory.ofBoxPlotOutput( expectedBoxes,
-                                                              VectorOfDoubles.of( new double[] { 0.0, 0.25, 0.5, 0.75,
-                                                                                                 1.0 } ),
-                                                              m1,
-                                                              MetricDimension.OBSERVED_VALUE,
-                                                              MetricDimension.FORECAST_ERROR );
+        BoxPlotOutput expected = BoxPlotOutput.of( expectedBoxes, VectorOfDoubles.of( new double[] { 0.0, 0.25, 0.5, 0.75,
+         1.0 } ), m1, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
         //Check the results
         assertTrue( "The actual output for the box plot of forecast errors by observed value does not match the "
                     + "expected output.",
@@ -110,7 +106,7 @@ public final class BoxPlotErrorByObservedTest
     {
         // Generate empty data
         EnsemblePairs input =
-                DataFactory.ofEnsemblePairs( Arrays.asList(), MetadataFactory.getMetadata() );
+                EnsemblePairs.of( Arrays.asList(), MetadataFactory.getMetadata() );
 
         BoxPlotOutput actual = bpe.apply( input );
 

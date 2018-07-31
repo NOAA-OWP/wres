@@ -77,7 +77,7 @@ public class IndexOfAgreement extends DoubleErrorScore<SingleValuedPairs>
         //Metadata
         final MetricOutputMetadata metOut = this.getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, null );
 
-        return DataFactory.ofDoubleScoreOutput( returnMe, metOut );
+        return DoubleScoreOutput.of( returnMe, metOut );
     }
 
     @Override
