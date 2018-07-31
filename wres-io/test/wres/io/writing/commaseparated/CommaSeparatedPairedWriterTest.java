@@ -25,7 +25,7 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.Dimension;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
@@ -84,8 +84,8 @@ public class CommaSeparatedPairedWriterTest extends CommaSeparatedWriterTest
 
         MetricOutputMetadata fakeMetadata =
                 MetricOutputMetadata.of( 1000,
-                                                   Dimension.of(),
-                                                   Dimension.of( "CMS" ),
+                                                   MeasurementUnit.of(),
+                                                   MeasurementUnit.of( "CMS" ),
                                                    MetricConstants.TIME_TO_PEAK_ERROR,
                                                    null,
                                                    datasetIdentifier );

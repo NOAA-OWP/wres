@@ -7,7 +7,7 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
-import wres.datamodel.metadata.Dimension;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
@@ -75,12 +75,12 @@ public class MeanSquareError extends SumOfSquareError
         final MetricOutputMetadata metIn = output.getMetadata();
 
         // Set the output dimension
-        Dimension outputDimension = Dimension.of();
+        MeasurementUnit outputDimension = MeasurementUnit.of();
         if ( hasRealUnits() )
         {
             outputDimension = metIn.getDimension();
         }
-        final Dimension outputDim = outputDimension;
+        final MeasurementUnit outputDim = outputDimension;
         MetricOutputMetadata meta = MetricOutputMetadata.of( metIn.getSampleSize(),
         outputDim,
         metIn.getDimension(),

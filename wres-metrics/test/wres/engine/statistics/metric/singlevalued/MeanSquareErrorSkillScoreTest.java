@@ -18,7 +18,7 @@ import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.Dimension;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetricOutputMetadata;
@@ -64,8 +64,8 @@ public final class MeanSquareErrorSkillScoreTest
 
         //Metadata for the output
         final MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getRawData().size(),
-                                                                           Dimension.of(),
-                                                                           Dimension.of( "CMS" ),
+                                                                           MeasurementUnit.of(),
+                                                                           MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE,
                                                                            MetricConstants.MAIN,
                                                                            DatasetIdentifier.of( Location.of( "DRRC2" ), "SQIN", "HEFS", "ESP" ) );
@@ -99,8 +99,8 @@ public final class MeanSquareErrorSkillScoreTest
                                            Duration.ofHours( 24 ) );
         final TimeWindow timeWindow = window;
         MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getRawData().size(),
-        Dimension.of(),
-        Dimension.of( "MM/DAY" ),
+        MeasurementUnit.of(),
+        MeasurementUnit.of( "MM/DAY" ),
         MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE,
         MetricConstants.MAIN,
         DatasetIdentifier.of( Location.of( "103.1" ),
@@ -131,8 +131,8 @@ public final class MeanSquareErrorSkillScoreTest
 
         //Metadata for the output
         MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getRawData().size(),
-                                                                     Dimension.of(),
-                                                                     Dimension.of(),
+                                                                     MeasurementUnit.of(),
+                                                                     MeasurementUnit.of(),
                                                                      MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE,
                                                                      MetricConstants.MAIN );
 

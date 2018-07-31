@@ -19,7 +19,7 @@ import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPair;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.Dimension;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetricOutputMetadata;
@@ -64,8 +64,8 @@ public final class ReliabilityDiagramTest
         //Metadata for the output
         final MetricOutputMetadata m1 =
                 MetricOutputMetadata.of( input.getRawData().size(),
-                                                   Dimension.of(),
-                                                   Dimension.of(),
+                                                   MeasurementUnit.of(),
+                                                   MeasurementUnit.of(),
                                                    MetricConstants.RELIABILITY_DIAGRAM,
                                                    MetricConstants.MAIN,
                                                    DatasetIdentifier.of( Location.of( "Tampere" ),
@@ -140,14 +140,14 @@ public final class ReliabilityDiagramTest
 
         DiscreteProbabilityPairs input =
                 DiscreteProbabilityPairs.of( data,
-                                                        Metadata.of( Dimension.of(),
+                                                        Metadata.of( MeasurementUnit.of(),
                                                                                      identifier ) );
 
         //Metadata for the output
         final MetricOutputMetadata m1 =
                 MetricOutputMetadata.of( input.getRawData().size(),
-                                                   Dimension.of(),
-                                                   Dimension.of(),
+                                                   MeasurementUnit.of(),
+                                                   MeasurementUnit.of(),
                                                    MetricConstants.RELIABILITY_DIAGRAM,
                                                    MetricConstants.MAIN,
                                                    identifier );

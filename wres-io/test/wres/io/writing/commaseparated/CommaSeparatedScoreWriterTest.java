@@ -26,7 +26,7 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.Dimension;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
@@ -79,22 +79,22 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTest
 
         MetricOutputMetadata fakeMetadataA =
                 MetricOutputMetadata.of( 1000,
-                                                   Dimension.of(),
-                                                   Dimension.of( "CMS" ),
+                                                   MeasurementUnit.of(),
+                                                   MeasurementUnit.of( "CMS" ),
                                                    MetricConstants.MEAN_SQUARE_ERROR,
                                                    MetricConstants.MAIN,
                                                    datasetIdentifier );
         MetricOutputMetadata fakeMetadataB =
                 MetricOutputMetadata.of( 1000,
-                                                   Dimension.of(),
-                                                   Dimension.of( "CMS" ),
+                                                   MeasurementUnit.of(),
+                                                   MeasurementUnit.of( "CMS" ),
                                                    MetricConstants.MEAN_ERROR,
                                                    MetricConstants.MAIN,
                                                    datasetIdentifier );
         MetricOutputMetadata fakeMetadataC =
                 MetricOutputMetadata.of( 1000,
-                                                   Dimension.of(),
-                                                   Dimension.of( "CMS" ),
+                                                   MeasurementUnit.of(),
+                                                   MeasurementUnit.of( "CMS" ),
                                                    MetricConstants.MEAN_ABSOLUTE_ERROR,
                                                    MetricConstants.MAIN,
                                                    datasetIdentifier );
@@ -205,8 +205,8 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTest
 
         MetricOutputMetadata fakeMetadata =
                 MetricOutputMetadata.of( 1000,
-                                                   Dimension.of(),
-                                                   Dimension.of( "CMS" ),
+                                                   MeasurementUnit.of(),
+                                                   MeasurementUnit.of( "CMS" ),
                                                    MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
                                                    null,
                                                    datasetIdentifier );
@@ -293,8 +293,8 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTest
 
         MetricOutputMetadata fakeMetadataA =
                 MetricOutputMetadata.of( 1000,
-                                                   Dimension.of(),
-                                                   Dimension.of( "CMS" ),
+                                                   MeasurementUnit.of(),
+                                                   MeasurementUnit.of( "CMS" ),
                                                    MetricConstants.MEAN_SQUARE_ERROR,
                                                    MetricConstants.MAIN,
                                                    datasetIdentifier );

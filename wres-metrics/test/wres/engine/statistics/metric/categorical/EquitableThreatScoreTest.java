@@ -16,7 +16,7 @@ import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.Dimension;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetricOutputMetadata;
@@ -56,8 +56,8 @@ public final class EquitableThreatScoreTest
     {
         ets = EquitableThreatScore.of();
         meta = MetricOutputMetadata.of( 365,
-                                                  Dimension.of(),
-                                                  Dimension.of(),
+                                                  MeasurementUnit.of(),
+                                                  MeasurementUnit.of(),
                                                   MetricConstants.EQUITABLE_THREAT_SCORE,
                                                   MetricConstants.MAIN,
                                                   DatasetIdentifier.of( Location.of( "DRRC2" ),

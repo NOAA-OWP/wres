@@ -20,7 +20,7 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.Dimension;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
@@ -66,8 +66,8 @@ public final class DataModelTestDataFactory
 
             //Metric output metadata: add fake sample sizes as these are not readily available
             final MetricOutputMetadata meta = MetricOutputMetadata.of( 1000,
-                                                                                 Dimension.of(),
-                                                                                 Dimension.of( "CMS" ),
+                                                                                 MeasurementUnit.of(),
+                                                                                 MeasurementUnit.of( "CMS" ),
                                                                                  MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
                                                                                  MetricConstants.MAIN,
                                                                                  DatasetIdentifier.of( Location.of( "DRRC2" ), "SQIN", "HEFS", "ESP" ) );
@@ -132,8 +132,8 @@ public final class DataModelTestDataFactory
 
         //Fake metadata
         MetricOutputMetadata meta = MetricOutputMetadata.of( 1000,
-                                                                       Dimension.of(),
-                                                                       Dimension.of( "CMS" ),
+                                                                       MeasurementUnit.of(),
+                                                                       MeasurementUnit.of( "CMS" ),
                                                                        MetricConstants.MEAN_ABSOLUTE_ERROR,
                                                                        MetricConstants.MAIN,
                                                                        DatasetIdentifier.of( Location.of( "DRRC2" ), "SQIN", "HEFS", "ESP" ) );
@@ -222,8 +222,8 @@ public final class DataModelTestDataFactory
 
             //Metric output metadata: add fake sample sizes as these are not readily available
             final MetricOutputMetadata meta = MetricOutputMetadata.of( 1000,
-                                                                                 Dimension.of(),
-                                                                                 Dimension.of( "CFS" ),
+                                                                                 MeasurementUnit.of(),
+                                                                                 MeasurementUnit.of( "CFS" ),
                                                                                  MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
                                                                                  MetricConstants.CR_POT,
                                                                                  DatasetIdentifier.of( Location.of( "NPTP1" ), "SQIN", "HEFS", "ESP" ) );

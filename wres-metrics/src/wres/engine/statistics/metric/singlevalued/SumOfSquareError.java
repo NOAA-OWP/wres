@@ -9,7 +9,7 @@ import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.Dimension;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
@@ -130,12 +130,12 @@ public class SumOfSquareError extends DecomposableScore<SingleValuedPairs>
                                                                     .getScenarioID() );
         }
         // Set the output dimension
-        Dimension outputDimension = Dimension.of();
+        MeasurementUnit outputDimension = MeasurementUnit.of();
         if ( hasRealUnits() )
         {
             outputDimension = metIn.getDimension();
         }
-        final Dimension outputDim = outputDimension;
+        final MeasurementUnit outputDim = outputDimension;
         final DatasetIdentifier identifier1 = identifier;
         return MetricOutputMetadata.of( input.getRawData().size(),
         outputDim,

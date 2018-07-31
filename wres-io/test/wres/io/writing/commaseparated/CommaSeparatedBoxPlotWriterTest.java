@@ -28,7 +28,7 @@ import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.inputs.pairs.EnsemblePair;
 import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.Dimension;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
@@ -88,8 +88,8 @@ public class CommaSeparatedBoxPlotWriterTest extends CommaSeparatedWriterTest
 
         MetricOutputMetadata fakeMetadata =
                 MetricOutputMetadata.of( 1000,
-                                                   Dimension.of(),
-                                                   Dimension.of( "CMS" ),
+                                                   MeasurementUnit.of(),
+                                                   MeasurementUnit.of( "CMS" ),
                                                    MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
                                                    null,
                                                    datasetIdentifier );

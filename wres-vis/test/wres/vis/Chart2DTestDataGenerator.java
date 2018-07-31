@@ -30,7 +30,7 @@ import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.inputs.pairs.EnsemblePair;
 import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.Dimension;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
@@ -119,8 +119,8 @@ public abstract class Chart2DTestDataGenerator
 
         //Metric output metadata: add fake sample sizes as these are not available in the test input file
         final MetricOutputMetadata meta = MetricOutputMetadata.of( 1000,
-                                                                         Dimension.of(),
-                                                                         Dimension.of( "CMS" ),
+                                                                         MeasurementUnit.of(),
+                                                                         MeasurementUnit.of( "CMS" ),
                                                                          MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
                                                                          MetricConstants.MAIN,
                                                                          DatasetIdentifier.of( Location.of("NPTP1"), "STREAMFLOW", "HEFS", "ESP" ) );
@@ -182,8 +182,8 @@ public abstract class Chart2DTestDataGenerator
 
         //Metric output metadata: add fake sample sizes as these are not available in the test input file
         final MetricOutputMetadata meta = MetricOutputMetadata.of( 1000,
-                                                                         Dimension.of(),
-                                                                         Dimension.of( "CMS" ),
+                                                                         MeasurementUnit.of(),
+                                                                         MeasurementUnit.of( "CMS" ),
                                                                          MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
                                                                          MetricConstants.MAIN,
                                                                          DatasetIdentifier.of( Location.of("NPTP1"), "STREAMFLOW", "HEFS", "ESP" ) );
@@ -255,8 +255,8 @@ public abstract class Chart2DTestDataGenerator
 
         //Metric output metadata: add fake sample sizes as these are not available in the test input file
         final MetricOutputMetadata meta = MetricOutputMetadata.of( 1000,
-                                                                         Dimension.of(),
-                                                                         Dimension.of( "CMS" ),
+                                                                         MeasurementUnit.of(),
+                                                                         MeasurementUnit.of( "CMS" ),
                                                                          MetricConstants.RELIABILITY_DIAGRAM,
                                                                          MetricConstants.MAIN,
                                                                          DatasetIdentifier.of( Location.of("NPTP1"),
@@ -371,8 +371,8 @@ public abstract class Chart2DTestDataGenerator
 
         //Metric output metadata
         final MetricOutputMetadata meta = MetricOutputMetadata.of( 1000,
-                                                                         Dimension.of(),
-                                                                         Dimension.of( "CMS" ),
+                                                                         MeasurementUnit.of(),
+                                                                         MeasurementUnit.of( "CMS" ),
                                                                          MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
                                                                          MetricConstants.MAIN,
                                                                          DatasetIdentifier.of( Location.of("NPTP1"),
@@ -459,8 +459,8 @@ public abstract class Chart2DTestDataGenerator
 
         //Metric output metadata
         final MetricOutputMetadata meta = MetricOutputMetadata.of( 1000,
-                                                                         Dimension.of(),
-                                                                         Dimension.of( "CMS" ),
+                                                                         MeasurementUnit.of(),
+                                                                         MeasurementUnit.of( "CMS" ),
                                                                          MetricConstants.RANK_HISTOGRAM,
                                                                          MetricConstants.MAIN,
                                                                          DatasetIdentifier.of( Location.of("NPTP1"),
@@ -555,8 +555,8 @@ public abstract class Chart2DTestDataGenerator
                                                Duration.ofHours( 120 ) );
         final TimeWindow timeWindow = windowMeta;
         final MetricOutputMetadata meta = MetricOutputMetadata.of( 1000,
-        Dimension.of(),
-        Dimension.of( "MILLIMETER" ),
+        MeasurementUnit.of(),
+        MeasurementUnit.of( "MILLIMETER" ),
         MetricConstants.QUANTILE_QUANTILE_DIAGRAM,
         MetricConstants.MAIN,
         DatasetIdentifier.of( Location.of("WGCM8"),
@@ -618,8 +618,8 @@ public abstract class Chart2DTestDataGenerator
 
         //Metric output metadata
         final MetricOutputMetadata meta = MetricOutputMetadata.of( 1000,
-                                                                         Dimension.of( "INCH" ),
-                                                                         Dimension.of( "INCH" ),
+                                                                         MeasurementUnit.of( "INCH" ),
+                                                                         MeasurementUnit.of( "INCH" ),
                                                                          MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
                                                                          MetricConstants.MAIN,
                                                                          DatasetIdentifier.of( Location.of("NBBC1"),
@@ -684,8 +684,8 @@ public abstract class Chart2DTestDataGenerator
 
         //Metric output metadata
         final MetricOutputMetadata meta = MetricOutputMetadata.of( 1000,
-                                                                         Dimension.of( "INCH" ),
-                                                                         Dimension.of( "INCH" ),
+                                                                         MeasurementUnit.of( "INCH" ),
+                                                                         MeasurementUnit.of( "INCH" ),
                                                                          MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE,
                                                                          MetricConstants.MAIN,
                                                                          DatasetIdentifier.of( Location.of("NBBC1"),
@@ -742,8 +742,8 @@ public abstract class Chart2DTestDataGenerator
 
         // Create the metric output metadata: add fake sample sizes as these are not available in the test input file
         final MetricOutputMetadata meta = MetricOutputMetadata.of( 90,
-                                                                         Dimension.of(),
-                                                                         Dimension.of( "CMS" ),
+                                                                         MeasurementUnit.of(),
+                                                                         MeasurementUnit.of( "CMS" ),
                                                                          MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
                                                                          MetricConstants.MAIN,
                                                                          DatasetIdentifier.of( Location.of("DOSC1"), "STREAMFLOW", "HEFS", "ESP" ) );
@@ -818,8 +818,8 @@ public abstract class Chart2DTestDataGenerator
 
         // Create the metric output metadata: add fake sample sizes as these are not available in the test input file
         final MetricOutputMetadata meta = MetricOutputMetadata.of( 18,
-                                                                         Dimension.of(),
-                                                                         Dimension.of( "CMS" ),
+                                                                         MeasurementUnit.of(),
+                                                                         MeasurementUnit.of( "CMS" ),
                                                                          MetricConstants.BIAS_FRACTION,
                                                                          MetricConstants.MAIN,
                                                                          DatasetIdentifier.of( Location.of("ABEC2"),
@@ -900,8 +900,8 @@ public abstract class Chart2DTestDataGenerator
                                            Duration.ofHours( 336 ) );
         final TimeWindow timeWindow = window;
         MetricOutputMetadata meta = MetricOutputMetadata.of( input.size(),
-        Dimension.of( "DURATION" ),
-        Dimension.of( "CMS" ),
+        MeasurementUnit.of( "DURATION" ),
+        MeasurementUnit.of( "CMS" ),
         MetricConstants.TIME_TO_PEAK_ERROR,
         MetricConstants.MAIN,
         DatasetIdentifier.of( Location.of("DRRC2"),
@@ -951,8 +951,8 @@ public abstract class Chart2DTestDataGenerator
                                            Duration.ofHours( 336 ) );
         final TimeWindow timeWindow = window;
         MetricOutputMetadata meta = MetricOutputMetadata.of( 10,
-        Dimension.of( "DURATION" ),
-        Dimension.of( "CMS" ),
+        MeasurementUnit.of( "DURATION" ),
+        MeasurementUnit.of( "CMS" ),
         MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
         MetricConstants.MAIN,
         DatasetIdentifier.of( Location.of("DRRC2"),

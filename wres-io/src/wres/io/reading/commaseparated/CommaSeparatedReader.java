@@ -15,7 +15,7 @@ import java.util.TreeSet;
 import wres.config.FeaturePlus;
 import wres.config.generated.Feature;
 import wres.datamodel.OneOrTwoDoubles;
-import wres.datamodel.metadata.Dimension;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
@@ -52,7 +52,7 @@ public class CommaSeparatedReader
                                                                    Operator condition,
                                                                    ThresholdDataType dataType,
                                                                    Double missingValue,
-                                                                   Dimension units )
+                                                                   MeasurementUnit units )
             throws IOException
     {
         Objects.requireNonNull( commaSeparated, "Specify a non-null source of comma separated thresholds to read." );
@@ -138,7 +138,7 @@ public class CommaSeparatedReader
                                                         String[] labels,
                                                         String nextInputFeature,
                                                         Double missingValue,
-                                                        Dimension units )
+                                                        MeasurementUnit units )
             throws IOException
     {
         // Ignore empty lines
@@ -184,7 +184,7 @@ public class CommaSeparatedReader
                                                  Operator condition,
                                                  ThresholdDataType dataType,
                                                  Double missingValue,
-                                                 Dimension units )
+                                                 MeasurementUnit units )
     {
         Objects.requireNonNull( input, "Specify a non-null input in order to read the thresholds." );
 

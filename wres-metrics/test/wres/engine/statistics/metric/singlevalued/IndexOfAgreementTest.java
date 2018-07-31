@@ -19,7 +19,7 @@ import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.Dimension;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
@@ -69,8 +69,8 @@ public final class IndexOfAgreementTest
                                                  ReferenceTime.VALID_TIME,
                                                  Duration.ofHours( 24 ) );
         final MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getRawData().size(),
-        Dimension.of(),
-        Dimension.of( "MM/DAY" ),
+        MeasurementUnit.of(),
+        MeasurementUnit.of( "MM/DAY" ),
         MetricConstants.INDEX_OF_AGREEMENT,
         MetricConstants.MAIN,
         DatasetIdentifier.of( Location.of("103.1"),

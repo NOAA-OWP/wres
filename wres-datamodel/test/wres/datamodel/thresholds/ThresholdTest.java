@@ -8,7 +8,7 @@ import static org.junit.Assert.fail;
 import org.junit.Test;
 
 import wres.datamodel.OneOrTwoDoubles;
-import wres.datamodel.metadata.Dimension;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.Threshold.ThresholdBuilder;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
@@ -130,7 +130,7 @@ public final class ThresholdTest
                                       .setCondition( Operator.BETWEEN )
                                       .setDataType( ThresholdDataType.LEFT )
                                       .setLabel( "a label" )
-                                      .setUnits( Dimension.of( "CMS" ) )
+                                      .setUnits( MeasurementUnit.of( "CMS" ) )
                                       .build();
         Threshold fourteenth =
                 new ThresholdBuilder().setValues( OneOrTwoDoubles.of( 0.0, 0.1 ) )
@@ -138,7 +138,7 @@ public final class ThresholdTest
                                       .setCondition( Operator.BETWEEN )
                                       .setDataType( ThresholdDataType.LEFT )
                                       .setLabel( "a label" )
-                                      .setUnits( Dimension.of( "CMS" ) )
+                                      .setUnits( MeasurementUnit.of( "CMS" ) )
                                       .build();
 
         assertEquals( "Expected equal hash codes.", thirteenth.hashCode(), fourteenth.hashCode() );
@@ -322,7 +322,7 @@ public final class ThresholdTest
                                       .setProbabilities( OneOrTwoDoubles.of( 0.2, 0.8 ) )
                                       .setCondition( Operator.BETWEEN )
                                       .setDataType( ThresholdDataType.LEFT )
-                                      .setUnits( Dimension.of( "CMS" ) )
+                                      .setUnits( MeasurementUnit.of( "CMS" ) )
                                       .build();
 
         Threshold twentieth =
@@ -330,7 +330,7 @@ public final class ThresholdTest
                                       .setProbabilities( OneOrTwoDoubles.of( 0.2, 0.8 ) )
                                       .setCondition( Operator.BETWEEN )
                                       .setDataType( ThresholdDataType.LEFT )
-                                      .setUnits( Dimension.of( "CMS" ) )
+                                      .setUnits( MeasurementUnit.of( "CMS" ) )
                                       .build();
 
         assertFalse( "Expected unequal values.", sixteenth.compareTo( nineteenth ) == 0 );
@@ -342,7 +342,7 @@ public final class ThresholdTest
                 new ThresholdBuilder().setProbabilities( OneOrTwoDoubles.of( 0.1 ) )
                                       .setCondition( Operator.GREATER )
                                       .setDataType( ThresholdDataType.LEFT )
-                                      .setUnits( Dimension.of( "CMS" ) )
+                                      .setUnits( MeasurementUnit.of( "CMS" ) )
                                       .build();
 
         assertFalse( "Expected unequal values.", eighth.compareTo( twentyFirst ) == 0 );
@@ -353,7 +353,7 @@ public final class ThresholdTest
                 new ThresholdBuilder().setProbabilities( OneOrTwoDoubles.of( 0.1 ) )
                                       .setCondition( Operator.GREATER )
                                       .setDataType( ThresholdDataType.LEFT )
-                                      .setUnits( Dimension.of( "CFS" ) )
+                                      .setUnits( MeasurementUnit.of( "CFS" ) )
                                       .build();
 
         assertFalse( "Expected unequal values.", twentyFirst.compareTo( twentySecond ) == 0 );
@@ -363,7 +363,7 @@ public final class ThresholdTest
                 new ThresholdBuilder().setProbabilities( OneOrTwoDoubles.of( 0.1 ) )
                                       .setCondition( Operator.GREATER )
                                       .setDataType( ThresholdDataType.RIGHT )
-                                      .setUnits( Dimension.of( "CFS" ) )
+                                      .setUnits( MeasurementUnit.of( "CFS" ) )
                                       .build();
 
         assertFalse( "Expected unequal values.", twentySecond.compareTo( twentyThird ) == 0 );
@@ -533,7 +533,7 @@ public final class ThresholdTest
                                       .setProbabilities( OneOrTwoDoubles.of( 0.2, 0.8 ) )
                                       .setCondition( Operator.BETWEEN )
                                       .setDataType( ThresholdDataType.LEFT )
-                                      .setUnits( Dimension.of( "CFS" ) )
+                                      .setUnits( MeasurementUnit.of( "CFS" ) )
                                       .build();
 
         Threshold cms =
@@ -541,7 +541,7 @@ public final class ThresholdTest
                                       .setProbabilities( OneOrTwoDoubles.of( 0.2, 0.8 ) )
                                       .setCondition( Operator.BETWEEN )
                                       .setDataType( ThresholdDataType.LEFT )
-                                      .setUnits( Dimension.of( "CMS" ) )
+                                      .setUnits( MeasurementUnit.of( "CMS" ) )
                                       .build();
 
         Threshold noUnits =
@@ -619,7 +619,7 @@ public final class ThresholdTest
         Threshold oneValPlusLabel = new ThresholdBuilder().setValues( OneOrTwoDoubles.of( 0.0 ) )
                                                           .setCondition( Operator.GREATER )
                                                           .setDataType( ThresholdDataType.LEFT )
-                                                          .setUnits( Dimension.of( "CMS" ) )
+                                                          .setUnits( MeasurementUnit.of( "CMS" ) )
                                                           .build();
 
         assertTrue( "Unexpected inequality in string representations.",
@@ -670,7 +670,7 @@ public final class ThresholdTest
                                                     .setCondition( Operator.BETWEEN )
                                                     .setDataType( ThresholdDataType.LEFT )
                                                     .setLabel( "a threshold" )
-                                                    .setUnits( Dimension.of( "CMS" ) )
+                                                    .setUnits( MeasurementUnit.of( "CMS" ) )
                                                     .build();
 
         assertTrue( "Unexpected inequality in string representations.",
@@ -741,7 +741,7 @@ public final class ThresholdTest
                                                     .setCondition( Operator.BETWEEN )
                                                     .setDataType( ThresholdDataType.LEFT )
                                                     .setLabel( "a threshold" )
-                                                    .setUnits( Dimension.of( "CMS" ) )
+                                                    .setUnits( MeasurementUnit.of( "CMS" ) )
                                                     .build();
 
         assertTrue( "Unexpected inequality in string representations.",

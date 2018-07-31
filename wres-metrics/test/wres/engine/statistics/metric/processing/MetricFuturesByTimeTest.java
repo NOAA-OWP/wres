@@ -23,7 +23,7 @@ import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.metadata.Dimension;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
@@ -112,8 +112,8 @@ public final class MetricFuturesByTimeTest
                 Collections.singletonMap( MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
                                           BoxPlotOutput.of( Arrays.asList(), VectorOfDoubles.of( new double[] { 0.1,
                                           0.9 } ), MetricOutputMetadata.of( 1,
-                                          Dimension.of(),
-                                          Dimension.of(),
+                                          MeasurementUnit.of(),
+                                          MeasurementUnit.of(),
                                           MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE ), MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR ) );
 
         builder.addBoxPlotOutput( key,
@@ -123,8 +123,8 @@ public final class MetricFuturesByTimeTest
         doubleScore =
                 Collections.singletonMap( MetricConstants.MEAN_ERROR,
                                           DoubleScoreOutput.of( 1.0, MetricOutputMetadata.of( 1,
-                                          Dimension.of(),
-                                          Dimension.of(),
+                                          MeasurementUnit.of(),
+                                          MeasurementUnit.of(),
                                           MetricConstants.MEAN_ERROR ) ) );
 
         builder.addDoubleScoreOutput( key,
@@ -135,8 +135,8 @@ public final class MetricFuturesByTimeTest
         durationScore =
                 Collections.singletonMap( MetricConstants.TIME_TO_PEAK_ERROR,
                                           DurationScoreOutput.of( Duration.ofDays( 1 ), MetricOutputMetadata.of( 1,
-                                        Dimension.of(),
-                                        Dimension.of(),
+                                        MeasurementUnit.of(),
+                                        MeasurementUnit.of(),
                                         MetricConstants.TIME_TO_PEAK_ERROR ) ) );
 
         builder.addDurationScoreOutput( key,
@@ -148,8 +148,8 @@ public final class MetricFuturesByTimeTest
                 Collections.singletonMap( MetricConstants.CONTINGENCY_TABLE,
                                           MatrixOutput.of( new double[][] { { 1, 1 }, { 1, 1 } },
                                                                       MetricOutputMetadata.of( 1,
-                                                                                                         Dimension.of(),
-                                                                                                         Dimension.of(),
+                                                                                                         MeasurementUnit.of(),
+                                                                                                         MeasurementUnit.of(),
                                                                                                          MetricConstants.CONTINGENCY_TABLE ) ) );
 
         builder.addMatrixOutput( key,
@@ -161,8 +161,8 @@ public final class MetricFuturesByTimeTest
                                           MultiVectorOutput.ofMultiVectorOutput( Collections.singletonMap( MetricDimension.FORECAST_PROBABILITY,
                                                                                                      new double[] { 1 } ),
                                                                            MetricOutputMetadata.of( 1,
-                                                                                                              Dimension.of(),
-                                                                                                              Dimension.of(),
+                                                                                                              MeasurementUnit.of(),
+                                                                                                              MeasurementUnit.of(),
                                                                                                               MetricConstants.CONTINGENCY_TABLE ) ) );
 
         builder.addMultiVectorOutput( key,
@@ -172,8 +172,8 @@ public final class MetricFuturesByTimeTest
         paired =
                 Collections.singletonMap( MetricConstants.CONTINGENCY_TABLE,
                                           PairedOutput.of( Arrays.asList(), MetricOutputMetadata.of( 1,
-                                         Dimension.of(),
-                                         Dimension.of(),
+                                         MeasurementUnit.of(),
+                                         MeasurementUnit.of(),
                                          MetricConstants.CONTINGENCY_TABLE ) ) );
 
         builder.addPairedOutput( key,

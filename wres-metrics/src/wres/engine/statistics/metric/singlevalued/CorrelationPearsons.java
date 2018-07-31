@@ -10,7 +10,7 @@ import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.Slicer;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
-import wres.datamodel.metadata.Dimension;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
@@ -58,7 +58,7 @@ public class CorrelationPearsons extends OrdinaryScore<SingleValuedPairs, Double
         Metadata in = s.getMetadata();
         // Set the metadata explicitly since this class implements Collectable and getID() may be overridden
         MetricOutputMetadata meta = MetricOutputMetadata.of( s.getRawData().size(),
-                                                                       Dimension.of(),
+                                                                       MeasurementUnit.of(),
                                                                        in.getDimension(),
                                                                        MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
                                                                        MetricConstants.MAIN,

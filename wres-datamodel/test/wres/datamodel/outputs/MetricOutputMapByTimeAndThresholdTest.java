@@ -18,7 +18,7 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.Dimension;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
@@ -142,8 +142,8 @@ public final class MetricOutputMapByTimeAndThresholdTest
     public void testSetOfTimeWindowKeyByLeadTime()
     {
         final MetricOutputMetadata meta = MetricOutputMetadata.of( 1,
-                                                                             Dimension.of(),
-                                                                             Dimension.of(),
+                                                                             MeasurementUnit.of(),
+                                                                             MeasurementUnit.of(),
                                                                              MetricConstants.COEFFICIENT_OF_DETERMINATION,
                                                                              MetricConstants.MAIN );
         Map<Pair<TimeWindow, OneOrTwoThresholds>, DoubleScoreOutput> testMap = new HashMap<>();
@@ -420,8 +420,8 @@ public final class MetricOutputMapByTimeAndThresholdTest
         Location location = Location.of( "DRRC2" );
         final Location geospatialID = location;
         MetricOutputMetadata meta = MetricOutputMetadata.of( 1000,
-                                                                       Dimension.of(),
-                                                                       Dimension.of( "CMS" ),
+                                                                       MeasurementUnit.of(),
+                                                                       MeasurementUnit.of( "CMS" ),
                                                                        MetricConstants.MEAN_ABSOLUTE_ERROR,
                                                                        MetricConstants.MAIN,
                                                                        DatasetIdentifier.of( geospatialID, "SQIN", "HEFS", "ESP" ) );
