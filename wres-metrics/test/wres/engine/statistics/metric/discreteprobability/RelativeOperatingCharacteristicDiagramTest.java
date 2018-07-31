@@ -11,18 +11,18 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
-import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.metadata.DatasetIdentifier;
+import wres.datamodel.metadata.MeasurementUnit;
+import wres.datamodel.metadata.Location;
+import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
-import wres.engine.statistics.metric.discreteprobability.RelativeOperatingCharacteristicDiagram.RelativeOperatingCharacteristicBuilder;
-
 /**
  * Tests the {@link RelativeOperatingCharacteristicDiagram}.
  * 
@@ -43,8 +43,7 @@ public final class RelativeOperatingCharacteristicDiagramTest
     @Before
     public void setupBeforeEachTest() throws MetricParameterException
     {
-        RelativeOperatingCharacteristicBuilder b = new RelativeOperatingCharacteristicBuilder();
-        this.roc = b.build();
+        this.roc = RelativeOperatingCharacteristicDiagram.of();
     }
 
     /**
@@ -60,12 +59,12 @@ public final class RelativeOperatingCharacteristicDiagramTest
 
         //Metadata for the output
         final MetricOutputMetadata m1 =
-                MetadataFactory.getOutputMetadata( input.getRawData().size(),
-                                                   MetadataFactory.getDimension(),
-                                                   MetadataFactory.getDimension(),
+                MetricOutputMetadata.of( input.getRawData().size(),
+                                                   MeasurementUnit.of(),
+                                                   MeasurementUnit.of(),
                                                    MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
                                                    MetricConstants.MAIN,
-                                                   MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation( "Tampere" ),
+                                                   DatasetIdentifier.of( Location.of( "Tampere" ),
                                                                                          "MAP",
                                                                                          "FMI" ) );
 
@@ -82,7 +81,7 @@ public final class RelativeOperatingCharacteristicDiagramTest
         Map<MetricDimension, double[]> output = new HashMap<>();
         output.put( MetricDimension.PROBABILITY_OF_DETECTION, expectedPOD );
         output.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, expectedPOFD );
-        final MultiVectorOutput expected = DataFactory.ofMultiVectorOutput( output, m1 );
+        final MultiVectorOutput expected = MultiVectorOutput.ofMultiVectorOutput( output, m1 );
         assertTrue( "Difference between actual and expected ROC.", actual.equals( expected ) );
     }
 
@@ -96,7 +95,7 @@ public final class RelativeOperatingCharacteristicDiagramTest
     {
         // Generate empty data
         DiscreteProbabilityPairs input =
-                DataFactory.ofDiscreteProbabilityPairs( Arrays.asList(), MetadataFactory.getMetadata() );
+                DiscreteProbabilityPairs.of( Arrays.asList(), Metadata.of() );
 
         MultiVectorOutput actual = roc.apply( input );
 

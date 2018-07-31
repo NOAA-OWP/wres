@@ -10,14 +10,13 @@ import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.Slicer;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Metadata;
-import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.Collectable;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricCollection;
-import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.OrdinaryScore;
 
 /**
@@ -37,6 +36,17 @@ public class CorrelationPearsons extends OrdinaryScore<SingleValuedPairs, Double
 
     private final PearsonsCorrelation correlation;
 
+    /**
+     * Returns an instance.
+     * 
+     * @return an instance
+     */
+    
+    public static CorrelationPearsons of()
+    {
+        return new CorrelationPearsons();
+    }
+    
     @Override
     public DoubleScoreOutput apply( SingleValuedPairs s )
     {
@@ -47,8 +57,8 @@ public class CorrelationPearsons extends OrdinaryScore<SingleValuedPairs, Double
 
         Metadata in = s.getMetadata();
         // Set the metadata explicitly since this class implements Collectable and getID() may be overridden
-        MetricOutputMetadata meta = MetadataFactory.getOutputMetadata( s.getRawData().size(),
-                                                                       MetadataFactory.getDimension(),
+        MetricOutputMetadata meta = MetricOutputMetadata.of( s.getRawData().size(),
+                                                                       MeasurementUnit.of(),
                                                                        in.getDimension(),
                                                                        MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
                                                                        MetricConstants.MAIN,
@@ -61,7 +71,7 @@ public class CorrelationPearsons extends OrdinaryScore<SingleValuedPairs, Double
                                       .applyAsDouble( correlation.correlation( Slicer.getLeftSide( s ),
                                                                                Slicer.getRightSide( s ) ) );
         }
-        return DataFactory.ofDoubleScoreOutput( returnMe, meta );
+        return DoubleScoreOutput.of( returnMe, meta );
     }
 
     @Override
@@ -117,28 +127,10 @@ public class CorrelationPearsons extends OrdinaryScore<SingleValuedPairs, Double
     }
 
     /**
-     * A {@link MetricBuilder} to build the metric.
-     */
-
-    public static class CorrelationPearsonsBuilder implements MetricBuilder<SingleValuedPairs, DoubleScoreOutput>
-    {
-
-        @Override
-        public CorrelationPearsons build() throws MetricParameterException
-        {
-            return new CorrelationPearsons( this );
-        }
-
-    }
-
-    /**
      * Hidden constructor.
-     * 
-     * @param builder the builder
-     * @throws MetricParameterException if one or more parameters is invalid 
      */
 
-    protected CorrelationPearsons( final CorrelationPearsonsBuilder builder ) throws MetricParameterException
+    CorrelationPearsons()
     {
         super();
         correlation = new PearsonsCorrelation();

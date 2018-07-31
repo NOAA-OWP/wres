@@ -14,10 +14,10 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.MetricConfigException;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
+import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.Slicer;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
@@ -107,12 +107,6 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
      */
 
     final Threshold allDataThreshold;
-
-    /**
-     * Instance of a {@link MetricFactory}.
-     */
-
-    final MetricFactory metricFactory;
 
     /**
      * Set of thresholds associated with each metric.
@@ -353,13 +347,12 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
         Objects.requireNonNull( metricExecutor, "Specify a non-null metric executor service." );
 
         this.metrics = MetricConfigHelper.getMetricsFromConfig( config );
-        this.metricFactory = MetricFactory.getInstance();
 
         //Construct the metrics that are common to more than one type of input pairs
         if ( this.hasMetrics( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.DOUBLE_SCORE ) )
         {
             this.singleValuedScore =
-                    metricFactory.ofSingleValuedScoreCollection( metricExecutor,
+                    MetricFactory.ofSingleValuedScoreCollection( metricExecutor,
                                                                  this.getMetrics( MetricInputGroup.SINGLE_VALUED,
                                                                                   MetricOutputGroup.DOUBLE_SCORE ) );
         }
@@ -370,9 +363,9 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
         if ( this.hasMetrics( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.MULTIVECTOR ) )
         {
             this.singleValuedMultiVector =
-                    this.metricFactory.ofSingleValuedMultiVectorCollection( metricExecutor,
-                                                                            this.getMetrics( MetricInputGroup.SINGLE_VALUED,
-                                                                                             MetricOutputGroup.MULTIVECTOR ) );
+                    MetricFactory.ofSingleValuedMultiVectorCollection( metricExecutor,
+                                                                       this.getMetrics( MetricInputGroup.SINGLE_VALUED,
+                                                                                        MetricOutputGroup.MULTIVECTOR ) );
         }
         else
         {
@@ -383,9 +376,9 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
         if ( this.hasMetrics( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.DOUBLE_SCORE ) )
         {
             this.dichotomousScalar =
-                    this.metricFactory.ofDichotomousScoreCollection( metricExecutor,
-                                                                     this.getMetrics( MetricInputGroup.DICHOTOMOUS,
-                                                                                      MetricOutputGroup.DOUBLE_SCORE ) );
+                    MetricFactory.ofDichotomousScoreCollection( metricExecutor,
+                                                                this.getMetrics( MetricInputGroup.DICHOTOMOUS,
+                                                                                 MetricOutputGroup.DOUBLE_SCORE ) );
         }
         else
         {
@@ -395,9 +388,9 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
         if ( this.hasMetrics( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.MATRIX ) )
         {
             this.dichotomousMatrix =
-                    this.metricFactory.ofDichotomousMatrixCollection( metricExecutor,
-                                                                      this.getMetrics( MetricInputGroup.DICHOTOMOUS,
-                                                                                       MetricOutputGroup.MATRIX ) );
+                    MetricFactory.ofDichotomousMatrixCollection( metricExecutor,
+                                                                 this.getMetrics( MetricInputGroup.DICHOTOMOUS,
+                                                                                  MetricOutputGroup.MATRIX ) );
         }
         else
         {
@@ -419,7 +412,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
         //Set the executor for processing thresholds
         this.thresholdExecutor = thresholdExecutor;
 
-        this.allDataThreshold = DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
+        this.allDataThreshold = Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                          Operator.GREATER,
                                                          ThresholdDataType.LEFT_AND_RIGHT );
 

@@ -18,6 +18,9 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
+import wres.datamodel.metadata.DatasetIdentifier;
+import wres.datamodel.metadata.MeasurementUnit;
+import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
@@ -26,7 +29,6 @@ import wres.datamodel.outputs.PairedOutput;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.engine.statistics.metric.singlevalued.SumOfSquareError;
-import wres.engine.statistics.metric.timeseries.TimeToPeakError.TimeToPeakErrorBuilder;
 
 /**
  * Tests the {@link TimeToPeakError}.
@@ -48,13 +50,7 @@ public final class TimeToPeakErrorTest
     @Before
     public void setupBeforeEachTest() throws MetricParameterException
     {
-        TimeToPeakErrorBuilder b = new TimeToPeakErrorBuilder();
-        
-        // Seeded RNG to resolve ties consistently
-        Random resolveTies = new Random( 123456789 );
-        b.setRNGForTies( resolveTies );
-        
-        ttp = b.build();
+        ttp = TimeToPeakError.of( new Random( 123456789 ) );
     }
     
     /**
@@ -75,14 +71,15 @@ public final class TimeToPeakErrorTest
                                                  ReferenceTime.ISSUE_TIME,
                                                  Duration.ofHours( 6 ),
                                                  Duration.ofHours( 18 ) );
-        MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( input.getBasisTimes().size(),
-                                                                   MetadataFactory.getDimension( "DURATION" ),
-                                                                   MetadataFactory.getDimension( "CMS" ),
-                                                                   MetricConstants.TIME_TO_PEAK_ERROR,
-                                                                   MetricConstants.MAIN,
-                                                                   MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation("A"),
-                                                                                                 "Streamflow" ),
-                                                                   window );
+        final TimeWindow timeWindow = window;
+        MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getBasisTimes().size(),
+        MeasurementUnit.of( "DURATION" ),
+        MeasurementUnit.of( "CMS" ),
+        MetricConstants.TIME_TO_PEAK_ERROR,
+        MetricConstants.MAIN,
+        DatasetIdentifier.of( Location.of("A"),
+                                                                                                         "Streamflow" ),
+        timeWindow );
 
         // Check the parameters
         assertTrue( "Unexpected name for the Time-to-Peak Error.",
@@ -93,7 +90,7 @@ public final class TimeToPeakErrorTest
         List<Pair<Instant, Duration>> expectedSource = new ArrayList<>();
         expectedSource.add( Pair.of( Instant.parse( "1985-01-01T00:00:00Z" ), Duration.ofHours( -6 ) ) );
         expectedSource.add( Pair.of( Instant.parse( "1985-01-02T00:00:00Z" ), Duration.ofHours( 12 ) ) );
-        PairedOutput<Instant, Duration> expected = DataFactory.ofPairedOutput( expectedSource, m1 );
+        PairedOutput<Instant, Duration> expected = PairedOutput.of( expectedSource, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -124,22 +121,6 @@ public final class TimeToPeakErrorTest
         exception.expect( MetricInputException.class );
 
         ttp.apply( null );
-    }
-    
-    /**
-     * Tests for an expected exception on attempting to build a {@link TimeToPeakError} with a null 
-     * builder.
-     * @throws MetricParameterException if the test fails unexpectedly
-     */
-
-    @Test
-    public void testBuildThrowsExceptionOnNullBuilder() throws MetricParameterException
-    {
-        // Null input to apply
-        exception.expect( MetricParameterException.class );
-        exception.expectMessage( "Cannot construct the metric with a null builder." );
-
-        new TimeToPeakError( null );
     }
     
 //  /**

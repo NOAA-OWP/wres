@@ -44,6 +44,27 @@ public class MultiVectorOutput implements MetricOutput<Map<MetricDimension, Vect
         return new MultiVectorOutput( output, meta );
     }
 
+
+    /**
+     * Return a {@link MultiVectorOutput}.
+     * 
+     * @param output the output data
+     * @param meta the metadata
+     * @return a {@link MultiVectorOutput}
+     * @throws NullPointerException if the output is null
+     */
+
+    public static MultiVectorOutput ofMultiVectorOutput( Map<MetricDimension, double[]> output,
+                                                         MetricOutputMetadata meta )
+    {
+        Objects.requireNonNull( output, "Specify a non-null map of inputs." );
+
+        EnumMap<MetricDimension, VectorOfDoubles> map = new EnumMap<>( MetricDimension.class );
+        output.forEach( ( key, value ) -> map.put( key, VectorOfDoubles.of( value ) ) );
+
+        return of( map, meta );
+    }
+
     /**
      * Returns a prescribed vector from the map or null if no mapping exists.
      * 

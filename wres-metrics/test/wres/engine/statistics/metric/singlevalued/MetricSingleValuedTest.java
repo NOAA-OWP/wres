@@ -9,8 +9,6 @@ import org.junit.rules.ExpectedException;
 import wres.datamodel.MetricConstants;
 import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricParameterException;
-import wres.engine.statistics.metric.singlevalued.MeanAbsoluteError.MeanAbsoluteErrorBuilder;
-import wres.engine.statistics.metric.singlevalued.MeanError.MeanErrorBuilder;
 
 /**
  * Tests the {@link Metric} using single-valued metrics.
@@ -33,14 +31,12 @@ public final class MetricSingleValuedTest
     {
 
         //Build a metric
-        final MeanErrorBuilder b = new MeanError.MeanErrorBuilder();
-        final MeanError me = b.build();
+        final MeanError me = MeanError.of();
         //Build another metric
-        final MeanError me2 = b.build();
+        final MeanError me2 = MeanError.of();
         //Build a different metric
-        final MeanAbsoluteErrorBuilder c = new MeanAbsoluteError.MeanAbsoluteErrorBuilder();
-        final MeanAbsoluteError mae = c.build();
-
+        final MeanAbsoluteError mae = MeanAbsoluteError.of();
+        
         //Check for equality of names
         assertTrue( "Unexpected difference in metric names.", me.nameEquals( me2 ) );
         assertTrue( "Unexpected equality in metric names.", !mae.nameEquals( me ) );
@@ -58,8 +54,7 @@ public final class MetricSingleValuedTest
     {
 
         //Build a metric
-        final MeanErrorBuilder b = new MeanError.MeanErrorBuilder();
-        final MeanError me = b.build();
+        final MeanError me = MeanError.of();
 
         //Check for equality of names
         assertTrue( "Unexpected metric name.",

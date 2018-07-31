@@ -6,10 +6,8 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
-import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
-import wres.engine.statistics.metric.MetricParameterException;
 
 /**
  * Computes the square of Pearson's product-moment correlation coefficient between the left and right sides of the
@@ -20,6 +18,17 @@ import wres.engine.statistics.metric.MetricParameterException;
 public class CoefficientOfDetermination extends CorrelationPearsons
 {
 
+    /**
+     * Returns an instance.
+     * 
+     * @return an instance
+     */
+    
+    public static CoefficientOfDetermination of()
+    {
+        return new CoefficientOfDetermination();
+    }
+    
     @Override
     public DoubleScoreOutput apply(SingleValuedPairs s)
     {
@@ -40,13 +49,13 @@ public class CoefficientOfDetermination extends CorrelationPearsons
             throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
         }
         MetricOutputMetadata in = output.getMetadata();
-        MetricOutputMetadata meta = MetadataFactory.getOutputMetadata( in.getSampleSize(),
+        MetricOutputMetadata meta = MetricOutputMetadata.of( in.getSampleSize(),
                                                                                              in.getDimension(),
                                                                                              in.getInputDimension(),
                                                                                              MetricConstants.COEFFICIENT_OF_DETERMINATION,
                                                                                              MetricConstants.MAIN,
                                                                                              in.getIdentifier() );
-        return DataFactory.ofDoubleScoreOutput(Math.pow(output.getData(), 2), meta);
+        return DoubleScoreOutput.of( Math.pow(output.getData(), 2), meta );
     }
 
     @Override
@@ -66,30 +75,12 @@ public class CoefficientOfDetermination extends CorrelationPearsons
     }
 
     /**
-     * A {@link MetricBuilder} to build the metric.
-     */
-
-    public static class CoefficientOfDeterminationBuilder extends CorrelationPearsonsBuilder
-    {
-
-        @Override
-        public CoefficientOfDetermination build() throws MetricParameterException
-        {
-            return new CoefficientOfDetermination(this);
-        }
-
-    }
-
-    /**
      * Hidden constructor.
-     * 
-     * @param builder the builder
-     * @throws MetricParameterException if one or more parameters is invalid
      */
 
-    private CoefficientOfDetermination(final CoefficientOfDeterminationBuilder builder) throws MetricParameterException
+    private CoefficientOfDetermination()
     {
-        super(builder);
+        super();
     }    
     
 }

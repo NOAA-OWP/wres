@@ -16,7 +16,6 @@ import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.FunctionFactory;
-import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.OrdinaryScore;
 import wres.engine.statistics.metric.ProbabilityScore;
 
@@ -46,6 +45,17 @@ public class RelativeOperatingCharacteristicScore extends OrdinaryScore<Discrete
         implements ProbabilityScore<DiscreteProbabilityPairs, DoubleScoreOutput>
 {
 
+    /**
+     * Returns an instance.
+     * 
+     * @return an instance
+     */
+    
+    public static RelativeOperatingCharacteristicScore of()
+    {
+        return new RelativeOperatingCharacteristicScore();
+    }   
+    
     @Override
     public DoubleScoreOutput apply( final DiscreteProbabilityPairs s )
     {
@@ -69,7 +79,7 @@ public class RelativeOperatingCharacteristicScore extends OrdinaryScore<Discrete
         }
         final MetricOutputMetadata metOut =
                 getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, baselineIdentifier );
-        return DataFactory.ofDoubleScoreOutput( rocScore, metOut );
+        return DoubleScoreOutput.of( rocScore, metOut );
     }
 
     @Override
@@ -113,22 +123,6 @@ public class RelativeOperatingCharacteristicScore extends OrdinaryScore<Discrete
     public ScoreOutputGroup getScoreOutputGroup()
     {
         return ScoreOutputGroup.NONE;
-    }
-
-    /**
-     * A {@link MetricBuilder} to build the metric.
-     */
-
-    public static class RelativeOperatingCharacteristicScoreBuilder
-            implements MetricBuilder<DiscreteProbabilityPairs, DoubleScoreOutput>
-    {
-
-        @Override
-        public RelativeOperatingCharacteristicScore build() throws MetricParameterException
-        {
-            return new RelativeOperatingCharacteristicScore( this );
-        }
-
     }
 
     /**
@@ -191,13 +185,9 @@ public class RelativeOperatingCharacteristicScore extends OrdinaryScore<Discrete
 
     /**
      * Hidden constructor.
-     * 
-     * @param builder the builder
-     * @throws MetricParameterException if one or more parameter values is incorrect
      */
 
-    private RelativeOperatingCharacteristicScore( final RelativeOperatingCharacteristicScoreBuilder builder )
-            throws MetricParameterException
+    private RelativeOperatingCharacteristicScore()
     {
         super();
     }

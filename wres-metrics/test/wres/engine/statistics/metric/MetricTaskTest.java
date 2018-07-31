@@ -18,9 +18,10 @@ import org.junit.rules.ExpectedException;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
-import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
+import wres.engine.statistics.metric.singlevalued.MeanError;
 
 /**
  * Tests the {@link MetricTask}.
@@ -61,8 +62,7 @@ public final class MetricTaskTest
         final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Add some appropriate metrics to the collection
-        final MetricFactory metF = MetricFactory.getInstance();
-        final Metric<SingleValuedPairs, DoubleScoreOutput> m = metF.ofMeanError();
+        final Metric<SingleValuedPairs, DoubleScoreOutput> m = MeanError.of();
 
         // Wrap an input in a future
         final FutureTask<SingleValuedPairs> futureInput =
@@ -80,12 +80,12 @@ public final class MetricTaskTest
         pairPool.submit( futureInput );
 
         //Should not throw an exception
-        MetricOutputMetadata benchmarkMeta = MetadataFactory.getOutputMetadata( 10,
-                                                                                MetadataFactory.getDimension(),
+        MetricOutputMetadata benchmarkMeta = MetricOutputMetadata.of( 10,
+                                                                                MeasurementUnit.of(),
                                                                                 input.getMetadata(),
                                                                                 MetricConstants.MEAN_ERROR,
                                                                                 MetricConstants.MAIN );
-        DoubleScoreOutput benchmark = DataFactory.ofDoubleScoreOutput( 200.55, benchmarkMeta );
+        DoubleScoreOutput benchmark = DoubleScoreOutput.of( 200.55, benchmarkMeta );
 
         assertTrue( benchmark.equals( task.call() ) );
 
@@ -105,8 +105,7 @@ public final class MetricTaskTest
     {
 
         // Add some appropriate metrics to the collection
-        final MetricFactory metF = MetricFactory.getInstance();
-        final Metric<SingleValuedPairs, DoubleScoreOutput> m = metF.ofMeanError();
+        final Metric<SingleValuedPairs, DoubleScoreOutput> m = MeanError.of();
 
         final FutureTask<SingleValuedPairs> futureInputNull =
                 new FutureTask<SingleValuedPairs>( new Callable<SingleValuedPairs>()

@@ -7,7 +7,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
-import wres.engine.statistics.metric.SampleSize.SampleSizeBuilder;
 
 /**
  * Tests the {@link OrdinaryScore}.
@@ -29,8 +28,7 @@ public final class OrdinaryScoreTest
     @Test
     public void testToString() throws MetricParameterException
     {
-        SampleSizeBuilder<SingleValuedPairs> b = new SampleSizeBuilder<>();
-        SampleSize<SingleValuedPairs> ss = b.build();
+        SampleSize<SingleValuedPairs> ss = SampleSize.of();
 
         assertTrue( "SAMPLE SIZE".equals( ss.toString() ) );
     }

@@ -3,7 +3,6 @@ package wres.engine.statistics.metric.singlevalued;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.engine.statistics.metric.FunctionFactory;
-import wres.engine.statistics.metric.MetricParameterException;
 
 /**
  * The mean absolute error applies to continuous variables and is the average unsigned difference between a
@@ -14,6 +13,17 @@ import wres.engine.statistics.metric.MetricParameterException;
 public class MeanAbsoluteError extends DoubleErrorScore<SingleValuedPairs>
 {
 
+    /**
+     * Returns an instance.
+     * 
+     * @return an instance
+     */
+    
+    public static MeanAbsoluteError of()
+    {
+        return new MeanAbsoluteError();
+    }
+    
     @Override
     public boolean isSkillScore()
     {
@@ -33,30 +43,12 @@ public class MeanAbsoluteError extends DoubleErrorScore<SingleValuedPairs>
     }
 
     /**
-     * A {@link MetricBuilder} to build the metric.
-     */
-
-    public static class MeanAbsoluteErrorBuilder extends DoubleErrorScoreBuilder<SingleValuedPairs>
-    {
-
-        @Override
-        public MeanAbsoluteError build() throws MetricParameterException
-        {
-            return new MeanAbsoluteError(this);
-        }
-
-    }
-
-    /**
      * Hidden constructor.
-     * 
-     * @param builder the builder
-     * @throws MetricParameterException if one or more parameters is invalid
      */
 
-    private MeanAbsoluteError(final MeanAbsoluteErrorBuilder builder) throws MetricParameterException
+    private MeanAbsoluteError()
     {
-        super(builder.setErrorFunction(FunctionFactory.absError()));
+        super( FunctionFactory.absError() );
     }
 
 }

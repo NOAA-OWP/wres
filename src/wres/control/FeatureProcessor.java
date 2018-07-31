@@ -16,7 +16,6 @@ import wres.config.FeaturePlus;
 import wres.config.generated.DestinationType;
 import wres.config.generated.ProjectConfig;
 import wres.control.ProcessorHelper.ExecutorServices;
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.thresholds.ThresholdsByMetric;
@@ -129,8 +128,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
         final MetricProcessorForProject processor;
         try
         {
-            processor = MetricFactory.getInstance()
-                                     .ofMetricProcessorForProject( projectConfig,
+            processor = MetricFactory.ofMetricProcessorForProject( projectConfig,
                                                                    thresholds,
                                                                    this.executors.getThresholdExecutor(),
                                                                    this.executors.getMetricExecutor() );

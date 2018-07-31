@@ -122,7 +122,7 @@ public class SingleValuedPair implements Comparable<SingleValuedPair>
      * @param right the second item
      */
 
-    private SingleValuedPair( double left, double right )
+    SingleValuedPair( double left, double right )
     {
         this.left = left;
         this.right = right;

@@ -13,8 +13,6 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
-import wres.datamodel.MetricConstants.ScoreOutputGroup;
-import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
@@ -28,7 +26,6 @@ import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.PairedOutput;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.engine.statistics.metric.MetricCollection.MetricCollectionBuilder;
-import wres.engine.statistics.metric.SampleSize.SampleSizeBuilder;
 import wres.engine.statistics.metric.categorical.ContingencyTable;
 import wres.engine.statistics.metric.categorical.EquitableThreatScore;
 import wres.engine.statistics.metric.categorical.FrequencyBias;
@@ -39,57 +36,33 @@ import wres.engine.statistics.metric.categorical.ThreatScore;
 import wres.engine.statistics.metric.discreteprobability.BrierScore;
 import wres.engine.statistics.metric.discreteprobability.BrierSkillScore;
 import wres.engine.statistics.metric.discreteprobability.RelativeOperatingCharacteristicDiagram;
-import wres.engine.statistics.metric.discreteprobability.RelativeOperatingCharacteristicDiagram.RelativeOperatingCharacteristicBuilder;
 import wres.engine.statistics.metric.discreteprobability.RelativeOperatingCharacteristicScore;
-import wres.engine.statistics.metric.discreteprobability.RelativeOperatingCharacteristicScore.RelativeOperatingCharacteristicScoreBuilder;
 import wres.engine.statistics.metric.discreteprobability.ReliabilityDiagram;
-import wres.engine.statistics.metric.discreteprobability.ReliabilityDiagram.ReliabilityDiagramBuilder;
 import wres.engine.statistics.metric.ensemble.BoxPlotErrorByForecast;
-import wres.engine.statistics.metric.ensemble.BoxPlotErrorByForecast.BoxPlotErrorByForecastBuilder;
 import wres.engine.statistics.metric.ensemble.BoxPlotErrorByObserved;
-import wres.engine.statistics.metric.ensemble.BoxPlotErrorByObserved.BoxPlotErrorByObservedBuilder;
 import wres.engine.statistics.metric.ensemble.ContinuousRankedProbabilityScore;
-import wres.engine.statistics.metric.ensemble.ContinuousRankedProbabilityScore.CRPSBuilder;
 import wres.engine.statistics.metric.ensemble.ContinuousRankedProbabilitySkillScore;
-import wres.engine.statistics.metric.ensemble.ContinuousRankedProbabilitySkillScore.CRPSSBuilder;
 import wres.engine.statistics.metric.ensemble.RankHistogram;
-import wres.engine.statistics.metric.ensemble.RankHistogram.RankHistogramBuilder;
 import wres.engine.statistics.metric.processing.MetricProcessor;
 import wres.engine.statistics.metric.processing.MetricProcessorByTime;
 import wres.engine.statistics.metric.processing.MetricProcessorByTimeEnsemblePairs;
 import wres.engine.statistics.metric.processing.MetricProcessorByTimeSingleValuedPairs;
 import wres.engine.statistics.metric.processing.MetricProcessorForProject;
 import wres.engine.statistics.metric.singlevalued.BiasFraction;
-import wres.engine.statistics.metric.singlevalued.BiasFraction.BiasFractionBuilder;
 import wres.engine.statistics.metric.singlevalued.CoefficientOfDetermination;
-import wres.engine.statistics.metric.singlevalued.CoefficientOfDetermination.CoefficientOfDeterminationBuilder;
 import wres.engine.statistics.metric.singlevalued.CorrelationPearsons;
-import wres.engine.statistics.metric.singlevalued.CorrelationPearsons.CorrelationPearsonsBuilder;
 import wres.engine.statistics.metric.singlevalued.IndexOfAgreement;
-import wres.engine.statistics.metric.singlevalued.IndexOfAgreement.IndexOfAgreementBuilder;
 import wres.engine.statistics.metric.singlevalued.KlingGuptaEfficiency;
-import wres.engine.statistics.metric.singlevalued.KlingGuptaEfficiency.KlingGuptaEfficiencyBuilder;
 import wres.engine.statistics.metric.singlevalued.MeanAbsoluteError;
-import wres.engine.statistics.metric.singlevalued.MeanAbsoluteError.MeanAbsoluteErrorBuilder;
 import wres.engine.statistics.metric.singlevalued.MeanError;
-import wres.engine.statistics.metric.singlevalued.MeanError.MeanErrorBuilder;
 import wres.engine.statistics.metric.singlevalued.MeanSquareError;
-import wres.engine.statistics.metric.singlevalued.MeanSquareError.MeanSquareErrorBuilder;
 import wres.engine.statistics.metric.singlevalued.MeanSquareErrorSkillScore;
-import wres.engine.statistics.metric.singlevalued.MeanSquareErrorSkillScore.MeanSquareErrorSkillScoreBuilder;
 import wres.engine.statistics.metric.singlevalued.QuantileQuantileDiagram;
 import wres.engine.statistics.metric.singlevalued.RootMeanSquareError;
-import wres.engine.statistics.metric.singlevalued.RootMeanSquareError.RootMeanSquareErrorBuilder;
 import wres.engine.statistics.metric.singlevalued.SumOfSquareError;
-import wres.engine.statistics.metric.singlevalued.SumOfSquareError.SumOfSquareErrorBuilder;
 import wres.engine.statistics.metric.singlevalued.VolumetricEfficiency;
-import wres.engine.statistics.metric.singlevalued.VolumetricEfficiency.VolumetricEfficiencyBuilder;
 import wres.engine.statistics.metric.timeseries.TimeToPeakError;
-import wres.engine.statistics.metric.timeseries.TimeToPeakError.TimeToPeakErrorBuilder;
 import wres.engine.statistics.metric.timeseries.TimeToPeakRelativeError;
-import wres.engine.statistics.metric.timeseries.TimeToPeakRelativeError.TimeToPeakRelativeErrorBuilder;
-import wres.engine.statistics.metric.timeseries.TimingErrorDurationStatistics;
-import wres.engine.statistics.metric.timeseries.TimingErrorDurationStatistics.TimingErrorDurationStatisticsBuilder;
 
 /**
  * <p>A factory class for constructing metrics.
@@ -97,32 +70,14 @@ import wres.engine.statistics.metric.timeseries.TimingErrorDurationStatistics.Ti
  * @author james.brown@hydrosolved.com
  */
 
-public class MetricFactory
+public final class MetricFactory
 {
-
-    /**
-     * Singleton instance of the factory.
-     */
-
-    private static final MetricFactory INSTANCE = new MetricFactory();
 
     /**
      * String used in several error messages to denote an unrecognized metric.
      */
 
     private static final String UNRECOGNIZED_METRIC_ERROR = "Unrecognized metric for identifier.";
-
-    /**
-     * Returns an instance of a {@link MetricFactory}.
-     * 
-     * @return a {@link MetricFactory}
-     * @throws NullPointerException if the input is null
-     */
-
-    public static MetricFactory getInstance()
-    {
-        return INSTANCE;
-    }
 
     /**
      * Returns a {@link MetricProcessorForProject} for the specified project configuration.
@@ -136,14 +91,13 @@ public class MetricFactory
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
-    public MetricProcessorForProject ofMetricProcessorForProject( final ProjectConfig projectConfig,
-                                                                  final ThresholdsByMetric externalThresholds,
-                                                                  final ExecutorService thresholdExecutor,
-                                                                  final ExecutorService metricExecutor )
+    public static MetricProcessorForProject ofMetricProcessorForProject( final ProjectConfig projectConfig,
+                                                                         final ThresholdsByMetric externalThresholds,
+                                                                         final ExecutorService thresholdExecutor,
+                                                                         final ExecutorService metricExecutor )
             throws MetricParameterException
     {
-        return new MetricProcessorForProject( this,
-                                              projectConfig,
+        return new MetricProcessorForProject( projectConfig,
                                               externalThresholds,
                                               thresholdExecutor,
                                               metricExecutor );
@@ -164,16 +118,16 @@ public class MetricFactory
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
-    public MetricProcessorByTime<SingleValuedPairs>
+    public static MetricProcessorByTime<SingleValuedPairs>
             ofMetricProcessorByTimeSingleValuedPairs( final ProjectConfig config,
                                                       final Set<MetricOutputGroup> mergeSet )
                     throws MetricParameterException
     {
-        return this.ofMetricProcessorByTimeSingleValuedPairs( config,
-                                                              null,
-                                                              ForkJoinPool.commonPool(),
-                                                              ForkJoinPool.commonPool(),
-                                                              mergeSet );
+        return MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( config,
+                                                                       null,
+                                                                       ForkJoinPool.commonPool(),
+                                                                       ForkJoinPool.commonPool(),
+                                                                       mergeSet );
     }
 
     /**
@@ -191,16 +145,16 @@ public class MetricFactory
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
-    public MetricProcessorByTime<EnsemblePairs>
+    public static MetricProcessorByTime<EnsemblePairs>
             ofMetricProcessorByTimeEnsemblePairs( final ProjectConfig config,
                                                   final Set<MetricOutputGroup> mergeSet )
                     throws MetricParameterException
     {
-        return this.ofMetricProcessorByTimeEnsemblePairs( config,
-                                                          null,
-                                                          ForkJoinPool.commonPool(),
-                                                          ForkJoinPool.commonPool(),
-                                                          mergeSet );
+        return MetricFactory.ofMetricProcessorByTimeEnsemblePairs( config,
+                                                                   null,
+                                                                   ForkJoinPool.commonPool(),
+                                                                   ForkJoinPool.commonPool(),
+                                                                   mergeSet );
     }
 
     /**
@@ -219,17 +173,17 @@ public class MetricFactory
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
-    public MetricProcessorByTime<SingleValuedPairs>
+    public static MetricProcessorByTime<SingleValuedPairs>
             ofMetricProcessorByTimeSingleValuedPairs( final ProjectConfig config,
                                                       final ThresholdsByMetric externalThresholds,
                                                       final Set<MetricOutputGroup> mergeSet )
                     throws MetricParameterException
     {
-        return this.ofMetricProcessorByTimeSingleValuedPairs( config,
-                                                              externalThresholds,
-                                                              ForkJoinPool.commonPool(),
-                                                              ForkJoinPool.commonPool(),
-                                                              mergeSet );
+        return MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( config,
+                                                                       externalThresholds,
+                                                                       ForkJoinPool.commonPool(),
+                                                                       ForkJoinPool.commonPool(),
+                                                                       mergeSet );
     }
 
     /**
@@ -248,17 +202,17 @@ public class MetricFactory
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
-    public MetricProcessorByTime<EnsemblePairs>
+    public static MetricProcessorByTime<EnsemblePairs>
             ofMetricProcessorByTimeEnsemblePairs( final ProjectConfig config,
                                                   final ThresholdsByMetric externalThresholds,
                                                   final Set<MetricOutputGroup> mergeSet )
                     throws MetricParameterException
     {
-        return this.ofMetricProcessorByTimeEnsemblePairs( config,
-                                                          externalThresholds,
-                                                          ForkJoinPool.commonPool(),
-                                                          ForkJoinPool.commonPool(),
-                                                          mergeSet );
+        return MetricFactory.ofMetricProcessorByTimeEnsemblePairs( config,
+                                                                   externalThresholds,
+                                                                   ForkJoinPool.commonPool(),
+                                                                   ForkJoinPool.commonPool(),
+                                                                   mergeSet );
     }
 
     /**
@@ -279,7 +233,7 @@ public class MetricFactory
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
-    public MetricProcessorByTime<SingleValuedPairs>
+    public static MetricProcessorByTime<SingleValuedPairs>
             ofMetricProcessorByTimeSingleValuedPairs( final ProjectConfig config,
                                                       final ThresholdsByMetric externalThresholds,
                                                       final ExecutorService thresholdExecutor,
@@ -312,11 +266,11 @@ public class MetricFactory
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
-    public MetricProcessorByTime<EnsemblePairs> ofMetricProcessorByTimeEnsemblePairs( final ProjectConfig config,
-                                                                                      final ThresholdsByMetric externalThresholds,
-                                                                                      final ExecutorService thresholdExecutor,
-                                                                                      final ExecutorService metricExecutor,
-                                                                                      final Set<MetricOutputGroup> mergeSet )
+    public static MetricProcessorByTime<EnsemblePairs> ofMetricProcessorByTimeEnsemblePairs( final ProjectConfig config,
+                                                                                             final ThresholdsByMetric externalThresholds,
+                                                                                             final ExecutorService thresholdExecutor,
+                                                                                             final ExecutorService metricExecutor,
+                                                                                             final Set<MetricOutputGroup> mergeSet )
             throws MetricParameterException
     {
         return new MetricProcessorByTimeEnsemblePairs( config,
@@ -338,11 +292,11 @@ public class MetricFactory
      * @throws IllegalArgumentException if a metric identifier is not recognized
      */
 
-    public MetricCollection<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput>
+    public static MetricCollection<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput>
             ofSingleValuedScoreCollection( MetricConstants... metric )
                     throws MetricParameterException
     {
-        return ofSingleValuedScoreCollection( ForkJoinPool.commonPool(), metric );
+        return MetricFactory.ofSingleValuedScoreCollection( ForkJoinPool.commonPool(), metric );
     }
 
     /**
@@ -355,10 +309,10 @@ public class MetricFactory
      * @throws IllegalArgumentException if a metric identifier is not recognized
      */
 
-    public MetricCollection<SingleValuedPairs, MultiVectorOutput, MultiVectorOutput>
+    public static MetricCollection<SingleValuedPairs, MultiVectorOutput, MultiVectorOutput>
             ofSingleValuedMultiVectorCollection( MetricConstants... metric ) throws MetricParameterException
     {
-        return ofSingleValuedMultiVectorCollection( ForkJoinPool.commonPool(), metric );
+        return MetricFactory.ofSingleValuedMultiVectorCollection( ForkJoinPool.commonPool(), metric );
     }
 
     /**
@@ -373,10 +327,10 @@ public class MetricFactory
      * @throws IllegalArgumentException if a metric identifier is not recognized
      */
 
-    public MetricCollection<DiscreteProbabilityPairs, DoubleScoreOutput, DoubleScoreOutput>
+    public static MetricCollection<DiscreteProbabilityPairs, DoubleScoreOutput, DoubleScoreOutput>
             ofDiscreteProbabilityScoreCollection( MetricConstants... metric ) throws MetricParameterException
     {
-        return ofDiscreteProbabilityScoreCollection( ForkJoinPool.commonPool(), metric );
+        return MetricFactory.ofDiscreteProbabilityScoreCollection( ForkJoinPool.commonPool(), metric );
     }
 
     /**
@@ -391,11 +345,11 @@ public class MetricFactory
      * @throws IllegalArgumentException if a metric identifier is not recognized
      */
 
-    public MetricCollection<DichotomousPairs, MatrixOutput, DoubleScoreOutput>
+    public static MetricCollection<DichotomousPairs, MatrixOutput, DoubleScoreOutput>
             ofDichotomousScoreCollection( MetricConstants... metric )
                     throws MetricParameterException
     {
-        return ofDichotomousScoreCollection( ForkJoinPool.commonPool(), metric );
+        return MetricFactory.ofDichotomousScoreCollection( ForkJoinPool.commonPool(), metric );
     }
 
     /**
@@ -410,10 +364,10 @@ public class MetricFactory
      * @throws IllegalArgumentException if a metric identifier is not recognized
      */
 
-    public MetricCollection<DiscreteProbabilityPairs, MultiVectorOutput, MultiVectorOutput>
+    public static MetricCollection<DiscreteProbabilityPairs, MultiVectorOutput, MultiVectorOutput>
             ofDiscreteProbabilityMultiVectorCollection( MetricConstants... metric ) throws MetricParameterException
     {
-        return ofDiscreteProbabilityMultiVectorCollection( ForkJoinPool.commonPool(), metric );
+        return MetricFactory.ofDiscreteProbabilityMultiVectorCollection( ForkJoinPool.commonPool(), metric );
     }
 
     /**
@@ -428,10 +382,10 @@ public class MetricFactory
      * @throws IllegalArgumentException if a metric identifier is not recognized
      */
 
-    public MetricCollection<DichotomousPairs, MatrixOutput, MatrixOutput>
+    public static MetricCollection<DichotomousPairs, MatrixOutput, MatrixOutput>
             ofDichotomousMatrixCollection( MetricConstants... metric ) throws MetricParameterException
     {
-        return ofDichotomousMatrixCollection( ForkJoinPool.commonPool(), metric );
+        return MetricFactory.ofDichotomousMatrixCollection( ForkJoinPool.commonPool(), metric );
     }
 
     /**
@@ -446,11 +400,11 @@ public class MetricFactory
      * @throws IllegalArgumentException if a metric identifier is not recognized 
      */
 
-    public MetricCollection<EnsemblePairs, DoubleScoreOutput, DoubleScoreOutput>
+    public static MetricCollection<EnsemblePairs, DoubleScoreOutput, DoubleScoreOutput>
             ofEnsembleScoreCollection( MetricConstants... metric )
                     throws MetricParameterException
     {
-        return ofEnsembleScoreCollection( ForkJoinPool.commonPool(), metric );
+        return MetricFactory.ofEnsembleScoreCollection( ForkJoinPool.commonPool(), metric );
     }
 
     /**
@@ -465,10 +419,10 @@ public class MetricFactory
      * @throws IllegalArgumentException if a metric identifier is not recognized
      */
 
-    public MetricCollection<EnsemblePairs, MultiVectorOutput, MultiVectorOutput>
+    public static MetricCollection<EnsemblePairs, MultiVectorOutput, MultiVectorOutput>
             ofEnsembleMultiVectorCollection( MetricConstants... metric ) throws MetricParameterException
     {
-        return ofEnsembleMultiVectorCollection( ForkJoinPool.commonPool(), metric );
+        return MetricFactory.ofEnsembleMultiVectorCollection( ForkJoinPool.commonPool(), metric );
     }
 
     /**
@@ -483,10 +437,10 @@ public class MetricFactory
      * @throws IllegalArgumentException if a metric identifier is not recognized
      */
 
-    public MetricCollection<EnsemblePairs, BoxPlotOutput, BoxPlotOutput>
+    public static MetricCollection<EnsemblePairs, BoxPlotOutput, BoxPlotOutput>
             ofEnsembleBoxPlotCollection( MetricConstants... metric ) throws MetricParameterException
     {
-        return ofEnsembleBoxPlotCollection( ForkJoinPool.commonPool(), metric );
+        return MetricFactory.ofEnsembleBoxPlotCollection( ForkJoinPool.commonPool(), metric );
     }
 
     /**
@@ -501,11 +455,12 @@ public class MetricFactory
      * @throws IllegalArgumentException if a metric identifier is not recognized
      */
 
-    public MetricCollection<TimeSeriesOfSingleValuedPairs, PairedOutput<Instant, Duration>, PairedOutput<Instant, Duration>>
+    public static
+            MetricCollection<TimeSeriesOfSingleValuedPairs, PairedOutput<Instant, Duration>, PairedOutput<Instant, Duration>>
             ofSingleValuedTimeSeriesCollection( MetricConstants... metric )
                     throws MetricParameterException
     {
-        return ofSingleValuedTimeSeriesCollection( ForkJoinPool.commonPool(), metric );
+        return MetricFactory.ofSingleValuedTimeSeriesCollection( ForkJoinPool.commonPool(), metric );
     }
 
     /**
@@ -519,7 +474,7 @@ public class MetricFactory
      * @throws IllegalArgumentException if a metric identifier is not recognized
      */
 
-    public MetricCollection<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput>
+    public static MetricCollection<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput>
             ofSingleValuedScoreCollection( ExecutorService executor,
                                            MetricConstants... metric )
                     throws MetricParameterException
@@ -532,11 +487,11 @@ public class MetricFactory
         {
             if ( MetricFactory.isCollectable( next ) )
             {
-                builder.addCollectable( this.ofSingleValuedScoreCollectable( next ) );
+                builder.addCollectable( MetricFactory.ofSingleValuedScoreCollectable( next ) );
             }
             else
             {
-                builder.addMetric( this.ofSingleValuedScore( next ) );
+                builder.addMetric( MetricFactory.ofSingleValuedScore( next ) );
             }
         }
 
@@ -555,7 +510,7 @@ public class MetricFactory
      * @throws IllegalArgumentException if a metric identifier is not recognized 
      */
 
-    public MetricCollection<SingleValuedPairs, MultiVectorOutput, MultiVectorOutput>
+    public static MetricCollection<SingleValuedPairs, MultiVectorOutput, MultiVectorOutput>
             ofSingleValuedMultiVectorCollection( ExecutorService executor,
                                                  MetricConstants... metric )
                     throws MetricParameterException
@@ -564,7 +519,7 @@ public class MetricFactory
                 MetricCollectionBuilder.of();
         for ( MetricConstants next : metric )
         {
-            builder.addMetric( this.ofSingleValuedMultiVector( next ) );
+            builder.addMetric( MetricFactory.ofSingleValuedMultiVector( next ) );
         }
         builder.setExecutorService( executor );
         return builder.build();
@@ -581,7 +536,7 @@ public class MetricFactory
      * @throws IllegalArgumentException if a metric identifier is not recognized
      */
 
-    public MetricCollection<DiscreteProbabilityPairs, DoubleScoreOutput, DoubleScoreOutput>
+    public static MetricCollection<DiscreteProbabilityPairs, DoubleScoreOutput, DoubleScoreOutput>
             ofDiscreteProbabilityScoreCollection( ExecutorService executor,
                                                   MetricConstants... metric )
                     throws MetricParameterException
@@ -590,7 +545,7 @@ public class MetricFactory
                 MetricCollectionBuilder.of();
         for ( MetricConstants next : metric )
         {
-            builder.addMetric( this.ofDiscreteProbabilityScore( next ) );
+            builder.addMetric( MetricFactory.ofDiscreteProbabilityScore( next ) );
         }
         builder.setExecutorService( executor );
         return builder.build();
@@ -607,7 +562,7 @@ public class MetricFactory
      * @throws IllegalArgumentException if a metric identifier is not recognized 
      */
 
-    public MetricCollection<DichotomousPairs, MatrixOutput, DoubleScoreOutput>
+    public static MetricCollection<DichotomousPairs, MatrixOutput, DoubleScoreOutput>
             ofDichotomousScoreCollection( ExecutorService executor,
                                           MetricConstants... metric )
                     throws MetricParameterException
@@ -617,7 +572,7 @@ public class MetricFactory
         for ( MetricConstants next : metric )
         {
             // All dichotomous scores are collectable
-            builder.addCollectable( this.ofDichotomousScore( next ) );
+            builder.addCollectable( MetricFactory.ofDichotomousScore( next ) );
         }
         builder.setExecutorService( executor );
         return builder.build();
@@ -634,7 +589,7 @@ public class MetricFactory
      * @throws IllegalArgumentException if a metric identifier is not recognized 
      */
 
-    public MetricCollection<DiscreteProbabilityPairs, MultiVectorOutput, MultiVectorOutput>
+    public static MetricCollection<DiscreteProbabilityPairs, MultiVectorOutput, MultiVectorOutput>
             ofDiscreteProbabilityMultiVectorCollection( ExecutorService executor,
                                                         MetricConstants... metric )
                     throws MetricParameterException
@@ -643,7 +598,7 @@ public class MetricFactory
                 MetricCollectionBuilder.of();
         for ( MetricConstants next : metric )
         {
-            builder.addMetric( this.ofDiscreteProbabilityMultiVector( next ) );
+            builder.addMetric( MetricFactory.ofDiscreteProbabilityMultiVector( next ) );
         }
         builder.setExecutorService( executor );
         return builder.build();
@@ -660,7 +615,7 @@ public class MetricFactory
      * @throws IllegalArgumentException if a metric identifier is not recognized 
      */
 
-    public MetricCollection<DichotomousPairs, MatrixOutput, MatrixOutput>
+    public static MetricCollection<DichotomousPairs, MatrixOutput, MatrixOutput>
             ofDichotomousMatrixCollection( ExecutorService executor,
                                            MetricConstants... metric )
                     throws MetricParameterException
@@ -669,7 +624,7 @@ public class MetricFactory
                 MetricCollectionBuilder.of();
         for ( MetricConstants next : metric )
         {
-            builder.addMetric( this.ofDichotomousMatrix( next ) );
+            builder.addMetric( MetricFactory.ofDichotomousMatrix( next ) );
         }
         builder.setExecutorService( executor );
         return builder.build();
@@ -686,7 +641,7 @@ public class MetricFactory
      * @throws IllegalArgumentException if a metric identifier is not recognized
      */
 
-    public MetricCollection<EnsemblePairs, DoubleScoreOutput, DoubleScoreOutput>
+    public static MetricCollection<EnsemblePairs, DoubleScoreOutput, DoubleScoreOutput>
             ofEnsembleScoreCollection( ExecutorService executor,
                                        MetricConstants... metric )
                     throws MetricParameterException
@@ -695,7 +650,7 @@ public class MetricFactory
                 MetricCollectionBuilder.of();
         for ( MetricConstants next : metric )
         {
-            builder.addMetric( this.ofEnsembleScore( next ) );
+            builder.addMetric( MetricFactory.ofEnsembleScore( next ) );
         }
         builder.setExecutorService( executor );
         return builder.build();
@@ -712,7 +667,7 @@ public class MetricFactory
      * @throws IllegalArgumentException if a metric identifier is not recognized
      */
 
-    public MetricCollection<EnsemblePairs, MultiVectorOutput, MultiVectorOutput>
+    public static MetricCollection<EnsemblePairs, MultiVectorOutput, MultiVectorOutput>
             ofEnsembleMultiVectorCollection( ExecutorService executor,
                                              MetricConstants... metric )
                     throws MetricParameterException
@@ -721,7 +676,7 @@ public class MetricFactory
                 MetricCollectionBuilder.of();
         for ( MetricConstants next : metric )
         {
-            builder.addMetric( this.ofEnsembleMultiVector( next ) );
+            builder.addMetric( MetricFactory.ofEnsembleMultiVector( next ) );
         }
         builder.setExecutorService( executor );
         return builder.build();
@@ -738,7 +693,7 @@ public class MetricFactory
      * @throws IllegalArgumentException if a metric identifier is not recognized
      */
 
-    public MetricCollection<EnsemblePairs, BoxPlotOutput, BoxPlotOutput>
+    public static MetricCollection<EnsemblePairs, BoxPlotOutput, BoxPlotOutput>
             ofEnsembleBoxPlotCollection( ExecutorService executor,
                                          MetricConstants... metric )
                     throws MetricParameterException
@@ -747,7 +702,7 @@ public class MetricFactory
                 MetricCollectionBuilder.of();
         for ( MetricConstants next : metric )
         {
-            builder.addMetric( this.ofEnsembleBoxPlot( next ) );
+            builder.addMetric( MetricFactory.ofEnsembleBoxPlot( next ) );
         }
         builder.setExecutorService( executor );
         return builder.build();
@@ -764,7 +719,8 @@ public class MetricFactory
      * @throws IllegalArgumentException if a metric identifier is not recognized
      */
 
-    public MetricCollection<TimeSeriesOfSingleValuedPairs, PairedOutput<Instant, Duration>, PairedOutput<Instant, Duration>>
+    public static
+            MetricCollection<TimeSeriesOfSingleValuedPairs, PairedOutput<Instant, Duration>, PairedOutput<Instant, Duration>>
             ofSingleValuedTimeSeriesCollection( ExecutorService executor,
                                                 MetricConstants... metric )
                     throws MetricParameterException
@@ -773,7 +729,7 @@ public class MetricFactory
                 MetricCollectionBuilder.of();
         for ( MetricConstants next : metric )
         {
-            builder.addMetric( this.ofSingleValuedTimeSeries( next ) );
+            builder.addMetric( MetricFactory.ofSingleValuedTimeSeries( next ) );
         }
         builder.setExecutorService( executor );
         return builder.build();
@@ -784,41 +740,39 @@ public class MetricFactory
      * 
      * @param metric the metric identifier
      * @return the metric
-     * @throws MetricParameterException if one or more parameter values is incorrect
      * @throws IllegalArgumentException if the metric identifier is not recognized
      */
 
-    public Metric<SingleValuedPairs, DoubleScoreOutput> ofSingleValuedScore( MetricConstants metric )
-            throws MetricParameterException
+    public static Metric<SingleValuedPairs, DoubleScoreOutput> ofSingleValuedScore( MetricConstants metric )
     {
         switch ( metric )
         {
             case BIAS_FRACTION:
-                return this.ofBiasFraction();
+                return BiasFraction.of();
             case KLING_GUPTA_EFFICIENCY:
-                return this.ofKlingGuptaEfficiency();
+                return KlingGuptaEfficiency.of();
             case MEAN_ABSOLUTE_ERROR:
-                return this.ofMeanAbsoluteError();
+                return MeanAbsoluteError.of();
             case MEAN_ERROR:
-                return this.ofMeanError();
+                return MeanError.of();
             case SAMPLE_SIZE:
-                return this.ofSampleSize();
+                return SampleSize.of();
             case INDEX_OF_AGREEMENT:
-                return this.ofIndexOfAgreement();
+                return IndexOfAgreement.of();
             case VOLUMETRIC_EFFICIENCY:
-                return this.ofVolumetricEfficiency();
+                return VolumetricEfficiency.of();
             case MEAN_SQUARE_ERROR_SKILL_SCORE:
-                return this.ofMeanSquareErrorSkillScore();
+                return MeanSquareErrorSkillScore.of();
             case COEFFICIENT_OF_DETERMINATION:
-                return this.ofCoefficientOfDetermination();
+                return CoefficientOfDetermination.of();
             case PEARSON_CORRELATION_COEFFICIENT:
-                return this.ofCorrelationPearsons();
+                return CorrelationPearsons.of();
             case MEAN_SQUARE_ERROR:
-                return this.ofMeanSquareError();
+                return MeanSquareError.of();
             case ROOT_MEAN_SQUARE_ERROR:
-                return this.ofRootMeanSquareError();
+                return RootMeanSquareError.of();
             case SUM_OF_SQUARE_ERROR:
-                return this.ofSumOfSquareError();
+                return SumOfSquareError.of();
             default:
                 throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
         }
@@ -829,26 +783,24 @@ public class MetricFactory
      * 
      * @param metric the metric identifier
      * @return the metric
-     * @throws MetricParameterException if one or more parameter values is incorrect
      * @throws IllegalArgumentException if the metric identifier is not recognized
      */
 
-    public Collectable<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput>
+    public static Collectable<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput>
             ofSingleValuedScoreCollectable( MetricConstants metric )
-                    throws MetricParameterException
     {
         switch ( metric )
         {
             case SUM_OF_SQUARE_ERROR:
-                return this.ofSumOfSquareError();
+                return SumOfSquareError.of();
             case COEFFICIENT_OF_DETERMINATION:
-                return this.ofCoefficientOfDetermination();
+                return CoefficientOfDetermination.of();
             case PEARSON_CORRELATION_COEFFICIENT:
-                return this.ofCorrelationPearsons();
+                return CorrelationPearsons.of();
             case MEAN_SQUARE_ERROR:
-                return this.ofMeanSquareError();
+                return MeanSquareError.of();
             case ROOT_MEAN_SQUARE_ERROR:
-                return this.ofRootMeanSquareError();
+                return RootMeanSquareError.of();
             default:
                 throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
         }
@@ -859,16 +811,14 @@ public class MetricFactory
      * 
      * @param metric the metric identifier
      * @return a metric
-     * @throws MetricParameterException if one or more parameter values is incorrect
      * @throws IllegalArgumentException if the metric identifier is not recognized
      */
 
-    public Metric<SingleValuedPairs, MultiVectorOutput> ofSingleValuedMultiVector( MetricConstants metric )
-            throws MetricParameterException
+    public static Metric<SingleValuedPairs, MultiVectorOutput> ofSingleValuedMultiVector( MetricConstants metric )
     {
         if ( MetricConstants.QUANTILE_QUANTILE_DIAGRAM.equals( metric ) )
         {
-            return ofQuantileQuantileDiagram();
+            return QuantileQuantileDiagram.of();
         }
         else
         {
@@ -881,22 +831,20 @@ public class MetricFactory
      * 
      * @param metric the metric identifier
      * @return a metric
-     * @throws MetricParameterException if one or more parameter values is incorrect
      * @throws IllegalArgumentException if the metric identifier is not recognized
      */
 
-    public Metric<DiscreteProbabilityPairs, DoubleScoreOutput>
+    public static Metric<DiscreteProbabilityPairs, DoubleScoreOutput>
             ofDiscreteProbabilityScore( MetricConstants metric )
-                    throws MetricParameterException
     {
         switch ( metric )
         {
             case BRIER_SCORE:
-                return this.ofBrierScore();
+                return BrierScore.of();
             case BRIER_SKILL_SCORE:
-                return this.ofBrierSkillScore();
+                return BrierSkillScore.of();
             case RELATIVE_OPERATING_CHARACTERISTIC_SCORE:
-                return this.ofRelativeOperatingCharacteristicScore();
+                return RelativeOperatingCharacteristicScore.of();
             default:
                 throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
         }
@@ -907,27 +855,26 @@ public class MetricFactory
      * 
      * @param metric the metric identifier
      * @return a metric
-     * @throws MetricParameterException if one or more parameter values is incorrect
      * @throws IllegalArgumentException if the metric identifier is not recognized
      */
 
-    public Collectable<DichotomousPairs, MatrixOutput, DoubleScoreOutput> ofDichotomousScore( MetricConstants metric )
-            throws MetricParameterException
+    public static Collectable<DichotomousPairs, MatrixOutput, DoubleScoreOutput>
+            ofDichotomousScore( MetricConstants metric )
     {
         switch ( metric )
         {
             case THREAT_SCORE:
-                return this.ofThreatScore();
+                return ThreatScore.of();
             case EQUITABLE_THREAT_SCORE:
-                return this.ofEquitableThreatScore();
+                return EquitableThreatScore.of();
             case PEIRCE_SKILL_SCORE:
-                return this.ofPeirceSkillScore();
+                return PeirceSkillScore.of();
             case PROBABILITY_OF_DETECTION:
-                return this.ofProbabilityOfDetection();
+                return ProbabilityOfDetection.of();
             case PROBABILITY_OF_FALSE_DETECTION:
-                return this.ofProbabilityOfFalseDetection();
+                return ProbabilityOfFalseDetection.of();
             case FREQUENCY_BIAS:
-                return this.ofFrequencyBias();
+                return FrequencyBias.of();
             default:
                 throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
         }
@@ -939,16 +886,14 @@ public class MetricFactory
      * 
      * @param metric the metric identifier
      * @return a metric
-     * @throws MetricParameterException if one or more parameter values is incorrect
      * @throws IllegalArgumentException if the metric identifier is not recognized
      */
 
-    public Metric<MulticategoryPairs, DoubleScoreOutput> ofMulticategoryScore( MetricConstants metric )
-            throws MetricParameterException
+    public static Metric<MulticategoryPairs, DoubleScoreOutput> ofMulticategoryScore( MetricConstants metric )
     {
         if ( MetricConstants.PEIRCE_SKILL_SCORE.equals( metric ) )
         {
-            return ofPeirceSkillScore();
+            return PeirceSkillScore.of();
         }
         else
         {
@@ -965,15 +910,15 @@ public class MetricFactory
      * @throws IllegalArgumentException if the metric identifier is not recognized
      */
 
-    public Metric<DiscreteProbabilityPairs, MultiVectorOutput>
+    public static Metric<DiscreteProbabilityPairs, MultiVectorOutput>
             ofDiscreteProbabilityMultiVector( MetricConstants metric ) throws MetricParameterException
     {
         switch ( metric )
         {
             case RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM:
-                return this.ofRelativeOperatingCharacteristic();
+                return RelativeOperatingCharacteristicDiagram.of();
             case RELIABILITY_DIAGRAM:
-                return this.ofReliabilityDiagram();
+                return ReliabilityDiagram.of();
             default:
                 throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
         }
@@ -984,16 +929,14 @@ public class MetricFactory
      * 
      * @param metric the metric identifier
      * @return a metric
-     * @throws MetricParameterException if one or more parameter values is incorrect
      * @throws IllegalArgumentException if the metric identifier is not recognized
      */
 
-    public Metric<DichotomousPairs, MatrixOutput> ofDichotomousMatrix( MetricConstants metric )
-            throws MetricParameterException
+    public static Metric<DichotomousPairs, MatrixOutput> ofDichotomousMatrix( MetricConstants metric )
     {
         if ( MetricConstants.CONTINGENCY_TABLE.equals( metric ) )
         {
-            return ofDichotomousContingencyTable();
+            return ContingencyTable.of();
         }
         else
         {
@@ -1006,21 +949,19 @@ public class MetricFactory
      * 
      * @param metric the metric identifier
      * @return a metric
-     * @throws MetricParameterException if one or more parameter values is incorrect
      * @throws IllegalArgumentException if the metric identifier is not recognized
      */
 
-    public Metric<EnsemblePairs, DoubleScoreOutput> ofEnsembleScore( MetricConstants metric )
-            throws MetricParameterException
+    public static Metric<EnsemblePairs, DoubleScoreOutput> ofEnsembleScore( MetricConstants metric )
     {
         switch ( metric )
         {
             case CONTINUOUS_RANKED_PROBABILITY_SCORE:
-                return this.ofContinuousRankedProbabilityScore();
+                return ContinuousRankedProbabilityScore.of();
             case CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE:
-                return this.ofContinuousRankedProbabilitySkillScore();
+                return ContinuousRankedProbabilitySkillScore.of();
             case SAMPLE_SIZE:
-                return this.ofSampleSize();
+                return SampleSize.of();
             default:
                 throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
         }
@@ -1031,19 +972,17 @@ public class MetricFactory
      * 
      * @param metric the metric identifier
      * @return a metric
-     * @throws MetricParameterException if one or more parameter values is incorrect
      * @throws IllegalArgumentException if the metric identifier is not recognized
      */
 
-    public Metric<EnsemblePairs, BoxPlotOutput> ofEnsembleBoxPlot( MetricConstants metric )
-            throws MetricParameterException
+    public static Metric<EnsemblePairs, BoxPlotOutput> ofEnsembleBoxPlot( MetricConstants metric )
     {
         switch ( metric )
         {
             case BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE:
-                return this.ofBoxPlotErrorByObserved();
+                return BoxPlotErrorByObserved.of();
             case BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE:
-                return this.ofBoxPlotErrorByForecast();
+                return BoxPlotErrorByForecast.of();
             default:
                 throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
         }
@@ -1054,16 +993,14 @@ public class MetricFactory
      * 
      * @param metric the metric identifier
      * @return a metric
-     * @throws MetricParameterException if one or more parameter values is incorrect
      * @throws IllegalArgumentException if the metric identifier is not recognized
      */
 
-    public Metric<EnsemblePairs, MultiVectorOutput> ofEnsembleMultiVector( MetricConstants metric )
-            throws MetricParameterException
+    public static Metric<EnsemblePairs, MultiVectorOutput> ofEnsembleMultiVector( MetricConstants metric )
     {
         if ( MetricConstants.RANK_HISTOGRAM.equals( metric ) )
         {
-            return ofRankHistogram();
+            return RankHistogram.of();
         }
         else
         {
@@ -1076,442 +1013,21 @@ public class MetricFactory
      * 
      * @param metric the metric identifier
      * @return a metric
-     * @throws MetricParameterException if one or more parameter values is incorrect
      * @throws IllegalArgumentException if the metric identifier is not recognized
      */
 
-    public Metric<TimeSeriesOfSingleValuedPairs, PairedOutput<Instant, Duration>>
+    public static Metric<TimeSeriesOfSingleValuedPairs, PairedOutput<Instant, Duration>>
             ofSingleValuedTimeSeries( MetricConstants metric )
-                    throws MetricParameterException
     {
         switch ( metric )
         {
             case TIME_TO_PEAK_ERROR:
-                return this.ofTimeToPeakError();
+                return TimeToPeakError.of();
             case TIME_TO_PEAK_RELATIVE_ERROR:
-                return this.ofTimeToPeakRelativeError();
+                return TimeToPeakRelativeError.of();
             default:
                 throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
         }
-    }
-
-    /**
-     * Return a default {@link BiasFraction} function.
-     * 
-     * @return a default {@link BiasFraction} function
-     * @throws MetricParameterException if one or more parameter values is incorrect 
-     */
-
-    public BiasFraction ofBiasFraction() throws MetricParameterException
-    {
-        return (BiasFraction) new BiasFractionBuilder().build();
-    }
-
-    /**
-     * Return a default {@link BrierScore} function.
-     * 
-     * @return a default {@link BrierScore} function
-     * @throws MetricParameterException if one or more parameter values is incorrect 
-     */
-
-    public BrierScore ofBrierScore() throws MetricParameterException
-    {
-        return (BrierScore) new BrierScore.BrierScoreBuilder().build();
-    }
-
-    /**
-     * Return a default {@link BrierSkillScore} function.
-     * 
-     * @return a default {@link BrierSkillScore} function
-     * @throws MetricParameterException if one or more parameter values is incorrect 
-     */
-
-    public BrierSkillScore ofBrierSkillScore() throws MetricParameterException
-    {
-        return (BrierSkillScore) new BrierSkillScore.BrierSkillScoreBuilder().build();
-    }
-
-    /**
-     * Return a default {@link CoefficientOfDetermination} function.
-     * 
-     * @return a default {@link CoefficientOfDetermination} function
-     * @throws MetricParameterException if one or more parameter values is incorrect
-     */
-
-    public CoefficientOfDetermination ofCoefficientOfDetermination() throws MetricParameterException
-    {
-        return (CoefficientOfDetermination) new CoefficientOfDeterminationBuilder().build();
-    }
-
-    /**
-     * Return a default {@link ContingencyTable} function.
-     * 
-     * @return a default {@link ContingencyTable} function
-     * @throws MetricParameterException if one or more parameter values is incorrect
-     */
-
-    public ContingencyTable<DichotomousPairs> ofDichotomousContingencyTable() throws MetricParameterException
-    {
-        return new ContingencyTable.ContingencyTableBuilder<DichotomousPairs>().build();
-    }
-
-    /**
-     * Return a default {@link CorrelationPearsons} function.
-     * 
-     * @return a default {@link CorrelationPearsons} function
-     * @throws MetricParameterException if one or more parameter values is incorrect
-     */
-
-    public CorrelationPearsons ofCorrelationPearsons() throws MetricParameterException
-    {
-        return (CorrelationPearsons) new CorrelationPearsonsBuilder().build();
-    }
-
-    /**
-     * Return a default {@link ThreatScore} function.
-     * 
-     * @return a default {@link ThreatScore} function
-     * @throws MetricParameterException if one or more parameter values is incorrect 
-     */
-
-    public ThreatScore ofThreatScore() throws MetricParameterException
-    {
-        return (ThreatScore) new ThreatScore.ThreatScoreBuilder().build();
-    }
-
-    /**
-     * Return a default {@link EquitableThreatScore} function.
-     * 
-     * @return a default {@link EquitableThreatScore} function
-     * @throws MetricParameterException if one or more parameter values is incorrect 
-     */
-
-    public EquitableThreatScore ofEquitableThreatScore() throws MetricParameterException
-    {
-        return (EquitableThreatScore) new EquitableThreatScore.EquitableThreatScoreBuilder().build();
-    }
-
-    /**
-     * Return a default {@link MeanAbsoluteError} function.
-     * 
-     * @return a default {@link MeanAbsoluteError} function
-     * @throws MetricParameterException if one or more parameter values is incorrect 
-     */
-
-    public MeanAbsoluteError ofMeanAbsoluteError() throws MetricParameterException
-    {
-        return (MeanAbsoluteError) new MeanAbsoluteErrorBuilder().build();
-    }
-
-    /**
-     * Return a default {@link MeanError} function.
-     * 
-     * @return a default {@link MeanError} function
-     * @throws MetricParameterException if one or more parameter values is incorrect
-     */
-
-    public MeanError ofMeanError() throws MetricParameterException
-    {
-        return (MeanError) new MeanErrorBuilder().build();
-    }
-
-    /**
-     * Return a default {@link SumOfSquareError} function.
-     * 
-     * @return a default {@link SumOfSquareError} function
-     * @throws MetricParameterException if one or more parameter values is incorrect 
-     */
-
-    public SumOfSquareError<SingleValuedPairs> ofSumOfSquareError() throws MetricParameterException
-    {
-        return (SumOfSquareError<SingleValuedPairs>) new SumOfSquareErrorBuilder<>().build();
-    }
-
-    /**
-     * Return a default {@link MeanSquareError} function.
-     * 
-     * @return a default {@link MeanSquareError} function
-     * @throws MetricParameterException if one or more parameter values is incorrect 
-     */
-
-    public MeanSquareError<SingleValuedPairs> ofMeanSquareError() throws MetricParameterException
-    {
-        return (MeanSquareError<SingleValuedPairs>) new MeanSquareErrorBuilder<>().build();
-    }
-
-    /**
-     * Return a default {@link MeanSquareErrorSkillScore} function.
-     * 
-     * @return a default {@link MeanSquareErrorSkillScore} function
-     * @throws MetricParameterException if one or more parameter values is incorrect
-     */
-
-    public MeanSquareErrorSkillScore<SingleValuedPairs> ofMeanSquareErrorSkillScore() throws MetricParameterException
-    {
-        return (MeanSquareErrorSkillScore<SingleValuedPairs>) new MeanSquareErrorSkillScoreBuilder<>().build();
-    }
-
-    /**
-     * Return a default {@link PeirceSkillScore} function.
-     * 
-     * @param <S> the type of pairs
-     * @return a default {@link PeirceSkillScore} function
-     * @throws MetricParameterException if one or more parameter values is incorrect
-     */
-
-    public <S extends MulticategoryPairs> PeirceSkillScore<S> ofPeirceSkillScore() throws MetricParameterException
-    {
-        return (PeirceSkillScore<S>) new PeirceSkillScore.PeirceSkillScoreBuilder<S>().build();
-    }
-
-    /**
-     * Return a default {@link ProbabilityOfDetection} function.
-     * 
-     * @return a default {@link ProbabilityOfDetection} function
-     * @throws MetricParameterException if one or more parameter values is incorrect
-     */
-
-    public ProbabilityOfDetection ofProbabilityOfDetection() throws MetricParameterException
-    {
-        return (ProbabilityOfDetection) new ProbabilityOfDetection.ProbabilityOfDetectionBuilder().build();
-    }
-
-    /**
-     * Return a default {@link ProbabilityOfFalseDetection} function.
-     * 
-     * @return a default {@link ProbabilityOfFalseDetection} function
-     * @throws MetricParameterException if one or more parameter values is incorrect
-     */
-
-    public ProbabilityOfFalseDetection ofProbabilityOfFalseDetection() throws MetricParameterException
-    {
-        return (ProbabilityOfFalseDetection) new ProbabilityOfFalseDetection.ProbabilityOfFalseDetectionBuilder().build();
-    }
-
-    /**
-     * Return a default {@link QuantileQuantileDiagram} function.
-     * 
-     * @return a default {@link QuantileQuantileDiagram} function
-     * @throws MetricParameterException if one or more parameter values is incorrect 
-     */
-
-    public QuantileQuantileDiagram ofQuantileQuantileDiagram() throws MetricParameterException
-    {
-        return (QuantileQuantileDiagram) new QuantileQuantileDiagram.QuantileQuantileDiagramBuilder().build();
-    }
-
-    /**
-     * Return a default {@link RootMeanSquareError} function.
-     * 
-     * @return a default {@link RootMeanSquareError} function
-     * @throws MetricParameterException if one or more parameter values is incorrect 
-     */
-
-    public RootMeanSquareError ofRootMeanSquareError() throws MetricParameterException
-    {
-        return (RootMeanSquareError) new RootMeanSquareErrorBuilder().build();
-    }
-
-    /**
-     * Return a default {@link ReliabilityDiagram} function.
-     * 
-     * @return a default {@link ReliabilityDiagram} function
-     * @throws MetricParameterException if one or more parameter values is incorrect
-     */
-
-    public ReliabilityDiagram ofReliabilityDiagram() throws MetricParameterException
-    {
-        return (ReliabilityDiagram) new ReliabilityDiagramBuilder().build();
-    }
-
-    /**
-     * Return a default {@link RelativeOperatingCharacteristicDiagram} function.
-     * 
-     * @return a default {@link RelativeOperatingCharacteristicDiagram} function
-     * @throws MetricParameterException if one or more parameter values is incorrect
-     */
-
-    public RelativeOperatingCharacteristicDiagram ofRelativeOperatingCharacteristic() throws MetricParameterException
-    {
-        return (RelativeOperatingCharacteristicDiagram) new RelativeOperatingCharacteristicBuilder().build();
-    }
-
-    /**
-     * Return a default {@link RelativeOperatingCharacteristicScore} function.
-     * 
-     * @return a default {@link RelativeOperatingCharacteristicScore} function
-     * @throws MetricParameterException if one or more parameter values is incorrect
-     */
-
-    public RelativeOperatingCharacteristicScore ofRelativeOperatingCharacteristicScore() throws MetricParameterException
-    {
-        return (RelativeOperatingCharacteristicScore) new RelativeOperatingCharacteristicScoreBuilder().build();
-    }
-
-    /**
-     * Return a default {@link ContinuousRankedProbabilityScore} function.
-     * 
-     * @return a default {@link ContinuousRankedProbabilityScore} function
-     * @throws MetricParameterException if one or more parameter values is incorrect
-     */
-
-    public ContinuousRankedProbabilityScore ofContinuousRankedProbabilityScore() throws MetricParameterException
-    {
-        return (ContinuousRankedProbabilityScore) new CRPSBuilder().build();
-    }
-
-    /**
-     * Return a default {@link ContinuousRankedProbabilitySkillScore} function.
-     * 
-     * @return a default {@link ContinuousRankedProbabilitySkillScore} function
-     * @throws MetricParameterException if one or more parameter values is incorrect
-     */
-
-    public ContinuousRankedProbabilitySkillScore ofContinuousRankedProbabilitySkillScore()
-            throws MetricParameterException
-    {
-        return (ContinuousRankedProbabilitySkillScore) new CRPSSBuilder().build();
-    }
-
-    /**
-     * Return a default {@link IndexOfAgreement} function.
-     * 
-     * @return a default {@link IndexOfAgreement} function
-     * @throws MetricParameterException if one or more parameter values is incorrect
-     */
-
-    public IndexOfAgreement ofIndexOfAgreement() throws MetricParameterException
-    {
-        return (IndexOfAgreement) new IndexOfAgreementBuilder().build();
-    }
-
-    /**
-     * Return a default {@link KlingGuptaEfficiency} function.
-     * 
-     * @return a default {@link KlingGuptaEfficiency} function
-     * @throws MetricParameterException if one or more parameter values is incorrect
-     */
-
-    public KlingGuptaEfficiency ofKlingGuptaEfficiency() throws MetricParameterException
-    {
-        return (KlingGuptaEfficiency) new KlingGuptaEfficiencyBuilder().build();
-    }
-
-    /**
-     * Return a default {@link SampleSize} function.
-     * 
-     * @param <T> the type of {@link MetricInput}
-     * @return a default {@link SampleSize} function
-     * @throws MetricParameterException if one or more parameter values is incorrect
-     */
-
-    public <T extends MetricInput<?>> SampleSize<T> ofSampleSize() throws MetricParameterException
-    {
-        return (SampleSize<T>) new SampleSizeBuilder<T>().build();
-    }
-
-    /**
-     * Return a default {@link RankHistogram} function.
-     * 
-     * @return a default {@link RankHistogram} function
-     * @throws MetricParameterException if one or more parameter values is incorrect
-     */
-
-    public RankHistogram ofRankHistogram() throws MetricParameterException
-    {
-        return (RankHistogram) new RankHistogramBuilder().build();
-    }
-
-    /**
-     * Return a default {@link FrequencyBias} function.
-     * 
-     * @return a default {@link FrequencyBias} function
-     * @throws MetricParameterException if one or more parameter values is incorrect
-     */
-
-    public FrequencyBias ofFrequencyBias() throws MetricParameterException
-    {
-        return (FrequencyBias) new FrequencyBias.FrequencyBiasBuilder().build();
-    }
-
-    /**
-     * Return a default {@link BoxPlotErrorByObserved} function.
-     * 
-     * @return a default {@link BoxPlotErrorByObserved} function
-     * @throws MetricParameterException if one or more parameter values is incorrect
-     */
-
-    public BoxPlotErrorByObserved ofBoxPlotErrorByObserved() throws MetricParameterException
-    {
-        return (BoxPlotErrorByObserved) new BoxPlotErrorByObservedBuilder().build();
-    }
-
-    /**
-     * Return a default {@link BoxPlotErrorByForecast} function.
-     * 
-     * @return a default {@link BoxPlotErrorByForecast} function
-     * @throws MetricParameterException if one or more parameter values is incorrect
-     */
-
-    public BoxPlotErrorByForecast ofBoxPlotErrorByForecast() throws MetricParameterException
-    {
-        return (BoxPlotErrorByForecast) new BoxPlotErrorByForecastBuilder().build();
-    }
-
-    /**
-     * Return a default {@link VolumetricEfficiency} function.
-     * 
-     * @return a default {@link VolumetricEfficiency} function
-     * @throws MetricParameterException if one or more parameter values is incorrect
-     */
-
-    public VolumetricEfficiency ofVolumetricEfficiency() throws MetricParameterException
-    {
-        return (VolumetricEfficiency) new VolumetricEfficiencyBuilder().build();
-    }
-
-    /**
-     * Return a default {@link TimeToPeakError} function.
-     * 
-     * @return a default {@link TimeToPeakError} function
-     * @throws MetricParameterException if one or more parameter values is incorrect
-     */
-
-    public TimeToPeakError ofTimeToPeakError() throws MetricParameterException
-    {
-        return (TimeToPeakError) new TimeToPeakErrorBuilder().build();
-    }
-
-    /**
-     * Return a default {@link TimeToPeakRelativeError} function.
-     * 
-     * @return a default {@link TimeToPeakRelativeError} function
-     * @throws MetricParameterException if one or more parameter values is incorrect
-     */
-
-    public TimeToPeakRelativeError ofTimeToPeakRelativeError() throws MetricParameterException
-    {
-        return (TimeToPeakRelativeError) new TimeToPeakRelativeErrorBuilder().build();
-    }
-
-    /**
-     * Return a {@link TimingErrorDurationStatistics} function for a prescribed set of {@link MetricConstants}.
-     * For each of the {@link MetricConstants}, the {@link MetricConstants#isInGroup(ScoreOutputGroup)} should return 
-     * <code>true</code> when supplied with {@link ScoreOutputGroup#UNIVARIATE_STATISTIC}.
-     * 
-     * @param identifier the named metric for which summary statistics are required
-     * @param statistics the identifiers for summary statistics
-     * @return a default {@link TimingErrorDurationStatistics} function
-     * @throws MetricParameterException if one or more parameter values is incorrect
-     */
-
-    public TimingErrorDurationStatistics ofTimingErrorDurationStatistics( MetricConstants identifier,
-                                                                          Set<MetricConstants> statistics )
-            throws MetricParameterException
-    {
-        return new TimingErrorDurationStatisticsBuilder().setStatistics( statistics )
-                                                         .setID( identifier )
-                                                         .build();
     }
 
     /**

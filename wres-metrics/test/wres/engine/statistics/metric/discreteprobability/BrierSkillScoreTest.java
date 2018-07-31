@@ -15,12 +15,14 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
-import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.metadata.DatasetIdentifier;
+import wres.datamodel.metadata.MeasurementUnit;
+import wres.datamodel.metadata.Location;
+import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
-import wres.engine.statistics.metric.discreteprobability.BrierSkillScore.BrierSkillScoreBuilder;
 
 /**
  * Tests the {@link BrierSkillScore}.
@@ -42,9 +44,7 @@ public final class BrierSkillScoreTest
     @Before
     public void setupBeforeEachTest() throws MetricParameterException
     {
-        BrierSkillScoreBuilder b = new BrierSkillScore.BrierSkillScoreBuilder();
-        b.setDecompositionID( ScoreOutputGroup.NONE );
-        this.brierSkillScore = b.build();
+        this.brierSkillScore = BrierSkillScore.of();
     }
 
     /**
@@ -60,19 +60,16 @@ public final class BrierSkillScoreTest
 
         // Metadata for the output
         MetricOutputMetadata m1 =
-                MetadataFactory.getOutputMetadata( input.getRawData().size(),
-                                                   MetadataFactory.getDimension(),
-                                                   MetadataFactory.getDimension(),
+                MetricOutputMetadata.of( input.getRawData().size(),
+                                                   MeasurementUnit.of(),
+                                                   MeasurementUnit.of(),
                                                    MetricConstants.BRIER_SKILL_SCORE,
                                                    MetricConstants.MAIN,
-                                                   MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation( "DRRC2" ),
-                                                                                         "SQIN",
-                                                                                         "HEFS",
-                                                                                         "ESP" ) );
+                                                   DatasetIdentifier.of( Location.of( "DRRC2" ), "SQIN", "HEFS", "ESP" ) );
 
         // Check the results       
         final DoubleScoreOutput actual = brierSkillScore.apply( input );
-        final DoubleScoreOutput expected = DataFactory.ofDoubleScoreOutput( 0.11363636363636376, m1 );
+        final DoubleScoreOutput expected = DoubleScoreOutput.of( 0.11363636363636376, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -93,18 +90,18 @@ public final class BrierSkillScoreTest
 
         // Metadata for the output
         MetricOutputMetadata m1 =
-                MetadataFactory.getOutputMetadata( input.getRawData().size(),
-                                                   MetadataFactory.getDimension(),
-                                                   MetadataFactory.getDimension(),
+                MetricOutputMetadata.of( input.getRawData().size(),
+                                                   MeasurementUnit.of(),
+                                                   MeasurementUnit.of(),
                                                    MetricConstants.BRIER_SKILL_SCORE,
                                                    MetricConstants.MAIN,
-                                                   MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation( "DRRC2" ),
+                                                   DatasetIdentifier.of( Location.of( "DRRC2" ),
                                                                                          "SQIN",
                                                                                          "HEFS" ) );
 
         // Check the results       
         final DoubleScoreOutput actual = brierSkillScore.apply( input );
-        final DoubleScoreOutput expected = DataFactory.ofDoubleScoreOutput( -0.040000000000000036, m1 );
+        final DoubleScoreOutput expected = DoubleScoreOutput.of( -0.040000000000000036, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -122,7 +119,7 @@ public final class BrierSkillScoreTest
     {
         // Generate empty data
         DiscreteProbabilityPairs input =
-                DataFactory.ofDiscreteProbabilityPairs( Arrays.asList(), MetadataFactory.getMetadata() );
+                DiscreteProbabilityPairs.of( Arrays.asList(), Metadata.of() );
 
         DoubleScoreOutput actual = brierSkillScore.apply( input );
 

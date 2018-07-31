@@ -40,7 +40,6 @@ public class MetricProcessorForProject
     /**
      * Build the processor collection.
      * 
-     * @param metricFactory an instance of a metric factory
      * @param projectConfig the project configuration
      * @param externalThresholds an optional set of external thresholds, may be null
      * @param thresholdExecutor an executor service for processing thresholds
@@ -49,8 +48,7 @@ public class MetricProcessorForProject
      * @throws MetricConfigException if the metric configuration is incorrect
      */
 
-    public MetricProcessorForProject( final MetricFactory metricFactory,
-                                      final ProjectConfig projectConfig,
+    public MetricProcessorForProject( final ProjectConfig projectConfig,
                                       final ThresholdsByMetric externalThresholds,
                                       final ExecutorService thresholdExecutor,
                                       final ExecutorService metricExecutor )
@@ -62,7 +60,7 @@ public class MetricProcessorForProject
 
         if ( type.equals( DatasourceType.SINGLE_VALUED_FORECASTS ) || type.equals( DatasourceType.SIMULATIONS ) )
         {
-            singleValuedProcessor = metricFactory.ofMetricProcessorByTimeSingleValuedPairs( projectConfig,
+            singleValuedProcessor = MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( projectConfig,
                                                                                             externalThresholds,
                                                                                             thresholdExecutor,
                                                                                             metricExecutor,
@@ -71,7 +69,7 @@ public class MetricProcessorForProject
         }
         else
         {
-            ensembleProcessor = metricFactory.ofMetricProcessorByTimeEnsemblePairs( projectConfig,
+            ensembleProcessor = MetricFactory.ofMetricProcessorByTimeEnsemblePairs( projectConfig,
                                                                                     externalThresholds,
                                                                                     thresholdExecutor,
                                                                                     metricExecutor,

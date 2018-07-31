@@ -7,7 +7,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.engine.statistics.metric.singlevalued.QuantileQuantileDiagram;
-import wres.engine.statistics.metric.singlevalued.QuantileQuantileDiagram.QuantileQuantileDiagramBuilder;
 
 /**
  * Tests the {@link Diagram}.
@@ -40,8 +39,7 @@ public final class DiagramTest
     @Test
     public void testToString() throws MetricParameterException
     {
-        QuantileQuantileDiagramBuilder b = new QuantileQuantileDiagramBuilder();
-        QuantileQuantileDiagram qqd = b.build();
+        QuantileQuantileDiagram qqd = QuantileQuantileDiagram.of();
 
         assertTrue( "QUANTILE QUANTILE DIAGRAM".equals( qqd.toString() ) );
     }     

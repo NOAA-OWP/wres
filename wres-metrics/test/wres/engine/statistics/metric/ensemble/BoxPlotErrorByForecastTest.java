@@ -16,9 +16,13 @@ import org.junit.rules.ExpectedException;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
+import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.EnsemblePair;
+import wres.datamodel.metadata.DatasetIdentifier;
+import wres.datamodel.metadata.MeasurementUnit;
+import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
@@ -26,7 +30,6 @@ import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
 import wres.engine.statistics.metric.MetricParameterException;
-import wres.engine.statistics.metric.ensemble.BoxPlotErrorByForecast.BoxPlotErrorByForecastBuilder;
 
 /**
  * Tests the {@link BoxPlotErrorByForecast}.
@@ -48,10 +51,7 @@ public final class BoxPlotErrorByForecastTest
     @Before
     public void setupBeforeEachTest() throws MetricParameterException
     {
-        BoxPlotErrorByForecastBuilder b = new BoxPlotErrorByForecastBuilder();
-        b.setDomainDimension( MetricDimension.ENSEMBLE_MEAN );
-        b.setProbabilities( DataFactory.vectorOf( new double[] { 0.0, 0.25, 0.5, 0.75, 1.0 } ) );
-        this.bpe = (BoxPlotErrorByForecast) b.build();
+        this.bpe = BoxPlotErrorByForecast.of();
     }
 
     /**
@@ -63,39 +63,36 @@ public final class BoxPlotErrorByForecastTest
     public void testApplyWithEnsembleMean()
     {
         List<EnsemblePair> values = new ArrayList<>();
-        values.add( DataFactory.pairOf( 0.0, new double[] { 0.0, 20.0, 30.0, 50.0, 100.0 } ) );
+        values.add( EnsemblePair.of( 0.0, new double[] { 0.0, 20.0, 30.0, 50.0, 100.0 } ) );
 
         TimeWindow window = TimeWindow.of( Instant.MIN,
                                            Instant.MAX,
                                            ReferenceTime.VALID_TIME,
                                            Duration.ofHours( 24 ) );
-        final Metadata meta = MetadataFactory.getMetadata( MetadataFactory.getDimension( "MM/DAY" ),
-                                                           MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation( "A" ),
+        final Metadata meta = Metadata.of( MeasurementUnit.of( "MM/DAY" ),
+                                                           DatasetIdentifier.of( Location.of( "A" ),
                                                                                                  "MAP" ),
                                                            window );
-        EnsemblePairs input = DataFactory.ofEnsemblePairs( values, meta );
+        EnsemblePairs input = EnsemblePairs.of( values, meta );
+        final TimeWindow timeWindow = window;
 
-        final MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( input.getRawData().size(),
-                                                                           MetadataFactory.getDimension( "MM/DAY" ),
-                                                                           MetadataFactory.getDimension( "MM/DAY" ),
-                                                                           MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE,
-                                                                           MetricConstants.MAIN,
-                                                                           MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation( "A" ),
-                                                                                                                 "MAP" ),
-                                                                           window );
+        final MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getRawData().size(),
+        MeasurementUnit.of( "MM/DAY" ),
+        MeasurementUnit.of( "MM/DAY" ),
+        MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE,
+        MetricConstants.MAIN,
+        DatasetIdentifier.of( Location.of( "A" ),
+                                                                                                                         "MAP" ),
+        timeWindow );
 
         //Compute normally
         final BoxPlotOutput actual = bpe.apply( input );
         final EnsemblePair expectedBox =
-                DataFactory.pairOf( 40.0, new double[] { 0.0, 10, 30.0, 75.0, 100.0 } );
+                EnsemblePair.of( 40.0, new double[] { 0.0, 10, 30.0, 75.0, 100.0 } );
         List<EnsemblePair> expectedBoxes = new ArrayList<>();
         expectedBoxes.add( expectedBox );
-        BoxPlotOutput expected = DataFactory.ofBoxPlotOutput( expectedBoxes,
-                                                              DataFactory.vectorOf( new double[] { 0.0, 0.25, 0.5, 0.75,
-                                                                                                   1.0 } ),
-                                                              m1,
-                                                              MetricDimension.ENSEMBLE_MEAN,
-                                                              MetricDimension.FORECAST_ERROR );
+        BoxPlotOutput expected = BoxPlotOutput.of( expectedBoxes, VectorOfDoubles.of( new double[] { 0.0, 0.25, 0.5, 0.75,
+         1.0 } ), m1, MetricDimension.ENSEMBLE_MEAN, MetricDimension.FORECAST_ERROR );
         //Check the results
         assertTrue( "The actual output for the box plot of forecast errors by observed value does not match the "
                     + "expected output.",
@@ -112,45 +109,39 @@ public final class BoxPlotErrorByForecastTest
     public void testApplyWithEnsembleMedian() throws MetricParameterException
     {
         List<EnsemblePair> values = new ArrayList<>();
-        values.add( DataFactory.pairOf( 0.0, new double[] { 0.0, 20.0, 30.0, 50.0, 100.0 } ) );
+        values.add( EnsemblePair.of( 0.0, new double[] { 0.0, 20.0, 30.0, 50.0, 100.0 } ) );
 
         TimeWindow window = TimeWindow.of( Instant.MIN,
                                            Instant.MAX,
                                            ReferenceTime.VALID_TIME,
                                            Duration.ofHours( 24 ) );
-        final Metadata meta = MetadataFactory.getMetadata( MetadataFactory.getDimension( "MM/DAY" ),
-                                                           MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation( "A" ),
+        final Metadata meta = Metadata.of( MeasurementUnit.of( "MM/DAY" ),
+                                                           DatasetIdentifier.of( Location.of( "A" ),
                                                                                                  "MAP" ),
                                                            window );
-        EnsemblePairs input = DataFactory.ofEnsemblePairs( values, meta );
+        EnsemblePairs input = EnsemblePairs.of( values, meta );
+        final TimeWindow timeWindow = window;
 
-        final MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( input.getRawData().size(),
-                                                                           MetadataFactory.getDimension( "MM/DAY" ),
-                                                                           MetadataFactory.getDimension( "MM/DAY" ),
-                                                                           MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE,
-                                                                           MetricConstants.MAIN,
-                                                                           MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation( "A" ),
-                                                                                                                 "MAP" ),
-                                                                           window );
+        final MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getRawData().size(),
+        MeasurementUnit.of( "MM/DAY" ),
+        MeasurementUnit.of( "MM/DAY" ),
+        MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE,
+        MetricConstants.MAIN,
+        DatasetIdentifier.of( Location.of( "A" ),
+                                                                                                                         "MAP" ),
+        timeWindow );
 
         //Build the metric
-        final BoxPlotErrorByForecastBuilder b = new BoxPlotErrorByForecast.BoxPlotErrorByForecastBuilder();
-        b.setDomainDimension( MetricDimension.ENSEMBLE_MEDIAN );
-        b.setProbabilities( DataFactory.vectorOf( new double[] { 0.0, 0.25, 0.5, 0.75, 1.0 } ) );
-        BoxPlotErrorByForecast bpe = (BoxPlotErrorByForecast) b.build();
+        BoxPlotErrorByForecast bpe = BoxPlotErrorByForecast.of( MetricDimension.ENSEMBLE_MEDIAN,
+                                                                VectorOfDoubles.of( 0.0, 0.25, 0.5, 0.75, 1.0 ) );
 
         //Compute normally
         final BoxPlotOutput actual = bpe.apply( input );
         final EnsemblePair expectedBox =
-                DataFactory.pairOf( 30.0, new double[] { 0.0, 10, 30.0, 75.0, 100.0 } );
+                EnsemblePair.of( 30.0, new double[] { 0.0, 10, 30.0, 75.0, 100.0 } );
         List<EnsemblePair> expectedBoxes = new ArrayList<>();
         expectedBoxes.add( expectedBox );
-        BoxPlotOutput expected = DataFactory.ofBoxPlotOutput( expectedBoxes,
-                                                              DataFactory.vectorOf( new double[] { 0.0, 0.25, 0.5, 0.75,
-                                                                                                   1.0 } ),
-                                                              m1,
-                                                              MetricDimension.ENSEMBLE_MEDIAN,
-                                                              MetricDimension.FORECAST_ERROR );
+        BoxPlotOutput expected = BoxPlotOutput.of( expectedBoxes, VectorOfDoubles.of( 0.0, 0.25, 0.5, 0.75, 1.0 ), m1, MetricDimension.ENSEMBLE_MEDIAN, MetricDimension.FORECAST_ERROR );
         //Check the results
         assertTrue( "The actual output for the box plot of forecast errors by observed value does not match the "
                     + "expected output.",
@@ -166,7 +157,7 @@ public final class BoxPlotErrorByForecastTest
     {
         // Generate empty data
         EnsemblePairs input =
-                DataFactory.ofEnsemblePairs( Arrays.asList(), MetadataFactory.getMetadata() );
+                EnsemblePairs.of( Arrays.asList(), Metadata.of() );
 
         BoxPlotOutput actual = bpe.apply( input );
 
@@ -225,11 +216,7 @@ public final class BoxPlotErrorByForecastTest
         exception.expectMessage( "Cannot build the box plot of forecast errors by forecast value without a dimension "
                                  + "for the domain axis" );
 
-        BoxPlotErrorByForecastBuilder b = new BoxPlotErrorByForecast.BoxPlotErrorByForecastBuilder();
-
-        //Test for construction with a null domain dimension
-        b.setDomainDimension( null );
-        b.build();
+        BoxPlotErrorByForecast.of( null, VectorOfDoubles.of( 0.0, 1.0 ) );
     }
 
     /**
@@ -245,11 +232,7 @@ public final class BoxPlotErrorByForecastTest
         exception.expect( MetricParameterException.class );
         exception.expectMessage( "Unsupported dimension for the domain axis of the box plot: 'FALSE NEGATIVES'." );
 
-        BoxPlotErrorByForecastBuilder b = new BoxPlotErrorByForecast.BoxPlotErrorByForecastBuilder();
-
-        //Test for construction with a null domain dimension
-        b.setDomainDimension( MetricDimension.FALSE_NEGATIVES );
-        b.build();
+        BoxPlotErrorByForecast.of( MetricDimension.FALSE_NEGATIVES, VectorOfDoubles.of( 0.0, 1.0 ) );
     }
 
 }

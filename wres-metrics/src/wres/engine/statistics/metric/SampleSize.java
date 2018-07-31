@@ -17,6 +17,18 @@ import wres.datamodel.outputs.DoubleScoreOutput;
 class SampleSize<S extends MetricInput<?>> extends OrdinaryScore<S, DoubleScoreOutput>
 {
 
+    /**
+     * Returns an instance.
+     * 
+     * @param <S> the input type
+     * @return an instance
+     */
+    
+    public static <S extends MetricInput<?>> SampleSize<S> of()
+    {
+        return new SampleSize<>();
+    }
+    
     @Override
     public DoubleScoreOutput apply( S s )
     {
@@ -24,8 +36,7 @@ class SampleSize<S extends MetricInput<?>> extends OrdinaryScore<S, DoubleScoreO
         {
             throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
         }
-        return DataFactory.ofDoubleScoreOutput( s.getRawData().size(),
-                                               getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, null ) );
+        return DoubleScoreOutput.of( (double) s.getRawData().size(), getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, null ) );
     }
 
     @Override
@@ -59,26 +70,10 @@ class SampleSize<S extends MetricInput<?>> extends OrdinaryScore<S, DoubleScoreO
     }
 
     /**
-     * A {@link MetricBuilder} to build the metric.
-     */
-
-    static class SampleSizeBuilder<S extends MetricInput<?>> implements MetricBuilder<S, DoubleScoreOutput>
-    {
-        @Override
-        public SampleSize<S> build() throws MetricParameterException
-        {
-            return new SampleSize<>( this );
-        }
-    }
-
-    /**
      * Hidden constructor.
-     * 
-     * @param builder the builder
-     * @throws MetricParameterException if one or more parameters is invalid 
      */
 
-    private SampleSize( final SampleSizeBuilder<S> builder ) throws MetricParameterException
+    private SampleSize()
     {
         super();
     }

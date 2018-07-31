@@ -3,7 +3,6 @@ package wres.engine.statistics.metric.singlevalued;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.engine.statistics.metric.FunctionFactory;
-import wres.engine.statistics.metric.MetricParameterException;
 
 /**
  * The mean error applies to continuous variables and is the average signed difference between a single-valued
@@ -13,6 +12,17 @@ import wres.engine.statistics.metric.MetricParameterException;
  */
 public class MeanError extends DoubleErrorScore<SingleValuedPairs>
 {
+    
+    /**
+     * Returns an instance.
+     * 
+     * @return an instance
+     */
+    
+    public static MeanError of()
+    {
+        return new MeanError();
+    }
 
     @Override
     public boolean isSkillScore()
@@ -33,30 +43,12 @@ public class MeanError extends DoubleErrorScore<SingleValuedPairs>
     }
 
     /**
-     * A {@link MetricBuilder} to build the metric.
-     */
-
-    public static class MeanErrorBuilder extends DoubleErrorScoreBuilder<SingleValuedPairs>
-    {
-
-        @Override
-        public MeanError build() throws MetricParameterException
-        {
-            return new MeanError( this );
-        }
-
-    }
-
-    /**
      * Hidden constructor.
-     * 
-     * @param builder the builder
-     * @throws MetricParameterException if one or more parameters is invalid
      */
 
-    private MeanError( final MeanErrorBuilder builder ) throws MetricParameterException
+    private MeanError()
     {
-        super( builder.setErrorFunction( FunctionFactory.error() ) );
+        super( FunctionFactory.error() );
     }
 
 }

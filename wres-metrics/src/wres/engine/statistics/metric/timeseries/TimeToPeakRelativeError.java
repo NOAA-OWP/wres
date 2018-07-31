@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Random;
 
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -13,14 +14,13 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPair;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
-import wres.datamodel.metadata.Dimension;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.PairedOutput;
 import wres.datamodel.time.TimeSeries;
 import wres.engine.statistics.metric.Metric;
-import wres.engine.statistics.metric.MetricParameterException;
 
 /**
  * <p>Constructs a {@link Metric} that returns the fractional difference in time between the maximum values recorded in 
@@ -38,6 +38,29 @@ import wres.engine.statistics.metric.MetricParameterException;
  */
 public class TimeToPeakRelativeError extends TimingError
 {
+
+    /**
+     * Returns an instance.
+     * 
+     * @return an instance
+     */
+
+    public static TimeToPeakRelativeError of()
+    {
+        return new TimeToPeakRelativeError();
+    }
+
+    /**
+     * Returns an instance with a prescribed random number generator for resolving ties.
+     * 
+     * @param rng the random number generator for resolving ties
+     * @return an instance
+     */
+
+    public static TimeToPeakRelativeError of( Random rng )
+    {
+        return new TimeToPeakRelativeError( rng );
+    }
 
     @Override
     public PairedOutput<Instant, Duration> apply( TimeSeriesOfSingleValuedPairs s )
@@ -72,16 +95,17 @@ public class TimeToPeakRelativeError extends TimingError
 
         // Create output metadata with the identifier of the statistic as the component identifier
         Metadata in = s.getMetadata();
-        Dimension outputDimension = MetadataFactory.getDimension( "DURATION IN RELATIVE HOURS" );
-        MetricOutputMetadata meta = MetadataFactory.getOutputMetadata( s.getBasisTimes().size(),
-                                                                       outputDimension,
-                                                                       in.getDimension(),
-                                                                       this.getID(),
-                                                                       MetricConstants.MAIN,
-                                                                       in.getIdentifier(),
-                                                                       in.getTimeWindow() );
+        MeasurementUnit outputDimension = MeasurementUnit.of( "DURATION IN RELATIVE HOURS" );
+        final MeasurementUnit outputDim = outputDimension;
+        MetricOutputMetadata meta = MetricOutputMetadata.of( s.getBasisTimes().size(),
+        outputDim,
+        in.getDimension(),
+        this.getID(),
+        MetricConstants.MAIN,
+        in.getIdentifier(),
+        in.getTimeWindow() );
 
-        return DataFactory.ofPairedOutput( returnMe, meta );
+        return PairedOutput.of( returnMe, meta );
     }
 
     @Override
@@ -91,30 +115,23 @@ public class TimeToPeakRelativeError extends TimingError
     }
 
     /**
-     * A {@link MetricBuilder} to build the metric.
+     * Hidden constructor.
      */
 
-    public static class TimeToPeakRelativeErrorBuilder extends TimingErrorBuilder
+    private TimeToPeakRelativeError()
     {
-
-        @Override
-        public TimeToPeakRelativeError build() throws MetricParameterException
-        {
-            return new TimeToPeakRelativeError( this );
-        }
+        super();
     }
 
     /**
      * Hidden constructor.
      * 
-     * @param builder the builder
-     * @throws MetricParameterException if one or more parameters is invalid 
-     * @throws MetricInputException if the input is invalid
+     * @param rng the random number generator for resolving ties
      */
 
-    protected TimeToPeakRelativeError( final TimeToPeakRelativeErrorBuilder builder ) throws MetricParameterException
+    private TimeToPeakRelativeError( Random rng )
     {
-        super( builder );
+        super( rng );
     }
 
 }

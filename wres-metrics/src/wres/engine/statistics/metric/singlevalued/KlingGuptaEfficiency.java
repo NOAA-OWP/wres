@@ -13,8 +13,6 @@ import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.Collectable;
 import wres.engine.statistics.metric.DecomposableScore;
 import wres.engine.statistics.metric.FunctionFactory;
-import wres.engine.statistics.metric.MetricParameterException;
-import wres.engine.statistics.metric.singlevalued.CorrelationPearsons.CorrelationPearsonsBuilder;
 
 /**
  * <p>Computes the Kling-Gupta Efficiency (KGE) and associated decomposition into correlation, bias and variability.</p>
@@ -34,6 +32,24 @@ import wres.engine.statistics.metric.singlevalued.CorrelationPearsons.Correlatio
  */
 public class KlingGuptaEfficiency extends DecomposableScore<SingleValuedPairs>
 {
+
+    /**
+     * Default weighting for the correlation term.
+     */
+
+    private static final double DEFAULT_RHO_WEIGHT = 1.0;
+
+    /**
+     * Default weighting for the variance term.
+     */
+
+    private static final double DEFAULT_VAR_WEIGHT = 1.0;
+
+    /**
+     * Default weighting for the bias term.
+     */
+
+    private static final double DEFAULT_BIAS_WEIGHT = 1.0;
 
     /**
      * Instance of {@link CorrelationPearsons}.
@@ -59,6 +75,17 @@ public class KlingGuptaEfficiency extends DecomposableScore<SingleValuedPairs>
 
     private final double biasWeight;
 
+    /**
+     * Returns an instance.
+     * 
+     * @return an instance
+     */
+
+    public static KlingGuptaEfficiency of()
+    {
+        return new KlingGuptaEfficiency();
+    }
+
     @Override
     public DoubleScoreOutput apply( final SingleValuedPairs s )
     {
@@ -72,8 +99,8 @@ public class KlingGuptaEfficiency extends DecomposableScore<SingleValuedPairs>
 
         double result = Double.NaN;
         // Compute the components
-        VectorOfDoubles leftValues = DataFactory.vectorOf( Slicer.getLeftSide( s ) );
-        VectorOfDoubles rightValues = DataFactory.vectorOf( Slicer.getRightSide( s ) );
+        VectorOfDoubles leftValues = VectorOfDoubles.of( Slicer.getLeftSide( s ) );
+        VectorOfDoubles rightValues = VectorOfDoubles.of( Slicer.getRightSide( s ) );
         double rhoVal = rho.apply( s ).getData();
         // Check for finite correlation
         if ( Double.isFinite( rhoVal ) )
@@ -91,7 +118,7 @@ public class KlingGuptaEfficiency extends DecomposableScore<SingleValuedPairs>
         }
         //Metadata
         final MetricOutputMetadata metOut = this.getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, null );
-        return DataFactory.ofDoubleScoreOutput( result, metOut );
+        return DoubleScoreOutput.of( result, metOut );
     }
 
     @Override
@@ -113,38 +140,18 @@ public class KlingGuptaEfficiency extends DecomposableScore<SingleValuedPairs>
     }
 
     /**
-     * A {@link MetricBuilder} to build the metric.
+     * Hidden constructor.
      */
 
-    public static class KlingGuptaEfficiencyBuilder
-            extends
-            DecomposableScoreBuilder<SingleValuedPairs>
+    private KlingGuptaEfficiency()
     {
+        super();
 
-        @Override
-        public KlingGuptaEfficiency build() throws MetricParameterException
-        {
-            return new KlingGuptaEfficiency( this );
-        }
+        rho = new CorrelationPearsons();
 
-    }
-
-    /**
-     * Prevent direct construction.
-     * 
-     * @param builder the builder
-     * @throws MetricParameterException if one or more parameter values is incorrect
-     */
-
-    private KlingGuptaEfficiency( final KlingGuptaEfficiencyBuilder builder ) throws MetricParameterException
-    {
-        super( builder );
-        CorrelationPearsonsBuilder rhoBuilder = new CorrelationPearsonsBuilder();
-        rho = rhoBuilder.build();
-        //Equal weighting of terms
-        rhoWeight = 1.0;
-        varWeight = 1.0;
-        biasWeight = 1.0;
+        this.rhoWeight = DEFAULT_RHO_WEIGHT;
+        this.varWeight = DEFAULT_VAR_WEIGHT;
+        this.biasWeight = DEFAULT_BIAS_WEIGHT;
     }
 
 }

@@ -84,7 +84,7 @@ class NetcdfOutputFileCreator
                             metricConstants,
                             values.getMetadata()
                                   .getDimension()
-                                  .getDimension(),
+                                  .getUnit(),
                             outputWindow
                     );
                 }

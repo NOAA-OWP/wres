@@ -6,6 +6,7 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.Slicer;
+import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPair;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
@@ -15,7 +16,6 @@ import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.DecomposableScore;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricCalculationException;
-import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 
 /**
@@ -24,17 +24,28 @@ import wres.engine.statistics.metric.MetricParameterException;
  * 
  * @author james.brown@hydrosolved.com
  */
-public class MeanSquareErrorSkillScore<S extends SingleValuedPairs> extends DecomposableScore<S>
+public class MeanSquareErrorSkillScore extends DecomposableScore<SingleValuedPairs>
 {
 
+    /**
+     * Returns an instance.
+     * 
+     * @return an instance
+     */
+    
+    public static MeanSquareErrorSkillScore of()
+    {
+        return new MeanSquareErrorSkillScore();
+    }
+    
     /**
      * Instance if {@link SumOfSquareError}.
      */
 
-    private final SumOfSquareError<SingleValuedPairs> sse;
+    private final SumOfSquareError sse;
 
     @Override
-    public DoubleScoreOutput apply( final S s )
+    public DoubleScoreOutput apply( final SingleValuedPairs s )
     {
         if ( Objects.isNull( s ) )
         {
@@ -64,7 +75,7 @@ public class MeanSquareErrorSkillScore<S extends SingleValuedPairs> extends Deco
             else
             {
                 double meanLeft =
-                        FunctionFactory.mean().applyAsDouble( DataFactory.vectorOf( Slicer.getLeftSide( s ) ) );
+                        FunctionFactory.mean().applyAsDouble( VectorOfDoubles.of( Slicer.getLeftSide( s ) ) );
                 for ( SingleValuedPair next : s.getRawData() )
                 {
                     denominator += Math.pow( next.getLeft() - meanLeft, 2 );
@@ -81,7 +92,7 @@ public class MeanSquareErrorSkillScore<S extends SingleValuedPairs> extends Deco
         }
         final MetricOutputMetadata metOut =
                 this.getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, baselineIdentifier );
-        return DataFactory.ofDoubleScoreOutput( result, metOut );
+        return DoubleScoreOutput.of( result, metOut );
     }
 
     @Override
@@ -103,34 +114,26 @@ public class MeanSquareErrorSkillScore<S extends SingleValuedPairs> extends Deco
     }
 
     /**
-     * A {@link MetricBuilder} to build the metric.
+     * Hidden constructor.
      */
 
-    public static class MeanSquareErrorSkillScoreBuilder<S extends SingleValuedPairs>
-            extends
-            DecomposableScoreBuilder<S>
+    private MeanSquareErrorSkillScore()
     {
-
-        @Override
-        public MeanSquareErrorSkillScore<S> build() throws MetricParameterException
-        {
-            return new MeanSquareErrorSkillScore<>( this );
-        }
-
+        super();
+        sse = SumOfSquareError.of();
     }
-
+    
     /**
-     * Prevent direct construction.
+     * Hidden constructor.
      * 
-     * @param builder the builder
-     * @throws MetricParameterException if one or more parameters is invalid
+     * @param decompositionId the decomposition identifier
+     * @throws MetricParameterException if one or more parameters is invalid 
      */
 
-    protected MeanSquareErrorSkillScore( final MeanSquareErrorSkillScoreBuilder<S> builder )
-            throws MetricParameterException
+    private MeanSquareErrorSkillScore( ScoreOutputGroup decompositionId ) throws MetricParameterException
     {
-        super( builder );
-        sse = MetricFactory.getInstance().ofSumOfSquareError();
+        super( decompositionId );
+        sse = SumOfSquareError.of();
     }
 
 }

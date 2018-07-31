@@ -1,8 +1,11 @@
 package wres.datamodel.inputs.pairs;
 
-import wres.datamodel.DataFactory;
+import java.util.List;
+
+import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.inputs.MetricInputException;
+import wres.datamodel.metadata.Metadata;
 
 /**
  * Immutable store of verification pairs for two probabilistic variables that are defined for a common, discrete, 
@@ -11,8 +14,87 @@ import wres.datamodel.inputs.MetricInputException;
  * @author james.brown@hydrosolved.com
  */
 
-public class DiscreteProbabilityPairs extends SingleValuedPairs
+public class DiscreteProbabilityPairs extends BasicPairs<DiscreteProbabilityPair>
 {
+
+    /**
+     * Construct the discrete probability input with a baseline.
+     * 
+     * @param pairs the main verification pairs
+     * @param basePairs the baseline pairs (may be null)
+     * @param mainMeta the metadata for the main pairs
+     * @param baselineMeta the metadata for the baseline pairs (may be null, if the basePairs are null)
+     * @param climatology an optional climatological dataset (may be null)
+     * @throws MetricInputException if the inputs are invalid
+     * @return the pairs
+     */
+
+    public static DiscreteProbabilityPairs of( List<DiscreteProbabilityPair> pairs,
+                                               List<DiscreteProbabilityPair> basePairs,
+                                               Metadata mainMeta,
+                                               Metadata baselineMeta,
+                                               VectorOfDoubles climatology )
+    {
+        DiscreteProbabilityPairsBuilder b =
+                new DiscreteProbabilityPairsBuilder();
+        return (DiscreteProbabilityPairs) b.addData( pairs )
+                                           .setMetadata( mainMeta )
+                                           .addDataForBaseline( basePairs )
+                                           .setMetadataForBaseline( baselineMeta )
+                                           .setClimatology( climatology )
+                                           .build();
+    }
+
+    /**
+     * Construct the discrete probability input with a baseline.
+     * 
+     * @param pairs the main verification pairs
+     * @param basePairs the baseline pairs (may be null)
+     * @param mainMeta the metadata for the main pairs
+     * @param baselineMeta the metadata for the baseline pairs (may be null, if the basePairs are null)
+     * @throws MetricInputException if the inputs are invalid
+     * @return the pairs
+     */
+
+    public static DiscreteProbabilityPairs of( List<DiscreteProbabilityPair> pairs,
+                                               List<DiscreteProbabilityPair> basePairs,
+                                               Metadata mainMeta,
+                                               Metadata baselineMeta )
+    {
+        return DiscreteProbabilityPairs.of( pairs, basePairs, mainMeta, baselineMeta, null );
+    }
+
+    /**
+     * Construct the discrete probability input without any pairs for a baseline.
+     * 
+     * @param pairs the discrete probability pairs
+     * @param meta the metadata
+     * @param climatology an optional climatological dataset (may be null)
+     * @throws MetricInputException if the inputs are invalid
+     * @return the pairs
+     */
+
+    public static DiscreteProbabilityPairs of( List<DiscreteProbabilityPair> pairs,
+                                               Metadata meta,
+                                               VectorOfDoubles climatology )
+    {
+        return DiscreteProbabilityPairs.of( pairs, null, meta, null, climatology );
+    }
+
+    /**
+     * Construct the discrete probability input without any pairs for a baseline.
+     * 
+     * @param pairs the discrete probability pairs
+     * @param meta the metadata
+     * @throws MetricInputException if the inputs are invalid
+     * @return the pairs
+     */
+
+    public static DiscreteProbabilityPairs of( List<DiscreteProbabilityPair> pairs,
+                                               Metadata meta )
+    {
+        return DiscreteProbabilityPairs.of( pairs, null, meta, null, null );
+    }
 
     /**
      * Returns the baseline data as a {@link MetricInput} or null if no baseline is defined.
@@ -26,14 +108,14 @@ public class DiscreteProbabilityPairs extends SingleValuedPairs
         {
             return null;
         }
-        return DataFactory.ofDiscreteProbabilityPairs( getRawDataForBaseline(), getMetadataForBaseline() );
+        return DiscreteProbabilityPairs.of( getRawDataForBaseline(), getMetadataForBaseline() );
     }
 
     /**
      * A builder to build the metric input.
      */
 
-    public static class DiscreteProbabilityPairsBuilder extends SingleValuedPairsBuilder
+    public static class DiscreteProbabilityPairsBuilder extends BasicPairsBuilder<DiscreteProbabilityPair>
     {
 
         @Override

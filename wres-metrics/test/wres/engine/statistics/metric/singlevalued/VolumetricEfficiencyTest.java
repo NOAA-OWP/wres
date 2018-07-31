@@ -17,8 +17,11 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
+import wres.datamodel.metadata.DatasetIdentifier;
+import wres.datamodel.metadata.MeasurementUnit;
+import wres.datamodel.metadata.Location;
+import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
@@ -26,7 +29,6 @@ import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
-import wres.engine.statistics.metric.singlevalued.VolumetricEfficiency.VolumetricEfficiencyBuilder;
 
 /**
  * Tests the {@link VolumetricEfficiency}.
@@ -48,8 +50,7 @@ public final class VolumetricEfficiencyTest
     @Before
     public void setupBeforeEachTest() throws MetricParameterException
     {
-        VolumetricEfficiencyBuilder b = new VolumetricEfficiency.VolumetricEfficiencyBuilder();
-        this.ve = b.build();
+        this.ve = VolumetricEfficiency.of();
     }
 
     /**
@@ -68,18 +69,18 @@ public final class VolumetricEfficiencyTest
                                                  Instant.parse( "2010-12-31T11:59:59Z" ),
                                                  ReferenceTime.VALID_TIME,
                                                  Duration.ofHours( 24 ) );
-        final MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( input.getRawData().size(),
-                                                                   MetadataFactory.getDimension(),
-                                                                   MetadataFactory.getDimension( "MM/DAY" ),
-                                                                   MetricConstants.VOLUMETRIC_EFFICIENCY,
-                                                                   MetricConstants.MAIN,
-                                                                   MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation("103.1"),
-                                                                                                 "QME",
-                                                                                                 "NVE" ),
-                                                                   window );
+        final MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getRawData().size(),
+        MeasurementUnit.of(),
+        MeasurementUnit.of( "MM/DAY" ),
+        MetricConstants.VOLUMETRIC_EFFICIENCY,
+        MetricConstants.MAIN,
+        DatasetIdentifier.of( Location.of("103.1"),
+                                                                                                         "QME",
+                                                                                                         "NVE" ),
+        window );
         //Check the results
         DoubleScoreOutput actual = ve.apply( input );
-        DoubleScoreOutput expected = DataFactory.ofDoubleScoreOutput( 0.657420176533252, m1 );
+        DoubleScoreOutput expected = DoubleScoreOutput.of( 0.657420176533252, m1 );
         assertTrue( "Actual: " + actual.getData().doubleValue()
                     + ". Expected: "
                     + expected.getData().doubleValue()
@@ -95,8 +96,8 @@ public final class VolumetricEfficiencyTest
     public void testApplyWithNoData()
     {
         // Generate empty data
-        DiscreteProbabilityPairs input =
-                DataFactory.ofDiscreteProbabilityPairs( Arrays.asList(), MetadataFactory.getMetadata() );
+        SingleValuedPairs input =
+                SingleValuedPairs.of( Arrays.asList(), Metadata.of() );
  
         DoubleScoreOutput actual = ve.apply( input );
 

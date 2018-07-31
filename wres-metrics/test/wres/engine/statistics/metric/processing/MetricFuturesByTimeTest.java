@@ -21,7 +21,10 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
-import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.OneOrTwoDoubles;
+import wres.datamodel.VectorOfDoubles;
+import wres.datamodel.metadata.MeasurementUnit;
+import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.outputs.DoubleScoreOutput;
@@ -30,6 +33,7 @@ import wres.datamodel.outputs.MatrixOutput;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.PairedOutput;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
+import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.engine.statistics.metric.processing.MetricFuturesByTime.MetricFuturesByTimeBuilder;
@@ -98,7 +102,7 @@ public final class MetricFuturesByTimeTest
     {
         key = Pair.of( TimeWindow.of( Instant.parse( "1985-05-01T12:00:00Z" ),
                                       Instant.parse( "1985-05-03T12:00:00Z" ) ),
-                       OneOrTwoThresholds.of( DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( 1.0 ),
+                       OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 1.0 ),
                                                                        Operator.GREATER,
                                                                        ThresholdDataType.LEFT ) ) );
         MetricFuturesByTimeBuilder builder = new MetricFuturesByTimeBuilder();
@@ -106,15 +110,11 @@ public final class MetricFuturesByTimeTest
         // Add a boxplot future
         boxplot =
                 Collections.singletonMap( MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
-                                          DataFactory.ofBoxPlotOutput( Arrays.asList(),
-                                                                       DataFactory.vectorOf( new double[] { 0.1,
-                                                                                                            0.9 } ),
-                                                                       MetadataFactory.getOutputMetadata( 1,
-                                                                                                          MetadataFactory.getDimension(),
-                                                                                                          MetadataFactory.getDimension(),
-                                                                                                          MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE ),
-                                                                       MetricDimension.OBSERVED_VALUE,
-                                                                       MetricDimension.FORECAST_ERROR ) );
+                                          BoxPlotOutput.of( Arrays.asList(), VectorOfDoubles.of( new double[] { 0.1,
+                                          0.9 } ), MetricOutputMetadata.of( 1,
+                                          MeasurementUnit.of(),
+                                          MeasurementUnit.of(),
+                                          MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE ), MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR ) );
 
         builder.addBoxPlotOutput( key,
                                   CompletableFuture.completedFuture( DataFactory.ofMetricOutputMapByMetric( boxplot ) ) );
@@ -122,11 +122,10 @@ public final class MetricFuturesByTimeTest
         // Add a double score future
         doubleScore =
                 Collections.singletonMap( MetricConstants.MEAN_ERROR,
-                                          DataFactory.ofDoubleScoreOutput( 1.0,
-                                                                           MetadataFactory.getOutputMetadata( 1,
-                                                                                                              MetadataFactory.getDimension(),
-                                                                                                              MetadataFactory.getDimension(),
-                                                                                                              MetricConstants.MEAN_ERROR ) ) );
+                                          DoubleScoreOutput.of( 1.0, MetricOutputMetadata.of( 1,
+                                          MeasurementUnit.of(),
+                                          MeasurementUnit.of(),
+                                          MetricConstants.MEAN_ERROR ) ) );
 
         builder.addDoubleScoreOutput( key,
                                       CompletableFuture.completedFuture( DataFactory.ofMetricOutputMapByMetric( doubleScore ) ) );
@@ -135,11 +134,10 @@ public final class MetricFuturesByTimeTest
         // Add a duration score future
         durationScore =
                 Collections.singletonMap( MetricConstants.TIME_TO_PEAK_ERROR,
-                                          DataFactory.ofDurationScoreOutput( Duration.ofDays( 1 ),
-                                                                             MetadataFactory.getOutputMetadata( 1,
-                                                                                                                MetadataFactory.getDimension(),
-                                                                                                                MetadataFactory.getDimension(),
-                                                                                                                MetricConstants.TIME_TO_PEAK_ERROR ) ) );
+                                          DurationScoreOutput.of( Duration.ofDays( 1 ), MetricOutputMetadata.of( 1,
+                                        MeasurementUnit.of(),
+                                        MeasurementUnit.of(),
+                                        MetricConstants.TIME_TO_PEAK_ERROR ) ) );
 
         builder.addDurationScoreOutput( key,
                                         CompletableFuture.completedFuture( DataFactory.ofMetricOutputMapByMetric( durationScore ) ) );
@@ -148,10 +146,10 @@ public final class MetricFuturesByTimeTest
         // Add a matrix output
         matrix =
                 Collections.singletonMap( MetricConstants.CONTINGENCY_TABLE,
-                                          DataFactory.ofMatrixOutput( new double[][] { { 1, 1 }, { 1, 1 } },
-                                                                      MetadataFactory.getOutputMetadata( 1,
-                                                                                                         MetadataFactory.getDimension(),
-                                                                                                         MetadataFactory.getDimension(),
+                                          MatrixOutput.of( new double[][] { { 1, 1 }, { 1, 1 } },
+                                                                      MetricOutputMetadata.of( 1,
+                                                                                                         MeasurementUnit.of(),
+                                                                                                         MeasurementUnit.of(),
                                                                                                          MetricConstants.CONTINGENCY_TABLE ) ) );
 
         builder.addMatrixOutput( key,
@@ -160,11 +158,11 @@ public final class MetricFuturesByTimeTest
         // Add multi-vector output
         multivector =
                 Collections.singletonMap( MetricConstants.CONTINGENCY_TABLE,
-                                          DataFactory.ofMultiVectorOutput( Collections.singletonMap( MetricDimension.FORECAST_PROBABILITY,
+                                          MultiVectorOutput.ofMultiVectorOutput( Collections.singletonMap( MetricDimension.FORECAST_PROBABILITY,
                                                                                                      new double[] { 1 } ),
-                                                                           MetadataFactory.getOutputMetadata( 1,
-                                                                                                              MetadataFactory.getDimension(),
-                                                                                                              MetadataFactory.getDimension(),
+                                                                           MetricOutputMetadata.of( 1,
+                                                                                                              MeasurementUnit.of(),
+                                                                                                              MeasurementUnit.of(),
                                                                                                               MetricConstants.CONTINGENCY_TABLE ) ) );
 
         builder.addMultiVectorOutput( key,
@@ -173,11 +171,10 @@ public final class MetricFuturesByTimeTest
         // Add paired output
         paired =
                 Collections.singletonMap( MetricConstants.CONTINGENCY_TABLE,
-                                          DataFactory.ofPairedOutput( Arrays.asList(),
-                                                                      MetadataFactory.getOutputMetadata( 1,
-                                                                                                         MetadataFactory.getDimension(),
-                                                                                                         MetadataFactory.getDimension(),
-                                                                                                         MetricConstants.CONTINGENCY_TABLE ) ) );
+                                          PairedOutput.of( Arrays.asList(), MetricOutputMetadata.of( 1,
+                                         MeasurementUnit.of(),
+                                         MeasurementUnit.of(),
+                                         MetricConstants.CONTINGENCY_TABLE ) ) );
 
         builder.addPairedOutput( key,
                                  CompletableFuture.completedFuture( DataFactory.ofMetricOutputMapByMetric( paired ) ) );
@@ -293,7 +290,7 @@ public final class MetricFuturesByTimeTest
         // Create a new key
         Pair<TimeWindow, OneOrTwoThresholds> key = Pair.of( TimeWindow.of( Instant.parse( "1985-05-01T12:00:00Z" ),
                                                                            Instant.parse( "1985-05-03T12:00:00Z" ) ),
-                                                            OneOrTwoThresholds.of( DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( 2.0 ),
+                                                            OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 2.0 ),
                                                                                                             Operator.GREATER,
                                                                                                             ThresholdDataType.LEFT ) ) );
 

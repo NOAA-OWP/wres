@@ -21,7 +21,6 @@ import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DurationScoreOutput;
 import wres.datamodel.outputs.PairedOutput;
 import wres.engine.statistics.metric.FunctionFactory;
-import wres.engine.statistics.metric.Metric.MetricBuilder;
 import wres.engine.statistics.metric.MetricParameterException;
 
 /**
@@ -46,6 +45,22 @@ public class TimingErrorDurationStatistics implements Function<PairedOutput<Inst
      */
 
     private final MetricConstants identifier;
+
+    /**
+     * Returns an instance.
+     * 
+     * @param identifier the unique identifier for the summary statistics
+     * @param statistics the list of statistics the compute
+     * @throws MetricParameterException if one or more parameters is invalid
+     * @return an instance
+     */
+
+    public static TimingErrorDurationStatistics of( MetricConstants identifier, Set<MetricConstants> statistics )
+            throws MetricParameterException
+    {
+        return new TimingErrorDurationStatistics( identifier, statistics );
+    }
+
 
     @Override
     public DurationScoreOutput apply( PairedOutput<Instant, Duration> pairs )
@@ -73,7 +88,7 @@ public class TimingErrorDurationStatistics implements Function<PairedOutput<Inst
                 // Some loss of precision here, not consequential
                 returnMe.put( nextIdentifier,
                               Duration.ofMillis( (long) statistics.get( nextIdentifier )
-                                                                  .applyAsDouble( DataFactory.vectorOf( input ) ) ) );
+                                                                  .applyAsDouble( VectorOfDoubles.of( input ) ) ) );
             }
             // No data available
             else
@@ -91,98 +106,43 @@ public class TimingErrorDurationStatistics implements Function<PairedOutput<Inst
         {
             singleIdentifier = nextIdentifier;
         }
-        MetricOutputMetadata meta = MetadataFactory.getOutputMetadata( in.getSampleSize(),
-                                                                       in.getDimension(),
-                                                                       in.getInputDimension(),
-                                                                       this.getID(),
-                                                                       singleIdentifier,
-                                                                       in.getIdentifier(),
-                                                                       in.getTimeWindow() );
-        return DataFactory.ofDurationScoreOutput( returnMe, meta );
-    }
-
-    /**
-     * A {@link MetricBuilder} to build the metric.
-     */
-
-    public static class TimingErrorDurationStatisticsBuilder
-    {
-
-        /**
-         * The identifier for the summary statistic.
-         */
-
-        private Set<MetricConstants> statistics = new HashSet<>();
-
-        /**
-         * The unique identifier associated with these summary statistics.
-         */
-
-        private MetricConstants identifier;
-
-        /**
-         * Sets the statistic.
-         * 
-         * @param statistics the identifier
-         * @return the builder
-         */
-
-        public TimingErrorDurationStatisticsBuilder setStatistics( Set<MetricConstants> statistics )
-        {
-            this.statistics.addAll( statistics );
-            return this;
-        }
-
-        /**
-         * Sets the unique identifier for the summary statistics.
-         * 
-         * @param identifier the identifier
-         * @return the builder
-         */
-
-        public TimingErrorDurationStatisticsBuilder setID( MetricConstants identifier )
-        {
-            this.identifier = identifier;
-            return this;
-        }
-
-        /**
-         * Build.
-         * 
-         * @return the summary statistics
-         * @throws MetricParameterException if one or more parameters is invalid
-         */
-
-        public TimingErrorDurationStatistics build() throws MetricParameterException
-        {
-            return new TimingErrorDurationStatistics( this );
-        }
-
+        final MetricConstants componentID = singleIdentifier;
+        MetricOutputMetadata meta = MetricOutputMetadata.of( in.getSampleSize(),
+        in.getDimension(),
+        in.getInputDimension(),
+        this.getID(),
+        componentID,
+        in.getIdentifier(),
+        in.getTimeWindow() );
+        return DurationScoreOutput.of( returnMe, meta );
     }
 
     /**
      * Hidden constructor.
      * 
-     * @param builder the builder
+     * @param identifier the unique identifier for the summary statistics
+     * @param statistics the list of statistics the compute
      * @throws MetricParameterException if one or more parameters is invalid
      */
 
-    TimingErrorDurationStatistics( final TimingErrorDurationStatisticsBuilder builder ) throws MetricParameterException
+    private TimingErrorDurationStatistics( MetricConstants identifier, Set<MetricConstants> statistics )
+            throws MetricParameterException
     {
-        if ( Objects.isNull( builder ) )
-        {
-            throw new MetricParameterException( "Cannot construct the metric with a null builder." );
-        }
 
-        this.identifier = builder.identifier;
-
-        if ( Objects.isNull( this.identifier ) )
+        if ( Objects.isNull( identifier ) )
         {
             throw new MetricParameterException( "Specify a unique identifier from which to build the statistics." );
         }
+        
+        if ( Objects.isNull( statistics ) )
+        {
+            throw new MetricParameterException( "Specify a non-null container of summary statistics." );
+        }
+
+        this.identifier = identifier;
 
         // Copy locally
-        Set<MetricConstants> input = new HashSet<>( builder.statistics );
+        Set<MetricConstants> input = new HashSet<>( statistics );
 
         // Validate
         if ( input.isEmpty() )

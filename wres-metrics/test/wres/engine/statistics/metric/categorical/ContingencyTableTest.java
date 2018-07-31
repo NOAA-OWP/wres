@@ -9,13 +9,14 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.MulticategoryPairs;
-import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.metadata.DatasetIdentifier;
+import wres.datamodel.metadata.MeasurementUnit;
+import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.MatrixOutput;
 import wres.engine.statistics.metric.Metric;
@@ -42,7 +43,7 @@ public final class ContingencyTableTest
     @Before
     public void setupBeforeEachTest() throws MetricParameterException
     {
-        table = new ContingencyTable.ContingencyTableBuilder<>().build();
+        table = ContingencyTable.of();
     }
 
     /**
@@ -57,18 +58,18 @@ public final class ContingencyTableTest
 
         //Metadata for the output
         final MetricOutputMetadata meta =
-                MetadataFactory.getOutputMetadata( input.getRawData().size(),
-                                                   MetadataFactory.getDimension(),
-                                                   MetadataFactory.getDimension(),
+                MetricOutputMetadata.of( input.getRawData().size(),
+                                                   MeasurementUnit.of(),
+                                                   MeasurementUnit.of(),
                                                    MetricConstants.CONTINGENCY_TABLE,
                                                    MetricConstants.MAIN,
-                                                   MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation( "DRRC2" ),
+                                                   DatasetIdentifier.of( Location.of( "DRRC2" ),
                                                                                          "SQIN",
                                                                                          "HEFS" ) );
 
         final double[][] benchmark = new double[][] { { 82.0, 38.0 }, { 23.0, 222.0 } };
         final MatrixOutput actual = table.apply( input );
-        final MatrixOutput expected = DataFactory.ofMatrixOutput( benchmark,
+        final MatrixOutput expected = MatrixOutput.of( benchmark,
                                                                   Arrays.asList( MetricDimension.TRUE_POSITIVES,
                                                                                  MetricDimension.FALSE_POSITIVES,
                                                                                  MetricDimension.FALSE_NEGATIVES,

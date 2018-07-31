@@ -14,14 +14,13 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
-import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.metadata.MeasurementUnit;
+import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
-import wres.engine.statistics.metric.singlevalued.CorrelationPearsons.CorrelationPearsonsBuilder;
 
 /**
  * Tests the {@link CorrelationPearsons}.
@@ -43,8 +42,7 @@ public final class CorrelationPearsonsTest
     @Before
     public void setupBeforeEachTest() throws MetricParameterException
     {
-        CorrelationPearsonsBuilder b = new CorrelationPearsons.CorrelationPearsonsBuilder();
-        this.rho = b.build();
+        this.rho = CorrelationPearsons.of();
     }
 
     /**
@@ -56,15 +54,15 @@ public final class CorrelationPearsonsTest
     {
         SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
-        final MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( input.getRawData().size(),
-                                                                   MetadataFactory.getDimension(),
-                                                                   MetadataFactory.getDimension(),
+        final MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getRawData().size(),
+                                                                   MeasurementUnit.of(),
+                                                                   MeasurementUnit.of(),
                                                                    MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
                                                                    MetricConstants.MAIN );
 
         //Compute normally
         final DoubleScoreOutput actual = rho.apply( input );
-        final DoubleScoreOutput expected = DataFactory.ofDoubleScoreOutput( 0.9999999910148981, m1 );
+        final DoubleScoreOutput expected = DoubleScoreOutput.of( 0.9999999910148981, m1 );
         assertTrue( "Actual: " + actual.getData().doubleValue()
                     + ". Expected: "
                     + expected.getData().doubleValue()
@@ -92,8 +90,8 @@ public final class CorrelationPearsonsTest
     public void testApplyWithNoData()
     {
         // Generate empty data
-        DiscreteProbabilityPairs input =
-                DataFactory.ofDiscreteProbabilityPairs( Arrays.asList(), MetadataFactory.getMetadata() );
+        SingleValuedPairs input =
+                SingleValuedPairs.of( Arrays.asList(), Metadata.of() );
  
         DoubleScoreOutput actual = rho.apply( input );
 

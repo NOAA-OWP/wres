@@ -40,6 +40,31 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<Ensemble
         implements ProbabilityScore<EnsemblePairs, DoubleScoreOutput>
 {
 
+    /**
+     * Returns an instance.
+     * 
+     * @return an instance
+     */
+
+    public static ContinuousRankedProbabilityScore of()
+    {
+        return new ContinuousRankedProbabilityScore();
+    }
+
+    /**
+     * Returns an instance.
+     * 
+     * @param decompositionId the decomposition identifier
+     * @return an instance
+     * @throws MetricParameterException if one or more parameters is invalid 
+     */
+
+    public static ContinuousRankedProbabilityScore of( ScoreOutputGroup decompositionId )
+            throws MetricParameterException
+    {
+        return new ContinuousRankedProbabilityScore( decompositionId );
+    }
+
     @Override
     public DoubleScoreOutput apply( EnsemblePairs s )
     {
@@ -61,7 +86,7 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<Ensemble
         crps[0] = FunctionFactory.finiteOrMissing().applyAsDouble( crps[0] / s.getRawData().size() );
         //Metadata
         final MetricOutputMetadata metOut = getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, null );
-        return DataFactory.ofDoubleScoreOutput( crps[0], metOut );
+        return DoubleScoreOutput.of( crps[0], metOut );
     }
 
     @Override
@@ -95,29 +120,27 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<Ensemble
     }
 
     /**
-     * A {@link MetricBuilder} to build the metric.
+     * Constructor.
      */
 
-    public static class CRPSBuilder extends DecomposableScoreBuilder<EnsemblePairs>
+    ContinuousRankedProbabilityScore()
     {
-        @Override
-        public ContinuousRankedProbabilityScore build() throws MetricParameterException
-        {
-            return new ContinuousRankedProbabilityScore( this );
-        }
+        super();
     }
 
     /**
      * Constructor.
      * 
-     * @param builder the builder
+     * @param decompositionId the decomposition identifier
      * @throws MetricParameterException if one or more parameters is invalid 
      */
 
-    ContinuousRankedProbabilityScore( final CRPSBuilder builder ) throws MetricParameterException
+    ContinuousRankedProbabilityScore( ScoreOutputGroup decompositionId ) throws MetricParameterException
     {
-        super( builder );
-        switch ( this.getScoreOutputGroup() )
+        super( decompositionId );
+
+        // Validate
+        switch ( decompositionId )
         {
             case NONE:
             case CR:

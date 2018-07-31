@@ -17,12 +17,12 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import wres.config.MetricConfigException;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.Slicer;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
+import wres.datamodel.inputs.pairs.DiscreteProbabilityPair;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.DichotomousPair;
@@ -45,6 +45,7 @@ import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricCollection;
+import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.config.MetricConfigHelper;
 import wres.engine.statistics.metric.processing.MetricFuturesByTime.MetricFuturesByTimeBuilder;
@@ -111,7 +112,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
      * Function to map between ensemble pairs and discrete probabilities.
      */
 
-    private final BiFunction<EnsemblePair, Threshold, SingleValuedPair> toDiscreteProbabilities;
+    private final BiFunction<EnsemblePair, Threshold, DiscreteProbabilityPair> toDiscreteProbabilities;
 
     @Override
     public MetricOutputForProjectByTimeAndThreshold apply( EnsemblePairs input )
@@ -196,7 +197,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         if ( hasMetrics( MetricInputGroup.DISCRETE_PROBABILITY, MetricOutputGroup.DOUBLE_SCORE ) )
         {
             discreteProbabilityScore =
-                    metricFactory.ofDiscreteProbabilityScoreCollection( metricExecutor,
+                    MetricFactory.ofDiscreteProbabilityScoreCollection( metricExecutor,
                                                                         this.getMetrics( MetricInputGroup.DISCRETE_PROBABILITY,
                                                                                          MetricOutputGroup.DOUBLE_SCORE ) );
         }
@@ -208,7 +209,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         if ( hasMetrics( MetricInputGroup.DISCRETE_PROBABILITY, MetricOutputGroup.MULTIVECTOR ) )
         {
             discreteProbabilityMultiVector =
-                    metricFactory.ofDiscreteProbabilityMultiVectorCollection( metricExecutor,
+                    MetricFactory.ofDiscreteProbabilityMultiVectorCollection( metricExecutor,
                                                                               this.getMetrics( MetricInputGroup.DISCRETE_PROBABILITY,
                                                                                                MetricOutputGroup.MULTIVECTOR ) );
         }
@@ -219,7 +220,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         //Ensemble input, score output
         if ( hasMetrics( MetricInputGroup.ENSEMBLE, MetricOutputGroup.DOUBLE_SCORE ) )
         {
-            ensembleScore = metricFactory.ofEnsembleScoreCollection( metricExecutor,
+            ensembleScore = MetricFactory.ofEnsembleScoreCollection( metricExecutor,
                                                                      this.getMetrics( MetricInputGroup.ENSEMBLE,
                                                                                       MetricOutputGroup.DOUBLE_SCORE ) );
         }
@@ -231,7 +232,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         //Ensemble input, multi-vector output
         if ( hasMetrics( MetricInputGroup.ENSEMBLE, MetricOutputGroup.MULTIVECTOR ) )
         {
-            ensembleMultiVector = metricFactory.ofEnsembleMultiVectorCollection( metricExecutor,
+            ensembleMultiVector = MetricFactory.ofEnsembleMultiVectorCollection( metricExecutor,
                                                                                  this.getMetrics( MetricInputGroup.ENSEMBLE,
                                                                                                   MetricOutputGroup.MULTIVECTOR ) );
         }
@@ -242,7 +243,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         //Ensemble input, box-plot output
         if ( hasMetrics( MetricInputGroup.ENSEMBLE, MetricOutputGroup.BOXPLOT ) )
         {
-            ensembleBoxPlot = metricFactory.ofEnsembleBoxPlotCollection( metricExecutor,
+            ensembleBoxPlot = MetricFactory.ofEnsembleBoxPlotCollection( metricExecutor,
                                                                          this.getMetrics( MetricInputGroup.ENSEMBLE,
                                                                                           MetricOutputGroup.BOXPLOT ) );
         }
@@ -252,7 +253,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         }
 
         //Construct the default mapper from ensembles to single-values: this is not currently configurable
-        toSingleValues = in -> DataFactory.pairOf( in.getLeft(),
+        toSingleValues = in -> SingleValuedPair.of( in.getLeft(),
                                                    Arrays.stream( in.getRight() ).average().getAsDouble() );
 
         //Construct the default mapper from ensembles to probabilities: this is not currently configurable
@@ -712,8 +713,8 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                 Pair<TimeWindow, OneOrTwoThresholds> nextKey = Pair.of( timeWindow, compound );
 
                 //Define a mapper to convert the discrete probability pairs to dichotomous pairs
-                Function<SingleValuedPair, DichotomousPair> mapper =
-                        pair -> DataFactory.pairOf( innerThreshold.test( pair.getLeft() ),
+                Function<DiscreteProbabilityPair, DichotomousPair> mapper =
+                        pair -> DichotomousPair.of( innerThreshold.test( pair.getLeft() ),
                                                     innerThreshold.test( pair.getRight() ) );
                 //Transform the pairs
                 DichotomousPairs dichotomous = Slicer.toDichotomousPairs( transformed, mapper );

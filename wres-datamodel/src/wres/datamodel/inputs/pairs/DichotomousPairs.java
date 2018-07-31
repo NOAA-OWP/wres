@@ -4,9 +4,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import wres.datamodel.DataFactory;
+import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.inputs.MetricInputException;
+import wres.datamodel.metadata.Metadata;
 
 /**
  * Immutable store of verification pairs associated with a dichotomous input, i.e. a single event whose outcome is
@@ -20,6 +21,64 @@ public class DichotomousPairs extends MulticategoryPairs
 {
 
     /**
+     * Construct the dichotomous input from atomic {@link DichotomousPair} without any pairs for a baseline.
+     * 
+     * @param pairs the verification pairs
+     * @param meta the metadata
+     * @return the pairs
+     * @throws MetricInputException if the inputs are invalid
+     */
+    
+    public static DichotomousPairs ofDichotomousPairs( List<DichotomousPair> pairs,
+                                                       Metadata meta )
+    {
+        return DichotomousPairs.ofDichotomousPairs( pairs, meta, null );
+    }
+    
+    /**
+     * Construct the dichotomous input from atomic {@link DichotomousPair} without any pairs for a baseline and with
+     * a climatological dataset.
+     * 
+     * @param pairs the verification pairs
+     * @param meta the metadata
+     * @param climatology an optional climatological dataset (may be null)
+     * @return the pairs
+     * @throws MetricInputException if the inputs are invalid
+     */
+    
+    public static DichotomousPairs ofDichotomousPairs( List<DichotomousPair> pairs,
+                                                       Metadata meta,
+                                                       VectorOfDoubles climatology )
+    {
+        return DichotomousPairs.ofDichotomousPairs( pairs, null, meta, null, climatology );
+    }
+    
+    /**
+     * Construct the dichotomous input from atomic {@link DichotomousPair} with pairs for a baseline.
+     * 
+     * @param pairs the main verification pairs
+     * @param basePairs the baseline pairs (may be null)
+     * @param mainMeta the metadata for the main pairs
+     * @param baselineMeta the metadata for the baseline pairs (may be null, if the basePairs are null)
+     * @param climatology an optional climatological dataset (may be null)
+     * @return the pairs
+     * @throws MetricInputException if the inputs are invalid
+     */
+    
+    public static DichotomousPairs ofDichotomousPairs( List<DichotomousPair> pairs,
+                                                       List<DichotomousPair> basePairs,
+                                                       Metadata mainMeta,
+                                                       Metadata baselineMeta,
+                                                       VectorOfDoubles climatology )
+    {
+        DichotomousPairsBuilder b = new DichotomousPairsBuilder();
+        b.addDichotomousData( pairs ).setMetadata( mainMeta ).setClimatology( climatology );
+        return (DichotomousPairs) b.addDichotomousDataForBaseline( basePairs )
+                                   .setMetadataForBaseline( baselineMeta )
+                                   .build();
+    }
+
+    /**
      * Returns the baseline data as a {@link MetricInput} or null if no baseline is defined.
      * 
      * @return the baseline
@@ -31,8 +90,14 @@ public class DichotomousPairs extends MulticategoryPairs
         {
             return null;
         }
-        return DataFactory.ofDichotomousPairsFromMulticategoryPairs( getRawDataForBaseline(),
-                                                                     getMetadataForBaseline() );
+
+        DichotomousPairs.DichotomousPairsBuilder b = new DichotomousPairs.DichotomousPairsBuilder();
+        return (DichotomousPairs) b.addData( this.getRawData() )
+                                   .setMetadata( this.getMetadata() )
+                                   .addDataForBaseline( this.getRawDataForBaseline() )
+                                   .setMetadataForBaseline( this.getMetadataForBaseline() )
+                                   .setClimatology( this.getClimatology() )
+                                   .build();
     }
 
     @Override
@@ -110,7 +175,7 @@ public class DichotomousPairs extends MulticategoryPairs
         if ( count > 0 && count != 2 )
         {
             throw new MetricInputException( "Expected one category in the dichotomous input, represented as either "
-                    + "one or two elements." );
+                                            + "one or two elements." );
         }
     }
 

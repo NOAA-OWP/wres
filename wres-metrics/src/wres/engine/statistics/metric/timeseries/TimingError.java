@@ -8,7 +8,6 @@ import java.util.Random;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.outputs.PairedOutput;
 import wres.engine.statistics.metric.Metric;
-import wres.engine.statistics.metric.MetricParameterException;
 
 /**
  * Abstract base class for timing error metrics.
@@ -37,54 +36,29 @@ public abstract class TimingError implements Metric<TimeSeriesOfSingleValuedPair
     }
 
     /**
-     * A {@link MetricBuilder} to build the metric.
+     * Hidden constructor.
      */
 
-    public abstract static class TimingErrorBuilder
-            implements MetricBuilder<TimeSeriesOfSingleValuedPairs, PairedOutput<Instant, Duration>>
+    TimingError()
     {
-
-        /**
-         * A random number generator for resolving ties.
-         */
-        
-        private Random rng;
-        
-        /**
-         * Optionally, assign a random number generator for resolving ties.
-         * 
-         * @param rng the random number generator
-         * @return the builder
-         */
-        TimingErrorBuilder setRNGForTies( Random rng )
-        {
-            this.rng = rng;
-            return this;
-        }
-
+        this.rng = new Random();
     }
-
+    
     /**
      * Hidden constructor.
      * 
-     * @param builder the builder
-     * @throws MetricParameterException if one or more parameters is invalid 
+     * @param rng the random number generator for resolving ties 
      */
 
-    TimingError( final TimingErrorBuilder builder ) throws MetricParameterException
+    TimingError( Random rng )
     {
-        if ( Objects.isNull( builder ) )
+        if ( Objects.nonNull( rng ) )
         {
-            throw new MetricParameterException( "Cannot construct the metric with a null builder." );
-        }
-        
-        if ( Objects.nonNull( builder.rng ) )
-        {
-            rng = builder.rng;
+            this.rng = rng;
         }
         else
         {
-            rng = new Random();
+            this.rng = new Random();
         }
     }
     
@@ -96,7 +70,7 @@ public abstract class TimingError implements Metric<TimeSeriesOfSingleValuedPair
 
     Random getRNG()
     {
-        return rng;
+        return this.rng;
     }
 
 }

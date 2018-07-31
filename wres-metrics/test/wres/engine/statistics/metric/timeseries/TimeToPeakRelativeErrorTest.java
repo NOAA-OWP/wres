@@ -16,6 +16,9 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
+import wres.datamodel.metadata.DatasetIdentifier;
+import wres.datamodel.metadata.MeasurementUnit;
+import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
@@ -23,7 +26,6 @@ import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.PairedOutput;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
-import wres.engine.statistics.metric.timeseries.TimeToPeakRelativeError.TimeToPeakRelativeErrorBuilder;
 
 /**
  * Tests the {@link TimeToPeakRelativeError}.
@@ -54,17 +56,16 @@ public final class TimeToPeakRelativeErrorTest
                                                  ReferenceTime.ISSUE_TIME,
                                                  Duration.ofHours( 6 ),
                                                  Duration.ofHours( 18 ) );
-        final MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( input.getBasisTimes().size(),
-                                                                   MetadataFactory.getDimension( "DURATION IN RELATIVE HOURS" ),
-                                                                   MetadataFactory.getDimension( "CMS" ),
-                                                                   MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR,
-                                                                   MetricConstants.MAIN,
-                                                                           MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation("A"),
-                                                                                                 "Streamflow" ),
-                                                                   window );
+        final MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getBasisTimes().size(),
+        MeasurementUnit.of( "DURATION IN RELATIVE HOURS" ),
+        MeasurementUnit.of( "CMS" ),
+        MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR,
+        MetricConstants.MAIN,
+        DatasetIdentifier.of( Location.of("A"),
+                                                                                                         "Streamflow" ),
+        window );
         // Build the metric
-        final TimeToPeakRelativeErrorBuilder b = new TimeToPeakRelativeErrorBuilder();
-        final TimeToPeakRelativeError ttp = b.build();
+        TimeToPeakRelativeError ttp = TimeToPeakRelativeError.of();
 
         // Check the parameters
         assertTrue( "Unexpected name for the Time-to-Peak Relative Error.",
@@ -75,7 +76,7 @@ public final class TimeToPeakRelativeErrorTest
         List<Pair<Instant, Duration>> expectedSource = new ArrayList<>();
         expectedSource.add( Pair.of( Instant.parse( "1985-01-01T00:00:00Z" ), Duration.ofMinutes( -20 ) ) );
         expectedSource.add( Pair.of( Instant.parse( "1985-01-02T00:00:00Z" ), Duration.ofHours( 2 ) ) );
-        final PairedOutput<Instant, Duration> expected = DataFactory.ofPairedOutput( expectedSource, m1 );
+        final PairedOutput<Instant, Duration> expected = PairedOutput.of( expectedSource, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -92,13 +93,11 @@ public final class TimeToPeakRelativeErrorTest
     @Test
     public void testApplyThrowsExceptionOnNullInput() throws MetricParameterException
     {
-        //Build the metric
-        final TimeToPeakRelativeErrorBuilder b = new TimeToPeakRelativeErrorBuilder();
-        final TimeToPeakRelativeError ttp = b.build();
-
         //Check the exceptions
         exception.expect( MetricInputException.class );
-
+        
+        TimeToPeakRelativeError ttp = TimeToPeakRelativeError.of();
+        
         ttp.apply( null );
     }
 

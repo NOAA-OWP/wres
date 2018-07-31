@@ -4,9 +4,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import wres.datamodel.DataFactory;
+import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.inputs.MetricInputException;
+import wres.datamodel.metadata.Metadata;
 
 /**
  * Immutable store of verification pairs associated with the outcome (true or false) of a multi-category event.
@@ -15,6 +16,47 @@ import wres.datamodel.inputs.MetricInputException;
  */
 public class MulticategoryPairs extends BasicPairs<MulticategoryPair>
 {
+
+    /**
+     * Construct the multicategory input without any pairs for a baseline.
+     * 
+     * @param pairs the verification pairs
+     * @param meta the metadata
+     * @return the pairs
+     * @throws MetricInputException if the inputs are invalid
+     */
+    
+    public static MulticategoryPairs ofMulticategoryPairs( List<MulticategoryPair> pairs, Metadata meta )
+    {
+        return MulticategoryPairs.ofMulticategoryPairs( pairs, null, meta, null, null );
+    }
+    
+    /**
+     * Construct the multicategory input without any pairs for a baseline.
+     * 
+     * @param pairs the main verification pairs
+     * @param basePairs the baseline pairs (may be null)
+     * @param mainMeta the metadata for the main pairs
+     * @param baselineMeta the metadata for the baseline pairs (may be null, if the basePairs are null)
+     * @param climatology an optional climatological dataset (may be null)
+     * @return the pairs
+     * @throws MetricInputException if the inputs are invalid
+     */
+    
+    public static MulticategoryPairs ofMulticategoryPairs( List<MulticategoryPair> pairs,
+                                                           List<MulticategoryPair> basePairs,
+                                                           Metadata mainMeta,
+                                                           Metadata baselineMeta,
+                                                           VectorOfDoubles climatology )
+    {
+        MulticategoryPairsBuilder b = new MulticategoryPairsBuilder();
+        return (MulticategoryPairs) b.addData( pairs )
+                                     .setMetadata( mainMeta )
+                                     .addDataForBaseline( basePairs )
+                                     .setMetadataForBaseline( baselineMeta )
+                                     .setClimatology( climatology )
+                                     .build();
+    }
 
     /**
      * Returns the baseline data as a {@link MetricInput} or null if no baseline is defined.
@@ -28,7 +70,7 @@ public class MulticategoryPairs extends BasicPairs<MulticategoryPair>
         {
             return null;
         }
-        return DataFactory.ofMulticategoryPairs( this.getRawDataForBaseline(), this.getMetadataForBaseline() );
+        return MulticategoryPairs.ofMulticategoryPairs( this.getRawDataForBaseline(), this.getMetadataForBaseline() );
     }
 
     /**

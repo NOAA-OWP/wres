@@ -13,9 +13,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-import wres.datamodel.DataFactory;
+import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.inputs.pairs.DichotomousPair;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
+import wres.datamodel.inputs.pairs.DiscreteProbabilityPair;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.MulticategoryPair;
@@ -25,9 +26,10 @@ import wres.datamodel.inputs.pairs.SingleValuedPair;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs.TimeSeriesOfSingleValuedPairsBuilder;
+import wres.datamodel.metadata.DatasetIdentifier;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.Metadata;
-import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.time.Event;
@@ -50,18 +52,18 @@ public final class MetricTestDataFactory
     {
         //Construct some single-valued pairs
         final List<SingleValuedPair> values = new ArrayList<>();
-        values.add( DataFactory.pairOf( 22.9, 22.8 ) );
-        values.add( DataFactory.pairOf( 75.2, 80 ) );
-        values.add( DataFactory.pairOf( 63.2, 65 ) );
-        values.add( DataFactory.pairOf( 29, 30 ) );
-        values.add( DataFactory.pairOf( 5, 2 ) );
-        values.add( DataFactory.pairOf( 2.1, 3.1 ) );
-        values.add( DataFactory.pairOf( 35000, 37000 ) );
-        values.add( DataFactory.pairOf( 8, 7 ) );
-        values.add( DataFactory.pairOf( 12, 12 ) );
-        values.add( DataFactory.pairOf( 93, 94 ) );
+        values.add( SingleValuedPair.of( 22.9, 22.8 ) );
+        values.add( SingleValuedPair.of( 75.2, 80 ) );
+        values.add( SingleValuedPair.of( 63.2, 65 ) );
+        values.add( SingleValuedPair.of( 29, 30 ) );
+        values.add( SingleValuedPair.of( 5, 2 ) );
+        values.add( SingleValuedPair.of( 2.1, 3.1 ) );
+        values.add( SingleValuedPair.of( 35000, 37000 ) );
+        values.add( SingleValuedPair.of( 8, 7 ) );
+        values.add( SingleValuedPair.of( 12, 12 ) );
+        values.add( SingleValuedPair.of( 93, 94 ) );
 
-        return DataFactory.ofSingleValuedPairs( values, MetadataFactory.getMetadata() );
+        return SingleValuedPairs.of( values, Metadata.of() );
     }
 
     /**
@@ -74,42 +76,42 @@ public final class MetricTestDataFactory
     {
         //Construct some single-valued pairs
         final List<SingleValuedPair> values = new ArrayList<>();
-        values.add( DataFactory.pairOf( 22.9, 22.8 ) );
-        values.add( DataFactory.pairOf( 75.2, 80 ) );
-        values.add( DataFactory.pairOf( 63.2, 65 ) );
-        values.add( DataFactory.pairOf( 29, 30 ) );
-        values.add( DataFactory.pairOf( 5, 2 ) );
-        values.add( DataFactory.pairOf( 2.1, 3.1 ) );
-        values.add( DataFactory.pairOf( 35000, 37000 ) );
-        values.add( DataFactory.pairOf( 8, 7 ) );
-        values.add( DataFactory.pairOf( 12, 12 ) );
-        values.add( DataFactory.pairOf( 93, 94 ) );
+        values.add( SingleValuedPair.of( 22.9, 22.8 ) );
+        values.add( SingleValuedPair.of( 75.2, 80 ) );
+        values.add( SingleValuedPair.of( 63.2, 65 ) );
+        values.add( SingleValuedPair.of( 29, 30 ) );
+        values.add( SingleValuedPair.of( 5, 2 ) );
+        values.add( SingleValuedPair.of( 2.1, 3.1 ) );
+        values.add( SingleValuedPair.of( 35000, 37000 ) );
+        values.add( SingleValuedPair.of( 8, 7 ) );
+        values.add( SingleValuedPair.of( 12, 12 ) );
+        values.add( SingleValuedPair.of( 93, 94 ) );
         final List<SingleValuedPair> baseline = new ArrayList<>();
-        baseline.add( DataFactory.pairOf( 20.9, 23.8 ) );
-        baseline.add( DataFactory.pairOf( 71.2, 83.2 ) );
-        baseline.add( DataFactory.pairOf( 69.2, 66 ) );
-        baseline.add( DataFactory.pairOf( 20, 30.5 ) );
-        baseline.add( DataFactory.pairOf( 5.8, 2.1 ) );
-        baseline.add( DataFactory.pairOf( 1.1, 3.4 ) );
-        baseline.add( DataFactory.pairOf( 33020, 37500 ) );
-        baseline.add( DataFactory.pairOf( 8.8, 7.1 ) );
-        baseline.add( DataFactory.pairOf( 12.1, 13 ) );
-        baseline.add( DataFactory.pairOf( 93.2, 94.8 ) );
+        baseline.add( SingleValuedPair.of( 20.9, 23.8 ) );
+        baseline.add( SingleValuedPair.of( 71.2, 83.2 ) );
+        baseline.add( SingleValuedPair.of( 69.2, 66 ) );
+        baseline.add( SingleValuedPair.of( 20, 30.5 ) );
+        baseline.add( SingleValuedPair.of( 5.8, 2.1 ) );
+        baseline.add( SingleValuedPair.of( 1.1, 3.4 ) );
+        baseline.add( SingleValuedPair.of( 33020, 37500 ) );
+        baseline.add( SingleValuedPair.of( 8.8, 7.1 ) );
+        baseline.add( SingleValuedPair.of( 12.1, 13 ) );
+        baseline.add( SingleValuedPair.of( 93.2, 94.8 ) );
 
-        final Metadata main = MetadataFactory.getMetadata( MetadataFactory.getDimension( "CMS" ),
-                                                           MetadataFactory.getDatasetIdentifier( getLocation( "DRRC2" ),
+        final Metadata main = Metadata.of( MeasurementUnit.of( "CMS" ),
+                                                           DatasetIdentifier.of( getLocation( "DRRC2" ),
                                                                                                  "SQIN",
                                                                                                  "HEFS" ) );
-        final Metadata base = MetadataFactory.getMetadata( MetadataFactory.getDimension( "CMS" ),
-                                                           MetadataFactory.getDatasetIdentifier( getLocation( "DRRC2" ),
+        final Metadata base = Metadata.of( MeasurementUnit.of( "CMS" ),
+                                                           DatasetIdentifier.of( getLocation( "DRRC2" ),
                                                                                                  "SQIN",
                                                                                                  "ESP" ) );
-        return DataFactory.ofSingleValuedPairs( values, baseline, main, base );
+        return SingleValuedPairs.of( values, baseline, main, base );
     }
 
     public static Location getLocation( final String locationId )
     {
-        return MetadataFactory.getLocation( locationId );
+        return Location.of( locationId );
     }
 
     /**
@@ -125,14 +127,14 @@ public final class MetricTestDataFactory
 
         for ( int i = 0; i < 10000; i++ )
         {
-            values.add( DataFactory.pairOf( 5, 10 ) );
+            values.add( SingleValuedPair.of( 5, 10 ) );
         }
 
-        final Metadata meta = MetadataFactory.getMetadata( MetadataFactory.getDimension( "CMS" ),
-                                                           MetadataFactory.getDatasetIdentifier( getLocation( "DRRC2" ),
+        final Metadata meta = Metadata.of( MeasurementUnit.of( "CMS" ),
+                                                           DatasetIdentifier.of( getLocation( "DRRC2" ),
                                                                                                  "SQIN",
                                                                                                  "HEFS" ) );
-        return DataFactory.ofSingleValuedPairs( values, meta );
+        return SingleValuedPairs.of( values, meta );
     }
 
     /**
@@ -152,7 +154,7 @@ public final class MetricTestDataFactory
         {
             for ( int j = 0; j < 100; j++ )
             {
-                values.add( DataFactory.pairOf( i + 1, i + 6 ) );
+                values.add( SingleValuedPair.of( i + 1, i + 6 ) );
             }
         }
 
@@ -160,12 +162,12 @@ public final class MetricTestDataFactory
                                                  Instant.parse( "2010-12-31T11:59:59Z" ),
                                                  ReferenceTime.VALID_TIME,
                                                  Duration.ofHours( 1 ) );
-        final Metadata meta = MetadataFactory.getMetadata( MetadataFactory.getDimension( "CMS" ),
-                                                           MetadataFactory.getDatasetIdentifier( getLocation( "DRRC2" ),
+        final Metadata meta = Metadata.of( MeasurementUnit.of( "CMS" ),
+                                                           DatasetIdentifier.of( getLocation( "DRRC2" ),
                                                                                                  "SQIN",
                                                                                                  "HEFS" ),
                                                            window );
-        return DataFactory.ofSingleValuedPairs( values, meta );
+        return SingleValuedPairs.of( values, meta );
     }
 
     /**
@@ -199,7 +201,7 @@ public final class MetricTestDataFactory
             {
                 double[] doubleValues =
                         Arrays.stream( line.split( "\\s+" ) ).mapToDouble( Double::parseDouble ).toArray();
-                values.add( DataFactory.pairOf( doubleValues[0], doubleValues[1] ) );
+                values.add( SingleValuedPair.of( doubleValues[0], doubleValues[1] ) );
             }
         }
 
@@ -207,12 +209,12 @@ public final class MetricTestDataFactory
                                                  Instant.parse( "2010-12-31T11:59:59Z" ),
                                                  ReferenceTime.VALID_TIME,
                                                  Duration.ofHours( 24 ) );
-        final Metadata meta = MetadataFactory.getMetadata( MetadataFactory.getDimension( "MM/DAY" ),
-                                                           MetadataFactory.getDatasetIdentifier( getLocation( "103.1" ),
+        final Metadata meta = Metadata.of( MeasurementUnit.of( "MM/DAY" ),
+                                                           DatasetIdentifier.of( getLocation( "103.1" ),
                                                                                                  "QME",
                                                                                                  "NVE" ),
                                                            window );
-        return DataFactory.ofSingleValuedPairs( values, meta );
+        return SingleValuedPairs.of( values, meta );
     }
 
     /**
@@ -227,16 +229,16 @@ public final class MetricTestDataFactory
         //Construct some single-valued pairs
 
         final List<SingleValuedPair> values = new ArrayList<>();
-        values.add( DataFactory.pairOf( 22.9, 22.8 ) );
+        values.add( SingleValuedPair.of( 22.9, 22.8 ) );
         final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                  Instant.parse( "2010-12-31T11:59:59Z" ),
                                                  ReferenceTime.VALID_TIME,
                                                  Duration.ofHours( 24 ) );
-        final Metadata meta = MetadataFactory.getMetadata( MetadataFactory.getDimension( "MM/DAY" ),
-                                                           MetadataFactory.getDatasetIdentifier( getLocation( "A" ),
+        final Metadata meta = Metadata.of( MeasurementUnit.of( "MM/DAY" ),
+                                                           DatasetIdentifier.of( getLocation( "A" ),
                                                                                                  "MAP" ),
                                                            window );
-        return DataFactory.ofSingleValuedPairs( values, meta );
+        return SingleValuedPairs.of( values, meta );
     }
 
     /**
@@ -248,15 +250,15 @@ public final class MetricTestDataFactory
     public static SingleValuedPairs getSingleValuedPairsSeven()
     {
         //Construct some single-valued pairs
-        final Metadata main = MetadataFactory.getMetadata( MetadataFactory.getDimension( "CMS" ),
-                                                           MetadataFactory.getDatasetIdentifier( getLocation( "DRRC2" ),
+        final Metadata main = Metadata.of( MeasurementUnit.of( "CMS" ),
+                                                           DatasetIdentifier.of( getLocation( "DRRC2" ),
                                                                                                  "SQIN",
                                                                                                  "HEFS" ) );
-        final Metadata base = MetadataFactory.getMetadata( MetadataFactory.getDimension( "CMS" ),
-                                                           MetadataFactory.getDatasetIdentifier( getLocation( "DRRC2" ),
+        final Metadata base = Metadata.of( MeasurementUnit.of( "CMS" ),
+                                                           DatasetIdentifier.of( getLocation( "DRRC2" ),
                                                                                                  "SQIN",
                                                                                                  "ESP" ) );
-        return DataFactory.ofSingleValuedPairs( Collections.emptyList(), Collections.emptyList(), main, base );
+        return SingleValuedPairs.of( Collections.emptyList(), Collections.emptyList(), main, base );
     }
 
     /**
@@ -281,8 +283,8 @@ public final class MetricTestDataFactory
             {
                 double[] doubleValues =
                         Arrays.stream( line.split( "\\s+" ) ).mapToDouble( Double::parseDouble ).toArray();
-                values.add( DataFactory.pairOf( doubleValues[0],
-                                                Arrays.copyOfRange( doubleValues, 1, doubleValues.length ) ) );
+                values.add( EnsemblePair.of( doubleValues[0],
+                                             Arrays.copyOfRange( doubleValues, 1, doubleValues.length ) ) );
                 climatology.add( doubleValues[0] );
             }
         }
@@ -291,21 +293,21 @@ public final class MetricTestDataFactory
                                                  Instant.parse( "2010-12-31T11:59:59Z" ),
                                                  ReferenceTime.VALID_TIME,
                                                  Duration.ofHours( 24 ) );
-        final Metadata meta = MetadataFactory.getMetadata( MetadataFactory.getDimension( "CMS" ),
-                                                           MetadataFactory.getDatasetIdentifier( getLocation( "DRRC2" ),
+        final Metadata meta = Metadata.of( MeasurementUnit.of( "CMS" ),
+                                                           DatasetIdentifier.of( getLocation( "DRRC2" ),
                                                                                                  "SQIN",
                                                                                                  "HEFS" ),
                                                            window );
-        final Metadata baseMeta = MetadataFactory.getMetadata( MetadataFactory.getDimension( "CMS" ),
-                                                               MetadataFactory.getDatasetIdentifier( getLocation( "DRRC2" ),
+        final Metadata baseMeta = Metadata.of( MeasurementUnit.of( "CMS" ),
+                                                               DatasetIdentifier.of( getLocation( "DRRC2" ),
                                                                                                      "SQIN",
                                                                                                      "ESP" ),
                                                                window );
-        return DataFactory.ofEnsemblePairs( values,
+        return EnsemblePairs.of( values,
                                             values,
                                             meta,
                                             baseMeta,
-                                            DataFactory.vectorOf( climatology.toArray( new Double[climatology.size()] ) ) );
+                                            VectorOfDoubles.of( climatology.toArray( new Double[climatology.size()] ) ) );
     }
 
     /**
@@ -331,37 +333,37 @@ public final class MetricTestDataFactory
             {
                 double[] doubleValues =
                         Arrays.stream( line.split( "\\s+" ) ).mapToDouble( Double::parseDouble ).toArray();
-                values.add( DataFactory.pairOf( doubleValues[0],
-                                                Arrays.copyOfRange( doubleValues, 1, doubleValues.length ) ) );
+                values.add( EnsemblePair.of( doubleValues[0],
+                                             Arrays.copyOfRange( doubleValues, 1, doubleValues.length ) ) );
                 climatology.add( doubleValues[0] );
             }
         }
         //Add some missing values
         climatology.add( Double.NaN );
-        values.add( DataFactory.pairOf( Double.NaN,
-                                        new double[] { Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN } ) );
+        values.add( EnsemblePair.of( Double.NaN,
+                                     new double[] { Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN } ) );
 
         final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                  Instant.parse( "2010-12-31T11:59:59Z" ),
                                                  ReferenceTime.VALID_TIME,
                                                  Duration.ofHours( 24 ) );
-        final Metadata meta = MetadataFactory.getMetadata( MetadataFactory.getDimension( "CMS" ),
-                                                           MetadataFactory.getDatasetIdentifier( getLocation( "DRRC2" ),
+        final Metadata meta = Metadata.of( MeasurementUnit.of( "CMS" ),
+                                                           DatasetIdentifier.of( getLocation( "DRRC2" ),
                                                                                                  "SQIN",
                                                                                                  "HEFS" ),
                                                            window );
 
-        final Metadata baseMeta = MetadataFactory.getMetadata( MetadataFactory.getDimension( "CMS" ),
-                                                               MetadataFactory.getDatasetIdentifier( getLocation( "DRRC2" ),
+        final Metadata baseMeta = Metadata.of( MeasurementUnit.of( "CMS" ),
+                                                               DatasetIdentifier.of( getLocation( "DRRC2" ),
                                                                                                      "SQIN",
                                                                                                      "ESP" ),
                                                                window );
 
-        return DataFactory.ofEnsemblePairs( values,
+        return EnsemblePairs.of( values,
                                             values,
                                             meta,
                                             baseMeta,
-                                            DataFactory.vectorOf( climatology.toArray( new Double[climatology.size()] ) ) );
+                                            VectorOfDoubles.of( climatology.toArray( new Double[climatology.size()] ) ) );
     }
 
     /**
@@ -386,8 +388,8 @@ public final class MetricTestDataFactory
             {
                 double[] doubleValues =
                         Arrays.stream( line.split( "\\s+" ) ).mapToDouble( Double::parseDouble ).toArray();
-                values.add( DataFactory.pairOf( doubleValues[0],
-                                                Arrays.copyOfRange( doubleValues, 1, doubleValues.length ) ) );
+                values.add( EnsemblePair.of( doubleValues[0],
+                                             Arrays.copyOfRange( doubleValues, 1, doubleValues.length ) ) );
                 climatology.add( doubleValues[0] );
             }
         }
@@ -396,14 +398,14 @@ public final class MetricTestDataFactory
                                                  Instant.parse( "2010-12-31T11:59:59Z" ),
                                                  ReferenceTime.VALID_TIME,
                                                  Duration.ofHours( 24 ) );
-        final Metadata meta = MetadataFactory.getMetadata( MetadataFactory.getDimension( "CMS" ),
-                                                           MetadataFactory.getDatasetIdentifier( getLocation( "DRRC2" ),
+        final Metadata meta = Metadata.of( MeasurementUnit.of( "CMS" ),
+                                                           DatasetIdentifier.of( getLocation( "DRRC2" ),
                                                                                                  "SQIN",
                                                                                                  "HEFS" ),
                                                            window );
-        return DataFactory.ofEnsemblePairs( values,
+        return EnsemblePairs.of( values,
                                             meta,
-                                            DataFactory.vectorOf( climatology.toArray( new Double[climatology.size()] ) ) );
+                                            VectorOfDoubles.of( climatology.toArray( new Double[climatology.size()] ) ) );
     }
 
     /**
@@ -417,17 +419,17 @@ public final class MetricTestDataFactory
         //Construct some ensemble pairs
 
         final List<EnsemblePair> values = new ArrayList<>();
-        values.add( DataFactory.pairOf( 22.9, new double[] { 22.8, 23.9 } ) );
+        values.add( EnsemblePair.of( 22.9, new double[] { 22.8, 23.9 } ) );
 
         final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                  Instant.parse( "2010-12-31T11:59:59Z" ),
                                                  ReferenceTime.VALID_TIME,
                                                  Duration.ofHours( 24 ) );
-        final Metadata meta = MetadataFactory.getMetadata( MetadataFactory.getDimension( "MM/DAY" ),
-                                                           MetadataFactory.getDatasetIdentifier( getLocation( "DRRC2" ),
+        final Metadata meta = Metadata.of( MeasurementUnit.of( "MM/DAY" ),
+                                                           DatasetIdentifier.of( getLocation( "DRRC2" ),
                                                                                                  "MAP" ),
                                                            window );
-        return DataFactory.ofEnsemblePairs( values, meta );
+        return EnsemblePairs.of( values, meta );
     }
 
     /**
@@ -443,11 +445,11 @@ public final class MetricTestDataFactory
                                                  Instant.parse( "2010-12-31T11:59:59Z" ),
                                                  ReferenceTime.VALID_TIME,
                                                  Duration.ofHours( 24 ) );
-        final Metadata meta = MetadataFactory.getMetadata( MetadataFactory.getDimension( "MM/DAY" ),
-                                                           MetadataFactory.getDatasetIdentifier( getLocation( "DRRC2" ),
+        final Metadata meta = Metadata.of( MeasurementUnit.of( "MM/DAY" ),
+                                                           DatasetIdentifier.of( getLocation( "DRRC2" ),
                                                                                                  "MAP" ),
                                                            window );
-        return DataFactory.ofEnsemblePairs( Collections.emptyList(), Collections.emptyList(), meta, meta );
+        return EnsemblePairs.of( Collections.emptyList(), Collections.emptyList(), meta, meta );
     }
 
     /**
@@ -482,11 +484,11 @@ public final class MetricTestDataFactory
             values.add( DichotomousPair.of( false, false ) );
         }
 
-        final Metadata meta = MetadataFactory.getMetadata( MetadataFactory.getDimension(),
-                                                           MetadataFactory.getDatasetIdentifier( getLocation( "DRRC2" ),
+        final Metadata meta = Metadata.of( MeasurementUnit.of(),
+                                                           DatasetIdentifier.of( getLocation( "DRRC2" ),
                                                                                                  "SQIN",
                                                                                                  "HEFS" ) );
-        return DataFactory.ofDichotomousPairs( values, meta ); //Construct the pairs
+        return DichotomousPairs.ofDichotomousPairs( values, meta ); //Construct the pairs
     }
 
     /**
@@ -555,11 +557,11 @@ public final class MetricTestDataFactory
                                               new boolean[] { false, false, true } ) );
         }
 
-        final Metadata meta = MetadataFactory.getMetadata( MetadataFactory.getDimension(),
-                                                           MetadataFactory.getDatasetIdentifier( getLocation( "DRRC2" ),
+        final Metadata meta = Metadata.of( MeasurementUnit.of(),
+                                                           DatasetIdentifier.of( getLocation( "DRRC2" ),
                                                                                                  "SQIN",
                                                                                                  "HEFS" ) );
-        return DataFactory.ofMulticategoryPairs( values, meta ); //Construct the pairs
+        return MulticategoryPairs.ofMulticategoryPairs( values, meta ); //Construct the pairs
     }
 
     /**
@@ -571,19 +573,19 @@ public final class MetricTestDataFactory
     public static DiscreteProbabilityPairs getDiscreteProbabilityPairsOne()
     {
         //Construct some probabilistic pairs, and use the same pairs as a reference for skill (i.e. skill = 0.0)
-        final List<SingleValuedPair> values = new ArrayList<>();
-        values.add( DataFactory.pairOf( 0, 3.0 / 5.0 ) );
-        values.add( DataFactory.pairOf( 0, 1.0 / 5.0 ) );
-        values.add( DataFactory.pairOf( 1, 2.0 / 5.0 ) );
-        values.add( DataFactory.pairOf( 1, 3.0 / 5.0 ) );
-        values.add( DataFactory.pairOf( 0, 0.0 / 5.0 ) );
-        values.add( DataFactory.pairOf( 1, 1.0 / 5.0 ) );
+        final List<DiscreteProbabilityPair> values = new ArrayList<>();
+        values.add( DiscreteProbabilityPair.of( 0, 3.0 / 5.0 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 1.0 / 5.0 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 2.0 / 5.0 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 3.0 / 5.0 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.0 / 5.0 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 1.0 / 5.0 ) );
 
-        final Metadata meta = MetadataFactory.getMetadata( MetadataFactory.getDimension(),
-                                                           MetadataFactory.getDatasetIdentifier( getLocation( "DRRC2" ),
+        final Metadata meta = Metadata.of( MeasurementUnit.of(),
+                                                           DatasetIdentifier.of( getLocation( "DRRC2" ),
                                                                                                  "SQIN",
                                                                                                  "HEFS" ) );
-        return DataFactory.ofDiscreteProbabilityPairs( values, meta );
+        return DiscreteProbabilityPairs.of( values, meta );
     }
 
     /**
@@ -595,29 +597,29 @@ public final class MetricTestDataFactory
     public static DiscreteProbabilityPairs getDiscreteProbabilityPairsTwo()
     {
         //Construct some probabilistic pairs, and use some different pairs as a reference
-        final List<SingleValuedPair> values = new ArrayList<>();
-        values.add( DataFactory.pairOf( 0, 3.0 / 5.0 ) );
-        values.add( DataFactory.pairOf( 0, 1.0 / 5.0 ) );
-        values.add( DataFactory.pairOf( 1, 2.0 / 5.0 ) );
-        values.add( DataFactory.pairOf( 1, 3.0 / 5.0 ) );
-        values.add( DataFactory.pairOf( 0, 0.0 / 5.0 ) );
-        values.add( DataFactory.pairOf( 1, 1.0 / 5.0 ) );
-        final List<SingleValuedPair> baseline = new ArrayList<>();
-        baseline.add( DataFactory.pairOf( 0, 2.0 / 5.0 ) );
-        baseline.add( DataFactory.pairOf( 0, 2.0 / 5.0 ) );
-        baseline.add( DataFactory.pairOf( 1, 5.0 / 5.0 ) );
-        baseline.add( DataFactory.pairOf( 1, 3.0 / 5.0 ) );
-        baseline.add( DataFactory.pairOf( 0, 4.0 / 5.0 ) );
-        baseline.add( DataFactory.pairOf( 1, 1.0 / 5.0 ) );
-        final Metadata main = MetadataFactory.getMetadata( MetadataFactory.getDimension(),
-                                                           MetadataFactory.getDatasetIdentifier( getLocation( "DRRC2" ),
+        final List<DiscreteProbabilityPair> values = new ArrayList<>();
+        values.add( DiscreteProbabilityPair.of( 0, 3.0 / 5.0 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 1.0 / 5.0 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 2.0 / 5.0 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 3.0 / 5.0 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.0 / 5.0 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 1.0 / 5.0 ) );
+        final List<DiscreteProbabilityPair> baseline = new ArrayList<>();
+        baseline.add( DiscreteProbabilityPair.of( 0, 2.0 / 5.0 ) );
+        baseline.add( DiscreteProbabilityPair.of( 0, 2.0 / 5.0 ) );
+        baseline.add( DiscreteProbabilityPair.of( 1, 5.0 / 5.0 ) );
+        baseline.add( DiscreteProbabilityPair.of( 1, 3.0 / 5.0 ) );
+        baseline.add( DiscreteProbabilityPair.of( 0, 4.0 / 5.0 ) );
+        baseline.add( DiscreteProbabilityPair.of( 1, 1.0 / 5.0 ) );
+        final Metadata main = Metadata.of( MeasurementUnit.of(),
+                                                           DatasetIdentifier.of( getLocation( "DRRC2" ),
                                                                                                  "SQIN",
                                                                                                  "HEFS" ) );
-        final Metadata base = MetadataFactory.getMetadata( MetadataFactory.getDimension(),
-                                                           MetadataFactory.getDatasetIdentifier( getLocation( "DRRC2" ),
+        final Metadata base = Metadata.of( MeasurementUnit.of(),
+                                                           DatasetIdentifier.of( getLocation( "DRRC2" ),
                                                                                                  "SQIN",
                                                                                                  "ESP" ) );
-        return DataFactory.ofDiscreteProbabilityPairs( values, baseline, main, base );
+        return DiscreteProbabilityPairs.of( values, baseline, main, base );
     }
 
     /**
@@ -635,360 +637,360 @@ public final class MetricTestDataFactory
     public static DiscreteProbabilityPairs getDiscreteProbabilityPairsThree()
     {
         //Construct some probabilistic pairs, and use some different pairs as a reference
-        final List<SingleValuedPair> values = new ArrayList<>();
-        values.add( DataFactory.pairOf( 0, 0.3 ) );
-        values.add( DataFactory.pairOf( 0, 0.1 ) );
-        values.add( DataFactory.pairOf( 0, 0.1 ) );
-        values.add( DataFactory.pairOf( 0, 0.2 ) );
-        values.add( DataFactory.pairOf( 0, 0.2 ) );
-        values.add( DataFactory.pairOf( 0, 0.1 ) );
-        values.add( DataFactory.pairOf( 1, 0.4 ) );
-        values.add( DataFactory.pairOf( 1, 0.7 ) );
-        values.add( DataFactory.pairOf( 0, 0.7 ) );
-        values.add( DataFactory.pairOf( 0, 0.2 ) );
-        values.add( DataFactory.pairOf( 1, 0.2 ) );
-        values.add( DataFactory.pairOf( 1, 1 ) );
-        values.add( DataFactory.pairOf( 1, 0.7 ) );
-        values.add( DataFactory.pairOf( 1, 0.7 ) );
-        values.add( DataFactory.pairOf( 0, 0.6 ) );
-        values.add( DataFactory.pairOf( 1, 0.4 ) );
-        values.add( DataFactory.pairOf( 0, 0.3 ) );
-        values.add( DataFactory.pairOf( 1, 0.7 ) );
-        values.add( DataFactory.pairOf( 0, 0.9 ) );
-        values.add( DataFactory.pairOf( 1, 0.8 ) );
-        values.add( DataFactory.pairOf( 0, 0.2 ) );
-        values.add( DataFactory.pairOf( 0, 0.2 ) );
-        values.add( DataFactory.pairOf( 1, 0.8 ) );
-        values.add( DataFactory.pairOf( 1, 0.5 ) );
-        values.add( DataFactory.pairOf( 0, 0.3 ) );
-        values.add( DataFactory.pairOf( 0, 0.1 ) );
-        values.add( DataFactory.pairOf( 0, 0.2 ) );
-        values.add( DataFactory.pairOf( 0, 0 ) );
-        values.add( DataFactory.pairOf( 0, 0 ) );
-        values.add( DataFactory.pairOf( 0, 0.8 ) );
-        values.add( DataFactory.pairOf( 0, 0.5 ) );
-        values.add( DataFactory.pairOf( 1, 0.7 ) );
-        values.add( DataFactory.pairOf( 0, 0.8 ) );
-        values.add( DataFactory.pairOf( 0, 0.2 ) );
-        values.add( DataFactory.pairOf( 0, 0.2 ) );
-        values.add( DataFactory.pairOf( 0, 0.3 ) );
-        values.add( DataFactory.pairOf( 0, 0.1 ) );
-        values.add( DataFactory.pairOf( 0, 0.1 ) );
-        values.add( DataFactory.pairOf( 0, 0.1 ) );
-        values.add( DataFactory.pairOf( 0, 0.2 ) );
-        values.add( DataFactory.pairOf( 0, 0.2 ) );
-        values.add( DataFactory.pairOf( 0, 0.2 ) );
-        values.add( DataFactory.pairOf( 0, 0 ) );
-        values.add( DataFactory.pairOf( 0, 0 ) );
-        values.add( DataFactory.pairOf( 0, 0 ) );
-        values.add( DataFactory.pairOf( 0, 0 ) );
-        values.add( DataFactory.pairOf( 0, 0.2 ) );
-        values.add( DataFactory.pairOf( 0, 0.2 ) );
-        values.add( DataFactory.pairOf( 0, 0 ) );
-        values.add( DataFactory.pairOf( 0, 0 ) );
-        values.add( DataFactory.pairOf( 0, 0.1 ) );
-        values.add( DataFactory.pairOf( 0, 0 ) );
-        values.add( DataFactory.pairOf( 0, 0.1 ) );
-        values.add( DataFactory.pairOf( 0, 0.1 ) );
-        values.add( DataFactory.pairOf( 0, 0 ) );
-        values.add( DataFactory.pairOf( 0, 0 ) );
-        values.add( DataFactory.pairOf( 0, 0.1 ) );
-        values.add( DataFactory.pairOf( 0, 0.1 ) );
-        values.add( DataFactory.pairOf( 0, 0 ) );
-        values.add( DataFactory.pairOf( 0, 0 ) );
-        values.add( DataFactory.pairOf( 0, 0 ) );
-        values.add( DataFactory.pairOf( 0, 0.5 ) );
-        values.add( DataFactory.pairOf( 0, 0.2 ) );
-        values.add( DataFactory.pairOf( 0, 0.5 ) );
-        values.add( DataFactory.pairOf( 0, 0.3 ) );
-        values.add( DataFactory.pairOf( 0, 0.3 ) );
-        values.add( DataFactory.pairOf( 0, 0.2 ) );
-        values.add( DataFactory.pairOf( 0, 0.2 ) );
-        values.add( DataFactory.pairOf( 0, 0 ) );
-        values.add( DataFactory.pairOf( 0, 0.1 ) );
-        values.add( DataFactory.pairOf( 0, 0.2 ) );
-        values.add( DataFactory.pairOf( 0, 0 ) );
-        values.add( DataFactory.pairOf( 0, 0 ) );
-        values.add( DataFactory.pairOf( 0, 0.2 ) );
-        values.add( DataFactory.pairOf( 0, 0 ) );
-        values.add( DataFactory.pairOf( 0, 0.3 ) );
-        values.add( DataFactory.pairOf( 0, 0.2 ) );
-        values.add( DataFactory.pairOf( 0, 0.2 ) );
-        values.add( DataFactory.pairOf( 0, 0 ) );
-        values.add( DataFactory.pairOf( 0, 0 ) );
-        values.add( DataFactory.pairOf( 0, 0 ) );
-        values.add( DataFactory.pairOf( 0, 0.1 ) );
-        values.add( DataFactory.pairOf( 0, 0 ) );
-        values.add( DataFactory.pairOf( 1, 0 ) );
-        values.add( DataFactory.pairOf( 0, 0.3 ) );
-        values.add( DataFactory.pairOf( 0, 0 ) );
-        values.add( DataFactory.pairOf( 0, 0.2 ) );
-        values.add( DataFactory.pairOf( 0, 0.2 ) );
-        values.add( DataFactory.pairOf( 1, 0.9 ) );
-        values.add( DataFactory.pairOf( 1, 0.6 ) );
-        values.add( DataFactory.pairOf( 0, 0 ) );
-        values.add( DataFactory.pairOf( 0, 0 ) );
-        values.add( DataFactory.pairOf( 0, 0.3 ) );
-        values.add( DataFactory.pairOf( 0, 0.3 ) );
-        values.add( DataFactory.pairOf( 1, 0.8 ) );
-        values.add( DataFactory.pairOf( 0, 0.5 ) );
-        values.add( DataFactory.pairOf( 0, 0.7 ) );
-        values.add( DataFactory.pairOf( 0, 0.6 ) );
-        values.add( DataFactory.pairOf( 0, 0.3 ) );
-        values.add( DataFactory.pairOf( 0, 0.3 ) );
-        values.add( DataFactory.pairOf( 0, 0.1 ) );
-        values.add( DataFactory.pairOf( 0, 0.1 ) );
-        values.add( DataFactory.pairOf( 0, 0.1 ) );
-        values.add( DataFactory.pairOf( 0, 0.1 ) );
-        values.add( DataFactory.pairOf( 0, 0.2 ) );
-        values.add( DataFactory.pairOf( 0, 0.2 ) );
-        values.add( DataFactory.pairOf( 0, 0.1 ) );
-        values.add( DataFactory.pairOf( 0, 0.2 ) );
-        values.add( DataFactory.pairOf( 0, 0.2 ) );
-        values.add( DataFactory.pairOf( 0, 0.2 ) );
-        values.add( DataFactory.pairOf( 0, 0.2 ) );
-        values.add( DataFactory.pairOf( 0, 0.2 ) );
-        values.add( DataFactory.pairOf( 0, 0.3 ) );
-        values.add( DataFactory.pairOf( 0, 0.7 ) );
-        values.add( DataFactory.pairOf( 1, 1 ) );
-        values.add( DataFactory.pairOf( 0, 0.2 ) );
-        values.add( DataFactory.pairOf( 0, 0.1 ) );
-        values.add( DataFactory.pairOf( 0, 0.2 ) );
-        values.add( DataFactory.pairOf( 1, 0.9 ) );
-        values.add( DataFactory.pairOf( 0, 0.6 ) );
-        values.add( DataFactory.pairOf( 0, 0.1 ) );
-        values.add( DataFactory.pairOf( 0, 0.1 ) );
-        values.add( DataFactory.pairOf( 1, 0.2 ) );
-        values.add( DataFactory.pairOf( 0, 0.1 ) );
-        values.add( DataFactory.pairOf( 0, 0.8 ) );
-        values.add( DataFactory.pairOf( 1, 1 ) );
-        values.add( DataFactory.pairOf( 0, 0.1 ) );
-        values.add( DataFactory.pairOf( 1, 1 ) );
-        values.add( DataFactory.pairOf( 1, 0.8 ) );
-        values.add( DataFactory.pairOf( 0, 0.5 ) );
-        values.add( DataFactory.pairOf( 1, 0.6 ) );
-        values.add( DataFactory.pairOf( 1, 0.5 ) );
-        values.add( DataFactory.pairOf( 0, 0.2 ) );
-        values.add( DataFactory.pairOf( 0, 0.1 ) );
-        values.add( DataFactory.pairOf( 0, 0.2 ) );
-        values.add( DataFactory.pairOf( 0, 0.7 ) );
-        values.add( DataFactory.pairOf( 0, 0.2 ) );
-        values.add( DataFactory.pairOf( 1, 0.8 ) );
-        values.add( DataFactory.pairOf( 0, 0.1 ) );
-        values.add( DataFactory.pairOf( 0, 0.2 ) );
-        values.add( DataFactory.pairOf( 0, 0 ) );
-        values.add( DataFactory.pairOf( 0, 0.6 ) );
-        values.add( DataFactory.pairOf( 0, 0.1 ) );
-        values.add( DataFactory.pairOf( 0, 0.1 ) );
-        values.add( DataFactory.pairOf( 0, 0.2 ) );
-        values.add( DataFactory.pairOf( 1, 0.3 ) );
-        values.add( DataFactory.pairOf( 1, 0.3 ) );
-        values.add( DataFactory.pairOf( 0, 0.7 ) );
-        values.add( DataFactory.pairOf( 0, 0.6 ) );
-        values.add( DataFactory.pairOf( 0, 0.1 ) );
-        values.add( DataFactory.pairOf( 1, 0.9 ) );
-        values.add( DataFactory.pairOf( 0, 0.2 ) );
-        values.add( DataFactory.pairOf( 0, 0 ) );
-        values.add( DataFactory.pairOf( 0, 0.7 ) );
-        values.add( DataFactory.pairOf( 0, 0.7 ) );
-        values.add( DataFactory.pairOf( 1, 0.5 ) );
-        values.add( DataFactory.pairOf( 0, 0.7 ) );
-        values.add( DataFactory.pairOf( 1, 0.6 ) );
-        values.add( DataFactory.pairOf( 1, 0.4 ) );
-        values.add( DataFactory.pairOf( 0, 0.2 ) );
-        values.add( DataFactory.pairOf( 0, 0.8 ) );
-        values.add( DataFactory.pairOf( 1, 0.7 ) );
-        values.add( DataFactory.pairOf( 0, 0.4 ) );
-        values.add( DataFactory.pairOf( 0, 0.3 ) );
-        values.add( DataFactory.pairOf( 0, 0.2 ) );
-        values.add( DataFactory.pairOf( 1, 0.3 ) );
-        values.add( DataFactory.pairOf( 0, 0.3 ) );
-        values.add( DataFactory.pairOf( 0, 0.7 ) );
-        values.add( DataFactory.pairOf( 0, 0.2 ) );
-        values.add( DataFactory.pairOf( 1, 0.7 ) );
-        values.add( DataFactory.pairOf( 0, 0.8 ) );
-        values.add( DataFactory.pairOf( 0, 0.4 ) );
-        values.add( DataFactory.pairOf( 0, 0.2 ) );
-        values.add( DataFactory.pairOf( 0, 0.4 ) );
-        values.add( DataFactory.pairOf( 1, 0.7 ) );
-        values.add( DataFactory.pairOf( 0, 0.3 ) );
-        values.add( DataFactory.pairOf( 0, 0.5 ) );
-        values.add( DataFactory.pairOf( 0, 0.5 ) );
-        values.add( DataFactory.pairOf( 0, 0.1 ) );
-        values.add( DataFactory.pairOf( 0, 0.1 ) );
-        values.add( DataFactory.pairOf( 0, 0.7 ) );
-        values.add( DataFactory.pairOf( 0, 0.3 ) );
-        values.add( DataFactory.pairOf( 1, 0.2 ) );
-        values.add( DataFactory.pairOf( 0, 0.3 ) );
-        values.add( DataFactory.pairOf( 0, 0.2 ) );
-        values.add( DataFactory.pairOf( 0, 0.2 ) );
-        values.add( DataFactory.pairOf( 0, 0.3 ) );
-        values.add( DataFactory.pairOf( 0, 0.2 ) );
-        values.add( DataFactory.pairOf( 0, 0.5 ) );
-        values.add( DataFactory.pairOf( 0, 0.5 ) );
-        values.add( DataFactory.pairOf( 0, 0.2 ) );
-        values.add( DataFactory.pairOf( 0, 0.3 ) );
-        values.add( DataFactory.pairOf( 0, 0.4 ) );
-        values.add( DataFactory.pairOf( 0, 0.4 ) );
-        values.add( DataFactory.pairOf( 0, 0.4 ) );
-        values.add( DataFactory.pairOf( 0, 0.6 ) );
-        values.add( DataFactory.pairOf( 1, 0.8 ) );
-        values.add( DataFactory.pairOf( 1, 0.8 ) );
-        values.add( DataFactory.pairOf( 1, 0.9 ) );
-        values.add( DataFactory.pairOf( 0, 0.6 ) );
-        values.add( DataFactory.pairOf( 1, 0.5 ) );
-        values.add( DataFactory.pairOf( 0, 0.4 ) );
-        values.add( DataFactory.pairOf( 0, 0.4 ) );
-        values.add( DataFactory.pairOf( 1, 0.6 ) );
-        values.add( DataFactory.pairOf( 0, 0.7 ) );
-        values.add( DataFactory.pairOf( 1, 0.8 ) );
-        values.add( DataFactory.pairOf( 0, 0.3 ) );
-        values.add( DataFactory.pairOf( 0, 0.1 ) );
-        values.add( DataFactory.pairOf( 1, 0.5 ) );
-        values.add( DataFactory.pairOf( 1, 0.3 ) );
-        values.add( DataFactory.pairOf( 0, 0.7 ) );
-        values.add( DataFactory.pairOf( 0, 0 ) );
-        values.add( DataFactory.pairOf( 0, 0.2 ) );
-        values.add( DataFactory.pairOf( 0, 0.3 ) );
-        values.add( DataFactory.pairOf( 1, 0.7 ) );
-        values.add( DataFactory.pairOf( 0, 0.6 ) );
-        values.add( DataFactory.pairOf( 0, 0.4 ) );
-        values.add( DataFactory.pairOf( 0, 0.2 ) );
-        values.add( DataFactory.pairOf( 0, 0 ) );
-        values.add( DataFactory.pairOf( 0, 0.2 ) );
-        values.add( DataFactory.pairOf( 1, 0.7 ) );
-        values.add( DataFactory.pairOf( 0, 0.7 ) );
-        values.add( DataFactory.pairOf( 0, 0.5 ) );
-        values.add( DataFactory.pairOf( 1, 0.9 ) );
-        values.add( DataFactory.pairOf( 1, 0.7 ) );
-        values.add( DataFactory.pairOf( 0, 0.4 ) );
-        values.add( DataFactory.pairOf( 0, 0.6 ) );
-        values.add( DataFactory.pairOf( 0, 0.7 ) );
-        values.add( DataFactory.pairOf( 0, 1 ) );
-        values.add( DataFactory.pairOf( 1, 0.8 ) );
-        values.add( DataFactory.pairOf( 0, 0.3 ) );
-        values.add( DataFactory.pairOf( 0, 0.6 ) );
-        values.add( DataFactory.pairOf( 0, 0.5 ) );
-        values.add( DataFactory.pairOf( 0, 0.1 ) );
-        values.add( DataFactory.pairOf( 0, 0.5 ) );
-        values.add( DataFactory.pairOf( 0, 0.3 ) );
-        values.add( DataFactory.pairOf( 0, 0.1 ) );
-        values.add( DataFactory.pairOf( 0, 0.1 ) );
-        values.add( DataFactory.pairOf( 0, 0 ) );
-        values.add( DataFactory.pairOf( 0, 0 ) );
-        values.add( DataFactory.pairOf( 0, 0 ) );
-        values.add( DataFactory.pairOf( 0, 0 ) );
-        values.add( DataFactory.pairOf( 0, 0 ) );
-        values.add( DataFactory.pairOf( 0, 0.2 ) );
-        values.add( DataFactory.pairOf( 0, 0.4 ) );
-        values.add( DataFactory.pairOf( 0, 0 ) );
-        values.add( DataFactory.pairOf( 0, 0.2 ) );
-        values.add( DataFactory.pairOf( 0, 0.1 ) );
-        values.add( DataFactory.pairOf( 0, 0.3 ) );
-        values.add( DataFactory.pairOf( 0, 0.3 ) );
-        values.add( DataFactory.pairOf( 0, 0 ) );
-        values.add( DataFactory.pairOf( 0, 0.6 ) );
-        values.add( DataFactory.pairOf( 0, 0.3 ) );
-        values.add( DataFactory.pairOf( 1, 0.9 ) );
-        values.add( DataFactory.pairOf( 0, 0.1 ) );
-        values.add( DataFactory.pairOf( 0, 0.7 ) );
-        values.add( DataFactory.pairOf( 0, 1 ) );
-        values.add( DataFactory.pairOf( 0, 0.9 ) );
-        values.add( DataFactory.pairOf( 0, 0.2 ) );
-        values.add( DataFactory.pairOf( 0, 0.5 ) );
-        values.add( DataFactory.pairOf( 1, 0.8 ) );
-        values.add( DataFactory.pairOf( 0, 0.3 ) );
-        values.add( DataFactory.pairOf( 0, 0.6 ) );
-        values.add( DataFactory.pairOf( 0, 0.6 ) );
-        values.add( DataFactory.pairOf( 0, 0.7 ) );
-        values.add( DataFactory.pairOf( 1, 0.8 ) );
-        values.add( DataFactory.pairOf( 1, 1 ) );
-        values.add( DataFactory.pairOf( 0, 0.3 ) );
-        values.add( DataFactory.pairOf( 0, 0.2 ) );
-        values.add( DataFactory.pairOf( 1, 1 ) );
-        values.add( DataFactory.pairOf( 1, 0.7 ) );
-        values.add( DataFactory.pairOf( 0, 0.4 ) );
-        values.add( DataFactory.pairOf( 0, 0 ) );
-        values.add( DataFactory.pairOf( 0, 0 ) );
-        values.add( DataFactory.pairOf( 0, 0.1 ) );
-        values.add( DataFactory.pairOf( 0, 0.1 ) );
-        values.add( DataFactory.pairOf( 0, 0.3 ) );
-        values.add( DataFactory.pairOf( 0, 0.3 ) );
-        values.add( DataFactory.pairOf( 0, 0.2 ) );
-        values.add( DataFactory.pairOf( 0, 0.1 ) );
-        values.add( DataFactory.pairOf( 0, 0 ) );
-        values.add( DataFactory.pairOf( 0, 0.1 ) );
-        values.add( DataFactory.pairOf( 1, 0.8 ) );
-        values.add( DataFactory.pairOf( 0, 0.8 ) );
-        values.add( DataFactory.pairOf( 0, 0.3 ) );
-        values.add( DataFactory.pairOf( 0, 0.1 ) );
-        values.add( DataFactory.pairOf( 1, 0.5 ) );
-        values.add( DataFactory.pairOf( 0, 0.4 ) );
-        values.add( DataFactory.pairOf( 1, 0.7 ) );
-        values.add( DataFactory.pairOf( 0, 0.3 ) );
-        values.add( DataFactory.pairOf( 1, 0.8 ) );
-        values.add( DataFactory.pairOf( 0, 0.7 ) );
-        values.add( DataFactory.pairOf( 1, 0.7 ) );
-        values.add( DataFactory.pairOf( 0, 0.1 ) );
-        values.add( DataFactory.pairOf( 0, 0.1 ) );
-        values.add( DataFactory.pairOf( 0, 0.1 ) );
-        values.add( DataFactory.pairOf( 0, 0 ) );
-        values.add( DataFactory.pairOf( 0, 0 ) );
-        values.add( DataFactory.pairOf( 0, 0 ) );
-        values.add( DataFactory.pairOf( 1, 0.5 ) );
-        values.add( DataFactory.pairOf( 0, 0 ) );
-        values.add( DataFactory.pairOf( 1, 1 ) );
-        values.add( DataFactory.pairOf( 1, 0.7 ) );
-        values.add( DataFactory.pairOf( 1, 0.5 ) );
-        values.add( DataFactory.pairOf( 0, 0.6 ) );
-        values.add( DataFactory.pairOf( 1, 0.4 ) );
-        values.add( DataFactory.pairOf( 0, 0.3 ) );
-        values.add( DataFactory.pairOf( 0, 0.4 ) );
-        values.add( DataFactory.pairOf( 0, 0.3 ) );
-        values.add( DataFactory.pairOf( 0, 0 ) );
-        values.add( DataFactory.pairOf( 1, 0.8 ) );
-        values.add( DataFactory.pairOf( 1, 1 ) );
-        values.add( DataFactory.pairOf( 1, 1 ) );
-        values.add( DataFactory.pairOf( 0, 0.8 ) );
-        values.add( DataFactory.pairOf( 0, 0.5 ) );
-        values.add( DataFactory.pairOf( 1, 0.2 ) );
-        values.add( DataFactory.pairOf( 0, 0.1 ) );
-        values.add( DataFactory.pairOf( 0, 0.1 ) );
-        values.add( DataFactory.pairOf( 1, 0.2 ) );
-        values.add( DataFactory.pairOf( 0, 0.1 ) );
-        values.add( DataFactory.pairOf( 0, 0.1 ) );
-        values.add( DataFactory.pairOf( 0, 0.9 ) );
-        values.add( DataFactory.pairOf( 0, 0.1 ) );
-        values.add( DataFactory.pairOf( 0, 0 ) );
-        values.add( DataFactory.pairOf( 0, 0.6 ) );
-        values.add( DataFactory.pairOf( 0, 0.7 ) );
-        values.add( DataFactory.pairOf( 0, 0.1 ) );
-        values.add( DataFactory.pairOf( 0, 0.1 ) );
-        values.add( DataFactory.pairOf( 1, 1 ) );
-        values.add( DataFactory.pairOf( 1, 0.6 ) );
-        values.add( DataFactory.pairOf( 0, 0.2 ) );
-        values.add( DataFactory.pairOf( 1, 0.8 ) );
-        values.add( DataFactory.pairOf( 0, 0.8 ) );
-        values.add( DataFactory.pairOf( 0, 0.6 ) );
-        values.add( DataFactory.pairOf( 0, 0.4 ) );
-        values.add( DataFactory.pairOf( 1, 0.6 ) );
-        values.add( DataFactory.pairOf( 1, 0.3 ) );
-        values.add( DataFactory.pairOf( 1, 0.1 ) );
-        values.add( DataFactory.pairOf( 1, 0.9 ) );
-        values.add( DataFactory.pairOf( 1, 0.7 ) );
-        values.add( DataFactory.pairOf( 0, 0.3 ) );
-        values.add( DataFactory.pairOf( 1, 0.8 ) );
-        values.add( DataFactory.pairOf( 1, 1 ) );
-        values.add( DataFactory.pairOf( 1, 0.9 ) );
-        values.add( DataFactory.pairOf( 0, 0.1 ) );
-        values.add( DataFactory.pairOf( 0, 0.1 ) );
-        values.add( DataFactory.pairOf( 0, 0.1 ) );
+        final List<DiscreteProbabilityPair> values = new ArrayList<>();
+        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.4 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.7 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.7 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.2 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 1 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.7 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.7 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.6 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.4 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.7 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.9 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.8 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.8 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.5 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.8 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.5 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.7 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.8 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.5 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.5 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.9 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.6 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.8 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.5 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.7 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.6 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.7 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 1 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.9 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.6 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.2 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.8 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 1 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 1 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.8 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.5 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.6 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.5 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.7 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.8 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.6 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.3 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.3 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.7 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.6 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.9 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.7 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.7 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.5 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.7 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.6 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.4 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.8 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.7 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.4 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.3 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.7 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.7 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.8 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.4 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.4 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.7 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.5 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.5 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.7 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.2 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.5 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.5 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.4 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.4 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.4 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.6 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.8 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.8 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.9 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.6 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.5 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.4 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.4 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.6 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.7 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.8 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.5 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.3 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.7 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.7 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.6 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.4 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.7 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.7 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.5 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.9 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.7 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.4 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.6 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.7 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 1 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.8 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.6 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.5 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.5 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.4 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.6 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.9 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.7 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 1 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.9 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.5 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.8 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.6 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.6 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.7 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.8 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 1 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 1 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.7 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.4 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.8 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.8 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.5 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.4 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.7 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.8 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.7 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.7 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.5 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 1 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.7 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.5 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.6 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.4 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.4 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.8 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 1 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 1 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.8 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.5 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.2 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.2 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.9 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.6 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.7 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 1 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.6 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.2 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.8 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.8 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.6 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.4 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.6 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.3 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.1 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.9 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.7 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.3 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.8 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 1 ) );
+        values.add( DiscreteProbabilityPair.of( 1, 0.9 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
 
-        final Metadata main = MetadataFactory.getMetadata( MetadataFactory.getDimension(),
-                                                           MetadataFactory.getDatasetIdentifier( getLocation( "Tampere" ),
+        final Metadata main = Metadata.of( MeasurementUnit.of(),
+                                                           DatasetIdentifier.of( getLocation( "Tampere" ),
                                                                                                  "MAP",
                                                                                                  "FMI" ) );
-        return DataFactory.ofDiscreteProbabilityPairs( values, main );
+        return DiscreteProbabilityPairs.of( values, main );
     }
 
     /**
@@ -999,19 +1001,19 @@ public final class MetricTestDataFactory
 
     public static DiscreteProbabilityPairs getDiscreteProbabilityPairsFour()
     {
-        final List<SingleValuedPair> values = new ArrayList<>();
-        values.add( DataFactory.pairOf( 0, 3.0 / 5.0 ) );
-        values.add( DataFactory.pairOf( 0, 1.0 / 5.0 ) );
-        values.add( DataFactory.pairOf( 0, 2.0 / 5.0 ) );
-        values.add( DataFactory.pairOf( 0, 3.0 / 5.0 ) );
-        values.add( DataFactory.pairOf( 0, 0.0 / 5.0 ) );
-        values.add( DataFactory.pairOf( 0, 1.0 / 5.0 ) );
+        final List<DiscreteProbabilityPair> values = new ArrayList<>();
+        values.add( DiscreteProbabilityPair.of( 0, 3.0 / 5.0 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 1.0 / 5.0 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 2.0 / 5.0 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 3.0 / 5.0 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 0.0 / 5.0 ) );
+        values.add( DiscreteProbabilityPair.of( 0, 1.0 / 5.0 ) );
 
-        final Metadata meta = MetadataFactory.getMetadata( MetadataFactory.getDimension(),
-                                                           MetadataFactory.getDatasetIdentifier( getLocation( "DRRC2" ),
+        final Metadata meta = Metadata.of( MeasurementUnit.of(),
+                                                           DatasetIdentifier.of( getLocation( "DRRC2" ),
                                                                                                  "SQIN",
                                                                                                  "HEFS" ) );
-        return DataFactory.ofDiscreteProbabilityPairs( values, meta );
+        return DiscreteProbabilityPairs.of( values, meta );
     }
 
     /**
@@ -1024,22 +1026,22 @@ public final class MetricTestDataFactory
     {
         // Build an immutable regular time-series of single-valued pairs
         TimeSeriesOfSingleValuedPairsBuilder builder =
-                DataFactory.ofTimeSeriesOfSingleValuedPairsBuilder();
+                new TimeSeriesOfSingleValuedPairsBuilder();
         // Create a regular time-series with an issue date/time, a series of paired values, and a timestep
         Instant firstId = Instant.parse( "1985-01-01T00:00:00Z" );
         List<Event<SingleValuedPair>> firstValues = new ArrayList<>();
         // Add some values
-        firstValues.add( Event.of( Instant.parse( "1985-01-01T06:00:00Z" ), DataFactory.pairOf( 1, 1 ) ) );
-        firstValues.add( Event.of( Instant.parse( "1985-01-01T12:00:00Z" ), DataFactory.pairOf( 1, 5 ) ) );
-        firstValues.add( Event.of( Instant.parse( "1985-01-01T18:00:00Z" ), DataFactory.pairOf( 5, 1 ) ) );
+        firstValues.add( Event.of( Instant.parse( "1985-01-01T06:00:00Z" ), SingleValuedPair.of( 1, 1 ) ) );
+        firstValues.add( Event.of( Instant.parse( "1985-01-01T12:00:00Z" ), SingleValuedPair.of( 1, 5 ) ) );
+        firstValues.add( Event.of( Instant.parse( "1985-01-01T18:00:00Z" ), SingleValuedPair.of( 5, 1 ) ) );
 
         // Add another time-series
         Instant secondId = Instant.parse( "1985-01-02T00:00:00Z" );
         List<Event<SingleValuedPair>> secondValues = new ArrayList<>();
         // Add some values
-        secondValues.add( Event.of( Instant.parse( "1985-01-02T06:00:00Z" ), DataFactory.pairOf( 10, 1 ) ) );
-        secondValues.add( Event.of( Instant.parse( "1985-01-02T12:00:00Z" ), DataFactory.pairOf( 1, 1 ) ) );
-        secondValues.add( Event.of( Instant.parse( "1985-01-02T18:00:00Z" ), DataFactory.pairOf( 1, 10 ) ) );
+        secondValues.add( Event.of( Instant.parse( "1985-01-02T06:00:00Z" ), SingleValuedPair.of( 10, 1 ) ) );
+        secondValues.add( Event.of( Instant.parse( "1985-01-02T12:00:00Z" ), SingleValuedPair.of( 1, 1 ) ) );
+        secondValues.add( Event.of( Instant.parse( "1985-01-02T18:00:00Z" ), SingleValuedPair.of( 1, 10 ) ) );
 
         // Create some default metadata for the time-series
         final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
@@ -1047,8 +1049,8 @@ public final class MetricTestDataFactory
                                                  ReferenceTime.ISSUE_TIME,
                                                  Duration.ofHours( 6 ),
                                                  Duration.ofHours( 18 ) );
-        final Metadata metaData = MetadataFactory.getMetadata( MetadataFactory.getDimension( "CMS" ),
-                                                               MetadataFactory.getDatasetIdentifier( getLocation( "A" ),
+        final Metadata metaData = Metadata.of( MeasurementUnit.of( "CMS" ),
+                                                               DatasetIdentifier.of( getLocation( "A" ),
                                                                                                      "Streamflow" ),
                                                                window );
         // Build the time-series
@@ -1068,14 +1070,14 @@ public final class MetricTestDataFactory
     {
         // Build an immutable regular time-series of single-valued pairs
         TimeSeriesOfSingleValuedPairsBuilder builder =
-                DataFactory.ofTimeSeriesOfSingleValuedPairsBuilder();
+                new TimeSeriesOfSingleValuedPairsBuilder();
         // Create a regular time-series with an issue date/time, a series of paired values, and a timestep
         Instant firstId = Instant.parse( "1985-01-01T00:00:00Z" );
         List<Event<SingleValuedPair>> firstValues = new ArrayList<>();
         // Add some values
-        firstValues.add( Event.of( Instant.parse( "1985-01-01T06:00:00Z" ), DataFactory.pairOf( 1, 1 ) ) );
-        firstValues.add( Event.of( Instant.parse( "1985-01-01T12:00:00Z" ), DataFactory.pairOf( 1, 5 ) ) );
-        firstValues.add( Event.of( Instant.parse( "1985-01-01T18:00:00Z" ), DataFactory.pairOf( 5, 1 ) ) );
+        firstValues.add( Event.of( Instant.parse( "1985-01-01T06:00:00Z" ), SingleValuedPair.of( 1, 1 ) ) );
+        firstValues.add( Event.of( Instant.parse( "1985-01-01T12:00:00Z" ), SingleValuedPair.of( 1, 5 ) ) );
+        firstValues.add( Event.of( Instant.parse( "1985-01-01T18:00:00Z" ), SingleValuedPair.of( 5, 1 ) ) );
 
         // Create some default metadata for the time-series
         final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
@@ -1083,8 +1085,8 @@ public final class MetricTestDataFactory
                                                  ReferenceTime.ISSUE_TIME,
                                                  Duration.ofHours( 6 ),
                                                  Duration.ofHours( 18 ) );
-        final Metadata metaData = MetadataFactory.getMetadata( MetadataFactory.getDimension( "CMS" ),
-                                                               MetadataFactory.getDatasetIdentifier( getLocation( "A" ),
+        final Metadata metaData = Metadata.of( MeasurementUnit.of( "CMS" ),
+                                                               DatasetIdentifier.of( getLocation( "A" ),
                                                                                                      "Streamflow" ),
                                                                window );
         // Build the time-series
@@ -1103,16 +1105,16 @@ public final class MetricTestDataFactory
     {
         // Build an immutable regular time-series of single-valued pairs
         TimeSeriesOfSingleValuedPairsBuilder builder =
-                DataFactory.ofTimeSeriesOfSingleValuedPairsBuilder();
+                new TimeSeriesOfSingleValuedPairsBuilder();
         // Create a regular time-series with an issue date/time, a series of paired values, and a timestep
 
         // Add another time-series
         Instant secondId = Instant.parse( "1985-01-02T00:00:00Z" );
         List<Event<SingleValuedPair>> secondValues = new ArrayList<>();
         // Add some values
-        secondValues.add( Event.of( Instant.parse( "1985-01-02T06:00:00Z" ), DataFactory.pairOf( 10, 1 ) ) );
-        secondValues.add( Event.of( Instant.parse( "1985-01-02T12:00:00Z" ), DataFactory.pairOf( 1, 1 ) ) );
-        secondValues.add( Event.of( Instant.parse( "1985-01-02T18:00:00Z" ), DataFactory.pairOf( 1, 10 ) ) );
+        secondValues.add( Event.of( Instant.parse( "1985-01-02T06:00:00Z" ), SingleValuedPair.of( 10, 1 ) ) );
+        secondValues.add( Event.of( Instant.parse( "1985-01-02T12:00:00Z" ), SingleValuedPair.of( 1, 1 ) ) );
+        secondValues.add( Event.of( Instant.parse( "1985-01-02T18:00:00Z" ), SingleValuedPair.of( 1, 10 ) ) );
 
         // Create some default metadata for the time-series
         final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-02T00:00:00Z" ),
@@ -1120,8 +1122,8 @@ public final class MetricTestDataFactory
                                                  ReferenceTime.ISSUE_TIME,
                                                  Duration.ofHours( 6 ),
                                                  Duration.ofHours( 18 ) );
-        final Metadata metaData = MetadataFactory.getMetadata( MetadataFactory.getDimension( "CMS" ),
-                                                               MetadataFactory.getDatasetIdentifier( getLocation( "A" ),
+        final Metadata metaData = Metadata.of( MeasurementUnit.of( "CMS" ),
+                                                               DatasetIdentifier.of( getLocation( "A" ),
                                                                                                      "Streamflow" ),
                                                                window );
         // Build the time-series
@@ -1140,14 +1142,14 @@ public final class MetricTestDataFactory
     {
         // Build an immutable regular time-series of single-valued pairs
         TimeSeriesOfSingleValuedPairsBuilder builder =
-                DataFactory.ofTimeSeriesOfSingleValuedPairsBuilder();
+                new TimeSeriesOfSingleValuedPairsBuilder();
         // Create a regular time-series with an issue date/time, a series of paired values, and a timestep
 
         // Create some default metadata for the time-series
         final TimeWindow window = TimeWindow.of( Instant.MIN,
                                                  Instant.MAX );
-        final Metadata metaData = MetadataFactory.getMetadata( MetadataFactory.getDimension( "CMS" ),
-                                                               MetadataFactory.getDatasetIdentifier( getLocation( "A" ),
+        final Metadata metaData = Metadata.of( MeasurementUnit.of( "CMS" ),
+                                                               DatasetIdentifier.of( getLocation( "A" ),
                                                                                                      "Streamflow" ),
                                                                window );
         // Build the time-series
@@ -1166,7 +1168,7 @@ public final class MetricTestDataFactory
     {
         // Build an immutable regular time-series of single-valued pairs
         TimeSeriesOfSingleValuedPairsBuilder builder =
-                DataFactory.ofTimeSeriesOfSingleValuedPairsBuilder();
+                new TimeSeriesOfSingleValuedPairsBuilder();
         // Create a regular time-series with an issue date/time, a series of paired values, and a timestep
 
         // Add another time-series
@@ -1174,11 +1176,11 @@ public final class MetricTestDataFactory
         List<Event<SingleValuedPair>> secondValues = new ArrayList<>();
 
         // Add some values
-        secondValues.add( Event.of( Instant.parse( "1985-01-02T06:00:00Z" ), DataFactory.pairOf( 10, 1 ) ) );
-        secondValues.add( Event.of( Instant.parse( "1985-01-02T12:00:00Z" ), DataFactory.pairOf( 1, 1 ) ) );
-        secondValues.add( Event.of( Instant.parse( "1985-01-02T18:00:00Z" ), DataFactory.pairOf( 10, 10 ) ) );
-        secondValues.add( Event.of( Instant.parse( "1985-01-03T00:00:00Z" ), DataFactory.pairOf( 2, 10 ) ) );
-        secondValues.add( Event.of( Instant.parse( "1985-01-03T06:00:00Z" ), DataFactory.pairOf( 4, 7 ) ) );
+        secondValues.add( Event.of( Instant.parse( "1985-01-02T06:00:00Z" ), SingleValuedPair.of( 10, 1 ) ) );
+        secondValues.add( Event.of( Instant.parse( "1985-01-02T12:00:00Z" ), SingleValuedPair.of( 1, 1 ) ) );
+        secondValues.add( Event.of( Instant.parse( "1985-01-02T18:00:00Z" ), SingleValuedPair.of( 10, 10 ) ) );
+        secondValues.add( Event.of( Instant.parse( "1985-01-03T00:00:00Z" ), SingleValuedPair.of( 2, 10 ) ) );
+        secondValues.add( Event.of( Instant.parse( "1985-01-03T06:00:00Z" ), SingleValuedPair.of( 4, 7 ) ) );
 
         // Create some default metadata for the time-series
         final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-02T00:00:00Z" ),
@@ -1186,8 +1188,8 @@ public final class MetricTestDataFactory
                                                  ReferenceTime.ISSUE_TIME,
                                                  Duration.ofHours( 6 ),
                                                  Duration.ofHours( 30 ) );
-        final Metadata metaData = MetadataFactory.getMetadata( MetadataFactory.getDimension( "CMS" ),
-                                                               MetadataFactory.getDatasetIdentifier( getLocation( "A" ),
+        final Metadata metaData = Metadata.of( MeasurementUnit.of( "CMS" ),
+                                                               DatasetIdentifier.of( getLocation( "A" ),
                                                                                                      "Streamflow" ),
                                                                window );
         // Build the time-series

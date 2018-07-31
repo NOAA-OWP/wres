@@ -16,17 +16,17 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
-import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.metadata.DatasetIdentifier;
+import wres.datamodel.metadata.MeasurementUnit;
+import wres.datamodel.metadata.Location;
+import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.DoubleScoreOutput;
-import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
-import wres.engine.statistics.metric.singlevalued.MeanSquareErrorSkillScore.MeanSquareErrorSkillScoreBuilder;
 
 /**
  * Tests the {@link MeanSquareErrorSkillScoreSkillScore}.
@@ -43,14 +43,12 @@ public final class MeanSquareErrorSkillScoreTest
      * Default instance of a {@link MeanSquareErrorSkillScore}.
      */
 
-    private MeanSquareErrorSkillScore<SingleValuedPairs> msess;
+    private MeanSquareErrorSkillScore msess;
 
     @Before
     public void setupBeforeEachTest() throws MetricParameterException
     {
-        MeanSquareErrorSkillScoreBuilder<SingleValuedPairs> b =
-                new MeanSquareErrorSkillScore.MeanSquareErrorSkillScoreBuilder<>();
-        this.msess = b.build();
+        this.msess = MeanSquareErrorSkillScore.of();
     }
 
     /**
@@ -65,19 +63,16 @@ public final class MeanSquareErrorSkillScoreTest
         SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsTwo();
 
         //Metadata for the output
-        final MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( input.getRawData().size(),
-                                                                   MetadataFactory.getDimension(),
-                                                                   MetadataFactory.getDimension( "CMS" ),
-                                                                   MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE,
-                                                                   MetricConstants.MAIN,
-                                                                   MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation("DRRC2"),
-                                                                                                 "SQIN",
-                                                                                                 "HEFS",
-                                                                                                 "ESP" ) );
+        final MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getRawData().size(),
+                                                                           MeasurementUnit.of(),
+                                                                           MeasurementUnit.of( "CMS" ),
+                                                                           MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE,
+                                                                           MetricConstants.MAIN,
+                                                                           DatasetIdentifier.of( Location.of( "DRRC2" ), "SQIN", "HEFS", "ESP" ) );
 
         //Check the results
         final DoubleScoreOutput actual = msess.apply( input );
-        final DoubleScoreOutput expected = DataFactory.ofDoubleScoreOutput( 0.8007025335093799, m1 );
+        final DoubleScoreOutput expected = DoubleScoreOutput.of( 0.8007025335093799, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -102,19 +97,20 @@ public final class MeanSquareErrorSkillScoreTest
                                            Instant.parse( "2010-12-31T11:59:59Z" ),
                                            ReferenceTime.VALID_TIME,
                                            Duration.ofHours( 24 ) );
-        MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( input.getRawData().size(),
-                                                             MetadataFactory.getDimension(),
-                                                             MetadataFactory.getDimension( "MM/DAY" ),
-                                                             MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE,
-                                                             MetricConstants.MAIN,
-                                                             MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation("103.1"),
-                                                                                           "QME",
-                                                                                           "NVE" ),
-                                                             window );
+        final TimeWindow timeWindow = window;
+        MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getRawData().size(),
+        MeasurementUnit.of(),
+        MeasurementUnit.of( "MM/DAY" ),
+        MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE,
+        MetricConstants.MAIN,
+        DatasetIdentifier.of( Location.of( "103.1" ),
+                                                                                                                   "QME",
+                                                                                                                   "NVE" ),
+        timeWindow );
 
         //Check the results
         DoubleScoreOutput actual = msess.apply( input );
-        DoubleScoreOutput expected = DataFactory.ofDoubleScoreOutput( 0.7832791707526114, m1 );
+        DoubleScoreOutput expected = DoubleScoreOutput.of( 0.7832791707526114, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -134,15 +130,15 @@ public final class MeanSquareErrorSkillScoreTest
         SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Metadata for the output
-        MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( input.getRawData().size(),
-                                                             MetadataFactory.getDimension(),
-                                                             MetadataFactory.getDimension(),
-                                                             MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE,
-                                                             MetricConstants.MAIN );
+        MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getRawData().size(),
+                                                                     MeasurementUnit.of(),
+                                                                     MeasurementUnit.of(),
+                                                                     MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE,
+                                                                     MetricConstants.MAIN );
 
         //Check the results
         DoubleScoreOutput actual = msess.apply( input );
-        DoubleScoreOutput expected = DataFactory.ofDoubleScoreOutput( 0.9963647159052861, m1 );
+        DoubleScoreOutput expected = DoubleScoreOutput.of( 0.9963647159052861, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -158,8 +154,8 @@ public final class MeanSquareErrorSkillScoreTest
     public void testApplyWithNoData()
     {
         // Generate empty data
-        DiscreteProbabilityPairs input =
-                DataFactory.ofDiscreteProbabilityPairs( Arrays.asList(), MetadataFactory.getMetadata() );
+        SingleValuedPairs input =
+                SingleValuedPairs.of( Arrays.asList(), Metadata.of() );
 
         DoubleScoreOutput actual = msess.apply( input );
 
@@ -219,22 +215,6 @@ public final class MeanSquareErrorSkillScoreTest
         exception.expectMessage( "Specify non-null input to the 'MEAN SQUARE ERROR SKILL SCORE'." );
 
         msess.apply( null );
-    }
-
-    /**
-     * Tests for an expected exception on building a {@link MeanSquareErrorSkillScore} with
-     * an unrecognized decomposition identifier.
-     * @throws MetricParameterException if the metric could not be built for an unexpected reason
-     */
-
-    @Test
-    public void testApplyExceptionOnUnsupportedDecomposition() throws MetricParameterException
-    {
-        exception.expect( MetricCalculationException.class );
-        exception.expectMessage( "Decomposition is not currently implemented for the 'MEAN SQUARE ERROR SKILL SCORE'." );
-        MeanSquareErrorSkillScoreBuilder<SingleValuedPairs> b = new MeanSquareErrorSkillScoreBuilder<>();
-        b.setDecompositionID( ScoreOutputGroup.CR );
-        b.build().apply( MetricTestDataFactory.getSingleValuedPairsOne() );
     }
 
 }

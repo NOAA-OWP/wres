@@ -6,7 +6,6 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.inputs.MetricInputException;
@@ -15,7 +14,6 @@ import wres.datamodel.inputs.pairs.MulticategoryPairs;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.MatrixOutput;
 import wres.engine.statistics.metric.Metric;
-import wres.engine.statistics.metric.MetricParameterException;
 
 /**
  * <p>
@@ -30,6 +28,18 @@ import wres.engine.statistics.metric.MetricParameterException;
 public class ContingencyTable<S extends MulticategoryPairs> implements Metric<S, MatrixOutput>
 {
 
+    /**
+     * Returns an instance.
+     * 
+     * @param <S> the input type
+     * @return an instance
+     */
+    
+    public static <S extends MulticategoryPairs> ContingencyTable<S> of()
+    {
+        return new ContingencyTable<>();
+    }
+    
     @Override
     public MatrixOutput apply( final MulticategoryPairs s )
     {
@@ -71,7 +81,7 @@ public class ContingencyTable<S extends MulticategoryPairs> implements Metric<S,
                                             MetricDimension.TRUE_NEGATIVES );
         }
         final MetricOutputMetadata metOut = getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, null );
-        return DataFactory.ofMatrixOutput( returnMe, componentNames, metOut );
+        return MatrixOutput.of( returnMe, componentNames, metOut );
     }
 
     @Override
@@ -93,28 +103,10 @@ public class ContingencyTable<S extends MulticategoryPairs> implements Metric<S,
     }
 
     /**
-     * A {@link MetricBuilder} to build the metric.
-     */
-
-    public static class ContingencyTableBuilder<S extends MulticategoryPairs> implements MetricBuilder<S, MatrixOutput>
-    {
-
-        @Override
-        public ContingencyTable<S> build() throws MetricParameterException
-        {
-            return new ContingencyTable<>( this );
-        }
-
-    }
-
-    /**
      * Hidden constructor.
-     * 
-     * @param builder the builder.
-     * @throws MetricParameterException if one or more parameters is invalid 
      */
 
-    ContingencyTable( final ContingencyTableBuilder<S> builder ) throws MetricParameterException
+    ContingencyTable()
     {
     }
 }

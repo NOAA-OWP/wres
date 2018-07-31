@@ -24,12 +24,11 @@ import wres.config.generated.ThresholdType;
 import wres.config.generated.ThresholdsConfig;
 import wres.config.generated.TimeSeriesMetricConfig;
 import wres.config.generated.TimeSeriesMetricConfigName;
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
-import wres.datamodel.metadata.Dimension;
-import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.OneOrTwoDoubles;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
@@ -189,14 +188,14 @@ public final class MetricConfigHelper
         Objects.requireNonNull( projectConfig, NULL_CONFIGURATION_ERROR );
 
         // Find the units associated with the pairs
-        Dimension units = null;
+        MeasurementUnit units = null;
         if ( Objects.nonNull( projectConfig.getPair() ) && Objects.nonNull( projectConfig.getPair().getUnit() ) )
         {
-            units = MetadataFactory.getDimension( projectConfig.getPair().getUnit() );
+            units = MeasurementUnit.of( projectConfig.getPair().getUnit() );
         }
 
         // Builder 
-        ThresholdsByMetricBuilder builder = DataFactory.ofThresholdsByMetricBuilder();
+        ThresholdsByMetricBuilder builder = new ThresholdsByMetricBuilder();
 
         // Iterate through the metric groups
         for ( MetricsConfig nextGroup : projectConfig.getMetrics() )
@@ -382,7 +381,7 @@ public final class MetricConfigHelper
                                                                          Operator oper,
                                                                          ThresholdConstants.ThresholdDataType dataType,
                                                                          boolean areProbs,
-                                                                         Dimension units )
+                                                                         MeasurementUnit units )
     {
         Objects.requireNonNull( inputString, "Specify a non-null input string." );
 
@@ -407,17 +406,17 @@ public final class MetricConfigHelper
             {
                 if ( areProbs )
                 {
-                    returnMe.add( DataFactory.ofProbabilityThreshold( DataFactory.ofOneOrTwoDoubles( addMe.get( i ),
-                                                                                                     addMe.get( i
-                                                                                                                + 1 ) ),
+                    returnMe.add( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( addMe.get( i ),
+                                                                                          addMe.get( i
+                                                                                                     + 1 ) ),
                                                                       oper,
                                                                       dataType,
                                                                       units ) );
                 }
                 else
                 {
-                    returnMe.add( DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( addMe.get( i ),
-                                                                                          addMe.get( i + 1 ) ),
+                    returnMe.add( Threshold.of( OneOrTwoDoubles.of( addMe.get( i ),
+                                                                               addMe.get( i + 1 ) ),
                                                            oper,
                                                            dataType,
                                                            units ) );
@@ -429,14 +428,14 @@ public final class MetricConfigHelper
         {
             if ( areProbs )
             {
-                addMe.forEach( threshold -> returnMe.add( DataFactory.ofProbabilityThreshold( DataFactory.ofOneOrTwoDoubles( threshold ),
+                addMe.forEach( threshold -> returnMe.add( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( threshold ),
                                                                                               oper,
                                                                                               dataType,
                                                                                               units ) ) );
             }
             else
             {
-                addMe.forEach( threshold -> returnMe.add( DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( threshold ),
+                addMe.forEach( threshold -> returnMe.add( Threshold.of( OneOrTwoDoubles.of( threshold ),
                                                                                    oper,
                                                                                    dataType,
                                                                                    units ) ) );
@@ -476,7 +475,7 @@ public final class MetricConfigHelper
         Set<Threshold> returnMe = new HashSet<>();
 
         Threshold allData =
-                DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
+                Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                          Operator.GREATER,
                                          ThresholdConstants.ThresholdDataType.LEFT_AND_RIGHT );
 
@@ -596,7 +595,7 @@ public final class MetricConfigHelper
     private static void addThresholdsToBuilderForOneMetricGroup( ProjectConfig projectConfig,
                                                                  MetricsConfig metricsConfig,
                                                                  ThresholdsByMetricBuilder builder,
-                                                                 Dimension units )
+                                                                 MeasurementUnit units )
     {
 
         // Find the metrics
@@ -660,7 +659,7 @@ public final class MetricConfigHelper
      */
 
     private static Set<Threshold> getInternalThresholdsFromThresholdsConfig( ThresholdsConfig thresholds,
-                                                                             Dimension units )
+                                                                             MeasurementUnit units )
     {
         Objects.requireNonNull( thresholds, NULL_CONFIGURATION_ERROR );
 

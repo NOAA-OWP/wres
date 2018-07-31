@@ -13,8 +13,9 @@ import org.junit.Test;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.metadata.DatasetIdentifier;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
-import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.MetricOutputException;
 import wres.datamodel.outputs.PairedOutput;
@@ -34,37 +35,37 @@ public final class PairedOutputTest
     @Test
     public void test1Equals()
     {
-        final Location l1 = MetadataFactory.getLocation( "A" );
-        final MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( 10,
-                                                                           MetadataFactory.getDimension(),
-                                                                           MetadataFactory.getDimension( "CMS" ),
+        final Location l1 = Location.of( "A" );
+        final MetricOutputMetadata m1 = MetricOutputMetadata.of( 10,
+                                                                           MeasurementUnit.of(),
+                                                                           MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.TIME_TO_PEAK_ERROR,
                                                                            MetricConstants.MAIN,
-                                                                           MetadataFactory.getDatasetIdentifier( l1,
+                                                                           DatasetIdentifier.of( l1,
                                                                                                                  "B",
                                                                                                                  "C" ) );
-        final Location l2 = MetadataFactory.getLocation( "A" );
-        final MetricOutputMetadata m2 = MetadataFactory.getOutputMetadata( 11,
-                                                                           MetadataFactory.getDimension(),
-                                                                           MetadataFactory.getDimension( "CMS" ),
+        final Location l2 = Location.of( "A" );
+        final MetricOutputMetadata m2 = MetricOutputMetadata.of( 11,
+                                                                           MeasurementUnit.of(),
+                                                                           MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.TIME_TO_PEAK_ERROR,
                                                                            MetricConstants.MAIN,
-                                                                           MetadataFactory.getDatasetIdentifier( l2,
+                                                                           DatasetIdentifier.of( l2,
                                                                                                                  "B",
                                                                                                                  "C" ) );
-        final Location l3 = MetadataFactory.getLocation( "B" );
-        final MetricOutputMetadata m3 = MetadataFactory.getOutputMetadata( 10,
-                                                                           MetadataFactory.getDimension(),
-                                                                           MetadataFactory.getDimension( "CMS" ),
+        final Location l3 = Location.of( "B" );
+        final MetricOutputMetadata m3 = MetricOutputMetadata.of( 10,
+                                                                           MeasurementUnit.of(),
+                                                                           MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.TIME_TO_PEAK_ERROR,
                                                                            MetricConstants.MAIN,
-                                                                           MetadataFactory.getDatasetIdentifier( l3,
+                                                                           DatasetIdentifier.of( l3,
                                                                                                                  "B",
                                                                                                                  "C" ) );
         List<Pair<Instant, Duration>> input = new ArrayList<>();
         input.add( Pair.of( Instant.parse( "1985-01-01T00:00:00Z" ), Duration.ofHours( 1 ) ) );
-        final PairedOutput<Instant, Duration> s = DataFactory.ofPairedOutput( input, m1 );
-        final PairedOutput<Instant, Duration> t = DataFactory.ofPairedOutput( input, m1 );
+        final PairedOutput<Instant, Duration> s = PairedOutput.of( input, m1 );
+        final PairedOutput<Instant, Duration> t = PairedOutput.of( input, m1 );
         assertTrue( "Expected outputs of equal size", s.getData().size() == t.getData().size() );
         // Iterate the pairs
         for ( Pair<Instant, Duration> next : s )
@@ -76,12 +77,12 @@ public final class PairedOutputTest
         assertTrue( "Expected non-equal outputs.", !s.equals( new Double( 1.0 ) ) );
         List<Pair<Instant, Duration>> inputSecond = new ArrayList<>();
         inputSecond.add( Pair.of( Instant.parse( "1985-01-01T00:00:00Z" ), Duration.ofHours( 2 ) ) );
-        assertTrue( "Expected non-equal outputs.", !s.equals( DataFactory.ofPairedOutput( inputSecond, m1 ) ) );
-        assertTrue( "Expected non-equal outputs.", !s.equals( DataFactory.ofPairedOutput( input, m2 ) ) );
+        assertTrue( "Expected non-equal outputs.", !s.equals( PairedOutput.of( inputSecond, m1 ) ) );
+        assertTrue( "Expected non-equal outputs.", !s.equals( PairedOutput.of( input, m2 ) ) );
         List<Pair<Instant, Duration>> inputThird = new ArrayList<>();
         inputThird.add( Pair.of( Instant.parse( "1985-01-01T00:00:00Z" ), Duration.ofHours( 1 ) ) );
-        final PairedOutput<Instant, Duration> q = DataFactory.ofPairedOutput( inputThird, m2 );
-        final PairedOutput<Instant, Duration> r = DataFactory.ofPairedOutput( inputThird, m3 );
+        final PairedOutput<Instant, Duration> q = PairedOutput.of( inputThird, m2 );
+        final PairedOutput<Instant, Duration> r = PairedOutput.of( inputThird, m3 );
         assertTrue( "Expected non-equal outputs.", !s.equals( q ) );
         assertTrue( "Expected equal outputs.", q.equals( q ) );
         assertTrue( "Expected non-equal outputs.", !q.equals( s ) );
@@ -95,20 +96,20 @@ public final class PairedOutputTest
     @Test
     public void test2ToString()
     {
-        final Location l1 = MetadataFactory.getLocation( "A" );
-        final MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( 10,
-                                                                           MetadataFactory.getDimension(),
-                                                                           MetadataFactory.getDimension( "CMS" ),
+        final Location l1 = Location.of( "A" );
+        final MetricOutputMetadata m1 = MetricOutputMetadata.of( 10,
+                                                                           MeasurementUnit.of(),
+                                                                           MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.TIME_TO_PEAK_ERROR,
                                                                            MetricConstants.MAIN,
-                                                                           MetadataFactory.getDatasetIdentifier( l1,
+                                                                           DatasetIdentifier.of( l1,
                                                                                                                  "B",
                                                                                                                  "C" ) );
         List<Pair<Instant, Duration>> input = new ArrayList<>();
         input.add( Pair.of( Instant.parse( "1985-01-01T00:00:00Z" ), Duration.ofHours( 1 ) ) );
         input.add( Pair.of( Instant.parse( "1985-01-01T00:00:00Z" ), Duration.ofHours( 1 ) ) );
-        final PairedOutput<Instant, Duration> s = DataFactory.ofPairedOutput( input, m1 );
-        final PairedOutput<Instant, Duration> t = DataFactory.ofPairedOutput( input, m1 );
+        final PairedOutput<Instant, Duration> s = PairedOutput.of( input, m1 );
+        final PairedOutput<Instant, Duration> t = PairedOutput.of( input, m1 );
         assertTrue( "Expected equal string representations.", s.toString().equals( t.toString() ) );
     }
 
@@ -119,28 +120,28 @@ public final class PairedOutputTest
     @Test
     public void test3GetMetadata()
     {
-        final Location l1 = MetadataFactory.getLocation( "A" );
-        final MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( 10,
-                                                                           MetadataFactory.getDimension(),
-                                                                           MetadataFactory.getDimension( "CMS" ),
+        final Location l1 = Location.of( "A" );
+        final MetricOutputMetadata m1 = MetricOutputMetadata.of( 10,
+                                                                           MeasurementUnit.of(),
+                                                                           MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.TIME_TO_PEAK_ERROR,
                                                                            MetricConstants.MAIN,
-                                                                           MetadataFactory.getDatasetIdentifier( l1,
+                                                                           DatasetIdentifier.of( l1,
                                                                                                                  "B",
                                                                                                                  "C" ) );
-        final Location l2 = MetadataFactory.getLocation( "B" );
-        final MetricOutputMetadata m2 = MetadataFactory.getOutputMetadata( 10,
-                                                                           MetadataFactory.getDimension(),
-                                                                           MetadataFactory.getDimension( "CMS" ),
+        final Location l2 = Location.of( "B" );
+        final MetricOutputMetadata m2 = MetricOutputMetadata.of( 10,
+                                                                           MeasurementUnit.of(),
+                                                                           MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.TIME_TO_PEAK_ERROR,
                                                                            MetricConstants.MAIN,
-                                                                           MetadataFactory.getDatasetIdentifier( l2,
+                                                                           DatasetIdentifier.of( l2,
                                                                                                                  "B",
                                                                                                                  "C" ) );
         List<Pair<Instant, Duration>> inputThird = new ArrayList<>();
         inputThird.add( Pair.of( Instant.parse( "1985-01-01T00:00:00Z" ), Duration.ofHours( 1 ) ) );
-        final PairedOutput<Instant, Duration> q = DataFactory.ofPairedOutput( inputThird, m1 );
-        final PairedOutput<Instant, Duration> r = DataFactory.ofPairedOutput( inputThird, m2 );
+        final PairedOutput<Instant, Duration> q = PairedOutput.of( inputThird, m1 );
+        final PairedOutput<Instant, Duration> r = PairedOutput.of( inputThird, m2 );
         assertTrue( "Unequal metadata.", !q.getMetadata().equals( r.getMetadata() ) );
     }
 
@@ -151,38 +152,38 @@ public final class PairedOutputTest
     @Test
     public void test4HashCode()
     {
-        final Location l1 = MetadataFactory.getLocation( "A" );
-        final MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( 10,
-                                                                           MetadataFactory.getDimension(),
-                                                                           MetadataFactory.getDimension( "CMS" ),
+        final Location l1 = Location.of( "A" );
+        final MetricOutputMetadata m1 = MetricOutputMetadata.of( 10,
+                                                                           MeasurementUnit.of(),
+                                                                           MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
                                                                            MetricConstants.MAIN,
-                                                                           MetadataFactory.getDatasetIdentifier( l1,
+                                                                           DatasetIdentifier.of( l1,
                                                                                                                  "B",
                                                                                                                  "C" ) );
-        final Location l2 = MetadataFactory.getLocation( "A" );
-        final MetricOutputMetadata m2 = MetadataFactory.getOutputMetadata( 10,
-                                                                           MetadataFactory.getDimension(),
-                                                                           MetadataFactory.getDimension( "CMS" ),
+        final Location l2 = Location.of( "A" );
+        final MetricOutputMetadata m2 = MetricOutputMetadata.of( 10,
+                                                                           MeasurementUnit.of(),
+                                                                           MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
                                                                            MetricConstants.MAIN,
-                                                                           MetadataFactory.getDatasetIdentifier( l2,
+                                                                           DatasetIdentifier.of( l2,
                                                                                                                  "B",
                                                                                                                  "C" ) );
-        final Location l3 = MetadataFactory.getLocation( "B" );
-        final MetricOutputMetadata m3 = MetadataFactory.getOutputMetadata( 10,
-                                                                           MetadataFactory.getDimension(),
-                                                                           MetadataFactory.getDimension( "CMS" ),
+        final Location l3 = Location.of( "B" );
+        final MetricOutputMetadata m3 = MetricOutputMetadata.of( 10,
+                                                                           MeasurementUnit.of(),
+                                                                           MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
                                                                            MetricConstants.MAIN,
-                                                                           MetadataFactory.getDatasetIdentifier( l3,
+                                                                           DatasetIdentifier.of( l3,
                                                                                                                  "B",
                                                                                                                  "C" ) );
         List<Pair<Instant, Duration>> inputThird = new ArrayList<>();
         inputThird.add( Pair.of( Instant.parse( "1985-01-01T00:00:00Z" ), Duration.ofHours( 1 ) ) );
-        final PairedOutput<Instant, Duration> q = DataFactory.ofPairedOutput( inputThird, m1 );
-        final PairedOutput<Instant, Duration> r = DataFactory.ofPairedOutput( inputThird, m2 );
-        final PairedOutput<Instant, Duration> s = DataFactory.ofPairedOutput( inputThird, m3 );
+        final PairedOutput<Instant, Duration> q = PairedOutput.of( inputThird, m1 );
+        final PairedOutput<Instant, Duration> r = PairedOutput.of( inputThird, m2 );
+        final PairedOutput<Instant, Duration> s = PairedOutput.of( inputThird, m3 );
         assertTrue( "Expected equal hash codes.", q.hashCode() == r.hashCode() );
         assertTrue( "Expected unequal hash codes.", q.hashCode() != s.hashCode() );
     }
@@ -194,13 +195,13 @@ public final class PairedOutputTest
     @Test
     public void test6Exceptions()
     {
-        final Location l1 = MetadataFactory.getLocation( "A" );
-        final MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( 10,
-                                                                           MetadataFactory.getDimension(),
-                                                                           MetadataFactory.getDimension( "CMS" ),
+        final Location l1 = Location.of( "A" );
+        final MetricOutputMetadata m1 = MetricOutputMetadata.of( 10,
+                                                                           MeasurementUnit.of(),
+                                                                           MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
                                                                            MetricConstants.MAIN,
-                                                                           MetadataFactory.getDatasetIdentifier( l1,
+                                                                           DatasetIdentifier.of( l1,
                                                                                                                  "B",
                                                                                                                  "C" ) );
         List<Pair<Instant, Duration>> input = new ArrayList<>();
@@ -208,7 +209,7 @@ public final class PairedOutputTest
         // Null output
         try
         {
-            DataFactory.ofPairedOutput( null, m1 );
+            PairedOutput.of( null, m1 );
             fail( "Expected a checked exception on attempting to construct a paired output with null input." );
         }
         catch ( MetricOutputException e )
@@ -217,7 +218,7 @@ public final class PairedOutputTest
         // Null metadata
         try
         {
-            DataFactory.ofPairedOutput( input, null );
+            PairedOutput.of( input, null );
             fail( "Expected a checked exception on attempting to construct a paired output with null metadata." );
         }
         catch ( MetricOutputException e )
@@ -227,7 +228,7 @@ public final class PairedOutputTest
         try
         {
             input.add( null );
-            DataFactory.ofPairedOutput( input, m1 );
+            PairedOutput.of( input, m1 );
             fail( "Expected a checked exception on attempting to construct a paired output with a null pair." );
         }
         catch ( MetricOutputException e )
@@ -238,7 +239,7 @@ public final class PairedOutputTest
         {
             input.remove( 1 );
             input.add( Pair.of( null, Duration.ofHours( 1 ) ) );
-            DataFactory.ofPairedOutput( input, m1 );
+            PairedOutput.of( input, m1 );
             fail( "Expected a checked exception on attempting to construct a paired output with a pair that has a "
                   + "null left side." );
         }
@@ -250,7 +251,7 @@ public final class PairedOutputTest
         {
             input.remove( 1 );
             input.add( Pair.of( Instant.parse( "1985-01-01T00:00:00Z" ), null ) );
-            DataFactory.ofPairedOutput( input, m1 );
+            PairedOutput.of( input, m1 );
             fail( "Expected a checked exception on attempting to construct a paired output with a pair that has a "
                   + "null right side." );
         }

@@ -12,16 +12,14 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPair;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
-import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.metadata.Metadata;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.engine.statistics.metric.MetricParameterException;
-import wres.engine.statistics.metric.singlevalued.QuantileQuantileDiagram.QuantileQuantileDiagramBuilder;
 
 /**
  * Tests the {@link QuantileQuantileDiagram}.
@@ -43,8 +41,7 @@ public final class QuantileQuantileDiagramTest
     @Before
     public void setupBeforeEachTest() throws MetricParameterException
     {
-        QuantileQuantileDiagramBuilder b = new QuantileQuantileDiagram.QuantileQuantileDiagramBuilder();
-        this.qqd = b.build();
+        this.qqd = QuantileQuantileDiagram.of();
     }
 
     /**
@@ -60,10 +57,10 @@ public final class QuantileQuantileDiagramTest
         {
             double left = i;
             double right = left;
-            values.add( DataFactory.pairOf( left, right ) );
+            values.add( SingleValuedPair.of( left, right ) );
         }
 
-        final SingleValuedPairs input = DataFactory.ofSingleValuedPairs( values, MetadataFactory.getMetadata() );
+        final SingleValuedPairs input = SingleValuedPairs.of( values, Metadata.of() );
 
         //Check the results       
         final MultiVectorOutput actual = qqd.apply( input );
@@ -111,7 +108,7 @@ public final class QuantileQuantileDiagramTest
     {
         // Generate empty data
         SingleValuedPairs input =
-                DataFactory.ofSingleValuedPairs( Arrays.asList(), MetadataFactory.getMetadata() );
+                SingleValuedPairs.of( Arrays.asList(), Metadata.of() );
 
         MultiVectorOutput actual = qqd.apply( input );
 

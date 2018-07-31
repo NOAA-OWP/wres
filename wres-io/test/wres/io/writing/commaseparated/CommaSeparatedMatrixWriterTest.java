@@ -24,9 +24,10 @@ import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
+import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.metadata.DatasetIdentifier;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
-import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
@@ -35,6 +36,7 @@ import wres.datamodel.outputs.MetricOutputAccessException;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMapByMetric;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
+import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 
@@ -79,21 +81,19 @@ public class CommaSeparatedMatrixWriterTest extends CommaSeparatedWriterTest
         // which requires a datasetidentifier...
         // which requires a location...
 
-        Location fakeLocation = MetadataFactory.getLocation( LID );
+        Location fakeLocation = Location.of( LID );
+        final Location geospatialID = fakeLocation;
 
         DatasetIdentifier datasetIdentifier =
-                MetadataFactory.getDatasetIdentifier( fakeLocation,
-                                              "SQIN",
-                                              "HEFS",
-                                              "ESP" );
+                DatasetIdentifier.of( geospatialID, "SQIN", "HEFS", "ESP" );
 
         MetricOutputMetadata fakeMetadata =
-                MetadataFactory.getOutputMetadata( 1000,
-                                           MetadataFactory.getDimension(),
-                                           MetadataFactory.getDimension( "CMS" ),
-                                           MetricConstants.CONTINGENCY_TABLE,
-                                           null,
-                                           datasetIdentifier );
+                MetricOutputMetadata.of( 1000,
+                                                   MeasurementUnit.of(),
+                                                   MeasurementUnit.of( "CMS" ),
+                                                   MetricConstants.CONTINGENCY_TABLE,
+                                                   null,
+                                                   datasetIdentifier );
 
         double[][] fakeOutputs = new double[][] { { 23, 79 }, { 56, 342 } };
 
@@ -101,12 +101,12 @@ public class CommaSeparatedMatrixWriterTest extends CommaSeparatedWriterTest
         // Fake output wrapper.
         MetricOutputMapByMetric<MatrixOutput> fakeOutputData =
                 DataFactory.ofMetricOutputMapByMetric( Collections.singletonMap( MetricConstants.CONTINGENCY_TABLE,
-                                                                                   DataFactory.ofMatrixOutput( fakeOutputs,
-                                                                                                                 Arrays.asList( MetricDimension.TRUE_POSITIVES,
-                                                                                                                                MetricDimension.FALSE_POSITIVES,
-                                                                                                                                MetricDimension.FALSE_NEGATIVES,
-                                                                                                                                MetricDimension.TRUE_NEGATIVES ),
-                                                                                                                 fakeMetadata ) ) );
+                                                                                 MatrixOutput.of( fakeOutputs,
+                                                                                                             Arrays.asList( MetricDimension.TRUE_POSITIVES,
+                                                                                                                            MetricDimension.FALSE_POSITIVES,
+                                                                                                                            MetricDimension.FALSE_NEGATIVES,
+                                                                                                                            MetricDimension.TRUE_NEGATIVES ),
+                                                                                                             fakeMetadata ) ) );
         // wrap outputs in future
         Future<MetricOutputMapByMetric<MatrixOutput>> outputMapByMetricFuture =
                 CompletableFuture.completedFuture( fakeOutputData );
@@ -115,9 +115,9 @@ public class CommaSeparatedMatrixWriterTest extends CommaSeparatedWriterTest
         // Fake lead time and threshold
         Pair<TimeWindow, OneOrTwoThresholds> mapKeyByLeadThreshold =
                 Pair.of( timeOne,
-                         OneOrTwoThresholds.of( DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
-                                                                           Operator.GREATER,
-                                                                           ThresholdDataType.LEFT ) ) );
+                         OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                                                                         Operator.GREATER,
+                                                                         ThresholdDataType.LEFT ) ) );
 
         outputBuilder.addMatrixOutput( mapKeyByLeadThreshold,
                                        outputMapByMetricFuture );

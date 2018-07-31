@@ -15,12 +15,14 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
-import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.metadata.DatasetIdentifier;
+import wres.datamodel.metadata.MeasurementUnit;
+import wres.datamodel.metadata.Location;
+import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
-import wres.engine.statistics.metric.discreteprobability.BrierScore.BrierScoreBuilder;
 
 /**
  * Tests the {@link BrierScore}.
@@ -42,9 +44,7 @@ public final class BrierScoreTest
     @Before
     public void setupBeforeEachTest() throws MetricParameterException
     {
-        BrierScoreBuilder b = new BrierScore.BrierScoreBuilder();
-        b.setDecompositionID( ScoreOutputGroup.NONE );
-        this.brierScore = b.build();
+        this.brierScore = BrierScore.of();
     }
 
     /**
@@ -59,16 +59,16 @@ public final class BrierScoreTest
 
         // Metadata for the output
         MetricOutputMetadata m1 =
-                MetadataFactory.getOutputMetadata( input.getRawData().size(),
-                                           MetadataFactory.getDimension(),
-                                           MetadataFactory.getDimension(),
+                MetricOutputMetadata.of( input.getRawData().size(),
+                                           MeasurementUnit.of(),
+                                           MeasurementUnit.of(),
                                            MetricConstants.BRIER_SCORE,
                                            MetricConstants.MAIN,
-                                           MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation("DRRC2"), "SQIN", "HEFS" ) );
+                                           DatasetIdentifier.of( Location.of("DRRC2"), "SQIN", "HEFS" ) );
 
         // Check the results       
         DoubleScoreOutput actual = brierScore.apply( input );
-        DoubleScoreOutput expected = DataFactory.ofDoubleScoreOutput( 0.26, m1 );
+        DoubleScoreOutput expected = DoubleScoreOutput.of( 0.26, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -85,7 +85,7 @@ public final class BrierScoreTest
     {
         // Generate empty data
         DiscreteProbabilityPairs input =
-                DataFactory.ofDiscreteProbabilityPairs( Arrays.asList(), MetadataFactory.getMetadata() );
+                DiscreteProbabilityPairs.of( Arrays.asList(), Metadata.of() );
  
         DoubleScoreOutput actual = brierScore.apply( input );
 
@@ -164,23 +164,6 @@ public final class BrierScoreTest
         exception.expectMessage( "Specify non-null input to the 'BRIER SCORE'." );
         
         brierScore.apply( null );
-    }
-    
-    /**
-     * Tests for an expected exception on attempting to build the {@link BrierScore} with a null decomposition
-     * identifier.
-     * @throws MetricParameterException if the metric could not be built for an unexpected reason
-     */
-
-    @Test
-    public void testBuildThrowsExceptionOnNullDecompositionIdentifier() throws MetricParameterException
-    {
-        exception.expect( MetricParameterException.class );
-        exception.expectMessage( "Specify a non-null decomposition identifier." );
-        
-        BrierScoreBuilder b = new BrierScore.BrierScoreBuilder();
-        b.setDecompositionID( null );
-        b.build();
     }
 
 }
