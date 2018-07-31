@@ -6,13 +6,12 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.EnsemblePair;
+import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.BoxPlotOutput;
 import wres.engine.statistics.metric.Diagram;
@@ -88,7 +87,12 @@ abstract class BoxPlot
         {
             boxes.add( getBox( next ) );
         }
-        MetricOutputMetadata metOut = getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, null );
+        MetricOutputMetadata metOut = MetricOutputMetadata.of( s.getMetadata(),
+                                                          this.getID(),
+                                                          MetricConstants.MAIN,
+                                                          this.hasRealUnits(),
+                                                          s.getRawData().size(),
+                                                          null );
         return BoxPlotOutput.of( boxes, probabilities, metOut, getDomainAxisDimension(), getRangeAxisDimension() );
     }
 
@@ -108,7 +112,7 @@ abstract class BoxPlot
 
         this.probabilities = DEFAULT_PROBABILITIES;
     }
-    
+
     /**
      * Hidden constructor.
      * 

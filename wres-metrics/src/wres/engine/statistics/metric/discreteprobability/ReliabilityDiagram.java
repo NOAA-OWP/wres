@@ -42,9 +42,9 @@ public class ReliabilityDiagram extends Diagram<DiscreteProbabilityPairs, MultiV
     /**
      * Default number of bins.
      */
-    
+
     private static final int DEFAULT_BIN_COUNT = 10;
-    
+
     /**
      * Number of bins in the Reliability Diagram.
      */
@@ -56,12 +56,12 @@ public class ReliabilityDiagram extends Diagram<DiscreteProbabilityPairs, MultiV
      * 
      * @return an instance
      */
-    
+
     public static ReliabilityDiagram of()
     {
         return new ReliabilityDiagram( DEFAULT_BIN_COUNT );
-    }  
-    
+    }
+
     @Override
     public MultiVectorOutput apply( final DiscreteProbabilityPairs s )
     {
@@ -119,7 +119,13 @@ public class ReliabilityDiagram extends Diagram<DiscreteProbabilityPairs, MultiV
         output.put( MetricDimension.OBSERVED_RELATIVE_FREQUENCY, oProb );
         output.put( MetricDimension.SAMPLE_SIZE, samples );
 
-        MetricOutputMetadata metOut = getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, null );
+        MetricOutputMetadata metOut =
+                MetricOutputMetadata.of( s.getMetadata(),
+                                    this.getID(),
+                                    MetricConstants.MAIN,
+                                    this.hasRealUnits(),
+                                    s.getRawData().size(),
+                                    null );
 
         return MultiVectorOutput.ofMultiVectorOutput( output, metOut );
     }

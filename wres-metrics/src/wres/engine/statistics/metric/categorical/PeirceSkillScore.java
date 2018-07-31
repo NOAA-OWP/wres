@@ -1,6 +1,5 @@
 package wres.engine.statistics.metric.categorical;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.MatrixOfDoubles;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.pairs.MulticategoryPairs;

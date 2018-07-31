@@ -8,6 +8,11 @@ import java.time.Instant;
 import org.junit.Test;
 
 import wres.datamodel.MetricConstants;
+import wres.datamodel.OneOrTwoDoubles;
+import wres.datamodel.thresholds.OneOrTwoThresholds;
+import wres.datamodel.thresholds.Threshold;
+import wres.datamodel.thresholds.ThresholdConstants.Operator;
+import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 
 /**
  * Tests the {@link MetricOutputMetadata}.
@@ -28,22 +33,29 @@ public class MetricOutputMetadataTest
         TimeWindow firstWindow = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                 Instant.parse( "1986-01-01T00:00:00Z" ),
                                                 ReferenceTime.ISSUE_TIME );
+        OneOrTwoThresholds thresholds =
+                OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                                                     Operator.GREATER,
+                                                     ThresholdDataType.LEFT ) );
+
         Location locationBase = Location.of( "DRRC3" );
         Metadata base = Metadata.of( MeasurementUnit.of( "SOME_DIM" ),
-                                                     DatasetIdentifier.of( locationBase,
-                                                                                           "SQIN",
-                                                                                           "HEFS" ),
-                                                     firstWindow );
+                                     DatasetIdentifier.of( locationBase,
+                                                           "SQIN",
+                                                           "HEFS" ),
+                                     firstWindow,
+                                     thresholds );
+
         MetricOutputMetadata first = MetricOutputMetadata.of( 1,
-                                                                        MeasurementUnit.of( "CMS" ),
-                                                                        base,
-                                                                        MetricConstants.BIAS_FRACTION,
-                                                                        null );
+                                                              MeasurementUnit.of( "CMS" ),
+                                                              base,
+                                                              MetricConstants.BIAS_FRACTION,
+                                                              null );
         MetricOutputMetadata second = MetricOutputMetadata.of( 1,
-                                                                         MeasurementUnit.of( "CMS" ),
-                                                                         base,
-                                                                         MetricConstants.BIAS_FRACTION,
-                                                                         null );
+                                                               MeasurementUnit.of( "CMS" ),
+                                                               base,
+                                                               MetricConstants.BIAS_FRACTION,
+                                                               null );
         // Reflexive
         assertTrue( "Unexpected inequality between two metadata instances.", first.equals( first ) );
         // Symmetric
@@ -51,10 +63,10 @@ public class MetricOutputMetadataTest
         assertTrue( "Unexpected inequality between two metadata instances.", second.equals( first ) );
         // Transitive
         MetricOutputMetadata secondT = MetricOutputMetadata.of( 1,
-                                                                          MeasurementUnit.of( "CMS" ),
-                                                                          base,
-                                                                          MetricConstants.BIAS_FRACTION,
-                                                                          null );
+                                                                MeasurementUnit.of( "CMS" ),
+                                                                base,
+                                                                MetricConstants.BIAS_FRACTION,
+                                                                null );
         assertTrue( "Unexpected inequality between two metadata instances.", second.equals( secondT ) );
         assertTrue( "Unexpected inequality between two metadata instances.", first.equals( secondT ) );
         // Consistent
@@ -65,40 +77,40 @@ public class MetricOutputMetadataTest
 
         // Unequal
         MetricOutputMetadata third = MetricOutputMetadata.of( 2,
-                                                                        MeasurementUnit.of( "CMS" ),
-                                                                        base,
-                                                                        MetricConstants.BIAS_FRACTION,
-                                                                        null );
+                                                              MeasurementUnit.of( "CMS" ),
+                                                              base,
+                                                              MetricConstants.BIAS_FRACTION,
+                                                              null );
         assertFalse( "Unexpected equality between two metadata instances.", first.equals( third ) );
         MetricOutputMetadata fourth = MetricOutputMetadata.of( 1,
-                                                                         MeasurementUnit.of( "CFS" ),
-                                                                         base,
-                                                                         MetricConstants.BIAS_FRACTION,
-                                                                         null );
+                                                               MeasurementUnit.of( "CFS" ),
+                                                               base,
+                                                               MetricConstants.BIAS_FRACTION,
+                                                               null );
         assertFalse( "Unexpected equality between two metadata instances.", first.equals( fourth ) );
         MetricOutputMetadata fifth = MetricOutputMetadata.of( 1,
-                                                                        MeasurementUnit.of( "CMS" ),
-                                                                        base,
-                                                                        MetricConstants.COEFFICIENT_OF_DETERMINATION,
-                                                                        null );
+                                                              MeasurementUnit.of( "CMS" ),
+                                                              base,
+                                                              MetricConstants.COEFFICIENT_OF_DETERMINATION,
+                                                              null );
         assertFalse( "Unexpected equality between two metadata instances.", first.equals( fifth ) );
         MetricOutputMetadata sixth = MetricOutputMetadata.of( 1,
-                                                                        MeasurementUnit.of( "CMS" ),
-                                                                        base,
-                                                                        MetricConstants.BIAS_FRACTION,
-                                                                        MetricConstants.NONE );
+                                                              MeasurementUnit.of( "CMS" ),
+                                                              base,
+                                                              MetricConstants.BIAS_FRACTION,
+                                                              MetricConstants.NONE );
         assertFalse( "Unexpected equality between two metadata instances.", first.equals( sixth ) );
         // Unequal input dimensions
         Location seventhLocation = Location.of( "DRRC3" );
         MetricOutputMetadata seventh = MetricOutputMetadata.of( 2,
-                                                                          MeasurementUnit.of( "CMS" ),
-                                                                          Metadata.of( MeasurementUnit.of( "OTHER_DIM" ),
-                                                                                                       DatasetIdentifier.of( seventhLocation,
-                                                                                                                                             "SQIN",
-                                                                                                                                             "HEFS" ),
-                                                                                                       firstWindow ),
-                                                                          MetricConstants.BIAS_FRACTION,
-                                                                          null );
+                                                                MeasurementUnit.of( "CMS" ),
+                                                                Metadata.of( MeasurementUnit.of( "OTHER_DIM" ),
+                                                                             DatasetIdentifier.of( seventhLocation,
+                                                                                                   "SQIN",
+                                                                                                   "HEFS" ),
+                                                                             firstWindow ),
+                                                                MetricConstants.BIAS_FRACTION,
+                                                                null );
         assertFalse( "Unexpected equality between two metadata instances.", third.equals( seventh ) );
         // Null check
         assertFalse( "Unexpected equality between two metadata instances.", first.equals( null ) );
@@ -115,19 +127,19 @@ public class MetricOutputMetadataTest
     {
         Location locationBase = Location.of( "DRRC3" );
         Metadata base = Metadata.of( MeasurementUnit.of( "SOME_DIM" ),
-                                                     DatasetIdentifier.of( locationBase,
-                                                                                           "SQIN",
-                                                                                           "HEFS" ) );
+                                     DatasetIdentifier.of( locationBase,
+                                                           "SQIN",
+                                                           "HEFS" ) );
         MetricOutputMetadata first = MetricOutputMetadata.of( 1,
-                                                                        MeasurementUnit.of( "CMS" ),
-                                                                        base,
-                                                                        MetricConstants.BIAS_FRACTION,
-                                                                        null );
+                                                              MeasurementUnit.of( "CMS" ),
+                                                              base,
+                                                              MetricConstants.BIAS_FRACTION,
+                                                              null );
         MetricOutputMetadata second = MetricOutputMetadata.of( 2,
-                                                                         MeasurementUnit.of( "CMS" ),
-                                                                         base,
-                                                                         MetricConstants.BIAS_FRACTION,
-                                                                         null );
+                                                               MeasurementUnit.of( "CMS" ),
+                                                               base,
+                                                               MetricConstants.BIAS_FRACTION,
+                                                               null );
         // Not equal according to stricter equals
         assertFalse( "Unexpected inequality between two metadata instances.", first.equals( second ) );
         // Reflexive
@@ -137,43 +149,43 @@ public class MetricOutputMetadataTest
         assertTrue( "Unexpected inequality between two metadata instances.", second.minimumEquals( first ) );
         // Transitive
         MetricOutputMetadata secondT = MetricOutputMetadata.of( 1,
-                                                                          MeasurementUnit.of( "CMS" ),
-                                                                          base,
-                                                                          MetricConstants.BIAS_FRACTION,
-                                                                          null );
+                                                                MeasurementUnit.of( "CMS" ),
+                                                                base,
+                                                                MetricConstants.BIAS_FRACTION,
+                                                                null );
 
         assertTrue( "Unexpected inequality between two metadata instances.", second.minimumEquals( secondT ) );
         assertTrue( "Unexpected inequality between two metadata instances.", first.minimumEquals( secondT ) );
         // Unequal
         MetricOutputMetadata third = MetricOutputMetadata.of( 2,
-                                                                        MeasurementUnit.of( "CMS" ),
-                                                                        base,
-                                                                        MetricConstants.COEFFICIENT_OF_DETERMINATION,
-                                                                        null );
+                                                              MeasurementUnit.of( "CMS" ),
+                                                              base,
+                                                              MetricConstants.COEFFICIENT_OF_DETERMINATION,
+                                                              null );
         assertFalse( "Unexpected equality between two metadata instances.", first.minimumEquals( third ) );
         MetricOutputMetadata fourth = MetricOutputMetadata.of( 2,
-                                                                         MeasurementUnit.of( "CMS" ),
-                                                                         base,
-                                                                         MetricConstants.COEFFICIENT_OF_DETERMINATION,
-                                                                         MetricConstants.NONE );
+                                                               MeasurementUnit.of( "CMS" ),
+                                                               base,
+                                                               MetricConstants.COEFFICIENT_OF_DETERMINATION,
+                                                               MetricConstants.NONE );
         assertFalse( "Unexpected equality between two metadata instances.", third.minimumEquals( fourth ) );
         MetricOutputMetadata fifth = MetricOutputMetadata.of( 2,
-                                                                        MeasurementUnit.of( "CFS" ),
-                                                                        base,
-                                                                        MetricConstants.COEFFICIENT_OF_DETERMINATION,
-                                                                        MetricConstants.NONE );
+                                                              MeasurementUnit.of( "CFS" ),
+                                                              base,
+                                                              MetricConstants.COEFFICIENT_OF_DETERMINATION,
+                                                              MetricConstants.NONE );
         assertFalse( "Unexpected equality between two metadata instances.", fourth.minimumEquals( fifth ) );
         Location secondLocation = Location.of( "DRRC3" );
         Metadata baseSecond = Metadata.of( MeasurementUnit.of( "OTHER_DIM" ),
-                                                           DatasetIdentifier.of( secondLocation,
-                                                                                                 "SQIN",
-                                                                                                 "HEFS" ) );
+                                           DatasetIdentifier.of( secondLocation,
+                                                                 "SQIN",
+                                                                 "HEFS" ) );
 
         MetricOutputMetadata sixth = MetricOutputMetadata.of( 1,
-                                                                        MeasurementUnit.of( "CMS" ),
-                                                                        baseSecond,
-                                                                        MetricConstants.BIAS_FRACTION,
-                                                                        null );
+                                                              MeasurementUnit.of( "CMS" ),
+                                                              baseSecond,
+                                                              MetricConstants.BIAS_FRACTION,
+                                                              null );
         assertFalse( "Unexpected equality between two metadata instances.", first.minimumEquals( sixth ) );
 
 
@@ -190,29 +202,36 @@ public class MetricOutputMetadataTest
         TimeWindow firstWindow = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                 Instant.parse( "1986-01-01T00:00:00Z" ),
                                                 ReferenceTime.ISSUE_TIME );
+
+        OneOrTwoThresholds thresholds =
+                OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                                                     Operator.GREATER,
+                                                     ThresholdDataType.LEFT ) );
+
         Location baseLocation = Location.of( "DRRC3" );
         Metadata base = Metadata.of( MeasurementUnit.of( "SOME_DIM" ),
-                                                     DatasetIdentifier.of( baseLocation,
-                                                                                           "SQIN",
-                                                                                           "HEFS" ),
-                                                     firstWindow );
+                                     DatasetIdentifier.of( baseLocation,
+                                                           "SQIN",
+                                                           "HEFS" ),
+                                     firstWindow,
+                                     thresholds );
         MetricOutputMetadata first = MetricOutputMetadata.of( 1,
-                                                                        MeasurementUnit.of( "CMS" ),
-                                                                        base,
-                                                                        MetricConstants.BIAS_FRACTION,
-                                                                        null );
+                                                              MeasurementUnit.of( "CMS" ),
+                                                              base,
+                                                              MetricConstants.BIAS_FRACTION,
+                                                              null );
         MetricOutputMetadata second = MetricOutputMetadata.of( 1,
-                                                                         MeasurementUnit.of( "CMS" ),
-                                                                         base,
-                                                                         MetricConstants.BIAS_FRACTION,
-                                                                         null );
+                                                               MeasurementUnit.of( "CMS" ),
+                                                               base,
+                                                               MetricConstants.BIAS_FRACTION,
+                                                               null );
         assertTrue( "Unexpected inequality between two metadata hashcodes.", first.hashCode() == first.hashCode() );
         assertTrue( "Unexpected inequality between two metadata hashcodes.", first.hashCode() == second.hashCode() );
         MetricOutputMetadata secondT = MetricOutputMetadata.of( 1,
-                                                                          MeasurementUnit.of( "CMS" ),
-                                                                          base,
-                                                                          MetricConstants.BIAS_FRACTION,
-                                                                          null );
+                                                                MeasurementUnit.of( "CMS" ),
+                                                                base,
+                                                                MetricConstants.BIAS_FRACTION,
+                                                                null );
         assertTrue( "Unexpected inequality between two metadata hashcodes.", second.hashCode() == secondT.hashCode() );
         assertTrue( "Unexpected inequality between two metadata hashcodes.", first.hashCode() == secondT.hashCode() );
         // Consistent
@@ -223,40 +242,40 @@ public class MetricOutputMetadataTest
         }
         // Unequal
         MetricOutputMetadata third = MetricOutputMetadata.of( 2,
-                                                                        MeasurementUnit.of( "CMS" ),
-                                                                        base,
-                                                                        MetricConstants.BIAS_FRACTION,
-                                                                        null );
+                                                              MeasurementUnit.of( "CMS" ),
+                                                              base,
+                                                              MetricConstants.BIAS_FRACTION,
+                                                              null );
         assertFalse( "Unexpected equality between two metadata hashcodes.", first.hashCode() == third.hashCode() );
         MetricOutputMetadata fourth = MetricOutputMetadata.of( 1,
-                                                                         MeasurementUnit.of( "CFS" ),
-                                                                         base,
-                                                                         MetricConstants.BIAS_FRACTION,
-                                                                         null );
+                                                               MeasurementUnit.of( "CFS" ),
+                                                               base,
+                                                               MetricConstants.BIAS_FRACTION,
+                                                               null );
         assertFalse( "Unexpected equality between two metadata hashcodes.", first.hashCode() == fourth.hashCode() );
         MetricOutputMetadata fifth = MetricOutputMetadata.of( 1,
-                                                                        MeasurementUnit.of( "CMS" ),
-                                                                        base,
-                                                                        MetricConstants.COEFFICIENT_OF_DETERMINATION,
-                                                                        null );
+                                                              MeasurementUnit.of( "CMS" ),
+                                                              base,
+                                                              MetricConstants.COEFFICIENT_OF_DETERMINATION,
+                                                              null );
         assertFalse( "Unexpected equality between two metadata hashcodes.", first.hashCode() == fifth.hashCode() );
         MetricOutputMetadata sixth = MetricOutputMetadata.of( 1,
-                                                                        MeasurementUnit.of( "CMS" ),
-                                                                        base,
-                                                                        MetricConstants.BIAS_FRACTION,
-                                                                        MetricConstants.NONE );
+                                                              MeasurementUnit.of( "CMS" ),
+                                                              base,
+                                                              MetricConstants.BIAS_FRACTION,
+                                                              MetricConstants.NONE );
         assertFalse( "Unexpected equality between two metadata hashcodes.", first.hashCode() == sixth.hashCode() );
         // Unequal input dimensions
         Location seventhLocation = Location.of( "DRRC3" );
         MetricOutputMetadata seventh = MetricOutputMetadata.of( 2,
-                                                                          MeasurementUnit.of( "CMS" ),
-                                                                          Metadata.of( MeasurementUnit.of( "OTHER_DIM" ),
-                                                                                                       DatasetIdentifier.of( seventhLocation,
-                                                                                                                                             "SQIN",
-                                                                                                                                             "HEFS" ),
-                                                                                                       firstWindow ),
-                                                                          MetricConstants.BIAS_FRACTION,
-                                                                          null );
+                                                                MeasurementUnit.of( "CMS" ),
+                                                                Metadata.of( MeasurementUnit.of( "OTHER_DIM" ),
+                                                                             DatasetIdentifier.of( seventhLocation,
+                                                                                                   "SQIN",
+                                                                                                   "HEFS" ),
+                                                                             firstWindow ),
+                                                                MetricConstants.BIAS_FRACTION,
+                                                                null );
         assertFalse( "Unexpected equality between two metadata hashcodes.", third.hashCode() == seventh.hashCode() );
         // Other type check
         assertFalse( "Unexpected equality between two metadata hashcodes.",
