@@ -163,6 +163,16 @@ public abstract class BasicSource
         return this.specifiedFeatures;
     }
 
+    public void setIsRemote(final boolean isRemote)
+    {
+        this.isRemote = isRemote;
+    }
+
+    protected boolean getIsRemote()
+    {
+        return this.isRemote;
+    }
+
     /**
      * The name of the file containing the given source data
      */
@@ -618,6 +628,11 @@ public abstract class BasicSource
      * The ID of the variable being ingested
      */
 	private int variableId;
+
+    /**
+     * Whether or not the data is held remotely
+     */
+	private boolean isRemote;
 
     /**
      * The ID of the unit that the variable is measured in

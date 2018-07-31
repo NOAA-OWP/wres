@@ -397,11 +397,11 @@ public class SQLDataProvider implements DataProvider
     }
 
     @Override
-    public Double[] getDoubleArray( String columnName )
+    public double[] getDoubleArray( String columnName )
     {
         try
         {
-            return (Double[])this.resultSet.getArray( columnName ).getArray();
+            return (double[])this.resultSet.getArray( columnName ).getArray();
         }
         catch ( SQLException e )
         {
@@ -573,6 +573,15 @@ public class SQLDataProvider implements DataProvider
             catch ( SQLException e )
             {
                 LOGGER.debug("The contained resultset could not be properly closed.", e);
+            }
+
+            try
+            {
+                this.resultSet.getStatement().close();
+            }
+            catch ( SQLException e )
+            {
+                LOGGER.error("The statement for the result set could not be closed.");
             }
         }
         else

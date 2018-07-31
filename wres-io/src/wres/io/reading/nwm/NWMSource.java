@@ -1,15 +1,22 @@
 package wres.io.reading.nwm;
 
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.URL;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
+import java.nio.file.Files;
 import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ucar.nc2.FileWriter2;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
 
 import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.WRESRunnable;
+import wres.io.config.ConfigHelper;
 import wres.io.reading.BasicSource;
 import wres.io.reading.IngestResult;
 import wres.io.utilities.Database;
@@ -67,6 +74,14 @@ public class NWMSource extends BasicSource
 			WRESRunnable saver;
 			if (NetCDF.isGridded(var) && this.getHash() == null)
 			{
+			    /*We can't use the file name as the key because that is the URL. If we can strip the domain from the url, maybe we can use that
+                   to form the actual file path. I'll need to consult the other code and make sure everything stays in line. */
+			    // TODO: Return to this once the object store can be used again
+			    /*if ( this.getIsRemote())
+                {
+                    URL sourcePath = new URL(source.getLocation());
+                    ReadableByteChannel channel = Channels.newChannel(sourcePath.openStream());
+                }*/
 			    // TODO: We aren't guaranteed to have a physical file.
                 // If we don't we need to save it for later use
 				saver = new GriddedNWMValueSaver( this.getFilename(),

@@ -386,11 +386,11 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
             throws SQLException
     {
         ScriptBuilder script = new ScriptBuilder(  );
-        script = this.addInsert( script );
+        this.addInsert( script );
         script.addLine();
         script.addLine("UNION");
         script.addLine();
-        script = this.addSelect(script);
+        this.addSelect(script);
 
         return script;
     }

@@ -85,6 +85,11 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
         return DataSources.getCache().get( id );
     }
 
+    public static SourceDetails getById(Integer id)
+    {
+        return DataSources.getCache().get( id );
+    }
+
     public static boolean isCached( SourceDetails.SourceKey key )
     {
         return DataSources.getCache()
@@ -131,7 +136,7 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
 
             String script = "";
 
-            script += "SELECT source_id, path, output_time::text, lead, hash" + NEWLINE;
+            script += "SELECT source_id, path, output_time::text, lead, hash, is_point_data" + NEWLINE;
             script += "FROM wres.Source" + NEWLINE;
             script += "WHERE hash = '" + hash + "';";
 
@@ -151,6 +156,7 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
                         details.setOutputTime( data.getString( "output_time" ) );
                         details.setSourcePath( data.getString( "path" ) );
                         details.setID( data.getInt( "source_id" ) );
+                        details.setIsPointData( data.getBoolean( "is_point_data" ) );
 
                         DataSources.getCache().addElement( details );
 
@@ -310,7 +316,7 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
 
 	@Override
 	protected int getMaxDetails() {
-		return 1000;
+		return 10000;
 	}
 
     @Override
@@ -327,7 +333,7 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
         try
         {
             connection = Database.getHighPriorityConnection();
-            String loadScript = "SELECT source_id, path, CAST(output_time AS TEXT) AS output_time, hash" + System.lineSeparator();
+            String loadScript = "SELECT source_id, path, CAST(output_time AS TEXT) AS output_time, hash, is_point_data" + System.lineSeparator();
             loadScript += "FROM wres.Source" + System.lineSeparator();
             loadScript += "LIMIT " + getMaxDetails();
             
@@ -341,6 +347,7 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
                     detail.setOutputTime( sources.getString( "output_time" ) );
                     detail.setSourcePath( sources.getString( "path" ) );
                     detail.setHash( sources.getString( "hash" ) );
+                    detail.setIsPointData( sources.getBoolean( "is_point_data" ) );
                     detail.setID( sources.getInt( "source_id" ) );
 
                     this.getKeyIndex().put( detail.getKey(), detail.getId() );

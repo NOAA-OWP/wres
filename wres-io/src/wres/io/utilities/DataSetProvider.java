@@ -14,18 +14,10 @@ import java.util.Map;
 import java.util.TreeMap;
 
 /**
- * This class was originally used in development to separate a resultset
- * from its database components. A function could use a connection and
- * statement to retrieve data, but closing the database statement and
- * connection would render the resultset unreadable. As a result, you
- * could not retrieve data from the database in one thread and send it to
- * another. This was built as a possible solution.
- *
- * Despite being a workable solution, it was later removed as a return type
- * for Database.execute and SQLExecutor.execute. Large queries simply
- * return too much data and result in paging, slowing down the entire
- * application. This remains in the system in case it is needed down the line.
- * If not, it is safe to remove.
+ * A fully in-memory tabular dataset that doesn't require an
+ * active connection to a database. Mimics the behavior of
+ * the <code>ResultSet</code> data structure used for
+ * sql queries.
  */
 public class DataSetProvider implements DataProvider
 {
@@ -388,17 +380,17 @@ public class DataSetProvider implements DataProvider
             return 0;
         }
 
-        return (float)this.getObject( columnName );
+        return (double)this.getObject( columnName );
     }
 
     @Override
-    public Double[] getDoubleArray( String columnName )
+    public double[] getDoubleArray( String columnName )
     {
         if (this.isClosed())
         {
             throw new IllegalStateException( "The data set is inaccessible." );
         }
-        return (Double[])this.getObject(columnName);
+        return (double[])this.getObject(columnName);
     }
 
     @Override
@@ -473,6 +465,15 @@ public class DataSetProvider implements DataProvider
             throw new IllegalStateException( "The data set is inaccessible." );
         }
 
+        Object value = this.getObject( columnName );
+
+        if (value instanceof OffsetDateTime)
+        {
+            return (OffsetDateTime)value;
+        }
+
+        // Since we know this isn't natively an offset date time, we try to
+        // convert it to a type that CAN be an offset date time.
         Instant instant = this.getInstant( columnName );
         return OffsetDateTime.ofInstant( instant, ZoneId.of( "UTC" ) );
     }

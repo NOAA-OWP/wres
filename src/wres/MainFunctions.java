@@ -2,6 +2,9 @@ package wres;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -47,9 +50,7 @@ import wres.io.concurrency.WRESRunnable;
 import wres.io.config.ConfigHelper;
 import wres.io.reading.usgs.USGSParameterReader;
 import wres.io.utilities.DataProvider;
-import wres.io.utilities.DataSetProvider;
 import wres.io.utilities.Database;
-import wres.io.utilities.NoDataException;
 import wres.io.utilities.ScriptBuilder;
 import wres.system.ProgressMonitor;
 import wres.system.SystemSettings;
@@ -139,6 +140,7 @@ final class MainFunctions
 		functions.put("validate", MainFunctions::validate);
 		functions.put("validategrid", MainFunctions::validateNetcdfGrid);
 		functions.put("s3test", MainFunctions::s3Test);
+		functions.put("readheader", MainFunctions::readHeader);
 
 		return functions;
 	}
@@ -1409,6 +1411,68 @@ final class MainFunctions
 
             return result;
         };
+    }
+
+    private static Integer readHeader(String[] args)
+    {
+        Integer result = FAILURE;
+        final String url = "http://***REMOVED***rgw.***REMOVED***.***REMOVED***:8080/nwm/nwm.20180515/analysis_assim/nwm.t00z.analysis_assim.channel_rt.tm00.conus.nc";
+
+        // TODO: Finish experiment; current work must be halted
+
+        /*
+         * The idea here is that we want to see if we can pull the top x
+         * bytes from the remote file. From there, we can pull and work with
+         * just the header of a netcdf file.  If the data within the file
+         * meets expectations, we may continue to work with it. If not,
+         * we can avoid further work. If we can't avoid it, we are forced
+         * to download a full file before we can determine whether or not
+         * it can/should be used.
+         */
+
+        // Create a connection and open a stream to the resource
+        URL sourcePath = null;
+        try
+        {
+            sourcePath = new URL( url);
+        }
+        catch ( MalformedURLException e )
+        {
+            LOGGER.error("The url pointing towards the file was incorrect.", e);
+            return FAILURE;
+        }
+
+        try(InputStream stream = sourcePath.openStream())
+        {
+            // The idea of 200 bytes for the header was pushed.
+            // Working with 300 for initial tests just to be safe
+            byte[] buffer = new byte[300];
+
+            // Fill the buffer and attempt to load it into a Netcdf object
+            // This is supposed to work in Thredds; it's called
+            // "Range Subsetting"
+            int bytesRead = stream.read( buffer );
+            try (NetcdfFile data = NetcdfFile.openInMemory( "file", buffer ))
+            {
+                LOGGER.info( "Loaded data..." );
+            }
+
+            // If/when we can load the header, we want to be able to
+            // evaluate the contents of it without actually hitting the
+            // data. This might mean that attributes storing single
+            // value data also contained within variables might
+            // see use again. While "time" and "reference_time" are
+            // the canonical sources of time and issue time data,
+            // We most likely won't be able to hit that data
+            // with the header alone (or at least reliably).
+            result = SUCCESS;
+        }
+        catch ( IOException e )
+        {
+            LOGGER.error("Remote Netcdf reading failed.", e);
+        }
+
+        return result;
     }
 
     private static final Object EXCEPTION_LOCK = new Object();

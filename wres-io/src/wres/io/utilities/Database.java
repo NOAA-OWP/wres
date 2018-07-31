@@ -295,7 +295,7 @@ public final class Database {
             ProgressMonitor.completeStep();
         }
 
-        if (LOGGER.isTraceEnabled())
+        if (LOGGER.isTraceEnabled() && watch != null)
         {
             watch.stop();
             LOGGER.trace("It took {} to restore all indexes in the database.",
@@ -1657,6 +1657,8 @@ public final class Database {
 
         try
         {
+            // Don't close the statement; it will close the result set.
+            // Closing the data provider will also kill the statement
             statement = connection.prepareStatement( query );
 
             int addedParameters = 0;
@@ -1678,6 +1680,8 @@ public final class Database {
                 timer = Database.createScriptTimer( query );
             }
 
+            // Don't close the statement; it will close the result set.
+            // Closing the data provider will also kill the statement
             results = new SQLDataProvider( statement.executeQuery() );
 
             if (LOGGER.isDebugEnabled() && timer != null)
@@ -1688,6 +1692,8 @@ public final class Database {
         }
         catch (SQLException error)
         {
+            // Only attempt to close the statement here because
+            // we're going to bubble up the error
             if (statement != null && !statement.isClosed())
             {
                 try

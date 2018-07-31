@@ -460,7 +460,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
         private int[] getOrigin(String name, Location location)
                 throws IOException, InvalidRangeException
         {
-            int[] origin = null;
+            int[] origin;
 
             LOGGER.trace("Looking for the origin of {}", location);
 
