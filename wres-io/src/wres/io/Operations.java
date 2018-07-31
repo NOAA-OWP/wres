@@ -6,16 +6,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
 import java.nio.file.Paths;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.sql.Timestamp;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,26 +20,21 @@ import java.util.TreeSet;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Pattern;
 
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.AnonymousAWSCredentials;
-import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.ListObjectsRequest;
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
-import com.amazonaws.util.StringUtils;
 import org.slf4j.LoggerFactory;
-import ucar.nc2.NetcdfFile;
 
 import wres.config.FeaturePlus;
 import wres.config.generated.Feature;
@@ -72,7 +59,6 @@ import wres.io.writing.PairWriter;
 import wres.io.writing.netcdf.NetCDFCopier;
 import wres.io.writing.netcdf.NetcdfOutputWriter;
 import wres.system.ProgressMonitor;
-import wres.util.NotImplementedException;
 
 public final class Operations {
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(Operations.class);
@@ -96,7 +82,7 @@ public final class Operations {
         LOGGER.info("Loading preliminary metadata...");
         Future unitConversionLoad = Executor.execute( UnitConversions::initialize );
 
-        boolean isVector = true;
+        boolean isVector;
         Future<Boolean> leftValid = null;
         Future<Boolean> rightValid = null;
         Future<Boolean> baselineValid = null;

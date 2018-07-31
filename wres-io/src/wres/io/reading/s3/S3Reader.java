@@ -2,6 +2,8 @@ package wres.io.reading.s3;
 
 import java.io.IOException;
 import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.PathMatcher;
 import java.nio.file.Paths;
 import java.sql.SQLException;
@@ -22,11 +24,14 @@ import com.amazonaws.services.s3.model.ObjectListing;
 import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.IngestSaver;
 import wres.io.concurrency.WRESCallable;
+import wres.io.config.ConfigHelper;
 import wres.io.data.caching.DataSources;
+import wres.io.data.details.SourceDetails;
 import wres.io.reading.BasicSource;
 import wres.io.reading.IngestResult;
 import wres.io.utilities.Database;
 import wres.system.ProgressMonitor;
+import wres.system.SystemSettings;
 
 public abstract class S3Reader extends BasicSource
 {
@@ -57,9 +62,25 @@ public abstract class S3Reader extends BasicSource
         {
             try
             {
-                if ( DataSources.hasSource(tagAndKey.getEtag() ))
+                Integer sourceId = DataSources.getActiveSourceID( tagAndKey.getEtag() );
+
+                // TODO: This needs to check if it needs to be stored locally, not if it is gridded
+                boolean isVector = true;
+                boolean fileExists = sourceId != null;
+
+                if (sourceId != null)
                 {
-                    // TODO: Add additional logic to actually check if a possible gridded file is on the file system
+                    SourceDetails source = DataSources.getById( sourceId );
+                    isVector = source.getIsPointData();
+                }
+
+                if (!isVector)
+                {
+                    fileExists = Files.exists( ConfigHelper.getStoredNetcdfPath(tagAndKey.getKey()));
+                }
+
+                if ( fileExists )
+                {
                     ingests.add(
                             IngestResult.fakeFutureSingleItemListFrom(
                                     this.getProjectConfig(),
@@ -76,7 +97,10 @@ public abstract class S3Reader extends BasicSource
             }
             catch ( SQLException e )
             {
-                e.printStackTrace();
+                throw new IOException(
+                        "The database could not be queried to see if metadata for " +
+                        tagAndKey.getKey() + " already exists.",
+                        e);
             }
         }
 
@@ -88,6 +112,7 @@ public abstract class S3Reader extends BasicSource
                                                                 .withProject( this.getProjectConfig() )
                                                                 .withDataSourceConfig( this.getDataSourceConfig() )
                                                                 .withHash( tagKey.getEtag() )
+                                                                .isRemote()
                                                                 .withProgressMonitoring()
                                                                 .build();
 

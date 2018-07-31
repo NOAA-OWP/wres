@@ -1,5 +1,6 @@
 package wres.io.reading.s3;
 
+import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -19,6 +20,8 @@ import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.regions.Regions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ucar.nc2.NetcdfFile;
+import ucar.nc2.Variable;
 
 import wres.config.generated.ProjectConfig;
 import wres.util.TimeHelper;

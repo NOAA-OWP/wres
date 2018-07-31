@@ -77,7 +77,7 @@ public interface DataProvider extends AutoCloseable
 
     double getDouble(final String columnName);
 
-    Double[] getDoubleArray(final String columnName);
+    double[] getDoubleArray(final String columnName);
 
     BigDecimal getBigDecimal(final String columnName);
 

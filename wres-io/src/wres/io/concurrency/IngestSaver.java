@@ -2,7 +2,6 @@ package wres.io.concurrency;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.concurrent.Future;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +37,7 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
         private final List<Feature> specifiedFeatures;
         private final String hash;
         private final boolean monitorProgress;
+        private final boolean isRemote;
 
         private IngestBuilder()
         {
@@ -48,6 +48,7 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
             this.specifiedFeatures = null;
             this.hash = null;
             this.monitorProgress = false;
+            this.isRemote = false;
         }
 
         public IngestBuilder withFilePath(final String filepath)
@@ -59,7 +60,8 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
                     this.sourceConfig,
                     this.specifiedFeatures,
                     this.hash,
-                    this.monitorProgress
+                    this.monitorProgress,
+                    this.isRemote
             );
         }
 
@@ -72,7 +74,8 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
                     this.sourceConfig,
                     this.specifiedFeatures,
                     this.hash,
-                    this.monitorProgress
+                    this.monitorProgress,
+                    this.isRemote
             );
         }
 
@@ -85,7 +88,8 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
                     this.sourceConfig,
                     this.specifiedFeatures,
                     this.hash,
-                    this.monitorProgress
+                    this.monitorProgress,
+                    this.isRemote
             );
         }
 
@@ -98,7 +102,8 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
                     sourceConfig,
                     this.specifiedFeatures,
                     this.hash,
-                    this.monitorProgress
+                    this.monitorProgress,
+                    this.isRemote
             );
         }
 
@@ -111,7 +116,8 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
                     this.sourceConfig,
                     specifiedFeatures,
                     this.hash,
-                    this.monitorProgress
+                    this.monitorProgress,
+                    this.isRemote
             );
         }
 
@@ -124,7 +130,8 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
                     this.sourceConfig,
                     this.specifiedFeatures,
                     hash,
-                    this.monitorProgress
+                    this.monitorProgress,
+                    this.isRemote
             );
         }
 
@@ -137,6 +144,21 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
                     this.sourceConfig,
                     this.specifiedFeatures,
                     this.hash,
+                    true,
+                    this.isRemote
+            );
+        }
+
+        public IngestBuilder isRemote()
+        {
+            return new IngestBuilder(
+                    this.filepath,
+                    this.projectConfig,
+                    this.dataSourceConfig,
+                    this.sourceConfig,
+                    this.specifiedFeatures,
+                    this.hash,
+                    this.monitorProgress,
                     true
             );
         }
@@ -148,7 +170,8 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
                 final DataSourceConfig.Source sourceConfig,
                 final List<Feature> specifiedFeatures,
                 final String hash,
-                final boolean monitorProgress)
+                final boolean monitorProgress,
+                final boolean isRemote)
         {
             this.filepath = filepath;
             this.projectConfig = projectConfig;
@@ -157,6 +180,7 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
             this.specifiedFeatures = specifiedFeatures;
             this.hash = hash;
             this.monitorProgress = monitorProgress;
+            this.isRemote = isRemote;
         }
 
         private void validate()
@@ -183,7 +207,8 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
                     this.dataSourceConfig,
                     this.sourceConfig,
                     this.specifiedFeatures,
-                    this.hash
+                    this.hash,
+                    this.isRemote
             );
 
             if (this.monitorProgress)
@@ -202,13 +227,15 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
     private final DataSourceConfig.Source sourceConfig;
     private final List<Feature> specifiedFeatures;
     private final String hash;
+    private final boolean isRemote;
 
     private IngestSaver( String filepath,
                         ProjectConfig projectConfig,
                         DataSourceConfig dataSourceConfig,
                         DataSourceConfig.Source sourceConfig,
                         List<Feature> specifiedFeatures,
-                        final String hash)
+                        final String hash,
+                         final boolean isRemote)
     {
         this.filepath = filepath;
         this.projectConfig = projectConfig;
@@ -216,6 +243,7 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
         this.sourceConfig = sourceConfig;
         this.specifiedFeatures = specifiedFeatures;
         this.hash = hash;
+        this.isRemote = isRemote;
     }
 
 
@@ -228,6 +256,7 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
         source.setSourceConfig( this.sourceConfig );
         source.setSpecifiedFeatures( this.specifiedFeatures );
         source.setHash( this.hash );
+        source.setIsRemote( this.isRemote );
         return source.save();
     }
 

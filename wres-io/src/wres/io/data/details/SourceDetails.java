@@ -97,6 +97,11 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
 		return this.hash;
 	}
 
+	public boolean getIsPointData()
+    {
+        return this.isPointData;
+    }
+
 	@Override
 	public int compareTo(SourceDetails other)
 	{

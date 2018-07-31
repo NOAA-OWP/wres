@@ -85,6 +85,7 @@ import wres.io.utilities.Database;
 import wres.io.writing.SharedWriters;
 import wres.io.writing.WriterHelper;
 import wres.io.writing.netcdf.NetcdfDoubleScoreWriter;
+import wres.system.SystemSettings;
 import wres.util.Strings;
 import wres.util.TimeHelper;
 
@@ -829,6 +830,11 @@ public class ConfigHelper
     public static List<DestinationConfig> getNumericalDestinations( ProjectConfig config )
     {
         return getDestinationsOfType( config, DestinationType.NUMERIC );
+    }
+
+    public static Path getStoredNetcdfPath(final String key)
+    {
+        return Paths.get( SystemSettings.getNetCDFStorePath(), key );
     }
 
     /**
