@@ -16,6 +16,7 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,6 +30,8 @@ public class SQLDataProvider implements DataProvider
 
     SQLDataProvider( final ResultSet resultSet)
     {
+        Objects.requireNonNull( resultSet );
+
         try
         {
             if (resultSet.isClosed())
@@ -64,7 +67,7 @@ public class SQLDataProvider implements DataProvider
             }
             catch ( SQLException e )
             {
-                LOGGER.error( "The data set is inaccessible.", e );
+                LOGGER.warn( "The data set is inaccessible.", e );
                 this.closed = true;
             }
         }
@@ -599,20 +602,21 @@ public class SQLDataProvider implements DataProvider
         {
             try
             {
-                this.resultSet.close();
-            }
-            catch ( SQLException e )
-            {
-                LOGGER.debug("The contained resultset could not be properly closed.", e);
-            }
-
-            try
-            {
                 this.resultSet.getStatement().close();
             }
             catch ( SQLException e )
             {
-                LOGGER.error("The statement for the result set could not be closed.");
+                LOGGER.warn( "A Statement for a ResultSet could not be closed.",
+                             e );
+            }
+
+            try
+            {
+                this.resultSet.close();
+            }
+            catch ( SQLException e )
+            {
+                LOGGER.warn( "A ResultSet could not be properly closed.", e );
             }
         }
         else
