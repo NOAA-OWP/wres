@@ -207,7 +207,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
     }
 
     @Override
-    public MetricInput<?> execute() throws Exception
+    public MetricInput<?> execute() throws SQLException, IOException
     {
         if (this.projectDetails.usesGriddedData( this.projectDetails.getRight() ))
         {
@@ -247,9 +247,9 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         {
             input = createInput();
         }
-        catch ( Exception error )
+        catch ( IOException | SQLException e )
         {
-            String message = "Error occured while calculating pairs for";
+            String message = "While calculating pairs for";
 
             if ( this.projectDetails.getIssuePoolingWindow() != null )
             {
@@ -261,9 +261,9 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             message += " lead time ";
             message += String.valueOf( this.leadIteration );
 
-            LOGGER.debug( message, error );
-            throw error;
+            throw new RetrievalFailedException( message, e );
         }
+
         return input;
     }
 
