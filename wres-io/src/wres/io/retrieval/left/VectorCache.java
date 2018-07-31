@@ -1,15 +1,11 @@
 package wres.io.retrieval.left;
 
 import java.sql.Connection;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.NavigableMap;
 import java.util.TreeMap;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
@@ -22,12 +18,9 @@ import wres.io.utilities.DataProvider;
 import wres.io.utilities.Database;
 import wres.io.utilities.ScriptBuilder;
 import wres.util.Collections;
-import wres.util.TimeHelper;
 
 class VectorCache implements LeftHandCache
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger( VectorCache.class );
-
     VectorCache(final ProjectDetails projectDetails, Feature feature) throws SQLException
     {
         this.projectDetails = projectDetails;
