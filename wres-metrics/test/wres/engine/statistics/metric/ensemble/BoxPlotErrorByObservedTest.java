@@ -17,9 +17,13 @@ import org.junit.rules.ExpectedException;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
+import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.EnsemblePair;
+import wres.datamodel.metadata.DatasetIdentifier;
+import wres.datamodel.metadata.MeasurementUnit;
+import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
@@ -27,7 +31,6 @@ import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
 import wres.engine.statistics.metric.MetricParameterException;
-import wres.engine.statistics.metric.ensemble.BoxPlotErrorByObserved.BoxPlotErrorByObservedBuilder;
 
 /**
  * Tests the {@link BoxPlotErrorByObserved}.
@@ -49,9 +52,7 @@ public final class BoxPlotErrorByObservedTest
     @Before
     public void setupBeforeEachTest() throws MetricParameterException
     {
-        BoxPlotErrorByObservedBuilder b = new BoxPlotErrorByObservedBuilder();
-        b.setProbabilities( DataFactory.vectorOf( new double[] { 0.0, 0.25, 0.5, 0.75, 1.0 } ) );
-        this.bpe = (BoxPlotErrorByObserved) b.build();
+        this.bpe = BoxPlotErrorByObserved.of();
     }
 
     /**
@@ -63,40 +64,37 @@ public final class BoxPlotErrorByObservedTest
     public void testApply()
     {
         List<EnsemblePair> values = new ArrayList<>();
-        values.add( DataFactory.pairOf( 50.0, new double[] { 0.0, 25.0, 50.0, 75.0, 100.0 } ) );
+        values.add( EnsemblePair.of( 50.0, new double[] { 0.0, 25.0, 50.0, 75.0, 100.0 } ) );
 
         TimeWindow window = TimeWindow.of( Instant.MIN,
                                            Instant.MAX,
                                            ReferenceTime.VALID_TIME,
                                            Duration.ofHours( 24 ) );
-        Metadata meta = MetadataFactory.getMetadata( MetadataFactory.getDimension( "MM/DAY" ),
-                                                     MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation( "A" ),
+        Metadata meta = Metadata.of( MeasurementUnit.of( "MM/DAY" ),
+                                                     DatasetIdentifier.of( Location.of( "A" ),
                                                                                            "MAP" ),
                                                      window );
 
-        EnsemblePairs input = DataFactory.ofEnsemblePairs( values, meta );
+        EnsemblePairs input = EnsemblePairs.of( values, meta );
+        final TimeWindow timeWindow = window;
 
-        final MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( input.getRawData().size(),
-                                                                           MetadataFactory.getDimension( "MM/DAY" ),
-                                                                           MetadataFactory.getDimension( "MM/DAY" ),
-                                                                           MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
-                                                                           MetricConstants.MAIN,
-                                                                           MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation( "A" ),
-                                                                                                                 "MAP" ),
-                                                                           window );
+        final MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getRawData().size(),
+        MeasurementUnit.of( "MM/DAY" ),
+        MeasurementUnit.of( "MM/DAY" ),
+        MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
+        MetricConstants.MAIN,
+        DatasetIdentifier.of( Location.of( "A" ),
+                                                                                                                         "MAP" ),
+        timeWindow );
 
         //Compute normally
         final BoxPlotOutput actual = bpe.apply( input );
         final EnsemblePair expectedBox =
-                DataFactory.pairOf( 50.0, new double[] { -50.0, -37.5, 0.0, 37.5, 50.0 } );
+                EnsemblePair.of( 50.0, new double[] { -50.0, -37.5, 0.0, 37.5, 50.0 } );
         List<EnsemblePair> expectedBoxes = new ArrayList<>();
         expectedBoxes.add( expectedBox );
-        BoxPlotOutput expected = DataFactory.ofBoxPlotOutput( expectedBoxes,
-                                                              DataFactory.vectorOf( new double[] { 0.0, 0.25, 0.5, 0.75,
-                                                                                                   1.0 } ),
-                                                              m1,
-                                                              MetricDimension.OBSERVED_VALUE,
-                                                              MetricDimension.FORECAST_ERROR );
+        BoxPlotOutput expected = BoxPlotOutput.of( expectedBoxes, VectorOfDoubles.of( new double[] { 0.0, 0.25, 0.5, 0.75,
+         1.0 } ), m1, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
         //Check the results
         assertTrue( "The actual output for the box plot of forecast errors by observed value does not match the "
                     + "expected output.",
@@ -112,7 +110,7 @@ public final class BoxPlotErrorByObservedTest
     {
         // Generate empty data
         EnsemblePairs input =
-                DataFactory.ofEnsemblePairs( Arrays.asList(), MetadataFactory.getMetadata() );
+                EnsemblePairs.of( Arrays.asList(), Metadata.of() );
 
         BoxPlotOutput actual = bpe.apply( input );
 
@@ -151,10 +149,7 @@ public final class BoxPlotErrorByObservedTest
     @Test
     public void testConstructionWithTwoProbabilities() throws MetricParameterException
     {
-        BoxPlotErrorByObservedBuilder b = new BoxPlotErrorByObservedBuilder();
-        b.setProbabilities( DataFactory.vectorOf( new double[] { 0.0, 1.0 } ) );
-
-        assertTrue( Objects.nonNull( b.build() ) );
+        assertTrue( Objects.nonNull( BoxPlotErrorByObserved.of( VectorOfDoubles.of( new double[] { 0.0, 1.0 } ) ) ) );
     }
 
     /**
@@ -181,9 +176,7 @@ public final class BoxPlotErrorByObservedTest
         exception.expect( MetricParameterException.class );
         exception.expectMessage( "Specify at least two probabilities for the verification box plot." );
 
-        BoxPlotErrorByObservedBuilder b = new BoxPlotErrorByObserved.BoxPlotErrorByObservedBuilder();
-        b.setProbabilities( DataFactory.vectorOf( new double[] { 0.1 } ) );
-        b.build();
+        BoxPlotErrorByObserved.of( VectorOfDoubles.of( 0.1 ) );
     }
 
     /**
@@ -196,9 +189,7 @@ public final class BoxPlotErrorByObservedTest
         exception.expect( MetricParameterException.class );
         exception.expectMessage( "Specify only valid probabilities within [0,1] from which to construct the box plot." );
 
-        BoxPlotErrorByObservedBuilder b = new BoxPlotErrorByObserved.BoxPlotErrorByObservedBuilder();
-        b.setProbabilities( DataFactory.vectorOf( new double[] { -0.1, 0.0, 0.5 } ) );
-        b.build();
+        BoxPlotErrorByObserved.of( VectorOfDoubles.of( -0.1, 0.0, 0.5 ) );
     }
 
     /**
@@ -211,9 +202,7 @@ public final class BoxPlotErrorByObservedTest
         exception.expect( MetricParameterException.class );
         exception.expectMessage( "Specify only valid probabilities within [0,1] from which to construct the box plot." );
 
-        BoxPlotErrorByObservedBuilder b = new BoxPlotErrorByObserved.BoxPlotErrorByObservedBuilder();
-        b.setProbabilities( DataFactory.vectorOf( new double[] { 0.0, 0.5, 1.5 } ) );
-        b.build();
+        BoxPlotErrorByObserved.of( VectorOfDoubles.of( 0.0, 0.5, 1.5 ) );
     }
 
     /**
@@ -226,9 +215,7 @@ public final class BoxPlotErrorByObservedTest
         exception.expect( MetricParameterException.class );
         exception.expectMessage( "Specify only non-unique probabilities from which to construct the box plot." );
 
-        BoxPlotErrorByObservedBuilder b = new BoxPlotErrorByObserved.BoxPlotErrorByObservedBuilder();
-        b.setProbabilities( DataFactory.vectorOf( new double[] { 0.0, 0.0, 1.0 } ) );
-        b.build();
+        BoxPlotErrorByObserved.of( VectorOfDoubles.of( 0.0, 0.0, 1.0 ) );
     }
 
     /**
@@ -241,21 +228,7 @@ public final class BoxPlotErrorByObservedTest
         exception.expect( MetricParameterException.class );
         exception.expectMessage( "Specify an odd number of probabilities for the verification box plot." );
 
-        BoxPlotErrorByObservedBuilder b = new BoxPlotErrorByObserved.BoxPlotErrorByObservedBuilder();
-        b.setProbabilities( DataFactory.vectorOf( new double[] { 0.0, 0.25, 0.5, 1.0 } ) );
-        b.build();
-    }
-
-    /**
-     * Tests for an expected exception on construction with an even number of probabilities. 
-     */
-
-    @Test
-    public void testForExceptionOnEvenNumberOf() throws MetricParameterException
-    {
-        BoxPlotErrorByObservedBuilder b = new BoxPlotErrorByObserved.BoxPlotErrorByObservedBuilder();
-        b.setProbabilities( DataFactory.vectorOf( new double[] { 0.0, 0.25 } ) );
-        b.build();
+        BoxPlotErrorByObserved.of( VectorOfDoubles.of( 0.0, 0.25, 0.5, 1.0 ) );
     }
 
 }

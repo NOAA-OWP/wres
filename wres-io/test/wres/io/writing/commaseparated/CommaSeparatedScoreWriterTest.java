@@ -24,9 +24,10 @@ import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.metadata.DatasetIdentifier;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
-import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
@@ -63,7 +64,7 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTest
     {
 
         // location id
-        final Location LID = MetadataFactory.getLocation( "DRRC2" );
+        final Location LID = Location.of( "DRRC2" );
 
         MetricOutputForProjectByTimeAndThreshold.MetricOutputForProjectByTimeAndThresholdBuilder outputBuilder =
                 DataFactory.ofMetricOutputForProjectByTimeAndThreshold();
@@ -74,37 +75,34 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTest
         // which requires a datasetidentifier..
 
         DatasetIdentifier datasetIdentifier =
-                MetadataFactory.getDatasetIdentifier( LID,
-                                                      "SQIN",
-                                                      "HEFS",
-                                                      "ESP" );
+                DatasetIdentifier.of( LID, "SQIN", "HEFS", "ESP" );
 
         MetricOutputMetadata fakeMetadataA =
-                MetadataFactory.getOutputMetadata( 1000,
-                                                   MetadataFactory.getDimension(),
-                                                   MetadataFactory.getDimension( "CMS" ),
+                MetricOutputMetadata.of( 1000,
+                                                   MeasurementUnit.of(),
+                                                   MeasurementUnit.of( "CMS" ),
                                                    MetricConstants.MEAN_SQUARE_ERROR,
                                                    MetricConstants.MAIN,
                                                    datasetIdentifier );
         MetricOutputMetadata fakeMetadataB =
-                MetadataFactory.getOutputMetadata( 1000,
-                                                   MetadataFactory.getDimension(),
-                                                   MetadataFactory.getDimension( "CMS" ),
+                MetricOutputMetadata.of( 1000,
+                                                   MeasurementUnit.of(),
+                                                   MeasurementUnit.of( "CMS" ),
                                                    MetricConstants.MEAN_ERROR,
                                                    MetricConstants.MAIN,
                                                    datasetIdentifier );
         MetricOutputMetadata fakeMetadataC =
-                MetadataFactory.getOutputMetadata( 1000,
-                                                   MetadataFactory.getDimension(),
-                                                   MetadataFactory.getDimension( "CMS" ),
+                MetricOutputMetadata.of( 1000,
+                                                   MeasurementUnit.of(),
+                                                   MeasurementUnit.of( "CMS" ),
                                                    MetricConstants.MEAN_ABSOLUTE_ERROR,
                                                    MetricConstants.MAIN,
                                                    datasetIdentifier );
 
         Map<MetricConstants, DoubleScoreOutput> fakeOutputs = new HashMap<>();
-        fakeOutputs.put( MetricConstants.MEAN_SQUARE_ERROR, DataFactory.ofDoubleScoreOutput( 1.0, fakeMetadataA ) );
-        fakeOutputs.put( MetricConstants.MEAN_ERROR, DataFactory.ofDoubleScoreOutput( 2.0, fakeMetadataB ) );
-        fakeOutputs.put( MetricConstants.MEAN_ABSOLUTE_ERROR, DataFactory.ofDoubleScoreOutput( 3.0, fakeMetadataC ) );
+        fakeOutputs.put( MetricConstants.MEAN_SQUARE_ERROR, DoubleScoreOutput.of( 1.0, fakeMetadataA ) );
+        fakeOutputs.put( MetricConstants.MEAN_ERROR, DoubleScoreOutput.of( 2.0, fakeMetadataB ) );
+        fakeOutputs.put( MetricConstants.MEAN_ABSOLUTE_ERROR, DoubleScoreOutput.of( 3.0, fakeMetadataC ) );
 
         // Fake output wrapper.
         MetricOutputMapByMetric<DoubleScoreOutput> fakeOutputData =
@@ -117,7 +115,7 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTest
         // Fake lead time and threshold
         Pair<TimeWindow, OneOrTwoThresholds> mapKeyByLeadThreshold =
                 DataFactory.ofMapKeyByTimeThreshold( timeOne,
-                                                     DataFactory.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
+                                                     OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                      Operator.GREATER,
                                                      ThresholdDataType.LEFT );
 
@@ -203,15 +201,12 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTest
         // which requires a datasetidentifier..
 
         DatasetIdentifier datasetIdentifier =
-                MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation( LID ),
-                                                      "SQIN",
-                                                      "HEFS",
-                                                      "ESP" );
+                DatasetIdentifier.of( Location.of( LID ), "SQIN", "HEFS", "ESP" );
 
         MetricOutputMetadata fakeMetadata =
-                MetadataFactory.getOutputMetadata( 1000,
-                                                   MetadataFactory.getDimension(),
-                                                   MetadataFactory.getDimension( "CMS" ),
+                MetricOutputMetadata.of( 1000,
+                                                   MeasurementUnit.of(),
+                                                   MeasurementUnit.of( "CMS" ),
                                                    MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
                                                    null,
                                                    datasetIdentifier );
@@ -224,8 +219,7 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTest
         // Fake output wrapper.
         MetricOutputMapByMetric<DurationScoreOutput> fakeOutputData =
                 DataFactory.ofMetricOutputMapByMetric( Collections.singletonMap( MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
-                                                                                 DataFactory.ofDurationScoreOutput( fakeOutputs,
-                                                                                                                    fakeMetadata ) ) );
+                                                                                 DurationScoreOutput.of( fakeOutputs, fakeMetadata ) ) );
 
         // wrap outputs in future
         Future<MetricOutputMapByMetric<DurationScoreOutput>> outputMapByMetricFuture =
@@ -234,7 +228,7 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTest
         // Fake lead time and threshold
         Pair<TimeWindow, OneOrTwoThresholds> mapKeyByLeadThreshold =
                 DataFactory.ofMapKeyByTimeThreshold( timeOne,
-                                                     DataFactory.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
+                                                     OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                      Operator.GREATER,
                                                      ThresholdDataType.LEFT );
 
@@ -295,22 +289,19 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTest
         // which requires a datasetidentifier..
 
         DatasetIdentifier datasetIdentifier =
-                MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation( LID ),
-                                                      "SQIN",
-                                                      "HEFS",
-                                                      "ESP" );
+                DatasetIdentifier.of( Location.of( LID ), "SQIN", "HEFS", "ESP" );
 
         MetricOutputMetadata fakeMetadataA =
-                MetadataFactory.getOutputMetadata( 1000,
-                                                   MetadataFactory.getDimension(),
-                                                   MetadataFactory.getDimension( "CMS" ),
+                MetricOutputMetadata.of( 1000,
+                                                   MeasurementUnit.of(),
+                                                   MeasurementUnit.of( "CMS" ),
                                                    MetricConstants.MEAN_SQUARE_ERROR,
                                                    MetricConstants.MAIN,
                                                    datasetIdentifier );
 
         Map<MetricConstants, DoubleScoreOutput> fakeOutputs =
                 Collections.singletonMap( MetricConstants.MEAN_SQUARE_ERROR,
-                                          DataFactory.ofDoubleScoreOutput( 1.0, fakeMetadataA ) );
+                                          DoubleScoreOutput.of( 1.0, fakeMetadataA ) );
 
         // Fake output wrapper.
         MetricOutputMapByMetric<DoubleScoreOutput> fakeOutputData =
@@ -323,7 +314,7 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTest
         // Fake lead time and threshold
         Pair<TimeWindow, OneOrTwoThresholds> mapKeyByLeadThreshold =
                 DataFactory.ofMapKeyByTimeThreshold( timeOne,
-                                                     DataFactory.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
+                                                     OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                      Operator.GREATER,
                                                      ThresholdDataType.LEFT );
 
@@ -333,7 +324,7 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTest
         // Add the data for another threshold at the same time
         Pair<TimeWindow, OneOrTwoThresholds> mapKeyByLeadThresholdTwo =
                 DataFactory.ofMapKeyByTimeThreshold( timeOne,
-                                                     DataFactory.ofOneOrTwoDoubles( 23.0 ),
+                                                     OneOrTwoDoubles.of( 23.0 ),
                                                      Operator.GREATER,
                                                      ThresholdDataType.LEFT );
 
@@ -344,7 +335,7 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTest
         TimeWindow timeTwo = TimeWindow.of( Instant.MIN, Instant.MAX, ReferenceTime.VALID_TIME, Duration.ofHours( 2 ) );
         Pair<TimeWindow, OneOrTwoThresholds> mapKeyByLeadThresholdThree =
                 DataFactory.ofMapKeyByTimeThreshold( timeTwo,
-                                                     DataFactory.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
+                                                     OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                      Operator.GREATER,
                                                      ThresholdDataType.LEFT );
         outputBuilder.addDoubleScoreOutput( mapKeyByLeadThresholdThree,

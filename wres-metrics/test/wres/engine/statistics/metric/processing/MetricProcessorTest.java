@@ -28,13 +28,13 @@ import wres.config.generated.ProjectConfig;
 import wres.config.generated.ThresholdOperator;
 import wres.config.generated.ThresholdType;
 import wres.config.generated.ThresholdsConfig;
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
+import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
-import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
@@ -88,12 +88,10 @@ public final class MetricProcessorTest
         String configPath = "testinput/metricProcessorTest/testAllValid.xml";
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> trueProcessor =
-                MetricFactory.getInstance()
-                             .ofMetricProcessorByTimeSingleValuedPairs( config,
+                MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( config,
                                                                         MetricOutputGroup.set() );
         MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> falseProcessor =
-                MetricFactory.getInstance()
-                             .ofMetricProcessorByTimeSingleValuedPairs( config, null );
+                MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( config, null );
         //Check for storage
         assertFalse( "Expected a metric processor that stores metric outputs.",
                      trueProcessor.getMetricOutputTypesToCache().isEmpty() );
@@ -120,8 +118,7 @@ public final class MetricProcessorTest
         ProjectConfig emptyConfig = new ProjectConfig( null, null, null, null, null, null );
 
         MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> emptyProcessor =
-                MetricFactory.getInstance()
-                             .ofMetricProcessorByTimeSingleValuedPairs( emptyConfig, null );
+                MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( emptyConfig, null );
 
         assertTrue( emptyProcessor.getCachedMetricOutputTypes().isEmpty() );
 
@@ -130,8 +127,7 @@ public final class MetricProcessorTest
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
-                MetricFactory.getInstance()
-                             .ofMetricProcessorByTimeSingleValuedPairs( config,
+                MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( config,
                                                                         null,
                                                                         thresholdExecutor,
                                                                         metricExecutor,
@@ -161,8 +157,7 @@ public final class MetricProcessorTest
         String configPath = "testinput/metricProcessorTest/testAllValid.xml";
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
-                MetricFactory.getInstance()
-                             .ofMetricProcessorByTimeSingleValuedPairs( config,
+                MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( config,
                                                                         MetricOutputGroup.set() );
         //Check for existence of metrics
         assertTrue( processor.hasMetrics( MetricInputGroup.SINGLE_VALUED ) );
@@ -184,8 +179,7 @@ public final class MetricProcessorTest
         String configPath = "testinput/metricProcessorTest/testAllValid.xml";
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
-                MetricFactory.getInstance()
-                             .ofMetricProcessorByTimeSingleValuedPairs( config,
+                MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( config,
                                                                         MetricOutputGroup.set() );
         //Check for existence of metrics
         assertTrue( processor.hasMetrics( MetricOutputGroup.DOUBLE_SCORE ) );
@@ -206,8 +200,7 @@ public final class MetricProcessorTest
         String configPath = "testinput/metricProcessorTest/testAllValid.xml";
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
-                MetricFactory.getInstance()
-                             .ofMetricProcessorByTimeSingleValuedPairs( config,
+                MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( config,
                                                                         MetricOutputGroup.set() );
         //Check for existence of metrics
         assertTrue( processor.hasMetrics( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.DOUBLE_SCORE ) );
@@ -250,8 +243,7 @@ public final class MetricProcessorTest
 
 
         MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processorWithDiscreteProbability =
-                MetricFactory.getInstance()
-                             .ofMetricProcessorByTimeEnsemblePairs( discreteProbability,
+                MetricFactory.ofMetricProcessorByTimeEnsemblePairs( discreteProbability,
                                                                     MetricOutputGroup.set() );
 
         //Check for existence of metrics
@@ -270,8 +262,7 @@ public final class MetricProcessorTest
 
 
         MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processorWithDichotomous =
-                MetricFactory.getInstance()
-                             .ofMetricProcessorByTimeSingleValuedPairs( dichotomous,
+                MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( dichotomous,
                                                                         MetricOutputGroup.set() );
 
         //Check for existence of metrics
@@ -290,8 +281,7 @@ public final class MetricProcessorTest
 
 
         MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processorWithSingleValued =
-                MetricFactory.getInstance()
-                             .ofMetricProcessorByTimeSingleValuedPairs( singleValued,
+                MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( singleValued,
                                                                         MetricOutputGroup.set() );
 
         //Check for non-existence of metrics
@@ -310,8 +300,7 @@ public final class MetricProcessorTest
 
 
         MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processorWithMultiCat =
-                MetricFactory.getInstance()
-                             .ofMetricProcessorByTimeSingleValuedPairs( multicategory,
+                MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( multicategory,
                                                                         MetricOutputGroup.set() );
 
         //Check for existence of metrics
@@ -337,8 +326,7 @@ public final class MetricProcessorTest
         String configPathSingleValued = "testinput/metricProcessorTest/testSingleValued.xml";
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPathSingleValued ) ).getProjectConfig();
         MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
-                MetricFactory.getInstance()
-                             .ofMetricProcessorByTimeSingleValuedPairs( config,
+                MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( config,
                                                                         MetricOutputGroup.set() );
 
         //Check that score metrics are defined 
@@ -378,8 +366,7 @@ public final class MetricProcessorTest
         String configPathEnsemble = "testinput/metricProcessorTest/testDisallowNonScores.xml";
         ProjectConfig configEnsemble = ProjectConfigPlus.from( Paths.get( configPathEnsemble ) ).getProjectConfig();
         MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processorEnsemble =
-                MetricFactory.getInstance()
-                             .ofMetricProcessorByTimeEnsemblePairs( configEnsemble,
+                MetricFactory.ofMetricProcessorByTimeEnsemblePairs( configEnsemble,
                                                                     MetricOutputGroup.set() );
         //Check that score metrics are defined 
         assertTrue( "Expected metrics for '" + MetricOutputGroup.DOUBLE_SCORE
@@ -417,8 +404,7 @@ public final class MetricProcessorTest
                 "testinput/metricProcessorTest/testDoNotComputeTheseMetricsForThisThreshold.xml";
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPathSingleValued ) ).getProjectConfig();
         MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
-                MetricFactory.getInstance()
-                             .ofMetricProcessorByTimeSingleValuedPairs( config,
+                MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( config,
                                                                         MetricOutputGroup.set() );
 
         ThresholdsByMetric thresholds =
@@ -426,10 +412,10 @@ public final class MetricProcessorTest
                                                                  MetricOutputGroup.DOUBLE_SCORE );
 
         Threshold firstTest =
-                DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( 0.5 ),
+                Threshold.of( OneOrTwoDoubles.of( 0.5 ),
                                          Operator.GREATER,
                                          ThresholdDataType.LEFT,
-                                         MetadataFactory.getDimension( "CMS" ) );
+                                         MeasurementUnit.of( "CMS" ) );
         Set<MetricConstants> firstSet =
                 thresholds.doesNotHaveTheseMetricsForThisThreshold( firstTest );
         assertTrue( "Unexpected set of metrics to ignore for threshold '" + firstTest
@@ -437,20 +423,20 @@ public final class MetricProcessorTest
                     firstSet.equals( new HashSet<>( Arrays.asList( MetricConstants.MEAN_SQUARE_ERROR,
                                                                    MetricConstants.MEAN_ABSOLUTE_ERROR ) ) ) );
         Threshold secondTest =
-                DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( 0.75 ),
+                Threshold.of( OneOrTwoDoubles.of( 0.75 ),
                                          Operator.GREATER,
                                          ThresholdDataType.LEFT,
-                                         MetadataFactory.getDimension( "CMS" ) );
+                                         MeasurementUnit.of( "CMS" ) );
         Set<MetricConstants> secondSet =
                 thresholds.doesNotHaveTheseMetricsForThisThreshold( secondTest );
         assertTrue( "Unexpected set of metrics to ignore for threshold '" + secondTest
                     + "'",
                     secondSet.equals( new HashSet<>( Arrays.asList() ) ) );
         Threshold thirdTest =
-                DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( 0.83 ),
+                Threshold.of( OneOrTwoDoubles.of( 0.83 ),
                                          Operator.GREATER,
                                          ThresholdDataType.LEFT,
-                                         MetadataFactory.getDimension( "CMS" ) );
+                                         MeasurementUnit.of( "CMS" ) );
         Set<MetricConstants> thirdSet =
                 thresholds.doesNotHaveTheseMetricsForThisThreshold( thirdTest );
         assertTrue( "Unexpected set of metrics to ignore for threshold '" + thirdTest
@@ -458,10 +444,10 @@ public final class MetricProcessorTest
                     thirdSet.equals( new HashSet<>( Arrays.asList( MetricConstants.MEAN_SQUARE_ERROR,
                                                                    MetricConstants.MEAN_ABSOLUTE_ERROR ) ) ) );
         Threshold fourthTest =
-                DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( 0.9 ),
+                Threshold.of( OneOrTwoDoubles.of( 0.9 ),
                                          Operator.GREATER,
                                          ThresholdDataType.LEFT,
-                                         MetadataFactory.getDimension( "CMS" ) );
+                                         MeasurementUnit.of( "CMS" ) );
         Set<MetricConstants> fourthSet =
                 thresholds.doesNotHaveTheseMetricsForThisThreshold( fourthTest );
         assertTrue( "Unexpected set of metrics to ignore for threshold '" + fourthTest
@@ -490,10 +476,9 @@ public final class MetricProcessorTest
         String configPathSingleValued = "testinput/metricProcessorTest/testEnsemble.xml";
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPathSingleValued ) ).getProjectConfig();
         MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processor =
-                MetricFactory.getInstance()
-                             .ofMetricProcessorByTimeEnsemblePairs( config,
+                MetricFactory.ofMetricProcessorByTimeEnsemblePairs( config,
                                                                     MetricOutputGroup.set() );
-        Threshold firstTest = DataFactory.ofProbabilityThreshold( DataFactory.ofOneOrTwoDoubles( 0.1 ),
+        Threshold firstTest = Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.1 ),
                                                                   Operator.GREATER,
                                                                   ThresholdDataType.LEFT );
 
@@ -508,7 +493,7 @@ public final class MetricProcessorTest
                                                                    MetricConstants.MEAN_SQUARE_ERROR,
                                                                    MetricConstants.BRIER_SCORE ) ) ) );
 
-        Threshold secondTest = DataFactory.ofProbabilityThreshold( DataFactory.ofOneOrTwoDoubles( 0.25 ),
+        Threshold secondTest = Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.25 ),
                                                                    Operator.GREATER,
                                                                    ThresholdDataType.LEFT );
         Set<MetricConstants> secondSet =
@@ -519,7 +504,7 @@ public final class MetricProcessorTest
                                                                     MetricConstants.MEAN_SQUARE_ERROR,
                                                                     MetricConstants.BRIER_SCORE ) ) ) );
 
-        Threshold thirdTest = DataFactory.ofProbabilityThreshold( DataFactory.ofOneOrTwoDoubles( 0.5 ),
+        Threshold thirdTest = Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.5 ),
                                                                   Operator.GREATER,
                                                                   ThresholdDataType.LEFT );
         Set<MetricConstants> thirdSet =
@@ -530,7 +515,7 @@ public final class MetricProcessorTest
                     thirdSet.equals( new HashSet<>( Arrays.asList( MetricConstants.BRIER_SKILL_SCORE,
                                                                    MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE ) ) ) );
 
-        Threshold fourthTest = DataFactory.ofProbabilityThreshold( DataFactory.ofOneOrTwoDoubles( 0.925 ),
+        Threshold fourthTest = Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.925 ),
                                                                    Operator.GREATER,
                                                                    ThresholdDataType.LEFT );
         Set<MetricConstants> fourthSet =
@@ -554,11 +539,10 @@ public final class MetricProcessorTest
     {
         ProjectConfig config = new ProjectConfig( null, null, null, null, null, null );
         MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
-                MetricFactory.getInstance()
-                             .ofMetricProcessorByTimeSingleValuedPairs( config,
+                MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( config,
                                                                         MetricOutputGroup.set() );
 
-        Threshold expected = DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
+        Threshold expected = Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                       Operator.GREATER,
                                                       ThresholdDataType.LEFT_AND_RIGHT );
 

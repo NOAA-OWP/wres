@@ -15,13 +15,15 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
-import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.metadata.DatasetIdentifier;
+import wres.datamodel.metadata.MeasurementUnit;
+import wres.datamodel.metadata.Location;
+import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MatrixOutput;
 import wres.engine.statistics.metric.Collectable;
 import wres.engine.statistics.metric.Metric;
-import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.engine.statistics.metric.Score;
@@ -38,12 +40,6 @@ public final class ProbabilityOfDetectionTest
     public final ExpectedException exception = ExpectedException.none();
 
     /**
-     * Metric factory.
-     */
-
-    private MetricFactory metricFactory;
-
-    /**
      * Score used for testing. 
      */
 
@@ -58,14 +54,13 @@ public final class ProbabilityOfDetectionTest
     @Before
     public void setUpBeforeEachTest() throws MetricParameterException
     {
-        metricFactory = MetricFactory.getInstance();
-        pod = metricFactory.ofProbabilityOfDetection();
-        meta = MetadataFactory.getOutputMetadata( 365,
-                                                  MetadataFactory.getDimension(),
-                                                  MetadataFactory.getDimension(),
+        pod = ProbabilityOfDetection.of();
+        meta = MetricOutputMetadata.of( 365,
+                                                  MeasurementUnit.of(),
+                                                  MeasurementUnit.of(),
                                                   MetricConstants.PROBABILITY_OF_DETECTION,
                                                   MetricConstants.MAIN,
-                                                  MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation( "DRRC2" ),
+                                                  DatasetIdentifier.of( Location.of( "DRRC2" ),
                                                                                         "SQIN",
                                                                                         "HEFS" ) );
     }
@@ -82,7 +77,7 @@ public final class ProbabilityOfDetectionTest
 
         //Check the results
         final DoubleScoreOutput actual = pod.apply( input );
-        final DoubleScoreOutput expected = DataFactory.ofDoubleScoreOutput( 0.780952380952381, meta );
+        final DoubleScoreOutput expected = DoubleScoreOutput.of( 0.780952380952381, meta );
         assertTrue( "Actual: " + actual.getData().doubleValue()
                     + ". Expected: "
                     + expected.getData().doubleValue()
@@ -99,7 +94,7 @@ public final class ProbabilityOfDetectionTest
     {
         // Generate empty data
         DichotomousPairs input =
-                DataFactory.ofDichotomousPairs( Arrays.asList(), MetadataFactory.getMetadata() );
+                DichotomousPairs.ofDichotomousPairs( Arrays.asList(), Metadata.of() );
 
         DoubleScoreOutput actual = pod.apply( input );
 

@@ -27,18 +27,18 @@ import wres.config.generated.DestinationConfig;
 import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.TimeScaleConfig;
-import wres.datamodel.DataFactory;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.EnsemblePair;
+import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.SingleValuedPair;
+import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs.TimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.Dimension;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.Metadata;
-import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.time.Event;
 import wres.grid.client.Fetcher;
@@ -362,7 +362,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             baseline = convertToPairOfDoubles( this.baselinePairs );
         }
 
-        return DataFactory.ofSingleValuedPairs( primary,
+        return SingleValuedPairs.of( primary,
                                                 baseline,
                                                 rightMetadata,
                                                 baselineMetadata,
@@ -372,7 +372,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
     private MetricInput createSingleValuedTimeSeriesInput(Metadata rightMetadata, Metadata baselineMetadata)
             throws IOException, SQLException
     {
-        TimeSeriesOfSingleValuedPairsBuilder builder = DataFactory.ofTimeSeriesOfSingleValuedPairsBuilder();
+        TimeSeriesOfSingleValuedPairsBuilder builder = new TimeSeriesOfSingleValuedPairsBuilder();
 
         Map<Instant, List<Event<SingleValuedPair>>> events = this.getSingleValuedEvents( primaryPairs );
         events.forEach( builder::addTimeSeriesData );
@@ -427,7 +427,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             baseline = InputRetriever.extractRawPairs( this.baselinePairs );
         }
 
-        return DataFactory.ofEnsemblePairs( primary,
+        return EnsemblePairs.of( primary,
                                             baseline,
                                             rightMetadata,
                                             baselineMetadata,
@@ -518,7 +518,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         {
             for ( double pairedValue : pair.getValues().getRight() )
             {
-                pairs.add( DataFactory.pairOf( pair.getValues()
+                pairs.add( SingleValuedPair.of( pair.getValues()
                                                    .getLeft(),
                                                pairedValue ) );
             }
@@ -999,7 +999,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                 double[] wrappedValue = { convertedValue };
 
                 EnsemblePair pair =
-                        DataFactory.pairOf( primaryPair.getValues()
+                        EnsemblePair.of( primaryPair.getValues()
                                                        .getLeft(),
                                             wrappedValue );
 
@@ -1088,7 +1088,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         double[] aggregatedWrapped = { aggregated };
 
         EnsemblePair pair =
-                DataFactory.pairOf( primaryPair.getValues()
+                EnsemblePair.of( primaryPair.getValues()
                                                .getLeft(),
                                     aggregatedWrapped );
 
@@ -1174,7 +1174,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             sourceConfig = projectConfig.getInputs().getRight(); 
         }
 
-        Dimension dim = MetadataFactory.getDimension( this.projectDetails.getDesiredMeasurementUnit());
+        MeasurementUnit dim = MeasurementUnit.of( this.projectDetails.getDesiredMeasurementUnit());
         Float longitude = null;
         Float latitude = null;
 
@@ -1183,19 +1183,15 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             longitude = this.feature.getCoordinate().getLongitude();
             latitude = this.feature.getCoordinate().getLatitude();
         }
+        final Float longitude1 = longitude;
+        final Float latitude1 = latitude;
 
-        Location geospatialIdentifier = MetadataFactory.getLocation(
-                this.feature.getComid(),
-                this.feature.getLocationId(),
-                longitude,
-                latitude,
-                this.feature.getGageId()
-        );
+        Location geospatialIdentifier = Location.of( this.feature.getComid(), this.feature.getLocationId(), longitude1, latitude1, this.feature.getGageId() );
 
         // Get the variable identifier
         String variableIdentifier = ConfigHelper.getVariableIdFromProjectConfig( projectConfig, isBaseline );
 
-        DatasetIdentifier datasetIdentifier = MetadataFactory.getDatasetIdentifier(geospatialIdentifier,
+        DatasetIdentifier datasetIdentifier = DatasetIdentifier.of(geospatialIdentifier,
                                                                                    variableIdentifier,
                                                                                    sourceConfig.getLabel());
         // Replicated from earlier declaration as long
@@ -1264,7 +1260,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                                                             lastLead,
                                                             this.issueDatesPool );
 
-        return MetadataFactory.getMetadata( dim,
+        return Metadata.of( dim,
                                             datasetIdentifier,
                                             timeWindow );
     }
@@ -1289,7 +1285,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             return null;
         }
 
-        return DataFactory.pairOf(
+        return EnsemblePair.of(
                 leftAggregation,
                 condensedIngestedValue.getAggregatedValues(
                         this.projectDetails.shouldScale(),
@@ -1455,7 +1451,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
 
             for (int i = 0; i < pairOfDoubles.length; ++i)
             {
-                pairOfDoubles[i] = DataFactory.pairOf( this.getValues().getLeft(),
+                pairOfDoubles[i] = SingleValuedPair.of( this.getValues().getLeft(),
                                                        this.getValues().getRight()[i] );
             }
 

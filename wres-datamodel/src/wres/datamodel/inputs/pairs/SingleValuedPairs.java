@@ -1,8 +1,11 @@
 package wres.datamodel.inputs.pairs;
 
-import wres.datamodel.DataFactory;
+import java.util.List;
+
+import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.inputs.MetricInputException;
+import wres.datamodel.metadata.Metadata;
 
 /**
  * Immutable store of verification pairs that comprise two single-valued, continuous numerical, variables. The 
@@ -13,6 +16,83 @@ import wres.datamodel.inputs.MetricInputException;
  */
 public class SingleValuedPairs extends BasicPairs<SingleValuedPair>
 {
+
+    /**
+     * Construct the single-valued input without any pairs for a baseline.
+     * 
+     * @param pairs the single-valued pairs
+     * @param meta the metadata
+     * @return the pairs
+     * @throws MetricInputException if the inputs are invalid
+     */
+
+    public static SingleValuedPairs of( List<SingleValuedPair> pairs, Metadata meta )
+    {
+        return SingleValuedPairs.of( pairs, null, meta, null, null );
+    }
+
+    /**
+     * Construct the single-valued input without any pairs for a baseline.
+     * 
+     * @param pairs the single-valued pairs
+     * @param meta the metadata
+     * @param climatology an optional climatological dataset (may be null)
+     * @return the pairs
+     * @throws MetricInputException if the inputs are invalid
+     */
+
+    public static SingleValuedPairs of( List<SingleValuedPair> pairs,
+                                        Metadata meta,
+                                        VectorOfDoubles climatology )
+    {
+        return SingleValuedPairs.of( pairs, null, meta, null, climatology );
+    }
+
+    /**
+     * Construct the single-valued input with a baseline.
+     * 
+     * @param pairs the main verification pairs
+     * @param basePairs the baseline pairs (may be null)
+     * @param mainMeta the metadata for the main pairs
+     * @param baselineMeta the metadata for the baseline pairs (may be null, if the basePairs are null)
+     * @return the pairs
+     * @throws MetricInputException if the inputs are invalid
+     */
+
+    public static SingleValuedPairs of( List<SingleValuedPair> pairs,
+                                        List<SingleValuedPair> basePairs,
+                                        Metadata mainMeta,
+                                        Metadata baselineMeta )
+    {
+        return SingleValuedPairs.of( pairs, basePairs, mainMeta, baselineMeta, null );
+    }
+
+    /**
+     * Construct the single-valued input with a baseline.
+     * 
+     * @param pairs the main verification pairs
+     * @param basePairs the baseline pairs (may be null)
+     * @param mainMeta the metadata for the main pairs
+     * @param baselineMeta the metadata for the baseline pairs (may be null, if the basePairs are null)
+     * @param climatology an optional climatological dataset (may be null)
+     * @return the pairs
+     * @throws MetricInputException if the inputs are invalid
+     */
+
+    public static SingleValuedPairs of( List<SingleValuedPair> pairs,
+                                        List<SingleValuedPair> basePairs,
+                                        Metadata mainMeta,
+                                        Metadata baselineMeta,
+                                        VectorOfDoubles climatology )
+    {
+        SingleValuedPairsBuilder b = new SingleValuedPairsBuilder();
+        return (SingleValuedPairs) b.setMetadata( mainMeta )
+                                    .addData( pairs )
+                                    .addDataForBaseline( basePairs )
+                                    .setMetadataForBaseline( baselineMeta )
+                                    .setClimatology( climatology )
+                                    .build();
+    }
 
     /**
      * Returns the baseline data as a {@link MetricInput} or null if no baseline is defined. 
@@ -26,7 +106,7 @@ public class SingleValuedPairs extends BasicPairs<SingleValuedPair>
         {
             return null;
         }
-        return DataFactory.ofSingleValuedPairs( this.getRawDataForBaseline(), this.getMetadataForBaseline() );
+        return SingleValuedPairs.of( this.getRawDataForBaseline(), this.getMetadataForBaseline() );
     }
 
     /**

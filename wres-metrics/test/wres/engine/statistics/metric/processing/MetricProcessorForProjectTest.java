@@ -23,7 +23,6 @@ import wres.config.generated.MetricsConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Inputs;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
-import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 
 /**
@@ -36,12 +35,6 @@ public final class MetricProcessorForProjectTest
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
-
-    /**
-     * Instance of a metric factory.
-     */
-
-    private MetricFactory metricFac;
 
     /**
      * Instance of a single-valued processor.
@@ -58,8 +51,6 @@ public final class MetricProcessorForProjectTest
     @Before
     public void setupBeforeEachTest() throws MetricParameterException
     {
-        metricFac = MetricFactory.getInstance();
-
         // Mock some metrics
         List<MetricConfig> metrics = new ArrayList<>();
         metrics.add( new MetricConfig( null, null, MetricConfigName.MEAN_ERROR ) );
@@ -101,14 +92,12 @@ public final class MetricProcessorForProjectTest
                                    null,
                                    null );
 
-        singleValuedProcessor = new MetricProcessorForProject( metricFac,
-                                                               mockedConfigSingleValued,
+        singleValuedProcessor = new MetricProcessorForProject( mockedConfigSingleValued,
                                                                null,
                                                                ForkJoinPool.commonPool(),
                                                                ForkJoinPool.commonPool() );
 
-        ensembleProcessor = new MetricProcessorForProject( metricFac,
-                                                           mockedConfigEnsemble,
+        ensembleProcessor = new MetricProcessorForProject( mockedConfigEnsemble,
                                                            null,
                                                            ForkJoinPool.commonPool(),
                                                            ForkJoinPool.commonPool() );
@@ -157,8 +146,8 @@ public final class MetricProcessorForProjectTest
                                          .equals( new HashSet<>( Arrays.asList( MetricOutputGroup.PAIRED,
                                                                                 MetricOutputGroup.DOUBLE_SCORE ) ) ) );
         assertTrue( ensembleProcessor.getMetricOutputTypesToCache()
-                    .equals( new HashSet<>( Arrays.asList( MetricOutputGroup.PAIRED,
-                                                           MetricOutputGroup.DOUBLE_SCORE ) ) ) );
+                                     .equals( new HashSet<>( Arrays.asList( MetricOutputGroup.PAIRED,
+                                                                            MetricOutputGroup.DOUBLE_SCORE ) ) ) );
     }
 
     /**
@@ -172,9 +161,9 @@ public final class MetricProcessorForProjectTest
         assertTrue( singleValuedProcessor.getCachedMetricOutputTypes()
                                          .equals( new HashSet<>() ) );
         assertTrue( ensembleProcessor.getCachedMetricOutputTypes()
-                    .equals( new HashSet<>( ) ) );
-    }    
-    
+                                     .equals( new HashSet<>() ) );
+    }
+
     /**
      * Tests the {@link MetricProcessorForProject#getCachedMetricOutput()}.
      * @throws InterruptedException if the execution is interrupted
@@ -185,13 +174,13 @@ public final class MetricProcessorForProjectTest
     {
         assertNotNull( singleValuedProcessor.getCachedMetricOutput() );
         assertNotNull( ensembleProcessor.getCachedMetricOutput() );
-    }  
+    }
 
     /**
      * Tests the construction of a {@link MetricProcessorForProject} for processing simulations.
      * @throws MetricParameterException if the construction failed
      */
-    
+
     @Test
     public void testConstructionForSimulations() throws MetricParameterException
     {
@@ -219,15 +208,14 @@ public final class MetricProcessorForProjectTest
                                    null );
 
 
-        MetricProcessorForProject simulationProcessor = new MetricProcessorForProject( metricFac,
-                                                               mockedConfigSingleValued,
-                                                               null,
-                                                               ForkJoinPool.commonPool(),
-                                                               ForkJoinPool.commonPool() );
-        
+        MetricProcessorForProject simulationProcessor = new MetricProcessorForProject( mockedConfigSingleValued,
+                                                                                       null,
+                                                                                       ForkJoinPool.commonPool(),
+                                                                                       ForkJoinPool.commonPool() );
+
         assertFalse( simulationProcessor.getMetricOutputTypesToCache().isEmpty() );
     }
-    
+
     /**
      * Tests that the {@link MetricProcessorForProject#getMetricProcessorForSingleValuedPairs()} throws an exception
      * when the processor is built for ensemble pairs.
@@ -238,7 +226,7 @@ public final class MetricProcessorForProjectTest
     {
         exception.expect( MetricProcessorException.class );
         exception.expectMessage( "This metric processor was not built to consume ensemble pairs." );
-        
+
         singleValuedProcessor.getMetricProcessorForEnsemblePairs();
     }
 
@@ -249,11 +237,11 @@ public final class MetricProcessorForProjectTest
 
     @Test
     public void testGetMetricProcessorForEnsemblePairsThrowsException()
-    {        
+    {
         exception.expect( MetricProcessorException.class );
         exception.expectMessage( "This metric processor was not built to consume single-valued pairs." );
-    
+
         ensembleProcessor.getMetricProcessorForSingleValuedPairs();
-    }    
-    
+    }
+
 }

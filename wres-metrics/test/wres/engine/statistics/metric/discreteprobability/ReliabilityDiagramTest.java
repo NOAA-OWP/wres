@@ -13,19 +13,19 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.inputs.MetricInputException;
+import wres.datamodel.inputs.pairs.DiscreteProbabilityPair;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
-import wres.datamodel.inputs.pairs.SingleValuedPair;
 import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.metadata.MeasurementUnit;
+import wres.datamodel.metadata.Location;
+import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
-import wres.engine.statistics.metric.discreteprobability.ReliabilityDiagram.ReliabilityDiagramBuilder;
 
 /**
  * Tests the {@link ReliabilityDiagram}.
@@ -47,8 +47,7 @@ public final class ReliabilityDiagramTest
     @Before
     public void setupBeforeEachTest() throws MetricParameterException
     {
-        ReliabilityDiagramBuilder b = new ReliabilityDiagramBuilder();
-        this.rel = b.build();
+        this.rel = ReliabilityDiagram.of();
     }
 
     /**
@@ -64,12 +63,12 @@ public final class ReliabilityDiagramTest
 
         //Metadata for the output
         final MetricOutputMetadata m1 =
-                MetadataFactory.getOutputMetadata( input.getRawData().size(),
-                                                   MetadataFactory.getDimension(),
-                                                   MetadataFactory.getDimension(),
+                MetricOutputMetadata.of( input.getRawData().size(),
+                                                   MeasurementUnit.of(),
+                                                   MeasurementUnit.of(),
                                                    MetricConstants.RELIABILITY_DIAGRAM,
                                                    MetricConstants.MAIN,
-                                                   MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation( "Tampere" ),
+                                                   DatasetIdentifier.of( Location.of( "Tampere" ),
                                                                                          "MAP",
                                                                                          "FMI" ) );
 
@@ -90,7 +89,7 @@ public final class ReliabilityDiagramTest
         output.put( MetricDimension.OBSERVED_RELATIVE_FREQUENCY, expectedOProb );
         output.put( MetricDimension.SAMPLE_SIZE, expectedSample );
 
-        final MultiVectorOutput expected = DataFactory.ofMultiVectorOutput( output, m1 );
+        final MultiVectorOutput expected = MultiVectorOutput.ofMultiVectorOutput( output, m1 );
 
         assertTrue( "Difference between actual and expected Reliability Diagram.", actual.equals( expected ) );
     }
@@ -104,51 +103,51 @@ public final class ReliabilityDiagramTest
     public void testApplySomeBinsHaveZeroSamples() throws MetricParameterException
     {
         //Generate some data
-        List<SingleValuedPair> data = new ArrayList<>();
-        data.add( DataFactory.pairOf( 1.0, 0.8775510204081632 ) );
-        data.add( DataFactory.pairOf( 1.0, 0.6326530612244898 ) );
-        data.add( DataFactory.pairOf( 1.0, 0.8163265306122449 ) );
-        data.add( DataFactory.pairOf( 1.0, 0.9591836734693877 ) );
-        data.add( DataFactory.pairOf( 1.0, 0.8979591836734694 ) );
-        data.add( DataFactory.pairOf( 1.0, 0.9795918367346939 ) );
-        data.add( DataFactory.pairOf( 1.0, 1.0 ) );
-        data.add( DataFactory.pairOf( 1.0, 1.0 ) );
-        data.add( DataFactory.pairOf( 1.0, 1.0 ) );
-        data.add( DataFactory.pairOf( 1.0, 1.0 ) );
-        data.add( DataFactory.pairOf( 1.0, 1.0 ) );
-        data.add( DataFactory.pairOf( 1.0, 1.0 ) );
-        data.add( DataFactory.pairOf( 1.0, 1.0 ) );
-        data.add( DataFactory.pairOf( 1.0, 1.0 ) );
-        data.add( DataFactory.pairOf( 1.0, 0.0 ) );
-        data.add( DataFactory.pairOf( 1.0, 1.0 ) );
-        data.add( DataFactory.pairOf( 1.0, 1.0 ) );
-        data.add( DataFactory.pairOf( 1.0, 0.9183673469387755 ) );
-        data.add( DataFactory.pairOf( 1.0, 0.8163265306122449 ) );
-        data.add( DataFactory.pairOf( 1.0, 0.7755102040816326 ) );
-        data.add( DataFactory.pairOf( 0.0, 0.3469387755102041 ) );
-        data.add( DataFactory.pairOf( 0.0, 0.24489795918367346 ) );
-        data.add( DataFactory.pairOf( 0.0, 0.20408163265306123 ) );
-        data.add( DataFactory.pairOf( 0.0, 0.10204081632653061 ) );
-        data.add( DataFactory.pairOf( 0.0, 0.08163265306122448 ) );
-        data.add( DataFactory.pairOf( 0.0, 0.12244897959183673 ) );
-        data.add( DataFactory.pairOf( 0.0, 0.0 ) );
-        data.add( DataFactory.pairOf( 0.0, 0.0 ) );
-        data.add( DataFactory.pairOf( 0.0, 0.0 ) );
-        data.add( DataFactory.pairOf( 0.0, 0.0 ) );
+        List<DiscreteProbabilityPair> data = new ArrayList<>();
+        data.add( DiscreteProbabilityPair.of( 1.0, 0.8775510204081632 ) );
+        data.add( DiscreteProbabilityPair.of( 1.0, 0.6326530612244898 ) );
+        data.add( DiscreteProbabilityPair.of( 1.0, 0.8163265306122449 ) );
+        data.add( DiscreteProbabilityPair.of( 1.0, 0.9591836734693877 ) );
+        data.add( DiscreteProbabilityPair.of( 1.0, 0.8979591836734694 ) );
+        data.add( DiscreteProbabilityPair.of( 1.0, 0.9795918367346939 ) );
+        data.add( DiscreteProbabilityPair.of( 1.0, 1.0 ) );
+        data.add( DiscreteProbabilityPair.of( 1.0, 1.0 ) );
+        data.add( DiscreteProbabilityPair.of( 1.0, 1.0 ) );
+        data.add( DiscreteProbabilityPair.of( 1.0, 1.0 ) );
+        data.add( DiscreteProbabilityPair.of( 1.0, 1.0 ) );
+        data.add( DiscreteProbabilityPair.of( 1.0, 1.0 ) );
+        data.add( DiscreteProbabilityPair.of( 1.0, 1.0 ) );
+        data.add( DiscreteProbabilityPair.of( 1.0, 1.0 ) );
+        data.add( DiscreteProbabilityPair.of( 1.0, 0.0 ) );
+        data.add( DiscreteProbabilityPair.of( 1.0, 1.0 ) );
+        data.add( DiscreteProbabilityPair.of( 1.0, 1.0 ) );
+        data.add( DiscreteProbabilityPair.of( 1.0, 0.9183673469387755 ) );
+        data.add( DiscreteProbabilityPair.of( 1.0, 0.8163265306122449 ) );
+        data.add( DiscreteProbabilityPair.of( 1.0, 0.7755102040816326 ) );
+        data.add( DiscreteProbabilityPair.of( 0.0, 0.3469387755102041 ) );
+        data.add( DiscreteProbabilityPair.of( 0.0, 0.24489795918367346 ) );
+        data.add( DiscreteProbabilityPair.of( 0.0, 0.20408163265306123 ) );
+        data.add( DiscreteProbabilityPair.of( 0.0, 0.10204081632653061 ) );
+        data.add( DiscreteProbabilityPair.of( 0.0, 0.08163265306122448 ) );
+        data.add( DiscreteProbabilityPair.of( 0.0, 0.12244897959183673 ) );
+        data.add( DiscreteProbabilityPair.of( 0.0, 0.0 ) );
+        data.add( DiscreteProbabilityPair.of( 0.0, 0.0 ) );
+        data.add( DiscreteProbabilityPair.of( 0.0, 0.0 ) );
+        data.add( DiscreteProbabilityPair.of( 0.0, 0.0 ) );
 
         DatasetIdentifier identifier =
-                MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation( "FAKE" ), "MAP", "FK" );
+                DatasetIdentifier.of( Location.of( "FAKE" ), "MAP", "FK" );
 
         DiscreteProbabilityPairs input =
-                DataFactory.ofDiscreteProbabilityPairs( data,
-                                                        MetadataFactory.getMetadata( MetadataFactory.getDimension(),
+                DiscreteProbabilityPairs.of( data,
+                                                        Metadata.of( MeasurementUnit.of(),
                                                                                      identifier ) );
 
         //Metadata for the output
         final MetricOutputMetadata m1 =
-                MetadataFactory.getOutputMetadata( input.getRawData().size(),
-                                                   MetadataFactory.getDimension(),
-                                                   MetadataFactory.getDimension(),
+                MetricOutputMetadata.of( input.getRawData().size(),
+                                                   MeasurementUnit.of(),
+                                                   MeasurementUnit.of(),
                                                    MetricConstants.RELIABILITY_DIAGRAM,
                                                    MetricConstants.MAIN,
                                                    identifier );
@@ -167,7 +166,7 @@ public final class ReliabilityDiagramTest
         output.put( MetricDimension.OBSERVED_RELATIVE_FREQUENCY, expectedOProb );
         output.put( MetricDimension.SAMPLE_SIZE, expectedSample );
 
-        final MultiVectorOutput expected = DataFactory.ofMultiVectorOutput( output, m1 );
+        final MultiVectorOutput expected = MultiVectorOutput.ofMultiVectorOutput( output, m1 );
 
         assertTrue( "Difference between actual and expected Reliability Diagram.", actual.equals( expected ) );
     }
@@ -181,7 +180,7 @@ public final class ReliabilityDiagramTest
     {
         // Generate empty data
         DiscreteProbabilityPairs input =
-                DataFactory.ofDiscreteProbabilityPairs( Arrays.asList(), MetadataFactory.getMetadata() );
+                DiscreteProbabilityPairs.of( Arrays.asList(), Metadata.of() );
 
         MultiVectorOutput actual = rel.apply( input );
 

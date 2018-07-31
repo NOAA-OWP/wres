@@ -15,12 +15,12 @@ import ohd.hseb.charter.ChartEngineException;
 import ohd.hseb.charter.ChartPanelTools;
 import ohd.hseb.charter.ChartTools;
 import ohd.hseb.charter.datasource.XYChartDataSourceException;
-
-import wres.datamodel.DataFactory;
 import wres.datamodel.inputs.pairs.SingleValuedPair;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
+import wres.datamodel.metadata.DatasetIdentifier;
+import wres.datamodel.metadata.MeasurementUnit;
+import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.Metadata;
-import wres.datamodel.metadata.MetadataFactory;
 
 public class Chart2DTestInput extends TestCase
 {
@@ -32,12 +32,12 @@ public class Chart2DTestInput extends TestCase
         final List<SingleValuedPair> values = new ArrayList<>();
         for (int i = 0; i < 100; i ++)
         {
-            values.add(DataFactory.pairOf(rand.nextGaussian(), rand.nextGaussian()));
+            values.add(SingleValuedPair.of(rand.nextGaussian(), rand.nextGaussian()));
         }
 
-        final Metadata meta = MetadataFactory.getMetadata(MetadataFactory.getDimension("CMS"),
-                                                 MetadataFactory.getDatasetIdentifier(MetadataFactory.getLocation("DRRC2"), "SQIN", "HEFS"));
-        final SingleValuedPairs pairs = DataFactory.ofSingleValuedPairs(values, meta);
+        final Metadata meta = Metadata.of(MeasurementUnit.of("CMS"),
+                                                 DatasetIdentifier.of(Location.of("DRRC2"), "SQIN", "HEFS"));
+        final SingleValuedPairs pairs = SingleValuedPairs.of(values, meta);
 
         //Construct the source from the pairs assigning it a data source order index of 0.
         //The order index indicates the order in which the different sources are rendered.
@@ -70,20 +70,20 @@ public class Chart2DTestInput extends TestCase
     {
         //Construct some single-valued pairs
         final List<SingleValuedPair> values = new ArrayList<>();
-        values.add(DataFactory.pairOf(22.9, 22.8));
-        values.add(DataFactory.pairOf(75.2, 80));
-        values.add(DataFactory.pairOf(63.2, 65));
-        values.add(DataFactory.pairOf(29, 30));
-        values.add(DataFactory.pairOf(5, 2));
-        values.add(DataFactory.pairOf(2.1, 3.1));
-        values.add(DataFactory.pairOf(35000, 37000));
-        values.add(DataFactory.pairOf(8, 7));
-        values.add(DataFactory.pairOf(12, 12));
-        values.add(DataFactory.pairOf(93, 94));
+        values.add(SingleValuedPair.of(22.9, 22.8));
+        values.add(SingleValuedPair.of(75.2, 80));
+        values.add(SingleValuedPair.of(63.2, 65));
+        values.add(SingleValuedPair.of(29, 30));
+        values.add(SingleValuedPair.of(5, 2));
+        values.add(SingleValuedPair.of(2.1, 3.1));
+        values.add(SingleValuedPair.of(35000, 37000));
+        values.add(SingleValuedPair.of(8, 7));
+        values.add(SingleValuedPair.of(12, 12));
+        values.add(SingleValuedPair.of(93, 94));
 
-        final Metadata meta = MetadataFactory.getMetadata(MetadataFactory.getDimension("CMS"),
-                                                 MetadataFactory.getDatasetIdentifier(MetadataFactory.getLocation("DRRC2"), "SQIN", "HEFS"));
-        final SingleValuedPairs pairs = DataFactory.ofSingleValuedPairs(values, meta);
+        final Metadata meta = Metadata.of(MeasurementUnit.of("CMS"),
+                                                 DatasetIdentifier.of(Location.of("DRRC2"), "SQIN", "HEFS"));
+        final SingleValuedPairs pairs = SingleValuedPairs.of(values, meta);
 
         ChartEngine engine = ChartEngineFactory.buildSingleValuedPairsChartEngine( pairs, null, null );
 

@@ -9,7 +9,6 @@ import wres.datamodel.inputs.pairs.SingleValuedPair;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
-import wres.engine.statistics.metric.MetricParameterException;
 
 /**
  * <p>The {@link VolumetricEfficiency} (VE) accumulates the absolute observations (VO) and, separately, it accumulates 
@@ -24,6 +23,17 @@ import wres.engine.statistics.metric.MetricParameterException;
 public class VolumetricEfficiency extends DoubleErrorScore<SingleValuedPairs>
 {
 
+    /**
+     * Returns an instance.
+     * 
+     * @return an instance
+     */
+    
+    public static VolumetricEfficiency of()
+    {
+        return new VolumetricEfficiency();
+    }
+    
     @Override
     public DoubleScoreOutput apply( final SingleValuedPairs s )
     {
@@ -44,9 +54,9 @@ public class VolumetricEfficiency extends DoubleErrorScore<SingleValuedPairs>
         //Compute the atomic errors in a stream
         if( vO.equals( 0.0 ) )
         {
-            return DataFactory.ofDoubleScoreOutput( Double.NaN, metOut );
+            return DoubleScoreOutput.of( Double.NaN, metOut );
         }
-        return DataFactory.ofDoubleScoreOutput( ( vO - vP ) / vO, metOut );
+        return DoubleScoreOutput.of( ( vO - vP ) / vO, metOut );
     }
 
     @Override
@@ -68,30 +78,12 @@ public class VolumetricEfficiency extends DoubleErrorScore<SingleValuedPairs>
     }
 
     /**
-     * A {@link MetricBuilder} to build the metric.
-     */
-
-    public static class VolumetricEfficiencyBuilder extends DoubleErrorScoreBuilder<SingleValuedPairs>
-    {
-
-        @Override
-        public VolumetricEfficiency build() throws MetricParameterException
-        {
-            return new VolumetricEfficiency( this );
-        }
-
-    }
-
-    /**
      * Hidden constructor.
-     * 
-     * @param builder the builder
-     * @throws MetricParameterException if one or more parameters is invalid
      */
 
-    private VolumetricEfficiency( final VolumetricEfficiencyBuilder builder ) throws MetricParameterException
+    private VolumetricEfficiency()
     {
-        super( builder );
+        super();
     }
 
 }

@@ -8,14 +8,12 @@ import java.util.List;
 
 import org.junit.Test;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.EnsemblePair;
 import wres.datamodel.inputs.pairs.EnsemblePairs.EnsemblePairsBuilder;
 import wres.datamodel.metadata.Metadata;
-import wres.datamodel.metadata.MetadataFactory;
 
 /**
  * Tests the {@link EnsemblePairs}.
@@ -37,9 +35,9 @@ public final class EnsemblePairsTest
 
         for ( int i = 0; i < 10; i++ )
         {
-            values.add( DataFactory.pairOf( 1, new double[] { 1, 2, 3, 4 } ) );
+            values.add( EnsemblePair.of( 1, new double[] { 1, 2, 3, 4 } ) );
         }
-        final Metadata meta = MetadataFactory.getMetadata();
+        final Metadata meta = Metadata.of();
         EnsemblePairs p = (EnsemblePairs) b.addData( values ).setMetadata( meta ).build();
 
         //Check dataset count
@@ -73,8 +71,8 @@ public final class EnsemblePairsTest
         try
         {
             values.clear();
-            values.add( DataFactory.pairOf( 1, new double[] { 1 } ) );
-            VectorOfDoubles climatology = DataFactory.vectorOf( new double[] { Double.NaN } );
+            values.add( EnsemblePair.of( 1, new double[] { 1 } ) );
+            VectorOfDoubles climatology = VectorOfDoubles.of( new double[] { Double.NaN } );
             final EnsemblePairsBuilder c = new EnsemblePairsBuilder();
             c.addData( values ).setMetadata( meta ).setClimatology( climatology ).build();
             fail( "Expected a checked exception on invalid inputs: all climatology data missing." );

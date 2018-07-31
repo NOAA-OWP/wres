@@ -14,14 +14,14 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
-import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MatrixOutput;
+import wres.engine.statistics.metric.categorical.ThreatScore;
 
 /**
  * Tests the {@link CollectableTask}.
@@ -36,7 +36,6 @@ public final class CollectableTaskTest
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
-    private MetricFactory metF;
     private ExecutorService pairPool;
     private Collectable<DichotomousPairs, MatrixOutput, DoubleScoreOutput> m;
 
@@ -49,15 +48,14 @@ public final class CollectableTaskTest
     @Before
     public void setupBeforeEachTest() throws MetricParameterException
     {
-        metF = MetricFactory.getInstance();
         // Tests can run simultaneously, use only 1 (additional) Thread per test
         pairPool = Executors.newFixedThreadPool( 1 );
         //Add some appropriate metrics to the collection
-        m = metF.ofThreatScore();
+        m = ThreatScore.of();
 
-        m1 = MetadataFactory.getOutputMetadata( 100,
-                                                MetadataFactory.getDimension(),
-                                                MetadataFactory.getDimension(),
+        m1 = MetricOutputMetadata.of( 100,
+                                                MeasurementUnit.of(),
+                                                MeasurementUnit.of(),
                                                 MetricConstants.CONTINGENCY_TABLE,
                                                 MetricConstants.MAIN );
     }
@@ -73,7 +71,7 @@ public final class CollectableTaskTest
                     {
                         final double[][] returnMe =
                                 new double[][] { { 1.0, 1.0 }, { 1.0, 1.0 } };
-                        return DataFactory.ofMatrixOutput( returnMe, m1 );
+                        return MatrixOutput.of( returnMe, m1 );
                     }
                 } );
 

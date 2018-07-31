@@ -8,12 +8,12 @@ import java.util.Map;
 
 import org.junit.Test;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.MetricConstants.MetricDimension;
+import wres.datamodel.metadata.DatasetIdentifier;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
-import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.MetricOutputException;
 import wres.datamodel.outputs.MultiVectorOutput;
@@ -33,31 +33,31 @@ public final class MultiVectorOutputTest
     @Test
     public void test1Equals()
     {
-        final Location l1 = MetadataFactory.getLocation( "A" );
-        final MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( 10,
-                                                                           MetadataFactory.getDimension(),
-                                                                           MetadataFactory.getDimension( "CMS" ),
+        final Location l1 = Location.of( "A" );
+        final MetricOutputMetadata m1 = MetricOutputMetadata.of( 10,
+                                                                           MeasurementUnit.of(),
+                                                                           MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
                                                                            MetricConstants.MAIN,
-                                                                           MetadataFactory.getDatasetIdentifier( l1,
+                                                                           DatasetIdentifier.of( l1,
                                                                                                                  "B",
                                                                                                                  "C" ) );
-        final Location l2 = MetadataFactory.getLocation( "A" );
-        final MetricOutputMetadata m2 = MetadataFactory.getOutputMetadata( 11,
-                                                                           MetadataFactory.getDimension(),
-                                                                           MetadataFactory.getDimension( "CMS" ),
+        final Location l2 = Location.of( "A" );
+        final MetricOutputMetadata m2 = MetricOutputMetadata.of( 11,
+                                                                           MeasurementUnit.of(),
+                                                                           MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
                                                                            MetricConstants.MAIN,
-                                                                           MetadataFactory.getDatasetIdentifier( l2,
+                                                                           DatasetIdentifier.of( l2,
                                                                                                                  "B",
                                                                                                                  "C" ) );
-        final Location l3 = MetadataFactory.getLocation( "B" );
-        final MetricOutputMetadata m3 = MetadataFactory.getOutputMetadata( 10,
-                                                                           MetadataFactory.getDimension(),
-                                                                           MetadataFactory.getDimension( "CMS" ),
+        final Location l3 = Location.of( "B" );
+        final MetricOutputMetadata m3 = MetricOutputMetadata.of( 10,
+                                                                           MeasurementUnit.of(),
+                                                                           MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
                                                                            MetricConstants.MAIN,
-                                                                           MetadataFactory.getDatasetIdentifier( l3,
+                                                                           DatasetIdentifier.of( l3,
                                                                                                                  "B",
                                                                                                                  "C" ) );
         Map<MetricDimension, double[]> mva = new HashMap<>();
@@ -69,15 +69,15 @@ public final class MultiVectorOutputTest
         mvb.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4 } );
         mvc.put( MetricDimension.PROBABILITY_OF_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4, 0.5 } );
         mvc.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4, 0.5 } );
-        final MultiVectorOutput s = DataFactory.ofMultiVectorOutput( mva, m1 );
-        final MultiVectorOutput t = DataFactory.ofMultiVectorOutput( mvb, m1 );
+        final MultiVectorOutput s = MultiVectorOutput.ofMultiVectorOutput( mva, m1 );
+        final MultiVectorOutput t = MultiVectorOutput.ofMultiVectorOutput( mvb, m1 );
         assertTrue( "Expected equal outputs.", s.equals( t ) );
         assertTrue( "Expected non-equal outputs.", !s.equals( null ) );
         assertTrue( "Expected non-equal outputs.", !s.equals( new Double( 1.0 ) ) );
-        assertTrue( "Expected non-equal outputs.", !s.equals( DataFactory.ofMultiVectorOutput( mvc, m1 ) ) );
-        assertTrue( "Expected non-equal outputs.", !s.equals( DataFactory.ofMultiVectorOutput( mvc, m2 ) ) );
-        final MultiVectorOutput q = DataFactory.ofMultiVectorOutput( mva, m2 );
-        final MultiVectorOutput r = DataFactory.ofMultiVectorOutput( mvb, m3 );
+        assertTrue( "Expected non-equal outputs.", !s.equals( MultiVectorOutput.ofMultiVectorOutput( mvc, m1 ) ) );
+        assertTrue( "Expected non-equal outputs.", !s.equals( MultiVectorOutput.ofMultiVectorOutput( mvc, m2 ) ) );
+        final MultiVectorOutput q = MultiVectorOutput.ofMultiVectorOutput( mva, m2 );
+        final MultiVectorOutput r = MultiVectorOutput.ofMultiVectorOutput( mvb, m3 );
         assertTrue( "Expected equal outputs.", q.equals( q ) );
         assertTrue( "Expected non-equal outputs.", !s.equals( q ) );
         assertTrue( "Expected non-equal outputs.", !q.equals( s ) );
@@ -91,29 +91,29 @@ public final class MultiVectorOutputTest
     @Test
     public void test2GetMetadata()
     {
-        final Location l1 = MetadataFactory.getLocation( "A" );
-        final MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( 10,
-                                                                           MetadataFactory.getDimension(),
-                                                                           MetadataFactory.getDimension( "CMS" ),
+        final Location l1 = Location.of( "A" );
+        final MetricOutputMetadata m1 = MetricOutputMetadata.of( 10,
+                                                                           MeasurementUnit.of(),
+                                                                           MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
                                                                            MetricConstants.MAIN,
-                                                                           MetadataFactory.getDatasetIdentifier( l1,
+                                                                           DatasetIdentifier.of( l1,
                                                                                                                  "B",
                                                                                                                  "C" ) );
-        final Location l2 = MetadataFactory.getLocation( "B" );
-        final MetricOutputMetadata m2 = MetadataFactory.getOutputMetadata( 10,
-                                                                           MetadataFactory.getDimension(),
-                                                                           MetadataFactory.getDimension( "CMS" ),
+        final Location l2 = Location.of( "B" );
+        final MetricOutputMetadata m2 = MetricOutputMetadata.of( 10,
+                                                                           MeasurementUnit.of(),
+                                                                           MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
                                                                            MetricConstants.MAIN,
-                                                                           MetadataFactory.getDatasetIdentifier( l2,
+                                                                           DatasetIdentifier.of( l2,
                                                                                                                  "B",
                                                                                                                  "C" ) );
         Map<MetricDimension, double[]> mva = new HashMap<>();
         mva.put( MetricDimension.PROBABILITY_OF_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4 } );
         mva.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4 } );
-        final MultiVectorOutput q = DataFactory.ofMultiVectorOutput( mva, m1 );
-        final MultiVectorOutput r = DataFactory.ofMultiVectorOutput( mva, m2 );
+        final MultiVectorOutput q = MultiVectorOutput.ofMultiVectorOutput( mva, m1 );
+        final MultiVectorOutput r = MultiVectorOutput.ofMultiVectorOutput( mva, m2 );
         assertTrue( "Expected unequal dimensions.", !q.getMetadata().equals( r.getMetadata() ) );
     }
 
@@ -124,31 +124,31 @@ public final class MultiVectorOutputTest
     @Test
     public void test3HashCode()
     {
-        final Location l1 = MetadataFactory.getLocation( "A" );
-        final MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( 10,
-                                                                           MetadataFactory.getDimension(),
-                                                                           MetadataFactory.getDimension( "CMS" ),
+        final Location l1 = Location.of( "A" );
+        final MetricOutputMetadata m1 = MetricOutputMetadata.of( 10,
+                                                                           MeasurementUnit.of(),
+                                                                           MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
                                                                            MetricConstants.MAIN,
-                                                                           MetadataFactory.getDatasetIdentifier( l1,
+                                                                           DatasetIdentifier.of( l1,
                                                                                                                  "B",
                                                                                                                  "C" ) );
-        final Location l2 = MetadataFactory.getLocation( "A" );
-        final MetricOutputMetadata m2 = MetadataFactory.getOutputMetadata( 10,
-                                                                           MetadataFactory.getDimension(),
-                                                                           MetadataFactory.getDimension( "CMS" ),
+        final Location l2 = Location.of( "A" );
+        final MetricOutputMetadata m2 = MetricOutputMetadata.of( 10,
+                                                                           MeasurementUnit.of(),
+                                                                           MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
                                                                            MetricConstants.MAIN,
-                                                                           MetadataFactory.getDatasetIdentifier( l2,
+                                                                           DatasetIdentifier.of( l2,
                                                                                                                  "B",
                                                                                                                  "C" ) );
-        final Location l3 = MetadataFactory.getLocation( "B" );
-        final MetricOutputMetadata m3 = MetadataFactory.getOutputMetadata( 10,
-                                                                           MetadataFactory.getDimension(),
-                                                                           MetadataFactory.getDimension( "CMS" ),
+        final Location l3 = Location.of( "B" );
+        final MetricOutputMetadata m3 = MetricOutputMetadata.of( 10,
+                                                                           MeasurementUnit.of(),
+                                                                           MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
                                                                            MetricConstants.MAIN,
-                                                                           MetadataFactory.getDatasetIdentifier( l3,
+                                                                           DatasetIdentifier.of( l3,
                                                                                                                  "B",
                                                                                                                  "C" ) );
         Map<MetricDimension, double[]> mva = new HashMap<>();
@@ -160,9 +160,9 @@ public final class MultiVectorOutputTest
         mvb.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4 } );
         mvc.put( MetricDimension.PROBABILITY_OF_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4, 0.5 } );
         mvc.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4, 0.5 } );
-        final MultiVectorOutput q = DataFactory.ofMultiVectorOutput( mva, m1 );
-        final MultiVectorOutput r = DataFactory.ofMultiVectorOutput( mvb, m2 );
-        final MultiVectorOutput s = DataFactory.ofMultiVectorOutput( mvc, m3 );
+        final MultiVectorOutput q = MultiVectorOutput.ofMultiVectorOutput( mva, m1 );
+        final MultiVectorOutput r = MultiVectorOutput.ofMultiVectorOutput( mvb, m2 );
+        final MultiVectorOutput s = MultiVectorOutput.ofMultiVectorOutput( mvc, m3 );
         assertTrue( "Expected equal hash codes.", q.hashCode() == r.hashCode() );
         assertTrue( "Expected unequal hash codes.", q.hashCode() != s.hashCode() );
     }
@@ -174,19 +174,19 @@ public final class MultiVectorOutputTest
     @Test
     public void test4Accessors()
     {
-        final Location l1 = MetadataFactory.getLocation( "A" );
-        final MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( 10,
-                                                                           MetadataFactory.getDimension(),
-                                                                           MetadataFactory.getDimension( "CMS" ),
+        final Location l1 = Location.of( "A" );
+        final MetricOutputMetadata m1 = MetricOutputMetadata.of( 10,
+                                                                           MeasurementUnit.of(),
+                                                                           MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
                                                                            MetricConstants.MAIN,
-                                                                           MetadataFactory.getDatasetIdentifier( l1,
+                                                                           DatasetIdentifier.of( l1,
                                                                                                                  "B",
                                                                                                                  "C" ) );
         Map<MetricDimension, double[]> mva = new HashMap<>();
         mva.put( MetricDimension.PROBABILITY_OF_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4 } );
         mva.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4 } );
-        final MultiVectorOutput s = DataFactory.ofMultiVectorOutput( mva, m1 );
+        final MultiVectorOutput s = MultiVectorOutput.ofMultiVectorOutput( mva, m1 );
         assertTrue( "Expected a " + MetricDimension.PROBABILITY_OF_DETECTION
                     + ".",
                     s.containsKey( MetricDimension.PROBABILITY_OF_DETECTION ) );
@@ -203,20 +203,20 @@ public final class MultiVectorOutputTest
     @Test
     public void test5Exceptions()
     {
-        final Location l1 = MetadataFactory.getLocation( "A" );
-        final MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( 10,
-                                                                           MetadataFactory.getDimension(),
-                                                                           MetadataFactory.getDimension( "CMS" ),
+        final Location l1 = Location.of( "A" );
+        final MetricOutputMetadata m1 = MetricOutputMetadata.of( 10,
+                                                                           MeasurementUnit.of(),
+                                                                           MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
                                                                            MetricConstants.MAIN,
-                                                                           MetadataFactory.getDatasetIdentifier( l1,
+                                                                           DatasetIdentifier.of( l1,
                                                                                                                  "B",
                                                                                                                  "C" ) );
         Map<MetricDimension, VectorOfDoubles> mva = new HashMap<>();
         mva.put( MetricDimension.PROBABILITY_OF_DETECTION,
-                 DataFactory.vectorOf( new double[] { 0.1, 0.2, 0.3, 0.4 } ) );
+                 VectorOfDoubles.of( new double[] { 0.1, 0.2, 0.3, 0.4 } ) );
         mva.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION,
-                 DataFactory.vectorOf( new double[] { 0.1, 0.2, 0.3, 0.4 } ) );
+                 VectorOfDoubles.of( new double[] { 0.1, 0.2, 0.3, 0.4 } ) );
         try
         {
             MultiVectorOutput.of( mva, null );

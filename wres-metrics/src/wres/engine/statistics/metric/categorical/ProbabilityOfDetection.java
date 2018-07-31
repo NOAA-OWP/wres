@@ -6,7 +6,6 @@ import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MatrixOutput;
 import wres.engine.statistics.metric.FunctionFactory;
-import wres.engine.statistics.metric.MetricParameterException;
 
 /**
  * The Probability of Detection (PoD) measures the fraction of observed occurrences that were hits.
@@ -16,6 +15,17 @@ import wres.engine.statistics.metric.MetricParameterException;
 public class ProbabilityOfDetection extends ContingencyTableScore<DichotomousPairs>
 {
 
+    /**
+     * Returns an instance.
+     * 
+     * @return an instance
+     */
+    
+    public static ProbabilityOfDetection of()
+    {
+        return new ProbabilityOfDetection();
+    }
+    
     @Override
     public DoubleScoreOutput apply( final DichotomousPairs s )
     {
@@ -29,7 +39,7 @@ public class ProbabilityOfDetection extends ContingencyTableScore<DichotomousPai
         final MatrixOutput v = output;
         final double[][] cm = v.getData().getDoubles();
         double result = FunctionFactory.finiteOrMissing().applyAsDouble( cm[0][0] / ( cm[0][0] + cm[1][0] ) );
-        return DataFactory.ofDoubleScoreOutput( result, getMetadata( output ) );
+        return DoubleScoreOutput.of( result, getMetadata( output ) );
     }
 
     @Override
@@ -45,28 +55,10 @@ public class ProbabilityOfDetection extends ContingencyTableScore<DichotomousPai
     }
 
     /**
-     * A {@link MetricBuilder} to build the metric.
-     */
-
-    public static class ProbabilityOfDetectionBuilder implements MetricBuilder<DichotomousPairs, DoubleScoreOutput>
-    {
-
-        @Override
-        public ProbabilityOfDetection build() throws MetricParameterException
-        {
-            return new ProbabilityOfDetection( this );
-        }
-
-    }
-
-    /**
      * Hidden constructor.
-     * 
-     * @param builder the builder
-     * @throws MetricParameterException if one or more parameters is invalid
      */
 
-    private ProbabilityOfDetection( final ProbabilityOfDetectionBuilder builder ) throws MetricParameterException
+    private ProbabilityOfDetection()
     {
         super();
     }

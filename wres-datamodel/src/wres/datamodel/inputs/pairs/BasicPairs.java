@@ -15,12 +15,14 @@ import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.metadata.Metadata;
 
 /**
- * Abstract base class for storing pairs. 
+ * An abstract base class for storing zero or more paired values. 
  * 
- * Currently, there is no conditional "Pair" type within WRES. Introducing a generic "Pair" type would require that 
- * primitive pairs were autoboxed/unboxed and that array types were replaced with wrapped types, both of which would 
- * introduce some overhead. However, it would also allow for better conditioning. For example, this class would be 
- * constrained to store <code>T extends Pair</code>, rather than simply <code>T</code>.
+ * Currently, there is no "Pair" type within WRES. Introducing a "Pair" type would require that primitive pairs were 
+ * autoboxed/unboxed and that array types were replaced with wrapped types, both of which would 
+ * introduce some overhead. However, it would also allow for better conditioning. For example, this class could then be 
+ * constrained to store <code>T extends Pair</code>, rather than simply <code>T</code>. TODO: evaluate whether a 
+ * generic "Pair" interface is warranted. The Apache Pair is a concrete type, not an interface, so wouldn't work, 
+ * except as a composition to aid a specific implementation. 
  * 
  * @param <T> the paired type
  * @author james.brown@hydrosolved.com
@@ -244,9 +246,9 @@ public abstract class BasicPairs<T> implements MetricInput<T>
         this.baselineMeta = b.baselineMeta;
 
         //Validate
-        validateMainInput();
-        validateBaselineInput();
-        validateClimatologicalInput();
+        this.validateMainInput();
+        this.validateBaselineInput();
+        this.validateClimatologicalInput();
     }
 
     /**

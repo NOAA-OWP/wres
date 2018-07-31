@@ -24,10 +24,12 @@ import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
+import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.inputs.pairs.EnsemblePair;
 import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.metadata.MeasurementUnit;
+import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
@@ -36,6 +38,7 @@ import wres.datamodel.outputs.MetricOutputAccessException;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMapByMetric;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
+import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 
@@ -81,34 +84,27 @@ public class CommaSeparatedBoxPlotWriterTest extends CommaSeparatedWriterTest
         // which requires a datasetidentifier..
 
         DatasetIdentifier datasetIdentifier =
-                MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation( LID ),
-                                                      "SQIN",
-                                                      "HEFS",
-                                                      "ESP" );
+                DatasetIdentifier.of( Location.of( LID ), "SQIN", "HEFS", "ESP" );
 
         MetricOutputMetadata fakeMetadata =
-                MetadataFactory.getOutputMetadata( 1000,
-                                                   MetadataFactory.getDimension(),
-                                                   MetadataFactory.getDimension( "CMS" ),
+                MetricOutputMetadata.of( 1000,
+                                                   MeasurementUnit.of(),
+                                                   MeasurementUnit.of( "CMS" ),
                                                    MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
                                                    null,
                                                    datasetIdentifier );
 
         List<EnsemblePair> fakeOutputs = new ArrayList<>();
-        VectorOfDoubles probs = DataFactory.vectorOf( new double[] { 0, 0.25, 0.5, 0.75, 1.0 } );
+        VectorOfDoubles probs = VectorOfDoubles.of( new double[] { 0, 0.25, 0.5, 0.75, 1.0 } );
 
-        fakeOutputs.add( DataFactory.pairOf( 1, new double[] { 2, 3, 4, 5, 6 } ) );
-        fakeOutputs.add( DataFactory.pairOf( 3, new double[] { 7, 9, 11, 13, 15 } ) );
-        fakeOutputs.add( DataFactory.pairOf( 5, new double[] { 21, 24, 27, 30, 33 } ) );
+        fakeOutputs.add( EnsemblePair.of( 1, new double[] { 2, 3, 4, 5, 6 } ) );
+        fakeOutputs.add( EnsemblePair.of( 3, new double[] { 7, 9, 11, 13, 15 } ) );
+        fakeOutputs.add( EnsemblePair.of( 5, new double[] { 21, 24, 27, 30, 33 } ) );
 
         // Fake output wrapper.
         MetricOutputMapByMetric<BoxPlotOutput> fakeOutputData =
                 DataFactory.ofMetricOutputMapByMetric( Collections.singletonMap( MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
-                                                                                 DataFactory.ofBoxPlotOutput( fakeOutputs,
-                                                                                                              probs,
-                                                                                                              fakeMetadata,
-                                                                                                              MetricDimension.OBSERVED_VALUE,
-                                                                                                              MetricDimension.FORECAST_ERROR ) ) );
+                                                                                 BoxPlotOutput.of( fakeOutputs, probs, fakeMetadata, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR ) ) );
         // wrap outputs in future
         Future<MetricOutputMapByMetric<BoxPlotOutput>> outputMapByMetricFuture =
                 CompletableFuture.completedFuture( fakeOutputData );
@@ -117,7 +113,7 @@ public class CommaSeparatedBoxPlotWriterTest extends CommaSeparatedWriterTest
         // Fake lead time and threshold
         Pair<TimeWindow, OneOrTwoThresholds> mapKeyByLeadThreshold =
                 Pair.of( timeOne,
-                         OneOrTwoThresholds.of( DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
+                         OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                                          Operator.GREATER,
                                                                          ThresholdDataType.LEFT ) ) );
 

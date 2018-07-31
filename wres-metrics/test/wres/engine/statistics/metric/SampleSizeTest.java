@@ -11,10 +11,9 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
-import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
-import wres.engine.statistics.metric.SampleSize.SampleSizeBuilder;
 
 /**
  * Tests the {@link SampleSize}.
@@ -42,18 +41,17 @@ public final class SampleSizeTest
         final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Metadata for the output
-        final MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( input.getRawData().size(),
-                                                                           MetadataFactory.getDimension(),
-                                                                           MetadataFactory.getDimension(),
+        final MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getRawData().size(),
+                                                                           MeasurementUnit.of(),
+                                                                           MeasurementUnit.of(),
                                                                            MetricConstants.SAMPLE_SIZE,
                                                                            MetricConstants.MAIN );
         //Build the metric
-        final SampleSizeBuilder<SingleValuedPairs> b = new SampleSize.SampleSizeBuilder<>();
-        final SampleSize<SingleValuedPairs> ss = b.build();
+        SampleSize<SingleValuedPairs> ss = SampleSize.of();
 
         //Check the results
-        final DoubleScoreOutput actual = ss.apply( input );
-        final DoubleScoreOutput expected = DataFactory.ofDoubleScoreOutput( input.getRawData().size(), m1 );
+        DoubleScoreOutput actual = ss.apply( input );
+        DoubleScoreOutput expected = DoubleScoreOutput.of( (double) input.getRawData().size(), m1 );
         assertTrue( "Actual: " + actual.getData().doubleValue()
                     + ". Expected: "
                     + expected.getData().doubleValue()
@@ -77,8 +75,7 @@ public final class SampleSizeTest
     public void testExceptions() throws MetricParameterException
     {
         //Build the metric
-        final SampleSizeBuilder<SingleValuedPairs> b = new SampleSize.SampleSizeBuilder<>();
-        final SampleSize<SingleValuedPairs> ss = b.build();
+        SampleSize<SingleValuedPairs> ss = SampleSize.of();
 
         exception.expect( MetricInputException.class );
         exception.expectMessage( "Specify non-null input to the 'SAMPLE SIZE'." );

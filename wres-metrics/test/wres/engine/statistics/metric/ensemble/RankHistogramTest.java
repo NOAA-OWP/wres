@@ -1,11 +1,11 @@
 package wres.engine.statistics.metric.ensemble;
 
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import java.util.Random;
 
 import org.junit.Before;
@@ -13,16 +13,14 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
+import wres.datamodel.metadata.Metadata;
 import wres.datamodel.inputs.pairs.EnsemblePair;
-import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.engine.statistics.metric.MetricParameterException;
-import wres.engine.statistics.metric.ensemble.RankHistogram.RankHistogramBuilder;
 
 /**
  * Tests the {@link RankHistogram}.
@@ -50,10 +48,8 @@ public final class RankHistogramTest
     @Before
     public void setupBeforeEachTest() throws MetricParameterException
     {
-        RankHistogramBuilder b = new RankHistogramBuilder();
-        rng = new Random( 12345678 );
-        b.setRNGForTies( rng );
-        this.rh = b.build();
+        this.rng = new Random( 12345678 );
+        this.rh = RankHistogram.of( this.rng );
     }
 
     /**
@@ -73,10 +69,10 @@ public final class RankHistogramTest
             {
                 right[j] = rng.nextDouble();
             }
-            values.add( DataFactory.pairOf( left, right ) );
+            values.add( EnsemblePair.of( left, right ) );
         }
 
-        final EnsemblePairs input = DataFactory.ofEnsemblePairs( values, MetadataFactory.getMetadata() );
+        final EnsemblePairs input = EnsemblePairs.of( values, Metadata.of() );
 
         //Check the results       
         final MultiVectorOutput actual = rh.apply( input );
@@ -103,8 +99,8 @@ public final class RankHistogramTest
     {
         //Generate some data using an RNG for a uniform U[0,1] distribution with a fixed seed
         final List<EnsemblePair> values = new ArrayList<>();
-        values.add( DataFactory.pairOf( 2, new double[] { 1, 2, 2, 2, 4, 5, 6, 7, 8 } ) );
-        final EnsemblePairs input = DataFactory.ofEnsemblePairs( values, MetadataFactory.getMetadata() );
+        values.add( EnsemblePair.of( 2, new double[] { 1, 2, 2, 2, 4, 5, 6, 7, 8 } ) );
+        final EnsemblePairs input = EnsemblePairs.of( values, Metadata.of() );
 
         //Check the results       
         final MultiVectorOutput actual = rh.apply( input );
@@ -133,7 +129,7 @@ public final class RankHistogramTest
     {
         // Generate empty data
         EnsemblePairs input =
-                DataFactory.ofEnsemblePairs( Arrays.asList(), MetadataFactory.getMetadata() );
+                EnsemblePairs.of( Arrays.asList(), Metadata.of() );
 
         MultiVectorOutput actual = rh.apply( input );
 
@@ -186,8 +182,7 @@ public final class RankHistogramTest
     @Test
     public void testConstructionWithoutRNG() throws MetricParameterException
     {
-        RankHistogramBuilder b = new RankHistogramBuilder();
-        assertTrue( Objects.nonNull( b.build() ) );
+        assertNotNull( RankHistogram.of() );
     }
 
 }

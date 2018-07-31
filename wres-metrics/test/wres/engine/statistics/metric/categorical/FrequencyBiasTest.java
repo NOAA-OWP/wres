@@ -15,13 +15,15 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
-import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.metadata.DatasetIdentifier;
+import wres.datamodel.metadata.MeasurementUnit;
+import wres.datamodel.metadata.Location;
+import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MatrixOutput;
 import wres.engine.statistics.metric.Collectable;
 import wres.engine.statistics.metric.Metric;
-import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.engine.statistics.metric.Score;
@@ -38,12 +40,6 @@ public final class FrequencyBiasTest
     public final ExpectedException exception = ExpectedException.none();
 
     /**
-     * Metric factory.
-     */
-
-    private MetricFactory metricFactory;
-
-    /**
      * Score used for testing. 
      */
 
@@ -58,14 +54,13 @@ public final class FrequencyBiasTest
     @Before
     public void setUpBeforeEachTest() throws MetricParameterException
     {
-        metricFactory = MetricFactory.getInstance();
-        fb = metricFactory.ofFrequencyBias();
-        meta = MetadataFactory.getOutputMetadata( 365,
-                                          MetadataFactory.getDimension(),
-                                          MetadataFactory.getDimension(),
+        fb = FrequencyBias.of();
+        meta = MetricOutputMetadata.of( 365,
+                                          MeasurementUnit.of(),
+                                          MeasurementUnit.of(),
                                           MetricConstants.FREQUENCY_BIAS,
                                           MetricConstants.MAIN,
-                                          MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation("DRRC2"), "SQIN", "HEFS" ) );
+                                          DatasetIdentifier.of( Location.of("DRRC2"), "SQIN", "HEFS" ) );
     }    
     
     /**
@@ -80,7 +75,7 @@ public final class FrequencyBiasTest
 
         //Check the results
         final DoubleScoreOutput actual = fb.apply( input );
-        final DoubleScoreOutput expected = DataFactory.ofDoubleScoreOutput( 1.1428571428571428, meta );
+        final DoubleScoreOutput expected = DoubleScoreOutput.of( 1.1428571428571428, meta );
         assertTrue( "Actual: " + actual.getData().doubleValue()
                     + ". Expected: "
                     + expected.getData().doubleValue()
@@ -97,7 +92,7 @@ public final class FrequencyBiasTest
     {
         // Generate empty data
         DichotomousPairs input =
-                DataFactory.ofDichotomousPairs( Arrays.asList(), MetadataFactory.getMetadata() );
+                DichotomousPairs.ofDichotomousPairs( Arrays.asList(), Metadata.of() );
  
         DoubleScoreOutput actual = fb.apply( input );
 

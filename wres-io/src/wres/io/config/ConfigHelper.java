@@ -63,10 +63,8 @@ import wres.config.generated.ProjectConfig.Outputs;
 import wres.config.generated.ThresholdFormat;
 import wres.config.generated.ThresholdsConfig;
 import wres.config.generated.TimeScaleConfig;
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.metadata.Dimension;
-import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
@@ -1550,10 +1548,10 @@ public class ConfigHelper
         List<MetricsConfig> metrics = projectConfig.getMetrics();
 
         // Obtain any units for non-probability thresholds
-        Dimension units = null;
+        MeasurementUnit units = null;
         if ( Objects.nonNull( projectConfig.getPair() ) && Objects.nonNull( projectConfig.getPair().getUnit() ) )
         {
-            units = MetadataFactory.getDimension( projectConfig.getPair().getUnit() );
+            units = MeasurementUnit.of( projectConfig.getPair().getUnit() );
         }
 
         for ( MetricsConfig nextGroup : metrics )
@@ -1597,7 +1595,7 @@ public class ConfigHelper
                                                           Map<FeaturePlus, ThresholdsByMetric> mutate,
                                                           MetricsConfig group,
                                                           ThresholdsConfig thresholdsConfig,
-                                                          Dimension units )
+                                                          MeasurementUnit units )
     {
 
         Objects.requireNonNull( mutate, "Specify a non-null map of thresholds to mutate." );
@@ -1645,7 +1643,7 @@ public class ConfigHelper
     private static Map<FeaturePlus, ThresholdsByMetric>
             readOneExternalThresholdFromProjectConfig( ThresholdsConfig threshold,
                                                        Set<MetricConstants> metrics,
-                                                       Dimension units )
+                                                       MeasurementUnit units )
     {
 
         Objects.requireNonNull( threshold, "Specify non-null threshold configuration." );
@@ -1717,7 +1715,7 @@ public class ConfigHelper
             // Add the thresholds for each feature
             for ( Entry<FeaturePlus, Set<Threshold>> nextEntry : read.entrySet() )
             {
-                ThresholdsByMetricBuilder builder = DataFactory.ofThresholdsByMetricBuilder();
+                ThresholdsByMetricBuilder builder = new ThresholdsByMetricBuilder();
                 Map<MetricConstants, Set<Threshold>> thresholds = new EnumMap<>( MetricConstants.class );
 
                 // Add the thresholds for each metric in the group

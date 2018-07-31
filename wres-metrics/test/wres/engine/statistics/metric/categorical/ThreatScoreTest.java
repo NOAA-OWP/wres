@@ -15,13 +15,15 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
-import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.metadata.DatasetIdentifier;
+import wres.datamodel.metadata.MeasurementUnit;
+import wres.datamodel.metadata.Location;
+import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MatrixOutput;
 import wres.engine.statistics.metric.Collectable;
 import wres.engine.statistics.metric.Metric;
-import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.engine.statistics.metric.Score;
@@ -38,12 +40,6 @@ public final class ThreatScoreTest
     public final ExpectedException exception = ExpectedException.none();
 
     /**
-     * Metric factory.
-     */
-
-    private MetricFactory metricFactory;
-
-    /**
      * Score used for testing. 
      */
 
@@ -58,14 +54,13 @@ public final class ThreatScoreTest
     @Before
     public void setUpBeforeEachTest() throws MetricParameterException
     {
-        metricFactory = MetricFactory.getInstance();
-        ts = metricFactory.ofThreatScore();
-        meta = MetadataFactory.getOutputMetadata( 365,
-                                                  MetadataFactory.getDimension(),
-                                                  MetadataFactory.getDimension(),
+        ts = ThreatScore.of();
+        meta = MetricOutputMetadata.of( 365,
+                                                  MeasurementUnit.of(),
+                                                  MeasurementUnit.of(),
                                                   MetricConstants.THREAT_SCORE,
                                                   MetricConstants.MAIN,
-                                                  MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation( "DRRC2" ),
+                                                  DatasetIdentifier.of( Location.of( "DRRC2" ),
                                                                                         "SQIN",
                                                                                         "HEFS" ) );
     }
@@ -82,7 +77,7 @@ public final class ThreatScoreTest
 
         //Check the results
         final DoubleScoreOutput actual = ts.apply( input );
-        final DoubleScoreOutput expected = DataFactory.ofDoubleScoreOutput( 0.5734265734265734, meta );
+        final DoubleScoreOutput expected = DoubleScoreOutput.of( 0.5734265734265734, meta );
         assertTrue( "Actual: " + actual.getData().doubleValue()
                     + ". Expected: "
                     + expected.getData().doubleValue()
@@ -99,7 +94,7 @@ public final class ThreatScoreTest
     {
         // Generate empty data
         DichotomousPairs input =
-                DataFactory.ofDichotomousPairs( Arrays.asList(), MetadataFactory.getMetadata() );
+                DichotomousPairs.ofDichotomousPairs( Arrays.asList(), Metadata.of() );
 
         DoubleScoreOutput actual = ts.apply( input );
 

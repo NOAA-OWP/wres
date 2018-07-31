@@ -10,7 +10,6 @@ import java.util.function.Consumer;
 
 import org.apache.commons.math3.util.Precision;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.MissingValues;
@@ -20,7 +19,6 @@ import wres.datamodel.inputs.pairs.SingleValuedPair;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.engine.statistics.metric.Diagram;
-import wres.engine.statistics.metric.MetricParameterException;
 
 /**
  * <p>
@@ -42,11 +40,28 @@ public class ReliabilityDiagram extends Diagram<DiscreteProbabilityPairs, MultiV
 {
 
     /**
+     * Default number of bins.
+     */
+    
+    private static final int DEFAULT_BIN_COUNT = 10;
+    
+    /**
      * Number of bins in the Reliability Diagram.
      */
 
     private final int bins;
 
+    /**
+     * Returns an instance.
+     * 
+     * @return an instance
+     */
+    
+    public static ReliabilityDiagram of()
+    {
+        return new ReliabilityDiagram( DEFAULT_BIN_COUNT );
+    }  
+    
     @Override
     public MultiVectorOutput apply( final DiscreteProbabilityPairs s )
     {
@@ -106,7 +121,7 @@ public class ReliabilityDiagram extends Diagram<DiscreteProbabilityPairs, MultiV
 
         MetricOutputMetadata metOut = getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, null );
 
-        return DataFactory.ofMultiVectorOutput( output, metOut );
+        return MultiVectorOutput.ofMultiVectorOutput( output, metOut );
     }
 
     @Override
@@ -122,33 +137,16 @@ public class ReliabilityDiagram extends Diagram<DiscreteProbabilityPairs, MultiV
     }
 
     /**
-     * A {@link MetricBuilder} to build the metric.
-     */
-
-    public static class ReliabilityDiagramBuilder implements MetricBuilder<DiscreteProbabilityPairs, MultiVectorOutput>
-    {
-
-        @Override
-        public ReliabilityDiagram build() throws MetricParameterException
-        {
-            return new ReliabilityDiagram( this );
-        }
-
-    }
-
-    /**
      * Hidden constructor.
      * 
-     * @param builder the builder
-     * @throws MetricParameterException if one or more parameters is invalid 
+     * @param bins the number of bins in the diagram
      */
 
-    protected ReliabilityDiagram( final ReliabilityDiagramBuilder builder ) throws MetricParameterException
+    protected ReliabilityDiagram( int bins )
     {
         super();
 
-        //Set the default bins
-        this.bins = 10;
+        this.bins = bins;
     }
 
     /**

@@ -25,8 +25,10 @@ import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
+import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.metadata.MeasurementUnit;
+import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
@@ -35,6 +37,7 @@ import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMapByMetric;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
+import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 
@@ -79,15 +82,12 @@ public class CommaSeparatedDiagramOutputTest extends CommaSeparatedWriterTest
         // which requires a datasetidentifier..
 
         DatasetIdentifier datasetIdentifier =
-                MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation( LID ),
-                                                      "SQIN",
-                                                      "HEFS",
-                                                      "ESP" );
+                DatasetIdentifier.of( Location.of( LID ), "SQIN", "HEFS", "ESP" );
 
         MetricOutputMetadata fakeMetadata =
-                MetadataFactory.getOutputMetadata( 1000,
-                                                   MetadataFactory.getDimension(),
-                                                   MetadataFactory.getDimension( "CMS" ),
+                MetricOutputMetadata.of( 1000,
+                                                   MeasurementUnit.of(),
+                                                   MeasurementUnit.of( "CMS" ),
                                                    MetricConstants.RELIABILITY_DIAGRAM,
                                                    null,
                                                    datasetIdentifier );
@@ -102,7 +102,7 @@ public class CommaSeparatedDiagramOutputTest extends CommaSeparatedWriterTest
         // Fake output wrapper.
         MetricOutputMapByMetric<MultiVectorOutput> fakeOutputData =
                 DataFactory.ofMetricOutputMapByMetric( Collections.singletonMap( MetricConstants.RELIABILITY_DIAGRAM,
-                                                                                 DataFactory.ofMultiVectorOutput( fakeOutputs,
+                                                                                 MultiVectorOutput.ofMultiVectorOutput( fakeOutputs,
                                                                                                                   fakeMetadata ) ) );
 
         // wrap outputs in future
@@ -113,8 +113,8 @@ public class CommaSeparatedDiagramOutputTest extends CommaSeparatedWriterTest
         // Fake lead time and threshold
         Pair<TimeWindow, OneOrTwoThresholds> mapKeyByLeadThreshold =
                 Pair.of( timeOne,
-                         OneOrTwoThresholds.of( DataFactory.ofQuantileThreshold( DataFactory.ofOneOrTwoDoubles( 11.94128 ),
-                                                                                 DataFactory.ofOneOrTwoDoubles( 0.9 ),
+                         OneOrTwoThresholds.of( Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( 11.94128 ),
+                                                                                 OneOrTwoDoubles.of( 0.9 ),
                                                                                  Operator.GREATER_EQUAL,
                                                                                  ThresholdDataType.LEFT ) ) );
 

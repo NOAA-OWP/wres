@@ -65,6 +65,41 @@ public class Location
     }
 
     /**
+     * Returns a location.
+     * 
+     * @param longitude An optional longitudinal coordinate for a location (may be null)
+     * @param latitude An optional latitudinal coordinate for a location (may be null)
+     * @return a location
+     */
+    
+    public static Location of( final Float longitude, final Float latitude )
+    {
+        return Location.of( null, null, longitude, latitude, null );
+    }
+
+    /**
+     * Returns a location.
+     * 
+     * @param locationName An optional name for a location (may be null)
+     * @return a location
+     */
+    
+    public static Location of( final String locationName )
+    {
+        return Location.of( null, locationName, null, null, null );
+    }
+
+    /**
+     * Returns a location
+     * @param vectorIdentifier An optional vector identifier for a location (may be null)
+     * @return A location
+     */
+    public static Location of( final Long vectorIdentifier )
+    {
+        return Location.of( vectorIdentifier, null, null, null, null );
+    }
+    
+    /**
      * Optional Identifier for the location in Vector space
      *
      * @return The identifier for the location in Vector space
@@ -261,7 +296,6 @@ public class Location
                              this.longitude,
                              this.latitude );
     }
-
 
     /**
      * Hidden constructor.

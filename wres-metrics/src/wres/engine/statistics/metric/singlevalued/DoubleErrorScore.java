@@ -13,7 +13,6 @@ import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.DoubleErrorFunction;
 import wres.engine.statistics.metric.MetricCalculationException;
-import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.OrdinaryScore;
 
 /**
@@ -29,35 +28,7 @@ public abstract class DoubleErrorScore<S extends SingleValuedPairs> extends Ordi
      * The error function.
      */
 
-    DoubleErrorFunction f;
-
-    /**
-     * A {@link MetricBuilder} to build the metric.
-     */
-
-    public abstract static class DoubleErrorScoreBuilder<S extends SingleValuedPairs>
-            implements MetricBuilder<S, DoubleScoreOutput>
-    {
-
-        /**
-         * The error function associated with the score.
-         */
-        private DoubleErrorFunction f;
-
-        /**
-         * Sets the error function.
-         * 
-         * @param f the error function
-         * @return the metric builder
-         */
-
-        public DoubleErrorScoreBuilder<S> setErrorFunction( final DoubleErrorFunction f )
-        {
-            this.f = f;
-            return this;
-        }
-
-    }
+    DoubleErrorFunction function;
 
     @Override
     public DoubleScoreOutput apply( final S s )
@@ -66,7 +37,7 @@ public abstract class DoubleErrorScore<S extends SingleValuedPairs> extends Ordi
         {
             throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
         }
-        if ( Objects.isNull( f ) )
+        if ( Objects.isNull( function ) )
         {
             throw new MetricCalculationException( "Override or specify a non-null error function for the '" + toString()
                                                   + "'." );
@@ -83,9 +54,9 @@ public abstract class DoubleErrorScore<S extends SingleValuedPairs> extends Ordi
         double doubleScore = MissingValues.MISSING_DOUBLE;
         if ( !s.getRawData().isEmpty() )
         {
-            doubleScore = s.getRawData().stream().mapToDouble( f ).average().getAsDouble();
+            doubleScore = s.getRawData().stream().mapToDouble( function ).average().getAsDouble();
         }
-        return DataFactory.ofDoubleScoreOutput( doubleScore, metOut );
+        return DoubleScoreOutput.of( doubleScore, metOut );
     }
 
     @Override
@@ -101,17 +72,30 @@ public abstract class DoubleErrorScore<S extends SingleValuedPairs> extends Ordi
     }
 
     /**
-     * Hidden constructor.
-     * 
-     * @param builder the builder
-     * @throws MetricParameterException if one or more parameters is invalid 
+     * Hidden constructor for a delegated implementation, i.e. where the concrete implementation overrides 
+     * {@link #apply(SingleValuedPairs)}.
      */
 
-    protected DoubleErrorScore( final DoubleErrorScoreBuilder<S> builder ) throws MetricParameterException
+    protected DoubleErrorScore()
     {
         super();
+        
+        this.function = null;
+    }
+    
+    /**
+     * Hidden constructor. If the input function is null, the concrete implementation must override 
+     * {@link #apply(SingleValuedPairs)}.
+     * 
+     * @param function the error function
+     */
+
+    protected DoubleErrorScore( DoubleErrorFunction function )
+    {
+        super();
+        
         // Function can be null if calculation is delegated
-        this.f = builder.f;
+        this.function = function;
     }
 
 }

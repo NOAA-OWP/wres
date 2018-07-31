@@ -40,13 +40,14 @@ import wres.config.generated.TimeSeriesMetricConfigName;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
-import wres.datamodel.metadata.Dimension;
-import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.OneOrTwoDoubles;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdGroup;
+import wres.datamodel.thresholds.ThresholdsByMetric.ThresholdsByMetricBuilder;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 
 /**
@@ -213,16 +214,16 @@ public final class MetricConfigHelperTest
         Map<MetricConstants, Set<OneOrTwoThresholds>> expected = new HashMap<>();
         Set<OneOrTwoThresholds> atomicThresholds = new HashSet<>();
 
-        atomicThresholds.add( OneOrTwoThresholds.of( DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
+        atomicThresholds.add( OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                                               Operator.GREATER,
                                                                               ThresholdConstants.ThresholdDataType.LEFT_AND_RIGHT ) ) );
-        atomicThresholds.add( OneOrTwoThresholds.of( DataFactory.ofProbabilityThreshold( DataFactory.ofOneOrTwoDoubles( 0.1 ),
+        atomicThresholds.add( OneOrTwoThresholds.of( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.1 ),
                                                                                          Operator.GREATER,
                                                                                          ThresholdConstants.ThresholdDataType.LEFT ) ) );
-        atomicThresholds.add( OneOrTwoThresholds.of( DataFactory.ofProbabilityThreshold( DataFactory.ofOneOrTwoDoubles( 0.2 ),
+        atomicThresholds.add( OneOrTwoThresholds.of( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.2 ),
                                                                                          Operator.GREATER,
                                                                                          ThresholdConstants.ThresholdDataType.LEFT ) ) );
-        atomicThresholds.add( OneOrTwoThresholds.of( DataFactory.ofProbabilityThreshold( DataFactory.ofOneOrTwoDoubles( 0.3 ),
+        atomicThresholds.add( OneOrTwoThresholds.of( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.3 ),
                                                                                          Operator.GREATER,
                                                                                          ThresholdConstants.ThresholdDataType.LEFT ) ) );
 
@@ -288,7 +289,7 @@ public final class MetricConfigHelperTest
     {
 
         // Obtain the threshold dimension
-        Dimension dimension = MetadataFactory.getDimension( "CMS" );
+        MeasurementUnit dimension = MeasurementUnit.of( "CMS" );
 
         // Mock some metrics
         List<MetricConfig> metrics = new ArrayList<>();
@@ -323,14 +324,14 @@ public final class MetricConfigHelperTest
         // Mock external thresholds
         Map<MetricConstants, Set<Threshold>> mockExternal = new HashMap<>();
         Set<Threshold> atomicExternal = new HashSet<>();
-        atomicExternal.add( DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( 0.3 ),
+        atomicExternal.add( Threshold.of( OneOrTwoDoubles.of( 0.3 ),
                                                      Operator.GREATER,
                                                      ThresholdConstants.ThresholdDataType.LEFT,
                                                      dimension ) );
         mockExternal.put( MetricConstants.BIAS_FRACTION, atomicExternal );
 
         ThresholdsByMetric externalThresholds =
-                DataFactory.ofThresholdsByMetricBuilder().addThresholds( mockExternal, ThresholdGroup.VALUE ).build();
+                new ThresholdsByMetricBuilder().addThresholds( mockExternal, ThresholdGroup.VALUE ).build();
 
         // Compute combined thresholds
         ThresholdsByMetric actualByMetric = MetricConfigHelper.getThresholdsFromConfig( mockedConfig,
@@ -342,18 +343,18 @@ public final class MetricConfigHelperTest
         Map<MetricConstants, Set<OneOrTwoThresholds>> expected = new HashMap<>();
         Set<OneOrTwoThresholds> atomicThresholds = new HashSet<>();
 
-        atomicThresholds.add( OneOrTwoThresholds.of( DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
+        atomicThresholds.add( OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                                               Operator.GREATER,
                                                                               ThresholdConstants.ThresholdDataType.LEFT_AND_RIGHT ) ) );
-        atomicThresholds.add( OneOrTwoThresholds.of( DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( 0.1 ),
+        atomicThresholds.add( OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 0.1 ),
                                                                               Operator.GREATER,
                                                                               ThresholdConstants.ThresholdDataType.LEFT,
                                                                               dimension ) ) );
-        atomicThresholds.add( OneOrTwoThresholds.of( DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( 0.2 ),
+        atomicThresholds.add( OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 0.2 ),
                                                                               Operator.GREATER,
                                                                               ThresholdConstants.ThresholdDataType.LEFT,
                                                                               dimension ) ) );
-        atomicThresholds.add( OneOrTwoThresholds.of( DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( 0.3 ),
+        atomicThresholds.add( OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 0.3 ),
                                                                               Operator.GREATER,
                                                                               ThresholdConstants.ThresholdDataType.LEFT,
                                                                               dimension ) ) );
@@ -388,7 +389,7 @@ public final class MetricConfigHelperTest
                                                             Operator.class,
                                                             ThresholdConstants.ThresholdDataType.class,
                                                             boolean.class,
-                                                            Dimension.class );
+                                                            MeasurementUnit.class );
         method.setAccessible( true );
 
         // Test with probability thresholds
@@ -400,10 +401,10 @@ public final class MetricConfigHelperTest
                                                                                null } );
 
         Set<Threshold> expected = new HashSet<>();
-        expected.add( DataFactory.ofProbabilityThreshold( DataFactory.ofOneOrTwoDoubles( 0.1, 0.2 ),
+        expected.add( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.1, 0.2 ),
                                                           Operator.BETWEEN,
                                                           ThresholdConstants.ThresholdDataType.LEFT ) );
-        expected.add( DataFactory.ofProbabilityThreshold( DataFactory.ofOneOrTwoDoubles( 0.2, 0.3 ),
+        expected.add( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.2, 0.3 ),
                                                           Operator.BETWEEN,
                                                           ThresholdConstants.ThresholdDataType.LEFT ) );
         assertTrue( actual.equals( expected ) );
@@ -418,10 +419,10 @@ public final class MetricConfigHelperTest
                                                                                     null } );
 
         Set<Threshold> expectedValue = new HashSet<>();
-        expectedValue.add( DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( 0.1, 0.2 ),
+        expectedValue.add( Threshold.of( OneOrTwoDoubles.of( 0.1, 0.2 ),
                                                     Operator.BETWEEN,
                                                     ThresholdConstants.ThresholdDataType.LEFT ) );
-        expectedValue.add( DataFactory.ofThreshold( DataFactory.ofOneOrTwoDoubles( 0.2, 0.3 ),
+        expectedValue.add( Threshold.of( OneOrTwoDoubles.of( 0.2, 0.3 ),
                                                     Operator.BETWEEN,
                                                     ThresholdConstants.ThresholdDataType.LEFT ) );
 
