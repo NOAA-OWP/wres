@@ -6,16 +6,10 @@ import java.io.StringReader;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.sql.Connection;
-import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.sql.Time;
-import java.sql.Timestamp;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -1061,52 +1055,6 @@ public final class Database {
 
         return result;
     }
-
-    /**
-     * Checks if the specified column is in the given result set
-     * @param resultSet The set of data retrieved from the database
-     * @param columnName The name of the column to check for
-     * @return Whether or not the column exists
-     * @throws SQLException when resultSet metadata cannot be retrieved
-     * @throws NullPointerException when any arg is null
-     */
-	public static boolean hasColumn(ResultSet resultSet, String columnName)
-            throws SQLException
-	{
-	    Objects.requireNonNull( resultSet );
-	    Objects.requireNonNull( columnName );
-
-		boolean columnExists = false;
-
-        try
-        {
-            // JDBC has a findColumn function that can do this, but it throws
-            // an exception if it isn't found. This means that an exception is
-            // thrown everytime it returns false. If you have thousands of
-            // calls and they all return false, you'll hit a massive slowdown
-            // due to exceptions. Instead, we perform a simple loop which will
-            // prevent that
-            int columnCount = resultSet.getMetaData().getColumnCount();
-            for ( int index = 1; index <= columnCount; ++index )
-            {
-                if ( resultSet.getMetaData()
-                              .getColumnLabel( index )
-                              .equals( columnName ) )
-                {
-                    columnExists = true;
-                    break;
-                }
-            }
-        }
-        catch ( SQLException e )
-        {
-            // We don't rethrow because it already answers the question;
-            // it just means we can't query the column.
-            LOGGER.debug( "A database result set could not be queried.", e );
-        }
-
-		return columnExists;
-	}
 
     /**
      * Populates the passed in collection with values of the indicated data type
