@@ -36,8 +36,7 @@ class SampleSize<S extends MetricInput<?>> extends OrdinaryScore<S, DoubleScoreO
         {
             throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
         }
-        return DataFactory.ofDoubleScoreOutput( s.getRawData().size(),
-                                               getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, null ) );
+        return DoubleScoreOutput.of( (double) s.getRawData().size(), getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, null ) );
     }
 
     @Override

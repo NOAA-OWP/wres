@@ -7,7 +7,6 @@ import java.time.Instant;
 
 import org.junit.Test;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 
 /**
@@ -26,9 +25,9 @@ public class MetricOutputMetadataTest
     @Test
     public void testEquals()
     {
-        TimeWindow firstWindow = DataFactory.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                           Instant.parse( "1986-01-01T00:00:00Z" ),
-                                                           ReferenceTime.ISSUE_TIME );
+        TimeWindow firstWindow = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                Instant.parse( "1986-01-01T00:00:00Z" ),
+                                                ReferenceTime.ISSUE_TIME );
         Location locationBase = MetadataFactory.getLocation( "DRRC3" );
         Metadata base = MetadataFactory.getMetadata( MetadataFactory.getDimension( "SOME_DIM" ),
                                                      MetadataFactory.getDatasetIdentifier( locationBase,
@@ -188,9 +187,9 @@ public class MetricOutputMetadataTest
     public void testHashCode()
     {
         // Equal
-        TimeWindow firstWindow = DataFactory.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                           Instant.parse( "1986-01-01T00:00:00Z" ),
-                                                           ReferenceTime.ISSUE_TIME );
+        TimeWindow firstWindow = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                Instant.parse( "1986-01-01T00:00:00Z" ),
+                                                ReferenceTime.ISSUE_TIME );
         Location baseLocation = MetadataFactory.getLocation( "DRRC3" );
         Metadata base = MetadataFactory.getMetadata( MetadataFactory.getDimension( "SOME_DIM" ),
                                                      MetadataFactory.getDatasetIdentifier( baseLocation,

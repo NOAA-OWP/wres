@@ -72,7 +72,7 @@ public final class FrequencyBiasTest
 
         //Check the results
         final DoubleScoreOutput actual = fb.apply( input );
-        final DoubleScoreOutput expected = DataFactory.ofDoubleScoreOutput( 1.1428571428571428, meta );
+        final DoubleScoreOutput expected = DoubleScoreOutput.of( 1.1428571428571428, meta );
         assertTrue( "Actual: " + actual.getData().doubleValue()
                     + ". Expected: "
                     + expected.getData().doubleValue()
@@ -89,7 +89,7 @@ public final class FrequencyBiasTest
     {
         // Generate empty data
         DichotomousPairs input =
-                DataFactory.ofDichotomousPairs( Arrays.asList(), MetadataFactory.getMetadata() );
+                DichotomousPairs.ofDichotomousPairs( Arrays.asList(), MetadataFactory.getMetadata() );
  
         DoubleScoreOutput actual = fb.apply( input );
 

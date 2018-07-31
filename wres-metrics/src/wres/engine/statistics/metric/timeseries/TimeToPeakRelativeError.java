@@ -104,7 +104,7 @@ public class TimeToPeakRelativeError extends TimingError
                                                                        in.getIdentifier(),
                                                                        in.getTimeWindow() );
 
-        return DataFactory.ofPairedOutput( returnMe, meta );
+        return PairedOutput.of( returnMe, meta );
     }
 
     @Override

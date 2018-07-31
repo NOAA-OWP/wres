@@ -86,7 +86,7 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<Ensemble
         crps[0] = FunctionFactory.finiteOrMissing().applyAsDouble( crps[0] / s.getRawData().size() );
         //Metadata
         final MetricOutputMetadata metOut = getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, null );
-        return DataFactory.ofDoubleScoreOutput( crps[0], metOut );
+        return DoubleScoreOutput.of( crps[0], metOut );
     }
 
     @Override

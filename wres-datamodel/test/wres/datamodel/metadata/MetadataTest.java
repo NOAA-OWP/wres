@@ -7,8 +7,6 @@ import java.time.Instant;
 
 import org.junit.Test;
 
-import wres.datamodel.DataFactory;
-
 /**
  * Tests the {@link Metadata}.
  * 
@@ -65,10 +63,10 @@ public class MetadataTest
             assertTrue( "Unexpected inequality between two metadata instances.", m1.equals( m2 ) );
         }
         // Add a time window
-        TimeWindow firstWindow = DataFactory.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
+        TimeWindow firstWindow = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                            Instant.parse( "1986-01-01T00:00:00Z" ),
                                                            ReferenceTime.VALID_TIME );
-        TimeWindow secondWindow = DataFactory.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
+        TimeWindow secondWindow = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                             Instant.parse( "1986-01-01T00:00:00Z" ),
                                                             ReferenceTime.VALID_TIME );
         Location l6 = MetadataFactory.getLocation( "DRRC3" );
@@ -82,7 +80,7 @@ public class MetadataTest
         assertTrue( "Unexpected inequality between two metadata instances.", m6.equals( m7 ) );
         assertTrue( "Unexpected inequality between two metadata instances.", m7.equals( m6 ) );
         assertFalse( "Unexpected equality between two metadata instances.", m3.equals( m6 ) );
-        TimeWindow thirdWindow = DataFactory.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
+        TimeWindow thirdWindow = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                            Instant.parse( "1986-01-01T00:00:00Z" ),
                                                            ReferenceTime.ISSUE_TIME );
         Location l8 = MetadataFactory.getLocation( "DRRC3" );
@@ -141,10 +139,10 @@ public class MetadataTest
         }
 
         // Add a time window
-        TimeWindow firstWindow = DataFactory.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
+        TimeWindow firstWindow = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                            Instant.parse( "1986-01-01T00:00:00Z" ),
                                                            ReferenceTime.VALID_TIME );
-        TimeWindow secondWindow = DataFactory.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
+        TimeWindow secondWindow = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                             Instant.parse( "1986-01-01T00:00:00Z" ),
                                                             ReferenceTime.VALID_TIME );
         Location l6 = MetadataFactory.getLocation( "DRRC3" );
@@ -158,7 +156,7 @@ public class MetadataTest
         assertTrue( "Unexpected inequality between two metadata hashcodes.", m6.hashCode() == m7.hashCode() );
         assertTrue( "Unexpected inequality between two metadata hashcodes.", m7.hashCode() == m6.hashCode() );
         assertFalse( "Unexpected equality between two metadata hashcodes.", m3.hashCode() == m6.hashCode() );
-        TimeWindow thirdWindow = DataFactory.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
+        TimeWindow thirdWindow = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                            Instant.parse( "1986-01-01T00:00:00Z" ),
                                                            ReferenceTime.ISSUE_TIME );
         Location l8 = MetadataFactory.getLocation( "DRRC3" );

@@ -10,7 +10,6 @@ import java.util.function.Consumer;
 
 import org.apache.commons.math3.util.Precision;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.MissingValues;
@@ -122,7 +121,7 @@ public class ReliabilityDiagram extends Diagram<DiscreteProbabilityPairs, MultiV
 
         MetricOutputMetadata metOut = getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, null );
 
-        return DataFactory.ofMultiVectorOutput( output, metOut );
+        return MultiVectorOutput.ofMultiVectorOutput( output, metOut );
     }
 
     @Override

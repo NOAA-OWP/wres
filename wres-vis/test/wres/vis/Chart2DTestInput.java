@@ -15,8 +15,6 @@ import ohd.hseb.charter.ChartEngineException;
 import ohd.hseb.charter.ChartPanelTools;
 import ohd.hseb.charter.ChartTools;
 import ohd.hseb.charter.datasource.XYChartDataSourceException;
-
-import wres.datamodel.DataFactory;
 import wres.datamodel.inputs.pairs.SingleValuedPair;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.Metadata;
@@ -37,7 +35,7 @@ public class Chart2DTestInput extends TestCase
 
         final Metadata meta = MetadataFactory.getMetadata(MetadataFactory.getDimension("CMS"),
                                                  MetadataFactory.getDatasetIdentifier(MetadataFactory.getLocation("DRRC2"), "SQIN", "HEFS"));
-        final SingleValuedPairs pairs = DataFactory.ofSingleValuedPairs(values, meta);
+        final SingleValuedPairs pairs = SingleValuedPairs.of(values, meta);
 
         //Construct the source from the pairs assigning it a data source order index of 0.
         //The order index indicates the order in which the different sources are rendered.
@@ -83,7 +81,7 @@ public class Chart2DTestInput extends TestCase
 
         final Metadata meta = MetadataFactory.getMetadata(MetadataFactory.getDimension("CMS"),
                                                  MetadataFactory.getDatasetIdentifier(MetadataFactory.getLocation("DRRC2"), "SQIN", "HEFS"));
-        final SingleValuedPairs pairs = DataFactory.ofSingleValuedPairs(values, meta);
+        final SingleValuedPairs pairs = SingleValuedPairs.of(values, meta);
 
         ChartEngine engine = ChartEngineFactory.buildSingleValuedPairsChartEngine( pairs, null, null );
 

@@ -74,6 +74,53 @@ public final class TimeWindow implements Comparable<TimeWindow>
     private final Duration latestLead;
 
     /**
+     * Constructs a {@link TimeWindow} where the {@link #earliestLead} and {@link #latestLead} are both 
+     * zero and the {@link #referenceTime} is {@link ReferenceTime#VALID_TIME}.
+     * 
+     * @param earliestTime the earliest time
+     * @param latestTime the latest time
+     * @return a time window
+     * @throws IllegalArgumentException if the latestTime is before (i.e. smaller than) the earliestTime
+     */
+
+    public static TimeWindow of( Instant earliestTime, Instant latestTime )
+    {
+        return new TimeWindow( earliestTime, latestTime, ReferenceTime.VALID_TIME, Duration.ZERO, Duration.ZERO );
+    }
+    
+    /**
+     * Constructs a {@link TimeWindow} where the {@link #earliestLead} and {@link #latestLead} are both zero.
+     * 
+     * @param earliestTime the earliest time
+     * @param latestTime the latest time
+     * @param referenceTime the reference time for the earliestTime and latestTime
+     * @return a time window
+     * @throws IllegalArgumentException if the latestTime is before (i.e. smaller than) the earliestTime
+     */
+
+    public static TimeWindow of( Instant earliestTime, Instant latestTime, ReferenceTime referenceTime )
+    {
+        return new TimeWindow( earliestTime, latestTime, referenceTime, Duration.ZERO, Duration.ZERO );
+    }
+    
+    /**
+     * Constructs a {@link TimeWindow} where the {@link #earliestLead} and {@link #latestLead} both 
+     * have the same value.
+     * 
+     * @param earliestTime the earliest time
+     * @param latestTime the latest time
+     * @param referenceTime the reference time for the earliestTime and latestTime
+     * @param lead the earliest and latest lead time
+     * @return a time window
+     * @throws IllegalArgumentException if the latestTime is before (i.e. smaller than) the earliestTime
+     */
+
+    public static TimeWindow of( Instant earliestTime, Instant latestTime, ReferenceTime referenceTime, Duration lead )
+    {
+        return new TimeWindow( earliestTime, latestTime, referenceTime, lead, lead );
+    }
+    
+    /**
      * Constructs a {@link TimeWindow}.
      * 
      * @param earliestTime the earliest time
@@ -93,38 +140,6 @@ public final class TimeWindow implements Comparable<TimeWindow>
                                  Duration latestLead )
     {
         return new TimeWindow( earliestTime, latestTime, referenceTime, earliestLead, latestLead );
-    }
-
-    /**
-     * Constructs a {@link TimeWindow} where the {@link #earliestLead} and {@link #latestLead} both 
-     * have the same value.
-     * 
-     * @param earliestTime the earliest time
-     * @param latestTime the latest time
-     * @param referenceTime the reference time for the earliestTime and latestTime
-     * @param lead the earliest and latest lead time
-     * @return a time window
-     * @throws IllegalArgumentException if the latestTime is before (i.e. smaller than) the earliestTime
-     */
-
-    public static TimeWindow of( Instant earliestTime, Instant latestTime, ReferenceTime referenceTime, Duration lead )
-    {
-        return new TimeWindow( earliestTime, latestTime, referenceTime, lead, lead );
-    }
-
-    /**
-     * Constructs a {@link TimeWindow} where the {@link #earliestLead} and {@link #latestLead} are both 
-     * zero and the {@link #referenceTime} is {@link ReferenceTime#VALID_TIME}.
-     * 
-     * @param earliestTime the earliest time
-     * @param latestTime the latest time
-     * @return a time window
-     * @throws IllegalArgumentException if the latestTime is before (i.e. smaller than) the earliestTime
-     */
-
-    public static TimeWindow of( Instant earliestTime, Instant latestTime )
-    {
-        return new TimeWindow( earliestTime, latestTime, ReferenceTime.VALID_TIME, Duration.ZERO, Duration.ZERO );
     }
 
     /**

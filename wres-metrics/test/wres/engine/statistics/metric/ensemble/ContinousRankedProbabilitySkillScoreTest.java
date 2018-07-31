@@ -71,7 +71,7 @@ public final class ContinousRankedProbabilitySkillScoreTest
         basePairs.add( EnsemblePair.of( 47, new double[] { 2, 54, 23, 54, 78 } ) );
         basePairs.add( EnsemblePair.of( 12.1, new double[] { 9, 18, 5, 6, 12 } ) );
         basePairs.add( EnsemblePair.of( 43, new double[] { 23, 12, 12, 39, 10 } ) );
-        EnsemblePairs input = DataFactory.ofEnsemblePairs( pairs,
+        EnsemblePairs input = EnsemblePairs.of( pairs,
                                                            basePairs,
                                                            MetadataFactory.getMetadata(),
                                                            MetadataFactory.getMetadata() );
@@ -85,7 +85,7 @@ public final class ContinousRankedProbabilitySkillScoreTest
                                                    MetricConstants.MAIN );
         //Check the results       
         DoubleScoreOutput actual = crpss.apply( input );
-        DoubleScoreOutput expected = DataFactory.ofDoubleScoreOutput( 0.0779168348809044, m1 );
+        DoubleScoreOutput expected = DoubleScoreOutput.of( 0.0779168348809044, m1 );
 
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
@@ -104,7 +104,7 @@ public final class ContinousRankedProbabilitySkillScoreTest
     {
         // Generate empty data
         EnsemblePairs input =
-                DataFactory.ofEnsemblePairs( Arrays.asList(),
+                EnsemblePairs.of( Arrays.asList(),
                                              Arrays.asList(),
                                              MetadataFactory.getMetadata(),
                                              MetadataFactory.getMetadata() );
@@ -229,7 +229,7 @@ public final class ContinousRankedProbabilitySkillScoreTest
         exception.expectMessage( "Specify a non-null baseline for the 'CONTINUOUS RANKED PROBABILITY SKILL SCORE'." );
         List<EnsemblePair> pairs = new ArrayList<>();
         pairs.add( EnsemblePair.of( 25.7, new double[] { 23, 43, 45, 23, 54 } ) );
-        EnsemblePairs input = DataFactory.ofEnsemblePairs( pairs, MetadataFactory.getMetadata() );
+        EnsemblePairs input = EnsemblePairs.of( pairs, MetadataFactory.getMetadata() );
         crpss.apply( input );
     }
 

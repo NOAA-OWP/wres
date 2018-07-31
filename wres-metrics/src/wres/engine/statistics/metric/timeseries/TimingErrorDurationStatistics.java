@@ -113,7 +113,7 @@ public class TimingErrorDurationStatistics implements Function<PairedOutput<Inst
                                                                        singleIdentifier,
                                                                        in.getIdentifier(),
                                                                        in.getTimeWindow() );
-        return DataFactory.ofDurationScoreOutput( returnMe, meta );
+        return DurationScoreOutput.of( returnMe, meta );
     }
 
     /**

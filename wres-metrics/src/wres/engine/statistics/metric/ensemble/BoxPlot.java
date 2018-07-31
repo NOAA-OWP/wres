@@ -89,11 +89,7 @@ abstract class BoxPlot
             boxes.add( getBox( next ) );
         }
         MetricOutputMetadata metOut = getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, null );
-        return DataFactory.ofBoxPlotOutput( boxes,
-                                            probabilities,
-                                            metOut,
-                                            getDomainAxisDimension(),
-                                            getRangeAxisDimension() );
+        return BoxPlotOutput.of( boxes, probabilities, metOut, getDomainAxisDimension(), getRangeAxisDimension() );
     }
 
     @Override

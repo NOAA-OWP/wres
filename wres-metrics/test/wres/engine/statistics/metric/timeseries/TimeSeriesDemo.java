@@ -7,7 +7,6 @@ import java.util.List;
 
 import org.junit.Test;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.Slicer;
 import wres.datamodel.inputs.pairs.EnsemblePair;
 import wres.datamodel.inputs.pairs.SingleValuedPair;
@@ -39,8 +38,7 @@ public class TimeSeriesDemo
         boolean printOutput = false;
 
         //Build an immutable regular time-series of single-valued pairs
-        TimeSeriesOfSingleValuedPairsBuilder builder =
-                DataFactory.ofTimeSeriesOfSingleValuedPairsBuilder();
+        TimeSeriesOfSingleValuedPairsBuilder builder = new TimeSeriesOfSingleValuedPairsBuilder();
         //Create a regular time-series with an issue date/time, a series of paired values, and a timestep
         Instant firstId = Instant.parse( "1985-01-01T00:00:00Z" );
         List<Event<SingleValuedPair>> firstValues = new ArrayList<>();
@@ -230,7 +228,7 @@ public class TimeSeriesDemo
         List<Event<EnsemblePair>> first = new ArrayList<>();
         List<Event<EnsemblePair>> second = new ArrayList<>();
         List<Event<EnsemblePair>> third = new ArrayList<>();
-        TimeSeriesOfEnsemblePairsBuilder b = DataFactory.ofTimeSeriesOfEnsemblePairsBuilder();
+        TimeSeriesOfEnsemblePairsBuilder b = new TimeSeriesOfEnsemblePairsBuilder();
 
         Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
         first.add( Event.of( Instant.parse( "1985-01-02T00:00:00Z" ),

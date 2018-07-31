@@ -8,7 +8,6 @@ import java.util.Arrays;
 
 import org.junit.Test;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataException;
@@ -32,25 +31,25 @@ public final class MetadataFactoryTest
         Location l1 = MetadataFactory.getLocation( "DRRC2" );
         Metadata m1 = MetadataFactory.getMetadata( MetadataFactory.getDimension(),
                                            MetadataFactory.getDatasetIdentifier( l1, "SQIN", "HEFS" ),
-                                           DataFactory.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                           TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                                  Instant.parse( "1985-12-31T23:59:59Z" ),
                                                                  ReferenceTime.ISSUE_TIME ) );
         Location l2 = MetadataFactory.getLocation( "DRRC2" );
         Metadata m2 = MetadataFactory.getMetadata( MetadataFactory.getDimension(),
                                            MetadataFactory.getDatasetIdentifier( l2, "SQIN", "HEFS" ),
-                                           DataFactory.ofTimeWindow( Instant.parse( "1986-01-01T00:00:00Z" ),
+                                           TimeWindow.of( Instant.parse( "1986-01-01T00:00:00Z" ),
                                                                  Instant.parse( "1986-12-31T23:59:59Z" ),
                                                                  ReferenceTime.ISSUE_TIME ) );
         Location l3 = MetadataFactory.getLocation( "DRRC2" );
         Metadata m3 = MetadataFactory.getMetadata( MetadataFactory.getDimension(),
                                            MetadataFactory.getDatasetIdentifier( l3, "SQIN", "HEFS" ),
-                                           DataFactory.ofTimeWindow( Instant.parse( "1987-01-01T00:00:00Z" ),
+                                           TimeWindow.of( Instant.parse( "1987-01-01T00:00:00Z" ),
                                                                  Instant.parse( "1988-01-01T00:00:00Z" ),
                                                                  ReferenceTime.ISSUE_TIME ) );
         Location benchmarkLocation = MetadataFactory.getLocation( "DRRC2" );
         Metadata benchmark = MetadataFactory.getMetadata( MetadataFactory.getDimension(),
                                                   MetadataFactory.getDatasetIdentifier( benchmarkLocation, "SQIN", "HEFS" ),
-                                                  DataFactory.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                          TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                                         Instant.parse( "1988-01-01T00:00:00Z" ),
                                                                         ReferenceTime.ISSUE_TIME ) );
         assertTrue( "Unexpected difference between union of metadata and benchmark.",

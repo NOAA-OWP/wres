@@ -54,15 +54,15 @@ public final class ScoreOutputTest
                                                                            MetadataFactory.getDatasetIdentifier( l3,
                                                                                                                  "B",
                                                                                                                  "C" ) );
-        final ScoreOutput<Double, DoubleScoreOutput> s = DataFactory.ofDoubleScoreOutput( 1.0, m1 );
-        final ScoreOutput<Double, DoubleScoreOutput> t = DataFactory.ofDoubleScoreOutput( 1.0, m1 );
+        final ScoreOutput<Double, DoubleScoreOutput> s = DoubleScoreOutput.of( 1.0, m1 );
+        final ScoreOutput<Double, DoubleScoreOutput> t = DoubleScoreOutput.of( 1.0, m1 );
         assertTrue( "Expected equal outputs.", s.equals( t ) );
         assertTrue( "Expected non-equal outputs.", !s.equals( null ) );
         assertTrue( "Expected non-equal outputs.", !s.equals( new Double( 1.0 ) ) );
-        assertTrue( "Expected non-equal outputs.", !s.equals( DataFactory.ofDoubleScoreOutput( 2.0, m1 ) ) );
-        assertTrue( "Expected non-equal outputs.", !s.equals( DataFactory.ofDoubleScoreOutput( 1.0, m2 ) ) );
-        final ScoreOutput<Double, DoubleScoreOutput> q = DataFactory.ofDoubleScoreOutput( 1.0, m2 );
-        final ScoreOutput<Double, DoubleScoreOutput> r = DataFactory.ofDoubleScoreOutput( 1.0, m3 );
+        assertTrue( "Expected non-equal outputs.", !s.equals( DoubleScoreOutput.of( 2.0, m1 ) ) );
+        assertTrue( "Expected non-equal outputs.", !s.equals( DoubleScoreOutput.of( 1.0, m2 ) ) );
+        final ScoreOutput<Double, DoubleScoreOutput> q = DoubleScoreOutput.of( 1.0, m2 );
+        final ScoreOutput<Double, DoubleScoreOutput> r = DoubleScoreOutput.of( 1.0, m3 );
         assertTrue( "Expected non-equal outputs.", !s.equals( q ) );
         assertTrue( "Expected equal outputs.", q.equals( q ) );
         assertTrue( "Expected non-equal outputs.", !q.equals( s ) );
@@ -85,8 +85,8 @@ public final class ScoreOutputTest
                                                                            MetadataFactory.getDatasetIdentifier( l1,
                                                                                                                  "B",
                                                                                                                  "C" ) );
-        final ScoreOutput<Double, DoubleScoreOutput> s = DataFactory.ofDoubleScoreOutput( 1.0, m1 );
-        final ScoreOutput<Double, DoubleScoreOutput> t = DataFactory.ofDoubleScoreOutput( 1.0, m1 );
+        final ScoreOutput<Double, DoubleScoreOutput> s = DoubleScoreOutput.of( 1.0, m1 );
+        final ScoreOutput<Double, DoubleScoreOutput> t = DoubleScoreOutput.of( 1.0, m1 );
         assertTrue( "Expected equal string representations.", s.toString().equals( t.toString() ) );
     }
 
@@ -115,8 +115,8 @@ public final class ScoreOutputTest
                                                                            MetadataFactory.getDatasetIdentifier( l2,
                                                                                                                  "B",
                                                                                                                  "C" ) );
-        final ScoreOutput<Double, DoubleScoreOutput> q = DataFactory.ofDoubleScoreOutput( 1.0, m1 );
-        final ScoreOutput<Double, DoubleScoreOutput> r = DataFactory.ofDoubleScoreOutput( 1.0, m2 );
+        final ScoreOutput<Double, DoubleScoreOutput> q = DoubleScoreOutput.of( 1.0, m1 );
+        final ScoreOutput<Double, DoubleScoreOutput> r = DoubleScoreOutput.of( 1.0, m2 );
         assertTrue( "Unequal metadata.", !q.getMetadata().equals( r.getMetadata() ) );
     }
 
@@ -154,11 +154,11 @@ public final class ScoreOutputTest
                                                                            MetadataFactory.getDatasetIdentifier( l3,
                                                                                                                  "B",
                                                                                                                  "C" ) );
-        final ScoreOutput<Double, DoubleScoreOutput> q = DataFactory.ofDoubleScoreOutput( 1.0, m1 );
-        final ScoreOutput<Double, DoubleScoreOutput> r = DataFactory.ofDoubleScoreOutput( 1.0, m2 );
+        final ScoreOutput<Double, DoubleScoreOutput> q = DoubleScoreOutput.of( 1.0, m1 );
+        final ScoreOutput<Double, DoubleScoreOutput> r = DoubleScoreOutput.of( 1.0, m2 );
         assertTrue( "Expected equal hash codes.", q.hashCode() == r.hashCode() );
         assertTrue( "Expected unequal hash codes.",
-                    q.hashCode() != DataFactory.ofDoubleScoreOutput( 1.0, m3 ).hashCode() );
+                    q.hashCode() != DoubleScoreOutput.of( 1.0, m3 ).hashCode() );
     }
 
 }

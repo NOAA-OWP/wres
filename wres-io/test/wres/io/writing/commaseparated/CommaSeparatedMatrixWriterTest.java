@@ -36,6 +36,7 @@ import wres.datamodel.outputs.MetricOutputAccessException;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMapByMetric;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
+import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 
@@ -102,7 +103,7 @@ public class CommaSeparatedMatrixWriterTest extends CommaSeparatedWriterTest
         // Fake output wrapper.
         MetricOutputMapByMetric<MatrixOutput> fakeOutputData =
                 DataFactory.ofMetricOutputMapByMetric( Collections.singletonMap( MetricConstants.CONTINGENCY_TABLE,
-                                                                                 DataFactory.ofMatrixOutput( fakeOutputs,
+                                                                                 MatrixOutput.of( fakeOutputs,
                                                                                                              Arrays.asList( MetricDimension.TRUE_POSITIVES,
                                                                                                                             MetricDimension.FALSE_POSITIVES,
                                                                                                                             MetricDimension.FALSE_NEGATIVES,
@@ -116,7 +117,7 @@ public class CommaSeparatedMatrixWriterTest extends CommaSeparatedWriterTest
         // Fake lead time and threshold
         Pair<TimeWindow, OneOrTwoThresholds> mapKeyByLeadThreshold =
                 Pair.of( timeOne,
-                         OneOrTwoThresholds.of( DataFactory.ofThreshold( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                         OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                                          Operator.GREATER,
                                                                          ThresholdDataType.LEFT ) ) );
 

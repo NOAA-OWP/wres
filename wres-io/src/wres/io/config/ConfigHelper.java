@@ -63,7 +63,6 @@ import wres.config.generated.ProjectConfig.Outputs;
 import wres.config.generated.ThresholdFormat;
 import wres.config.generated.ThresholdsConfig;
 import wres.config.generated.TimeScaleConfig;
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.metadata.Dimension;
 import wres.datamodel.metadata.MetadataFactory;
@@ -1679,7 +1678,7 @@ public class ConfigHelper
             // Add the thresholds for each feature
             for ( Entry<FeaturePlus, Set<Threshold>> nextEntry : read.entrySet() )
             {
-                ThresholdsByMetricBuilder builder = DataFactory.ofThresholdsByMetricBuilder();
+                ThresholdsByMetricBuilder builder = new ThresholdsByMetricBuilder();
                 Map<MetricConstants, Set<Threshold>> thresholds = new EnumMap<>( MetricConstants.class );
 
                 // Add the thresholds for each metric in the group

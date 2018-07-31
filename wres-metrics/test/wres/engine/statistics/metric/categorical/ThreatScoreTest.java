@@ -74,7 +74,7 @@ public final class ThreatScoreTest
 
         //Check the results
         final DoubleScoreOutput actual = ts.apply( input );
-        final DoubleScoreOutput expected = DataFactory.ofDoubleScoreOutput( 0.5734265734265734, meta );
+        final DoubleScoreOutput expected = DoubleScoreOutput.of( 0.5734265734265734, meta );
         assertTrue( "Actual: " + actual.getData().doubleValue()
                     + ". Expected: "
                     + expected.getData().doubleValue()
@@ -91,7 +91,7 @@ public final class ThreatScoreTest
     {
         // Generate empty data
         DichotomousPairs input =
-                DataFactory.ofDichotomousPairs( Arrays.asList(), MetadataFactory.getMetadata() );
+                DichotomousPairs.ofDichotomousPairs( Arrays.asList(), MetadataFactory.getMetadata() );
 
         DoubleScoreOutput actual = ts.apply( input );
 

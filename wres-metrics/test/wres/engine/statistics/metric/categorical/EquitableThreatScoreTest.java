@@ -74,7 +74,7 @@ public final class EquitableThreatScoreTest
 
         //Check the results
         final DoubleScoreOutput actual = ets.apply( input );
-        final DoubleScoreOutput expected = DataFactory.ofDoubleScoreOutput( 0.43768152544513195, meta );
+        final DoubleScoreOutput expected = DoubleScoreOutput.of( 0.43768152544513195, meta );
         assertTrue( "Actual: " + actual.getData().doubleValue()
                     + ". Expected: "
                     + expected.getData().doubleValue()
@@ -91,7 +91,7 @@ public final class EquitableThreatScoreTest
     {
         // Generate empty data
         DichotomousPairs input =
-                DataFactory.ofDichotomousPairs( Arrays.asList(), MetadataFactory.getMetadata() );
+                DichotomousPairs.ofDichotomousPairs( Arrays.asList(), MetadataFactory.getMetadata() );
 
         DoubleScoreOutput actual = ets.apply( input );
 

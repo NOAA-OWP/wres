@@ -14,7 +14,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
@@ -72,7 +71,7 @@ public final class CollectableTaskTest
                     {
                         final double[][] returnMe =
                                 new double[][] { { 1.0, 1.0 }, { 1.0, 1.0 } };
-                        return DataFactory.ofMatrixOutput( returnMe, m1 );
+                        return MatrixOutput.of( returnMe, m1 );
                     }
                 } );
 

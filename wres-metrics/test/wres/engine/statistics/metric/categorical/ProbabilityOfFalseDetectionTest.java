@@ -74,7 +74,7 @@ public final class ProbabilityOfFalseDetectionTest
 
         //Check the results
         final DoubleScoreOutput actual = pofd.apply( input );
-        final DoubleScoreOutput expected = DataFactory.ofDoubleScoreOutput( 0.14615384615384616, meta );
+        final DoubleScoreOutput expected = DoubleScoreOutput.of( 0.14615384615384616, meta );
         assertTrue( "Actual: " + actual.getData().doubleValue()
                     + ". Expected: "
                     + expected.getData().doubleValue()
@@ -91,7 +91,7 @@ public final class ProbabilityOfFalseDetectionTest
     {
         // Generate empty data
         DichotomousPairs input =
-                DataFactory.ofDichotomousPairs( Arrays.asList(), MetadataFactory.getMetadata() );
+                DichotomousPairs.ofDichotomousPairs( Arrays.asList(), MetadataFactory.getMetadata() );
 
         DoubleScoreOutput actual = pofd.apply( input );
 

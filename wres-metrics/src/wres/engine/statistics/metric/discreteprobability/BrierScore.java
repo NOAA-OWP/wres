@@ -58,7 +58,7 @@ public class BrierScore extends DecomposableScore<DiscreteProbabilityPairs>
 
         MetricOutputMetadata metOut = getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, null );
 
-        return DataFactory.ofDoubleScoreOutput( mse.apply( Slicer.toSingleValuedPairs( s ) ).getData(), metOut );
+        return DoubleScoreOutput.of( mse.apply( Slicer.toSingleValuedPairs( s ) ).getData(), metOut );
     }
 
     @Override

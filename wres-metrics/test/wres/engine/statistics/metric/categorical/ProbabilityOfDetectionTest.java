@@ -74,7 +74,7 @@ public final class ProbabilityOfDetectionTest
 
         //Check the results
         final DoubleScoreOutput actual = pod.apply( input );
-        final DoubleScoreOutput expected = DataFactory.ofDoubleScoreOutput( 0.780952380952381, meta );
+        final DoubleScoreOutput expected = DoubleScoreOutput.of( 0.780952380952381, meta );
         assertTrue( "Actual: " + actual.getData().doubleValue()
                     + ". Expected: "
                     + expected.getData().doubleValue()
@@ -91,7 +91,7 @@ public final class ProbabilityOfDetectionTest
     {
         // Generate empty data
         DichotomousPairs input =
-                DataFactory.ofDichotomousPairs( Arrays.asList(), MetadataFactory.getMetadata() );
+                DichotomousPairs.ofDichotomousPairs( Arrays.asList(), MetadataFactory.getMetadata() );
 
         DoubleScoreOutput actual = pod.apply( input );
 

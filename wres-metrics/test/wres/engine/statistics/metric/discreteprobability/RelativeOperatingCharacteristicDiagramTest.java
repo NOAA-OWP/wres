@@ -11,7 +11,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.inputs.MetricInputException;
@@ -79,7 +78,7 @@ public final class RelativeOperatingCharacteristicDiagramTest
         Map<MetricDimension, double[]> output = new HashMap<>();
         output.put( MetricDimension.PROBABILITY_OF_DETECTION, expectedPOD );
         output.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, expectedPOFD );
-        final MultiVectorOutput expected = DataFactory.ofMultiVectorOutput( output, m1 );
+        final MultiVectorOutput expected = MultiVectorOutput.ofMultiVectorOutput( output, m1 );
         assertTrue( "Difference between actual and expected ROC.", actual.equals( expected ) );
     }
 
@@ -93,7 +92,7 @@ public final class RelativeOperatingCharacteristicDiagramTest
     {
         // Generate empty data
         DiscreteProbabilityPairs input =
-                DataFactory.ofDiscreteProbabilityPairs( Arrays.asList(), MetadataFactory.getMetadata() );
+                DiscreteProbabilityPairs.of( Arrays.asList(), MetadataFactory.getMetadata() );
 
         MultiVectorOutput actual = roc.apply( input );
 

@@ -41,7 +41,7 @@ public class FrequencyBias extends ContingencyTableScore<DichotomousPairs>
         final double[][] cm = v.getData().getDoubles();
         final double score =
                 FunctionFactory.finiteOrMissing().applyAsDouble( ( cm[0][0] + cm[0][1] ) / ( cm[0][0] + cm[1][0] ) );
-        return DataFactory.ofDoubleScoreOutput( score, getMetadata( output ) );
+        return DoubleScoreOutput.of( score, getMetadata( output ) );
     }
 
     @Override

@@ -13,9 +13,13 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
 import wres.datamodel.inputs.pairs.DichotomousPair;
+import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPair;
+import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.inputs.pairs.EnsemblePair;
+import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.SingleValuedPair;
+import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.Metadata;
@@ -52,7 +56,7 @@ public final class DataFactoryTest
                                                          MetadataFactory.getDatasetIdentifier( l, "SQIN", "HEFS" ) );
         final List<DichotomousPair> input = new ArrayList<>();
         input.add( DichotomousPair.of( true, false ) );
-        assertNotNull( DataFactory.ofDichotomousPairs( input, m1 ) );
+        assertNotNull( DichotomousPairs.ofDichotomousPairs( input, m1 ) );
 
         final List<DiscreteProbabilityPair> dInput = new ArrayList<>();
         dInput.add( DiscreteProbabilityPair.of( 0.0, 1.0 ) );
@@ -62,19 +66,19 @@ public final class DataFactoryTest
         final Location l3 = MetadataFactory.getLocation( "DRRC2" );
         final Metadata m3 = MetadataFactory.getMetadata( MetadataFactory.getDimension(),
                                                          MetadataFactory.getDatasetIdentifier( l3, "SQIN", "ESP" ) );
-        assertNotNull( DataFactory.ofDiscreteProbabilityPairs( dInput, m2 ) );
-        assertNotNull( DataFactory.ofDiscreteProbabilityPairs( dInput, dInput, m2, m3, null ) );
+        assertNotNull( DiscreteProbabilityPairs.of( dInput, m2 ) );
+        assertNotNull( DiscreteProbabilityPairs.of( dInput, dInput, m2, m3, null ) );
 
         final List<SingleValuedPair> dInputSingleValued = new ArrayList<>();
         dInputSingleValued.add( SingleValuedPair.of( 0.0, 1.0 ) );
 
-        assertNotNull( DataFactory.ofSingleValuedPairs( dInputSingleValued, m3 ) );
-        assertNotNull( DataFactory.ofSingleValuedPairs( dInputSingleValued, dInputSingleValued, m2, m3, null ) );
+        assertNotNull( SingleValuedPairs.of( dInputSingleValued, m3 ) );
+        assertNotNull( SingleValuedPairs.of( dInputSingleValued, dInputSingleValued, m2, m3, null ) );
 
         final List<EnsemblePair> eInput = new ArrayList<>();
         eInput.add( EnsemblePair.of( 0.0, new double[] { 1.0, 2.0 } ) );
-        assertNotNull( DataFactory.ofEnsemblePairs( eInput, m3 ) );
-        assertNotNull( DataFactory.ofEnsemblePairs( eInput, eInput, m2, m3, null ) );
+        assertNotNull( EnsemblePairs.of( eInput, m3 ) );
+        assertNotNull( EnsemblePairs.of( eInput, eInput, m2, m3, null ) );
     }
 
     @Test
@@ -213,56 +217,56 @@ public final class DataFactoryTest
     public void compareDefaultMapBiKeyTest()
     {
         //Test equality
-        Pair<TimeWindow, Threshold> first = Pair.of( DataFactory.ofTimeWindow( Instant.MIN,
-                                                                               Instant.MAX,
-                                                                               ReferenceTime.ISSUE_TIME ),
-                                                     DataFactory.ofThreshold( OneOrTwoDoubles.of( 1.0 ),
+        Pair<TimeWindow, Threshold> first = Pair.of( TimeWindow.of( Instant.MIN,
+                                                                    Instant.MAX,
+                                                                    ReferenceTime.ISSUE_TIME ),
+                                                     Threshold.of( OneOrTwoDoubles.of( 1.0 ),
                                                                               Operator.GREATER,
                                                                               ThresholdDataType.LEFT ) );
-        Pair<TimeWindow, Threshold> second = Pair.of( DataFactory.ofTimeWindow( Instant.MIN,
-                                                                                Instant.MAX,
-                                                                                ReferenceTime.ISSUE_TIME ),
-                                                      DataFactory.ofThreshold( OneOrTwoDoubles.of( 1.0 ),
+        Pair<TimeWindow, Threshold> second = Pair.of( TimeWindow.of( Instant.MIN,
+                                                                     Instant.MAX,
+                                                                     ReferenceTime.ISSUE_TIME ),
+                                                      Threshold.of( OneOrTwoDoubles.of( 1.0 ),
                                                                                Operator.GREATER,
                                                                                ThresholdDataType.LEFT ) );
         assertTrue( "Expected equality.",
                     first.compareTo( second ) == 0 && second.compareTo( first ) == 0 && first.equals( second ) );
         //Test inequality and anticommutativity 
         //Earliest date
-        Pair<TimeWindow, Threshold> third = Pair.of( DataFactory.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                                               Instant.MAX,
-                                                                               ReferenceTime.ISSUE_TIME ),
-                                                     DataFactory.ofThreshold( OneOrTwoDoubles.of( 1.0 ),
+        Pair<TimeWindow, Threshold> third = Pair.of( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                                    Instant.MAX,
+                                                                    ReferenceTime.ISSUE_TIME ),
+                                                     Threshold.of( OneOrTwoDoubles.of( 1.0 ),
                                                                               Operator.GREATER,
                                                                               ThresholdDataType.LEFT ) );
         assertTrue( "Expected greater than.", third.compareTo( first ) > 0 );
         assertTrue( "Expected anticommutativity.",
                     Math.abs( first.compareTo( third ) ) == Math.abs( third.compareTo( first ) ) );
         //Latest date
-        Pair<TimeWindow, Threshold> fourth = Pair.of( DataFactory.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                                                Instant.parse( "1986-01-01T00:00:00Z" ),
-                                                                                ReferenceTime.ISSUE_TIME ),
-                                                      DataFactory.ofThreshold( OneOrTwoDoubles.of( 1.0 ),
+        Pair<TimeWindow, Threshold> fourth = Pair.of( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                                     Instant.parse( "1986-01-01T00:00:00Z" ),
+                                                                     ReferenceTime.ISSUE_TIME ),
+                                                      Threshold.of( OneOrTwoDoubles.of( 1.0 ),
                                                                                Operator.GREATER,
                                                                                ThresholdDataType.LEFT ) );
         assertTrue( "Expected greater than.", third.compareTo( fourth ) > 0 );
         assertTrue( "Expected anticommutativity.",
                     Math.abs( third.compareTo( fourth ) ) == Math.abs( fourth.compareTo( third ) ) );
         //Reference time
-        Pair<TimeWindow, Threshold> fifth = Pair.of( DataFactory.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                                               Instant.parse( "1986-01-01T00:00:00Z" ),
-                                                                               ReferenceTime.VALID_TIME ),
-                                                     DataFactory.ofThreshold( OneOrTwoDoubles.of( 1.0 ),
+        Pair<TimeWindow, Threshold> fifth = Pair.of( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                                    Instant.parse( "1986-01-01T00:00:00Z" ),
+                                                                    ReferenceTime.VALID_TIME ),
+                                                     Threshold.of( OneOrTwoDoubles.of( 1.0 ),
                                                                               Operator.GREATER,
                                                                               ThresholdDataType.LEFT ) );
         assertTrue( "Expected greater than.", fourth.compareTo( fifth ) > 0 );
         assertTrue( "Expected anticommutativity.",
                     Math.abs( fourth.compareTo( fifth ) ) == Math.abs( fifth.compareTo( fourth ) ) );
         //Threshold
-        Pair<TimeWindow, Threshold> sixth = Pair.of( DataFactory.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                                               Instant.parse( "1986-01-01T00:00:00Z" ),
-                                                                               ReferenceTime.VALID_TIME ),
-                                                     DataFactory.ofThreshold( OneOrTwoDoubles.of( 0.0 ),
+        Pair<TimeWindow, Threshold> sixth = Pair.of( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                                    Instant.parse( "1986-01-01T00:00:00Z" ),
+                                                                    ReferenceTime.VALID_TIME ),
+                                                     Threshold.of( OneOrTwoDoubles.of( 0.0 ),
                                                                               Operator.GREATER,
                                                                               ThresholdDataType.LEFT ) );
         assertTrue( "Expected greater than.", fifth.compareTo( sixth ) > 0 );
@@ -287,22 +291,22 @@ public final class DataFactoryTest
     public void equalsHashCodePairTest()
     {
         //Equality
-        Pair<TimeWindow, Threshold> zeroeth = Pair.of( DataFactory.ofTimeWindow( Instant.MIN,
-                                                                                 Instant.MAX,
-                                                                                 ReferenceTime.ISSUE_TIME ),
-                                                       DataFactory.ofThreshold( OneOrTwoDoubles.of( 1.0 ),
+        Pair<TimeWindow, Threshold> zeroeth = Pair.of( TimeWindow.of( Instant.MIN,
+                                                                      Instant.MAX,
+                                                                      ReferenceTime.ISSUE_TIME ),
+                                                       Threshold.of( OneOrTwoDoubles.of( 1.0 ),
                                                                                 Operator.GREATER,
                                                                                 ThresholdDataType.LEFT ) );
-        Pair<TimeWindow, Threshold> first = Pair.of( DataFactory.ofTimeWindow( Instant.MIN,
-                                                                               Instant.MAX,
-                                                                               ReferenceTime.ISSUE_TIME ),
-                                                     DataFactory.ofThreshold( OneOrTwoDoubles.of( 1.0 ),
+        Pair<TimeWindow, Threshold> first = Pair.of( TimeWindow.of( Instant.MIN,
+                                                                    Instant.MAX,
+                                                                    ReferenceTime.ISSUE_TIME ),
+                                                     Threshold.of( OneOrTwoDoubles.of( 1.0 ),
                                                                               Operator.GREATER,
                                                                               ThresholdDataType.LEFT ) );
-        Pair<TimeWindow, Threshold> second = Pair.of( DataFactory.ofTimeWindow( Instant.MIN,
-                                                                                Instant.MAX,
-                                                                                ReferenceTime.ISSUE_TIME ),
-                                                      DataFactory.ofThreshold( OneOrTwoDoubles.of( 1.0 ),
+        Pair<TimeWindow, Threshold> second = Pair.of( TimeWindow.of( Instant.MIN,
+                                                                     Instant.MAX,
+                                                                     ReferenceTime.ISSUE_TIME ),
+                                                      Threshold.of( OneOrTwoDoubles.of( 1.0 ),
                                                                                Operator.GREATER,
                                                                                ThresholdDataType.LEFT ) );
         //Reflexive
@@ -319,34 +323,34 @@ public final class DataFactoryTest
 
         //Test inequalities
         //Earliest date
-        Pair<TimeWindow, Threshold> third = Pair.of( DataFactory.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                                               Instant.MAX,
-                                                                               ReferenceTime.ISSUE_TIME ),
-                                                     DataFactory.ofThreshold( OneOrTwoDoubles.of( 1.0 ),
+        Pair<TimeWindow, Threshold> third = Pair.of( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                                    Instant.MAX,
+                                                                    ReferenceTime.ISSUE_TIME ),
+                                                     Threshold.of( OneOrTwoDoubles.of( 1.0 ),
                                                                               Operator.GREATER,
                                                                               ThresholdDataType.LEFT ) );
         assertTrue( "Expected inequality.", !third.equals( first ) );
         //Latest date
-        Pair<TimeWindow, Threshold> fourth = Pair.of( DataFactory.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                                                Instant.parse( "1986-01-01T00:00:00Z" ),
-                                                                                ReferenceTime.ISSUE_TIME ),
-                                                      DataFactory.ofThreshold( OneOrTwoDoubles.of( 1.0 ),
+        Pair<TimeWindow, Threshold> fourth = Pair.of( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                                     Instant.parse( "1986-01-01T00:00:00Z" ),
+                                                                     ReferenceTime.ISSUE_TIME ),
+                                                      Threshold.of( OneOrTwoDoubles.of( 1.0 ),
                                                                                Operator.GREATER,
                                                                                ThresholdDataType.LEFT ) );
         assertTrue( "Expected inequality.", !third.equals( fourth ) );
         //Reference time
-        Pair<TimeWindow, Threshold> fifth = Pair.of( DataFactory.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                                               Instant.parse( "1986-01-01T00:00:00Z" ),
-                                                                               ReferenceTime.VALID_TIME ),
-                                                     DataFactory.ofThreshold( OneOrTwoDoubles.of( 1.0 ),
+        Pair<TimeWindow, Threshold> fifth = Pair.of( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                                    Instant.parse( "1986-01-01T00:00:00Z" ),
+                                                                    ReferenceTime.VALID_TIME ),
+                                                     Threshold.of( OneOrTwoDoubles.of( 1.0 ),
                                                                               Operator.GREATER,
                                                                               ThresholdDataType.LEFT ) );
         assertTrue( "Expected inequality.", !fourth.equals( fifth ) );
         //Threshold
-        Pair<TimeWindow, Threshold> sixth = Pair.of( DataFactory.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                                               Instant.parse( "1986-01-01T00:00:00Z" ),
-                                                                               ReferenceTime.VALID_TIME ),
-                                                     DataFactory.ofThreshold( OneOrTwoDoubles.of( 0.0 ),
+        Pair<TimeWindow, Threshold> sixth = Pair.of( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                                    Instant.parse( "1986-01-01T00:00:00Z" ),
+                                                                    ReferenceTime.VALID_TIME ),
+                                                     Threshold.of( OneOrTwoDoubles.of( 0.0 ),
                                                                               Operator.GREATER,
                                                                               ThresholdDataType.LEFT ) );
         assertTrue( "Expected inequality.", !fifth.equals( sixth ) );
@@ -360,36 +364,36 @@ public final class DataFactoryTest
     public void compareDefaultMapKeyTest()
     {
         //Test equality
-        MapKey<TimeWindow> first = MapKey.of( DataFactory.ofTimeWindow( Instant.MIN,
-                                                                        Instant.MAX,
-                                                                        ReferenceTime.ISSUE_TIME ) );
-        MapKey<TimeWindow> second = MapKey.of( DataFactory.ofTimeWindow( Instant.MIN,
-                                                                         Instant.MAX,
-                                                                         ReferenceTime.ISSUE_TIME ) );
+        MapKey<TimeWindow> first = MapKey.of( TimeWindow.of( Instant.MIN,
+                                                             Instant.MAX,
+                                                             ReferenceTime.ISSUE_TIME ) );
+        MapKey<TimeWindow> second = MapKey.of( TimeWindow.of( Instant.MIN,
+                                                              Instant.MAX,
+                                                              ReferenceTime.ISSUE_TIME ) );
         assertTrue( "Expected equality.",
                     first.compareTo( second ) == 0 && second.compareTo( first ) == 0 && first.equals( second ) );
         //Test inequality and anticommutativity 
         //Earliest date
         MapKey<TimeWindow> third =
-                MapKey.of( DataFactory.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                     Instant.MAX,
-                                                     ReferenceTime.ISSUE_TIME ) );
+                MapKey.of( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                          Instant.MAX,
+                                          ReferenceTime.ISSUE_TIME ) );
         assertTrue( "Expected greater than.", third.compareTo( first ) > 0 );
         assertTrue( "Expected anticommutativity.",
                     Math.abs( first.compareTo( third ) ) == Math.abs( third.compareTo( first ) ) );
         //Latest date
         MapKey<TimeWindow> fourth =
-                MapKey.of( DataFactory.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                     Instant.parse( "1986-01-01T00:00:00Z" ),
-                                                     ReferenceTime.ISSUE_TIME ) );
+                MapKey.of( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                          Instant.parse( "1986-01-01T00:00:00Z" ),
+                                          ReferenceTime.ISSUE_TIME ) );
         assertTrue( "Expected greater than.", third.compareTo( fourth ) > 0 );
         assertTrue( "Expected anticommutativity.",
                     Math.abs( third.compareTo( fourth ) ) == Math.abs( fourth.compareTo( third ) ) );
         //Reference time
         MapKey<TimeWindow> fifth =
-                MapKey.of( DataFactory.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                     Instant.parse( "1986-01-01T00:00:00Z" ),
-                                                     ReferenceTime.VALID_TIME ) );
+                MapKey.of( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                          Instant.parse( "1986-01-01T00:00:00Z" ),
+                                          ReferenceTime.VALID_TIME ) );
         assertTrue( "Expected greater than.", fourth.compareTo( fifth ) > 0 );
         assertTrue( "Expected anticommutativity.",
                     Math.abs( fourth.compareTo( fifth ) ) == Math.abs( fifth.compareTo( fourth ) ) );
@@ -412,15 +416,15 @@ public final class DataFactoryTest
     public void equalsHashCodeDefaultMapKeyTest()
     {
         //Equality
-        MapKey<TimeWindow> zeroeth = MapKey.of( DataFactory.ofTimeWindow( Instant.MIN,
-                                                                          Instant.MAX,
-                                                                          ReferenceTime.ISSUE_TIME ) );
-        MapKey<TimeWindow> first = MapKey.of( DataFactory.ofTimeWindow( Instant.MIN,
-                                                                        Instant.MAX,
-                                                                        ReferenceTime.ISSUE_TIME ) );
-        MapKey<TimeWindow> second = MapKey.of( DataFactory.ofTimeWindow( Instant.MIN,
-                                                                         Instant.MAX,
-                                                                         ReferenceTime.ISSUE_TIME ) );
+        MapKey<TimeWindow> zeroeth = MapKey.of( TimeWindow.of( Instant.MIN,
+                                                               Instant.MAX,
+                                                               ReferenceTime.ISSUE_TIME ) );
+        MapKey<TimeWindow> first = MapKey.of( TimeWindow.of( Instant.MIN,
+                                                             Instant.MAX,
+                                                             ReferenceTime.ISSUE_TIME ) );
+        MapKey<TimeWindow> second = MapKey.of( TimeWindow.of( Instant.MIN,
+                                                              Instant.MAX,
+                                                              ReferenceTime.ISSUE_TIME ) );
         //Reflexive
         assertEquals( "Expected reflexive equality.", first, first );
         //Symmetric 
@@ -436,21 +440,21 @@ public final class DataFactoryTest
         //Test inequalities
         //Earliest date
         MapKey<TimeWindow> third =
-                MapKey.of( DataFactory.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                     Instant.MAX,
-                                                     ReferenceTime.ISSUE_TIME ) );
+                MapKey.of( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                          Instant.MAX,
+                                          ReferenceTime.ISSUE_TIME ) );
         assertTrue( "Expected inequality.", !third.equals( first ) );
         //Latest date
         MapKey<TimeWindow> fourth =
-                MapKey.of( DataFactory.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                     Instant.parse( "1986-01-01T00:00:00Z" ),
-                                                     ReferenceTime.ISSUE_TIME ) );
+                MapKey.of( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                          Instant.parse( "1986-01-01T00:00:00Z" ),
+                                          ReferenceTime.ISSUE_TIME ) );
         assertTrue( "Expected inequality.", !third.equals( fourth ) );
         //Reference time
         MapKey<TimeWindow> fifth =
-                MapKey.of( DataFactory.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                     Instant.parse( "1986-01-01T00:00:00Z" ),
-                                                     ReferenceTime.VALID_TIME ) );
+                MapKey.of( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                          Instant.parse( "1986-01-01T00:00:00Z" ),
+                                          ReferenceTime.VALID_TIME ) );
         assertTrue( "Expected inequality.", !fourth.equals( fifth ) );
     }
 

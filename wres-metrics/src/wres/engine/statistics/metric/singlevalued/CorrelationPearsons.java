@@ -71,7 +71,7 @@ public class CorrelationPearsons extends OrdinaryScore<SingleValuedPairs, Double
                                       .applyAsDouble( correlation.correlation( Slicer.getLeftSide( s ),
                                                                                Slicer.getRightSide( s ) ) );
         }
-        return DataFactory.ofDoubleScoreOutput( returnMe, meta );
+        return DoubleScoreOutput.of( returnMe, meta );
     }
 
     @Override

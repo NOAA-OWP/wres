@@ -77,7 +77,7 @@ public final class IndexOfAgreementTest
         //Check the results
         DoubleScoreOutput actual = ioa.apply( input );
 
-        DoubleScoreOutput expected = DataFactory.ofDoubleScoreOutput( 0.8221179993380173, m1 );
+        DoubleScoreOutput expected = DoubleScoreOutput.of( 0.8221179993380173, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -94,7 +94,7 @@ public final class IndexOfAgreementTest
     {
         // Generate empty data
         SingleValuedPairs input =
-                DataFactory.ofSingleValuedPairs( Arrays.asList(), MetadataFactory.getMetadata() );
+                SingleValuedPairs.of( Arrays.asList(), MetadataFactory.getMetadata() );
 
         DoubleScoreOutput actual = ioa.apply( input );
 

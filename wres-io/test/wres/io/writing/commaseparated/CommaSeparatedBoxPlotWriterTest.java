@@ -37,6 +37,7 @@ import wres.datamodel.outputs.MetricOutputAccessException;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMapByMetric;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
+import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 
@@ -105,11 +106,7 @@ public class CommaSeparatedBoxPlotWriterTest extends CommaSeparatedWriterTest
         // Fake output wrapper.
         MetricOutputMapByMetric<BoxPlotOutput> fakeOutputData =
                 DataFactory.ofMetricOutputMapByMetric( Collections.singletonMap( MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
-                                                                                 DataFactory.ofBoxPlotOutput( fakeOutputs,
-                                                                                                              probs,
-                                                                                                              fakeMetadata,
-                                                                                                              MetricDimension.OBSERVED_VALUE,
-                                                                                                              MetricDimension.FORECAST_ERROR ) ) );
+                                                                                 BoxPlotOutput.of( fakeOutputs, probs, fakeMetadata, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR ) ) );
         // wrap outputs in future
         Future<MetricOutputMapByMetric<BoxPlotOutput>> outputMapByMetricFuture =
                 CompletableFuture.completedFuture( fakeOutputData );
@@ -118,7 +115,7 @@ public class CommaSeparatedBoxPlotWriterTest extends CommaSeparatedWriterTest
         // Fake lead time and threshold
         Pair<TimeWindow, OneOrTwoThresholds> mapKeyByLeadThreshold =
                 Pair.of( timeOne,
-                         OneOrTwoThresholds.of( DataFactory.ofThreshold( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                         OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                                          Operator.GREATER,
                                                                          ThresholdDataType.LEFT ) ) );
 

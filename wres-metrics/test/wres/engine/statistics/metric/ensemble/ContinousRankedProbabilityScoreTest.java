@@ -62,7 +62,7 @@ public final class ContinousRankedProbabilityScoreTest
         pairs.add( EnsemblePair.of( 47, new double[] { 12, 54, 23, 54, 78 } ) );
         pairs.add( EnsemblePair.of( 12.1, new double[] { 9, 8, 5, 6, 12 } ) );
         pairs.add( EnsemblePair.of( 43, new double[] { 23, 12, 12, 34, 10 } ) );
-        EnsemblePairs input = DataFactory.ofEnsemblePairs( pairs, MetadataFactory.getMetadata() );
+        EnsemblePairs input = EnsemblePairs.of( pairs, MetadataFactory.getMetadata() );
 
         //Metadata for the output
         MetricOutputMetadata m1 =
@@ -73,7 +73,7 @@ public final class ContinousRankedProbabilityScoreTest
                                                    MetricConstants.MAIN );
         //Check the results       
         final DoubleScoreOutput actual = crps.apply( input );
-        final DoubleScoreOutput expected = DataFactory.ofDoubleScoreOutput( 7.63, m1 );
+        final DoubleScoreOutput expected = DoubleScoreOutput.of( 7.63, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -98,7 +98,7 @@ public final class ContinousRankedProbabilityScoreTest
         pairs.add( EnsemblePair.of( 47, new double[] { 12, 54, 23, 54 } ) );
         pairs.add( EnsemblePair.of( 12, new double[] { 9, 8, 5 } ) );
         pairs.add( EnsemblePair.of( 43, new double[] { 23, 12, 12 } ) );
-        EnsemblePairs input = DataFactory.ofEnsemblePairs( pairs, MetadataFactory.getMetadata() );
+        EnsemblePairs input = EnsemblePairs.of( pairs, MetadataFactory.getMetadata() );
 
         //Metadata for the output
         MetricOutputMetadata m1 =
@@ -109,7 +109,7 @@ public final class ContinousRankedProbabilityScoreTest
                                                    MetricConstants.MAIN );
         //Check the results       
         DoubleScoreOutput actual = crps.apply( input );
-        DoubleScoreOutput expected = DataFactory.ofDoubleScoreOutput( 8.734401927437641, m1 );
+        DoubleScoreOutput expected = DoubleScoreOutput.of( 8.734401927437641, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -129,7 +129,7 @@ public final class ContinousRankedProbabilityScoreTest
         //Generate some data
         List<EnsemblePair> pairs = new ArrayList<>();
         pairs.add( EnsemblePair.of( 8, new double[] { 23, 54, 23, 12, 32 } ) );
-        EnsemblePairs input = DataFactory.ofEnsemblePairs( pairs, MetadataFactory.getMetadata() );
+        EnsemblePairs input = EnsemblePairs.of( pairs, MetadataFactory.getMetadata() );
 
         //Metadata for the output
         MetricOutputMetadata m1 =
@@ -140,7 +140,7 @@ public final class ContinousRankedProbabilityScoreTest
                                                    MetricConstants.MAIN );
         //Check the results       
         DoubleScoreOutput actual = crps.apply( input );
-        DoubleScoreOutput expected = DataFactory.ofDoubleScoreOutput( 13.36, m1 );
+        DoubleScoreOutput expected = DoubleScoreOutput.of( 13.36, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -161,7 +161,7 @@ public final class ContinousRankedProbabilityScoreTest
         //Generate some data
         List<EnsemblePair> pairs = new ArrayList<>();
         pairs.add( EnsemblePair.of( 32, new double[] { 23, 54, 23, 12, 32 } ) );
-        EnsemblePairs input = DataFactory.ofEnsemblePairs( pairs, MetadataFactory.getMetadata() );
+        EnsemblePairs input = EnsemblePairs.of( pairs, MetadataFactory.getMetadata() );
 
         //Metadata for the output
         MetricOutputMetadata m1 =
@@ -172,7 +172,7 @@ public final class ContinousRankedProbabilityScoreTest
                                                    MetricConstants.MAIN );
         //Check the results       
         DoubleScoreOutput actual = crps.apply( input );
-        DoubleScoreOutput expected = DataFactory.ofDoubleScoreOutput( 4.56, m1 );
+        DoubleScoreOutput expected = DoubleScoreOutput.of( 4.56, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -191,7 +191,7 @@ public final class ContinousRankedProbabilityScoreTest
     {
         // Generate empty data
         EnsemblePairs input =
-                DataFactory.ofEnsemblePairs( Arrays.asList(), MetadataFactory.getMetadata() );
+                EnsemblePairs.of( Arrays.asList(), MetadataFactory.getMetadata() );
 
         DoubleScoreOutput actual = crps.apply( input );
 

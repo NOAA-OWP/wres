@@ -62,7 +62,7 @@ public final class MeanAbsoluteErrorTest
                                                                    MetricConstants.MAIN );
         //Check the results
         final DoubleScoreOutput actual = mae.apply( input );
-        final DoubleScoreOutput expected = DataFactory.ofDoubleScoreOutput( 201.37, m1 );
+        final DoubleScoreOutput expected = DoubleScoreOutput.of( 201.37, m1 );
         assertTrue( "Actual: " + actual.getData().doubleValue()
                     + ". Expected: "
                     + expected.getData().doubleValue()
@@ -79,7 +79,7 @@ public final class MeanAbsoluteErrorTest
     {
         // Generate empty data
         SingleValuedPairs input =
-                DataFactory.ofSingleValuedPairs( Arrays.asList(), MetadataFactory.getMetadata() );
+                SingleValuedPairs.of( Arrays.asList(), MetadataFactory.getMetadata() );
  
         DoubleScoreOutput actual = mae.apply( input );
 

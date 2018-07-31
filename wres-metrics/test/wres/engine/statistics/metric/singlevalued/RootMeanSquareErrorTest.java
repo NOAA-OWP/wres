@@ -62,7 +62,7 @@ public final class RootMeanSquareErrorTest
                                                                    MetricConstants.MAIN );
         //Check the results
         DoubleScoreOutput actual = rmse.apply( input );
-        DoubleScoreOutput expected = DataFactory.ofDoubleScoreOutput( 632.4586381732801, m1 );
+        DoubleScoreOutput expected = DoubleScoreOutput.of( 632.4586381732801, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -79,7 +79,7 @@ public final class RootMeanSquareErrorTest
     {
         // Generate empty data
         SingleValuedPairs input =
-                DataFactory.ofSingleValuedPairs( Arrays.asList(), MetadataFactory.getMetadata() );
+                SingleValuedPairs.of( Arrays.asList(), MetadataFactory.getMetadata() );
  
         DoubleScoreOutput actual = rmse.apply( input );
 

@@ -69,7 +69,7 @@ public final class BrierSkillScoreTest
 
         // Check the results       
         final DoubleScoreOutput actual = brierSkillScore.apply( input );
-        final DoubleScoreOutput expected = DataFactory.ofDoubleScoreOutput( 0.11363636363636376, m1 );
+        final DoubleScoreOutput expected = DoubleScoreOutput.of( 0.11363636363636376, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -101,7 +101,7 @@ public final class BrierSkillScoreTest
 
         // Check the results       
         final DoubleScoreOutput actual = brierSkillScore.apply( input );
-        final DoubleScoreOutput expected = DataFactory.ofDoubleScoreOutput( -0.040000000000000036, m1 );
+        final DoubleScoreOutput expected = DoubleScoreOutput.of( -0.040000000000000036, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -119,7 +119,7 @@ public final class BrierSkillScoreTest
     {
         // Generate empty data
         DiscreteProbabilityPairs input =
-                DataFactory.ofDiscreteProbabilityPairs( Arrays.asList(), MetadataFactory.getMetadata() );
+                DiscreteProbabilityPairs.of( Arrays.asList(), MetadataFactory.getMetadata() );
 
         DoubleScoreOutput actual = brierSkillScore.apply( input );
 

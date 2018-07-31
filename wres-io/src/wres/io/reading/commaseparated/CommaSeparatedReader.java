@@ -14,7 +14,6 @@ import java.util.TreeSet;
 
 import wres.config.FeaturePlus;
 import wres.config.generated.Feature;
-import wres.datamodel.DataFactory;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.metadata.Dimension;
 import wres.datamodel.thresholds.Threshold;
@@ -214,7 +213,7 @@ public class CommaSeparatedReader
                 // Probability thresholds
                 if ( isProbability )
                 {
-                    returnMe.add( DataFactory.ofProbabilityThreshold( OneOrTwoDoubles.of( threshold ),
+                    returnMe.add( Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( threshold ),
                                                                       condition,
                                                                       dataType,
                                                                       iterateLabels[i],
@@ -223,7 +222,7 @@ public class CommaSeparatedReader
                 // Ordinary thresholds
                 else
                 {
-                    returnMe.add( DataFactory.ofThreshold( OneOrTwoDoubles.of( threshold ),
+                    returnMe.add( Threshold.of( OneOrTwoDoubles.of( threshold ),
                                                            condition,
                                                            dataType,
                                                            iterateLabels[i],

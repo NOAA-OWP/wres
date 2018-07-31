@@ -118,7 +118,7 @@ public class KlingGuptaEfficiency extends DecomposableScore<SingleValuedPairs>
         }
         //Metadata
         final MetricOutputMetadata metOut = this.getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, null );
-        return DataFactory.ofDoubleScoreOutput( result, metOut );
+        return DoubleScoreOutput.of( result, metOut );
     }
 
     @Override

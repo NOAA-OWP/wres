@@ -14,7 +14,6 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.MetricConfigException;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
@@ -413,7 +412,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
         //Set the executor for processing thresholds
         this.thresholdExecutor = thresholdExecutor;
 
-        this.allDataThreshold = DataFactory.ofThreshold( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+        this.allDataThreshold = Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                          Operator.GREATER,
                                                          ThresholdDataType.LEFT_AND_RIGHT );
 

@@ -67,7 +67,7 @@ public final class SlicerTest
         values.add( SingleValuedPair.of( 1, 1.0 / 5.0 ) );
         double[] expected = new double[] { 0, 0, 1, 1, 0, 1 };
         assertTrue( "The left side of the test data does not match the benchmark.",
-                    Arrays.equals( Slicer.getLeftSide( DataFactory.ofSingleValuedPairs( values,
+                    Arrays.equals( Slicer.getLeftSide( SingleValuedPairs.of( values,
                                                                                         MetadataFactory.getMetadata() ) ),
                                    expected ) );
     }
@@ -88,7 +88,7 @@ public final class SlicerTest
         values.add( EnsemblePair.of( 1, new double[] { 1, 2, 3 } ) );
         double[] expected = new double[] { 0, 0, 1, 1, 0, 1 };
         assertTrue( "The left side of the test data does not match the benchmark.",
-                    Arrays.equals( Slicer.getLeftSide( DataFactory.ofEnsemblePairs( values,
+                    Arrays.equals( Slicer.getLeftSide( EnsemblePairs.of( values,
                                                                                     MetadataFactory.getMetadata() ) ),
                                    expected ) );
     }
@@ -109,7 +109,7 @@ public final class SlicerTest
         values.add( SingleValuedPair.of( 1, 1.0 / 5.0 ) );
         double[] expected = new double[] { 3.0 / 5.0, 1.0 / 5.0, 2.0 / 5.0, 3.0 / 5.0, 0.0 / 5.0, 1.0 / 5.0 };
         assertTrue( "The right side of the test data does not match the benchmark.",
-                    Arrays.equals( Slicer.getRightSide( DataFactory.ofSingleValuedPairs( values,
+                    Arrays.equals( Slicer.getRightSide( SingleValuedPairs.of( values,
                                                                                          MetadataFactory.getMetadata() ) ),
                                    expected ) );
     }
@@ -129,18 +129,18 @@ public final class SlicerTest
         values.add( SingleValuedPair.of( 0, 0.0 / 5.0 ) );
         values.add( SingleValuedPair.of( 1, 1.0 / 5.0 ) );
         double[] expected = new double[] { 1, 1, 1 };
-        Threshold threshold = DataFactory.ofThreshold( OneOrTwoDoubles.of( 0.0 ),
+        Threshold threshold = Threshold.of( OneOrTwoDoubles.of( 0.0 ),
                                                        Operator.GREATER,
                                                        ThresholdDataType.LEFT );
         Metadata meta = MetadataFactory.getMetadata();
-        SingleValuedPairs pairs = DataFactory.ofSingleValuedPairs( values, values, meta, meta, null );
+        SingleValuedPairs pairs = SingleValuedPairs.of( values, values, meta, meta, null );
         SingleValuedPairs sliced =
                 Slicer.filter( pairs, Slicer.left( threshold::test ), clim -> threshold.test( clim ) );
         //Test with baseline
         assertTrue( "The left side of the test data does not match the benchmark.",
                     Arrays.equals( Slicer.getLeftSide( sliced.getBaselineData() ), expected ) );
         //Test without baseline
-        SingleValuedPairs pairsNoBase = DataFactory.ofSingleValuedPairs( values, meta );
+        SingleValuedPairs pairsNoBase = SingleValuedPairs.of( values, meta );
         SingleValuedPairs slicedNoBase =
                 Slicer.filter( pairsNoBase, Slicer.left( threshold::test ), clim -> threshold.test( clim ) );
         assertTrue( "The left side of the test data does not match the benchmark.",
@@ -162,18 +162,18 @@ public final class SlicerTest
         values.add( EnsemblePair.of( 0, new double[] { 1, 2, 3 } ) );
         values.add( EnsemblePair.of( 1, new double[] { 1, 2, 3 } ) );
         double[] expected = new double[] { 1, 1, 1 };
-        Threshold threshold = DataFactory.ofThreshold( OneOrTwoDoubles.of( 0.0 ),
+        Threshold threshold = Threshold.of( OneOrTwoDoubles.of( 0.0 ),
                                                        Operator.GREATER,
                                                        ThresholdDataType.LEFT );
         Metadata meta = MetadataFactory.getMetadata();
-        EnsemblePairs pairs = DataFactory.ofEnsemblePairs( values, values, meta, meta, null );
+        EnsemblePairs pairs = EnsemblePairs.of( values, values, meta, meta, null );
         EnsemblePairs sliced =
                 Slicer.filter( pairs, Slicer.leftVector( threshold::test ), clim -> threshold.test( clim ) );
         //Test with baseline
         assertTrue( "The left side of the test data does not match the benchmark.",
                     Arrays.equals( Slicer.getLeftSide( sliced.getBaselineData() ), expected ) );
         //Test without baseline
-        EnsemblePairs pairsNoBase = DataFactory.ofEnsemblePairs( values, meta );
+        EnsemblePairs pairsNoBase = EnsemblePairs.of( values, meta );
         EnsemblePairs slicedNoBase =
                 Slicer.filter( pairsNoBase, Slicer.leftVector( threshold::test ), clim -> threshold.test( clim ) );
         assertTrue( "The left side of the test data does not match the benchmark.",
@@ -195,14 +195,14 @@ public final class SlicerTest
         values.add( EnsemblePair.of( 0, new double[] { 21, 22, 23, 24, 25 } ) );
         values.add( EnsemblePair.of( 1, new double[] { 26, 27, 28, 29, 30 } ) );
         Metadata meta = MetadataFactory.getMetadata();
-        EnsemblePairs input = DataFactory.ofEnsemblePairs( values, values, meta, meta, null );
+        EnsemblePairs input = EnsemblePairs.of( values, values, meta, meta, null );
         Function<EnsemblePair, SingleValuedPair> mapper = ( in ) -> {
             return SingleValuedPair.of( in.getLeft(), Arrays.stream( in.getRight() ).average().getAsDouble() );
         };
         double[] expected = new double[] { 3.0, 8.0, 13.0, 18.0, 23.0, 28.0 };
         //Test without baseline
         double[] actualNoBase =
-                Slicer.getRightSide( Slicer.toSingleValuedPairs( DataFactory.ofEnsemblePairs( values, meta ),
+                Slicer.getRightSide( Slicer.toSingleValuedPairs( EnsemblePairs.of( values, meta ),
                                                                  mapper ) );
         assertTrue( "The transformed test data does not match the benchmark.",
                     Arrays.equals( actualNoBase, expected ) );
@@ -236,8 +236,8 @@ public final class SlicerTest
         expectedValues.add( DichotomousPair.of( true, true ) );
         expectedValues.add( DichotomousPair.of( false, false ) );
         expectedValues.add( DichotomousPair.of( true, true ) );
-        DichotomousPairs expectedNoBase = DataFactory.ofDichotomousPairs( expectedValues, meta );
-        DichotomousPairs expectedBase = DataFactory.ofDichotomousPairs( expectedValues,
+        DichotomousPairs expectedNoBase = DichotomousPairs.ofDichotomousPairs( expectedValues, meta );
+        DichotomousPairs expectedBase = DichotomousPairs.ofDichotomousPairs( expectedValues,
                                                                         expectedValues,
                                                                         meta,
                                                                         meta,
@@ -245,12 +245,12 @@ public final class SlicerTest
 
         //Test without baseline
         DichotomousPairs actualNoBase =
-                Slicer.toDichotomousPairs( DataFactory.ofSingleValuedPairs( values, meta ), mapper );
+                Slicer.toDichotomousPairs( SingleValuedPairs.of( values, meta ), mapper );
         assertTrue( "The transformed test data does not match the benchmark.",
                     actualNoBase.getRawData().equals( expectedNoBase.getRawData() ) );
         //Test baseline
         DichotomousPairs actualBase =
-                Slicer.toDichotomousPairs( DataFactory.ofSingleValuedPairs( values, values, meta, meta, null ),
+                Slicer.toDichotomousPairs( SingleValuedPairs.of( values, values, meta, meta, null ),
                                            mapper );
         assertTrue( "The transformed test data does not match the benchmark.",
                     actualBase.getRawDataForBaseline().equals( expectedBase.getRawDataForBaseline() ) );
@@ -271,7 +271,7 @@ public final class SlicerTest
         values.add( EnsemblePair.of( 0, new double[] { 1, 2, 3, 4, 5 } ) );
         values.add( EnsemblePair.of( 5, new double[] { 1, 1, 6, 6, 50 } ) );
         Metadata meta = MetadataFactory.getMetadata();
-        Threshold threshold = DataFactory.ofThreshold( OneOrTwoDoubles.of( 3.0 ),
+        Threshold threshold = Threshold.of( OneOrTwoDoubles.of( 3.0 ),
                                                        Operator.GREATER,
                                                        ThresholdDataType.LEFT );
         BiFunction<EnsemblePair, Threshold, DiscreteProbabilityPair> mapper =
@@ -287,7 +287,7 @@ public final class SlicerTest
 
         //Test without baseline
         DiscreteProbabilityPairs sliced =
-                Slicer.toDiscreteProbabilityPairs( DataFactory.ofEnsemblePairs( values, meta ),
+                Slicer.toDiscreteProbabilityPairs( EnsemblePairs.of( values, meta ),
                                                    threshold,
                                                    mapper );
 
@@ -296,7 +296,7 @@ public final class SlicerTest
 
         //Test baseline
         DiscreteProbabilityPairs slicedWithBaseline =
-                Slicer.toDiscreteProbabilityPairs( DataFactory.ofEnsemblePairs( values, values, meta, meta ),
+                Slicer.toDiscreteProbabilityPairs( EnsemblePairs.of( values, values, meta, meta ),
                                                    threshold,
                                                    mapper );
         assertTrue( "The transformed test data does not match the benchmark.",
@@ -318,7 +318,7 @@ public final class SlicerTest
         EnsemblePair d = EnsemblePair.of( 4, new double[] { 4, 4, 4, 4, 4 } );
         EnsemblePair e = EnsemblePair.of( 0, new double[] { 1, 2, 3, 4, 5 } );
         EnsemblePair f = EnsemblePair.of( 5, new double[] { 1, 1, 6, 6, 50 } );
-        Threshold threshold = DataFactory.ofThreshold( OneOrTwoDoubles.of( 3.0 ),
+        Threshold threshold = Threshold.of( OneOrTwoDoubles.of( 3.0 ),
                                                        Operator.GREATER,
                                                        ThresholdDataType.LEFT );
         BiFunction<EnsemblePair, Threshold, DiscreteProbabilityPair> mapper =
@@ -395,54 +395,54 @@ public final class SlicerTest
         double tF = 8.0 / 11.0;
         double tG = 0.01;
 
-        Threshold testA = DataFactory.ofProbabilityThreshold( OneOrTwoDoubles.of( tA ),
+        Threshold testA = Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( tA ),
                                                               Operator.GREATER,
                                                               ThresholdDataType.LEFT );
-        Threshold testB = DataFactory.ofProbabilityThreshold( OneOrTwoDoubles.of( tB ),
+        Threshold testB = Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( tB ),
                                                               Operator.LESS,
                                                               ThresholdDataType.LEFT );
-        Threshold testC = DataFactory.ofProbabilityThreshold( OneOrTwoDoubles.of( tC ),
+        Threshold testC = Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( tC ),
                                                               Operator.GREATER,
                                                               ThresholdDataType.LEFT );
-        Threshold testD = DataFactory.ofProbabilityThreshold( OneOrTwoDoubles.of( tD ),
+        Threshold testD = Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( tD ),
                                                               Operator.GREATER,
                                                               ThresholdDataType.LEFT );
-        Threshold testE = DataFactory.ofProbabilityThreshold( OneOrTwoDoubles.of( tE[0], tE[1] ),
+        Threshold testE = Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( tE[0], tE[1] ),
                                                               Operator.BETWEEN,
                                                               ThresholdDataType.LEFT );
-        Threshold testF = DataFactory.ofProbabilityThreshold( OneOrTwoDoubles.of( tF ),
+        Threshold testF = Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( tF ),
                                                               Operator.GREATER,
                                                               ThresholdDataType.LEFT );
-        Threshold testG = DataFactory.ofProbabilityThreshold( OneOrTwoDoubles.of( tG ),
+        Threshold testG = Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( tG ),
                                                               Operator.GREATER,
                                                               ThresholdDataType.LEFT );
-        Threshold expectedA = DataFactory.ofQuantileThreshold( OneOrTwoDoubles.of( 1.5 ),
+        Threshold expectedA = Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( 1.5 ),
                                                                OneOrTwoDoubles.of( tA ),
                                                                Operator.GREATER,
                                                                ThresholdDataType.LEFT );
-        Threshold expectedB = DataFactory.ofQuantileThreshold( OneOrTwoDoubles.of( 17897.2 ),
+        Threshold expectedB = Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( 17897.2 ),
                                                                OneOrTwoDoubles.of( tB ),
                                                                Operator.LESS,
                                                                ThresholdDataType.LEFT );
-        Threshold expectedC = DataFactory.ofQuantileThreshold( OneOrTwoDoubles.of( 1647.1818181818185 ),
+        Threshold expectedC = Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( 1647.1818181818185 ),
                                                                OneOrTwoDoubles.of( tC ),
                                                                Operator.GREATER,
                                                                ThresholdDataType.LEFT );
-        Threshold expectedD = DataFactory.ofQuantileThreshold( OneOrTwoDoubles.of( 8924.920568373052 ),
+        Threshold expectedD = Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( 8924.920568373052 ),
                                                                OneOrTwoDoubles.of( tD ),
                                                                Operator.GREATER,
                                                                ThresholdDataType.LEFT );
-        Threshold expectedE = DataFactory.ofQuantileThreshold( OneOrTwoDoubles.of( 6.3,
+        Threshold expectedE = Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( 6.3,
                                                                                    433.9 ),
                                                                OneOrTwoDoubles.of( tE[0],
                                                                                    tE[1] ),
                                                                Operator.BETWEEN,
                                                                ThresholdDataType.LEFT );
-        Threshold expectedF = DataFactory.ofQuantileThreshold( OneOrTwoDoubles.of( 1.5 ),
+        Threshold expectedF = Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( 1.5 ),
                                                                OneOrTwoDoubles.of( tF ),
                                                                Operator.GREATER,
                                                                ThresholdDataType.LEFT );
-        Threshold expectedG = DataFactory.ofQuantileThreshold( OneOrTwoDoubles.of( 1.5 ),
+        Threshold expectedG = Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( 1.5 ),
                                                                OneOrTwoDoubles.of( tG ),
                                                                Operator.GREATER,
                                                                ThresholdDataType.LEFT );
@@ -572,7 +572,7 @@ public final class SlicerTest
         VectorOfDoubles climatologyExpected = VectorOfDoubles.of( new double[] { 1, 2, 3, 4, 5 } );
 
         Metadata meta = MetadataFactory.getMetadata();
-        SingleValuedPairs pairs = DataFactory.ofSingleValuedPairs( values, values, meta, meta, climatology );
+        SingleValuedPairs pairs = SingleValuedPairs.of( values, values, meta, meta, climatology );
         SingleValuedPairs sliced = Slicer.filter( pairs, Slicer.leftAndRight( Double::isFinite ), Double::isFinite );
 
         //Test with baseline
@@ -589,7 +589,7 @@ public final class SlicerTest
         assertTrue( "Unexpected equality of the sliced and unsliced data.",
                     !sliced.getRawData().equals( values ) );
         //Test without baseline or climatology
-        SingleValuedPairs pairsNoBase = DataFactory.ofSingleValuedPairs( values, meta );
+        SingleValuedPairs pairsNoBase = SingleValuedPairs.of( values, meta );
         SingleValuedPairs slicedNoBase = Slicer.filter( pairsNoBase, Slicer.leftAndRight( Double::isFinite ), null );
 
         assertTrue( "The sliced data without a baseline does not match the benchmark.",
@@ -621,7 +621,7 @@ public final class SlicerTest
         VectorOfDoubles climatologyExpected = VectorOfDoubles.of( new double[] { 1, 2, 3, 4, 5 } );
 
         Metadata meta = MetadataFactory.getMetadata();
-        EnsemblePairs pairs = DataFactory.ofEnsemblePairs( values, values, meta, meta, climatology );
+        EnsemblePairs pairs = EnsemblePairs.of( values, values, meta, meta, climatology );
         EnsemblePairs sliced = Slicer.filter( pairs, Slicer.leftAndEachOfRight( Double::isFinite ), Double::isFinite );
 
         //Test with baseline
@@ -638,7 +638,7 @@ public final class SlicerTest
         assertTrue( "Unexpected equality of the sliced and unsliced data.",
                     !sliced.getRawData().equals( values ) );
         //Test without baseline or climatology
-        EnsemblePairs pairsNoBase = DataFactory.ofEnsemblePairs( values, meta );
+        EnsemblePairs pairsNoBase = EnsemblePairs.of( values, meta );
         EnsemblePairs slicedNoBase = Slicer.filter( pairsNoBase, Slicer.leftAndEachOfRight( Double::isFinite ), null );
 
         assertTrue( "The sliced data without a baseline does not match the benchmark.",

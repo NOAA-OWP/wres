@@ -13,7 +13,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.inputs.MetricInputException;
@@ -88,7 +87,7 @@ public final class ReliabilityDiagramTest
         output.put( MetricDimension.OBSERVED_RELATIVE_FREQUENCY, expectedOProb );
         output.put( MetricDimension.SAMPLE_SIZE, expectedSample );
 
-        final MultiVectorOutput expected = DataFactory.ofMultiVectorOutput( output, m1 );
+        final MultiVectorOutput expected = MultiVectorOutput.ofMultiVectorOutput( output, m1 );
 
         assertTrue( "Difference between actual and expected Reliability Diagram.", actual.equals( expected ) );
     }
@@ -138,7 +137,7 @@ public final class ReliabilityDiagramTest
                 MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation( "FAKE" ), "MAP", "FK" );
 
         DiscreteProbabilityPairs input =
-                DataFactory.ofDiscreteProbabilityPairs( data,
+                DiscreteProbabilityPairs.of( data,
                                                         MetadataFactory.getMetadata( MetadataFactory.getDimension(),
                                                                                      identifier ) );
 
@@ -165,7 +164,7 @@ public final class ReliabilityDiagramTest
         output.put( MetricDimension.OBSERVED_RELATIVE_FREQUENCY, expectedOProb );
         output.put( MetricDimension.SAMPLE_SIZE, expectedSample );
 
-        final MultiVectorOutput expected = DataFactory.ofMultiVectorOutput( output, m1 );
+        final MultiVectorOutput expected = MultiVectorOutput.ofMultiVectorOutput( output, m1 );
 
         assertTrue( "Difference between actual and expected Reliability Diagram.", actual.equals( expected ) );
     }
@@ -179,7 +178,7 @@ public final class ReliabilityDiagramTest
     {
         // Generate empty data
         DiscreteProbabilityPairs input =
-                DataFactory.ofDiscreteProbabilityPairs( Arrays.asList(), MetadataFactory.getMetadata() );
+                DiscreteProbabilityPairs.of( Arrays.asList(), MetadataFactory.getMetadata() );
 
         MultiVectorOutput actual = rel.apply( input );
 

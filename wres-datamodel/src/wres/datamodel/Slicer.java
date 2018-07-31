@@ -537,14 +537,14 @@ public final class Slicer
             List<SingleValuedPair> basePairsSubset =
                     basePairs.stream().filter( condition ).collect( Collectors.toList() );
 
-            return DataFactory.ofSingleValuedPairs( mainPairsSubset,
-                                                    basePairsSubset,
-                                                    input.getMetadata(),
-                                                    input.getMetadataForBaseline(),
-                                                    climatology );
+            return SingleValuedPairs.of( mainPairsSubset,
+                                         basePairsSubset,
+                                         input.getMetadata(),
+                                         input.getMetadataForBaseline(),
+                                         climatology );
         }
 
-        return DataFactory.ofSingleValuedPairs( mainPairsSubset, input.getMetadata(), climatology );
+        return SingleValuedPairs.of( mainPairsSubset, input.getMetadata(), climatology );
     }
 
     /**
@@ -584,14 +584,14 @@ public final class Slicer
             List<EnsemblePair> basePairsSubset =
                     basePairs.stream().filter( condition ).collect( Collectors.toList() );
 
-            return DataFactory.ofEnsemblePairs( mainPairsSubset,
-                                                basePairsSubset,
-                                                input.getMetadata(),
-                                                input.getMetadataForBaseline(),
-                                                climatology );
+            return EnsemblePairs.of( mainPairsSubset,
+                                     basePairsSubset,
+                                     input.getMetadata(),
+                                     input.getMetadataForBaseline(),
+                                     climatology );
         }
 
-        return DataFactory.ofEnsemblePairs( mainPairsSubset, input.getMetadata(), climatology );
+        return EnsemblePairs.of( mainPairsSubset, input.getMetadata(), climatology );
     }
 
     /**
@@ -648,13 +648,13 @@ public final class Slicer
                 }
             }
 
-            return DataFactory.ofEnsemblePairs( mainPairsSubset,
-                                                basePairsSubset,
-                                                input.getMetadata(),
-                                                input.getMetadataForBaseline(),
-                                                climatology );
+            return EnsemblePairs.of( mainPairsSubset,
+                                     basePairsSubset,
+                                     input.getMetadata(),
+                                     input.getMetadataForBaseline(),
+                                     climatology );
         }
-        return DataFactory.ofEnsemblePairs( mainPairsSubset, input.getMetadata(), climatology );
+        return EnsemblePairs.of( mainPairsSubset, input.getMetadata(), climatology );
     }
 
     /**
@@ -931,7 +931,7 @@ public final class Slicer
                 }
                 rawInput.add( Event.of( next.getTime(),
                                         EnsemblePair.of( next.getValue().getLeft(),
-                                                            subTraces.toArray( new Double[subTraces.size()] ) ) ) );
+                                                         subTraces.toArray( new Double[subTraces.size()] ) ) ) );
             }
             builder.addTimeSeriesData( nextSeries.getEarliestBasisTime(), rawInput );
         }
@@ -1049,15 +1049,15 @@ public final class Slicer
             List<SingleValuedPair> basePairs = input.getRawDataForBaseline();
             List<DichotomousPair> basePairsTransformed = new ArrayList<>();
             basePairs.stream().map( mapper ).forEach( basePairsTransformed::add );
-            return DataFactory.ofDichotomousPairs( mainPairsTransformed,
-                                                   basePairsTransformed,
-                                                   input.getMetadata(),
-                                                   input.getMetadataForBaseline(),
-                                                   input.getClimatology() );
+            return DichotomousPairs.ofDichotomousPairs( mainPairsTransformed,
+                                                        basePairsTransformed,
+                                                        input.getMetadata(),
+                                                        input.getMetadataForBaseline(),
+                                                        input.getClimatology() );
         }
-        return DataFactory.ofDichotomousPairs( mainPairsTransformed,
-                                               input.getMetadata(),
-                                               input.getClimatology() );
+        return DichotomousPairs.ofDichotomousPairs( mainPairsTransformed,
+                                                    input.getMetadata(),
+                                                    input.getClimatology() );
     }
 
     /**
@@ -1086,15 +1086,15 @@ public final class Slicer
             List<DiscreteProbabilityPair> basePairs = input.getRawDataForBaseline();
             List<DichotomousPair> basePairsTransformed = new ArrayList<>();
             basePairs.stream().map( mapper ).forEach( basePairsTransformed::add );
-            return DataFactory.ofDichotomousPairs( mainPairsTransformed,
-                                                   basePairsTransformed,
-                                                   input.getMetadata(),
-                                                   input.getMetadataForBaseline(),
-                                                   input.getClimatology() );
+            return DichotomousPairs.ofDichotomousPairs( mainPairsTransformed,
+                                                        basePairsTransformed,
+                                                        input.getMetadata(),
+                                                        input.getMetadataForBaseline(),
+                                                        input.getClimatology() );
         }
-        return DataFactory.ofDichotomousPairs( mainPairsTransformed,
-                                               input.getMetadata(),
-                                               input.getClimatology() );
+        return DichotomousPairs.ofDichotomousPairs( mainPairsTransformed,
+                                                    input.getMetadata(),
+                                                    input.getClimatology() );
     }
 
     /**
@@ -1117,13 +1117,13 @@ public final class Slicer
         if ( input.hasBaseline() )
         {
             List<SingleValuedPair> basePairsTransformed = toSingleValuedPairs( input.getRawDataForBaseline(), mapper );
-            return DataFactory.ofSingleValuedPairs( mainPairsTransformed,
-                                                    basePairsTransformed,
-                                                    input.getMetadata(),
-                                                    input.getMetadataForBaseline(),
-                                                    input.getClimatology() );
+            return SingleValuedPairs.of( mainPairsTransformed,
+                                         basePairsTransformed,
+                                         input.getMetadata(),
+                                         input.getMetadataForBaseline(),
+                                         input.getClimatology() );
         }
-        return DataFactory.ofSingleValuedPairs( mainPairsTransformed, input.getMetadata(), input.getClimatology() );
+        return SingleValuedPairs.of( mainPairsTransformed, input.getMetadata(), input.getClimatology() );
     }
 
     /**
@@ -1140,15 +1140,15 @@ public final class Slicer
 
         if ( input.hasBaseline() )
         {
-            return DataFactory.ofSingleValuedPairs( new ArrayList<SingleValuedPair>( input.getRawData() ),
-                                                    new ArrayList<SingleValuedPair>( input.getRawDataForBaseline() ),
-                                                    input.getMetadata(),
-                                                    input.getMetadataForBaseline(),
-                                                    input.getClimatology() );
+            return SingleValuedPairs.of( new ArrayList<SingleValuedPair>( input.getRawData() ),
+                                         new ArrayList<SingleValuedPair>( input.getRawDataForBaseline() ),
+                                         input.getMetadata(),
+                                         input.getMetadataForBaseline(),
+                                         input.getClimatology() );
         }
-        return DataFactory.ofSingleValuedPairs( new ArrayList<SingleValuedPair>( input.getRawData() ),
-                                                input.getMetadata(),
-                                                input.getClimatology() );
+        return SingleValuedPairs.of( new ArrayList<SingleValuedPair>( input.getRawData() ),
+                                     input.getMetadata(),
+                                     input.getClimatology() );
     }
 
     /**
@@ -1179,15 +1179,15 @@ public final class Slicer
             List<EnsemblePair> basePairs = input.getRawDataForBaseline();
             List<DiscreteProbabilityPair> basePairsTransformed = new ArrayList<>();
             basePairs.forEach( pair -> basePairsTransformed.add( mapper.apply( pair, threshold ) ) );
-            return DataFactory.ofDiscreteProbabilityPairs( mainPairsTransformed,
-                                                           basePairsTransformed,
-                                                           input.getMetadata(),
-                                                           input.getMetadataForBaseline(),
-                                                           input.getClimatology() );
+            return DiscreteProbabilityPairs.of( mainPairsTransformed,
+                                                basePairsTransformed,
+                                                input.getMetadata(),
+                                                input.getMetadataForBaseline(),
+                                                input.getClimatology() );
         }
-        return DataFactory.ofDiscreteProbabilityPairs( mainPairsTransformed,
-                                                       input.getMetadata(),
-                                                       input.getClimatology() );
+        return DiscreteProbabilityPairs.of( mainPairsTransformed,
+                                            input.getMetadata(),
+                                            input.getClimatology() );
     }
 
     /**
@@ -1324,12 +1324,12 @@ public final class Slicer
                 second = round().apply( second, digits );
             }
         }
-        return DataFactory.ofQuantileThreshold( OneOrTwoDoubles.of( first, second ),
-                                                threshold.getProbabilities(),
-                                                threshold.getCondition(),
-                                                threshold.getDataType(),
-                                                threshold.getLabel(),
-                                                threshold.getUnits() );
+        return Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( first, second ),
+                                              threshold.getProbabilities(),
+                                              threshold.getCondition(),
+                                              threshold.getDataType(),
+                                              threshold.getLabel(),
+                                              threshold.getUnits() );
     }
 
     /**

@@ -67,7 +67,7 @@ public final class SumOfSquareErrorTest
         //Check the results
         DoubleScoreOutput actual = sse.apply( input );
 
-        DoubleScoreOutput expected = DataFactory.ofDoubleScoreOutput( 4000039.29, m1 );
+        DoubleScoreOutput expected = DoubleScoreOutput.of( 4000039.29, m1 );
 
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
@@ -85,7 +85,7 @@ public final class SumOfSquareErrorTest
     {
         // Generate empty data
         SingleValuedPairs input =
-                DataFactory.ofSingleValuedPairs( Arrays.asList(), MetadataFactory.getMetadata() );
+                SingleValuedPairs.of( Arrays.asList(), MetadataFactory.getMetadata() );
 
         DoubleScoreOutput actual = sse.apply( input );
 

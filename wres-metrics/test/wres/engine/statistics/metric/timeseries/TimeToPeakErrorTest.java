@@ -86,7 +86,7 @@ public final class TimeToPeakErrorTest
         List<Pair<Instant, Duration>> expectedSource = new ArrayList<>();
         expectedSource.add( Pair.of( Instant.parse( "1985-01-01T00:00:00Z" ), Duration.ofHours( -6 ) ) );
         expectedSource.add( Pair.of( Instant.parse( "1985-01-02T00:00:00Z" ), Duration.ofHours( 12 ) ) );
-        PairedOutput<Instant, Duration> expected = DataFactory.ofPairedOutput( expectedSource, m1 );
+        PairedOutput<Instant, Duration> expected = PairedOutput.of( expectedSource, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()

@@ -100,8 +100,7 @@ public class CommaSeparatedPairedWriterTest extends CommaSeparatedWriterTest
         // Fake output wrapper.
         MetricOutputMapByMetric<PairedOutput<Instant, Duration>> fakeOutputData =
                 DataFactory.ofMetricOutputMapByMetric( Collections.singletonMap( MetricConstants.TIME_TO_PEAK_ERROR,
-                                                                                 DataFactory.ofPairedOutput( fakeOutputs,
-                                                                                                             fakeMetadata ) ) );
+                                                                                 PairedOutput.of( fakeOutputs, fakeMetadata ) ) );
 
         // wrap outputs in future
         Future<MetricOutputMapByMetric<PairedOutput<Instant, Duration>>> outputMapByMetricFuture =
