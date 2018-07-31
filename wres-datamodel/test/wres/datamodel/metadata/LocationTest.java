@@ -21,66 +21,34 @@ public class LocationTest
     @Test
     public void testEquals()
     {
-        Location all = MetadataFactory.getLocation( 18384141L,
-                                                    "DRRC2",
-                                                    -108.06F,
-                                                    37.6389F,
-                                                    "09165000" );
-        Location all2 = MetadataFactory.getLocation( 18384141L,
-                                                     "DRRC2",
-                                                     -108.06F,
-                                                     37.6389F,
-                                                     "09165000" );
-        Location all3 = MetadataFactory.getLocation( 18384141L,
-                                                     "DRRC2",
-                                                     -108.06F,
-                                                     37.6389F,
-                                                     "09165000" );
-        Location allDiffVectorID = MetadataFactory.getLocation( 1838141L,
-                                                                "DRRC2",
-                                                                -108.06F,
-                                                                37.6389F,
-                                                                "09165000" );
-        Location allDiffName = MetadataFactory.getLocation( 18384141L,
-                                                            "DRRC3",
-                                                            -108.06F,
-                                                            37.6389F,
-                                                            "09165000" );
-        Location allDiffCoordinates = MetadataFactory.getLocation( 18384141L,
-                                                                   "DRRC2",
-                                                                   -108.106F,
-                                                                   37.63829F,
-                                                                   "09165000" );
-        Location allDiffGage = MetadataFactory.getLocation( 18384141L,
-                                                            "DRRC2",
-                                                            -108.06F,
-                                                            37.6389F,
-                                                            "0916500" );
-        Location allDiff = MetadataFactory.getLocation( 1838425141L,
-                                                        "DRRC3",
-                                                        -108.061F,
-                                                        37.63859F,
-                                                        "0916500" );
+        Location all = Location.of( 18384141L, "DRRC2", -108.06F, 37.6389F, "09165000" );
+        Location all2 = Location.of( 18384141L, "DRRC2", -108.06F, 37.6389F, "09165000" );
+        Location all3 = Location.of( 18384141L, "DRRC2", -108.06F, 37.6389F, "09165000" );
+        Location allDiffVectorID = Location.of( 1838141L, "DRRC2", -108.06F, 37.6389F, "09165000" );
+        Location allDiffName = Location.of( 18384141L, "DRRC3", -108.06F, 37.6389F, "09165000" );
+        Location allDiffCoordinates = Location.of( 18384141L, "DRRC2", -108.106F, 37.63829F, "09165000" );
+        Location allDiffGage = Location.of( 18384141L, "DRRC2", -108.06F, 37.6389F, "0916500" );
+        Location allDiff = Location.of( 1838425141L, "DRRC3", -108.061F, 37.63859F, "0916500" );
 
-        Location name = MetadataFactory.getLocation( "DRRC2" );
-        Location name2 = MetadataFactory.getLocation( "DRRC2" );
-        Location name3 = MetadataFactory.getLocation( "DRRC2" );
-        Location diffName = MetadataFactory.getLocation( "DRRC5" );
+        Location name = Location.of( "DRRC2" );
+        Location name2 = Location.of( "DRRC2" );
+        Location name3 = Location.of( "DRRC2" );
+        Location diffName = Location.of( "DRRC5" );
 
-        Location vID = MetadataFactory.getLocation( 18384141L );
-        Location vID2 = MetadataFactory.getLocation( 18384141L );
-        Location vID3 = MetadataFactory.getLocation( 18384141L );
-        Location diffVID = MetadataFactory.getLocation( 1834584141L );
+        Location vID = Location.of( 18384141L );
+        Location vID2 = Location.of( 18384141L );
+        Location vID3 = Location.of( 18384141L );
+        Location diffVID = Location.of( 1834584141L );
 
-        Location latLon = MetadataFactory.getLocation( -108.06F, 37.6389F );
-        Location latLon2 = MetadataFactory.getLocation( -108.06F, 37.6389F );
-        Location latLon3 = MetadataFactory.getLocation( -108.06F, 37.6389F );
-        Location diffLatLon = MetadataFactory.getLocation( -101.06F, 37.6389F );
+        Location latLon = Location.of( -108.06F, 37.6389F );
+        Location latLon2 = Location.of( -108.06F, 37.6389F );
+        Location latLon3 = Location.of( -108.06F, 37.6389F );
+        Location diffLatLon = Location.of( -101.06F, 37.6389F );
 
-        Location gage = MetadataFactory.getLocation( null, null, null, null, "09165000" );
-        Location gage2 = MetadataFactory.getLocation( null, null, null, null, "09165000" );
-        Location gage3 = MetadataFactory.getLocation( null, null, null, null, "09165000" );
-        Location diffGage = MetadataFactory.getLocation( null, null, null, null, "0916455000" );
+        Location gage = Location.of( null, null, null, null, "09165000" );
+        Location gage2 = Location.of( null, null, null, null, "09165000" );
+        Location gage3 = Location.of( null, null, null, null, "09165000" );
+        Location diffGage = Location.of( null, null, null, null, "0916455000" );
 
         // Reflexive
         assertTrue( "Unexpected inequality between two location identifier instances",
@@ -199,16 +167,8 @@ public class LocationTest
     public void testHashCode()
     {
         // Equal
-        Location all = MetadataFactory.getLocation( 18384141L,
-                                                    "DRRC2",
-                                                    -108.06F,
-                                                    37.6389F,
-                                                    "09165000" );
-        Location all2 = MetadataFactory.getLocation( 18384141L,
-                                                     "DRRC2",
-                                                     -108.06F,
-                                                     37.6389F,
-                                                     "09165000" );
+        Location all = Location.of( 18384141L, "DRRC2", -108.06F, 37.6389F, "09165000" );
+        Location all2 = Location.of( 18384141L, "DRRC2", -108.06F, 37.6389F, "09165000" );
         assertTrue( "Unexpected inequality between two location hashcodes.", all.hashCode() == all2.hashCode() );
 
         // Consistent
@@ -218,79 +178,59 @@ public class LocationTest
         }
 
         // Equal with Identifiers missing
-        Location name = MetadataFactory.getLocation( "DRRC2" );
-        Location name2 = MetadataFactory.getLocation( "DRRC2" );
+        Location name = Location.of( "DRRC2" );
+        Location name2 = Location.of( "DRRC2" );
         assertTrue( "Unexpected inequality between two location hashcodes.", name.hashCode() == name2.hashCode() );
 
-        Location vID = MetadataFactory.getLocation( 18384141L );
-        Location vID2 = MetadataFactory.getLocation( 18384141L );
+        Location vID = Location.of( 18384141L );
+        Location vID2 = Location.of( 18384141L );
         assertTrue( "Unexpected inequality between two location hashcodes.", vID.hashCode() == vID2.hashCode() );
 
-        Location latLon = MetadataFactory.getLocation( -108.06F, 37.6389F );
-        Location latLon2 = MetadataFactory.getLocation( -108.06F, 37.6389F );
+        Location latLon = Location.of( -108.06F, 37.6389F );
+        Location latLon2 = Location.of( -108.06F, 37.6389F );
         assertTrue( "Unexpected inequality between two location hashcodes.", latLon.hashCode() == latLon2.hashCode() );
 
-        Location gage = MetadataFactory.getLocation( null, null, null, null, "09165000" );
-        Location gage2 = MetadataFactory.getLocation( null, null, null, null, "09165000" );
+        Location gage = Location.of( null, null, null, null, "09165000" );
+        Location gage2 = Location.of( null, null, null, null, "09165000" );
         assertTrue( "Unexpected inequality between two location hashcodes.",
                     gage.hashCode() == gage2.hashCode() );
 
         // Unequal
-        Location allDiffVectorID = MetadataFactory.getLocation( 1838141L,
-                                                                "DRRC2",
-                                                                -108.06F,
-                                                                37.6389F,
-                                                                "09165000" );
+        Location allDiffVectorID = Location.of( 1838141L, "DRRC2", -108.06F, 37.6389F, "09165000" );
         assertFalse( "Unexpected equality between two location hashcodes.",
                      all.hashCode() == allDiffVectorID.hashCode() );
 
-        Location allDiffName = MetadataFactory.getLocation( 18384141L,
-                                                            "DRRC3",
-                                                            -108.06F,
-                                                            37.6389F,
-                                                            "09165000" );
+        Location allDiffName = Location.of( 18384141L, "DRRC3", -108.06F, 37.6389F, "09165000" );
         assertFalse( "Unexpected equality between two location hashcodes.",
                      all.hashCode() == allDiffName.hashCode() );
 
-        Location allDiffCoordinates = MetadataFactory.getLocation( 18384141L,
-                                                                   "DRRC2",
-                                                                   -108.106F,
-                                                                   37.63829F,
-                                                                   "09165000" );
+        Location allDiffCoordinates = Location.of( 18384141L, "DRRC2", -108.106F, 37.63829F, "09165000" );
         assertFalse( "Unexpected equality between two location hashcodes.",
                      all.hashCode() == allDiffCoordinates.hashCode() );
 
-        Location allDiffGage = MetadataFactory.getLocation( 18384141L,
-                                                            "DRRC2",
-                                                            -108.06F,
-                                                            37.6389F,
-                                                            "0916500" );
+        Location allDiffGage = Location.of( 18384141L, "DRRC2", -108.06F, 37.6389F, "0916500" );
         assertFalse( "Unexpected equality between two location hashcodes.",
                      all.hashCode() == allDiffGage.hashCode() );
 
-        Location allDiff = MetadataFactory.getLocation( 1838425141L,
-                                                        "DRRC3",
-                                                        -108.061F,
-                                                        37.63859F,
-                                                        "0916500" );
+        Location allDiff = Location.of( 1838425141L, "DRRC3", -108.061F, 37.63859F, "0916500" );
         assertFalse( "Unexpected equality between two location hashcodes.",
                      all.hashCode() == allDiff.hashCode() );
 
 
         // Unequal with some identifiers missing
-        Location diffName = MetadataFactory.getLocation( "DRRC5" );
+        Location diffName = Location.of( "DRRC5" );
         assertFalse( "Unexpected equality between two location hashcodes.",
                      name.hashCode() == diffName.hashCode() );
 
-        Location diffVID = MetadataFactory.getLocation( 1834584141L );
+        Location diffVID = Location.of( 1834584141L );
         assertFalse( "Unexpected equality between two location hashcodes.",
                      vID.hashCode() == diffVID.hashCode() );
 
-        Location diffLatLon = MetadataFactory.getLocation( -101.06F, 37.6389F );
+        Location diffLatLon = Location.of( -101.06F, 37.6389F );
         assertFalse( "Unexpected equality between two location hashcodes.",
                      latLon.hashCode() == diffLatLon.hashCode() );
 
-        Location diffGage = MetadataFactory.getLocation( null, null, null, null, "0916455000" );
+        Location diffGage = Location.of( null, null, null, null, "0916455000" );
         assertFalse( "Unexpected equality between two location hashcodes.",
                      gage.hashCode() == diffGage.hashCode() );
 

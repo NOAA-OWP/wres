@@ -16,7 +16,6 @@ import wres.config.FeaturePlus;
 import wres.config.generated.Feature;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.metadata.Dimension;
-import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
@@ -104,7 +103,7 @@ public class CommaSeparatedReaderTest
     {
         Path commaSeparated = Paths.get( "testinput/commaseparated/testValueThresholdsWithLabels.csv" );
 
-        Dimension dim = MetadataFactory.getDimension( "CMS" );
+        Dimension dim = Dimension.of( "CMS" );
 
         Map<FeaturePlus, Set<Threshold>> actual =
                 CommaSeparatedReader.readThresholds( commaSeparated,

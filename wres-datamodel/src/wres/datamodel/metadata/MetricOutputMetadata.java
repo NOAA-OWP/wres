@@ -37,6 +37,180 @@ public class MetricOutputMetadata extends Metadata
     private final MetricConstants componentID;
 
     /**
+     * Builds a {@link MetricOutputMetadata} with an input source and an override for the sample size.
+     * 
+     * @param source the input source
+     * @param sampleSize the sample size
+     * @return a {@link MetricOutputMetadata} object
+     */
+
+    public static MetricOutputMetadata of( final MetricOutputMetadata source,
+                                           final int sampleSize )
+    {
+        return MetricOutputMetadata.of( sampleSize,
+                                        source.getDimension(),
+                                        source.getInputDimension(),
+                                        source.getMetricID(),
+                                        source.getMetricComponentID(),
+                                        source.getIdentifier(),
+                                        source.getTimeWindow() );
+    }
+
+    /**
+     * Builds a {@link MetricOutputMetadata} with an input source and an override for the {@link TimeWindow}.
+     * 
+     * @param source the input source
+     * @param timeWindow the time window
+     * @return a {@link MetricOutputMetadata} object
+     */
+
+    public static MetricOutputMetadata of( final MetricOutputMetadata source,
+                                           final TimeWindow timeWindow )
+    {
+        return MetricOutputMetadata.of( source.getSampleSize(),
+                                        source.getDimension(),
+                                        source.getInputDimension(),
+                                        source.getMetricID(),
+                                        source.getMetricComponentID(),
+                                        source.getIdentifier(),
+                                        timeWindow );
+    }
+
+    /**
+     * Builds a {@link MetricOutputMetadata} with an input source and an override for the metric component identifier.
+     * 
+     * @param source the input source
+     * @param componentID the metric component identifier or decomposition template
+     * @return a {@link MetricOutputMetadata} object
+     */
+
+    public static MetricOutputMetadata of( final MetricOutputMetadata source,
+                                           final MetricConstants componentID )
+    {
+        return MetricOutputMetadata.of( source.getSampleSize(),
+                                        source.getDimension(),
+                                        source.getInputDimension(),
+                                        source.getMetricID(),
+                                        componentID,
+                                        source.getIdentifier(),
+                                        source.getTimeWindow() );
+    }
+
+    /**
+     * Builds a default {@link MetricOutputMetadata} with a prescribed sample size, a {@link Dimension} for the output
+     * and the input, and a {@link MetricConstants} identifier for the metric.
+     * 
+     * @param sampleSize the sample size
+     * @param outputDim the dimension
+     * @param inputDim the input dimension
+     * @param metricID the metric identifier
+     * @return a {@link MetricOutputMetadata} object
+     */
+
+    public static MetricOutputMetadata of( final int sampleSize,
+                                           final Dimension outputDim,
+                                           final Dimension inputDim,
+                                           final MetricConstants metricID )
+    {
+        return MetricOutputMetadata.of( sampleSize,
+                                        outputDim,
+                                        inputDim,
+                                        metricID,
+                                        MetricConstants.MAIN,
+                                        null,
+                                        null );
+    }
+
+    /**
+     * Builds a default {@link MetricOutputMetadata} with a prescribed sample size, a {@link Dimension} for the output
+     * and the input, and {@link MetricConstants} identifiers for the metric and the metric component, respectively.
+     * 
+     * @param sampleSize the sample size
+     * @param outputDim the output dimension
+     * @param inputDim the input dimension
+     * @param metricID the metric identifier
+     * @param componentID the metric component identifier or decomposition template
+     * @return a {@link MetricOutputMetadata} object
+     */
+
+    public static MetricOutputMetadata of( final int sampleSize,
+                                           final Dimension outputDim,
+                                           final Dimension inputDim,
+                                           final MetricConstants metricID,
+                                           final MetricConstants componentID )
+    {
+        return MetricOutputMetadata.of( sampleSize,
+                                        outputDim,
+                                        inputDim,
+                                        metricID,
+                                        componentID,
+                                        null,
+                                        null );
+    }
+
+    /**
+     * Builds a default {@link MetricOutputMetadata} with a prescribed source of {@link Metadata} whose parameters are
+     * copied, together with a sample size, a {@link Dimension} for the output, and {@link MetricConstants} identifiers
+     * for the metric and the metric component, respectively.
+     * 
+     * @param sampleSize the sample size
+     * @param outputDim the output dimension
+     * @param metadata the source metadata
+     * @param metricID the metric identifier
+     * @param componentID the metric component identifier or decomposition template
+     * @return a {@link MetricOutputMetadata} object
+     * @throws NullPointerException if the input metadata is null
+     */
+
+    public static MetricOutputMetadata of( final int sampleSize,
+                                           final Dimension outputDim,
+                                           final Metadata metadata,
+                                           final MetricConstants metricID,
+                                           final MetricConstants componentID )
+    {
+        Objects.requireNonNull( metadata,
+                                "Specify a non-null source of input metadata from which to build the output metadata." );
+
+        return MetricOutputMetadata.of( sampleSize,
+                                        outputDim,
+                                        metadata.getDimension(),
+                                        metricID,
+                                        componentID,
+                                        metadata.getIdentifier(),
+                                        metadata.getTimeWindow() );
+    }
+
+    /**
+     * Builds a default {@link MetricOutputMetadata} with a prescribed sample size, a {@link Dimension} for the output
+     * and the input, {@link MetricConstants} identifiers for the metric and the metric component, respectively, and an
+     * optional {@link DatasetIdentifier} identifier.
+     * 
+     * @param sampleSize the sample size
+     * @param outputDim the output dimension
+     * @param inputDim the input dimension
+     * @param metricID the metric identifier
+     * @param componentID the metric component identifier or decomposition template
+     * @param identifier an optional dataset identifier (may be null)
+     * @return a {@link MetricOutputMetadata} object
+     */
+
+    public static MetricOutputMetadata of( final int sampleSize,
+                                           final Dimension outputDim,
+                                           final Dimension inputDim,
+                                           final MetricConstants metricID,
+                                           final MetricConstants componentID,
+                                           final DatasetIdentifier identifier )
+    {
+        return MetricOutputMetadata.of( sampleSize,
+                                        outputDim,
+                                        inputDim,
+                                        metricID,
+                                        componentID,
+                                        identifier,
+                                        null );
+    }
+
+    /**
      * Returns an instance from the inputs.
      * 
      * @param sampleSize the sample size

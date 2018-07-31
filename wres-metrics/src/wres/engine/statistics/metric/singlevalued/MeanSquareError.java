@@ -75,18 +75,19 @@ public class MeanSquareError extends SumOfSquareError
         final MetricOutputMetadata metIn = output.getMetadata();
 
         // Set the output dimension
-        Dimension outputDimension = MetadataFactory.getDimension();
+        Dimension outputDimension = Dimension.of();
         if ( hasRealUnits() )
         {
             outputDimension = metIn.getDimension();
         }
-        MetricOutputMetadata meta = MetadataFactory.getOutputMetadata( metIn.getSampleSize(),
-                                                                       outputDimension,
-                                                                       metIn.getDimension(),
-                                                                       this.getID(),
-                                                                       MetricConstants.MAIN,
-                                                                       metIn.getIdentifier(),
-                                                                       metIn.getTimeWindow() );
+        final Dimension outputDim = outputDimension;
+        MetricOutputMetadata meta = MetricOutputMetadata.of( metIn.getSampleSize(),
+        outputDim,
+        metIn.getDimension(),
+        this.getID(),
+        MetricConstants.MAIN,
+        metIn.getIdentifier(),
+        metIn.getTimeWindow() );
 
         double mse = FunctionFactory.finiteOrMissing()
                                     .applyAsDouble( output.getData() / metIn.getSampleSize() );

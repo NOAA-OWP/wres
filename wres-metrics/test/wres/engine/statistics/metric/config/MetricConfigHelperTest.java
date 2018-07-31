@@ -42,7 +42,6 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.metadata.Dimension;
-import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants;
@@ -290,7 +289,7 @@ public final class MetricConfigHelperTest
     {
 
         // Obtain the threshold dimension
-        Dimension dimension = MetadataFactory.getDimension( "CMS" );
+        Dimension dimension = Dimension.of( "CMS" );
 
         // Mock some metrics
         List<MetricConfig> metrics = new ArrayList<>();

@@ -65,7 +65,6 @@ import wres.config.generated.ThresholdsConfig;
 import wres.config.generated.TimeScaleConfig;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.metadata.Dimension;
-import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
@@ -1514,7 +1513,7 @@ public class ConfigHelper
         Dimension units = null;
         if ( Objects.nonNull( projectConfig.getPair() ) && Objects.nonNull( projectConfig.getPair().getUnit() ) )
         {
-            units = MetadataFactory.getDimension( projectConfig.getPair().getUnit() );
+            units = Dimension.of( projectConfig.getPair().getUnit() );
         }
 
         for ( MetricsConfig nextGroup : metrics )

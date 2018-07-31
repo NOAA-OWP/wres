@@ -15,7 +15,8 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
-import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.metadata.Dimension;
+import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.MetricParameterException;
@@ -53,9 +54,9 @@ public final class CorrelationPearsonsTest
     {
         SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
-        final MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( input.getRawData().size(),
-                                                                   MetadataFactory.getDimension(),
-                                                                   MetadataFactory.getDimension(),
+        final MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getRawData().size(),
+                                                                   Dimension.of(),
+                                                                   Dimension.of(),
                                                                    MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
                                                                    MetricConstants.MAIN );
 
@@ -90,7 +91,7 @@ public final class CorrelationPearsonsTest
     {
         // Generate empty data
         SingleValuedPairs input =
-                SingleValuedPairs.of( Arrays.asList(), MetadataFactory.getMetadata() );
+                SingleValuedPairs.of( Arrays.asList(), Metadata.of() );
  
         DoubleScoreOutput actual = rho.apply( input );
 

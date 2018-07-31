@@ -26,8 +26,8 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.metadata.DatasetIdentifier;
+import wres.datamodel.metadata.Dimension;
 import wres.datamodel.metadata.Location;
-import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
@@ -81,18 +81,16 @@ public class CommaSeparatedMatrixWriterTest extends CommaSeparatedWriterTest
         // which requires a datasetidentifier...
         // which requires a location...
 
-        Location fakeLocation = MetadataFactory.getLocation( LID );
+        Location fakeLocation = Location.of( LID );
+        final Location geospatialID = fakeLocation;
 
         DatasetIdentifier datasetIdentifier =
-                MetadataFactory.getDatasetIdentifier( fakeLocation,
-                                                      "SQIN",
-                                                      "HEFS",
-                                                      "ESP" );
+                DatasetIdentifier.of( geospatialID, "SQIN", "HEFS", "ESP" );
 
         MetricOutputMetadata fakeMetadata =
-                MetadataFactory.getOutputMetadata( 1000,
-                                                   MetadataFactory.getDimension(),
-                                                   MetadataFactory.getDimension( "CMS" ),
+                MetricOutputMetadata.of( 1000,
+                                                   Dimension.of(),
+                                                   Dimension.of( "CMS" ),
                                                    MetricConstants.CONTINGENCY_TABLE,
                                                    null,
                                                    datasetIdentifier );

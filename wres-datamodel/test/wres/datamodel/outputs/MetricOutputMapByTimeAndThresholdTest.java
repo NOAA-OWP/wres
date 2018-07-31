@@ -17,8 +17,9 @@ import org.junit.Test;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.OneOrTwoDoubles;
+import wres.datamodel.metadata.DatasetIdentifier;
+import wres.datamodel.metadata.Dimension;
 import wres.datamodel.metadata.Location;
-import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
@@ -140,9 +141,9 @@ public final class MetricOutputMapByTimeAndThresholdTest
     @Test
     public void testSetOfTimeWindowKeyByLeadTime()
     {
-        final MetricOutputMetadata meta = MetadataFactory.getOutputMetadata( 1,
-                                                                             MetadataFactory.getDimension(),
-                                                                             MetadataFactory.getDimension(),
+        final MetricOutputMetadata meta = MetricOutputMetadata.of( 1,
+                                                                             Dimension.of(),
+                                                                             Dimension.of(),
                                                                              MetricConstants.COEFFICIENT_OF_DETERMINATION,
                                                                              MetricConstants.MAIN );
         Map<Pair<TimeWindow, OneOrTwoThresholds>, DoubleScoreOutput> testMap = new HashMap<>();
@@ -416,16 +417,14 @@ public final class MetricOutputMapByTimeAndThresholdTest
                 new MetricOutputMapByTimeAndThreshold.MetricOutputMapByTimeAndThresholdBuilder<>();
 
         //Metadata
-        Location location = MetadataFactory.getLocation( "DRRC2" );
-        MetricOutputMetadata meta = MetadataFactory.getOutputMetadata( 1000,
-                                                                       MetadataFactory.getDimension(),
-                                                                       MetadataFactory.getDimension( "CMS" ),
+        Location location = Location.of( "DRRC2" );
+        final Location geospatialID = location;
+        MetricOutputMetadata meta = MetricOutputMetadata.of( 1000,
+                                                                       Dimension.of(),
+                                                                       Dimension.of( "CMS" ),
                                                                        MetricConstants.MEAN_ABSOLUTE_ERROR,
                                                                        MetricConstants.MAIN,
-                                                                       MetadataFactory.getDatasetIdentifier( location,
-                                                                                                             "SQIN",
-                                                                                                             "HEFS",
-                                                                                                             "ESP" ) );
+                                                                       DatasetIdentifier.of( geospatialID, "SQIN", "HEFS", "ESP" ) );
 
         int[] leadTimes = new int[] { 1, 2, 3, 4, 5 };
 

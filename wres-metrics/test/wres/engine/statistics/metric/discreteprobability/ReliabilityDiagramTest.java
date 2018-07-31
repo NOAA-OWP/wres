@@ -19,7 +19,9 @@ import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPair;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.metadata.Dimension;
+import wres.datamodel.metadata.Location;
+import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.engine.statistics.metric.MetricParameterException;
@@ -61,12 +63,12 @@ public final class ReliabilityDiagramTest
 
         //Metadata for the output
         final MetricOutputMetadata m1 =
-                MetadataFactory.getOutputMetadata( input.getRawData().size(),
-                                                   MetadataFactory.getDimension(),
-                                                   MetadataFactory.getDimension(),
+                MetricOutputMetadata.of( input.getRawData().size(),
+                                                   Dimension.of(),
+                                                   Dimension.of(),
                                                    MetricConstants.RELIABILITY_DIAGRAM,
                                                    MetricConstants.MAIN,
-                                                   MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation( "Tampere" ),
+                                                   DatasetIdentifier.of( Location.of( "Tampere" ),
                                                                                          "MAP",
                                                                                          "FMI" ) );
 
@@ -134,18 +136,18 @@ public final class ReliabilityDiagramTest
         data.add( DiscreteProbabilityPair.of( 0.0, 0.0 ) );
 
         DatasetIdentifier identifier =
-                MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation( "FAKE" ), "MAP", "FK" );
+                DatasetIdentifier.of( Location.of( "FAKE" ), "MAP", "FK" );
 
         DiscreteProbabilityPairs input =
                 DiscreteProbabilityPairs.of( data,
-                                                        MetadataFactory.getMetadata( MetadataFactory.getDimension(),
+                                                        Metadata.of( Dimension.of(),
                                                                                      identifier ) );
 
         //Metadata for the output
         final MetricOutputMetadata m1 =
-                MetadataFactory.getOutputMetadata( input.getRawData().size(),
-                                                   MetadataFactory.getDimension(),
-                                                   MetadataFactory.getDimension(),
+                MetricOutputMetadata.of( input.getRawData().size(),
+                                                   Dimension.of(),
+                                                   Dimension.of(),
                                                    MetricConstants.RELIABILITY_DIAGRAM,
                                                    MetricConstants.MAIN,
                                                    identifier );
@@ -178,7 +180,7 @@ public final class ReliabilityDiagramTest
     {
         // Generate empty data
         DiscreteProbabilityPairs input =
-                DiscreteProbabilityPairs.of( Arrays.asList(), MetadataFactory.getMetadata() );
+                DiscreteProbabilityPairs.of( Arrays.asList(), Metadata.of() );
 
         MultiVectorOutput actual = rel.apply( input );
 

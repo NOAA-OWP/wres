@@ -30,7 +30,7 @@ import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.inputs.pairs.MulticategoryPairs;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
-import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.metadata.Dimension;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MetricOutput;
@@ -695,9 +695,9 @@ public class MetricCollectionTest
                                                                     MetricConstants.MEAN_SQUARE_ERROR ) );
         final MetricOutputMapByMetric<DoubleScoreOutput> actual = collection.apply( input, ignore );
         MetricOutputMetadata outM =
-                MetadataFactory.getOutputMetadata( 10,
-                                                   MetadataFactory.getDimension(),
-                                                   MetadataFactory.getDimension(),
+                MetricOutputMetadata.of( 10,
+                                                   Dimension.of(),
+                                                   Dimension.of(),
                                                    MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
         MetricOutputMapByMetric<DoubleScoreOutput> expected =
                 DataFactory.ofMetricOutputMapByMetric( Collections.singletonMap( MetricConstants.PEARSON_CORRELATION_COEFFICIENT,

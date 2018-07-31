@@ -11,7 +11,7 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
-import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.metadata.Dimension;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
 
@@ -41,9 +41,9 @@ public final class SampleSizeTest
         final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Metadata for the output
-        final MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( input.getRawData().size(),
-                                                                           MetadataFactory.getDimension(),
-                                                                           MetadataFactory.getDimension(),
+        final MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getRawData().size(),
+                                                                           Dimension.of(),
+                                                                           Dimension.of(),
                                                                            MetricConstants.SAMPLE_SIZE,
                                                                            MetricConstants.MAIN );
         //Build the metric

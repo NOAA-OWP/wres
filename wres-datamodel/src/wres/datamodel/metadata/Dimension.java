@@ -25,18 +25,30 @@ public class Dimension implements Comparable<Dimension>
     private final String dimension; 
 
     /**
-     * Returns an instance from the input.
+     * Returns a {@link Dimension} that is nominally dimensionless.
      * 
-     * @param dimension the dimension
-     * @throws NullPointerException if the input is null
-     * @return a dimension instance
+     * @return a {@link Dimension}
      */
-
-    public static Dimension of( String dimension )
+    
+    public static Dimension of()
+    {
+        return Dimension.of( "DIMENSIONLESS" );
+    }
+    
+    /**
+     * Returns a {@link Dimension} with a named dimension and {@link Dimension#hasDimension()} that returns 
+     * <code>false</code> if the dimension is "DIMENSIONLESS", <code>true</code> otherwise.
+     * 
+     * @param dimension the dimension string
+     * @return a {@link Dimension}
+     * @throws MetadataException if the input string is null
+     */
+    
+    public static Dimension of( final String dimension )
     {
         return new Dimension( dimension );
     }
-
+    
     /**
      * Returns true if the metric data has an explicit dimension, false if it is dimensionless.
      * 

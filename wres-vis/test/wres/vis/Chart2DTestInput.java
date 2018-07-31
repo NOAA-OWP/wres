@@ -17,8 +17,10 @@ import ohd.hseb.charter.ChartTools;
 import ohd.hseb.charter.datasource.XYChartDataSourceException;
 import wres.datamodel.inputs.pairs.SingleValuedPair;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
+import wres.datamodel.metadata.DatasetIdentifier;
+import wres.datamodel.metadata.Dimension;
+import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.Metadata;
-import wres.datamodel.metadata.MetadataFactory;
 
 public class Chart2DTestInput extends TestCase
 {
@@ -33,8 +35,8 @@ public class Chart2DTestInput extends TestCase
             values.add(SingleValuedPair.of(rand.nextGaussian(), rand.nextGaussian()));
         }
 
-        final Metadata meta = MetadataFactory.getMetadata(MetadataFactory.getDimension("CMS"),
-                                                 MetadataFactory.getDatasetIdentifier(MetadataFactory.getLocation("DRRC2"), "SQIN", "HEFS"));
+        final Metadata meta = Metadata.of(Dimension.of("CMS"),
+                                                 DatasetIdentifier.of(Location.of("DRRC2"), "SQIN", "HEFS"));
         final SingleValuedPairs pairs = SingleValuedPairs.of(values, meta);
 
         //Construct the source from the pairs assigning it a data source order index of 0.
@@ -79,8 +81,8 @@ public class Chart2DTestInput extends TestCase
         values.add(SingleValuedPair.of(12, 12));
         values.add(SingleValuedPair.of(93, 94));
 
-        final Metadata meta = MetadataFactory.getMetadata(MetadataFactory.getDimension("CMS"),
-                                                 MetadataFactory.getDatasetIdentifier(MetadataFactory.getLocation("DRRC2"), "SQIN", "HEFS"));
+        final Metadata meta = Metadata.of(Dimension.of("CMS"),
+                                                 DatasetIdentifier.of(Location.of("DRRC2"), "SQIN", "HEFS"));
         final SingleValuedPairs pairs = SingleValuedPairs.of(values, meta);
 
         ChartEngine engine = ChartEngineFactory.buildSingleValuedPairsChartEngine( pairs, null, null );

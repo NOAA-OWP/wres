@@ -20,7 +20,8 @@ import wres.datamodel.inputs.pairs.EnsemblePair;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.SingleValuedPair;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
-import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.metadata.DatasetIdentifier;
+import wres.datamodel.metadata.Dimension;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.ReferenceTime;
@@ -51,21 +52,21 @@ public final class DataFactoryTest
     public void constructionOfPairsTest()
     {
 
-        final Location l = MetadataFactory.getLocation( "DRRC2" );
-        final Metadata m1 = MetadataFactory.getMetadata( MetadataFactory.getDimension(),
-                                                         MetadataFactory.getDatasetIdentifier( l, "SQIN", "HEFS" ) );
+        final Location l = Location.of( "DRRC2" );
+        final Metadata m1 = Metadata.of( Dimension.of(),
+                                                         DatasetIdentifier.of( l, "SQIN", "HEFS" ) );
         final List<DichotomousPair> input = new ArrayList<>();
         input.add( DichotomousPair.of( true, false ) );
         assertNotNull( DichotomousPairs.ofDichotomousPairs( input, m1 ) );
 
         final List<DiscreteProbabilityPair> dInput = new ArrayList<>();
         dInput.add( DiscreteProbabilityPair.of( 0.0, 1.0 ) );
-        final Location l2 = MetadataFactory.getLocation( "DRRC2" );
-        final Metadata m2 = MetadataFactory.getMetadata( MetadataFactory.getDimension(),
-                                                         MetadataFactory.getDatasetIdentifier( l2, "SQIN", "HEFS" ) );
-        final Location l3 = MetadataFactory.getLocation( "DRRC2" );
-        final Metadata m3 = MetadataFactory.getMetadata( MetadataFactory.getDimension(),
-                                                         MetadataFactory.getDatasetIdentifier( l3, "SQIN", "ESP" ) );
+        final Location l2 = Location.of( "DRRC2" );
+        final Metadata m2 = Metadata.of( Dimension.of(),
+                                                         DatasetIdentifier.of( l2, "SQIN", "HEFS" ) );
+        final Location l3 = Location.of( "DRRC2" );
+        final Metadata m3 = Metadata.of( Dimension.of(),
+                                                         DatasetIdentifier.of( l3, "SQIN", "ESP" ) );
         assertNotNull( DiscreteProbabilityPairs.of( dInput, m2 ) );
         assertNotNull( DiscreteProbabilityPairs.of( dInput, dInput, m2, m3, null ) );
 

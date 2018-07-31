@@ -15,7 +15,10 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
-import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.metadata.DatasetIdentifier;
+import wres.datamodel.metadata.Dimension;
+import wres.datamodel.metadata.Location;
+import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.MetricParameterException;
@@ -55,15 +58,12 @@ public final class SumOfSquareErrorTest
         SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsTwo();
 
         //Metadata for the output
-        final MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( input.getRawData().size(),
-                                                                           MetadataFactory.getDimension( "CMS" ),
-                                                                           MetadataFactory.getDimension( "CMS" ),
+        final MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getRawData().size(),
+                                                                           Dimension.of( "CMS" ),
+                                                                           Dimension.of( "CMS" ),
                                                                            MetricConstants.SUM_OF_SQUARE_ERROR,
                                                                            MetricConstants.MAIN,
-                                                                           MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation( "DRRC2" ),
-                                                                                                                 "SQIN",
-                                                                                                                 "HEFS",
-                                                                                                                 "ESP" ) );
+                                                                           DatasetIdentifier.of( Location.of( "DRRC2" ), "SQIN", "HEFS", "ESP" ) );
         //Check the results
         DoubleScoreOutput actual = sse.apply( input );
 
@@ -85,7 +85,7 @@ public final class SumOfSquareErrorTest
     {
         // Generate empty data
         SingleValuedPairs input =
-                SingleValuedPairs.of( Arrays.asList(), MetadataFactory.getMetadata() );
+                SingleValuedPairs.of( Arrays.asList(), Metadata.of() );
 
         DoubleScoreOutput actual = sse.apply( input );
 

@@ -18,6 +18,10 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
+import wres.datamodel.metadata.DatasetIdentifier;
+import wres.datamodel.metadata.Dimension;
+import wres.datamodel.metadata.Location;
+import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
@@ -64,15 +68,15 @@ public final class IndexOfAgreementTest
                                                  Instant.parse( "2010-12-31T11:59:59Z" ),
                                                  ReferenceTime.VALID_TIME,
                                                  Duration.ofHours( 24 ) );
-        final MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( input.getRawData().size(),
-                                                                   MetadataFactory.getDimension(),
-                                                                   MetadataFactory.getDimension( "MM/DAY" ),
-                                                                   MetricConstants.INDEX_OF_AGREEMENT,
-                                                                   MetricConstants.MAIN,
-                                                                   MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation("103.1"),
-                                                                                                 "QME",
-                                                                                                 "NVE" ),
-                                                                   window );
+        final MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getRawData().size(),
+        Dimension.of(),
+        Dimension.of( "MM/DAY" ),
+        MetricConstants.INDEX_OF_AGREEMENT,
+        MetricConstants.MAIN,
+        DatasetIdentifier.of( Location.of("103.1"),
+                                                                                                         "QME",
+                                                                                                         "NVE" ),
+        window );
 
         //Check the results
         DoubleScoreOutput actual = ioa.apply( input );
@@ -94,7 +98,7 @@ public final class IndexOfAgreementTest
     {
         // Generate empty data
         SingleValuedPairs input =
-                SingleValuedPairs.of( Arrays.asList(), MetadataFactory.getMetadata() );
+                SingleValuedPairs.of( Arrays.asList(), Metadata.of() );
 
         DoubleScoreOutput actual = ioa.apply( input );
 

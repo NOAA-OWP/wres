@@ -21,7 +21,6 @@ import wres.datamodel.inputs.pairs.EnsemblePair;
 import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairs.TimeSeriesOfEnsemblePairsBuilder;
 import wres.datamodel.metadata.Metadata;
-import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 
@@ -61,7 +60,7 @@ public final class TimeSeriesOfEnsemblePairsTest
         third.add( Event.of( Instant.parse( "1985-01-03T01:00:00Z" ), EnsemblePair.of( 7, new double[] { 7 } ) ) );
         third.add( Event.of( Instant.parse( "1985-01-03T02:00:00Z" ), EnsemblePair.of( 8, new double[] { 8 } ) ) );
         third.add( Event.of( Instant.parse( "1985-01-03T03:00:00Z" ), EnsemblePair.of( 9, new double[] { 9 } ) ) );
-        final Metadata meta = MetadataFactory.getMetadata();
+        final Metadata meta = Metadata.of();
         TimeSeriesOfEnsemblePairs ts =
                 (TimeSeriesOfEnsemblePairs) b.addTimeSeriesData( firstBasisTime, first )
                                              .addTimeSeriesData( secondBasisTime, second )
@@ -107,7 +106,7 @@ public final class TimeSeriesOfEnsemblePairsTest
         third.add( Event.of( Instant.parse( "1985-01-03T01:00:00Z" ), EnsemblePair.of( 1, new double[] { 1 } ) ) );
         third.add( Event.of( Instant.parse( "1985-01-03T02:00:00Z" ), EnsemblePair.of( 2, new double[] { 2 } ) ) );
         third.add( Event.of( Instant.parse( "1985-01-03T03:00:00Z" ), EnsemblePair.of( 3, new double[] { 3 } ) ) );
-        Metadata meta = MetadataFactory.getMetadata();
+        Metadata meta = Metadata.of();
         //Add the time-series, with only one for baseline
         TimeSeriesOfEnsemblePairs ts =
                 (TimeSeriesOfEnsemblePairs) b.addTimeSeriesData( firstBasisTime, first )
@@ -162,7 +161,7 @@ public final class TimeSeriesOfEnsemblePairsTest
         values.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), EnsemblePair.of( 1, new double[] { 1 } ) ) );
         values.add( Event.of( Instant.parse( "1985-01-01T02:00:00Z" ), EnsemblePair.of( 2, new double[] { 2 } ) ) );
         values.add( Event.of( Instant.parse( "1985-01-01T03:00:00Z" ), EnsemblePair.of( 3, new double[] { 3 } ) ) );
-        Metadata meta = MetadataFactory.getMetadata();
+        Metadata meta = Metadata.of();
         b.addTimeSeriesData( basisTime, values ).setMetadata( meta );
         //Check dataset dimensions
         assertTrue( "Unexpected baseline associated with time-series.",
@@ -209,7 +208,7 @@ public final class TimeSeriesOfEnsemblePairsTest
         first.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), EnsemblePair.of( 1, new double[] { 1 } ) ) );
         first.add( Event.of( Instant.parse( "1985-01-01T02:00:00Z" ), EnsemblePair.of( 2, new double[] { 2 } ) ) );
         first.add( Event.of( Instant.parse( "1985-01-01T03:00:00Z" ), EnsemblePair.of( 3, new double[] { 3 } ) ) );
-        Metadata meta = MetadataFactory.getMetadata();
+        Metadata meta = Metadata.of();
         VectorOfDoubles climatology = VectorOfDoubles.of( new double[] { 1, 2, 3 } );
         b.addTimeSeriesData( basisTime, first )
          .addTimeSeriesDataForBaseline( basisTime, first )
@@ -268,7 +267,7 @@ public final class TimeSeriesOfEnsemblePairsTest
         first.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), EnsemblePair.of( 1, new double[] { 1 } ) ) );
         first.add( Event.of( Instant.parse( "1985-01-01T02:00:00Z" ), EnsemblePair.of( 2, new double[] { 2 } ) ) );
         first.add( Event.of( Instant.parse( "1985-01-01T03:00:00Z" ), EnsemblePair.of( 3, new double[] { 3 } ) ) );
-        final Metadata meta = MetadataFactory.getMetadata();
+        final Metadata meta = Metadata.of();
 
         //Check for exceptions on the iterators
         TimeSeriesOfEnsemblePairsBuilder d = new TimeSeriesOfEnsemblePairsBuilder();
@@ -310,7 +309,7 @@ public final class TimeSeriesOfEnsemblePairsTest
         TimeSeriesOfEnsemblePairsBuilder b = new TimeSeriesOfEnsemblePairsBuilder();
 
         Instant basisTime = Instant.parse( "1985-01-01T00:00:00Z" );
-        Metadata meta = MetadataFactory.getMetadata();
+        Metadata meta = Metadata.of();
         StringJoiner joiner = new StringJoiner( System.lineSeparator() );
         for ( int i = 0; i < 5; i++ )
         {
@@ -381,7 +380,7 @@ public final class TimeSeriesOfEnsemblePairsTest
                               EnsemblePair.of( 11, new double[] { 11 } ) ) );
         fourth.add( Event.of( Instant.parse( "1985-01-04T06:00:00Z" ),
                               EnsemblePair.of( 12, new double[] { 12 } ) ) );
-        Metadata meta = MetadataFactory.getMetadata();
+        Metadata meta = Metadata.of();
         //Add the time-series, with only one for baseline
         TimeSeriesOfEnsemblePairs ts =
                 (TimeSeriesOfEnsemblePairs) b.addTimeSeriesData( firstBasisTime, first )
@@ -425,7 +424,7 @@ public final class TimeSeriesOfEnsemblePairsTest
         first.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), EnsemblePair.of( 1, new double[] { 1 } ) ) );
         first.add( Event.of( Instant.parse( "1985-01-01T02:00:00Z" ), EnsemblePair.of( 2, new double[] { 2 } ) ) );
         first.add( Event.of( Instant.parse( "1985-01-01T03:00:00Z" ), EnsemblePair.of( 3, new double[] { 3 } ) ) );
-        Metadata meta = MetadataFactory.getMetadata();
+        Metadata meta = Metadata.of();
         VectorOfDoubles climatology = VectorOfDoubles.of( new double[] { 1, 2, 3 } );
         b.addTimeSeriesData( basisTime, first )
          .setMetadata( meta )

@@ -18,7 +18,10 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
-import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.metadata.DatasetIdentifier;
+import wres.datamodel.metadata.Dimension;
+import wres.datamodel.metadata.Location;
+import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
@@ -64,16 +67,17 @@ public final class KlingGuptaEfficiencyTest
                                            Instant.parse( "2010-12-31T11:59:59Z" ),
                                            ReferenceTime.VALID_TIME,
                                            Duration.ofHours( 24 ) );
+        final TimeWindow timeWindow = window;
 
-        MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( input.getRawData().size(),
-                                                             MetadataFactory.getDimension(),
-                                                             MetadataFactory.getDimension( "MM/DAY" ),
-                                                             MetricConstants.KLING_GUPTA_EFFICIENCY,
-                                                             MetricConstants.MAIN,
-                                                             MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation("103.1"),
-                                                                                           "QME",
-                                                                                           "NVE" ),
-                                                             window );
+        MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getRawData().size(),
+        Dimension.of(),
+        Dimension.of( "MM/DAY" ),
+        MetricConstants.KLING_GUPTA_EFFICIENCY,
+        MetricConstants.MAIN,
+        DatasetIdentifier.of( Location.of("103.1"),
+                                                                                                   "QME",
+                                                                                                   "NVE" ),
+        timeWindow );
 
         //Check the results
         DoubleScoreOutput actual = kge.apply( input );
@@ -95,9 +99,9 @@ public final class KlingGuptaEfficiencyTest
     {
         SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
-        MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( input.getRawData().size(),
-                                                             MetadataFactory.getDimension(),
-                                                             MetadataFactory.getDimension(),
+        MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getRawData().size(),
+                                                             Dimension.of(),
+                                                             Dimension.of(),
                                                              MetricConstants.KLING_GUPTA_EFFICIENCY,
                                                              MetricConstants.MAIN );
 
@@ -121,7 +125,7 @@ public final class KlingGuptaEfficiencyTest
     {
         // Generate empty data
         SingleValuedPairs input =
-                SingleValuedPairs.of( Arrays.asList(), MetadataFactory.getMetadata() );
+                SingleValuedPairs.of( Arrays.asList(), Metadata.of() );
 
         DoubleScoreOutput actual = kge.apply( input );
 
