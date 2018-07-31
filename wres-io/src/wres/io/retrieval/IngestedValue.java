@@ -10,6 +10,7 @@ import java.util.TreeMap;
 
 import wres.io.data.caching.UnitConversions;
 import wres.io.data.details.ProjectDetails;
+import wres.io.utilities.DataProvider;
 import wres.io.utilities.Database;
 
 class IngestedValue implements Comparable<IngestedValue>
@@ -20,7 +21,7 @@ class IngestedValue implements Comparable<IngestedValue>
     private final long referenceEpoch;
     private final Instant validTime;
     private final int lead;
-    private final Double[] measurements;
+    private final double[] measurements;
 
     private static UnitConversions.Conversion getConversion(int measurementUnitID, String desiredUnit)
     {
@@ -43,21 +44,21 @@ class IngestedValue implements Comparable<IngestedValue>
         }
     }
 
-    IngestedValue( ResultSet row, ProjectDetails projectDetails) throws SQLException
+    IngestedValue( DataProvider row, ProjectDetails projectDetails)
     {
-        this.validTime = Database.getInstant(row, "value_date");
-        this.measurements = (Double[])row.getArray( "measurements" ).getArray();
+        this.validTime = row.getInstant( "value_date" );
+        this.measurements = row.getDoubleArray("measurements" );
         this.convertAllMeasurements(
-                Database.getValue( row, "measurementunit_id" ),
+                row.getInt( "measurementunit_id" ),
                 projectDetails
         );
 
-        this.lead = Database.getValue( row, "lead" );
-        this.referenceEpoch = Database.getValue( row, "basis_epoch_time" );
+        this.lead = row.getInt( "lead" );
+        this.referenceEpoch = row.getLong("basis_epoch_time");
     }
 
     IngestedValue(Instant validTime,
-                  Double[] measurements,
+                  double[] measurements,
                   int measurementUnitId,
                   int lead,
                   long basisEpoch,

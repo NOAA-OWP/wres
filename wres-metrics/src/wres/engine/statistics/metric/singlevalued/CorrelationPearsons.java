@@ -4,13 +4,11 @@ import java.util.Objects;
 
 import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.Slicer;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
-import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
@@ -41,12 +39,12 @@ public class CorrelationPearsons extends OrdinaryScore<SingleValuedPairs, Double
      * 
      * @return an instance
      */
-    
+
     public static CorrelationPearsons of()
     {
         return new CorrelationPearsons();
     }
-    
+
     @Override
     public DoubleScoreOutput apply( SingleValuedPairs s )
     {
@@ -54,16 +52,18 @@ public class CorrelationPearsons extends OrdinaryScore<SingleValuedPairs, Double
         {
             throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
         }
+        
+        // Get the metadata
+        Metadata metIn = s.getMetadata();
+        MetricOutputMetadata meta = MetricOutputMetadata.of( metIn,
+                                                             MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
+                                                             MetricConstants.MAIN,
+                                                             this.hasRealUnits(),
+                                                             s.getRawData().size(),
+                                                             null );
 
-        Metadata in = s.getMetadata();
-        // Set the metadata explicitly since this class implements Collectable and getID() may be overridden
-        MetricOutputMetadata meta = MetricOutputMetadata.of( s.getRawData().size(),
-                                                                       MeasurementUnit.of(),
-                                                                       in.getDimension(),
-                                                                       MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
-                                                                       MetricConstants.MAIN,
-                                                                       in.getIdentifier() );
         double returnMe = Double.NaN;
+
         // Minimum sample size of 1
         if ( s.getRawData().size() > 1 )
         {

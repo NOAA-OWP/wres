@@ -4,6 +4,7 @@ import java.util.Objects;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.outputs.MetricOutput;
+import wres.datamodel.thresholds.OneOrTwoThresholds;
 
 /**
  * An immutable store of metadata associated with a {@link MetricOutput}.
@@ -48,32 +49,36 @@ public class MetricOutputMetadata extends Metadata
                                            final int sampleSize )
     {
         return MetricOutputMetadata.of( sampleSize,
-                                        source.getDimension(),
+                                        source.getMeasurementUnit(),
                                         source.getInputDimension(),
                                         source.getMetricID(),
                                         source.getMetricComponentID(),
                                         source.getIdentifier(),
-                                        source.getTimeWindow() );
+                                        source.getTimeWindow(),
+                                        source.getThresholds() );
     }
 
     /**
-     * Builds a {@link MetricOutputMetadata} with an input source and an override for the {@link TimeWindow}.
+     * Builds a {@link MetricOutputMetadata} with an input source and an override for the time window and thresholds.
      * 
      * @param source the input source
-     * @param timeWindow the time window
+     * @param timeWindow the optional time window
+     * @param thresholds the optional thresholds
      * @return a {@link MetricOutputMetadata} object
      */
 
     public static MetricOutputMetadata of( final MetricOutputMetadata source,
-                                           final TimeWindow timeWindow )
+                                           final TimeWindow timeWindow,
+                                           final OneOrTwoThresholds thresholds )
     {
         return MetricOutputMetadata.of( source.getSampleSize(),
-                                        source.getDimension(),
+                                        source.getMeasurementUnit(),
                                         source.getInputDimension(),
                                         source.getMetricID(),
                                         source.getMetricComponentID(),
                                         source.getIdentifier(),
-                                        timeWindow );
+                                        timeWindow,
+                                        thresholds );
     }
 
     /**
@@ -88,12 +93,13 @@ public class MetricOutputMetadata extends Metadata
                                            final MetricConstants componentID )
     {
         return MetricOutputMetadata.of( source.getSampleSize(),
-                                        source.getDimension(),
+                                        source.getMeasurementUnit(),
                                         source.getInputDimension(),
                                         source.getMetricID(),
                                         componentID,
                                         source.getIdentifier(),
-                                        source.getTimeWindow() );
+                                        source.getTimeWindow(),
+                                        source.getThresholds() );
     }
 
     /**
@@ -117,6 +123,7 @@ public class MetricOutputMetadata extends Metadata
                                         inputDim,
                                         metricID,
                                         MetricConstants.MAIN,
+                                        null,
                                         null,
                                         null );
     }
@@ -144,6 +151,7 @@ public class MetricOutputMetadata extends Metadata
                                         inputDim,
                                         metricID,
                                         componentID,
+                                        null,
                                         null,
                                         null );
     }
@@ -173,11 +181,12 @@ public class MetricOutputMetadata extends Metadata
 
         return MetricOutputMetadata.of( sampleSize,
                                         outputDim,
-                                        metadata.getDimension(),
+                                        metadata.getMeasurementUnit(),
                                         metricID,
                                         componentID,
                                         metadata.getIdentifier(),
-                                        metadata.getTimeWindow() );
+                                        metadata.getTimeWindow(),
+                                        metadata.getThresholds() );
     }
 
     /**
@@ -207,7 +216,59 @@ public class MetricOutputMetadata extends Metadata
                                         metricID,
                                         componentID,
                                         identifier,
+                                        null,
                                         null );
+    }
+    
+
+    /**
+     * Returns an instance from the inputs.
+     * 
+     * @param metIn the metric input metadata
+     * @param metricId the metric identifier
+     * @param componentId the component identifier or metric decomposition template
+     * @param hasRealUnits is true if the metric produces outputs with real units, false for dimensionless units
+     * @param sampleSize the sample size
+     * @param baselineID the baseline identifier or null
+     * @return the output metadata
+     */
+
+    public static MetricOutputMetadata of( final Metadata metIn,
+                                           final MetricConstants metricId,
+                                           final MetricConstants componentId,
+                                           final boolean hasRealUnits,
+                                           final int sampleSize,
+                                           final DatasetIdentifier baselineID )
+    {
+        MeasurementUnit outputDim = null;
+
+        //Dimensioned?
+        if ( hasRealUnits )
+        {
+            outputDim = metIn.getMeasurementUnit();
+        }
+        else
+        {
+            outputDim = MeasurementUnit.of();
+        }
+
+        DatasetIdentifier identifier = metIn.getIdentifier();
+
+        //Add the scenario ID associated with the baseline input
+        if ( Objects.nonNull( baselineID ) )
+        {
+            identifier =
+                    DatasetIdentifier.of( identifier, baselineID.getScenarioID() );
+        }
+
+        return of( sampleSize,
+                   outputDim,
+                   metIn.getMeasurementUnit(),
+                   metricId,
+                   componentId,
+                   identifier,
+                   metIn.getTimeWindow(),
+                   metIn.getThresholds() );
     }
 
     /**
@@ -220,6 +281,7 @@ public class MetricOutputMetadata extends Metadata
      * @param componentID the optional metric component identifier or decomposition template
      * @param identifier the optional dataset identifier
      * @param timeWindow the optional time window
+     * @param thresholds the optional thresholds
      * @return a {@link MetricOutputMetadata} object
      * @throws NullPointerException if the output dimension is null
      */
@@ -230,7 +292,8 @@ public class MetricOutputMetadata extends Metadata
                                            MetricConstants metricID,
                                            MetricConstants componentID,
                                            DatasetIdentifier identifier,
-                                           TimeWindow timeWindow )
+                                           TimeWindow timeWindow,
+                                           OneOrTwoThresholds thresholds )
     {
         return new MetricOutputMetadata( sampleSize,
                                          outputDim,
@@ -238,7 +301,8 @@ public class MetricOutputMetadata extends Metadata
                                          metricID,
                                          componentID,
                                          identifier,
-                                         timeWindow );
+                                         timeWindow,
+                                         thresholds );
     }
 
     /**
@@ -278,7 +342,7 @@ public class MetricOutputMetadata extends Metadata
 
     /**
      * Returns the dimension associated with the metric input, which may differ from the output. The output dimension
-     * is returned by {@link #getDimension()}.
+     * is returned by {@link #getMeasurementUnit()}.
      * 
      * @return the dimension
      */
@@ -306,7 +370,7 @@ public class MetricOutputMetadata extends Metadata
      * they are minimally unequal (and hence also unequal in terms of the stricter {@link Object#equals(Object)}.
      * </p>
      * <ol>
-     * <li>{@link #getDimension()}</li>
+     * <li>{@link #getMeasurementUnit()}</li>
      * <li>{@link #getInputDimension()}</li>
      * <li>{@link #getMetricID()}</li>
      * <li>{@link #getMetricComponentID()}</li>
@@ -320,7 +384,7 @@ public class MetricOutputMetadata extends Metadata
     {
         return meta.getMetricID() == getMetricID()
                && meta.getMetricComponentID() == getMetricComponentID()
-               && meta.getDimension().equals( getDimension() )
+               && meta.getMeasurementUnit().equals( getMeasurementUnit() )
                && meta.getInputDimension().equals( getInputDimension() );
     }
 
@@ -376,6 +440,7 @@ public class MetricOutputMetadata extends Metadata
      * @param componentID the optional metric component identifier or decomposition template
      * @param identifier the optional dataset identifier
      * @param timeWindow the optional time window
+     * @param thresholds the optional thresholds
      * @return a {@link MetricOutputMetadata} object
      * @throws NullPointerException if the output dimension is null
      */
@@ -386,9 +451,10 @@ public class MetricOutputMetadata extends Metadata
                                   MetricConstants metricID,
                                   MetricConstants componentID,
                                   DatasetIdentifier identifier,
-                                  TimeWindow timeWindow )
+                                  TimeWindow timeWindow,
+                                  OneOrTwoThresholds thresholds )
     {
-        super( outputDim, identifier, timeWindow );
+        super( outputDim, identifier, timeWindow, thresholds );
 
         this.sampleSize = sampleSize;
         this.inputDim = inputDim;

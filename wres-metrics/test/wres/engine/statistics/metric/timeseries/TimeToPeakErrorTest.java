@@ -14,14 +14,12 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
-import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
@@ -52,7 +50,7 @@ public final class TimeToPeakErrorTest
     {
         ttp = TimeToPeakError.of( new Random( 123456789 ) );
     }
-    
+
     /**
      * Constructs a {@link TimeToPeakError} and compares the actual result to the expected result. Also, checks 
      * the parameters.
@@ -67,19 +65,20 @@ public final class TimeToPeakErrorTest
 
         // Metadata for the output
         TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                 Instant.parse( "1985-01-02T00:00:00Z" ),
-                                                 ReferenceTime.ISSUE_TIME,
-                                                 Duration.ofHours( 6 ),
-                                                 Duration.ofHours( 18 ) );
+                                           Instant.parse( "1985-01-02T00:00:00Z" ),
+                                           ReferenceTime.ISSUE_TIME,
+                                           Duration.ofHours( 6 ),
+                                           Duration.ofHours( 18 ) );
         final TimeWindow timeWindow = window;
         MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getBasisTimes().size(),
-        MeasurementUnit.of( "DURATION" ),
-        MeasurementUnit.of( "CMS" ),
-        MetricConstants.TIME_TO_PEAK_ERROR,
-        MetricConstants.MAIN,
-        DatasetIdentifier.of( Location.of("A"),
-                                                                                                         "Streamflow" ),
-        timeWindow );
+                                                           MeasurementUnit.of( "DURATION" ),
+                                                           MeasurementUnit.of( "CMS" ),
+                                                           MetricConstants.TIME_TO_PEAK_ERROR,
+                                                           MetricConstants.MAIN,
+                                                           DatasetIdentifier.of( Location.of( "A" ),
+                                                                                 "Streamflow" ),
+                                                           timeWindow,
+                                                           null );
 
         // Check the parameters
         assertTrue( "Unexpected name for the Time-to-Peak Error.",
@@ -107,7 +106,7 @@ public final class TimeToPeakErrorTest
     {
         assertTrue( ttp.hasRealUnits() );
     }
-    
+
     /**
      * Checks that {@link TimeToPeakError#apply(TimeSeriesOfSingleValuedPairs)} throws an exception when 
      * provided with null input.
@@ -122,7 +121,7 @@ public final class TimeToPeakErrorTest
 
         ttp.apply( null );
     }
-    
+
 //  /**
 //  * Tests the behavior of {@link Incremental} implemented by {@link TimeToPeakError}.
 //  * @throws MetricParameterException if the metric could not be constructed 

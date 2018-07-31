@@ -7,7 +7,6 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.MulticategoryPairs;
-import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MatrixOutput;
@@ -79,14 +78,15 @@ abstract class ContingencyTableScore<S extends MulticategoryPairs> extends Ordin
      */
 
     MetricOutputMetadata getMetadata( final MatrixOutput output )
-    {
+    {    
         final MetricOutputMetadata metIn = output.getMetadata();
-        return MetricOutputMetadata.of( metIn.getSampleSize(),
-                                                  MeasurementUnit.of(),
-                                    metIn.getInputDimension(),
-                                    getID(),
-                                    MetricConstants.MAIN,
-                                    metIn.getIdentifier() );
+
+        return MetricOutputMetadata.of( output.getMetadata(),
+                                        this.getID(),
+                                        MetricConstants.MAIN,
+                                        this.hasRealUnits(),
+                                        metIn.getSampleSize(),
+                                        null );
     }
 
     /**
@@ -145,7 +145,12 @@ abstract class ContingencyTableScore<S extends MulticategoryPairs> extends Ordin
         if ( v.rows() != 2 || v.columns() != 2 )
         {
             throw new MetricInputException( "Expected an intermediate result with a 2x2 square matrix when computing the '"
-                                            + metric + "': [" + v.rows() + ", " + v.columns() + "]." );
+                                            + metric
+                                            + "': ["
+                                            + v.rows()
+                                            + ", "
+                                            + v.columns()
+                                            + "]." );
         }
     }
 

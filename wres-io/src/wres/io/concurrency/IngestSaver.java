@@ -12,6 +12,7 @@ import wres.config.generated.ProjectConfig;
 import wres.io.reading.BasicSource;
 import wres.io.reading.IngestResult;
 import wres.io.reading.ReaderFactory;
+import wres.system.ProgressMonitor;
 
 /**
  * Saves the forecast at the indicated path asynchronously
@@ -22,24 +23,227 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( IngestSaver.class );
 
+    public static IngestBuilder createTask()
+    {
+        return new IngestBuilder(  );
+    }
+
+    public static class IngestBuilder
+    {
+        private final String filepath;
+        private final ProjectConfig projectConfig;
+        private final DataSourceConfig dataSourceConfig;
+        private final DataSourceConfig.Source sourceConfig;
+        private final List<Feature> specifiedFeatures;
+        private final String hash;
+        private final boolean monitorProgress;
+        private final boolean isRemote;
+
+        private IngestBuilder()
+        {
+            this.filepath = null;
+            this.projectConfig = null;
+            this.dataSourceConfig = null;
+            this.sourceConfig = null;
+            this.specifiedFeatures = null;
+            this.hash = null;
+            this.monitorProgress = false;
+            this.isRemote = false;
+        }
+
+        public IngestBuilder withFilePath(final String filepath)
+        {
+            return new IngestBuilder(
+                    filepath,
+                    this.projectConfig,
+                    this.dataSourceConfig,
+                    this.sourceConfig,
+                    this.specifiedFeatures,
+                    this.hash,
+                    this.monitorProgress,
+                    this.isRemote
+            );
+        }
+
+        public IngestBuilder withProject(final ProjectConfig projectConfig)
+        {
+            return new IngestBuilder(
+                    this.filepath,
+                    projectConfig,
+                    this.dataSourceConfig,
+                    this.sourceConfig,
+                    this.specifiedFeatures,
+                    this.hash,
+                    this.monitorProgress,
+                    this.isRemote
+            );
+        }
+
+        public IngestBuilder withDataSourceConfig(final DataSourceConfig dataSourceConfig)
+        {
+            return new IngestBuilder(
+                    this.filepath,
+                    this.projectConfig,
+                    dataSourceConfig,
+                    this.sourceConfig,
+                    this.specifiedFeatures,
+                    this.hash,
+                    this.monitorProgress,
+                    this.isRemote
+            );
+        }
+
+        public IngestBuilder withSourceConfig(final DataSourceConfig.Source sourceConfig)
+        {
+            return new IngestBuilder(
+                    this.filepath,
+                    this.projectConfig,
+                    this.dataSourceConfig,
+                    sourceConfig,
+                    this.specifiedFeatures,
+                    this.hash,
+                    this.monitorProgress,
+                    this.isRemote
+            );
+        }
+
+        public IngestBuilder withFeatures(final List<Feature> specifiedFeatures)
+        {
+            return new IngestBuilder(
+                    this.filepath,
+                    this.projectConfig,
+                    this.dataSourceConfig,
+                    this.sourceConfig,
+                    specifiedFeatures,
+                    this.hash,
+                    this.monitorProgress,
+                    this.isRemote
+            );
+        }
+
+        public IngestBuilder withHash(final String hash)
+        {
+            return new IngestBuilder(
+                    this.filepath,
+                    this.projectConfig,
+                    this.dataSourceConfig,
+                    this.sourceConfig,
+                    this.specifiedFeatures,
+                    hash,
+                    this.monitorProgress,
+                    this.isRemote
+            );
+        }
+
+        public IngestBuilder withProgressMonitoring()
+        {
+            return new IngestBuilder(
+                    this.filepath,
+                    this.projectConfig,
+                    this.dataSourceConfig,
+                    this.sourceConfig,
+                    this.specifiedFeatures,
+                    this.hash,
+                    true,
+                    this.isRemote
+            );
+        }
+
+        public IngestBuilder isRemote()
+        {
+            return new IngestBuilder(
+                    this.filepath,
+                    this.projectConfig,
+                    this.dataSourceConfig,
+                    this.sourceConfig,
+                    this.specifiedFeatures,
+                    this.hash,
+                    this.monitorProgress,
+                    true
+            );
+        }
+
+        private IngestBuilder(
+                final String filepath,
+                final ProjectConfig projectConfig,
+                final DataSourceConfig dataSourceConfig,
+                final DataSourceConfig.Source sourceConfig,
+                final List<Feature> specifiedFeatures,
+                final String hash,
+                final boolean monitorProgress,
+                final boolean isRemote)
+        {
+            this.filepath = filepath;
+            this.projectConfig = projectConfig;
+            this.dataSourceConfig = dataSourceConfig;
+            this.sourceConfig = sourceConfig;
+            this.specifiedFeatures = specifiedFeatures;
+            this.hash = hash;
+            this.monitorProgress = monitorProgress;
+            this.isRemote = isRemote;
+        }
+
+        private void validate()
+        {
+            if (this.projectConfig == null)
+            {
+                throw new IllegalArgumentException( "Data cannot be ingested from a nonexistent project." );
+            }
+
+            if (this.dataSourceConfig == null)
+            {
+                throw new IllegalArgumentException(
+                        "Data cannot be ingested from a nonexistent data source configuration"
+                );
+            }
+        }
+
+        public IngestSaver build()
+        {
+            validate();
+            IngestSaver saver = new IngestSaver(
+                    this.filepath,
+                    this.projectConfig,
+                    this.dataSourceConfig,
+                    this.sourceConfig,
+                    this.specifiedFeatures,
+                    this.hash,
+                    this.isRemote
+            );
+
+            if (this.monitorProgress)
+            {
+                saver.setOnRun( ProgressMonitor.onThreadStartHandler() );
+                saver.setOnComplete( ProgressMonitor.onThreadCompleteHandler() );
+            }
+
+            return saver;
+        }
+    }
+
     private final String filepath;
     private final ProjectConfig projectConfig;
     private final DataSourceConfig dataSourceConfig;
     private final DataSourceConfig.Source sourceConfig;
     private final List<Feature> specifiedFeatures;
+    private final String hash;
+    private final boolean isRemote;
 
-
-    public IngestSaver( String filepath,
+    private IngestSaver( String filepath,
                         ProjectConfig projectConfig,
                         DataSourceConfig dataSourceConfig,
                         DataSourceConfig.Source sourceConfig,
-                        List<Feature> specifiedFeatures )
+                        List<Feature> specifiedFeatures,
+                        final String hash,
+                         final boolean isRemote)
     {
         this.filepath = filepath;
         this.projectConfig = projectConfig;
         this.dataSourceConfig = dataSourceConfig;
         this.sourceConfig = sourceConfig;
         this.specifiedFeatures = specifiedFeatures;
+        this.hash = hash;
+        this.isRemote = isRemote;
     }
 
 
@@ -51,6 +255,8 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
         source.setDataSourceConfig( this.dataSourceConfig );
         source.setSourceConfig( this.sourceConfig );
         source.setSpecifiedFeatures( this.specifiedFeatures );
+        source.setHash( this.hash );
+        source.setIsRemote( this.isRemote );
         return source.save();
     }
 

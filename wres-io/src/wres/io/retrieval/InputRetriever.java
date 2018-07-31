@@ -52,6 +52,7 @@ import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.UnitConversions;
 import wres.io.data.details.ProjectDetails;
 import wres.io.retrieval.scripting.Scripter;
+import wres.io.utilities.DataProvider;
 import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
 import wres.io.writing.PairWriter;
@@ -679,7 +680,6 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         String loadScript = this.getLoadScript( dataSourceConfig );
 
         Connection connection = null;
-        ResultSet resultSet = null;
 
         IngestedValueCollection ingestedValues = new IngestedValueCollection(  );
         long reference = -1;
@@ -718,33 +718,70 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         try
         {
             connection = Database.getConnection();
-            resultSet = Database.getResults(connection, loadScript);
-            int minimumLead = this.projectDetails.getLeadRange( this.feature, this.leadIteration ).getLeft();
-            int period = this.projectDetails.getScale().getPeriod();
-            int frequency = this.projectDetails.getScale().getFrequency();
-
-            period = (int)TimeHelper.unitsToLeadUnits(
-                    this.projectDetails.getScale().getUnit().value(),
-                    period
-            );
-
-            frequency = (int)TimeHelper.unitsToLeadUnits(
-                    this.projectDetails.getScale().getUnit().value(),
-                    frequency
-            );
-
-            while(resultSet.next())
+            try (DataProvider data = Database.getResults(connection, loadScript))
             {
-                // Results need to be ordered by the ascending basis times
-                // first, then ascending lead times. If we have already
-                // gathered at least one value and either encounter a issue
-                // time that differs from the one we just gathered or we
-                // encounter a value for the same issue time but a
-                // non-incremented lead, we want to condense our gathered
-                // values for processing and continue
-                if (ingestedValues.size() > 0 &&
-                    (resultSet.getLong( "basis_epoch_time" ) != reference ||
-                     resultSet.getInt( "lead" ) <= currentLead))
+                int minimumLead = this.projectDetails.getLeadRange( this.feature, this.leadIteration ).getLeft();
+                int period = this.projectDetails.getScale().getPeriod();
+                int frequency = this.projectDetails.getScale().getFrequency();
+
+                period = ( int ) TimeHelper.unitsToLeadUnits(
+                        this.projectDetails.getScale().getUnit().value(),
+                        period
+                );
+
+                frequency = ( int ) TimeHelper.unitsToLeadUnits(
+                        this.projectDetails.getScale().getUnit().value(),
+                        frequency
+                );
+
+                while ( data.next() )
+                {
+                    // Results need to be ordered by the ascending basis times
+                    // first, then ascending lead times. If we have already
+                    // gathered at least one value and either encounter a issue
+                    // time that differs from the one we just gathered or we
+                    // encounter a value for the same issue time but a
+                    // non-incremented lead, we want to condense our gathered
+                    // values for processing and continue
+                    if ( ingestedValues.size() > 0 &&
+                         ( data.getLong( "basis_epoch_time" ) != reference ||
+                           data.getInt( "lead" ) <= currentLead ) )
+                    {
+                        Integer aggregationStep = ingestedValues.getFirstCondensingStep(
+                                period,
+                                frequency,
+                                minimumLead
+                        );
+
+                        CondensedIngestedValue condensedValue = ingestedValues.condense(
+                                aggregationStep,
+                                period,
+                                frequency,
+                                minimumLead
+                        );
+
+                        while ( condensedValue != null )
+                        {
+                            pairs = this.addPair( pairs, condensedValue, dataSourceConfig );
+                            aggregationStep++;
+                            condensedValue = ingestedValues.condense(
+                                    aggregationStep,
+                                    period,
+                                    frequency,
+                                    minimumLead
+                            );
+                        }
+
+                        ingestedValues = new IngestedValueCollection();
+                    }
+
+                    reference = data.getLong( "basis_epoch_time" );
+                    currentLead = data.getInt( "lead" );
+
+                    ingestedValues.add( data, this.projectDetails );
+                }
+
+                if ( ingestedValues.size() > 0 )
                 {
                     Integer aggregationStep = ingestedValues.getFirstCondensingStep(
                             period,
@@ -759,7 +796,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                             minimumLead
                     );
 
-                    while (condensedValue != null)
+                    while ( condensedValue != null )
                     {
                         pairs = this.addPair( pairs, condensedValue, dataSourceConfig );
                         aggregationStep++;
@@ -770,51 +807,11 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                                 minimumLead
                         );
                     }
-
-                    ingestedValues = new IngestedValueCollection(  );
-                }
-
-                reference = resultSet.getLong("basis_epoch_time");
-                currentLead = resultSet.getInt( "lead" );
-
-                ingestedValues.add( resultSet, this.projectDetails);
-            }
-
-            if ( ingestedValues.size() > 0)
-            {
-                Integer aggregationStep = ingestedValues.getFirstCondensingStep(
-                        period,
-                        frequency,
-                        minimumLead
-                );
-
-                CondensedIngestedValue condensedValue = ingestedValues.condense(
-                        aggregationStep,
-                        period,
-                        frequency,
-                        minimumLead
-                );
-
-                while (condensedValue != null)
-                {
-                    pairs = this.addPair( pairs, condensedValue, dataSourceConfig );
-                    aggregationStep++;
-                    condensedValue = ingestedValues.condense(
-                            aggregationStep,
-                            period,
-                            frequency,
-                            minimumLead
-                    );
                 }
             }
         }
         finally
         {
-            if (resultSet != null)
-            {
-                resultSet.close();
-            }
-
             if (connection != null)
             {
                 Database.returnConnection(connection);
@@ -845,7 +842,6 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         final String MEASUREMENT_ID_COLUMN = "measurementunit_id";
 
         Connection connection = null;
-        ResultSet resultSet = null;
 
         // First, store the raw results
         List<RawPersistenceRow> rawRawPersistenceValues = new ArrayList<>();
@@ -853,26 +849,22 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         try
         {
             connection = Database.getConnection();
-            resultSet = Database.getResults( connection, loadScript );
-
-            while ( resultSet.next() )
+            try (DataProvider data = Database.getResults( connection, loadScript ))
             {
-                long basisEpochTimeMillis = resultSet.getLong( VALID_DATETIME_COLUMN );
-                double value = resultSet.getDouble( RESULT_VALUE_COLUMN );
-                int measurementUnitId = resultSet.getInt( MEASUREMENT_ID_COLUMN );
-                RawPersistenceRow row = new RawPersistenceRow( basisEpochTimeMillis,
-                                                               value,
-                                                               measurementUnitId );
-                rawRawPersistenceValues.add( row );
+                while ( data.next() )
+                {
+                    long basisEpochTimeMillis = data.getLong( VALID_DATETIME_COLUMN );
+                    double value = data.getDouble( RESULT_VALUE_COLUMN );
+                    int measurementUnitId = data.getInt( MEASUREMENT_ID_COLUMN );
+                    RawPersistenceRow row = new RawPersistenceRow( basisEpochTimeMillis,
+                                                                   value,
+                                                                   measurementUnitId );
+                    rawRawPersistenceValues.add( row );
+                }
             }
         }
         finally
         {
-            if ( resultSet != null )
-            {
-                resultSet.close();
-            }
-
             if ( connection != null )
             {
                 Database.returnConnection( connection );
@@ -1244,11 +1236,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                                            + "the window could not be determined." );
                 }
 
-                // The lead time offset is in fixed units of hours. TODO: confirm and 
-                // change/document API to use java.time
                 Duration offsetDuration = Duration.of( offset, TimeHelper.LEAD_RESOLUTION );
-                // The window width is in fixed units of hours. TODO: confirm and 
-                // change/document API to use java.time
                 Duration windowWidth = Duration.of( this.projectDetails.getWindowWidth(),
                                                     TimeHelper.LEAD_RESOLUTION );
 

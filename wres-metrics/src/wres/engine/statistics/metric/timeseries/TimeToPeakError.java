@@ -9,14 +9,12 @@ import java.util.Random;
 
 import org.apache.commons.lang3.tuple.Pair;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPair;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Metadata;
-import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.PairedOutput;
 import wres.datamodel.time.TimeSeries;
@@ -32,25 +30,25 @@ import wres.engine.statistics.metric.Metric;
  */
 public class TimeToPeakError extends TimingError
 {
-    
+
     /**
      * Returns an instance.
      * 
      * @return an instance
      */
-    
+
     public static TimeToPeakError of()
     {
         return new TimeToPeakError();
     }
-    
+
     /**
      * Returns an instance with a prescribed random number generator for resolving ties.
      * 
      * @param rng the random number generator for resolving ties
      * @return an instance
      */
-    
+
     public static TimeToPeakError of( Random rng )
     {
         return new TimeToPeakError( rng );
@@ -69,10 +67,10 @@ public class TimeToPeakError extends TimingError
         for ( TimeSeries<SingleValuedPair> next : s.basisTimeIterator() )
         {
             Pair<Instant, Instant> peak = TimingErrorHelper.getTimeToPeak( next, this.getRNG() );
-            
+
             // Duration.between is negative if the predicted/right or "end" is before the observed/left or "start"
             Duration error = Duration.between( peak.getLeft(), peak.getRight() );
-            
+
             // Add the time-to-peak error against the basis time
             returnMe.add( Pair.of( next.getEarliestBasisTime(), error ) );
         }
@@ -82,12 +80,13 @@ public class TimeToPeakError extends TimingError
         MeasurementUnit outputDimension = MeasurementUnit.of( "DURATION" );
         final MeasurementUnit outputDim = outputDimension;
         MetricOutputMetadata meta = MetricOutputMetadata.of( s.getBasisTimes().size(),
-        outputDim,
-        in.getDimension(),
-        this.getID(),
-        MetricConstants.MAIN,
-        in.getIdentifier(),
-        in.getTimeWindow() );
+                                                             outputDim,
+                                                             in.getMeasurementUnit(),
+                                                             this.getID(),
+                                                             MetricConstants.MAIN,
+                                                             in.getIdentifier(),
+                                                             in.getTimeWindow(),
+                                                             in.getThresholds() );
 
         return PairedOutput.of( returnMe, meta );
     }
@@ -105,8 +104,8 @@ public class TimeToPeakError extends TimingError
     private TimeToPeakError()
     {
         super();
-    } 
-    
+    }
+
     /**
      * Hidden constructor.
      * 
@@ -116,6 +115,6 @@ public class TimeToPeakError extends TimingError
     private TimeToPeakError( Random rng )
     {
         super( rng );
-    }    
+    }
 
 }

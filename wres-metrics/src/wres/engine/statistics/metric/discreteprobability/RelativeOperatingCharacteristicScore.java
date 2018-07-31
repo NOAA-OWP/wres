@@ -50,12 +50,12 @@ public class RelativeOperatingCharacteristicScore extends OrdinaryScore<Discrete
      * 
      * @return an instance
      */
-    
+
     public static RelativeOperatingCharacteristicScore of()
     {
         return new RelativeOperatingCharacteristicScore();
-    }   
-    
+    }
+
     @Override
     public DoubleScoreOutput apply( final DiscreteProbabilityPairs s )
     {
@@ -78,7 +78,12 @@ public class RelativeOperatingCharacteristicScore extends OrdinaryScore<Discrete
             rocScore = 2.0 * getAUCMasonGraham( s ) - 1.0;
         }
         final MetricOutputMetadata metOut =
-                getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, baselineIdentifier );
+                MetricOutputMetadata.of( s.getMetadata(),
+                                    this.getID(),
+                                    MetricConstants.MAIN,
+                                    this.hasRealUnits(),
+                                    s.getRawData().size(),
+                                    baselineIdentifier );
         return DoubleScoreOutput.of( rocScore, metOut );
     }
 
@@ -137,10 +142,10 @@ public class RelativeOperatingCharacteristicScore extends OrdinaryScore<Discrete
         //Obtain the predicted probabilities when the event occurred and did not occur
         //Begin by collecting against occurrence/non-occurrence
         Map<Boolean, List<SingleValuedPair>> mapped = pairs.getRawData()
-                                                        .stream()
-                                                        .collect( Collectors.groupingBy( a -> DataFactory.doubleEquals( a.getLeft(),
-                                                                                                                        1.0,
-                                                                                                                        7 ) ) );
+                                                           .stream()
+                                                           .collect( Collectors.groupingBy( a -> DataFactory.doubleEquals( a.getLeft(),
+                                                                                                                           1.0,
+                                                                                                                           7 ) ) );
         if ( mapped.size() != 2 )
         {
             return Double.NaN; //Undefined

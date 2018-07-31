@@ -5,7 +5,7 @@ import java.sql.SQLException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.io.utilities.DataSet;
+import wres.io.utilities.DataProvider;
 import wres.io.utilities.Database;
 
 /**
@@ -13,7 +13,7 @@ import wres.io.utilities.Database;
  * 
  * @author Christopher Tubbs
  */
-public class DataSetRetriever extends WRESCallable<DataSet>
+public class DataSetRetriever extends WRESCallable<DataProvider>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(DataSetRetriever.class);
 
@@ -27,9 +27,9 @@ public class DataSetRetriever extends WRESCallable<DataSet>
 	}
 
 	@Override
-    public DataSet execute() throws SQLException
+    public DataProvider execute() throws SQLException
 	{
-		return Database.getDataSet( this.script );
+		return Database.getData( this.script );
 	}
 
 	private String script = null;

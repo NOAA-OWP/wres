@@ -171,10 +171,10 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                      ReferenceTime.VALID_TIME,
                                                      Duration.ofHours( i ) );
             final Metadata meta = Metadata.of( MeasurementUnit.of( "CMS" ),
-                                                               DatasetIdentifier.of( Location.of( "DRRC2" ),
-                                                                                                     "SQIN",
-                                                                                                     "HEFS" ),
-                                                               window );
+                                               DatasetIdentifier.of( Location.of( "DRRC2" ),
+                                                                     "SQIN",
+                                                                     "HEFS" ),
+                                               window );
             processor.apply( SingleValuedPairs.of( pairs.getRawData(), meta ) );
         }
 
@@ -205,9 +205,9 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         Pair<TimeWindow, OneOrTwoThresholds> key =
                 Pair.of( expectedWindow,
                          OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 1.0 ),
-                                                                         Operator.GREATER,
-                                                                         ThresholdDataType.LEFT,
-                                                                         MeasurementUnit.of( "CMS" ) ) ) );
+                                                              Operator.GREATER,
+                                                              ThresholdDataType.LEFT,
+                                                              MeasurementUnit.of( "CMS" ) ) ) );
         assertTrue( "Unexpected results for the contingency table.",
                     expected.equals( processor.getCachedMetricOutput()
                                               .getMatrixOutput()
@@ -301,27 +301,28 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                  Duration.ofHours( 18 ) );
         final TimeWindow timeWindow = firstWindow;
         MetricOutputMetadata m1 = MetricOutputMetadata.of( 1,
-        MeasurementUnit.of( "DURATION" ),
-        MeasurementUnit.of( "CMS" ),
-        MetricConstants.TIME_TO_PEAK_ERROR,
-        MetricConstants.MAIN,
-        DatasetIdentifier.of( Location.of( "A" ),
-                                                                                                                   "Streamflow" ),
-        timeWindow );
+                                                           MeasurementUnit.of( "DURATION" ),
+                                                           MeasurementUnit.of( "CMS" ),
+                                                           MetricConstants.TIME_TO_PEAK_ERROR,
+                                                           MetricConstants.MAIN,
+                                                           DatasetIdentifier.of( Location.of( "A" ),
+                                                                                 "Streamflow" ),
+                                                           timeWindow,
+                                                           null );
 
         PairedOutput<Instant, Duration> expectedErrorsFirst = PairedOutput.of( expectedFirst, m1 );
         PairedOutput<Instant, Duration> expectedErrorsSecond =
-                PairedOutput.of( expectedSecond, MetricOutputMetadata.of( m1, secondWindow ) );
+                PairedOutput.of( expectedSecond, MetricOutputMetadata.of( m1, secondWindow, null ) );
         Map<Pair<TimeWindow, OneOrTwoThresholds>, PairedOutput<Instant, Duration>> inMap = new HashMap<>();
         inMap.put( Pair.of( firstWindow,
                             OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                                            Operator.GREATER,
-                                                                            ThresholdDataType.LEFT_AND_RIGHT ) ) ),
+                                                                 Operator.GREATER,
+                                                                 ThresholdDataType.LEFT_AND_RIGHT ) ) ),
                    expectedErrorsFirst );
         inMap.put( Pair.of( secondWindow,
                             OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                                            Operator.GREATER,
-                                                                            ThresholdDataType.LEFT_AND_RIGHT ) ) ),
+                                                                 Operator.GREATER,
+                                                                 ThresholdDataType.LEFT_AND_RIGHT ) ) ),
                    expectedErrorsSecond );
         MetricOutputMapByTimeAndThreshold<PairedOutput<Instant, Duration>> mapped =
                 DataFactory.ofMetricOutputMapByTimeAndThreshold( inMap );
@@ -404,40 +405,41 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                  Duration.ofHours( 18 ) );
         final TimeWindow timeWindow = firstWindow;
         MetricOutputMetadata m1 = MetricOutputMetadata.of( 1,
-        MeasurementUnit.of( "DURATION" ),
-        MeasurementUnit.of( "CMS" ),
-        MetricConstants.TIME_TO_PEAK_ERROR,
-        MetricConstants.MAIN,
-        DatasetIdentifier.of( Location.of( "A" ),
-                                                                                                                   "Streamflow" ),
-        timeWindow );
+                                                           MeasurementUnit.of( "DURATION" ),
+                                                           MeasurementUnit.of( "CMS" ),
+                                                           MetricConstants.TIME_TO_PEAK_ERROR,
+                                                           MetricConstants.MAIN,
+                                                           DatasetIdentifier.of( Location.of( "A" ),
+                                                                                 "Streamflow" ),
+                                                           timeWindow,
+                                                           null );
 
         PairedOutput<Instant, Duration> expectedErrorsFirst = PairedOutput.of( expectedFirst, m1 );
         PairedOutput<Instant, Duration> expectedErrorsSecond =
-                PairedOutput.of( expectedSecond, MetricOutputMetadata.of( m1, secondWindow ) );
+                PairedOutput.of( expectedSecond, MetricOutputMetadata.of( m1, secondWindow, null ) );
         Map<Pair<TimeWindow, OneOrTwoThresholds>, PairedOutput<Instant, Duration>> inMap = new HashMap<>();
         inMap.put( Pair.of( firstWindow,
                             OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                                            Operator.GREATER,
-                                                                            ThresholdDataType.LEFT_AND_RIGHT ) ) ),
+                                                                 Operator.GREATER,
+                                                                 ThresholdDataType.LEFT_AND_RIGHT ) ) ),
                    expectedErrorsFirst );
 
         inMap.put( Pair.of( firstWindow,
                             OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 5.0 ),
-                                                                            Operator.GREATER,
-                                                                            ThresholdDataType.LEFT_AND_RIGHT ) ) ),
+                                                                 Operator.GREATER,
+                                                                 ThresholdDataType.LEFT_AND_RIGHT ) ) ),
                    PairedOutput.of( Arrays.asList(), MetricOutputMetadata.of( m1, 0 ) ) );
 
         inMap.put( Pair.of( secondWindow,
                             OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                                            Operator.GREATER,
-                                                                            ThresholdDataType.LEFT_AND_RIGHT ) ) ),
+                                                                 Operator.GREATER,
+                                                                 ThresholdDataType.LEFT_AND_RIGHT ) ) ),
                    expectedErrorsSecond );
 
         inMap.put( Pair.of( secondWindow,
                             OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 5.0 ),
-                                                                            Operator.GREATER,
-                                                                            ThresholdDataType.LEFT_AND_RIGHT ) ) ),
+                                                                 Operator.GREATER,
+                                                                 ThresholdDataType.LEFT_AND_RIGHT ) ) ),
                    expectedErrorsSecond );
 
         MetricOutputMapByTimeAndThreshold<PairedOutput<Instant, Duration>> mapped =
@@ -506,19 +508,20 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                    Duration.ofHours( 18 ) );
         final TimeWindow timeWindow = combinedWindow;
         MetricOutputMetadata scoreMeta = MetricOutputMetadata.of( 2,
-        MeasurementUnit.of( "DURATION" ),
-        MeasurementUnit.of( "CMS" ),
-        MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
-        null,
-        DatasetIdentifier.of( Location.of( "A" ),
-                                                                                                                          "Streamflow" ),
-        timeWindow );
+                                                                  MeasurementUnit.of( "DURATION" ),
+                                                                  MeasurementUnit.of( "CMS" ),
+                                                                  MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
+                                                                  null,
+                                                                  DatasetIdentifier.of( Location.of( "A" ),
+                                                                                        "Streamflow" ),
+                                                                  timeWindow,
+                                                                  null );
         DurationScoreOutput expectedScoresSource = DurationScoreOutput.of( expectedSource, scoreMeta );
         Map<Pair<TimeWindow, OneOrTwoThresholds>, DurationScoreOutput> scoreInMap = new HashMap<>();
         scoreInMap.put( Pair.of( combinedWindow,
                                  OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                                                 Operator.GREATER,
-                                                                                 ThresholdDataType.LEFT_AND_RIGHT ) ) ),
+                                                                      Operator.GREATER,
+                                                                      ThresholdDataType.LEFT_AND_RIGHT ) ) ),
                         expectedScoresSource );
         MetricOutputMapByTimeAndThreshold<DurationScoreOutput> mappedScores =
                 DataFactory.ofMetricOutputMapByTimeAndThreshold( scoreInMap );
@@ -555,8 +558,8 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
         Set<Threshold> thresholds =
                 new HashSet<>( Arrays.asList( Threshold.of( OneOrTwoDoubles.of( 0.5 ),
-                                                                       Operator.GREATER_EQUAL,
-                                                                       ThresholdDataType.LEFT ) ) );
+                                                            Operator.GREATER_EQUAL,
+                                                            ThresholdDataType.LEFT ) ) );
 
         ThresholdsByMetricBuilder builder = new ThresholdsByMetricBuilder();
 
@@ -590,10 +593,10 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                      ReferenceTime.VALID_TIME,
                                                      Duration.ofHours( i ) );
             final Metadata meta = Metadata.of( MeasurementUnit.of( "CMS" ),
-                                                               DatasetIdentifier.of( Location.of( "DRRC2" ),
-                                                                                                     "SQIN",
-                                                                                                     "HEFS" ),
-                                                               window );
+                                               DatasetIdentifier.of( Location.of( "DRRC2" ),
+                                                                     "SQIN",
+                                                                     "HEFS" ),
+                                               window );
             processor.apply( SingleValuedPairs.of( pairs.getRawData(), meta ) );
         }
 
@@ -624,8 +627,8 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         Pair<TimeWindow, OneOrTwoThresholds> key =
                 Pair.of( expectedWindow,
                          OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 0.5 ),
-                                                                         Operator.GREATER_EQUAL,
-                                                                         ThresholdDataType.LEFT ) ) );
+                                                              Operator.GREATER_EQUAL,
+                                                              ThresholdDataType.LEFT ) ) );
         assertTrue( "Unexpected results for the contingency table.",
                     expected.equals( processor.getCachedMetricOutput()
                                               .getMatrixOutput()
@@ -665,10 +668,10 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                      ReferenceTime.VALID_TIME,
                                                      Duration.ofHours( i ) );
             final Metadata meta = Metadata.of( MeasurementUnit.of( "CMS" ),
-                                                               DatasetIdentifier.of( Location.of( "DRRC2" ),
-                                                                                                     "SQIN",
-                                                                                                     "HEFS" ),
-                                                               window );
+                                               DatasetIdentifier.of( Location.of( "DRRC2" ),
+                                                                     "SQIN",
+                                                                     "HEFS" ),
+                                               window );
             processor.apply( SingleValuedPairs.of( pairs.getRawData(), meta ) );
         }
 
@@ -699,9 +702,9 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         Pair<TimeWindow, OneOrTwoThresholds> key =
                 Pair.of( expectedWindow,
                          OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 1.0 ),
-                                                                         Operator.GREATER,
-                                                                         ThresholdDataType.LEFT,
-                                                                         MeasurementUnit.of( "CMS" ) ) ) );
+                                                              Operator.GREATER,
+                                                              ThresholdDataType.LEFT,
+                                                              MeasurementUnit.of( "CMS" ) ) ) );
         assertTrue( "Unexpected results for the contingency table.",
                     expected.equals( processor.getCachedMetricOutput()
                                               .getMatrixOutput()
@@ -759,19 +762,20 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                    Instant.MAX );
         final TimeWindow timeWindow = combinedWindow;
         MetricOutputMetadata scoreMeta = MetricOutputMetadata.of( 0,
-        MeasurementUnit.of( "DURATION" ),
-        MeasurementUnit.of( "CMS" ),
-        MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
-        null,
-        DatasetIdentifier.of( Location.of( "A" ),
-                                                                                                                          "Streamflow" ),
-        timeWindow );
+                                                                  MeasurementUnit.of( "DURATION" ),
+                                                                  MeasurementUnit.of( "CMS" ),
+                                                                  MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
+                                                                  null,
+                                                                  DatasetIdentifier.of( Location.of( "A" ),
+                                                                                        "Streamflow" ),
+                                                                  timeWindow,
+                                                                  null );
         DurationScoreOutput expectedScoresSource = DurationScoreOutput.of( expectedSource, scoreMeta );
         Map<Pair<TimeWindow, OneOrTwoThresholds>, DurationScoreOutput> scoreInMap = new HashMap<>();
         scoreInMap.put( Pair.of( combinedWindow,
                                  OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                                                 Operator.GREATER,
-                                                                                 ThresholdDataType.LEFT_AND_RIGHT ) ) ),
+                                                                      Operator.GREATER,
+                                                                      ThresholdDataType.LEFT_AND_RIGHT ) ) ),
                         expectedScoresSource );
         MetricOutputMapByTimeAndThreshold<DurationScoreOutput> mappedScores =
                 DataFactory.ofMetricOutputMapByTimeAndThreshold( scoreInMap );

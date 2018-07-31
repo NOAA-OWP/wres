@@ -114,7 +114,13 @@ public class RelativeOperatingCharacteristicDiagram extends Diagram<DiscreteProb
         Map<MetricDimension, double[]> output = new EnumMap<>( MetricDimension.class );
         output.put( MetricDimension.PROBABILITY_OF_DETECTION, pOD );
         output.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, pOFD );
-        final MetricOutputMetadata metOut = getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, null );
+        final MetricOutputMetadata metOut =
+                MetricOutputMetadata.of( s.getMetadata(),
+                                    this.getID(),
+                                    MetricConstants.MAIN,
+                                    this.hasRealUnits(),
+                                    s.getRawData().size(),
+                                    null );
         return MultiVectorOutput.ofMultiVectorOutput( output, metOut );
     }
 

@@ -183,9 +183,9 @@ public class TimeSeriesResponse implements Response
             return this.measurementUnit;
         }
 
-        public Double[] getMeasurements()
+        public double[] getMeasurements()
         {
-            return values.toArray( new Double[this.values.size()] );
+            return this.values.stream().mapToDouble( i -> i ).toArray();
         }
 
         private final Instant validDate;

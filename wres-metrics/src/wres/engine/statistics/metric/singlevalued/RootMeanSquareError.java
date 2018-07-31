@@ -2,12 +2,9 @@ package wres.engine.statistics.metric.singlevalued;
 
 import java.util.Objects;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
-import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.Collectable;
@@ -29,12 +26,12 @@ public class RootMeanSquareError extends DoubleErrorScore<SingleValuedPairs>
      * 
      * @return an instance
      */
-    
+
     public static RootMeanSquareError of()
     {
         return new RootMeanSquareError();
     }
-    
+
     /**
      * Instance if {@link SumOfSquareError}.
      */
@@ -71,16 +68,13 @@ public class RootMeanSquareError extends DoubleErrorScore<SingleValuedPairs>
         final MetricOutputMetadata metIn = output.getMetadata();
 
         // Set the output dimension
-        MeasurementUnit outputDimension = metIn.getDimension();
-        final MeasurementUnit outputDim = outputDimension;
-
-        MetricOutputMetadata meta = MetricOutputMetadata.of( metIn.getSampleSize(),
-        outputDim,
-        metIn.getDimension(),
-        this.getID(),
-        MetricConstants.MAIN,
-        metIn.getIdentifier(),
-        metIn.getTimeWindow() );
+        MetricOutputMetadata meta = MetricOutputMetadata.of( metIn,
+                                                             this.getID(),
+                                                             MetricConstants.MAIN,
+                                                             this.hasRealUnits(),
+                                                             metIn.getSampleSize(),
+                                                             null );
+        
         return DoubleScoreOutput.of( Math.sqrt( output.getData() / metIn.getSampleSize() ), meta );
     }
 
@@ -107,7 +101,7 @@ public class RootMeanSquareError extends DoubleErrorScore<SingleValuedPairs>
     private RootMeanSquareError()
     {
         super( FunctionFactory.squareError() );
-        
+
         sse = SumOfSquareError.of();
     }
 

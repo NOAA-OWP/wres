@@ -60,8 +60,8 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         //Setup fixed arguments.  This uses a special set since it is not metric output.
         addArgument( "rangeAxisLabelPrefix", "Forecast" );
         addArgument( "domainAxisLabelPrefix", "Observed" );
-        addArgument( "inputUnitsLabelSuffix", " [" + meta.getDimension() + "]" );
-        addArgument( "inputUnits", meta.getDimension().toString() );
+        addArgument( "inputUnitsLabelSuffix", " [" + meta.getMeasurementUnit() + "]" );
+        addArgument( "inputUnits", meta.getMeasurementUnit().toString() );
 
         recordIdentifierArguments( meta );
 
@@ -136,9 +136,9 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         //Setup fixed arguments.
         addArgument( "metricName", meta.getMetricID().toString() );
         addArgument( "metricShortName", meta.getMetricID().toString() );
-        addArgument( "outputUnits", meta.getDimension().toString() );
+        addArgument( "outputUnits", meta.getMeasurementUnit().toString() );
         addArgument( "inputUnits", meta.getInputDimension().toString() );
-        addArgument( "outputUnitsLabelSuffix", " [" + meta.getDimension() + "]" );
+        addArgument( "outputUnitsLabelSuffix", " [" + meta.getMeasurementUnit() + "]" );
         addArgument( "inputUnitsLabelSuffix", " [" + meta.getInputDimension() + "]" );
 
         recordIdentifierArguments( meta );

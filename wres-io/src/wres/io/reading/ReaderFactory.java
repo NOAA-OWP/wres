@@ -8,6 +8,7 @@ import wres.config.generated.ProjectConfig;
 import wres.io.reading.datacard.DatacardSource;
 import wres.io.reading.fews.FEWSSource;
 import wres.io.reading.nwm.NWMSource;
+import wres.io.reading.s3.S3Reader;
 import wres.io.reading.usgs.USGSReader;
 import wres.util.NetCDF;
 import wres.util.Strings;
@@ -48,6 +49,9 @@ public class ReaderFactory {
             case USGS:
                 source = new USGSReader( projectConfig );
                 break;
+            case S_3:
+                source = S3Reader.getReader( projectConfig );
+                break;
 			default:
 				String message = "The file '%s' is not a valid data file.";
 				throw new IOException(String.format(message, filename));
@@ -79,6 +83,10 @@ public class ReaderFactory {
 		else if (filename.equalsIgnoreCase( "usgs" ))
         {
             type = Format.USGS;
+        }
+        else if (filename.equalsIgnoreCase( "s3" ))
+        {
+            type = Format.S_3;
         }
         else if ( NetCDF.isNetCDFFile(filename ) )
         {

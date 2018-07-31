@@ -83,6 +83,7 @@ import wres.io.utilities.Database;
 import wres.io.writing.SharedWriters;
 import wres.io.writing.WriterHelper;
 import wres.io.writing.netcdf.NetcdfDoubleScoreWriter;
+import wres.system.SystemSettings;
 import wres.util.Strings;
 import wres.util.TimeHelper;
 
@@ -211,6 +212,38 @@ public class ConfigHelper
                                                                 .getSource() )
             {
                 if ( source.getFormat() == Format.USGS )
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    public static boolean usesS3Data(ProjectConfig projectConfig)
+    {
+        for ( DataSourceConfig.Source source : projectConfig.getInputs().getLeft().getSource() )
+        {
+            if (source.getFormat().equals( Format.S_3 ))
+            {
+                return true;
+            }
+        }
+
+        for (DataSourceConfig.Source source : projectConfig.getInputs().getRight().getSource())
+        {
+            if (source.getFormat().equals( Format.S_3 ))
+            {
+                return true;
+            }
+        }
+
+        if (projectConfig.getInputs().getBaseline() != null)
+        {
+            for ( DataSourceConfig.Source source : projectConfig.getInputs().getBaseline().getSource() )
+            {
+                if ( source.getFormat().equals( Format.S_3 ) )
                 {
                     return true;
                 }
@@ -795,6 +828,11 @@ public class ConfigHelper
     public static List<DestinationConfig> getNumericalDestinations( ProjectConfig config )
     {
         return getDestinationsOfType( config, DestinationType.NUMERIC );
+    }
+
+    public static Path getStoredNetcdfPath(final String key)
+    {
+        return Paths.get( SystemSettings.getNetCDFStorePath(), key );
     }
 
     /**

@@ -22,7 +22,7 @@ public interface Response extends Iterable<List<Response.Series>>
     {
         Duration getLead();
         Instant getValidDate();
-        Double[] getMeasurements();
+        double[] getMeasurements();
         String getMeasurementUnit();
     }
 

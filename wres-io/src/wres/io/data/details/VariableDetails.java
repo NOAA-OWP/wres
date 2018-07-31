@@ -10,6 +10,7 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.io.utilities.DataProvider;
 import wres.io.utilities.Database;
 import wres.io.utilities.ScriptBuilder;
 
@@ -26,11 +27,11 @@ public final class VariableDetails extends CachedDetail<VariableDetails, String>
 	 */
 	private static final Object VARIABLE_SAVE_LOCK = new Object();
 
-	public static VariableDetails from (ResultSet resultSet) throws SQLException
+	public static VariableDetails from (DataProvider data) throws SQLException
 	{
 	    VariableDetails details = new VariableDetails();
-        details.setVariableName(resultSet.getString("variable_name"));
-        details.setID(Database.getValue( resultSet,"variable_id"));
+        details.setVariableName(data.getString("variable_name"));
+        details.setID( data.getValue("variable_id"));
         return details;
 	}
 
@@ -61,7 +62,7 @@ public final class VariableDetails extends CachedDetail<VariableDetails, String>
 	}
 
 	@Override
-	protected void update( ResultSet databaseResults ) throws SQLException
+	protected void update( DataProvider databaseResults ) throws SQLException
 	{
 		super.update( databaseResults );
 		String partition = "";
@@ -112,10 +113,9 @@ public final class VariableDetails extends CachedDetail<VariableDetails, String>
 	}
 
 	@Override
-	protected PreparedStatement getInsertSelectStatement( Connection connection )
+	protected ScriptBuilder getInsertSelect()
 			throws SQLException
 	{
-		List<Object> args = new ArrayList<>(  );
 		ScriptBuilder script = new ScriptBuilder(  );
 
 		script.addLine("WITH new_variable_id AS");
@@ -123,14 +123,14 @@ public final class VariableDetails extends CachedDetail<VariableDetails, String>
 		script.addTab().addLine("INSERT INTO wres.Variable(variable_name)");
 		script.addTab().addLine("SELECT ?");
 
-		args.add(this.variableName);
+		script.addArgument(this.variableName);
 
 		script.addTab().addLine("WHERE NOT EXISTS (");
 		script.addTab(  2  ).addLine("SELECT 1");
 		script.addTab(  2  ).addLine("FROM wres.Variable");
 		script.addTab(  2  ).addLine("WHERE variable_name = ?");
 
-		args.add(this.variableName);
+        script.addArgument(this.variableName);
 
 		script.addTab().addLine(")");
 		script.addTab().addLine("RETURNING variable_id");
@@ -144,9 +144,9 @@ public final class VariableDetails extends CachedDetail<VariableDetails, String>
 		script.addLine("FROM wres.Variable");
 		script.addLine("WHERE variable_name = ?;");
 
-		args.add( this.variableName );
+        script.addArgument( this.variableName );
 
-		return script.getPreparedStatement( connection, args );
+		return script;
 	}
 
 	@Override

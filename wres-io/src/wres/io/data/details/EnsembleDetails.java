@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.io.data.details.EnsembleDetails.EnsembleKey;
+import wres.io.utilities.DataProvider;
 import wres.io.utilities.ScriptBuilder;
 
 /**
@@ -156,10 +157,9 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
 	}
 
 	@Override
-	protected PreparedStatement getInsertSelectStatement( Connection connection )
+	protected ScriptBuilder getInsertSelect()
 			throws SQLException
 	{
-		List<Object> args = new ArrayList<>(  );
 		ScriptBuilder script = new ScriptBuilder(  );
 
 		script.addLine("WITH new_ensemble AS");
@@ -167,24 +167,24 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
 		script.addTab().addLine("INSERT INTO wres.Ensemble(ensemble_name, qualifier_id, ensemblemember_id)");
 		script.addTab().addLine("SELECT ?, ?, ?");
 
-		args.add(this.ensembleName);
+		script.addArgument( this.ensembleName );
 
 		if (this.qualifierID == null)
 		{
-			args.add(null);
+			script.addArgument( null );
 		}
 		else
 		{
-			args.add( this.getQualifierID() );
+		    script.addArgument( this.getQualifierID() );
 		}
 
 		if (this.getEnsembleMemberID() == null)
 		{
-			args.add(null);
+		    script.addArgument( null );
 		}
 		else
 		{
-			args.add( Integer.parseInt( this.getEnsembleMemberID() ) );
+			script.addArgument( Integer.parseInt( this.getEnsembleMemberID() ) );
 		}
 
 		script.addTab().addLine("WHERE NOT EXISTS (");
@@ -192,7 +192,7 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
 		script.addTab(  2  ).addLine("FROM wres.Ensemble");
 		script.addTab(  2  ).addLine("WHERE ensemble_name = ?");
 
-		args.add(this.ensembleName);
+        script.addArgument(this.ensembleName);
 
 		script.addTab(   3   ).add("AND ensemblemember_id ");
 
@@ -203,7 +203,7 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
         else
         {
             script.addLine("= ?");
-            args.add( Integer.parseInt( this.getEnsembleMemberID() ) );
+            script.addArgument( Integer.parseInt( this.getEnsembleMemberID() ) );
         }
 
 		script.addTab(   3   ).add("AND qualifier_id ");
@@ -215,7 +215,7 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
         else
         {
             script.addLine("= ?");
-            args.add( this.getQualifierID() );
+            script.addArgument( this.getQualifierID() );
         }
 
 		script.addTab().addLine(")");
@@ -230,7 +230,7 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
 		script.addLine("FROM wres.Ensemble");
 		script.addLine("WHERE ensemble_name = ?");
 
-		args.add(this.ensembleName);
+        script.addArgument(this.ensembleName);
 
 		script.addTab().add("AND ensemblemember_id ");
 
@@ -241,7 +241,7 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
         else
         {
             script.addLine("= ?");
-            args.add( Integer.parseInt( this.getEnsembleMemberID() ) );
+            script.addArgument( Integer.parseInt( this.getEnsembleMemberID() ) );
         }
 
 		script.addTab().add("AND qualifier_id ");
@@ -253,10 +253,10 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
         else
         {
             script.add("= ?;");
-            args.add( this.getQualifierID() );
+            script.addArgument( this.getQualifierID() );
         }
 
-		return script.getPreparedStatement( connection, args.toArray( new Object[args.size()] ) );
+        return script;
 	}
 
 	@Override

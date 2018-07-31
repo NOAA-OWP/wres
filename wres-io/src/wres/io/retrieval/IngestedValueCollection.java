@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.io.data.details.ProjectDetails;
+import wres.io.utilities.DataProvider;
 import wres.io.utilities.NoDataException;
 import wres.util.Collections;
 
@@ -285,7 +286,7 @@ class IngestedValueCollection
         }
     }
 
-    void add( ResultSet row, ProjectDetails projectDetails) throws SQLException
+    void add( DataProvider row, ProjectDetails projectDetails) throws SQLException
     {
         IngestedValue value = new IngestedValue( row, projectDetails );
         this.add( value );

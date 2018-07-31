@@ -17,6 +17,7 @@ import wres.io.config.ConfigHelper;
 import wres.io.data.details.ProjectDetails;
 import wres.io.data.details.SourceDetails;
 import wres.io.data.details.SourceDetails.SourceKey;
+import wres.io.utilities.DataProvider;
 import wres.io.utilities.Database;
 import wres.io.utilities.ScriptBuilder;
 import wres.util.Collections;
@@ -84,6 +85,11 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
         return DataSources.getCache().get( id );
     }
 
+    public static SourceDetails getById(Integer id)
+    {
+        return DataSources.getCache().get( id );
+    }
+
     public static boolean isCached( SourceDetails.SourceKey key )
     {
         return DataSources.getCache()
@@ -127,50 +133,39 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
         if (id == null)
         {
             Connection connection = null;
-            ResultSet results = null;
 
             String script = "";
 
-            script += "SELECT source_id, path, output_time::text, lead, hash" + NEWLINE;
+            script += "SELECT source_id, path, output_time::text, lead, hash, is_point_data" + NEWLINE;
             script += "FROM wres.Source" + NEWLINE;
             script += "WHERE hash = '" + hash + "';";
 
             try
             {
                 connection = Database.getConnection();
-                results = Database.getResults( connection, script );
-
-                SourceDetails details;
-
-                if (results.next())
+                try (DataProvider data = Database.getResults( connection, script ))
                 {
-                    details = new SourceDetails(  );
-                    details.setHash( hash );
-                    details.setLead( results.getInt( "lead" ) );
-                    details.setOutputTime( results.getString("output_time") );
-                    details.setSourcePath( results.getString( "path" ) );
-                    details.setID( results.getInt( "source_id" ) );
+                    SourceDetails details;
 
-                    DataSources.getCache().addElement( details );
+                    if ( data.next() )
+                    {
+                        // TODO: Create a DataProvider constructor for SourceDetails
+                        details = new SourceDetails();
+                        details.setHash( hash );
+                        details.setLead( data.getInt( "lead" ) );
+                        details.setOutputTime( data.getString( "output_time" ) );
+                        details.setSourcePath( data.getString( "path" ) );
+                        details.setID( data.getInt( "source_id" ) );
+                        details.setIsPointData( data.getBoolean( "is_point_data" ) );
 
-                    id = results.getInt( "source_id" );
+                        DataSources.getCache().addElement( details );
+
+                        id = data.getInt( "source_id" );
+                    }
                 }
             }
             finally
             {
-                if (results != null)
-                {
-                    try
-                    {
-                        results.close();
-                    }
-                    catch ( SQLException se )
-                    {
-                        // Exception on close should not affect primary outputs.
-                        LOGGER.warn( "Failed to close result set {}.", results, se );
-                    }
-                }
-
                 if (connection != null)
                 {
                     Database.returnConnection( connection );
@@ -321,7 +316,7 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
 
 	@Override
 	protected int getMaxDetails() {
-		return 1000;
+		return 10000;
 	}
 
     @Override
@@ -333,28 +328,31 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
         }
 
         Connection connection = null;
-        ResultSet sources = null;
         this.initializeDetails();
 
         try
         {
             connection = Database.getHighPriorityConnection();
-            String loadScript = "SELECT source_id, path, CAST(output_time AS TEXT) AS output_time, hash" + System.lineSeparator();
+            String loadScript = "SELECT source_id, path, CAST(output_time AS TEXT) AS output_time, hash, is_point_data" + System.lineSeparator();
             loadScript += "FROM wres.Source" + System.lineSeparator();
             loadScript += "LIMIT " + getMaxDetails();
             
-            sources = Database.getResults(connection, loadScript);
-            SourceDetails detail;
-            
-            while (sources.next()) {
-                detail = new SourceDetails();
-                detail.setOutputTime(sources.getString("output_time"));
-                detail.setSourcePath(sources.getString("path"));
-                detail.setHash( sources.getString( "hash" ) );
-                detail.setID( sources.getInt( "source_id" ) );
-                
-                this.getKeyIndex().put(detail.getKey(), detail.getId());
-                this.getDetails().put(detail.getId(), detail);
+            try (DataProvider sources = Database.getResults(connection, loadScript))
+            {
+                SourceDetails detail;
+
+                while ( sources.next() )
+                {
+                    detail = new SourceDetails();
+                    detail.setOutputTime( sources.getString( "output_time" ) );
+                    detail.setSourcePath( sources.getString( "path" ) );
+                    detail.setHash( sources.getString( "hash" ) );
+                    detail.setIsPointData( sources.getBoolean( "is_point_data" ) );
+                    detail.setID( sources.getInt( "source_id" ) );
+
+                    this.getKeyIndex().put( detail.getKey(), detail.getId() );
+                    this.getDetails().put( detail.getId(), detail );
+                }
             }
         }
         catch (SQLException error)
@@ -365,20 +363,6 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
         }
         finally
         {
-            if (sources != null)
-            {
-                try
-                {
-                    sources.close();
-                }
-                catch(SQLException e)
-                {
-                    // Exception on close should not affect primary outputs.
-                    LOGGER.warn( "An error was encountered when trying to close the resultset that contained data source information.",
-                                  e );
-                }
-            }
-
             if (connection != null)
             {
                 Database.returnHighPriorityConnection(connection);

@@ -1,6 +1,9 @@
 package wres.io.concurrency;
 
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,11 +37,24 @@ public class SQLExecutor extends WRESRunnable
 	@Override
     public void execute() throws SQLException
     {
-        Database.execute( this.script, forceTransaction );
+        if (this.arguments.isEmpty())
+        {
+            Database.execute( this.script, forceTransaction );
+        }
+        else
+        {
+            Database.execute( this.script, this.arguments );
+        }
 	}
+
+    public void addBatchArguments( Collection<Object[]> arguments)
+    {
+        this.arguments.addAll( arguments );
+    }
 
 	private final String script;
 	private final boolean forceTransaction;
+	private final List<Object[]> arguments = new ArrayList<>(  );
 
 	@Override
 	protected Logger getLogger () {

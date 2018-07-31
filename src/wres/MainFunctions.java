@@ -2,17 +2,16 @@ package wres;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -31,7 +30,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import ucar.ma2.Array;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
 import ucar.nc2.dataset.NetcdfDataset;
@@ -42,7 +40,6 @@ import ucar.unidata.geoloc.LatLonPoint;
 
 import wres.config.ProjectConfigPlus;
 import wres.config.Validation;
-import wres.config.generated.Format;
 import wres.config.generated.ProjectConfig;
 import wres.control.Control;
 import wres.io.Operations;
@@ -51,11 +48,9 @@ import wres.io.concurrency.Downloader;
 import wres.io.concurrency.Executor;
 import wres.io.concurrency.WRESRunnable;
 import wres.io.config.ConfigHelper;
-import wres.io.reading.ReaderFactory;
 import wres.io.reading.usgs.USGSParameterReader;
-import wres.io.utilities.DataSet;
+import wres.io.utilities.DataProvider;
 import wres.io.utilities.Database;
-import wres.io.utilities.NoDataException;
 import wres.io.utilities.ScriptBuilder;
 import wres.system.ProgressMonitor;
 import wres.system.SystemSettings;
@@ -144,6 +139,8 @@ final class MainFunctions
 		functions.put("createnetcdftemplate", MainFunctions::createNetCDFTemplate);
 		functions.put("validate", MainFunctions::validate);
 		functions.put("validategrid", MainFunctions::validateNetcdfGrid);
+		functions.put("s3test", MainFunctions::s3Test);
+		functions.put("readheader", MainFunctions::readHeader);
 
 		return functions;
 	}
@@ -1199,6 +1196,22 @@ final class MainFunctions
 		};
 	}
 
+	private static Integer s3Test(String[] args) {
+	    Integer status = FAILURE;
+
+	    try
+        {
+            Operations.s3Test();
+            status = SUCCESS;
+        }
+        catch ( IOException e )
+        {
+            LOGGER.error( "Could not find S3 data.", e );
+        }
+
+	    return status;
+    }
+
 	private static Integer install(String[] args) {
         Integer status = FAILURE;
         try
@@ -1235,31 +1248,32 @@ final class MainFunctions
                 script.addLine( "ORDER BY log_id" );
                 script.addLine( "LIMIT 1;" );
 
-                DataSet errorData = script.getData();
+                try (DataProvider errorData = script.getData())
+                {
+                    String arguments = errorData.getString( "arguments" );
+                    String userIdentifier = errorData.getString( "username" ) +
+                                            ":" +
+                                            errorData.getString( "address" );
+                    String runTime = errorData.getString( "run_time" );
+                    String errors = errorData.getString( "error" );
 
-                String arguments = errorData.getString( "arguments" );
-                String userIdentifier = errorData.getString( "username" ) +
-                                        ":" +
-                                        errorData.getString( "address" );
-                String runTime = errorData.getString( "run_time" );
-                String errors = errorData.getString( "error" );
+                    String newline = System.lineSeparator();
 
-                String newline = System.lineSeparator();
+                    LOGGER.info( "{}"
+                                 + "User: {}{}"
+                                 + "Arguments: {}{}"
+                                 + "Run Time: {}{}"
+                                 + "Errors:{}{}"
+                                 + "{}",
+                                 newline,
+                                 userIdentifier, newline,
+                                 arguments, newline,
+                                 runTime, newline,
+                                 newline, newline,
+                                 errors );
 
-                LOGGER.info( "{}"
-                             + "User: {}{}"
-                             + "Arguments: {}{}"
-                             + "Run Time: {}{}"
-                             + "Errors:{}{}"
-                             + "{}",
-                             newline,
-                             userIdentifier, newline,
-                             arguments, newline,
-                             runTime, newline,
-                             newline, newline,
-                             errors );
-
-                result = SUCCESS;
+                    result = SUCCESS;
+                }
             }
             catch ( SQLException e )
             {
@@ -1268,10 +1282,6 @@ final class MainFunctions
                         "Information about the most recently failed project"
                         + "could not be loaded.",
                         e );
-            }
-            catch ( NoDataException e )
-            {
-                e.printStackTrace();
             }
 
             return result;
@@ -1297,7 +1307,7 @@ final class MainFunctions
             script.addTab(  2  ).addLine("ELSE '");
             script.addLine("' || error || '");
             script.addLine("'");
-            script.addTab().addLine("END");
+            script.addTab().addLine("END AS execution");
 
             if (args.length > 0)
             {
@@ -1333,16 +1343,11 @@ final class MainFunctions
             script.addLine("ORDER BY log_id DESC");
             script.addLine("LIMIT ", valueCount);
 
-            try
+            try (DataProvider executions = script.getData())
             {
-                DataSet executions = script.getData();
-
-                while (executions.next())
-                {
-                    LOGGER.info(executions.getString( 0 ));
-                }
+                executions.consume( execution -> LOGGER.info(execution.getString( "execution" )) );
             }
-            catch ( SQLException | NoDataException e )
+            catch ( SQLException e )
             {
                 MainFunctions.addException( e );
                 LOGGER.error( Strings.getStackTrace( e ));
@@ -1384,24 +1389,19 @@ final class MainFunctions
                 script.addTab(  2  ).addLine("WHEN failed = true THEN lpad('Failed', 10)");
                 script.addTab(  2  ).addLine("ELSE lpad('Succeeded', 10)");
                 script.addTab().addLine("END || '" + newline + "' || ");
-                script.addTab().addLine("repeat('-', 115)");
+                script.addTab().addLine("repeat('-', 115) AS run");
                 script.addLine("FROM ExecutionLog");
                 script.addLine("WHERE LOWER(arguments) LIKE ", projectName);
                 script.addLine("ORDER BY log_id DESC");
                 script.addLine("LIMIT ", valueCount);
 
-                try
+                try (DataProvider runs = script.getData())
                 {
-                    DataSet runs = script.getData();
-
-                    LOGGER.info( newline );
-                    while (runs.next())
-                    {
-                        LOGGER.info( runs.getString( 0 ) );
-                    }
+                    LOGGER.info(newline);
+                    runs.consume( run ->LOGGER.info(run.getString("run")));
                     LOGGER.info( newline );
                 }
-                catch ( SQLException | NoDataException e )
+                catch ( SQLException e )
                 {
                     result = FAILURE;
                     MainFunctions.addException( e );
@@ -1411,6 +1411,68 @@ final class MainFunctions
 
             return result;
         };
+    }
+
+    private static Integer readHeader(String[] args)
+    {
+        Integer result = FAILURE;
+        final String url = "http://***REMOVED***rgw.***REMOVED***.***REMOVED***:8080/nwm/nwm.20180515/analysis_assim/nwm.t00z.analysis_assim.channel_rt.tm00.conus.nc";
+
+        // TODO: Finish experiment; current work must be halted
+
+        /*
+         * The idea here is that we want to see if we can pull the top x
+         * bytes from the remote file. From there, we can pull and work with
+         * just the header of a netcdf file.  If the data within the file
+         * meets expectations, we may continue to work with it. If not,
+         * we can avoid further work. If we can't avoid it, we are forced
+         * to download a full file before we can determine whether or not
+         * it can/should be used.
+         */
+
+        // Create a connection and open a stream to the resource
+        URL sourcePath = null;
+        try
+        {
+            sourcePath = new URL( url);
+        }
+        catch ( MalformedURLException e )
+        {
+            LOGGER.error("The url pointing towards the file was incorrect.", e);
+            return FAILURE;
+        }
+
+        try(InputStream stream = sourcePath.openStream())
+        {
+            // The idea of 200 bytes for the header was pushed.
+            // Working with 300 for initial tests just to be safe
+            byte[] buffer = new byte[300];
+
+            // Fill the buffer and attempt to load it into a Netcdf object
+            // This is supposed to work in Thredds; it's called
+            // "Range Subsetting"
+            int bytesRead = stream.read( buffer );
+            try (NetcdfFile data = NetcdfFile.openInMemory( "file", buffer ))
+            {
+                LOGGER.info( "Loaded data..." );
+            }
+
+            // If/when we can load the header, we want to be able to
+            // evaluate the contents of it without actually hitting the
+            // data. This might mean that attributes storing single
+            // value data also contained within variables might
+            // see use again. While "time" and "reference_time" are
+            // the canonical sources of time and issue time data,
+            // We most likely won't be able to hit that data
+            // with the header alone (or at least reliably).
+            result = SUCCESS;
+        }
+        catch ( IOException e )
+        {
+            LOGGER.error("Remote Netcdf reading failed.", e);
+        }
+
+        return result;
     }
 
     private static final Object EXCEPTION_LOCK = new Object();
