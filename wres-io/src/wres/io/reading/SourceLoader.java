@@ -107,7 +107,7 @@ public class SourceLoader
                     );
                     continue;
                 }
-                else if (source.getFormat().equals( Format.S_3 ))
+                else if ( source.getFormat() == Format.S_3 )
                 {
                     savingFiles.add(
                             Executor.submit(
