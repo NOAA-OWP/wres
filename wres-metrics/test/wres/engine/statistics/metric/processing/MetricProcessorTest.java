@@ -34,7 +34,7 @@ import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
-import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
@@ -415,7 +415,7 @@ public final class MetricProcessorTest
                 Threshold.of( OneOrTwoDoubles.of( 0.5 ),
                                          Operator.GREATER,
                                          ThresholdDataType.LEFT,
-                                         MetadataFactory.getDimension( "CMS" ) );
+                                         MeasurementUnit.of( "CMS" ) );
         Set<MetricConstants> firstSet =
                 thresholds.doesNotHaveTheseMetricsForThisThreshold( firstTest );
         assertTrue( "Unexpected set of metrics to ignore for threshold '" + firstTest
@@ -426,7 +426,7 @@ public final class MetricProcessorTest
                 Threshold.of( OneOrTwoDoubles.of( 0.75 ),
                                          Operator.GREATER,
                                          ThresholdDataType.LEFT,
-                                         MetadataFactory.getDimension( "CMS" ) );
+                                         MeasurementUnit.of( "CMS" ) );
         Set<MetricConstants> secondSet =
                 thresholds.doesNotHaveTheseMetricsForThisThreshold( secondTest );
         assertTrue( "Unexpected set of metrics to ignore for threshold '" + secondTest
@@ -436,7 +436,7 @@ public final class MetricProcessorTest
                 Threshold.of( OneOrTwoDoubles.of( 0.83 ),
                                          Operator.GREATER,
                                          ThresholdDataType.LEFT,
-                                         MetadataFactory.getDimension( "CMS" ) );
+                                         MeasurementUnit.of( "CMS" ) );
         Set<MetricConstants> thirdSet =
                 thresholds.doesNotHaveTheseMetricsForThisThreshold( thirdTest );
         assertTrue( "Unexpected set of metrics to ignore for threshold '" + thirdTest
@@ -447,7 +447,7 @@ public final class MetricProcessorTest
                 Threshold.of( OneOrTwoDoubles.of( 0.9 ),
                                          Operator.GREATER,
                                          ThresholdDataType.LEFT,
-                                         MetadataFactory.getDimension( "CMS" ) );
+                                         MeasurementUnit.of( "CMS" ) );
         Set<MetricConstants> fourthSet =
                 thresholds.doesNotHaveTheseMetricsForThisThreshold( fourthTest );
         assertTrue( "Unexpected set of metrics to ignore for threshold '" + fourthTest

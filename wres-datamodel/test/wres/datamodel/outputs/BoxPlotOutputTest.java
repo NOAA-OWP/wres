@@ -13,8 +13,9 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.inputs.pairs.EnsemblePair;
+import wres.datamodel.metadata.DatasetIdentifier;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
-import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.outputs.MetricOutputException;
@@ -36,31 +37,31 @@ public final class BoxPlotOutputTest
     {
 
         //Build datasets
-        final Location l1 = MetadataFactory.getLocation( "A" );
-        final MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( 10,
-                                                                           MetadataFactory.getDimension(),
-                                                                           MetadataFactory.getDimension( "CMS" ),
+        final Location l1 = Location.of( "A" );
+        final MetricOutputMetadata m1 = MetricOutputMetadata.of( 10,
+                                                                           MeasurementUnit.of(),
+                                                                           MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
                                                                            MetricConstants.MAIN,
-                                                                           MetadataFactory.getDatasetIdentifier( l1,
+                                                                           DatasetIdentifier.of( l1,
                                                                                                                  "B",
                                                                                                                  "C" ) );
-        final Location l2 = MetadataFactory.getLocation( "A" );
-        final MetricOutputMetadata m2 = MetadataFactory.getOutputMetadata( 11,
-                                                                           MetadataFactory.getDimension(),
-                                                                           MetadataFactory.getDimension( "CMS" ),
+        final Location l2 = Location.of( "A" );
+        final MetricOutputMetadata m2 = MetricOutputMetadata.of( 11,
+                                                                           MeasurementUnit.of(),
+                                                                           MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
                                                                            MetricConstants.MAIN,
-                                                                           MetadataFactory.getDatasetIdentifier( l2,
+                                                                           DatasetIdentifier.of( l2,
                                                                                                                  "B",
                                                                                                                  "C" ) );
-        final Location l3 = MetadataFactory.getLocation( "B" );
-        final MetricOutputMetadata m3 = MetadataFactory.getOutputMetadata( 10,
-                                                                           MetadataFactory.getDimension(),
-                                                                           MetadataFactory.getDimension( "CMS" ),
+        final Location l3 = Location.of( "B" );
+        final MetricOutputMetadata m3 = MetricOutputMetadata.of( 10,
+                                                                           MeasurementUnit.of(),
+                                                                           MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
                                                                            MetricConstants.MAIN,
-                                                                           MetadataFactory.getDatasetIdentifier( l3,
+                                                                           DatasetIdentifier.of( l3,
                                                                                                                  "B",
                                                                                                                  "C" ) );
         List<EnsemblePair> mva = new ArrayList<>();
@@ -133,31 +134,31 @@ public final class BoxPlotOutputTest
     {
 
         //Build datasets
-        final Location l1 = MetadataFactory.getLocation( "A" );
-        final MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( 10,
-                                                                           MetadataFactory.getDimension(),
-                                                                           MetadataFactory.getDimension( "CMS" ),
+        final Location l1 = Location.of( "A" );
+        final MetricOutputMetadata m1 = MetricOutputMetadata.of( 10,
+                                                                           MeasurementUnit.of(),
+                                                                           MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
                                                                            MetricConstants.MAIN,
-                                                                           MetadataFactory.getDatasetIdentifier( l1,
+                                                                           DatasetIdentifier.of( l1,
                                                                                                                  "B",
                                                                                                                  "C" ) );
-        final Location l2 = MetadataFactory.getLocation( "A" );
-        final MetricOutputMetadata m2 = MetadataFactory.getOutputMetadata( 11,
-                                                                           MetadataFactory.getDimension(),
-                                                                           MetadataFactory.getDimension( "CMS" ),
+        final Location l2 = Location.of( "A" );
+        final MetricOutputMetadata m2 = MetricOutputMetadata.of( 11,
+                                                                           MeasurementUnit.of(),
+                                                                           MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
                                                                            MetricConstants.MAIN,
-                                                                           MetadataFactory.getDatasetIdentifier( l2,
+                                                                           DatasetIdentifier.of( l2,
                                                                                                                  "B",
                                                                                                                  "C" ) );
-        final Location l3 = MetadataFactory.getLocation( "B" );
-        final MetricOutputMetadata m3 = MetadataFactory.getOutputMetadata( 10,
-                                                                           MetadataFactory.getDimension(),
-                                                                           MetadataFactory.getDimension( "CMS" ),
+        final Location l3 = Location.of( "B" );
+        final MetricOutputMetadata m3 = MetricOutputMetadata.of( 10,
+                                                                           MeasurementUnit.of(),
+                                                                           MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
                                                                            MetricConstants.MAIN,
-                                                                           MetadataFactory.getDatasetIdentifier( l3,
+                                                                           DatasetIdentifier.of( l3,
                                                                                                                  "B",
                                                                                                                  "C" ) );
         List<EnsemblePair> mva = new ArrayList<>();
@@ -229,22 +230,22 @@ public final class BoxPlotOutputTest
     public void test2GetMetadata()
     {
 
-        final Location l1 = MetadataFactory.getLocation( "A" );
-        final MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( 10,
-                                                                           MetadataFactory.getDimension(),
-                                                                           MetadataFactory.getDimension( "CMS" ),
+        final Location l1 = Location.of( "A" );
+        final MetricOutputMetadata m1 = MetricOutputMetadata.of( 10,
+                                                                           MeasurementUnit.of(),
+                                                                           MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
                                                                            MetricConstants.MAIN,
-                                                                           MetadataFactory.getDatasetIdentifier( l1,
+                                                                           DatasetIdentifier.of( l1,
                                                                                                                  "B",
                                                                                                                  "C" ) );
-        final Location l2 = MetadataFactory.getLocation( "B" );
-        final MetricOutputMetadata m2 = MetadataFactory.getOutputMetadata( 10,
-                                                                           MetadataFactory.getDimension(),
-                                                                           MetadataFactory.getDimension( "CMS" ),
+        final Location l2 = Location.of( "B" );
+        final MetricOutputMetadata m2 = MetricOutputMetadata.of( 10,
+                                                                           MeasurementUnit.of(),
+                                                                           MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
                                                                            MetricConstants.MAIN,
-                                                                           MetadataFactory.getDatasetIdentifier( l2,
+                                                                           DatasetIdentifier.of( l2,
                                                                                                                  "B",
                                                                                                                  "C" ) );
         final List<EnsemblePair> values = new ArrayList<>();
@@ -275,13 +276,13 @@ public final class BoxPlotOutputTest
     public void test3Accessors()
     {
 
-        final Location l1 = MetadataFactory.getLocation( "A" );
-        final MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( 10,
-                                                                           MetadataFactory.getDimension(),
-                                                                           MetadataFactory.getDimension( "CMS" ),
+        final Location l1 = Location.of( "A" );
+        final MetricOutputMetadata m1 = MetricOutputMetadata.of( 10,
+                                                                           MeasurementUnit.of(),
+                                                                           MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
                                                                            MetricConstants.MAIN,
-                                                                           MetadataFactory.getDatasetIdentifier( l1,
+                                                                           DatasetIdentifier.of( l1,
                                                                                                                  "B",
                                                                                                                  "C" ) );
         final List<EnsemblePair> values = new ArrayList<>();
@@ -315,13 +316,13 @@ public final class BoxPlotOutputTest
     public void test4Exceptions()
     {
 
-        final Location l1 = MetadataFactory.getLocation( "A" );
-        final MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( 10,
-                                                                           MetadataFactory.getDimension(),
-                                                                           MetadataFactory.getDimension( "CMS" ),
+        final Location l1 = Location.of( "A" );
+        final MetricOutputMetadata m1 = MetricOutputMetadata.of( 10,
+                                                                           MeasurementUnit.of(),
+                                                                           MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
                                                                            MetricConstants.MAIN,
-                                                                           MetadataFactory.getDatasetIdentifier( l1,
+                                                                           DatasetIdentifier.of( l1,
                                                                                                                  "B",
                                                                                                                  "C" ) );
         final List<EnsemblePair> values = new ArrayList<>();

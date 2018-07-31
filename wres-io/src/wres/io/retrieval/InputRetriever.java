@@ -36,10 +36,9 @@ import wres.datamodel.inputs.pairs.SingleValuedPair;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs.TimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.Dimension;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.Metadata;
-import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.time.Event;
 import wres.grid.client.Fetcher;
@@ -1183,7 +1182,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             sourceConfig = projectConfig.getInputs().getRight(); 
         }
 
-        Dimension dim = MetadataFactory.getDimension( this.projectDetails.getDesiredMeasurementUnit());
+        MeasurementUnit dim = MeasurementUnit.of( this.projectDetails.getDesiredMeasurementUnit());
         Float longitude = null;
         Float latitude = null;
 
@@ -1192,19 +1191,15 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             longitude = this.feature.getCoordinate().getLongitude();
             latitude = this.feature.getCoordinate().getLatitude();
         }
+        final Float longitude1 = longitude;
+        final Float latitude1 = latitude;
 
-        Location geospatialIdentifier = MetadataFactory.getLocation(
-                this.feature.getComid(),
-                this.feature.getLocationId(),
-                longitude,
-                latitude,
-                this.feature.getGageId()
-        );
+        Location geospatialIdentifier = Location.of( this.feature.getComid(), this.feature.getLocationId(), longitude1, latitude1, this.feature.getGageId() );
 
         // Get the variable identifier
         String variableIdentifier = ConfigHelper.getVariableIdFromProjectConfig( projectConfig, isBaseline );
 
-        DatasetIdentifier datasetIdentifier = MetadataFactory.getDatasetIdentifier(geospatialIdentifier,
+        DatasetIdentifier datasetIdentifier = DatasetIdentifier.of(geospatialIdentifier,
                                                                                    variableIdentifier,
                                                                                    sourceConfig.getLabel());
         // Replicated from earlier declaration as long
@@ -1277,7 +1272,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                                                             lastLead,
                                                             this.issueDatesPool );
 
-        return MetadataFactory.getMetadata( dim,
+        return Metadata.of( dim,
                                             datasetIdentifier,
                                             timeWindow );
     }

@@ -14,7 +14,7 @@ public class Metadata
      * The dimension or measurement units associated with the data.
      */
 
-    private final Dimension dimension;
+    private final MeasurementUnit dimension;
 
     /**
      * An optional dataset identifier, may be null.
@@ -28,6 +28,69 @@ public class Metadata
 
     private final TimeWindow timeWindow;
 
+
+    /**
+     * Build a {@link Metadata} object with a default {@link MeasurementUnit}.
+     * 
+     * @return a {@link Metadata} object
+     */
+
+    public static Metadata of()
+    {
+        return Metadata.of( MeasurementUnit.of() );
+    }
+
+    /**
+     * Build a {@link Metadata} object with a sample size and a prescribed {@link MeasurementUnit}.
+     * 
+     * @param dim the dimension
+     * @return a {@link Metadata} object
+     */
+
+    public static Metadata of( final MeasurementUnit dim )
+    {
+        return Metadata.of( dim, null, null );
+    }
+
+    /**
+     * Build a {@link Metadata} object with a prescribed {@link MeasurementUnit} and an optional {@link DatasetIdentifier}.
+     * 
+     * @param dim the dimension
+     * @param identifier an optional dataset identifier (may be null)
+     * @return a {@link Metadata} object
+     */
+
+    public static Metadata of( final MeasurementUnit dim, final DatasetIdentifier identifier )
+    {
+        return Metadata.of( dim, identifier, null );
+    }
+
+    /**
+     * Builds a {@link Metadata} from a prescribed input source and a new {@link MeasurementUnit}.
+     * 
+     * @param input the source metadata
+     * @param dim the new dimension
+     * @return a {@link Metadata} object
+     */
+
+    public static Metadata of( final Metadata input, final MeasurementUnit dim )
+    {
+        return Metadata.of( dim, input.getIdentifier(), input.getTimeWindow() );
+    }
+
+    /**
+     * Builds a {@link Metadata} from a prescribed input source and a new {@link TimeWindow}.
+     * 
+     * @param input the source metadata
+     * @param timeWindow the new time window
+     * @return a {@link Metadata} object
+     */
+
+    public static Metadata of( final Metadata input, final TimeWindow timeWindow )
+    {
+        return Metadata.of( input.getDimension(), input.getIdentifier(), timeWindow );
+    }
+
     /**
      * Returns an instance from the inputs.
      * 
@@ -38,7 +101,7 @@ public class Metadata
      * @return a metadata instance
      */
 
-    public static Metadata of( Dimension dimension, DatasetIdentifier identifier, TimeWindow timeWindow )
+    public static Metadata of( MeasurementUnit dimension, DatasetIdentifier identifier, TimeWindow timeWindow )
     {
         return new Metadata( dimension, identifier, timeWindow );
     }
@@ -135,7 +198,7 @@ public class Metadata
      * @return the dimension
      */
 
-    public Dimension getDimension()
+    public MeasurementUnit getDimension()
     {
         return this.dimension;
     }
@@ -171,7 +234,7 @@ public class Metadata
      * @throws NullPointerException if the dimension is null
      */
 
-    Metadata( final Dimension dimension, final DatasetIdentifier identifier, final TimeWindow timeWindow )
+    Metadata( final MeasurementUnit dimension, final DatasetIdentifier identifier, final TimeWindow timeWindow )
     {
         Objects.requireNonNull( "Specify a non-null dimension from which to construct the metadata." );
 

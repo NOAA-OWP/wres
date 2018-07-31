@@ -18,6 +18,9 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
+import wres.datamodel.metadata.DatasetIdentifier;
+import wres.datamodel.metadata.MeasurementUnit;
+import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
@@ -68,14 +71,15 @@ public final class TimeToPeakErrorTest
                                                  ReferenceTime.ISSUE_TIME,
                                                  Duration.ofHours( 6 ),
                                                  Duration.ofHours( 18 ) );
-        MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( input.getBasisTimes().size(),
-                                                                   MetadataFactory.getDimension( "DURATION" ),
-                                                                   MetadataFactory.getDimension( "CMS" ),
-                                                                   MetricConstants.TIME_TO_PEAK_ERROR,
-                                                                   MetricConstants.MAIN,
-                                                                   MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation("A"),
-                                                                                                 "Streamflow" ),
-                                                                   window );
+        final TimeWindow timeWindow = window;
+        MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getBasisTimes().size(),
+        MeasurementUnit.of( "DURATION" ),
+        MeasurementUnit.of( "CMS" ),
+        MetricConstants.TIME_TO_PEAK_ERROR,
+        MetricConstants.MAIN,
+        DatasetIdentifier.of( Location.of("A"),
+                                                                                                         "Streamflow" ),
+        timeWindow );
 
         // Check the parameters
         assertTrue( "Unexpected name for the Time-to-Peak Error.",

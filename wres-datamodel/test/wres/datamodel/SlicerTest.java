@@ -30,7 +30,6 @@ import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs.TimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairs.TimeSeriesOfEnsemblePairsBuilder;
 import wres.datamodel.metadata.Metadata;
-import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.outputs.DataModelTestDataFactory;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
@@ -68,7 +67,7 @@ public final class SlicerTest
         double[] expected = new double[] { 0, 0, 1, 1, 0, 1 };
         assertTrue( "The left side of the test data does not match the benchmark.",
                     Arrays.equals( Slicer.getLeftSide( SingleValuedPairs.of( values,
-                                                                                        MetadataFactory.getMetadata() ) ),
+                                                                                        Metadata.of() ) ),
                                    expected ) );
     }
 
@@ -89,7 +88,7 @@ public final class SlicerTest
         double[] expected = new double[] { 0, 0, 1, 1, 0, 1 };
         assertTrue( "The left side of the test data does not match the benchmark.",
                     Arrays.equals( Slicer.getLeftSide( EnsemblePairs.of( values,
-                                                                                    MetadataFactory.getMetadata() ) ),
+                                                                                    Metadata.of() ) ),
                                    expected ) );
     }
 
@@ -110,7 +109,7 @@ public final class SlicerTest
         double[] expected = new double[] { 3.0 / 5.0, 1.0 / 5.0, 2.0 / 5.0, 3.0 / 5.0, 0.0 / 5.0, 1.0 / 5.0 };
         assertTrue( "The right side of the test data does not match the benchmark.",
                     Arrays.equals( Slicer.getRightSide( SingleValuedPairs.of( values,
-                                                                                         MetadataFactory.getMetadata() ) ),
+                                                                                         Metadata.of() ) ),
                                    expected ) );
     }
 
@@ -132,7 +131,7 @@ public final class SlicerTest
         Threshold threshold = Threshold.of( OneOrTwoDoubles.of( 0.0 ),
                                                        Operator.GREATER,
                                                        ThresholdDataType.LEFT );
-        Metadata meta = MetadataFactory.getMetadata();
+        Metadata meta = Metadata.of();
         SingleValuedPairs pairs = SingleValuedPairs.of( values, values, meta, meta, null );
         SingleValuedPairs sliced =
                 Slicer.filter( pairs, Slicer.left( threshold::test ), clim -> threshold.test( clim ) );
@@ -165,7 +164,7 @@ public final class SlicerTest
         Threshold threshold = Threshold.of( OneOrTwoDoubles.of( 0.0 ),
                                                        Operator.GREATER,
                                                        ThresholdDataType.LEFT );
-        Metadata meta = MetadataFactory.getMetadata();
+        Metadata meta = Metadata.of();
         EnsemblePairs pairs = EnsemblePairs.of( values, values, meta, meta, null );
         EnsemblePairs sliced =
                 Slicer.filter( pairs, Slicer.leftVector( threshold::test ), clim -> threshold.test( clim ) );
@@ -194,7 +193,7 @@ public final class SlicerTest
         values.add( EnsemblePair.of( 1, new double[] { 16, 17, 18, 19, 20 } ) );
         values.add( EnsemblePair.of( 0, new double[] { 21, 22, 23, 24, 25 } ) );
         values.add( EnsemblePair.of( 1, new double[] { 26, 27, 28, 29, 30 } ) );
-        Metadata meta = MetadataFactory.getMetadata();
+        Metadata meta = Metadata.of();
         EnsemblePairs input = EnsemblePairs.of( values, values, meta, meta, null );
         Function<EnsemblePair, SingleValuedPair> mapper = ( in ) -> {
             return SingleValuedPair.of( in.getLeft(), Arrays.stream( in.getRight() ).average().getAsDouble() );
@@ -225,7 +224,7 @@ public final class SlicerTest
         values.add( SingleValuedPair.of( 1, 3.0 / 5.0 ) );
         values.add( SingleValuedPair.of( 0, 0.0 / 5.0 ) );
         values.add( SingleValuedPair.of( 1, 1.0 / 5.0 ) );
-        Metadata meta = MetadataFactory.getMetadata();
+        Metadata meta = Metadata.of();
         Function<SingleValuedPair, DichotomousPair> mapper = ( in ) -> {
             return DichotomousPair.of( in.getLeft() > 0, in.getRight() > 0 );
         };
@@ -270,7 +269,7 @@ public final class SlicerTest
         values.add( EnsemblePair.of( 4, new double[] { 4, 4, 4, 4, 4 } ) );
         values.add( EnsemblePair.of( 0, new double[] { 1, 2, 3, 4, 5 } ) );
         values.add( EnsemblePair.of( 5, new double[] { 1, 1, 6, 6, 50 } ) );
-        Metadata meta = MetadataFactory.getMetadata();
+        Metadata meta = Metadata.of();
         Threshold threshold = Threshold.of( OneOrTwoDoubles.of( 3.0 ),
                                                        Operator.GREATER,
                                                        ThresholdDataType.LEFT );
@@ -571,7 +570,7 @@ public final class SlicerTest
         VectorOfDoubles climatology = VectorOfDoubles.of( new double[] { 1, 2, 3, 4, 5, Double.NaN } );
         VectorOfDoubles climatologyExpected = VectorOfDoubles.of( new double[] { 1, 2, 3, 4, 5 } );
 
-        Metadata meta = MetadataFactory.getMetadata();
+        Metadata meta = Metadata.of();
         SingleValuedPairs pairs = SingleValuedPairs.of( values, values, meta, meta, climatology );
         SingleValuedPairs sliced = Slicer.filter( pairs, Slicer.leftAndRight( Double::isFinite ), Double::isFinite );
 
@@ -620,7 +619,7 @@ public final class SlicerTest
         VectorOfDoubles climatology = VectorOfDoubles.of( new double[] { 1, 2, 3, 4, 5, Double.NaN } );
         VectorOfDoubles climatologyExpected = VectorOfDoubles.of( new double[] { 1, 2, 3, 4, 5 } );
 
-        Metadata meta = MetadataFactory.getMetadata();
+        Metadata meta = Metadata.of();
         EnsemblePairs pairs = EnsemblePairs.of( values, values, meta, meta, climatology );
         EnsemblePairs sliced = Slicer.filter( pairs, Slicer.leftAndEachOfRight( Double::isFinite ), Double::isFinite );
 
@@ -672,7 +671,7 @@ public final class SlicerTest
         third.add( Event.of( Instant.parse( "1985-01-03T01:00:00Z" ), SingleValuedPair.of( 7, 16 ) ) );
         third.add( Event.of( Instant.parse( "1985-01-03T02:00:00Z" ), SingleValuedPair.of( 8, 17 ) ) );
         third.add( Event.of( Instant.parse( "1985-01-03T03:00:00Z" ), SingleValuedPair.of( 9, 18 ) ) );
-        Metadata meta = MetadataFactory.getMetadata();
+        Metadata meta = Metadata.of();
 
         //Add the time-series
         TimeSeriesOfSingleValuedPairs firstSeries =
@@ -789,7 +788,7 @@ public final class SlicerTest
         third.add( Event.of( Instant.parse( "1985-01-03T01:00:00Z" ), EnsemblePair.of( 7, new double[] { 7 } ) ) );
         third.add( Event.of( Instant.parse( "1985-01-03T02:00:00Z" ), EnsemblePair.of( 8, new double[] { 8 } ) ) );
         third.add( Event.of( Instant.parse( "1985-01-03T03:00:00Z" ), EnsemblePair.of( 9, new double[] { 9 } ) ) );
-        Metadata meta = MetadataFactory.getMetadata();
+        Metadata meta = Metadata.of();
         //Add the time-series
         TimeSeriesOfEnsemblePairs ts =
                 (TimeSeriesOfEnsemblePairs) b.addTimeSeriesData( firstBasisTime, first )
@@ -848,7 +847,7 @@ public final class SlicerTest
         third.add( Event.of( Instant.parse( "1985-01-03T01:00:00Z" ), EnsemblePair.of( 7, new double[] { 7 } ) ) );
         third.add( Event.of( Instant.parse( "1985-01-03T02:00:00Z" ), EnsemblePair.of( 8, new double[] { 8 } ) ) );
         third.add( Event.of( Instant.parse( "1985-01-03T03:00:00Z" ), EnsemblePair.of( 9, new double[] { 9 } ) ) );
-        Metadata meta = MetadataFactory.getMetadata();
+        Metadata meta = Metadata.of();
         //Add the time-series
         TimeSeriesOfEnsemblePairs ts =
                 (TimeSeriesOfEnsemblePairs) b.addTimeSeriesData( firstBasisTime, first )
@@ -909,7 +908,7 @@ public final class SlicerTest
         third.add( Event.of( Instant.parse( "1985-01-03T01:00:00Z" ), SingleValuedPair.of( 7, 7 ) ) );
         third.add( Event.of( Instant.parse( "1985-01-03T02:00:00Z" ), SingleValuedPair.of( 8, 8 ) ) );
         third.add( Event.of( Instant.parse( "1985-01-03T03:00:00Z" ), SingleValuedPair.of( 9, 9 ) ) );
-        Metadata meta = MetadataFactory.getMetadata();
+        Metadata meta = Metadata.of();
         //Add the time-series
         TimeSeriesOfSingleValuedPairs ts =
                 (TimeSeriesOfSingleValuedPairs) b.addTimeSeriesData( firstBasisTime, first )
@@ -963,7 +962,7 @@ public final class SlicerTest
         third.add( Event.of( Instant.parse( "1985-01-03T01:00:00Z" ), SingleValuedPair.of( 7, 7 ) ) );
         third.add( Event.of( Instant.parse( "1985-01-03T02:00:00Z" ), SingleValuedPair.of( 8, 8 ) ) );
         third.add( Event.of( Instant.parse( "1985-01-03T03:00:00Z" ), SingleValuedPair.of( 9, 9 ) ) );
-        Metadata meta = MetadataFactory.getMetadata();
+        Metadata meta = Metadata.of();
         //Add the time-series
         TimeSeriesOfSingleValuedPairs ts =
                 (TimeSeriesOfSingleValuedPairs) b.addTimeSeriesData( firstBasisTime, first )

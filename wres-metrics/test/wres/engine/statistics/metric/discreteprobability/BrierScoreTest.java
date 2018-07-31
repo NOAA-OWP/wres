@@ -15,7 +15,10 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
-import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.metadata.DatasetIdentifier;
+import wres.datamodel.metadata.MeasurementUnit;
+import wres.datamodel.metadata.Location;
+import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.MetricParameterException;
@@ -56,12 +59,12 @@ public final class BrierScoreTest
 
         // Metadata for the output
         MetricOutputMetadata m1 =
-                MetadataFactory.getOutputMetadata( input.getRawData().size(),
-                                           MetadataFactory.getDimension(),
-                                           MetadataFactory.getDimension(),
+                MetricOutputMetadata.of( input.getRawData().size(),
+                                           MeasurementUnit.of(),
+                                           MeasurementUnit.of(),
                                            MetricConstants.BRIER_SCORE,
                                            MetricConstants.MAIN,
-                                           MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation("DRRC2"), "SQIN", "HEFS" ) );
+                                           DatasetIdentifier.of( Location.of("DRRC2"), "SQIN", "HEFS" ) );
 
         // Check the results       
         DoubleScoreOutput actual = brierScore.apply( input );
@@ -82,7 +85,7 @@ public final class BrierScoreTest
     {
         // Generate empty data
         DiscreteProbabilityPairs input =
-                DiscreteProbabilityPairs.of( Arrays.asList(), MetadataFactory.getMetadata() );
+                DiscreteProbabilityPairs.of( Arrays.asList(), Metadata.of() );
  
         DoubleScoreOutput actual = brierScore.apply( input );
 

@@ -106,13 +106,14 @@ public class TimingErrorDurationStatistics implements Function<PairedOutput<Inst
         {
             singleIdentifier = nextIdentifier;
         }
-        MetricOutputMetadata meta = MetadataFactory.getOutputMetadata( in.getSampleSize(),
-                                                                       in.getDimension(),
-                                                                       in.getInputDimension(),
-                                                                       this.getID(),
-                                                                       singleIdentifier,
-                                                                       in.getIdentifier(),
-                                                                       in.getTimeWindow() );
+        final MetricConstants componentID = singleIdentifier;
+        MetricOutputMetadata meta = MetricOutputMetadata.of( in.getSampleSize(),
+        in.getDimension(),
+        in.getInputDimension(),
+        this.getID(),
+        componentID,
+        in.getIdentifier(),
+        in.getTimeWindow() );
         return DurationScoreOutput.of( returnMe, meta );
     }
 

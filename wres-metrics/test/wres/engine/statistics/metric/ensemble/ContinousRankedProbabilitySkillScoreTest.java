@@ -19,7 +19,8 @@ import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.EnsemblePair;
-import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.metadata.MeasurementUnit;
+import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.MetricParameterException;
@@ -73,14 +74,14 @@ public final class ContinousRankedProbabilitySkillScoreTest
         basePairs.add( EnsemblePair.of( 43, new double[] { 23, 12, 12, 39, 10 } ) );
         EnsemblePairs input = EnsemblePairs.of( pairs,
                                                            basePairs,
-                                                           MetadataFactory.getMetadata(),
-                                                           MetadataFactory.getMetadata() );
+                                                           Metadata.of(),
+                                                           Metadata.of() );
 
         //Metadata for the output
         MetricOutputMetadata m1 =
-                MetadataFactory.getOutputMetadata( input.getRawData().size(),
-                                                   MetadataFactory.getDimension(),
-                                                   MetadataFactory.getDimension(),
+                MetricOutputMetadata.of( input.getRawData().size(),
+                                                   MeasurementUnit.of(),
+                                                   MeasurementUnit.of(),
                                                    MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
                                                    MetricConstants.MAIN );
         //Check the results       
@@ -106,8 +107,8 @@ public final class ContinousRankedProbabilitySkillScoreTest
         EnsemblePairs input =
                 EnsemblePairs.of( Arrays.asList(),
                                              Arrays.asList(),
-                                             MetadataFactory.getMetadata(),
-                                             MetadataFactory.getMetadata() );
+                                             Metadata.of(),
+                                             Metadata.of() );
 
         DoubleScoreOutput actual = crpss.apply( input );
 
@@ -229,7 +230,7 @@ public final class ContinousRankedProbabilitySkillScoreTest
         exception.expectMessage( "Specify a non-null baseline for the 'CONTINUOUS RANKED PROBABILITY SKILL SCORE'." );
         List<EnsemblePair> pairs = new ArrayList<>();
         pairs.add( EnsemblePair.of( 25.7, new double[] { 23, 43, 45, 23, 54 } ) );
-        EnsemblePairs input = EnsemblePairs.of( pairs, MetadataFactory.getMetadata() );
+        EnsemblePairs input = EnsemblePairs.of( pairs, Metadata.of() );
         crpss.apply( input );
     }
 

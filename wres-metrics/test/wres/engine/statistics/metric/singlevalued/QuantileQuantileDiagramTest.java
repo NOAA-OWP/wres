@@ -17,7 +17,7 @@ import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPair;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
-import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.metadata.Metadata;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.engine.statistics.metric.MetricParameterException;
 
@@ -60,7 +60,7 @@ public final class QuantileQuantileDiagramTest
             values.add( SingleValuedPair.of( left, right ) );
         }
 
-        final SingleValuedPairs input = SingleValuedPairs.of( values, MetadataFactory.getMetadata() );
+        final SingleValuedPairs input = SingleValuedPairs.of( values, Metadata.of() );
 
         //Check the results       
         final MultiVectorOutput actual = qqd.apply( input );
@@ -108,7 +108,7 @@ public final class QuantileQuantileDiagramTest
     {
         // Generate empty data
         SingleValuedPairs input =
-                SingleValuedPairs.of( Arrays.asList(), MetadataFactory.getMetadata() );
+                SingleValuedPairs.of( Arrays.asList(), Metadata.of() );
 
         MultiVectorOutput actual = qqd.apply( input );
 

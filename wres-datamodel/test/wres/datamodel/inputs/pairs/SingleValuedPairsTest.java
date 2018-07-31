@@ -15,7 +15,6 @@ import wres.datamodel.inputs.pairs.SingleValuedPair;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.inputs.pairs.SingleValuedPairs.SingleValuedPairsBuilder;
 import wres.datamodel.metadata.Metadata;
-import wres.datamodel.metadata.MetadataFactory;
 
 /**
  * Tests the {@link SingleValuedPairs}.
@@ -39,7 +38,7 @@ public final class SingleValuedPairsTest
         {
             values.add( SingleValuedPair.of( 1, 1 ) );
         }
-        final Metadata meta = MetadataFactory.getMetadata();
+        final Metadata meta = Metadata.of();
         SingleValuedPairs p = (SingleValuedPairs) b.addData( values ).setMetadata( meta ).build();
 
         //Check dataset count

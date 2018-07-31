@@ -15,7 +15,8 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
-import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.metadata.MeasurementUnit;
+import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.MetricParameterException;
@@ -52,9 +53,9 @@ public final class CoefficientOfDeterminationTest
     public void testApply()
     {
         SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
-        MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( input.getRawData().size(),
-                                                                   MetadataFactory.getDimension(),
-                                                                   MetadataFactory.getDimension(),
+        MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getRawData().size(),
+                                                                   MeasurementUnit.of(),
+                                                                   MeasurementUnit.of(),
                                                                    MetricConstants.COEFFICIENT_OF_DETERMINATION,
                                                                    MetricConstants.MAIN );
 
@@ -77,7 +78,7 @@ public final class CoefficientOfDeterminationTest
     {
         // Generate empty data
         SingleValuedPairs input =
-                SingleValuedPairs.of( Arrays.asList(), MetadataFactory.getMetadata() );
+                SingleValuedPairs.of( Arrays.asList(), Metadata.of() );
  
         DoubleScoreOutput actual = cod.apply( input );
 

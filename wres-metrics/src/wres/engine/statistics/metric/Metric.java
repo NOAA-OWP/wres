@@ -7,7 +7,7 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.Dimension;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
@@ -121,7 +121,7 @@ public interface Metric<S extends MetricInput<?>, T extends MetricOutput<?>> ext
                                                      + "': build the metadata in the implementing class." );
         }
         final Metadata metIn = input.getMetadata();
-        Dimension outputDim = null;
+        MeasurementUnit outputDim = null;
         //Dimensioned?
         if ( hasRealUnits() )
         {
@@ -129,22 +129,24 @@ public interface Metric<S extends MetricInput<?>, T extends MetricOutput<?>> ext
         }
         else
         {
-            outputDim = MetadataFactory.getDimension();
+            outputDim = MeasurementUnit.of();
         }
         DatasetIdentifier identifier = metIn.getIdentifier();
         //Add the scenario ID associated with the baseline input
         if ( Objects.nonNull( baselineID ) )
         {
             identifier =
-                    MetadataFactory.getDatasetIdentifier( identifier, baselineID.getScenarioID() );
+                    DatasetIdentifier.of( identifier, baselineID.getScenarioID() );
         }
-        return MetadataFactory.getOutputMetadata( sampleSize,
-                                                  outputDim,
-                                                  metIn.getDimension(),
-                                                  getID(),
-                                                  componentID,
-                                                  identifier,
-                                                  metIn.getTimeWindow() );
+        final MeasurementUnit outputDim1 = outputDim;
+        final DatasetIdentifier identifier1 = identifier;
+        return MetricOutputMetadata.of( sampleSize,
+        outputDim1,
+        metIn.getDimension(),
+        getID(),
+        componentID,
+        identifier1,
+        metIn.getTimeWindow() );
     }
 
 }

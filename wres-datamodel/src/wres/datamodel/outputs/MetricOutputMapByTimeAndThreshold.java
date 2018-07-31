@@ -18,7 +18,6 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
 
-import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
@@ -554,7 +553,7 @@ public class MetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>>
             if ( !windows.isEmpty() )
             {
                 builderLocalMeta =
-                        MetadataFactory.getOutputMetadata( builderLocalMeta, TimeWindow.unionOf( windows ) );
+                        MetricOutputMetadata.of( builderLocalMeta, TimeWindow.unionOf( windows ) );
             }
         }
         this.metadata = builderLocalMeta;
