@@ -160,13 +160,15 @@ public final class Operations {
         }
         catch ( InterruptedException e )
         {
-            LOGGER.error("The process for loading unit conversions was interrupted.");
+            LOGGER.warn( "The process for pre-loading unit conversions was interrupted.",
+                         e );
             Thread.currentThread().interrupt();
         }
         catch ( ExecutionException e )
         {
             // If loading failed, it will attempt to try again later.
-            LOGGER.error("The process for loading unit conversions failed.", e);
+            LOGGER.warn( "The process for pre-loading unit conversions failed.",
+                         e );
         }
 
         // If we're performing gridded evaluation, we can't check if our
