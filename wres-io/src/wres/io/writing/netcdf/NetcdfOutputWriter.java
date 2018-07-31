@@ -250,8 +250,8 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
                     }
                     catch ( ExecutionException e )
                     {
-                        // Not halting because other output needs to be written and some files may still be valid
-                        LOGGER.error( "Output could not be written.", e );
+                        throw new WriteException( "A netCDF output could not be written",
+                                                  e );
                     }
                     catch ( TimeoutException e )
                     {
