@@ -553,7 +553,7 @@ public class MetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>>
             if ( !windows.isEmpty() )
             {
                 builderLocalMeta =
-                        MetricOutputMetadata.of( builderLocalMeta, TimeWindow.unionOf( windows ) );
+                        MetricOutputMetadata.of( builderLocalMeta, TimeWindow.unionOf( windows ), null );
             }
         }
         this.metadata = builderLocalMeta;

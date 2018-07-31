@@ -2,7 +2,6 @@ package wres.engine.statistics.metric.ensemble;
 
 import java.util.Objects;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
@@ -69,7 +68,12 @@ public class ContinuousRankedProbabilitySkillScore extends ContinuousRankedProba
 
         //Metadata
         DatasetIdentifier baselineIdentifier = s.getMetadataForBaseline().getIdentifier();
-        MetricOutputMetadata metOut = getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, baselineIdentifier );
+        MetricOutputMetadata metOut = MetricOutputMetadata.of( s.getMetadata(),
+                                                          this.getID(),
+                                                          MetricConstants.MAIN,
+                                                          this.hasRealUnits(),
+                                                          s.getRawData().size(),
+                                                          baselineIdentifier );
         return DoubleScoreOutput.of( result, metOut );
     }
 

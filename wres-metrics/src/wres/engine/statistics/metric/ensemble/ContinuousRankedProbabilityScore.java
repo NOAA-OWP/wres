@@ -6,13 +6,12 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.Slicer;
 import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.EnsemblePair;
+import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.DecomposableScore;
@@ -85,7 +84,13 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<Ensemble
         //Compute the average (implicitly weighted by the number of pairs in each group)
         crps[0] = FunctionFactory.finiteOrMissing().applyAsDouble( crps[0] / s.getRawData().size() );
         //Metadata
-        final MetricOutputMetadata metOut = getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, null );
+        final MetricOutputMetadata metOut =
+                MetricOutputMetadata.of( s.getMetadata(),
+                                    this.getID(),
+                                    MetricConstants.MAIN,
+                                    this.hasRealUnits(),
+                                    s.getRawData().size(),
+                                    null );
         return DoubleScoreOutput.of( crps[0], metOut );
     }
 

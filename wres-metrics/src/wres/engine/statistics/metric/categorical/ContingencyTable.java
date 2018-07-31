@@ -34,12 +34,12 @@ public class ContingencyTable<S extends MulticategoryPairs> implements Metric<S,
      * @param <S> the input type
      * @return an instance
      */
-    
+
     public static <S extends MulticategoryPairs> ContingencyTable<S> of()
     {
         return new ContingencyTable<>();
     }
-    
+
     @Override
     public MatrixOutput apply( final MulticategoryPairs s )
     {
@@ -54,15 +54,15 @@ public class ContingencyTable<S extends MulticategoryPairs> implements Metric<S,
             boolean[] left = a.getLeft();
             boolean[] right = a.getRight();
             boolean[] compound;
-            
+
             // Dichotomous event represented as a single outcome: expand
             if ( left.length == 1 )
             {
                 compound = new boolean[] { left[0], !left[0], right[0], !right[0] };
             }
-            else 
+            else
             {
-                compound = new boolean[ left.length + right.length ];
+                compound = new boolean[left.length + right.length];
                 System.arraycopy( left, 0, compound, 0, left.length );
                 System.arraycopy( right, 0, compound, left.length, right.length );
             }
@@ -80,7 +80,13 @@ public class ContingencyTable<S extends MulticategoryPairs> implements Metric<S,
                                             MetricDimension.FALSE_NEGATIVES,
                                             MetricDimension.TRUE_NEGATIVES );
         }
-        final MetricOutputMetadata metOut = getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, null );
+        final MetricOutputMetadata metOut =
+                MetricOutputMetadata.of( s.getMetadata(),
+                                    this.getID(),
+                                    MetricConstants.MAIN,
+                                    this.hasRealUnits(),
+                                    s.getRawData().size(),
+                                    null );
         return MatrixOutput.of( returnMe, componentNames, metOut );
     }
 

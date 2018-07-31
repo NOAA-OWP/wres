@@ -2,7 +2,6 @@ package wres.engine.statistics.metric.singlevalued;
 
 import java.util.Objects;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPair;
@@ -28,18 +27,18 @@ public class VolumetricEfficiency extends DoubleErrorScore<SingleValuedPairs>
      * 
      * @return an instance
      */
-    
+
     public static VolumetricEfficiency of()
     {
         return new VolumetricEfficiency();
     }
-    
+
     @Override
     public DoubleScoreOutput apply( final SingleValuedPairs s )
     {
-        if(Objects.isNull(s))
+        if ( Objects.isNull( s ) )
         {
-            throw new MetricInputException("Specify non-null input to the '"+this+"'.");
+            throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
         }
         Double vO = 0.0;
         double vP = 0.0;
@@ -50,9 +49,15 @@ public class VolumetricEfficiency extends DoubleErrorScore<SingleValuedPairs>
         }
 
         //Metadata
-        final MetricOutputMetadata metOut = getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, null );
+        final MetricOutputMetadata metOut =
+                MetricOutputMetadata.of( s.getMetadata(),
+                                    this.getID(),
+                                    MetricConstants.MAIN,
+                                    this.hasRealUnits(),
+                                    s.getRawData().size(),
+                                    null );
         //Compute the atomic errors in a stream
-        if( vO.equals( 0.0 ) )
+        if ( vO.equals( 0.0 ) )
         {
             return DoubleScoreOutput.of( Double.NaN, metOut );
         }

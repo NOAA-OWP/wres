@@ -11,12 +11,10 @@ import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.function.ToDoubleFunction;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MissingValues;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DurationScoreOutput;
 import wres.datamodel.outputs.PairedOutput;
@@ -108,12 +106,13 @@ public class TimingErrorDurationStatistics implements Function<PairedOutput<Inst
         }
         final MetricConstants componentID = singleIdentifier;
         MetricOutputMetadata meta = MetricOutputMetadata.of( in.getSampleSize(),
-        in.getDimension(),
-        in.getInputDimension(),
-        this.getID(),
-        componentID,
-        in.getIdentifier(),
-        in.getTimeWindow() );
+                                                             in.getMeasurementUnit(),
+                                                             in.getInputDimension(),
+                                                             this.getID(),
+                                                             componentID,
+                                                             in.getIdentifier(),
+                                                             in.getTimeWindow(),
+                                                             in.getThresholds() );
         return DurationScoreOutput.of( returnMe, meta );
     }
 
@@ -133,7 +132,7 @@ public class TimingErrorDurationStatistics implements Function<PairedOutput<Inst
         {
             throw new MetricParameterException( "Specify a unique identifier from which to build the statistics." );
         }
-        
+
         if ( Objects.isNull( statistics ) )
         {
             throw new MetricParameterException( "Specify a non-null container of summary statistics." );

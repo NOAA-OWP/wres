@@ -2,7 +2,6 @@ package wres.engine.statistics.metric.discreteprobability;
 
 import java.util.Objects;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
 import wres.datamodel.inputs.MetricInputException;
@@ -36,18 +35,18 @@ public class BrierScore extends DecomposableScore<DiscreteProbabilityPairs>
      * 
      * @return an instance
      */
-    
+
     public static BrierScore of()
     {
         return new BrierScore();
-    }   
+    }
 
     /**
      * Instance of MSE used to compute the BS.
      */
-    
+
     private final MeanSquareError mse;
-    
+
     @Override
     public DoubleScoreOutput apply( DiscreteProbabilityPairs s )
     {
@@ -56,7 +55,12 @@ public class BrierScore extends DecomposableScore<DiscreteProbabilityPairs>
             throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
         }
 
-        MetricOutputMetadata metOut = getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, null );
+        MetricOutputMetadata metOut = MetricOutputMetadata.of( s.getMetadata(),
+                                                               this.getID(),
+                                                               MetricConstants.MAIN,
+                                                               this.hasRealUnits(),
+                                                               s.getRawData().size(),
+                                                               null );
 
         return DoubleScoreOutput.of( mse.apply( Slicer.toSingleValuedPairs( s ) ).getData(), metOut );
     }
@@ -100,7 +104,7 @@ public class BrierScore extends DecomposableScore<DiscreteProbabilityPairs>
     BrierScore()
     {
         super();
-        
+
         mse = MeanSquareError.of();
     }
 

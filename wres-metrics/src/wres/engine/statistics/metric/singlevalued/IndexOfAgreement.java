@@ -2,7 +2,6 @@ package wres.engine.statistics.metric.singlevalued;
 
 import java.util.Objects;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MissingValues;
 import wres.datamodel.inputs.MetricInputException;
@@ -27,20 +26,20 @@ public class IndexOfAgreement extends DoubleErrorScore<SingleValuedPairs>
     /**
      * The default exponent.
      */
-    
+
     private static final double DEFAULT_EXPONENT = 1.0;
-    
+
     /**
      * Returns an instance.
      * 
      * @return an instance
      */
-    
+
     public static IndexOfAgreement of()
     {
         return new IndexOfAgreement();
     }
-    
+
     /**
      * Exponent. 
      */
@@ -75,7 +74,12 @@ public class IndexOfAgreement extends DoubleErrorScore<SingleValuedPairs>
         }
 
         //Metadata
-        final MetricOutputMetadata metOut = this.getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, null );
+        final MetricOutputMetadata metOut = MetricOutputMetadata.of( s.getMetadata(),
+                                                                this.getID(),
+                                                                MetricConstants.MAIN,
+                                                                this.hasRealUnits(),
+                                                                s.getRawData().size(),
+                                                                null );
 
         return DoubleScoreOutput.of( returnMe, metOut );
     }
@@ -105,7 +109,7 @@ public class IndexOfAgreement extends DoubleErrorScore<SingleValuedPairs>
     private IndexOfAgreement()
     {
         super();
-        
+
         this.exponent = DEFAULT_EXPONENT;
     }
 

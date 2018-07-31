@@ -2,6 +2,8 @@ package wres.datamodel.metadata;
 
 import java.util.Objects;
 
+import wres.datamodel.thresholds.OneOrTwoThresholds;
+
 /**
  * An immutable store of metadata associated with metric inputs and outputs.
  * 
@@ -11,10 +13,10 @@ public class Metadata
 {
 
     /**
-     * The dimension or measurement units associated with the data.
+     * The measurement unit associated with the data.
      */
 
-    private final MeasurementUnit dimension;
+    private final MeasurementUnit unit;
 
     /**
      * An optional dataset identifier, may be null.
@@ -28,6 +30,11 @@ public class Metadata
 
     private final TimeWindow timeWindow;
 
+    /**
+     * An optional set of thresholds associated with the data, may be null.
+     */
+
+    private final OneOrTwoThresholds thresholds;
 
     /**
      * Build a {@link Metadata} object with a default {@link MeasurementUnit}.
@@ -43,39 +50,39 @@ public class Metadata
     /**
      * Build a {@link Metadata} object with a sample size and a prescribed {@link MeasurementUnit}.
      * 
-     * @param dim the dimension
+     * @param unit the required measurement unit
      * @return a {@link Metadata} object
      */
 
-    public static Metadata of( final MeasurementUnit dim )
+    public static Metadata of( final MeasurementUnit unit )
     {
-        return Metadata.of( dim, null, null );
+        return Metadata.of( unit, null );
     }
 
     /**
      * Build a {@link Metadata} object with a prescribed {@link MeasurementUnit} and an optional {@link DatasetIdentifier}.
      * 
-     * @param dim the dimension
+     * @param unit the required measurement unit
      * @param identifier an optional dataset identifier (may be null)
      * @return a {@link Metadata} object
      */
 
-    public static Metadata of( final MeasurementUnit dim, final DatasetIdentifier identifier )
+    public static Metadata of( final MeasurementUnit unit, final DatasetIdentifier identifier )
     {
-        return Metadata.of( dim, identifier, null );
+        return Metadata.of( unit, identifier, null );
     }
 
     /**
      * Builds a {@link Metadata} from a prescribed input source and a new {@link MeasurementUnit}.
      * 
      * @param input the source metadata
-     * @param dim the new dimension
+     * @param unit the required measurement unit
      * @return a {@link Metadata} object
      */
 
-    public static Metadata of( final Metadata input, final MeasurementUnit dim )
+    public static Metadata of( final Metadata input, final MeasurementUnit unit )
     {
-        return Metadata.of( dim, input.getIdentifier(), input.getTimeWindow() );
+        return Metadata.of( unit, input.getIdentifier(), input.getTimeWindow() );
     }
 
     /**
@@ -88,22 +95,41 @@ public class Metadata
 
     public static Metadata of( final Metadata input, final TimeWindow timeWindow )
     {
-        return Metadata.of( input.getDimension(), input.getIdentifier(), timeWindow );
+        return Metadata.of( input.getMeasurementUnit(), input.getIdentifier(), timeWindow );
     }
 
     /**
      * Returns an instance from the inputs.
      * 
-     * @param dimension a required dimension
+     * @param unit the required measurement unit
      * @param identifier an optional dataset identifier
      * @param timeWindow an optional time window
      * @throws NullPointerException if the dimension is null
      * @return a metadata instance
      */
 
-    public static Metadata of( MeasurementUnit dimension, DatasetIdentifier identifier, TimeWindow timeWindow )
+    public static Metadata of( MeasurementUnit unit, DatasetIdentifier identifier, TimeWindow timeWindow )
     {
-        return new Metadata( dimension, identifier, timeWindow );
+        return Metadata.of( unit, identifier, timeWindow, null );
+    }
+
+    /**
+     * Returns an instance from the inputs.
+     * 
+     * @param unit the required measurement unit
+     * @param identifier an optional dataset identifier
+     * @param timeWindow an optional time window
+     * @param thresholds an optional set of thresholds
+     * @throws NullPointerException if the dimension is null
+     * @return a metadata instance
+     */
+
+    public static Metadata of( MeasurementUnit unit,
+                               DatasetIdentifier identifier,
+                               TimeWindow timeWindow,
+                               OneOrTwoThresholds thresholds )
+    {
+        return new Metadata( unit, identifier, timeWindow, thresholds );
     }
 
     @Override
@@ -114,18 +140,32 @@ public class Metadata
             return false;
         }
         final Metadata p = (Metadata) o;
-        boolean returnMe = this.equalsWithoutTimeWindow( p ) && this.hasTimeWindow() == p.hasTimeWindow();
-        if ( hasTimeWindow() )
+        boolean returnMe = this.equalsWithoutTimeWindowOrThresholds( p ) && this.hasTimeWindow() == p.hasTimeWindow()
+                           && this.hasThresholds() == p.hasThresholds();
+        
+        if ( returnMe && hasTimeWindow() )
         {
-            returnMe = returnMe && this.getTimeWindow().equals( p.getTimeWindow() );
+            returnMe = this.getTimeWindow().equals( p.getTimeWindow() );
         }
+
+        if ( returnMe && hasThresholds() )
+        {
+            returnMe = this.getThresholds().equals( p.getThresholds() );
+        }
+
         return returnMe;
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( getDimension(), hasIdentifier(), hasTimeWindow(), getIdentifier(), getTimeWindow() );
+        return Objects.hash( getMeasurementUnit(),
+                             hasIdentifier(),
+                             hasTimeWindow(),
+                             hasThresholds(),
+                             getIdentifier(),
+                             getTimeWindow(),
+                             getThresholds() );
     }
 
     @Override
@@ -134,7 +174,7 @@ public class Metadata
         final StringBuilder b = new StringBuilder();
         if ( hasIdentifier() )
         {
-            String appendMe = identifier.toString();
+            String appendMe = this.identifier.toString();
             appendMe = appendMe.replaceAll( "]", "," );
             b.append( appendMe );
         }
@@ -144,9 +184,13 @@ public class Metadata
         }
         if ( hasTimeWindow() )
         {
-            b.append( timeWindow ).append( "," );
+            b.append( this.timeWindow ).append( "," );
         }
-        b.append( dimension ).append( "]" );
+        if ( hasThresholds() )
+        {
+            b.append( this.thresholds ).append( "," );
+        }
+        b.append( this.unit ).append( "]" );
         return b.toString();
     }
 
@@ -172,19 +216,30 @@ public class Metadata
     }
 
     /**
+     * Returns true if {@link #getThresholds()} returns non-null, false otherwise.
+     * 
+     * @return true if {@link #getThresholds()} returns non-null, false otherwise.
+     */
+    public boolean hasThresholds()
+    {
+        return Objects.nonNull( getThresholds() );
+    }
+
+    /**
      * Returns <code>true</code> if the input is equal to the current {@link Metadata} without considering the 
-     * {@link TimeWindow}.
+     * {@link #getTimeWindow()} or {@link #getThresholds()}.
      * 
      * @param input the input metadata
-     * @return true if the input is equal to the current metadata, without considering the time window
+     * @return true if the input is equal to the current metadata, without considering the time window or thresholds
      */
-    public boolean equalsWithoutTimeWindow( final Metadata input )
+    public boolean equalsWithoutTimeWindowOrThresholds( final Metadata input )
     {
         if ( Objects.isNull( input ) )
         {
             return false;
         }
-        boolean returnMe = input.getDimension().equals( getDimension() ) && hasIdentifier() == input.hasIdentifier();
+        boolean returnMe =
+                input.getMeasurementUnit().equals( getMeasurementUnit() ) && hasIdentifier() == input.hasIdentifier();
         if ( hasIdentifier() )
         {
             returnMe = returnMe && getIdentifier().equals( input.getIdentifier() );
@@ -193,14 +248,14 @@ public class Metadata
     }
 
     /**
-     * Returns the dimension associated with the metric.
+     * Returns the measurement unit associated with the metric.
      * 
-     * @return the dimension
+     * @return the measurement unit
      */
 
-    public MeasurementUnit getDimension()
+    public MeasurementUnit getMeasurementUnit()
     {
-        return this.dimension;
+        return this.unit;
     }
 
     /**
@@ -226,21 +281,37 @@ public class Metadata
     }
 
     /**
+     * Returns a {@link OneOrTwoThresholds} associated with the metadata or null.
+     * 
+     * @return a set of thresholds or null
+     */
+
+    public OneOrTwoThresholds getThresholds()
+    {
+        return this.thresholds;
+    }
+
+    /**
      * A hidden constructor.
      * 
-     * @param dimension a required dimension
+     * @param unit the required measurement unit
      * @param identifier an optional dataset identifier
      * @param timeWindow an optional time window
+     * @param thresholds an optional set of thresholds
      * @throws NullPointerException if the dimension is null
      */
 
-    Metadata( final MeasurementUnit dimension, final DatasetIdentifier identifier, final TimeWindow timeWindow )
+    Metadata( final MeasurementUnit unit,
+              final DatasetIdentifier identifier,
+              final TimeWindow timeWindow,
+              final OneOrTwoThresholds thresholds )
     {
-        Objects.requireNonNull( "Specify a non-null dimension from which to construct the metadata." );
+        Objects.requireNonNull( "Specify a non-null measurement unit from which to construct the metadata." );
 
-        this.dimension = dimension;
+        this.unit = unit;
         this.identifier = identifier;
         this.timeWindow = timeWindow;
+        this.thresholds = thresholds;
     }
 
 }

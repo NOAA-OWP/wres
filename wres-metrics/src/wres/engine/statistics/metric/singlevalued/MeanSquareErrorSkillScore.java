@@ -2,7 +2,6 @@ package wres.engine.statistics.metric.singlevalued;
 
 import java.util.Objects;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.Slicer;
@@ -32,12 +31,12 @@ public class MeanSquareErrorSkillScore extends DecomposableScore<SingleValuedPai
      * 
      * @return an instance
      */
-    
+
     public static MeanSquareErrorSkillScore of()
     {
         return new MeanSquareErrorSkillScore();
     }
-    
+
     /**
      * Instance if {@link SumOfSquareError}.
      */
@@ -90,8 +89,12 @@ public class MeanSquareErrorSkillScore extends DecomposableScore<SingleValuedPai
         {
             baselineIdentifier = s.getMetadataForBaseline().getIdentifier();
         }
-        final MetricOutputMetadata metOut =
-                this.getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, baselineIdentifier );
+        final MetricOutputMetadata metOut = MetricOutputMetadata.of( s.getMetadata(),
+                                                                this.getID(),
+                                                                MetricConstants.MAIN,
+                                                                this.hasRealUnits(),
+                                                                s.getRawData().size(),
+                                                                baselineIdentifier );
         return DoubleScoreOutput.of( result, metOut );
     }
 
@@ -122,7 +125,7 @@ public class MeanSquareErrorSkillScore extends DecomposableScore<SingleValuedPai
         super();
         sse = SumOfSquareError.of();
     }
-    
+
     /**
      * Hidden constructor.
      * 
