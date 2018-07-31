@@ -406,13 +406,13 @@ public class DataSetProvider implements DataProvider
     }
 
     @Override
-    public double[] getDoubleArray( String columnName )
+    public Double[] getDoubleArray( String columnName )
     {
         if (this.isClosed())
         {
             throw new IllegalStateException( "The data set is inaccessible." );
         }
-        return (double[])this.getObject(columnName);
+        return (Double[])this.getObject(columnName);
     }
 
     @Override

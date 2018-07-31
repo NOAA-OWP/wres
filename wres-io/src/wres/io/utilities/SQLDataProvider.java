@@ -420,11 +420,11 @@ public class SQLDataProvider implements DataProvider
     }
 
     @Override
-    public double[] getDoubleArray( String columnName )
+    public Double[] getDoubleArray( String columnName )
     {
         try
         {
-            return (double[])this.resultSet.getArray( columnName ).getArray();
+            return (Double[])this.resultSet.getArray( columnName ).getArray();
         }
         catch ( SQLException e )
         {

@@ -21,7 +21,7 @@ class IngestedValue implements Comparable<IngestedValue>
     private final long referenceEpoch;
     private final Instant validTime;
     private final int lead;
-    private final double[] measurements;
+    private final Double[] measurements;
 
     private static UnitConversions.Conversion getConversion(int measurementUnitID, String desiredUnit)
     {
@@ -58,7 +58,7 @@ class IngestedValue implements Comparable<IngestedValue>
     }
 
     IngestedValue(Instant validTime,
-                  double[] measurements,
+                  Double[] measurements,
                   int measurementUnitId,
                   int lead,
                   long basisEpoch,
