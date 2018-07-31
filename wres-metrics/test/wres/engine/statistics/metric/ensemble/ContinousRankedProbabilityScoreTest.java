@@ -18,7 +18,8 @@ import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.EnsemblePair;
-import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.metadata.MeasurementUnit;
+import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.MetricParameterException;
@@ -62,13 +63,13 @@ public final class ContinousRankedProbabilityScoreTest
         pairs.add( EnsemblePair.of( 47, new double[] { 12, 54, 23, 54, 78 } ) );
         pairs.add( EnsemblePair.of( 12.1, new double[] { 9, 8, 5, 6, 12 } ) );
         pairs.add( EnsemblePair.of( 43, new double[] { 23, 12, 12, 34, 10 } ) );
-        EnsemblePairs input = EnsemblePairs.of( pairs, MetadataFactory.getMetadata() );
+        EnsemblePairs input = EnsemblePairs.of( pairs, Metadata.of() );
 
         //Metadata for the output
         MetricOutputMetadata m1 =
-                MetadataFactory.getOutputMetadata( input.getRawData().size(),
-                                                   MetadataFactory.getDimension(),
-                                                   MetadataFactory.getDimension(),
+                MetricOutputMetadata.of( input.getRawData().size(),
+                                                   MeasurementUnit.of(),
+                                                   MeasurementUnit.of(),
                                                    MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE,
                                                    MetricConstants.MAIN );
         //Check the results       
@@ -98,13 +99,13 @@ public final class ContinousRankedProbabilityScoreTest
         pairs.add( EnsemblePair.of( 47, new double[] { 12, 54, 23, 54 } ) );
         pairs.add( EnsemblePair.of( 12, new double[] { 9, 8, 5 } ) );
         pairs.add( EnsemblePair.of( 43, new double[] { 23, 12, 12 } ) );
-        EnsemblePairs input = EnsemblePairs.of( pairs, MetadataFactory.getMetadata() );
+        EnsemblePairs input = EnsemblePairs.of( pairs, Metadata.of() );
 
         //Metadata for the output
         MetricOutputMetadata m1 =
-                MetadataFactory.getOutputMetadata( input.getRawData().size(),
-                                                   MetadataFactory.getDimension(),
-                                                   MetadataFactory.getDimension(),
+                MetricOutputMetadata.of( input.getRawData().size(),
+                                                   MeasurementUnit.of(),
+                                                   MeasurementUnit.of(),
                                                    MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE,
                                                    MetricConstants.MAIN );
         //Check the results       
@@ -129,13 +130,13 @@ public final class ContinousRankedProbabilityScoreTest
         //Generate some data
         List<EnsemblePair> pairs = new ArrayList<>();
         pairs.add( EnsemblePair.of( 8, new double[] { 23, 54, 23, 12, 32 } ) );
-        EnsemblePairs input = EnsemblePairs.of( pairs, MetadataFactory.getMetadata() );
+        EnsemblePairs input = EnsemblePairs.of( pairs, Metadata.of() );
 
         //Metadata for the output
         MetricOutputMetadata m1 =
-                MetadataFactory.getOutputMetadata( input.getRawData().size(),
-                                                   MetadataFactory.getDimension(),
-                                                   MetadataFactory.getDimension(),
+                MetricOutputMetadata.of( input.getRawData().size(),
+                                                   MeasurementUnit.of(),
+                                                   MeasurementUnit.of(),
                                                    MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE,
                                                    MetricConstants.MAIN );
         //Check the results       
@@ -161,13 +162,13 @@ public final class ContinousRankedProbabilityScoreTest
         //Generate some data
         List<EnsemblePair> pairs = new ArrayList<>();
         pairs.add( EnsemblePair.of( 32, new double[] { 23, 54, 23, 12, 32 } ) );
-        EnsemblePairs input = EnsemblePairs.of( pairs, MetadataFactory.getMetadata() );
+        EnsemblePairs input = EnsemblePairs.of( pairs, Metadata.of() );
 
         //Metadata for the output
         MetricOutputMetadata m1 =
-                MetadataFactory.getOutputMetadata( input.getRawData().size(),
-                                                   MetadataFactory.getDimension(),
-                                                   MetadataFactory.getDimension(),
+                MetricOutputMetadata.of( input.getRawData().size(),
+                                                   MeasurementUnit.of(),
+                                                   MeasurementUnit.of(),
                                                    MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE,
                                                    MetricConstants.MAIN );
         //Check the results       
@@ -191,7 +192,7 @@ public final class ContinousRankedProbabilityScoreTest
     {
         // Generate empty data
         EnsemblePairs input =
-                EnsemblePairs.of( Arrays.asList(), MetadataFactory.getMetadata() );
+                EnsemblePairs.of( Arrays.asList(), Metadata.of() );
 
         DoubleScoreOutput actual = crps.apply( input );
 

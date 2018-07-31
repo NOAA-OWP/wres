@@ -4,7 +4,7 @@ import java.util.Objects;
 import java.util.function.DoublePredicate;
 
 import wres.datamodel.OneOrTwoDoubles;
-import wres.datamodel.metadata.Dimension;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdType;
@@ -22,7 +22,7 @@ import wres.datamodel.thresholds.ThresholdConstants.ThresholdType;
  * {@link #isQuantile()}. A summary of the threshold type can be obtained from {@link #getType()}.</p>
  * 
  * <p>Additionally, a threshold comprises an {@link Operator}, denoting the type of threshold condition. Optionally,
- * a threshold may comprise a label and a {@link Dimension} that describes the units of the real-valued thresholds.</p>
+ * a threshold may comprise a label and a {@link MeasurementUnit} that describes the units of the real-valued thresholds.</p>
  * 
  * <p>This implementation is immutable.</p>
  * 
@@ -66,7 +66,7 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
      * The units associated with the threshold.
      */
 
-    private final Dimension units;
+    private final MeasurementUnit units;
 
     /**
      * Returns {@link Threshold} from the specified input.
@@ -96,7 +96,7 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
     public static Threshold of( OneOrTwoDoubles values,
                                 Operator condition,
                                 ThresholdDataType dataType,
-                                Dimension units )
+                                MeasurementUnit units )
     {
         return Threshold.of( values, condition, dataType, null, units );
     }
@@ -116,7 +116,7 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
                                 Operator condition,
                                 ThresholdDataType dataType,
                                 String label,
-                                Dimension units )
+                                MeasurementUnit units )
     {
         return new ThresholdBuilder().setValues( values )
                                      .setCondition( condition )
@@ -161,7 +161,7 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
                                                  Operator condition,
                                                  ThresholdDataType dataType,
                                                  String label,
-                                                 Dimension units )
+                                                 MeasurementUnit units )
     {
         return new ThresholdBuilder().setValues( values )
                                      .setProbabilities( probabilities )
@@ -201,7 +201,7 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
     public static Threshold ofProbabilityThreshold( OneOrTwoDoubles probabilities,
                                                     Operator condition,
                                                     ThresholdDataType dataType,
-                                                    Dimension units )
+                                                    MeasurementUnit units )
     {
         return Threshold.ofProbabilityThreshold( probabilities, condition, dataType, null, units );
     }
@@ -239,7 +239,7 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
                                                     Operator condition,
                                                     ThresholdDataType dataType,
                                                     String label,
-                                                    Dimension units )
+                                                    MeasurementUnit units )
     {
         return new ThresholdBuilder().setProbabilities( probabilities )
                                      .setCondition( condition )
@@ -296,7 +296,7 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
     }
 
     /**
-     * Returns <code>true</code> if {@link #getUnits()} returns a non-null {@link Dimension}, 
+     * Returns <code>true</code> if {@link #getUnits()} returns a non-null {@link MeasurementUnit}, 
      * otherwise <code>false</code>.
      * 
      * @return true if the threshold units are defined, false otherwise
@@ -368,7 +368,7 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
      * @return the units or null
      */
 
-    public Dimension getUnits()
+    public MeasurementUnit getUnits()
     {
         return units;
     }
@@ -721,7 +721,7 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
          * The units associated with the threshold.
          */
 
-        private Dimension units;
+        private MeasurementUnit units;
 
         /**
          * Sets the {@link Operator} associated with the threshold
@@ -795,7 +795,7 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
          * @return the builder
          */
 
-        public ThresholdBuilder setUnits( Dimension units )
+        public ThresholdBuilder setUnits( MeasurementUnit units )
         {
             this.units = units;
             return this;

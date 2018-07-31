@@ -54,6 +54,51 @@ public class DatasetIdentifier
         return new DatasetIdentifier( geospatialID, variableID, scenarioID, baselineScenarioID );
     }
 
+    /**
+     * Returns a new dataset identifier with an override for the {@link DatasetIdentifier#getScenarioIDForBaseline()}.
+     * 
+     * @param identifier the dataset identifier
+     * @param baselineScenarioID a scenario identifier for a baseline dataset
+     * @return a dataset identifier
+     */
+
+    public static DatasetIdentifier of( DatasetIdentifier identifier, String baselineScenarioID )
+    {
+        final String baselineScenarioID1 = baselineScenarioID;
+        return DatasetIdentifier.of( identifier.getGeospatialID(),
+                                     identifier.getVariableID(),
+                                     identifier.getScenarioID(),
+                                     baselineScenarioID1 );
+    }
+
+    /**
+     * Returns a dataset identifier.
+     * 
+     * @param geospatialID an optional geospatial identifier (may be null)
+     * @param variableID an optional variable identifier (may be null)
+     * @param scenarioID an optional scenario identifier (may be null)
+     * @return a dataset identifier
+     */
+
+    public static DatasetIdentifier of( final Location geospatialID,
+                                        final String variableID,
+                                        final String scenarioID )
+    {
+        return DatasetIdentifier.of( geospatialID, variableID, scenarioID, null );
+    }
+
+    /**
+     * Returns a dataset identifier.
+     * 
+     * @param geospatialID an optional geospatial identifier (may be null)
+     * @param variableID an optional variable identifier (may be null)
+     * @return a dataset identifier
+     */
+
+    public static DatasetIdentifier of( final Location geospatialID, final String variableID )
+    {
+        return DatasetIdentifier.of( geospatialID, variableID, null, null );
+    }
 
     /**
      * Optional geospatial identifier for the metric data.

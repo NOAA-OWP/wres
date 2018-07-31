@@ -18,6 +18,10 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
+import wres.datamodel.metadata.DatasetIdentifier;
+import wres.datamodel.metadata.MeasurementUnit;
+import wres.datamodel.metadata.Location;
+import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
@@ -65,15 +69,15 @@ public final class VolumetricEfficiencyTest
                                                  Instant.parse( "2010-12-31T11:59:59Z" ),
                                                  ReferenceTime.VALID_TIME,
                                                  Duration.ofHours( 24 ) );
-        final MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( input.getRawData().size(),
-                                                                   MetadataFactory.getDimension(),
-                                                                   MetadataFactory.getDimension( "MM/DAY" ),
-                                                                   MetricConstants.VOLUMETRIC_EFFICIENCY,
-                                                                   MetricConstants.MAIN,
-                                                                   MetadataFactory.getDatasetIdentifier( MetadataFactory.getLocation("103.1"),
-                                                                                                 "QME",
-                                                                                                 "NVE" ),
-                                                                   window );
+        final MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getRawData().size(),
+        MeasurementUnit.of(),
+        MeasurementUnit.of( "MM/DAY" ),
+        MetricConstants.VOLUMETRIC_EFFICIENCY,
+        MetricConstants.MAIN,
+        DatasetIdentifier.of( Location.of("103.1"),
+                                                                                                         "QME",
+                                                                                                         "NVE" ),
+        window );
         //Check the results
         DoubleScoreOutput actual = ve.apply( input );
         DoubleScoreOutput expected = DoubleScoreOutput.of( 0.657420176533252, m1 );
@@ -93,7 +97,7 @@ public final class VolumetricEfficiencyTest
     {
         // Generate empty data
         SingleValuedPairs input =
-                SingleValuedPairs.of( Arrays.asList(), MetadataFactory.getMetadata() );
+                SingleValuedPairs.of( Arrays.asList(), Metadata.of() );
  
         DoubleScoreOutput actual = ve.apply( input );
 

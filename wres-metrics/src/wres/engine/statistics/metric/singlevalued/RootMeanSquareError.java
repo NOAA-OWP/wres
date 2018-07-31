@@ -6,7 +6,7 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
-import wres.datamodel.metadata.Dimension;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
@@ -71,15 +71,16 @@ public class RootMeanSquareError extends DoubleErrorScore<SingleValuedPairs>
         final MetricOutputMetadata metIn = output.getMetadata();
 
         // Set the output dimension
-        Dimension outputDimension = metIn.getDimension();
+        MeasurementUnit outputDimension = metIn.getDimension();
+        final MeasurementUnit outputDim = outputDimension;
 
-        MetricOutputMetadata meta = MetadataFactory.getOutputMetadata( metIn.getSampleSize(),
-                                                                       outputDimension,
-                                                                       metIn.getDimension(),
-                                                                       this.getID(),
-                                                                       MetricConstants.MAIN,
-                                                                       metIn.getIdentifier(),
-                                                                       metIn.getTimeWindow() );
+        MetricOutputMetadata meta = MetricOutputMetadata.of( metIn.getSampleSize(),
+        outputDim,
+        metIn.getDimension(),
+        this.getID(),
+        MetricConstants.MAIN,
+        metIn.getIdentifier(),
+        metIn.getTimeWindow() );
         return DoubleScoreOutput.of( Math.sqrt( output.getData() / metIn.getSampleSize() ), meta );
     }
 

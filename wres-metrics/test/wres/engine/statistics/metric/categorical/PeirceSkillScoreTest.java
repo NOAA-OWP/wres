@@ -16,7 +16,10 @@ import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.MulticategoryPairs;
-import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.metadata.DatasetIdentifier;
+import wres.datamodel.metadata.MeasurementUnit;
+import wres.datamodel.metadata.Location;
+import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MatrixOutput;
@@ -54,13 +57,13 @@ public final class PeirceSkillScoreTest
     public void setUpBeforeEachTest() throws MetricParameterException
     {
         pss = PeirceSkillScore.of();
-        meta = MetadataFactory.getOutputMetadata( 365,
-                                                  MetadataFactory.getDimension(),
-                                                  MetadataFactory.getDimension(),
+        meta = MetricOutputMetadata.of( 365,
+                                                  MeasurementUnit.of(),
+                                                  MeasurementUnit.of(),
                                                   MetricConstants.PEIRCE_SKILL_SCORE,
                                                   MetricConstants.MAIN,
-                                                  MetadataFactory.getDatasetIdentifier(
-                                                                                        MetadataFactory.getLocation( "DRRC2" ),
+                                                  DatasetIdentifier.of(
+                                                                                        Location.of( "DRRC2" ),
                                                                                         "SQIN",
                                                                                         "HEFS" ) );
     }
@@ -103,7 +106,7 @@ public final class PeirceSkillScoreTest
         //Check the results
         final DoubleScoreOutput actual = ps.apply( input );
         final DoubleScoreOutput expected =
-                DoubleScoreOutput.of( 0.05057466520850963, MetadataFactory.getOutputMetadata( meta, input.getRawData().size() ) );
+                DoubleScoreOutput.of( 0.05057466520850963, MetricOutputMetadata.of( meta, input.getRawData().size() ) );
         assertTrue( "Actual: " + actual.getData().doubleValue()
                     + ". Expected: "
                     + expected.getData().doubleValue()
@@ -120,7 +123,7 @@ public final class PeirceSkillScoreTest
     {
         // Generate empty data
         DichotomousPairs input =
-                DichotomousPairs.ofDichotomousPairs( Arrays.asList(), MetadataFactory.getMetadata() );
+                DichotomousPairs.ofDichotomousPairs( Arrays.asList(), Metadata.of() );
 
         DoubleScoreOutput actual = pss.apply( input );
 

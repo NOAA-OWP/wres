@@ -24,8 +24,8 @@ import wres.datamodel.inputs.pairs.DiscreteProbabilityPair;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.EnsemblePair;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Metadata;
-import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.thresholds.Threshold;
@@ -84,12 +84,12 @@ public final class RelativeOperatingCharacteristicScoreTest
         values.add( DiscreteProbabilityPair.of( 1, 1.0 ) );
 
         final DiscreteProbabilityPairs input =
-                DiscreteProbabilityPairs.of( values, MetadataFactory.getMetadata() );
+                DiscreteProbabilityPairs.of( values, Metadata.of() );
 
         //Metadata for the output
-        final MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( input.getRawData().size(),
-                                                                           MetadataFactory.getDimension(),
-                                                                           MetadataFactory.getDimension(),
+        final MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getRawData().size(),
+                                                                           MeasurementUnit.of(),
+                                                                           MeasurementUnit.of(),
                                                                            MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE,
                                                                            MetricConstants.MAIN );
 
@@ -128,13 +128,13 @@ public final class RelativeOperatingCharacteristicScoreTest
         values.add( DiscreteProbabilityPair.of( 0, 0.0 ) );
         values.add( DiscreteProbabilityPair.of( 1, 0.984 ) );
         values.add( DiscreteProbabilityPair.of( 1, 0.952 ) );
-        Metadata meta = MetadataFactory.getMetadata();
+        Metadata meta = Metadata.of();
         DiscreteProbabilityPairs input = DiscreteProbabilityPairs.of( values, meta );
 
         //Metadata for the output
-        MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( input.getRawData().size(),
-                                                                     MetadataFactory.getDimension(),
-                                                                     MetadataFactory.getDimension(),
+        MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getRawData().size(),
+                                                                     MeasurementUnit.of(),
+                                                                     MeasurementUnit.of(),
                                                                      MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE,
                                                                      MetricConstants.MAIN );
 
@@ -183,14 +183,14 @@ public final class RelativeOperatingCharacteristicScoreTest
         values.add( DiscreteProbabilityPair.of( 0, 0.0 ) );
         values.add( DiscreteProbabilityPair.of( 0, 0.984 ) );
         values.add( DiscreteProbabilityPair.of( 0, 0.952 ) );
-        Metadata meta = MetadataFactory.getMetadata();
+        Metadata meta = Metadata.of();
 
         DiscreteProbabilityPairs input = DiscreteProbabilityPairs.of( values, meta );
 
         //Metadata for the output
-        final MetricOutputMetadata m1 = MetadataFactory.getOutputMetadata( input.getRawData().size(),
-                                                                           MetadataFactory.getDimension(),
-                                                                           MetadataFactory.getDimension(),
+        final MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getRawData().size(),
+                                                                           MeasurementUnit.of(),
+                                                                           MeasurementUnit.of(),
                                                                            MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE,
                                                                            MetricConstants.MAIN );
 
@@ -214,7 +214,7 @@ public final class RelativeOperatingCharacteristicScoreTest
     {
         // Generate empty data
         DiscreteProbabilityPairs input =
-                DiscreteProbabilityPairs.of( Arrays.asList(), MetadataFactory.getMetadata() );
+                DiscreteProbabilityPairs.of( Arrays.asList(), Metadata.of() );
 
         DoubleScoreOutput actual = rocScore.apply( input );
 

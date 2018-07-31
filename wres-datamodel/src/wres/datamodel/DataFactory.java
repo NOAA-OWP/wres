@@ -8,7 +8,6 @@ import java.util.Objects;
 
 import org.apache.commons.lang3.tuple.Pair;
 
-import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.MapKey;
@@ -89,7 +88,7 @@ public final class DataFactory
         }
 
         MetricOutputMetadata combinedMeta =
-                MetadataFactory.getOutputMetadata( MetadataFactory.getOutputMetadata( sourceMeta,
+                MetricOutputMetadata.of( MetricOutputMetadata.of( sourceMeta,
                                                                                       combined.size() ),
                                                    unionWindow );
         return PairedOutput.of( combined, combinedMeta );
@@ -244,7 +243,7 @@ public final class DataFactory
         MetricOutputMetadata override = input.get( 0 ).getMetadata();
         if ( !windows.isEmpty() )
         {
-            override = MetadataFactory.getOutputMetadata( override, TimeWindow.unionOf( windows ) );
+            override = MetricOutputMetadata.of( override, TimeWindow.unionOf( windows ) );
         }
         builder.setOverrideMetadata( override );
         return builder.build();
