@@ -2,7 +2,6 @@ package wres.system;
 
 import java.beans.PropertyVetoException;
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.InterfaceAddress;
 import java.net.NetworkInterface;
@@ -636,50 +635,55 @@ final class DatabaseSettings
             directConnectionString.append( "postgres" );
         }
 
-        try (Connection connection = DriverManager.getConnection(directConnectionString.toString(), this.username, this.password))
+        try (Connection connection = DriverManager.getConnection(
+                directConnectionString.toString(), this.username, this.password)
+        )
         {
             boolean databaseExists = false;
             boolean canAddDatabase = false;
 
-            Statement statement = connection.createStatement();
-
-            ResultSet results = statement.executeQuery( "SELECT * FROM pg_database;" );
-
-            while (results.next())
+            try (
+                    Statement statement = connection.createStatement();
+                    ResultSet results = statement.executeQuery( "SELECT * FROM pg_database;" )
+            )
             {
-                String name = results.getString( 1 );
-                if (name.equalsIgnoreCase( this.getDatabaseName() ))
+                while ( results.next() )
                 {
-                    databaseExists = true;
-                    break;
+                    String name = results.getString( 1 );
+                    if ( name.equalsIgnoreCase( this.getDatabaseName() ) )
+                    {
+                        databaseExists = true;
+                        break;
+                    }
                 }
             }
 
             if (!databaseExists)
             {
-                statement.close();
-                statement = connection.createStatement();
-
                 // TODO: If we support another database, we'll need to modify this to handle the others as well
-                results = statement.executeQuery( "SELECT rolcreatedb FROM pg_roles WHERE rolname = CURRENT_USER;" );
-                while (results.next())
+                try (
+                        Statement statement = connection.createStatement();
+                        ResultSet results = statement.executeQuery(
+                            "SELECT rolcreatedb FROM pg_roles WHERE rolname = CURRENT_USER;"
+                        )
+                )
                 {
-                    canAddDatabase = results.getBoolean( 1 );
+
+                    while ( results.next() )
+                    {
+                        canAddDatabase = results.getBoolean( 1 );
+                    }
+
+                    if ( !canAddDatabase )
+                    {
+                        throw new SQLException( "The database '" + this.getDatabaseName() + "' does not exist on '" +
+                                                this.url +
+                                                "' and you do not have permission to create it. Please contact an "
+                                                + "administrator to add it." );
+                    }
+
+                    statement.execute( "CREATE DATABASE " + this.getDatabaseName() + ";" );
                 }
-
-                statement.close();
-
-                if (!canAddDatabase)
-                {
-                    throw new SQLException( "The database '" + this.getDatabaseName() + "' does not exist on '" +
-                                            this.url +
-                                            "' and you do not have permission to create it. Please contact an "
-                                            + "administrator to add it."  );
-                }
-
-                statement = connection.createStatement();
-                statement.execute( "CREATE DATABASE " + this.getDatabaseName() + ";" );
-                statement.close();
             }
         }
     }
@@ -696,56 +700,64 @@ final class DatabaseSettings
             script += "        AND table_name = 'databasechangeloglock'" + System.lineSeparator();
             script += ");";
 
-            Statement statement = connection.createStatement();
+            // Collect the address to every interface for the system. Liquibase keeps track of
+            // lock ownership by the address of different lock interfaces
+            ArrayList<String> addresses = new ArrayList<>();
 
-            ResultSet result = statement.executeQuery( script );
-
-            result.next();
-
-            // Get the result from the database to determine whether or not it exists
-            boolean changeLogLockExists = result.getBoolean( 1 );
-
-            // If the change log lock table exists
-            if ( changeLogLockExists )
+            try (
+                    Statement statement = connection.createStatement();
+                    ResultSet result = statement.executeQuery( script )
+            )
             {
-                // Collect the address to every interface for the system. Liquibase keeps track of
-                // lock ownership by the address of different lock interfaces
-                ArrayList<String> addresses = new ArrayList<>();
 
-                try
+                result.next();
+
+                // Get the result from the database to determine whether or not it exists
+                boolean changeLogLockExists = result.getBoolean( 1 );
+
+                // If the change log lock table exists
+                if ( changeLogLockExists )
                 {
-                    Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
-                    for ( NetworkInterface networkInterface : Collections.list( interfaces ) )
+
+                    try
                     {
-                        for ( InterfaceAddress interfaceAddress : networkInterface.getInterfaceAddresses() )
+                        Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+                        for ( NetworkInterface networkInterface : Collections.list( interfaces ) )
                         {
-                            String address = interfaceAddress.getAddress().getHostAddress();
-                            addresses.add( address + " (" + address + ")" );
+                            for ( InterfaceAddress interfaceAddress : networkInterface.getInterfaceAddresses() )
+                            {
+                                String address = interfaceAddress.getAddress().getHostAddress();
+                                addresses.add( address + " (" + address + ")" );
+                            }
                         }
                     }
+                    catch ( SocketException e )
+                    {
+                        throw new IOException( "Could not determine if this system already holds "
+                                               + "liquibase locks due to I/O miscommunication.", e );
+                    }
                 }
-                catch ( SocketException e )
-                {
-                    throw new IOException("Could not determine if this system already holds "
-                                          + "liquibase locks due to I/O miscommunication.", e);
-                }
+            }
 
-                // If at least one address was determined...
-                if ( !addresses.isEmpty() )
+            // If at least one address was determined...
+            if ( !addresses.isEmpty() )
+            {
+                try (Statement statement = connection.createStatement())
                 {
                     // Forcibly remove any prior lock for this system.  Since we know that liquibase
                     // stores ownership via address, we want to delete any locks that are associated
                     // with this system, since any possible lock for this system will prevent this
                     // system (the one that supposedly already owns the lock) from doing its work.
-                    StringJoiner builder = new StringJoiner( ",",
-                                                             "DELETE FROM databasechangeloglock WHERE lockedby = ANY('{",
-                                                             "}');" );
+                    StringJoiner builder = new StringJoiner(
+                            ",",
+                            "DELETE FROM databasechangeloglock WHERE lockedby = ANY('{",
+                            "}');"
+                    );
                     addresses.forEach( builder::add );
-                    statement = connection.createStatement();
                     statement.execute( builder.toString() );
-                    statement.close();
                 }
             }
+
         }
     }
 }

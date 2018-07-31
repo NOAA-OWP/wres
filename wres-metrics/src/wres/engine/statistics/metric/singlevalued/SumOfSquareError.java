@@ -2,7 +2,6 @@ package wres.engine.statistics.metric.singlevalued;
 
 import java.util.Objects;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MissingValues;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
@@ -11,7 +10,6 @@ import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Metadata;
-import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.Collectable;
@@ -33,12 +31,12 @@ public class SumOfSquareError extends DecomposableScore<SingleValuedPairs>
      * 
      * @return an instance
      */
-    
+
     public static SumOfSquareError of()
     {
         return new SumOfSquareError();
     }
-    
+
     @Override
     public DoubleScoreOutput apply( SingleValuedPairs s )
     {
@@ -93,13 +91,16 @@ public class SumOfSquareError extends DecomposableScore<SingleValuedPairs>
             throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
         }
 
-        MetricOutputMetadata meta = MetricOutputMetadata.of( output.getMetadata().getSampleSize(),
-        output.getMetadata().getDimension(),
-        output.getMetadata().getInputDimension(),
-        this.getID(),
-        output.getMetadata().getMetricComponentID(),
-        output.getMetadata().getIdentifier(),
-        output.getMetadata().getTimeWindow() );
+        final MetricOutputMetadata metIn = output.getMetadata();
+
+        // Set the output dimension
+        MetricOutputMetadata meta = MetricOutputMetadata.of( metIn,
+                                                             this.getID(),
+                                                             MetricConstants.MAIN,
+                                                             this.hasRealUnits(),
+                                                             metIn.getSampleSize(),
+                                                             null );
+
         return DoubleScoreOutput.of( output.getData(), meta );
     }
 
@@ -125,25 +126,26 @@ public class SumOfSquareError extends DecomposableScore<SingleValuedPairs>
         if ( input.hasBaseline() )
         {
             identifier = DatasetIdentifier.of( identifier,
-                                                               input.getMetadataForBaseline()
-                                                                    .getIdentifier()
-                                                                    .getScenarioID() );
+                                               input.getMetadataForBaseline()
+                                                    .getIdentifier()
+                                                    .getScenarioID() );
         }
         // Set the output dimension
         MeasurementUnit outputDimension = MeasurementUnit.of();
         if ( hasRealUnits() )
         {
-            outputDimension = metIn.getDimension();
+            outputDimension = metIn.getMeasurementUnit();
         }
         final MeasurementUnit outputDim = outputDimension;
         final DatasetIdentifier identifier1 = identifier;
         return MetricOutputMetadata.of( input.getRawData().size(),
-        outputDim,
-        metIn.getDimension(),
-        this.getID(),
-        MetricConstants.MAIN,
-        identifier1,
-        metIn.getTimeWindow() );
+                                        outputDim,
+                                        metIn.getMeasurementUnit(),
+                                        this.getID(),
+                                        MetricConstants.MAIN,
+                                        identifier1,
+                                        metIn.getTimeWindow(),
+                                        metIn.getThresholds() );
     }
 
     /**
@@ -154,7 +156,7 @@ public class SumOfSquareError extends DecomposableScore<SingleValuedPairs>
     {
         super();
     }
-    
+
     /**
      * Hidden constructor.
      * 

@@ -3,7 +3,6 @@ package wres.engine.statistics.metric.singlevalued;
 import java.util.Objects;
 import java.util.concurrent.atomic.DoubleAdder;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
@@ -26,20 +25,26 @@ public class BiasFraction extends DoubleErrorScore<SingleValuedPairs>
      * 
      * @return an instance
      */
-    
+
     public static BiasFraction of()
     {
         return new BiasFraction();
     }
-    
+
     @Override
-    public DoubleScoreOutput apply(SingleValuedPairs s)
+    public DoubleScoreOutput apply( SingleValuedPairs s )
     {
         if ( Objects.isNull( s ) )
         {
             throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
         }
-        final MetricOutputMetadata metOut = getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, null );
+        final MetricOutputMetadata metOut =
+                MetricOutputMetadata.of( s.getMetadata(),
+                                    this.getID(),
+                                    MetricConstants.MAIN,
+                                    this.hasRealUnits(),
+                                    s.getRawData().size(),
+                                    null );
         DoubleAdder left = new DoubleAdder();
         DoubleAdder right = new DoubleAdder();
         DoubleErrorFunction error = FunctionFactory.error();

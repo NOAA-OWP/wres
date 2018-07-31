@@ -48,7 +48,8 @@ import wres.io.config.ConfigHelper;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.Variables;
-import wres.io.utilities.DataSet;
+import wres.io.utilities.DataProvider;
+import wres.io.utilities.DataSetProvider;
 import wres.io.utilities.Database;
 import wres.io.utilities.LRUMap;
 import wres.io.utilities.NoDataException;
@@ -1620,7 +1621,7 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
         Integer end;
 
         // If we're using time series, we want to cover all leads
-        if (this.usesTimeSeriesMetrics())
+        if ( this.usesTimeSeriesMetrics())
         {
             beginning = Integer.MIN_VALUE;
             end = Integer.MAX_VALUE;
@@ -1716,8 +1717,7 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
     private void populateDiscreteLeads() throws IOException
     {
         Connection connection = null;
-        ResultSet resultSet = null;
-        Map<FeatureDetails, Future<DataSet>> futureLeads = new LinkedHashMap<>(  );
+        Map<FeatureDetails, Future<DataProvider>> futureLeads = new LinkedHashMap<>(  );
 
         long width = Math.max(1, this.getMinimumLeadHour());
 
@@ -1778,20 +1778,22 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
         try
         {
             connection = Database.getConnection();
-            resultSet = Database.getResults( connection,
-                                             ScriptGenerator.formVariableFeatureLoadScript( this, false ) );
-
-            while (resultSet.next())
+            String variableFeatureScript = ScriptGenerator.formVariableFeatureLoadScript( this, false );
+            try (DataProvider resultSet = Database.getResults( connection, variableFeatureScript ))
             {
-                script = new ScriptBuilder( beginning );
+                while ( resultSet.next() )
+                {
+                    script = new ScriptBuilder( beginning );
 
-                script.addTab(  3  ).addLine(  "AND TS.variablefeature_id = ", resultSet.getInt( "forecast_feature" ));
-                script.addTab().addLine(")");
-                script.addLine("GROUP BY TSV.lead");
-                script.addLine("ORDER BY TSV.lead;");
+                    script.addTab( 3 )
+                          .addLine( "AND TS.variablefeature_id = ", resultSet.getInt( "forecast_feature" ) );
+                    script.addTab().addLine( ")" );
+                    script.addLine( "GROUP BY TSV.lead" );
+                    script.addLine( "ORDER BY TSV.lead;" );
 
-                futureLeads.put( new FeatureDetails( resultSet ),
-                                 Database.submit( new DataSetRetriever( script.toString() ) ) );
+                    futureLeads.put( new FeatureDetails( resultSet ),
+                                     Database.submit( new DataSetRetriever( script.toString() ) ) );
+                }
             }
         }
         catch (SQLException e)
@@ -1801,20 +1803,6 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
         }
         finally
         {
-            if (resultSet != null)
-            {
-                try
-                {
-                    resultSet.close();
-                }
-                catch (SQLException e)
-                {
-                    // Exception on close should not affect primary outputs.
-                    LOGGER.warn( "A database result set {} could not be closed.",
-                                 resultSet, e );
-                }
-            }
-
             if (connection != null)
             {
                 Database.returnConnection( connection );
@@ -1825,20 +1813,20 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
         {
             FeatureDetails key = (FeatureDetails)futureLeads.keySet().toArray()[0];
             Feature feature = key.toFeature();
-            Future<DataSet> futureDataSet = futureLeads.remove( key );
+            Future<DataProvider> futureData = futureLeads.remove( key );
             List<Integer> leadList = new ArrayList<>();
-            DataSet dataSet;
+            DataProvider dataSet;
             try
             {
                 // If we're on the last/only task, there's no reason to try and
                 // cycle through it
                 if (futureLeads.isEmpty())
                 {
-                    dataSet = futureDataSet.get();
+                    dataSet = futureData.get();
                 }
                 else
                 {
-                    dataSet = futureDataSet.get( 500, TimeUnit.MILLISECONDS );
+                    dataSet = futureData.get( 500, TimeUnit.MILLISECONDS );
                 }
 
                 if (dataSet == null)
@@ -1875,7 +1863,7 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
                              + "for '{}'; moving on to another location while "
                              + "we wait for the output for this location.",
                              ConfigHelper.getFeatureDescription( feature ));
-                futureLeads.put( key, futureDataSet );
+                futureLeads.put( key, futureData );
             }
 
         }
@@ -1977,12 +1965,6 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
             part.addTab(  2  ).addLine( "AND TSV.lead >= ", width);
         }
 
-        /*if (width > 1 || this.getMinimumLeadHour() != Integer.MIN_VALUE)
-        {
-            part.addTab( 2 ).addLine( "AND TSV.lead >= ", Math.max( width, this.getMinimumLeadHour() ) );
-        }*/
-
-
         if (this.getMaximumLeadHour() != Integer.MAX_VALUE)
         {
             part.addTab(  2  ).addLine( "AND TSV.lead <= ", this.getMaximumLeadHour());
@@ -2055,37 +2037,38 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
         String end = part.toString();
 
         Connection connection = null;
-        ResultSet resultSet = null;
         Map<FeatureDetails.FeatureKey, Future<Integer>> futureOffsets = new LinkedHashMap<>(  );
 
         try
         {
             connection = Database.getConnection();
-            resultSet = Database.getResults( connection, script );
-
-            LOGGER.trace("Variable feature metadata loaded...");
-
-            while (resultSet.next())
+            try (DataProvider data = Database.getResults( connection, script ))
             {
-                ScriptBuilder finalScript = new ScriptBuilder( );
-                finalScript.add(beginning);
-                finalScript.addLine((Integer)Database.getValue( resultSet, "forecast_feature" ));
-                finalScript.add(middle);
-                finalScript.addLine((Integer)Database.getValue( resultSet, "observation_feature" ));
-                finalScript.addLine(end);
+                LOGGER.trace("Variable feature metadata loaded...");
 
-                FeatureDetails.FeatureKey key = new FeatureDetails.FeatureKey(
-                        Database.getValue(resultSet, "comid"),
-                        Database.getValue(resultSet, "lid"),
-                        Database.getValue( resultSet,"gage_id"),
-                        Database.getValue(resultSet,"huc" ),
-                        Database.getValue(resultSet, "longitude"),
-                        Database.getValue( resultSet, "latitude" )
-                );
+                while (data.next())
+                {
+                    ScriptBuilder finalScript = new ScriptBuilder( );
+                    finalScript.add(beginning);
+                    finalScript.addLine( data.getInt("forecast_feature" ) );
+                    finalScript.add(middle);
+                    finalScript.addLine( data.getInt("observation_feature") );
+                    finalScript.addLine(end);
 
-                futureOffsets.put(key, finalScript.submit( "offset" ));
+                    // TODO: Add DataProvider constructor for the key
+                    FeatureDetails.FeatureKey key = new FeatureDetails.FeatureKey(
+                            data.getValue("comid"),
+                            data.getValue("lid"),
+                            data.getValue("gage_id"),
+                            data.getValue("huc"),
+                            data.getValue("longitude"),
+                            data.getValue("latitude")
+                    );
 
-                LOGGER.trace( "A task has been created to find the offset for {}.", key );
+                    futureOffsets.put(key, finalScript.submit( "offset" ));
+
+                    LOGGER.trace( "A task has been created to find the offset for {}.", key );
+                }
             }
         }
         catch ( SQLException e )
@@ -2095,19 +2078,6 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
         }
         finally
         {
-            if (resultSet != null)
-            {
-                try
-                {
-                    resultSet.close();
-                }
-                catch ( SQLException e )
-                {
-                    // Exception on close should not affect primary outputs.
-                    LOGGER.warn( "Database result set {} could not be closed.",
-                                 resultSet, e);
-                }
-            }
 
             if (connection != null)
             {
@@ -2175,7 +2145,7 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
             }
         }
 
-        if (LOGGER.isDebugEnabled())
+        if (timer != null && LOGGER.isDebugEnabled())
         {
             timer.stop();
             LOGGER.debug( "It took {} to get the offsets for all locations.",
@@ -2338,46 +2308,6 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
         }
 
         return this.rightScale;
-    }
-
-    /**
-     * Evaluates the scale of the baseline
-     * <p>
-     *     If no existing time scale has been dictated, it is evaluated from the
-     *     database
-     * </p>
-     * @return The number of standard temporal units between each value in the
-     * baseline
-     * @throws NoDataException Thrown if there wasn't enough data available to
-     * evaluate the scale
-     * @throws SQLException Thrown if an error was encountered while retrieving
-     * scale information from the database
-     */
-    public long getBaselineScale() throws NoDataException, SQLException
-    {
-        synchronized ( BASELINE_LEAD_LOCK )
-        {
-            if ( this.getBaseline() != null && this.baselineScale == -1 )
-            {
-                if ( this.getBaseline().getExistingTimeScale() == null )
-                {
-                    this.baselineScale = this.getScale( this.getBaseline() );
-                }
-                else
-                {
-                    this.baselineScale =
-                            TimeHelper.unitsToLeadUnits( this.getBaseline()
-                                                             .getExistingTimeScale()
-                                                             .getUnit()
-                                                             .value(),
-                                                         this.getBaseline()
-                                                             .getExistingTimeScale()
-                                                             .getPeriod() );
-                }
-            }
-        }
-
-        return this.baselineScale;
     }
 
     /**
@@ -2570,7 +2500,7 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
         return this.projectID;
     }
 
-    protected String getIDName() {
+    private String getIDName() {
         return "project_id";
     }
 
@@ -2579,7 +2509,7 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
         this.projectID = id;
     }
 
-    protected PreparedStatement getInsertSelectStatement( Connection connection )
+    private PreparedStatement getInsertSelectStatement( Connection connection )
             throws SQLException
     {
         List<Object> args = new ArrayList<>();
@@ -2631,7 +2561,6 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
             Database.lockTable( connection, "wres.Project" );
             statement = this.getInsertSelectStatement( connection );
             results = statement.executeQuery();
-            //results = Database.getResults( connection, this.getInsertSelectStatement() );
 
             this.setID( Database.getValue( results, this.getIDName() ) );
             this.performedInsert = Database.getValue( results, "wasInserted" );

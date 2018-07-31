@@ -34,6 +34,13 @@ class GriddedNWMValueSaver extends WRESRunnable
 		this.futureHash = futureHash;
 	}
 
+	GriddedNWMValueSaver(String fileName, String hash)
+    {
+        this.fileName = fileName;
+        this.hash = hash;
+        this.futureHash = null;
+    }
+
 	@Override
     public void execute() throws IOException, SQLException
     {

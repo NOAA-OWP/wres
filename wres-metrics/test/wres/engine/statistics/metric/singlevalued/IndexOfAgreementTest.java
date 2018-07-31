@@ -13,7 +13,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
@@ -22,7 +21,6 @@ import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.Metadata;
-import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
@@ -62,21 +60,22 @@ public final class IndexOfAgreementTest
     public void testApply() throws IOException
     {
         SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsFive();
-        
+
         //Metadata for the output
         final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                  Instant.parse( "2010-12-31T11:59:59Z" ),
                                                  ReferenceTime.VALID_TIME,
                                                  Duration.ofHours( 24 ) );
         final MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getRawData().size(),
-        MeasurementUnit.of(),
-        MeasurementUnit.of( "MM/DAY" ),
-        MetricConstants.INDEX_OF_AGREEMENT,
-        MetricConstants.MAIN,
-        DatasetIdentifier.of( Location.of("103.1"),
-                                                                                                         "QME",
-                                                                                                         "NVE" ),
-        window );
+                                                                 MeasurementUnit.of(),
+                                                                 MeasurementUnit.of( "MM/DAY" ),
+                                                                 MetricConstants.INDEX_OF_AGREEMENT,
+                                                                 MetricConstants.MAIN,
+                                                                 DatasetIdentifier.of( Location.of( "103.1" ),
+                                                                                       "QME",
+                                                                                       "NVE" ),
+                                                                 window,
+                                                                 null );
 
         //Check the results
         DoubleScoreOutput actual = ioa.apply( input );

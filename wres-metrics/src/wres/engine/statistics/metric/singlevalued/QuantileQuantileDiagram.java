@@ -30,9 +30,9 @@ public class QuantileQuantileDiagram extends Diagram<SingleValuedPairs, MultiVec
     /**
      * The default number of probabilities at which to compute the order statistics.
      */
-    
+
     private static final int DEFAULT_PROBABILITY_COUNT = 1000;
-    
+
     /**
      * The number of probabilities at which to compute the order statistics.
      */
@@ -44,12 +44,12 @@ public class QuantileQuantileDiagram extends Diagram<SingleValuedPairs, MultiVec
      * 
      * @return an instance
      */
-    
+
     public static QuantileQuantileDiagram of()
     {
         return new QuantileQuantileDiagram();
     }
-    
+
     @Override
     public MultiVectorOutput apply( SingleValuedPairs s )
     {
@@ -82,7 +82,13 @@ public class QuantileQuantileDiagram extends Diagram<SingleValuedPairs, MultiVec
         Map<MetricDimension, double[]> output = new EnumMap<>( MetricDimension.class );
         output.put( MetricDimension.OBSERVED_QUANTILES, observedQ );
         output.put( MetricDimension.PREDICTED_QUANTILES, predictedQ );
-        final MetricOutputMetadata metOut = getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, null );
+        final MetricOutputMetadata metOut =
+                MetricOutputMetadata.of( s.getMetadata(),
+                                    this.getID(),
+                                    MetricConstants.MAIN,
+                                    this.hasRealUnits(),
+                                    s.getRawData().size(),
+                                    null );
         return MultiVectorOutput.ofMultiVectorOutput( output, metOut );
     }
 
@@ -108,7 +114,7 @@ public class QuantileQuantileDiagram extends Diagram<SingleValuedPairs, MultiVec
 
         this.probCount = DEFAULT_PROBABILITY_COUNT;
     }
-    
+
     /**
      * Hidden constructor.
      * 
@@ -119,12 +125,12 @@ public class QuantileQuantileDiagram extends Diagram<SingleValuedPairs, MultiVec
     private QuantileQuantileDiagram( int probCount ) throws MetricParameterException
     {
         super();
-        
-        if( probCount < 1 )
+
+        if ( probCount < 1 )
         {
-            throw new MetricParameterException( "Specify a probability count greater than zero.");
+            throw new MetricParameterException( "Specify a probability count greater than zero." );
         }
-        
+
         this.probCount = probCount;
     }
 }

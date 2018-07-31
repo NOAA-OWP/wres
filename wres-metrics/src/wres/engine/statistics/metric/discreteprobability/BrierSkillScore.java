@@ -2,7 +2,6 @@ package wres.engine.statistics.metric.discreteprobability;
 
 import java.util.Objects;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
 import wres.datamodel.inputs.MetricInputException;
@@ -35,12 +34,12 @@ public class BrierSkillScore extends BrierScore
      * 
      * @return an instance
      */
-    
+
     public static BrierSkillScore of()
     {
         return new BrierSkillScore();
-    }  
-    
+    }
+
     @Override
     public DoubleScoreOutput apply( DiscreteProbabilityPairs s )
     {
@@ -55,7 +54,13 @@ public class BrierSkillScore extends BrierScore
             baselineIdentifier = s.getMetadataForBaseline().getIdentifier();
         }
 
-        MetricOutputMetadata metOut = getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, baselineIdentifier );
+        MetricOutputMetadata metOut =
+                MetricOutputMetadata.of( s.getMetadata(),
+                                    this.getID(),
+                                    MetricConstants.MAIN,
+                                    this.hasRealUnits(),
+                                    s.getRawData().size(),
+                                    baselineIdentifier );
 
         return DoubleScoreOutput.of( msess.apply( Slicer.toSingleValuedPairs( s ) ).getData(), metOut );
     }

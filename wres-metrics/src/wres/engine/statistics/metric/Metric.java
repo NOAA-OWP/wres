@@ -1,16 +1,10 @@
 package wres.engine.statistics.metric;
 
-import java.util.Objects;
 import java.util.function.Function;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.Metadata;
-import wres.datamodel.metadata.MetadataFactory;
-import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.MetricOutput;
 
 /**
@@ -90,63 +84,6 @@ public interface Metric<S extends MetricInput<?>, T extends MetricOutput<?>> ext
     default boolean nameEquals( final Object o )
     {
         return o instanceof Metric && ( (Metric<?, ?>) o ).getName().equals( getName() );
-    }
-
-    /**
-     * Returns the {@link MetricOutputMetadata} using a prescribed {@link MetricInput} and the current {@link Metric} to
-     * compose, along with an explicit component identifier or decomposition template and an identifier for the
-     * baseline, where applicable. This helper method is not intended for implementations of {@link Collectable}, whose
-     * {@link Collectable#getInputForAggregation(MetricInput)} should return the {@link MetricConstants} identifier
-     * associated with the implementing class and not the caller. This method identifies the metric by calling
-     * {@link #getID()}.
-     * 
-     * @param input the metric input
-     * @param sampleSize the sample size
-     * @param componentID the component identifier or metric decomposition template
-     * @param baselineID the baseline identifier or null
-     * @return the metadata
-     * @throws UnsupportedOperationException if the input metric is an instance of {@link Collectable}
-     */
-
-    default MetricOutputMetadata getMetadata( final MetricInput<?> input,
-                                              final int sampleSize,
-                                              final MetricConstants componentID,
-                                              final DatasetIdentifier baselineID )
-    {
-        if ( this instanceof Collectable )
-        {
-            throw new UnsupportedOperationException( "Cannot safely obtain the metadata for the collectable "
-                                                     + "implementation of '"
-                                                     + getID()
-                                                     + "': build the metadata in the implementing class." );
-        }
-        final Metadata metIn = input.getMetadata();
-        MeasurementUnit outputDim = null;
-        //Dimensioned?
-        if ( hasRealUnits() )
-        {
-            outputDim = metIn.getDimension();
-        }
-        else
-        {
-            outputDim = MeasurementUnit.of();
-        }
-        DatasetIdentifier identifier = metIn.getIdentifier();
-        //Add the scenario ID associated with the baseline input
-        if ( Objects.nonNull( baselineID ) )
-        {
-            identifier =
-                    DatasetIdentifier.of( identifier, baselineID.getScenarioID() );
-        }
-        final MeasurementUnit outputDim1 = outputDim;
-        final DatasetIdentifier identifier1 = identifier;
-        return MetricOutputMetadata.of( sampleSize,
-        outputDim1,
-        metIn.getDimension(),
-        getID(),
-        componentID,
-        identifier1,
-        metIn.getTimeWindow() );
     }
 
 }

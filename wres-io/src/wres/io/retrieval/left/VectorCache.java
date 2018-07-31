@@ -18,6 +18,7 @@ import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.UnitConversions;
 import wres.io.data.caching.Variables;
 import wres.io.data.details.ProjectDetails;
+import wres.io.utilities.DataProvider;
 import wres.io.utilities.Database;
 import wres.io.utilities.ScriptBuilder;
 import wres.util.Collections;
@@ -113,64 +114,51 @@ class VectorCache implements LeftHandCache
         script.add(";");
 
         Connection connection = null;
-        ResultSet resultSet = null;
 
         try
         {
             connection = Database.getHighPriorityConnection();
-            resultSet = Database.getResults(connection, script.toString());
-
-            while(resultSet.next())
+            try (DataProvider data = Database.getResults( connection, script.toString()))
             {
-                LocalDateTime date = TimeHelper.convertStringToDate(
-                        resultSet.getString( "left_date" ),
-                        LocalDateTime::from);
-                Double measurement = Database.getValue( resultSet, "left_value" );
 
-                int unitID = Database.getValue( resultSet, "measurementunit_id" );
+                while ( data.next() )
+                {
+                    LocalDateTime date = data.getLocalDateTime( "left_date" );
+                    Double measurement = data.getValue("left_value");
 
-                if ( unitID != desiredMeasurementUnitID
-                     && measurement != null )
-                {
-                    measurement = UnitConversions.convert( measurement,
-                                                           unitID,
-                                                           this.projectDetails
-                                                               .getDesiredMeasurementUnit());
-                }
+                    int unitID = data.getValue("measurementunit_id");
 
-                if (measurement != null && measurement < this.projectDetails.getMinimumValue())
-                {
-                    measurement = this.projectDetails.getDefaultMinimumValue();
-                }
-                else if (measurement != null && measurement > this.projectDetails.getMaximumValue())
-                {
-                    measurement = this.projectDetails.getDefaultMaximumValue();
-                }
-                else if (measurement == null)
-                {
-                    measurement = Double.NaN;
-                }
+                    if ( unitID != desiredMeasurementUnitID
+                         && measurement != null )
+                    {
+                        measurement = UnitConversions.convert( measurement,
+                                                               unitID,
+                                                               this.projectDetails
+                                                                       .getDesiredMeasurementUnit() );
+                    }
 
-                if (measurement != null)
-                {
-                    this.values.put( date, measurement );
+                    if ( measurement != null && measurement < this.projectDetails.getMinimumValue() )
+                    {
+                        measurement = this.projectDetails.getDefaultMinimumValue();
+                    }
+                    else if ( measurement != null && measurement > this.projectDetails.getMaximumValue() )
+                    {
+                        measurement = this.projectDetails.getDefaultMaximumValue();
+                    }
+                    else if ( measurement == null )
+                    {
+                        measurement = Double.NaN;
+                    }
+
+                    if ( measurement != null )
+                    {
+                        this.values.put( date, measurement );
+                    }
                 }
             }
         }
         finally
         {
-            if (resultSet != null)
-            {
-                try
-                {
-                    resultSet.close();
-                }
-                catch (SQLException closeError)
-                {
-                    LOGGER.debug("The set of retrieved values could not be closed after reading.", closeError);
-                }
-            }
-
             if (connection != null)
             {
                 Database.returnHighPriorityConnection(connection);

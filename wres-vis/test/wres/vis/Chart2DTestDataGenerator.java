@@ -555,14 +555,15 @@ public abstract class Chart2DTestDataGenerator
                                                Duration.ofHours( 120 ) );
         final TimeWindow timeWindow = windowMeta;
         final MetricOutputMetadata meta = MetricOutputMetadata.of( 1000,
-        MeasurementUnit.of(),
-        MeasurementUnit.of( "MILLIMETER" ),
-        MetricConstants.QUANTILE_QUANTILE_DIAGRAM,
-        MetricConstants.MAIN,
-        DatasetIdentifier.of( Location.of("WGCM8"),
-                                                                                                                   "PRECIPITATION",
-                                                                                                                   "HEFS" ),
-        timeWindow );
+                                                                   MeasurementUnit.of(),
+                                                                   MeasurementUnit.of( "MILLIMETER" ),
+                                                                   MetricConstants.QUANTILE_QUANTILE_DIAGRAM,
+                                                                   MetricConstants.MAIN,
+                                                                   DatasetIdentifier.of( Location.of( "WGCM8" ),
+                                                                                         "PRECIPITATION",
+                                                                                         "HEFS" ),
+                                                                   timeWindow,
+                                                                   null);
 
         //Single threshold
         final Threshold threshold = Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
@@ -742,11 +743,14 @@ public abstract class Chart2DTestDataGenerator
 
         // Create the metric output metadata: add fake sample sizes as these are not available in the test input file
         final MetricOutputMetadata meta = MetricOutputMetadata.of( 90,
-                                                                         MeasurementUnit.of(),
-                                                                         MeasurementUnit.of( "CMS" ),
-                                                                         MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
-                                                                         MetricConstants.MAIN,
-                                                                         DatasetIdentifier.of( Location.of("DOSC1"), "STREAMFLOW", "HEFS", "ESP" ) );
+                                                                   MeasurementUnit.of(),
+                                                                   MeasurementUnit.of( "CMS" ),
+                                                                   MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
+                                                                   MetricConstants.MAIN,
+                                                                   DatasetIdentifier.of( Location.of( "DOSC1" ),
+                                                                                         "STREAMFLOW",
+                                                                                         "HEFS",
+                                                                                         "ESP" ) );
 
         // Rolling window parameters
         Instant start = Instant.parse( "2015-12-01T00:00:00Z" );
@@ -775,7 +779,7 @@ public abstract class Chart2DTestDataGenerator
                                                       ReferenceTime.ISSUE_TIME,
                                                       Duration.ofHours( 6 ) );
             DoubleScoreOutput sixHourOutput =
-                    DoubleScoreOutput.of( sixHourOutputs[i], MetricOutputMetadata.of( meta, sixHourWindow ) );
+                    DoubleScoreOutput.of( sixHourOutputs[i], MetricOutputMetadata.of( meta, sixHourWindow, null ) );
             rawData.put( Pair.of( sixHourWindow, OneOrTwoThresholds.of( threshold ) ), sixHourOutput );
             //Add the 12h data
             TimeWindow twelveHourWindow = TimeWindow.of( begin,
@@ -783,7 +787,7 @@ public abstract class Chart2DTestDataGenerator
                                                          ReferenceTime.ISSUE_TIME,
                                                          Duration.ofHours( 12 ) );
             DoubleScoreOutput twelveHourOutput =
-                    DoubleScoreOutput.of( twelveHourOutputs[i], MetricOutputMetadata.of( meta, twelveHourWindow ) );
+                    DoubleScoreOutput.of( twelveHourOutputs[i], MetricOutputMetadata.of( meta, twelveHourWindow, null ) );
             rawData.put( Pair.of( twelveHourWindow, OneOrTwoThresholds.of( threshold ) ), twelveHourOutput );
             //Add the 18h data
             TimeWindow eighteenHourWindow = TimeWindow.of( begin,
@@ -791,7 +795,7 @@ public abstract class Chart2DTestDataGenerator
                                                            ReferenceTime.ISSUE_TIME,
                                                            Duration.ofHours( 18 ) );
             DoubleScoreOutput eighteenHourOutput =
-                    DoubleScoreOutput.of( eighteenHourOutputs[i], MetricOutputMetadata.of( meta, eighteenHourWindow ) );
+                    DoubleScoreOutput.of( eighteenHourOutputs[i], MetricOutputMetadata.of( meta, eighteenHourWindow, null ) );
             rawData.put( Pair.of( eighteenHourWindow, OneOrTwoThresholds.of( threshold ) ), eighteenHourOutput );
             //Add the 24h data
             TimeWindow twentyFourHourWindow = TimeWindow.of( begin,
@@ -799,7 +803,8 @@ public abstract class Chart2DTestDataGenerator
                                                              ReferenceTime.ISSUE_TIME,
                                                              Duration.ofHours( 24 ) );
             DoubleScoreOutput twentyFourHourOutput =
-                    DoubleScoreOutput.of( twentyFourHourOutputs[i], MetricOutputMetadata.of( meta, twentyFourHourWindow ) );
+                    DoubleScoreOutput.of( twentyFourHourOutputs[i],
+                                          MetricOutputMetadata.of( meta, twentyFourHourWindow, null ) );
             rawData.put( Pair.of( twentyFourHourWindow, OneOrTwoThresholds.of( threshold ) ), twentyFourHourOutput );
         }
 
@@ -900,14 +905,15 @@ public abstract class Chart2DTestDataGenerator
                                            Duration.ofHours( 336 ) );
         final TimeWindow timeWindow = window;
         MetricOutputMetadata meta = MetricOutputMetadata.of( input.size(),
-        MeasurementUnit.of( "DURATION" ),
-        MeasurementUnit.of( "CMS" ),
-        MetricConstants.TIME_TO_PEAK_ERROR,
-        MetricConstants.MAIN,
-        DatasetIdentifier.of( Location.of("DRRC2"),
-                                                                                                     "Streamflow",
-                                                                                                     "HEFS" ),
-        timeWindow );
+                                                             MeasurementUnit.of( "DURATION" ),
+                                                             MeasurementUnit.of( "CMS" ),
+                                                             MetricConstants.TIME_TO_PEAK_ERROR,
+                                                             MetricConstants.MAIN,
+                                                             DatasetIdentifier.of( Location.of( "DRRC2" ),
+                                                                                   "Streamflow",
+                                                                                   "HEFS" ),
+                                                             timeWindow,
+                                                             null );
         // Build and return
         Map<Pair<TimeWindow, OneOrTwoThresholds>, PairedOutput<Instant, Duration>> rawData = new TreeMap<>();
         rawData.put( Pair.of( window,
@@ -951,18 +957,19 @@ public abstract class Chart2DTestDataGenerator
                                            Duration.ofHours( 336 ) );
         final TimeWindow timeWindow = window;
         MetricOutputMetadata meta = MetricOutputMetadata.of( 10,
-        MeasurementUnit.of( "DURATION" ),
-        MeasurementUnit.of( "CMS" ),
-        MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
-        MetricConstants.MAIN,
-        DatasetIdentifier.of( Location.of("DRRC2"),
-                                                                                                     "Streamflow",
-                                                                                                     "HEFS" ),
-        timeWindow );
+                                                             MeasurementUnit.of( "DURATION" ),
+                                                             MeasurementUnit.of( "CMS" ),
+                                                             MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
+                                                             MetricConstants.MAIN,
+                                                             DatasetIdentifier.of( Location.of( "DRRC2" ),
+                                                                                   "Streamflow",
+                                                                                   "HEFS" ),
+                                                             timeWindow,
+                                                             null );
         Map<Pair<TimeWindow, OneOrTwoThresholds>, DurationScoreOutput> rawData = new TreeMap<>();
         rawData.put( Pair.of( window,
                               OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                                  Operator.GREATER, ThresholdDataType.LEFT ) ) ),
+                                                                   Operator.GREATER, ThresholdDataType.LEFT ) ) ),
                      DurationScoreOutput.of( returnMe, meta ) );
         return DataFactory.ofMetricOutputMapByTimeAndThreshold( rawData );
     }
