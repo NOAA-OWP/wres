@@ -2,7 +2,7 @@
 
 CREATE SCHEMA IF NOT EXISTS wres;
 
-DROP TABLE IF EXISTS wres.feature;
+DROP TABLE IF EXISTS wres.feature CASCADE;
 
 CREATE TABLE IF NOT EXISTS wres.feature
 (
