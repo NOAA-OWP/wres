@@ -12,14 +12,12 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
-import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
@@ -57,13 +55,14 @@ public final class TimeToPeakRelativeErrorTest
                                                  Duration.ofHours( 6 ),
                                                  Duration.ofHours( 18 ) );
         final MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getBasisTimes().size(),
-        MeasurementUnit.of( "DURATION IN RELATIVE HOURS" ),
-        MeasurementUnit.of( "CMS" ),
-        MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR,
-        MetricConstants.MAIN,
-        DatasetIdentifier.of( Location.of("A"),
-                                                                                                         "Streamflow" ),
-        window );
+                                                                 MeasurementUnit.of( "DURATION IN RELATIVE HOURS" ),
+                                                                 MeasurementUnit.of( "CMS" ),
+                                                                 MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR,
+                                                                 MetricConstants.MAIN,
+                                                                 DatasetIdentifier.of( Location.of( "A" ),
+                                                                                       "Streamflow" ),
+                                                                 window,
+                                                                 null );
         // Build the metric
         TimeToPeakRelativeError ttp = TimeToPeakRelativeError.of();
 
@@ -95,9 +94,9 @@ public final class TimeToPeakRelativeErrorTest
     {
         //Check the exceptions
         exception.expect( MetricInputException.class );
-        
+
         TimeToPeakRelativeError ttp = TimeToPeakRelativeError.of();
-        
+
         ttp.apply( null );
     }
 

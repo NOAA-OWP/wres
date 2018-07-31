@@ -2,7 +2,6 @@ package wres.engine.statistics.metric.singlevalued;
 
 import java.util.Objects;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
@@ -117,7 +116,12 @@ public class KlingGuptaEfficiency extends DecomposableScore<SingleValuedPairs>
             result = FunctionFactory.finiteOrMissing().applyAsDouble( 1.0 - Math.sqrt( left + middle + right ) );
         }
         //Metadata
-        final MetricOutputMetadata metOut = this.getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, null );
+        final MetricOutputMetadata metOut = MetricOutputMetadata.of( s.getMetadata(),
+                                                                this.getID(),
+                                                                MetricConstants.MAIN,
+                                                                this.hasRealUnits(),
+                                                                s.getRawData().size(),
+                                                                null );
         return DoubleScoreOutput.of( result, metOut );
     }
 

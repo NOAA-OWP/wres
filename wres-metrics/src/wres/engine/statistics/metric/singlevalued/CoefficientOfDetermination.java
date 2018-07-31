@@ -2,7 +2,6 @@ package wres.engine.statistics.metric.singlevalued;
 
 import java.util.Objects;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
@@ -50,7 +49,7 @@ public class CoefficientOfDetermination extends CorrelationPearsons
         }
         MetricOutputMetadata in = output.getMetadata();
         MetricOutputMetadata meta = MetricOutputMetadata.of( in.getSampleSize(),
-                                                                                             in.getDimension(),
+                                                                                             in.getMeasurementUnit(),
                                                                                              in.getInputDimension(),
                                                                                              MetricConstants.COEFFICIENT_OF_DETERMINATION,
                                                                                              MetricConstants.MAIN,

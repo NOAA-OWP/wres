@@ -14,14 +14,12 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
-import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
@@ -60,13 +58,14 @@ public final class TimingErrorDurationStatisticsTest
                                            Duration.ofHours( 18 ) );
         final TimeWindow timeWindow = window;
         MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getBasisTimes().size(),
-        MeasurementUnit.of( "DURATION" ),
-        MeasurementUnit.of( "CMS" ),
-        MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
-        MetricConstants.MEAN,
-        DatasetIdentifier.of( Location.of( "A" ),
-                                                                                                                   "Streamflow" ),
-        timeWindow );
+                                                           MeasurementUnit.of( "DURATION" ),
+                                                           MeasurementUnit.of( "CMS" ),
+                                                           MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
+                                                           MetricConstants.MEAN,
+                                                           DatasetIdentifier.of( Location.of( "A" ),
+                                                                                 "Streamflow" ),
+                                                           timeWindow,
+                                                           null );
         // Build a metric
         TimeToPeakError peakError = TimeToPeakError.of();
 
@@ -133,13 +132,14 @@ public final class TimingErrorDurationStatisticsTest
                                            Duration.ofHours( 18 ) );
         final TimeWindow timeWindow = window;
         MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getBasisTimes().size(),
-        MeasurementUnit.of( "DURATION" ),
-        MeasurementUnit.of( "CMS" ),
-        MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
-        null,
-        DatasetIdentifier.of( Location.of( "A" ),
-                                                                                                                   "Streamflow" ),
-        timeWindow );
+                                                           MeasurementUnit.of( "DURATION" ),
+                                                           MeasurementUnit.of( "CMS" ),
+                                                           MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
+                                                           null,
+                                                           DatasetIdentifier.of( Location.of( "A" ),
+                                                                                 "Streamflow" ),
+                                                           timeWindow,
+                                                           null );
 
         // Build a metric
         TimeToPeakError peakError = TimeToPeakError.of();
@@ -186,13 +186,14 @@ public final class TimingErrorDurationStatisticsTest
                                            Instant.MAX );
         final TimeWindow timeWindow = window;
         MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getBasisTimes().size(),
-        MeasurementUnit.of( "DURATION" ),
-        MeasurementUnit.of( "CMS" ),
-        MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
-        MetricConstants.MEAN,
-        DatasetIdentifier.of( Location.of( "A" ),
-                                                                                                                   "Streamflow" ),
-        timeWindow );
+                                                           MeasurementUnit.of( "DURATION" ),
+                                                           MeasurementUnit.of( "CMS" ),
+                                                           MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
+                                                           MetricConstants.MEAN,
+                                                           DatasetIdentifier.of( Location.of( "A" ),
+                                                                                 "Streamflow" ),
+                                                           timeWindow,
+                                                           null );
 
         // Build a metric
         TimeToPeakError peakError = TimeToPeakError.of();

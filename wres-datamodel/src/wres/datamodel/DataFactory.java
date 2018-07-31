@@ -88,9 +88,9 @@ public final class DataFactory
         }
 
         MetricOutputMetadata combinedMeta =
-                MetricOutputMetadata.of( MetricOutputMetadata.of( sourceMeta,
-                                                                                      combined.size() ),
-                                                   unionWindow );
+                MetricOutputMetadata.of( MetricOutputMetadata.of( sourceMeta, combined.size() ),
+                                         unionWindow,
+                                         sourceMeta.getThresholds() );
         return PairedOutput.of( combined, combinedMeta );
     }
 
@@ -243,7 +243,7 @@ public final class DataFactory
         MetricOutputMetadata override = input.get( 0 ).getMetadata();
         if ( !windows.isEmpty() )
         {
-            override = MetricOutputMetadata.of( override, TimeWindow.unionOf( windows ) );
+            override = MetricOutputMetadata.of( override, TimeWindow.unionOf( windows ), null );
         }
         builder.setOverrideMetadata( override );
         return builder.build();

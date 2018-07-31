@@ -16,8 +16,8 @@ import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.MissingValues;
 import wres.datamodel.Slicer;
 import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.EnsemblePair;
+import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.engine.statistics.metric.Diagram;
@@ -54,7 +54,7 @@ public class RankHistogram extends Diagram<EnsemblePairs, MultiVectorOutput>
     {
         return new RankHistogram();
     }
-    
+
     /**
      * Returns an instance.
      * 
@@ -66,7 +66,7 @@ public class RankHistogram extends Diagram<EnsemblePairs, MultiVectorOutput>
     {
         return new RankHistogram( rng );
     }
-    
+
     @Override
     public MultiVectorOutput apply( EnsemblePairs s )
     {
@@ -108,7 +108,13 @@ public class RankHistogram extends Diagram<EnsemblePairs, MultiVectorOutput>
         Map<MetricDimension, double[]> output = new EnumMap<>( MetricDimension.class );
         output.put( MetricDimension.RANK_ORDER, ranks );
         output.put( MetricDimension.OBSERVED_RELATIVE_FREQUENCY, relativeFrequencies );
-        final MetricOutputMetadata metOut = getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, null );
+        final MetricOutputMetadata metOut =
+                MetricOutputMetadata.of( s.getMetadata(),
+                                    this.getID(),
+                                    MetricConstants.MAIN,
+                                    this.hasRealUnits(),
+                                    s.getRawData().size(),
+                                    null );
         return MultiVectorOutput.ofMultiVectorOutput( output, metOut );
     }
 
@@ -133,7 +139,7 @@ public class RankHistogram extends Diagram<EnsemblePairs, MultiVectorOutput>
         super();
         this.rng = new Random();
     }
-    
+
     /**
      * Hidden constructor.
      * 
@@ -143,7 +149,7 @@ public class RankHistogram extends Diagram<EnsemblePairs, MultiVectorOutput>
     private RankHistogram( Random rng )
     {
         super();
-        
+
         if ( Objects.nonNull( rng ) )
         {
             this.rng = rng;

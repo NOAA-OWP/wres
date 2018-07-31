@@ -12,7 +12,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
@@ -64,11 +63,14 @@ public final class MeanSquareErrorSkillScoreTest
 
         //Metadata for the output
         final MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getRawData().size(),
-                                                                           MeasurementUnit.of(),
-                                                                           MeasurementUnit.of( "CMS" ),
-                                                                           MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE,
-                                                                           MetricConstants.MAIN,
-                                                                           DatasetIdentifier.of( Location.of( "DRRC2" ), "SQIN", "HEFS", "ESP" ) );
+                                                                 MeasurementUnit.of(),
+                                                                 MeasurementUnit.of( "CMS" ),
+                                                                 MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE,
+                                                                 MetricConstants.MAIN,
+                                                                 DatasetIdentifier.of( Location.of( "DRRC2" ),
+                                                                                       "SQIN",
+                                                                                       "HEFS",
+                                                                                       "ESP" ) );
 
         //Check the results
         final DoubleScoreOutput actual = msess.apply( input );
@@ -99,14 +101,15 @@ public final class MeanSquareErrorSkillScoreTest
                                            Duration.ofHours( 24 ) );
         final TimeWindow timeWindow = window;
         MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getRawData().size(),
-        MeasurementUnit.of(),
-        MeasurementUnit.of( "MM/DAY" ),
-        MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE,
-        MetricConstants.MAIN,
-        DatasetIdentifier.of( Location.of( "103.1" ),
-                                                                                                                   "QME",
-                                                                                                                   "NVE" ),
-        timeWindow );
+                                                           MeasurementUnit.of(),
+                                                           MeasurementUnit.of( "MM/DAY" ),
+                                                           MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE,
+                                                           MetricConstants.MAIN,
+                                                           DatasetIdentifier.of( Location.of( "103.1" ),
+                                                                                 "QME",
+                                                                                 "NVE" ),
+                                                           timeWindow,
+                                                           null );
 
         //Check the results
         DoubleScoreOutput actual = msess.apply( input );
@@ -131,10 +134,10 @@ public final class MeanSquareErrorSkillScoreTest
 
         //Metadata for the output
         MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getRawData().size(),
-                                                                     MeasurementUnit.of(),
-                                                                     MeasurementUnit.of(),
-                                                                     MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE,
-                                                                     MetricConstants.MAIN );
+                                                           MeasurementUnit.of(),
+                                                           MeasurementUnit.of(),
+                                                           MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE,
+                                                           MetricConstants.MAIN );
 
         //Check the results
         DoubleScoreOutput actual = msess.apply( input );

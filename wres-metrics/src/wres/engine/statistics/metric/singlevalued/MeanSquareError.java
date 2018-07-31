@@ -2,13 +2,11 @@ package wres.engine.statistics.metric.singlevalued;
 
 import java.util.Objects;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.FunctionFactory;
@@ -78,16 +76,17 @@ public class MeanSquareError extends SumOfSquareError
         MeasurementUnit outputDimension = MeasurementUnit.of();
         if ( hasRealUnits() )
         {
-            outputDimension = metIn.getDimension();
+            outputDimension = metIn.getMeasurementUnit();
         }
         final MeasurementUnit outputDim = outputDimension;
         MetricOutputMetadata meta = MetricOutputMetadata.of( metIn.getSampleSize(),
-        outputDim,
-        metIn.getDimension(),
-        this.getID(),
-        MetricConstants.MAIN,
-        metIn.getIdentifier(),
-        metIn.getTimeWindow() );
+                                                             outputDim,
+                                                             metIn.getMeasurementUnit(),
+                                                             this.getID(),
+                                                             MetricConstants.MAIN,
+                                                             metIn.getIdentifier(),
+                                                             metIn.getTimeWindow(),
+                                                             metIn.getThresholds() );
 
         double mse = FunctionFactory.finiteOrMissing()
                                     .applyAsDouble( output.getData() / metIn.getSampleSize() );

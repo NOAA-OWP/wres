@@ -2,7 +2,6 @@ package wres.engine.statistics.metric.singlevalued;
 
 import java.util.Objects;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MissingValues;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
@@ -48,7 +47,13 @@ public abstract class DoubleErrorScore<S extends SingleValuedPairs> extends Ordi
         {
             id = s.getMetadataForBaseline().getIdentifier();
         }
-        final MetricOutputMetadata metOut = getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, id );
+        final MetricOutputMetadata metOut =
+                MetricOutputMetadata.of( s.getMetadata(),
+                                    this.getID(),
+                                    MetricConstants.MAIN,
+                                    this.hasRealUnits(),
+                                    s.getRawData().size(),
+                                    id );
 
         //Compute the atomic errors in a stream
         double doubleScore = MissingValues.MISSING_DOUBLE;
@@ -79,10 +84,10 @@ public abstract class DoubleErrorScore<S extends SingleValuedPairs> extends Ordi
     protected DoubleErrorScore()
     {
         super();
-        
+
         this.function = null;
     }
-    
+
     /**
      * Hidden constructor. If the input function is null, the concrete implementation must override 
      * {@link #apply(SingleValuedPairs)}.
@@ -93,7 +98,7 @@ public abstract class DoubleErrorScore<S extends SingleValuedPairs> extends Ordi
     protected DoubleErrorScore( DoubleErrorFunction function )
     {
         super();
-        
+
         // Function can be null if calculation is delegated
         this.function = function;
     }
