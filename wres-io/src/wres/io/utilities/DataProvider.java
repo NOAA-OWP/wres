@@ -253,7 +253,7 @@ public interface DataProvider extends AutoCloseable
      * or the column name doesn't exist
      * @throws IndexOutOfBoundsException Thrown if the data is empty
      */
-    double[] getDoubleArray(final String columnName);
+    Double[] getDoubleArray(final String columnName);
 
     /**
      * @param columnName The name of the column containing a time
