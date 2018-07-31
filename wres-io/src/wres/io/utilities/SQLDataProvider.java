@@ -13,6 +13,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -173,7 +174,7 @@ public class SQLDataProvider implements DataProvider
         }
         catch ( SQLException e )
         {
-            throw new IllegalStateException( "The dataset is not accessible.", e );
+            throw new IllegalStateException( "The data is not accessible.", e );
         }
     }
 
@@ -198,7 +199,7 @@ public class SQLDataProvider implements DataProvider
         }
         catch ( SQLException e )
         {
-            throw new IllegalStateException( "The dataset is not accessible.", e );
+            throw new IllegalStateException( "The data is not accessible.", e );
         }
     }
 
@@ -248,7 +249,7 @@ public class SQLDataProvider implements DataProvider
         }
         catch ( SQLException e )
         {
-            throw new IllegalStateException( "The dataset is not accessible.", e );
+            throw new IllegalStateException( "The data is not accessible.", e );
         }
     }
 
@@ -266,7 +267,7 @@ public class SQLDataProvider implements DataProvider
         }
         catch ( SQLException e )
         {
-            throw new IllegalStateException( "The dataset is not accessible.", e );
+            throw new IllegalStateException( "The data is not accessible.", e );
         }
     }
 
@@ -284,7 +285,7 @@ public class SQLDataProvider implements DataProvider
         }
         catch ( SQLException e )
         {
-            throw new IllegalStateException( "The dataset is not accessible.", e );
+            throw new IllegalStateException( "The data is not accessible.", e );
         }
     }
 
@@ -302,7 +303,26 @@ public class SQLDataProvider implements DataProvider
         }
         catch ( SQLException e )
         {
-            throw new IllegalStateException( "The dataset is not accessible.", e );
+            throw new IllegalStateException( "The data is not accessible.", e );
+        }
+    }
+
+    @Override
+    public byte getByte( String columnName )
+    {
+        try
+        {
+            // Jump to the first row if the jump hasn't already been made
+            if (this.resultSet.isBeforeFirst())
+            {
+                this.resultSet.next();
+            }
+
+            return this.resultSet.getByte( columnName );
+        }
+        catch ( SQLException e )
+        {
+            throw new IllegalStateException( "The data is not accessible.", e );
         }
     }
 
@@ -320,7 +340,7 @@ public class SQLDataProvider implements DataProvider
         }
         catch ( SQLException e )
         {
-            throw new IllegalStateException( "The dataset is not accessible.", e );
+            throw new IllegalStateException( "The data is not accessible.", e );
         }
     }
 
@@ -338,7 +358,7 @@ public class SQLDataProvider implements DataProvider
         }
         catch ( SQLException e )
         {
-            throw new IllegalStateException( "The dataset is not accessible.", e );
+            throw new IllegalStateException( "The data is not accessible.", e );
         }
     }
 
@@ -356,7 +376,7 @@ public class SQLDataProvider implements DataProvider
         }
         catch ( SQLException e )
         {
-            throw new IllegalStateException( "The dataset is not accessible.", e );
+            throw new IllegalStateException( "The data is not accessible.", e );
         }
     }
 
@@ -374,7 +394,7 @@ public class SQLDataProvider implements DataProvider
         }
         catch ( SQLException e )
         {
-            throw new IllegalStateException( "The dataset is not accessible.", e );
+            throw new IllegalStateException( "The data is not accessible.", e );
         }
     }
 
@@ -392,7 +412,7 @@ public class SQLDataProvider implements DataProvider
         }
         catch ( SQLException e )
         {
-            throw new IllegalStateException( "The dataset is not accessible.", e );
+            throw new IllegalStateException( "The data is not accessible.", e );
         }
     }
 
@@ -405,7 +425,7 @@ public class SQLDataProvider implements DataProvider
         }
         catch ( SQLException e )
         {
-            throw new IllegalStateException( "The dataset is not accessible.", e );
+            throw new IllegalStateException( "The data is not accessible.", e );
         }
     }
 
@@ -423,7 +443,7 @@ public class SQLDataProvider implements DataProvider
         }
         catch ( SQLException e )
         {
-            throw new IllegalStateException( "The dataset is not accessible.", e );
+            throw new IllegalStateException( "The data is not accessible.", e );
         }
     }
 
@@ -437,11 +457,22 @@ public class SQLDataProvider implements DataProvider
             {
                 this.resultSet.next();
             }
-            return this.resultSet.getTime( columnName ).toLocalTime();
+
+            if (resultSet.getObject( columnName ) instanceof java.sql.Time)
+            {
+                return this.resultSet.getTime( columnName ).toLocalTime();
+            }
+            else if (resultSet.getObject( columnName ) instanceof java.sql.Timestamp)
+            {
+                return this.resultSet.getTimestamp( columnName ).toLocalDateTime().toLocalTime();
+            }
+
+            Instant instant = this.getInstant( columnName );
+            return instant.atOffset( ZoneOffset.UTC ).toLocalTime();
         }
         catch ( SQLException e )
         {
-            throw new IllegalStateException( "The dataset is not accessible.", e );
+            throw new IllegalStateException( "The data is not accessible.", e );
         }
     }
 
@@ -459,7 +490,7 @@ public class SQLDataProvider implements DataProvider
         }
         catch ( SQLException e )
         {
-            throw new IllegalStateException( "The dataset is not accessible.", e );
+            throw new IllegalStateException( "The data is not accessible.", e );
         }
     }
 
@@ -535,7 +566,7 @@ public class SQLDataProvider implements DataProvider
         }
         catch (SQLException e)
         {
-            throw new IllegalStateException( "The dataset is not accessible.", e );
+            throw new IllegalStateException( "The data is not accessible.", e );
         }
 
         return result;
@@ -557,7 +588,7 @@ public class SQLDataProvider implements DataProvider
         {
             // We don't care about this error; it occurs if there
             // was an issue on the database side, not application side
-            throw new IllegalStateException( "The dataset is not accessible.", e );
+            throw new IllegalStateException( "The data is not accessible.", e );
         }
     }
 

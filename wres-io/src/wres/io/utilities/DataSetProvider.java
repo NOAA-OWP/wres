@@ -169,6 +169,12 @@ public class DataSetProvider implements DataProvider
         return this.rows.get( this.currentRow );
     }
 
+    /**
+     * Retrieves the value from the indicated row stored in the indicated column
+     * @param rowNumber The row to look int
+     * @param index The index for the column containing the value
+     * @return The value stored in the row and column
+     */
     private Object getObject(int rowNumber, int index)
     {
         if (this.isClosed())
@@ -304,6 +310,22 @@ public class DataSetProvider implements DataProvider
     }
 
     @Override
+    public byte getByte( String columnName )
+    {
+        if (this.isClosed())
+        {
+            throw new IllegalStateException( "The data set is inaccessible." );
+        }
+
+        if (this.isNull( columnName ))
+        {
+            return 0;
+        }
+
+        return (byte)this.getObject( columnName );
+    }
+
+    @Override
     public int getInt(String columnName)
     {
         if (this.isClosed())
@@ -427,7 +449,7 @@ public class DataSetProvider implements DataProvider
         }
 
         Instant instant = this.getInstant( columnName );
-        return LocalDateTime.ofInstant( instant, ZoneId.of( "UTC" )).toLocalTime();
+        return instant.atOffset( ZoneOffset.UTC ).toLocalTime();
     }
 
     @Override
