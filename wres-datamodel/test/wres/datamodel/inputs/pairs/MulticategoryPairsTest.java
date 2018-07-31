@@ -11,7 +11,7 @@ import org.junit.Test;
 import wres.datamodel.inputs.pairs.MulticategoryPairs;
 import wres.datamodel.inputs.pairs.MulticategoryPairs.MulticategoryPairsBuilder;
 import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.Dimension;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.Metadata;
 
@@ -39,7 +39,7 @@ public final class MulticategoryPairsTest
             values.add( MulticategoryPair.of( new boolean[] { true }, new boolean[] { true } ) );
         }
         final Location l1 = Location.of( "DRRC2" );
-        final Metadata meta = Metadata.of( Dimension.of(),
+        final Metadata meta = Metadata.of( MeasurementUnit.of(),
                                                            DatasetIdentifier.of( l1, "SQIN", "HEFS" ) );
         MulticategoryPairs p = (MulticategoryPairs) b.addData( values ).setMetadata( meta ).build();
 

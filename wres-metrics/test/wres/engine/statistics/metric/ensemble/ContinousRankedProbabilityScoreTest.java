@@ -18,7 +18,7 @@ import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.EnsemblePair;
-import wres.datamodel.metadata.Dimension;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
@@ -68,8 +68,8 @@ public final class ContinousRankedProbabilityScoreTest
         //Metadata for the output
         MetricOutputMetadata m1 =
                 MetricOutputMetadata.of( input.getRawData().size(),
-                                                   Dimension.of(),
-                                                   Dimension.of(),
+                                                   MeasurementUnit.of(),
+                                                   MeasurementUnit.of(),
                                                    MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE,
                                                    MetricConstants.MAIN );
         //Check the results       
@@ -104,8 +104,8 @@ public final class ContinousRankedProbabilityScoreTest
         //Metadata for the output
         MetricOutputMetadata m1 =
                 MetricOutputMetadata.of( input.getRawData().size(),
-                                                   Dimension.of(),
-                                                   Dimension.of(),
+                                                   MeasurementUnit.of(),
+                                                   MeasurementUnit.of(),
                                                    MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE,
                                                    MetricConstants.MAIN );
         //Check the results       
@@ -135,8 +135,8 @@ public final class ContinousRankedProbabilityScoreTest
         //Metadata for the output
         MetricOutputMetadata m1 =
                 MetricOutputMetadata.of( input.getRawData().size(),
-                                                   Dimension.of(),
-                                                   Dimension.of(),
+                                                   MeasurementUnit.of(),
+                                                   MeasurementUnit.of(),
                                                    MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE,
                                                    MetricConstants.MAIN );
         //Check the results       
@@ -167,8 +167,8 @@ public final class ContinousRankedProbabilityScoreTest
         //Metadata for the output
         MetricOutputMetadata m1 =
                 MetricOutputMetadata.of( input.getRawData().size(),
-                                                   Dimension.of(),
-                                                   Dimension.of(),
+                                                   MeasurementUnit.of(),
+                                                   MeasurementUnit.of(),
                                                    MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE,
                                                    MetricConstants.MAIN );
         //Check the results       

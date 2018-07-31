@@ -22,7 +22,7 @@ import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.EnsemblePair;
 import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.Dimension;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
@@ -70,7 +70,7 @@ public final class BoxPlotErrorByObservedTest
                                            Instant.MAX,
                                            ReferenceTime.VALID_TIME,
                                            Duration.ofHours( 24 ) );
-        Metadata meta = Metadata.of( Dimension.of( "MM/DAY" ),
+        Metadata meta = Metadata.of( MeasurementUnit.of( "MM/DAY" ),
                                                      DatasetIdentifier.of( Location.of( "A" ),
                                                                                            "MAP" ),
                                                      window );
@@ -79,8 +79,8 @@ public final class BoxPlotErrorByObservedTest
         final TimeWindow timeWindow = window;
 
         final MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getRawData().size(),
-        Dimension.of( "MM/DAY" ),
-        Dimension.of( "MM/DAY" ),
+        MeasurementUnit.of( "MM/DAY" ),
+        MeasurementUnit.of( "MM/DAY" ),
         MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
         MetricConstants.MAIN,
         DatasetIdentifier.of( Location.of( "A" ),

@@ -19,7 +19,7 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.Dimension;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
@@ -60,8 +60,8 @@ public final class TimingErrorDurationStatisticsTest
                                            Duration.ofHours( 18 ) );
         final TimeWindow timeWindow = window;
         MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getBasisTimes().size(),
-        Dimension.of( "DURATION" ),
-        Dimension.of( "CMS" ),
+        MeasurementUnit.of( "DURATION" ),
+        MeasurementUnit.of( "CMS" ),
         MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
         MetricConstants.MEAN,
         DatasetIdentifier.of( Location.of( "A" ),
@@ -133,8 +133,8 @@ public final class TimingErrorDurationStatisticsTest
                                            Duration.ofHours( 18 ) );
         final TimeWindow timeWindow = window;
         MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getBasisTimes().size(),
-        Dimension.of( "DURATION" ),
-        Dimension.of( "CMS" ),
+        MeasurementUnit.of( "DURATION" ),
+        MeasurementUnit.of( "CMS" ),
         MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
         null,
         DatasetIdentifier.of( Location.of( "A" ),
@@ -186,8 +186,8 @@ public final class TimingErrorDurationStatisticsTest
                                            Instant.MAX );
         final TimeWindow timeWindow = window;
         MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getBasisTimes().size(),
-        Dimension.of( "DURATION" ),
-        Dimension.of( "CMS" ),
+        MeasurementUnit.of( "DURATION" ),
+        MeasurementUnit.of( "CMS" ),
         MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
         MetricConstants.MEAN,
         DatasetIdentifier.of( Location.of( "A" ),

@@ -27,7 +27,7 @@ import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs.TimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.Dimension;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.ReferenceTime;
@@ -98,11 +98,11 @@ public final class MetricTestDataFactory
         baseline.add( SingleValuedPair.of( 12.1, 13 ) );
         baseline.add( SingleValuedPair.of( 93.2, 94.8 ) );
 
-        final Metadata main = Metadata.of( Dimension.of( "CMS" ),
+        final Metadata main = Metadata.of( MeasurementUnit.of( "CMS" ),
                                                            DatasetIdentifier.of( getLocation( "DRRC2" ),
                                                                                                  "SQIN",
                                                                                                  "HEFS" ) );
-        final Metadata base = Metadata.of( Dimension.of( "CMS" ),
+        final Metadata base = Metadata.of( MeasurementUnit.of( "CMS" ),
                                                            DatasetIdentifier.of( getLocation( "DRRC2" ),
                                                                                                  "SQIN",
                                                                                                  "ESP" ) );
@@ -130,7 +130,7 @@ public final class MetricTestDataFactory
             values.add( SingleValuedPair.of( 5, 10 ) );
         }
 
-        final Metadata meta = Metadata.of( Dimension.of( "CMS" ),
+        final Metadata meta = Metadata.of( MeasurementUnit.of( "CMS" ),
                                                            DatasetIdentifier.of( getLocation( "DRRC2" ),
                                                                                                  "SQIN",
                                                                                                  "HEFS" ) );
@@ -162,7 +162,7 @@ public final class MetricTestDataFactory
                                                  Instant.parse( "2010-12-31T11:59:59Z" ),
                                                  ReferenceTime.VALID_TIME,
                                                  Duration.ofHours( 1 ) );
-        final Metadata meta = Metadata.of( Dimension.of( "CMS" ),
+        final Metadata meta = Metadata.of( MeasurementUnit.of( "CMS" ),
                                                            DatasetIdentifier.of( getLocation( "DRRC2" ),
                                                                                                  "SQIN",
                                                                                                  "HEFS" ),
@@ -209,7 +209,7 @@ public final class MetricTestDataFactory
                                                  Instant.parse( "2010-12-31T11:59:59Z" ),
                                                  ReferenceTime.VALID_TIME,
                                                  Duration.ofHours( 24 ) );
-        final Metadata meta = Metadata.of( Dimension.of( "MM/DAY" ),
+        final Metadata meta = Metadata.of( MeasurementUnit.of( "MM/DAY" ),
                                                            DatasetIdentifier.of( getLocation( "103.1" ),
                                                                                                  "QME",
                                                                                                  "NVE" ),
@@ -234,7 +234,7 @@ public final class MetricTestDataFactory
                                                  Instant.parse( "2010-12-31T11:59:59Z" ),
                                                  ReferenceTime.VALID_TIME,
                                                  Duration.ofHours( 24 ) );
-        final Metadata meta = Metadata.of( Dimension.of( "MM/DAY" ),
+        final Metadata meta = Metadata.of( MeasurementUnit.of( "MM/DAY" ),
                                                            DatasetIdentifier.of( getLocation( "A" ),
                                                                                                  "MAP" ),
                                                            window );
@@ -250,11 +250,11 @@ public final class MetricTestDataFactory
     public static SingleValuedPairs getSingleValuedPairsSeven()
     {
         //Construct some single-valued pairs
-        final Metadata main = Metadata.of( Dimension.of( "CMS" ),
+        final Metadata main = Metadata.of( MeasurementUnit.of( "CMS" ),
                                                            DatasetIdentifier.of( getLocation( "DRRC2" ),
                                                                                                  "SQIN",
                                                                                                  "HEFS" ) );
-        final Metadata base = Metadata.of( Dimension.of( "CMS" ),
+        final Metadata base = Metadata.of( MeasurementUnit.of( "CMS" ),
                                                            DatasetIdentifier.of( getLocation( "DRRC2" ),
                                                                                                  "SQIN",
                                                                                                  "ESP" ) );
@@ -293,12 +293,12 @@ public final class MetricTestDataFactory
                                                  Instant.parse( "2010-12-31T11:59:59Z" ),
                                                  ReferenceTime.VALID_TIME,
                                                  Duration.ofHours( 24 ) );
-        final Metadata meta = Metadata.of( Dimension.of( "CMS" ),
+        final Metadata meta = Metadata.of( MeasurementUnit.of( "CMS" ),
                                                            DatasetIdentifier.of( getLocation( "DRRC2" ),
                                                                                                  "SQIN",
                                                                                                  "HEFS" ),
                                                            window );
-        final Metadata baseMeta = Metadata.of( Dimension.of( "CMS" ),
+        final Metadata baseMeta = Metadata.of( MeasurementUnit.of( "CMS" ),
                                                                DatasetIdentifier.of( getLocation( "DRRC2" ),
                                                                                                      "SQIN",
                                                                                                      "ESP" ),
@@ -347,13 +347,13 @@ public final class MetricTestDataFactory
                                                  Instant.parse( "2010-12-31T11:59:59Z" ),
                                                  ReferenceTime.VALID_TIME,
                                                  Duration.ofHours( 24 ) );
-        final Metadata meta = Metadata.of( Dimension.of( "CMS" ),
+        final Metadata meta = Metadata.of( MeasurementUnit.of( "CMS" ),
                                                            DatasetIdentifier.of( getLocation( "DRRC2" ),
                                                                                                  "SQIN",
                                                                                                  "HEFS" ),
                                                            window );
 
-        final Metadata baseMeta = Metadata.of( Dimension.of( "CMS" ),
+        final Metadata baseMeta = Metadata.of( MeasurementUnit.of( "CMS" ),
                                                                DatasetIdentifier.of( getLocation( "DRRC2" ),
                                                                                                      "SQIN",
                                                                                                      "ESP" ),
@@ -398,7 +398,7 @@ public final class MetricTestDataFactory
                                                  Instant.parse( "2010-12-31T11:59:59Z" ),
                                                  ReferenceTime.VALID_TIME,
                                                  Duration.ofHours( 24 ) );
-        final Metadata meta = Metadata.of( Dimension.of( "CMS" ),
+        final Metadata meta = Metadata.of( MeasurementUnit.of( "CMS" ),
                                                            DatasetIdentifier.of( getLocation( "DRRC2" ),
                                                                                                  "SQIN",
                                                                                                  "HEFS" ),
@@ -425,7 +425,7 @@ public final class MetricTestDataFactory
                                                  Instant.parse( "2010-12-31T11:59:59Z" ),
                                                  ReferenceTime.VALID_TIME,
                                                  Duration.ofHours( 24 ) );
-        final Metadata meta = Metadata.of( Dimension.of( "MM/DAY" ),
+        final Metadata meta = Metadata.of( MeasurementUnit.of( "MM/DAY" ),
                                                            DatasetIdentifier.of( getLocation( "DRRC2" ),
                                                                                                  "MAP" ),
                                                            window );
@@ -445,7 +445,7 @@ public final class MetricTestDataFactory
                                                  Instant.parse( "2010-12-31T11:59:59Z" ),
                                                  ReferenceTime.VALID_TIME,
                                                  Duration.ofHours( 24 ) );
-        final Metadata meta = Metadata.of( Dimension.of( "MM/DAY" ),
+        final Metadata meta = Metadata.of( MeasurementUnit.of( "MM/DAY" ),
                                                            DatasetIdentifier.of( getLocation( "DRRC2" ),
                                                                                                  "MAP" ),
                                                            window );
@@ -484,7 +484,7 @@ public final class MetricTestDataFactory
             values.add( DichotomousPair.of( false, false ) );
         }
 
-        final Metadata meta = Metadata.of( Dimension.of(),
+        final Metadata meta = Metadata.of( MeasurementUnit.of(),
                                                            DatasetIdentifier.of( getLocation( "DRRC2" ),
                                                                                                  "SQIN",
                                                                                                  "HEFS" ) );
@@ -557,7 +557,7 @@ public final class MetricTestDataFactory
                                               new boolean[] { false, false, true } ) );
         }
 
-        final Metadata meta = Metadata.of( Dimension.of(),
+        final Metadata meta = Metadata.of( MeasurementUnit.of(),
                                                            DatasetIdentifier.of( getLocation( "DRRC2" ),
                                                                                                  "SQIN",
                                                                                                  "HEFS" ) );
@@ -581,7 +581,7 @@ public final class MetricTestDataFactory
         values.add( DiscreteProbabilityPair.of( 0, 0.0 / 5.0 ) );
         values.add( DiscreteProbabilityPair.of( 1, 1.0 / 5.0 ) );
 
-        final Metadata meta = Metadata.of( Dimension.of(),
+        final Metadata meta = Metadata.of( MeasurementUnit.of(),
                                                            DatasetIdentifier.of( getLocation( "DRRC2" ),
                                                                                                  "SQIN",
                                                                                                  "HEFS" ) );
@@ -611,11 +611,11 @@ public final class MetricTestDataFactory
         baseline.add( DiscreteProbabilityPair.of( 1, 3.0 / 5.0 ) );
         baseline.add( DiscreteProbabilityPair.of( 0, 4.0 / 5.0 ) );
         baseline.add( DiscreteProbabilityPair.of( 1, 1.0 / 5.0 ) );
-        final Metadata main = Metadata.of( Dimension.of(),
+        final Metadata main = Metadata.of( MeasurementUnit.of(),
                                                            DatasetIdentifier.of( getLocation( "DRRC2" ),
                                                                                                  "SQIN",
                                                                                                  "HEFS" ) );
-        final Metadata base = Metadata.of( Dimension.of(),
+        final Metadata base = Metadata.of( MeasurementUnit.of(),
                                                            DatasetIdentifier.of( getLocation( "DRRC2" ),
                                                                                                  "SQIN",
                                                                                                  "ESP" ) );
@@ -986,7 +986,7 @@ public final class MetricTestDataFactory
         values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
         values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
 
-        final Metadata main = Metadata.of( Dimension.of(),
+        final Metadata main = Metadata.of( MeasurementUnit.of(),
                                                            DatasetIdentifier.of( getLocation( "Tampere" ),
                                                                                                  "MAP",
                                                                                                  "FMI" ) );
@@ -1009,7 +1009,7 @@ public final class MetricTestDataFactory
         values.add( DiscreteProbabilityPair.of( 0, 0.0 / 5.0 ) );
         values.add( DiscreteProbabilityPair.of( 0, 1.0 / 5.0 ) );
 
-        final Metadata meta = Metadata.of( Dimension.of(),
+        final Metadata meta = Metadata.of( MeasurementUnit.of(),
                                                            DatasetIdentifier.of( getLocation( "DRRC2" ),
                                                                                                  "SQIN",
                                                                                                  "HEFS" ) );
@@ -1049,7 +1049,7 @@ public final class MetricTestDataFactory
                                                  ReferenceTime.ISSUE_TIME,
                                                  Duration.ofHours( 6 ),
                                                  Duration.ofHours( 18 ) );
-        final Metadata metaData = Metadata.of( Dimension.of( "CMS" ),
+        final Metadata metaData = Metadata.of( MeasurementUnit.of( "CMS" ),
                                                                DatasetIdentifier.of( getLocation( "A" ),
                                                                                                      "Streamflow" ),
                                                                window );
@@ -1085,7 +1085,7 @@ public final class MetricTestDataFactory
                                                  ReferenceTime.ISSUE_TIME,
                                                  Duration.ofHours( 6 ),
                                                  Duration.ofHours( 18 ) );
-        final Metadata metaData = Metadata.of( Dimension.of( "CMS" ),
+        final Metadata metaData = Metadata.of( MeasurementUnit.of( "CMS" ),
                                                                DatasetIdentifier.of( getLocation( "A" ),
                                                                                                      "Streamflow" ),
                                                                window );
@@ -1122,7 +1122,7 @@ public final class MetricTestDataFactory
                                                  ReferenceTime.ISSUE_TIME,
                                                  Duration.ofHours( 6 ),
                                                  Duration.ofHours( 18 ) );
-        final Metadata metaData = Metadata.of( Dimension.of( "CMS" ),
+        final Metadata metaData = Metadata.of( MeasurementUnit.of( "CMS" ),
                                                                DatasetIdentifier.of( getLocation( "A" ),
                                                                                                      "Streamflow" ),
                                                                window );
@@ -1148,7 +1148,7 @@ public final class MetricTestDataFactory
         // Create some default metadata for the time-series
         final TimeWindow window = TimeWindow.of( Instant.MIN,
                                                  Instant.MAX );
-        final Metadata metaData = Metadata.of( Dimension.of( "CMS" ),
+        final Metadata metaData = Metadata.of( MeasurementUnit.of( "CMS" ),
                                                                DatasetIdentifier.of( getLocation( "A" ),
                                                                                                      "Streamflow" ),
                                                                window );
@@ -1188,7 +1188,7 @@ public final class MetricTestDataFactory
                                                  ReferenceTime.ISSUE_TIME,
                                                  Duration.ofHours( 6 ),
                                                  Duration.ofHours( 30 ) );
-        final Metadata metaData = Metadata.of( Dimension.of( "CMS" ),
+        final Metadata metaData = Metadata.of( MeasurementUnit.of( "CMS" ),
                                                                DatasetIdentifier.of( getLocation( "A" ),
                                                                                                      "Streamflow" ),
                                                                window );

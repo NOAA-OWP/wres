@@ -7,7 +7,7 @@ import org.junit.Test;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.Dimension;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.ScoreOutput;
@@ -30,8 +30,8 @@ public final class ScoreOutputTest
     {
         final Location l1 = Location.of( "A" );
         final MetricOutputMetadata m1 = MetricOutputMetadata.of( 10,
-                                                                           Dimension.of(),
-                                                                           Dimension.of( "CMS" ),
+                                                                           MeasurementUnit.of(),
+                                                                           MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
                                                                            MetricConstants.MAIN,
                                                                            DatasetIdentifier.of( l1,
@@ -39,8 +39,8 @@ public final class ScoreOutputTest
                                                                                                                  "C" ) );
         final Location l2 = Location.of( "A" );
         final MetricOutputMetadata m2 = MetricOutputMetadata.of( 11,
-                                                                           Dimension.of(),
-                                                                           Dimension.of( "CMS" ),
+                                                                           MeasurementUnit.of(),
+                                                                           MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
                                                                            MetricConstants.MAIN,
                                                                            DatasetIdentifier.of( l2,
@@ -48,8 +48,8 @@ public final class ScoreOutputTest
                                                                                                                  "C" ) );
         final Location l3 = Location.of( "B" );
         final MetricOutputMetadata m3 = MetricOutputMetadata.of( 10,
-                                                                           Dimension.of(),
-                                                                           Dimension.of( "CMS" ),
+                                                                           MeasurementUnit.of(),
+                                                                           MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
                                                                            MetricConstants.MAIN,
                                                                            DatasetIdentifier.of( l3,
@@ -79,8 +79,8 @@ public final class ScoreOutputTest
     {
         final Location l1 = Location.of( "A" );
         final MetricOutputMetadata m1 = MetricOutputMetadata.of( 10,
-                                                                           Dimension.of(),
-                                                                           Dimension.of( "CMS" ),
+                                                                           MeasurementUnit.of(),
+                                                                           MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
                                                                            MetricConstants.MAIN,
                                                                            DatasetIdentifier.of( l1,
@@ -100,8 +100,8 @@ public final class ScoreOutputTest
     {
         final Location l1 = Location.of( "A" );
         final MetricOutputMetadata m1 = MetricOutputMetadata.of( 10,
-                                                                           Dimension.of(),
-                                                                           Dimension.of( "CMS" ),
+                                                                           MeasurementUnit.of(),
+                                                                           MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
                                                                            MetricConstants.MAIN,
                                                                            DatasetIdentifier.of( l1,
@@ -109,8 +109,8 @@ public final class ScoreOutputTest
                                                                                                                  "C" ) );
         final Location l2 = Location.of( "B" );
         final MetricOutputMetadata m2 = MetricOutputMetadata.of( 10,
-                                                                           Dimension.of(),
-                                                                           Dimension.of( "CMS" ),
+                                                                           MeasurementUnit.of(),
+                                                                           MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
                                                                            MetricConstants.MAIN,
                                                                            DatasetIdentifier.of( l2,
@@ -130,8 +130,8 @@ public final class ScoreOutputTest
     {
         final Location l1 = Location.of( "A" );
         final MetricOutputMetadata m1 = MetricOutputMetadata.of( 10,
-                                                                           Dimension.of(),
-                                                                           Dimension.of( "CMS" ),
+                                                                           MeasurementUnit.of(),
+                                                                           MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
                                                                            MetricConstants.MAIN,
                                                                            DatasetIdentifier.of( l1,
@@ -139,8 +139,8 @@ public final class ScoreOutputTest
                                                                                                                  "C" ) );
         final Location l2 = Location.of( "A" );
         final MetricOutputMetadata m2 = MetricOutputMetadata.of( 10,
-                                                                           Dimension.of(),
-                                                                           Dimension.of( "CMS" ),
+                                                                           MeasurementUnit.of(),
+                                                                           MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
                                                                            MetricConstants.MAIN,
                                                                            DatasetIdentifier.of( l2,
@@ -148,8 +148,8 @@ public final class ScoreOutputTest
                                                                                                                  "C" ) );
         final Location l3 = Location.of( "B" );
         final MetricOutputMetadata m3 = MetricOutputMetadata.of( 10,
-                                                                           Dimension.of(),
-                                                                           Dimension.of( "CMS" ),
+                                                                           MeasurementUnit.of(),
+                                                                           MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
                                                                            MetricConstants.MAIN,
                                                                            DatasetIdentifier.of( l3,

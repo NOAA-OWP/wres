@@ -6,7 +6,7 @@ import static org.junit.Assert.assertTrue;
 import org.junit.Test;
 
 /**
- * Tests the {@link Dimension}.
+ * Tests the {@link MeasurementUnit}.
  * 
  * @author james.brown@hydrosolved.com
  */
@@ -15,22 +15,22 @@ public class DimensionTest
 {
 
     /**
-     * Test {@link Dimension#equals(Object)}.
+     * Test {@link MeasurementUnit#equals(Object)}.
      */
 
     @Test
     public void testEquals()
     {
         assertTrue( "Unexpected inequality between two dimension instances.",
-                    Dimension.of().equals( Dimension.of() ) );
-        Dimension m1 = Dimension.of( "A" );
+                    MeasurementUnit.of().equals( MeasurementUnit.of() ) );
+        MeasurementUnit m1 = MeasurementUnit.of( "A" );
         // Reflexive
         assertTrue( "Unexpected inequality between two dimension instances.", m1.equals( m1 ) );
-        Dimension m2 = Dimension.of( "A" );
+        MeasurementUnit m2 = MeasurementUnit.of( "A" );
         // Symmetric
         assertTrue( "Unexpected inequality between two dimension instances.", m1.equals( m2 ) );
         assertTrue( "Unexpected inequality between two dimension instances.", m2.equals( m1 ) );
-        Dimension m3 = Dimension.of( "A" );
+        MeasurementUnit m3 = MeasurementUnit.of( "A" );
         // Transitive
         assertTrue( "Unexpected inequality between two dimension instances.", m1.equals( m2 ) );
         assertTrue( "Unexpected inequality between two dimension instances.", m2.equals( m3 ) );
@@ -41,7 +41,7 @@ public class DimensionTest
             assertTrue( "Unexpected inequality between two dimension instances.", m1.equals( m2 ) );
         }
         // Unequal
-        Dimension m4 = Dimension.of( "B" );
+        MeasurementUnit m4 = MeasurementUnit.of( "B" );
         assertFalse( "Unexpected equality between two dimension instances.", m1.equals( m4 ) );
         // Null check
         assertFalse( "Unexpected equality between two dimension instances.", m1.equals( null ) );
@@ -50,7 +50,7 @@ public class DimensionTest
     }
 
     /**
-     * Test {@link Dimension#hashCode()}.
+     * Test {@link MeasurementUnit#hashCode()}.
      */
 
     @Test
@@ -58,11 +58,11 @@ public class DimensionTest
     {
         // Equal
         assertTrue( "Unexpected inequality between two dimension hashcodes.",
-                    Dimension.of().equals( Dimension.of() ) );
-        Dimension m1 = Dimension.of( "A" );
+                    MeasurementUnit.of().equals( MeasurementUnit.of() ) );
+        MeasurementUnit m1 = MeasurementUnit.of( "A" );
         assertTrue( "Unexpected inequality between two dimension hashcodes.", m1.hashCode() == m1.hashCode() );
-        Dimension m2 = Dimension.of( "A" );
-        Dimension m3 = Dimension.of( "A" );
+        MeasurementUnit m2 = MeasurementUnit.of( "A" );
+        MeasurementUnit m3 = MeasurementUnit.of( "A" );
         assertTrue( "Unexpected inequality between two dimension hashcodes.", m1.hashCode() == m2.hashCode() );
         assertTrue( "Unexpected inequality between two dimension instances.", m2.equals( m3 ) );
         assertTrue( "Unexpected inequality between two dimension instances.", m1.equals( m3 ) );
@@ -72,7 +72,7 @@ public class DimensionTest
             assertTrue( "Unexpected inequality between two dimension hashcodes.", m1.hashCode() == m2.hashCode() );
         }
         // Unequal
-        Dimension m4 = Dimension.of( "B" );
+        MeasurementUnit m4 = MeasurementUnit.of( "B" );
         assertFalse( "Unexpected equality between two dimension hashcodes.", m1.hashCode() == m4.hashCode() );
         // Other type check
         assertFalse( "Unexpected equality between two dimension hashcodes.",

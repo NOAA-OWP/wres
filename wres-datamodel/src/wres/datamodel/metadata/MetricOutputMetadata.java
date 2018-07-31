@@ -22,7 +22,7 @@ public class MetricOutputMetadata extends Metadata
      * The dimension associated with the input data from which the output was computed.
      */
 
-    private final Dimension inputDim;
+    private final MeasurementUnit inputDim;
 
     /**
      * The metric identifier.
@@ -97,7 +97,7 @@ public class MetricOutputMetadata extends Metadata
     }
 
     /**
-     * Builds a default {@link MetricOutputMetadata} with a prescribed sample size, a {@link Dimension} for the output
+     * Builds a default {@link MetricOutputMetadata} with a prescribed sample size, a {@link MeasurementUnit} for the output
      * and the input, and a {@link MetricConstants} identifier for the metric.
      * 
      * @param sampleSize the sample size
@@ -108,8 +108,8 @@ public class MetricOutputMetadata extends Metadata
      */
 
     public static MetricOutputMetadata of( final int sampleSize,
-                                           final Dimension outputDim,
-                                           final Dimension inputDim,
+                                           final MeasurementUnit outputDim,
+                                           final MeasurementUnit inputDim,
                                            final MetricConstants metricID )
     {
         return MetricOutputMetadata.of( sampleSize,
@@ -122,7 +122,7 @@ public class MetricOutputMetadata extends Metadata
     }
 
     /**
-     * Builds a default {@link MetricOutputMetadata} with a prescribed sample size, a {@link Dimension} for the output
+     * Builds a default {@link MetricOutputMetadata} with a prescribed sample size, a {@link MeasurementUnit} for the output
      * and the input, and {@link MetricConstants} identifiers for the metric and the metric component, respectively.
      * 
      * @param sampleSize the sample size
@@ -134,8 +134,8 @@ public class MetricOutputMetadata extends Metadata
      */
 
     public static MetricOutputMetadata of( final int sampleSize,
-                                           final Dimension outputDim,
-                                           final Dimension inputDim,
+                                           final MeasurementUnit outputDim,
+                                           final MeasurementUnit inputDim,
                                            final MetricConstants metricID,
                                            final MetricConstants componentID )
     {
@@ -150,7 +150,7 @@ public class MetricOutputMetadata extends Metadata
 
     /**
      * Builds a default {@link MetricOutputMetadata} with a prescribed source of {@link Metadata} whose parameters are
-     * copied, together with a sample size, a {@link Dimension} for the output, and {@link MetricConstants} identifiers
+     * copied, together with a sample size, a {@link MeasurementUnit} for the output, and {@link MetricConstants} identifiers
      * for the metric and the metric component, respectively.
      * 
      * @param sampleSize the sample size
@@ -163,7 +163,7 @@ public class MetricOutputMetadata extends Metadata
      */
 
     public static MetricOutputMetadata of( final int sampleSize,
-                                           final Dimension outputDim,
+                                           final MeasurementUnit outputDim,
                                            final Metadata metadata,
                                            final MetricConstants metricID,
                                            final MetricConstants componentID )
@@ -181,7 +181,7 @@ public class MetricOutputMetadata extends Metadata
     }
 
     /**
-     * Builds a default {@link MetricOutputMetadata} with a prescribed sample size, a {@link Dimension} for the output
+     * Builds a default {@link MetricOutputMetadata} with a prescribed sample size, a {@link MeasurementUnit} for the output
      * and the input, {@link MetricConstants} identifiers for the metric and the metric component, respectively, and an
      * optional {@link DatasetIdentifier} identifier.
      * 
@@ -195,8 +195,8 @@ public class MetricOutputMetadata extends Metadata
      */
 
     public static MetricOutputMetadata of( final int sampleSize,
-                                           final Dimension outputDim,
-                                           final Dimension inputDim,
+                                           final MeasurementUnit outputDim,
+                                           final MeasurementUnit inputDim,
                                            final MetricConstants metricID,
                                            final MetricConstants componentID,
                                            final DatasetIdentifier identifier )
@@ -225,8 +225,8 @@ public class MetricOutputMetadata extends Metadata
      */
 
     public static MetricOutputMetadata of( int sampleSize,
-                                           Dimension outputDim,
-                                           Dimension inputDim,
+                                           MeasurementUnit outputDim,
+                                           MeasurementUnit inputDim,
                                            MetricConstants metricID,
                                            MetricConstants componentID,
                                            DatasetIdentifier identifier,
@@ -283,7 +283,7 @@ public class MetricOutputMetadata extends Metadata
      * @return the dimension
      */
 
-    public Dimension getInputDimension()
+    public MeasurementUnit getInputDimension()
     {
         return inputDim;
     }
@@ -381,8 +381,8 @@ public class MetricOutputMetadata extends Metadata
      */
 
     private MetricOutputMetadata( int sampleSize,
-                                  Dimension outputDim,
-                                  Dimension inputDim,
+                                  MeasurementUnit outputDim,
+                                  MeasurementUnit inputDim,
                                   MetricConstants metricID,
                                   MetricConstants componentID,
                                   DatasetIdentifier identifier,

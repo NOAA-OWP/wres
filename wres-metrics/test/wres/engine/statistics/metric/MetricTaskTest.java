@@ -18,7 +18,7 @@ import org.junit.rules.ExpectedException;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
-import wres.datamodel.metadata.Dimension;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.singlevalued.MeanError;
@@ -81,7 +81,7 @@ public final class MetricTaskTest
 
         //Should not throw an exception
         MetricOutputMetadata benchmarkMeta = MetricOutputMetadata.of( 10,
-                                                                                Dimension.of(),
+                                                                                MeasurementUnit.of(),
                                                                                 input.getMetadata(),
                                                                                 MetricConstants.MEAN_ERROR,
                                                                                 MetricConstants.MAIN );

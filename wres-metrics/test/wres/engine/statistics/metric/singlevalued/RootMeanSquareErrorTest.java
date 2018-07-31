@@ -15,7 +15,7 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
-import wres.datamodel.metadata.Dimension;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
@@ -57,8 +57,8 @@ public final class RootMeanSquareErrorTest
 
         //Metadata for the output
         MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getRawData().size(),
-                                                                   Dimension.of(),
-                                                                   Dimension.of(),
+                                                                   MeasurementUnit.of(),
+                                                                   MeasurementUnit.of(),
                                                                    MetricConstants.ROOT_MEAN_SQUARE_ERROR,
                                                                    MetricConstants.MAIN );
         //Check the results

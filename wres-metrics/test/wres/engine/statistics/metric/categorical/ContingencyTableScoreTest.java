@@ -16,7 +16,7 @@ import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.Dimension;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.MatrixOutput;
@@ -51,8 +51,8 @@ public final class ContingencyTableScoreTest
     {
         cs = ThreatScore.of();
         meta = MetricOutputMetadata.of( 365,
-                                                  Dimension.of(),
-                                                  Dimension.of(),
+                                                  MeasurementUnit.of(),
+                                                  MeasurementUnit.of(),
                                                   MetricConstants.CONTINGENCY_TABLE,
                                                   MetricConstants.MAIN );
     }
@@ -120,8 +120,8 @@ public final class ContingencyTableScoreTest
         //Metadata for the output
         final MetricOutputMetadata m1 =
                 MetricOutputMetadata.of( input.getRawData().size(),
-                                                   Dimension.of(),
-                                                   Dimension.of(),
+                                                   MeasurementUnit.of(),
+                                                   MeasurementUnit.of(),
                                                    MetricConstants.CONTINGENCY_TABLE,
                                                    MetricConstants.MAIN,
                                                    DatasetIdentifier.of( Location.of( "DRRC2" ),
@@ -173,8 +173,8 @@ public final class ContingencyTableScoreTest
 
         final MetricOutputMetadata expected =
                 MetricOutputMetadata.of( input.getRawData().size(),
-                                                   Dimension.of(),
-                                                   Dimension.of(),
+                                                   MeasurementUnit.of(),
+                                                   MeasurementUnit.of(),
                                                    MetricConstants.THREAT_SCORE,
                                                    MetricConstants.MAIN,
                                                    DatasetIdentifier.of( Location.of( "DRRC2" ),

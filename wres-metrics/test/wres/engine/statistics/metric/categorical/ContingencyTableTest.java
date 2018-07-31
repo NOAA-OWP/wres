@@ -15,7 +15,7 @@ import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.MulticategoryPairs;
 import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.Dimension;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.MatrixOutput;
@@ -59,8 +59,8 @@ public final class ContingencyTableTest
         //Metadata for the output
         final MetricOutputMetadata meta =
                 MetricOutputMetadata.of( input.getRawData().size(),
-                                                   Dimension.of(),
-                                                   Dimension.of(),
+                                                   MeasurementUnit.of(),
+                                                   MeasurementUnit.of(),
                                                    MetricConstants.CONTINGENCY_TABLE,
                                                    MetricConstants.MAIN,
                                                    DatasetIdentifier.of( Location.of( "DRRC2" ),

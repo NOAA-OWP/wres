@@ -17,7 +17,7 @@ import org.junit.rules.ExpectedException;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
-import wres.datamodel.metadata.Dimension;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MatrixOutput;
@@ -54,8 +54,8 @@ public final class CollectableTaskTest
         m = ThreatScore.of();
 
         m1 = MetricOutputMetadata.of( 100,
-                                                Dimension.of(),
-                                                Dimension.of(),
+                                                MeasurementUnit.of(),
+                                                MeasurementUnit.of(),
                                                 MetricConstants.CONTINGENCY_TABLE,
                                                 MetricConstants.MAIN );
     }

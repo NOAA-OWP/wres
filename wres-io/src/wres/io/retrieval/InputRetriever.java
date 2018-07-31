@@ -36,7 +36,7 @@ import wres.datamodel.inputs.pairs.SingleValuedPair;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs.TimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.Dimension;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.TimeWindow;
@@ -1182,7 +1182,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             sourceConfig = projectConfig.getInputs().getRight(); 
         }
 
-        Dimension dim = Dimension.of( this.projectDetails.getDesiredMeasurementUnit());
+        MeasurementUnit dim = MeasurementUnit.of( this.projectDetails.getDesiredMeasurementUnit());
         Float longitude = null;
         Float latitude = null;
 

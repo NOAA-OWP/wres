@@ -29,25 +29,25 @@ public final class MetadataFactoryTest
     public void unionOf()
     {
         Location l1 = Location.of( "DRRC2" );
-        Metadata m1 = Metadata.of( Dimension.of(),
+        Metadata m1 = Metadata.of( MeasurementUnit.of(),
                                            DatasetIdentifier.of( l1, "SQIN", "HEFS" ),
                                            TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                                  Instant.parse( "1985-12-31T23:59:59Z" ),
                                                                  ReferenceTime.ISSUE_TIME ) );
         Location l2 = Location.of( "DRRC2" );
-        Metadata m2 = Metadata.of( Dimension.of(),
+        Metadata m2 = Metadata.of( MeasurementUnit.of(),
                                            DatasetIdentifier.of( l2, "SQIN", "HEFS" ),
                                            TimeWindow.of( Instant.parse( "1986-01-01T00:00:00Z" ),
                                                                  Instant.parse( "1986-12-31T23:59:59Z" ),
                                                                  ReferenceTime.ISSUE_TIME ) );
         Location l3 = Location.of( "DRRC2" );
-        Metadata m3 = Metadata.of( Dimension.of(),
+        Metadata m3 = Metadata.of( MeasurementUnit.of(),
                                            DatasetIdentifier.of( l3, "SQIN", "HEFS" ),
                                            TimeWindow.of( Instant.parse( "1987-01-01T00:00:00Z" ),
                                                                  Instant.parse( "1988-01-01T00:00:00Z" ),
                                                                  ReferenceTime.ISSUE_TIME ) );
         Location benchmarkLocation = Location.of( "DRRC2" );
-        Metadata benchmark = Metadata.of( Dimension.of(),
+        Metadata benchmark = Metadata.of( MeasurementUnit.of(),
                                                   DatasetIdentifier.of( benchmarkLocation, "SQIN", "HEFS" ),
                                                           TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                                         Instant.parse( "1988-01-01T00:00:00Z" ),
@@ -58,7 +58,7 @@ public final class MetadataFactoryTest
         try
         {
             Location failLocation = Location.of( "DRRC3" );
-            Metadata fail = Metadata.of( Dimension.of(),
+            Metadata fail = Metadata.of( MeasurementUnit.of(),
                                                  DatasetIdentifier.of( failLocation, "SQIN", "HEFS" ) );
             MetadataFactory.unionOf( Arrays.asList( m1, m2, m3, fail ) );
             fail( "Expected a checked exception on building the union of metadata for unequal inputs." );

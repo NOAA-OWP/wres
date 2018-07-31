@@ -42,7 +42,7 @@ import wres.datamodel.Slicer;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.Dimension;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetricOutputMetadata;
@@ -170,7 +170,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                      Instant.MAX,
                                                      ReferenceTime.VALID_TIME,
                                                      Duration.ofHours( i ) );
-            final Metadata meta = Metadata.of( Dimension.of( "CMS" ),
+            final Metadata meta = Metadata.of( MeasurementUnit.of( "CMS" ),
                                                                DatasetIdentifier.of( Location.of( "DRRC2" ),
                                                                                                      "SQIN",
                                                                                                      "HEFS" ),
@@ -207,7 +207,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                          OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 1.0 ),
                                                                          Operator.GREATER,
                                                                          ThresholdDataType.LEFT,
-                                                                         Dimension.of( "CMS" ) ) ) );
+                                                                         MeasurementUnit.of( "CMS" ) ) ) );
         assertTrue( "Unexpected results for the contingency table.",
                     expected.equals( processor.getCachedMetricOutput()
                                               .getMatrixOutput()
@@ -301,8 +301,8 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                  Duration.ofHours( 18 ) );
         final TimeWindow timeWindow = firstWindow;
         MetricOutputMetadata m1 = MetricOutputMetadata.of( 1,
-        Dimension.of( "DURATION" ),
-        Dimension.of( "CMS" ),
+        MeasurementUnit.of( "DURATION" ),
+        MeasurementUnit.of( "CMS" ),
         MetricConstants.TIME_TO_PEAK_ERROR,
         MetricConstants.MAIN,
         DatasetIdentifier.of( Location.of( "A" ),
@@ -404,8 +404,8 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                  Duration.ofHours( 18 ) );
         final TimeWindow timeWindow = firstWindow;
         MetricOutputMetadata m1 = MetricOutputMetadata.of( 1,
-        Dimension.of( "DURATION" ),
-        Dimension.of( "CMS" ),
+        MeasurementUnit.of( "DURATION" ),
+        MeasurementUnit.of( "CMS" ),
         MetricConstants.TIME_TO_PEAK_ERROR,
         MetricConstants.MAIN,
         DatasetIdentifier.of( Location.of( "A" ),
@@ -506,8 +506,8 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                    Duration.ofHours( 18 ) );
         final TimeWindow timeWindow = combinedWindow;
         MetricOutputMetadata scoreMeta = MetricOutputMetadata.of( 2,
-        Dimension.of( "DURATION" ),
-        Dimension.of( "CMS" ),
+        MeasurementUnit.of( "DURATION" ),
+        MeasurementUnit.of( "CMS" ),
         MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
         null,
         DatasetIdentifier.of( Location.of( "A" ),
@@ -589,7 +589,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                      Instant.MAX,
                                                      ReferenceTime.VALID_TIME,
                                                      Duration.ofHours( i ) );
-            final Metadata meta = Metadata.of( Dimension.of( "CMS" ),
+            final Metadata meta = Metadata.of( MeasurementUnit.of( "CMS" ),
                                                                DatasetIdentifier.of( Location.of( "DRRC2" ),
                                                                                                      "SQIN",
                                                                                                      "HEFS" ),
@@ -664,7 +664,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                      Instant.MAX,
                                                      ReferenceTime.VALID_TIME,
                                                      Duration.ofHours( i ) );
-            final Metadata meta = Metadata.of( Dimension.of( "CMS" ),
+            final Metadata meta = Metadata.of( MeasurementUnit.of( "CMS" ),
                                                                DatasetIdentifier.of( Location.of( "DRRC2" ),
                                                                                                      "SQIN",
                                                                                                      "HEFS" ),
@@ -701,7 +701,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                          OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 1.0 ),
                                                                          Operator.GREATER,
                                                                          ThresholdDataType.LEFT,
-                                                                         Dimension.of( "CMS" ) ) ) );
+                                                                         MeasurementUnit.of( "CMS" ) ) ) );
         assertTrue( "Unexpected results for the contingency table.",
                     expected.equals( processor.getCachedMetricOutput()
                                               .getMatrixOutput()
@@ -759,8 +759,8 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                    Instant.MAX );
         final TimeWindow timeWindow = combinedWindow;
         MetricOutputMetadata scoreMeta = MetricOutputMetadata.of( 0,
-        Dimension.of( "DURATION" ),
-        Dimension.of( "CMS" ),
+        MeasurementUnit.of( "DURATION" ),
+        MeasurementUnit.of( "CMS" ),
         MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
         null,
         DatasetIdentifier.of( Location.of( "A" ),
