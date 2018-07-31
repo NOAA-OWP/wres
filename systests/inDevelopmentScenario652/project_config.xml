@@ -13,7 +13,7 @@
         </left>
         <right label="NWM Short Range">
             <type>single valued forecasts</type>
-            <source format="netCDF">../data/griddedExamples/land_ellicott_city/short_range/</source>
+            <source format="netCDF" pattern="**/*nwm.t0*">../data/griddedExamples/land_ellicott_city/short_range/20180526</source>
             <variable>SNEQV</variable>
             <existingTimeScale>
                 <function>avg</function>
@@ -47,7 +47,7 @@
         <leadHours maximum="4" />
         <issuedDates earliest="2018-05-26T00:00:00Z" latest="2018-05-28T00:00:00Z"/>
         <issuedDatesPoolingWindow>
-            <period>12</period>
+            <period>4</period>
             <unit>hours</unit>
         </issuedDatesPoolingWindow>
     </pair>

@@ -13,7 +13,8 @@
         </left>
         <right label="NWM Short Range">
             <type>single valued forecasts</type>
-            <source format="netCDF">../data/griddedExamples/precip_ellicott_city/short_range/</source>
+            <!--<source format="netCDF">../data/griddedExamples/precip_ellicott_city/short_range/</source> -->
+            <source format="netCDF" pattern="**/*nwm.t0*">../data/griddedExamples/precip_ellicott_city/short_range/nwm.20180526/</source>
             <variable>RAINRATE</variable>
             <existingTimeScale>
                 <function>avg</function>

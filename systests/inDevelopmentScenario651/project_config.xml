@@ -13,7 +13,7 @@
         </left>
         <right label="NWM Short Range">
             <type>single valued forecasts</type>
-            <source format="netCDF">../data/griddedExamples/land_ellicott_city/short_range/</source>
+            <source format="netCDF" pattern="**/*nwm.t0*">../data/griddedExamples/land_ellicott_city/short_range/20180526/</source>
             <variable>SNOWH</variable>
             <existingTimeScale>
                 <function>avg</function>
