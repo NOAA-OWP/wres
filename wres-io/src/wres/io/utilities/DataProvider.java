@@ -144,10 +144,10 @@ public interface DataProvider extends AutoCloseable
     Object getObject(final String columnName);
 
     /**Retrieves the value of the designated column in the current row as a boolean
-     * <br/>
+     * <br>
      * If the designated column has a datatype of <code>String</code> and contains a
      * '0' or has a datatype of <code>byte</code>, <code>short</code>, <code>int</code>,
-     * or <code>long</code> and is equal to 0, false</code> is returned.
+     * or <code>long</code> and is equal to 0, <code>false</code> is returned.
      * <code>false</code> is returned if the value was <code>null</code>
      * @param columnName The name of the column containing the desired boolean value
      * @return The boolean representation of the contained value
