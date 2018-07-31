@@ -13,7 +13,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
@@ -22,7 +21,6 @@ import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.Metadata;
-import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
@@ -37,10 +35,10 @@ import wres.engine.statistics.metric.MetricTestDataFactory;
  */
 public final class VolumetricEfficiencyTest
 {
-    
+
     @Rule
     public final ExpectedException exception = ExpectedException.none();
-    
+
     /**
      * Default instance of a {@link VolumetricEfficiency}.
      */
@@ -70,14 +68,15 @@ public final class VolumetricEfficiencyTest
                                                  ReferenceTime.VALID_TIME,
                                                  Duration.ofHours( 24 ) );
         final MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getRawData().size(),
-        MeasurementUnit.of(),
-        MeasurementUnit.of( "MM/DAY" ),
-        MetricConstants.VOLUMETRIC_EFFICIENCY,
-        MetricConstants.MAIN,
-        DatasetIdentifier.of( Location.of("103.1"),
-                                                                                                         "QME",
-                                                                                                         "NVE" ),
-        window );
+                                                                 MeasurementUnit.of(),
+                                                                 MeasurementUnit.of( "MM/DAY" ),
+                                                                 MetricConstants.VOLUMETRIC_EFFICIENCY,
+                                                                 MetricConstants.MAIN,
+                                                                 DatasetIdentifier.of( Location.of( "103.1" ),
+                                                                                       "QME",
+                                                                                       "NVE" ),
+                                                                 window,
+                                                                 null );
         //Check the results
         DoubleScoreOutput actual = ve.apply( input );
         DoubleScoreOutput expected = DoubleScoreOutput.of( 0.657420176533252, m1 );
@@ -98,7 +97,7 @@ public final class VolumetricEfficiencyTest
         // Generate empty data
         SingleValuedPairs input =
                 SingleValuedPairs.of( Arrays.asList(), Metadata.of() );
- 
+
         DoubleScoreOutput actual = ve.apply( input );
 
         assertTrue( actual.getData().isNaN() );
@@ -155,8 +154,8 @@ public final class VolumetricEfficiencyTest
     {
         exception.expect( MetricInputException.class );
         exception.expectMessage( "Specify non-null input to the 'VOLUMETRIC EFFICIENCY'." );
-        
+
         ve.apply( null );
     }
-    
+
 }

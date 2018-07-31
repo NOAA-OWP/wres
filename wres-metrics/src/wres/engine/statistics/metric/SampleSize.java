@@ -2,11 +2,11 @@ package wres.engine.statistics.metric;
 
 import java.util.Objects;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.inputs.MetricInputException;
+import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
 
 /**
@@ -23,12 +23,12 @@ class SampleSize<S extends MetricInput<?>> extends OrdinaryScore<S, DoubleScoreO
      * @param <S> the input type
      * @return an instance
      */
-    
+
     public static <S extends MetricInput<?>> SampleSize<S> of()
     {
         return new SampleSize<>();
     }
-    
+
     @Override
     public DoubleScoreOutput apply( S s )
     {
@@ -36,7 +36,13 @@ class SampleSize<S extends MetricInput<?>> extends OrdinaryScore<S, DoubleScoreO
         {
             throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
         }
-        return DoubleScoreOutput.of( (double) s.getRawData().size(), getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, null ) );
+        return DoubleScoreOutput.of( (double) s.getRawData().size(),
+                                     MetricOutputMetadata.of( s.getMetadata(),
+                                                         this.getID(),
+                                                         MetricConstants.MAIN,
+                                                         this.hasRealUnits(),
+                                                         s.getRawData().size(),
+                                                         null ) );
     }
 
     @Override

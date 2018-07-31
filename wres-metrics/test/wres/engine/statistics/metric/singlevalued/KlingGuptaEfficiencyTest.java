@@ -13,7 +13,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
@@ -70,14 +69,15 @@ public final class KlingGuptaEfficiencyTest
         final TimeWindow timeWindow = window;
 
         MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getRawData().size(),
-        MeasurementUnit.of(),
-        MeasurementUnit.of( "MM/DAY" ),
-        MetricConstants.KLING_GUPTA_EFFICIENCY,
-        MetricConstants.MAIN,
-        DatasetIdentifier.of( Location.of("103.1"),
-                                                                                                   "QME",
-                                                                                                   "NVE" ),
-        timeWindow );
+                                                           MeasurementUnit.of(),
+                                                           MeasurementUnit.of( "MM/DAY" ),
+                                                           MetricConstants.KLING_GUPTA_EFFICIENCY,
+                                                           MetricConstants.MAIN,
+                                                           DatasetIdentifier.of( Location.of( "103.1" ),
+                                                                                 "QME",
+                                                                                 "NVE" ),
+                                                           timeWindow,
+                                                           null );
 
         //Check the results
         DoubleScoreOutput actual = kge.apply( input );
@@ -100,10 +100,10 @@ public final class KlingGuptaEfficiencyTest
         SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getRawData().size(),
-                                                             MeasurementUnit.of(),
-                                                             MeasurementUnit.of(),
-                                                             MetricConstants.KLING_GUPTA_EFFICIENCY,
-                                                             MetricConstants.MAIN );
+                                                           MeasurementUnit.of(),
+                                                           MeasurementUnit.of(),
+                                                           MetricConstants.KLING_GUPTA_EFFICIENCY,
+                                                           MetricConstants.MAIN );
 
         //Check the results
         DoubleScoreOutput actual = kge.apply( input );

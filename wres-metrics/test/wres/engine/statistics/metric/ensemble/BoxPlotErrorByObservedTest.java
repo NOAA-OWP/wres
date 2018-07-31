@@ -14,7 +14,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.VectorOfDoubles;
@@ -25,7 +24,6 @@ import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.Metadata;
-import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
@@ -71,21 +69,22 @@ public final class BoxPlotErrorByObservedTest
                                            ReferenceTime.VALID_TIME,
                                            Duration.ofHours( 24 ) );
         Metadata meta = Metadata.of( MeasurementUnit.of( "MM/DAY" ),
-                                                     DatasetIdentifier.of( Location.of( "A" ),
-                                                                                           "MAP" ),
-                                                     window );
+                                     DatasetIdentifier.of( Location.of( "A" ),
+                                                           "MAP" ),
+                                     window );
 
         EnsemblePairs input = EnsemblePairs.of( values, meta );
         final TimeWindow timeWindow = window;
 
         final MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getRawData().size(),
-        MeasurementUnit.of( "MM/DAY" ),
-        MeasurementUnit.of( "MM/DAY" ),
-        MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
-        MetricConstants.MAIN,
-        DatasetIdentifier.of( Location.of( "A" ),
-                                                                                                                         "MAP" ),
-        timeWindow );
+                                                                 MeasurementUnit.of( "MM/DAY" ),
+                                                                 MeasurementUnit.of( "MM/DAY" ),
+                                                                 MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
+                                                                 MetricConstants.MAIN,
+                                                                 DatasetIdentifier.of( Location.of( "A" ),
+                                                                                       "MAP" ),
+                                                                 timeWindow,
+                                                                 null );
 
         //Compute normally
         final BoxPlotOutput actual = bpe.apply( input );
@@ -93,8 +92,12 @@ public final class BoxPlotErrorByObservedTest
                 EnsemblePair.of( 50.0, new double[] { -50.0, -37.5, 0.0, 37.5, 50.0 } );
         List<EnsemblePair> expectedBoxes = new ArrayList<>();
         expectedBoxes.add( expectedBox );
-        BoxPlotOutput expected = BoxPlotOutput.of( expectedBoxes, VectorOfDoubles.of( new double[] { 0.0, 0.25, 0.5, 0.75,
-         1.0 } ), m1, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
+        BoxPlotOutput expected = BoxPlotOutput.of( expectedBoxes,
+                                                   VectorOfDoubles.of( new double[] { 0.0, 0.25, 0.5, 0.75,
+                                                                                      1.0 } ),
+                                                   m1,
+                                                   MetricDimension.OBSERVED_VALUE,
+                                                   MetricDimension.FORECAST_ERROR );
         //Check the results
         assertTrue( "The actual output for the box plot of forecast errors by observed value does not match the "
                     + "expected output.",
