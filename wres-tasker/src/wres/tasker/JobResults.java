@@ -199,7 +199,7 @@ class JobResults
             catch ( InterruptedException ie )
             {
                 LOGGER.warn( "Interrupted while getting result for job {}, returning potentially fake result {}",
-                             jobId, resultValue );
+                             jobId, resultValue, ie );
                 Thread.currentThread().interrupt();
             }
             catch ( IOException ioe )
@@ -338,7 +338,7 @@ class JobResults
             }
             catch ( InterruptedException ie )
             {
-                LOGGER.warn( "Interrupted while getting output for job {}", jobId );
+                LOGGER.warn( "Interrupted while getting output for job {}", jobId, ie );
                 Thread.currentThread().interrupt();
             }
             catch ( IOException ioe )

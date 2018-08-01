@@ -100,6 +100,7 @@ public class USGSReader extends BasicSource
             }
             catch ( InterruptedException e )
             {
+                LOGGER.warn( "Interrupted while ingesting USGS data.", e );
                 Thread.currentThread().interrupt();
             }
             catch ( ExecutionException e )

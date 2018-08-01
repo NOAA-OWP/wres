@@ -249,6 +249,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
             }
             catch ( InterruptedException e )
             {
+                LOGGER.warn( "Interrupted while generating products.", e );
                 Thread.currentThread().interrupt();
 
                 throw new WresProcessingException( this.errorMessage, e );

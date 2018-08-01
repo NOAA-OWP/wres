@@ -408,7 +408,7 @@ public final class Database {
         }
         catch ( InterruptedException ie )
         {
-            LOGGER.warn( "Ingest task completion was interrupted." );
+            LOGGER.warn( "Ingest task completion was interrupted.", ie );
             Thread.currentThread().interrupt();
         }
         catch ( ExecutionException ee )
@@ -493,7 +493,7 @@ public final class Database {
         }
         catch ( InterruptedException ie )
         {
-            LOGGER.warn( "Database forceShutdown interrupted." );
+            LOGGER.warn( "Database forceShutdown interrupted.", ie );
             List<Runnable> abandonedDbTasks = SQL_TASKS.shutdownNow();
             abandoned.addAll( abandonedDbTasks );
             CONNECTION_POOL.close();
@@ -1290,6 +1290,8 @@ public final class Database {
             }
             catch ( InterruptedException ie )
             {
+                LOGGER.warn( "Interrupted while refreshing database statistics.",
+                             ie );
                 Thread.currentThread().interrupt();
             }
             catch ( ExecutionException ee )
@@ -1369,11 +1371,13 @@ public final class Database {
             }
             catch ( ExecutionException e )
             {
-                LOGGER.error("A data optimization statement could not be completed.", e);
+                LOGGER.warn( "A data optimization statement could not be completed.",
+                             e);
             }
             catch (InterruptedException e)
 			{
-				LOGGER.error("A data optimization statement could not be completed.", e);
+				LOGGER.warn( "Interrupted while running a data optimization statement.",
+                             e );
 				Thread.currentThread().interrupt();
 			}
         }
@@ -1909,6 +1913,8 @@ public final class Database {
         }
         catch ( InterruptedException ie )
         {
+            LOGGER.warn( "Interrupted while pausing before retrying to acquire database change privileges.",
+                         ie );
             Thread.currentThread().interrupt();
         }
         catch ( SQLException se )

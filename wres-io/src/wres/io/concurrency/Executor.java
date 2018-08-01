@@ -132,7 +132,7 @@ public final class Executor {
         }
         catch ( InterruptedException ie )
         {
-            LOGGER.warn( "Executor 1 shutdown interrupted." );
+            LOGGER.warn( "Executor 1 shutdown interrupted.", ie );
             List<Runnable> abandoned = SERVICE.shutdownNow();
             abandonedTasks.addAll( abandoned );
             Thread.currentThread().interrupt();
@@ -148,7 +148,7 @@ public final class Executor {
         }
         catch ( InterruptedException ie )
         {
-            LOGGER.warn( "Executor 2 shutdown interrupted." );
+            LOGGER.warn( "Executor 2 shutdown interrupted.", ie );
             List<Runnable> abandoned = HIGH_PRIORITY_TASKS.shutdownNow();
             abandonedTasks.addAll( abandoned );
             Thread.currentThread().interrupt();

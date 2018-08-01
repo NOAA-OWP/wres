@@ -127,7 +127,7 @@ public abstract class S3Reader extends BasicSource
             }
             catch ( InterruptedException e )
             {
-                this.getLogger().error( "S3 Data ingest was interrupted.", e );
+                this.getLogger().warn( "S3 Data ingest was interrupted.", e );
                 Thread.currentThread().interrupt();
             }
             catch ( ExecutionException e )
