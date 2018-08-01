@@ -1250,7 +1250,7 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
         {
             mode = PairingMode.ROLLING;
         }
-        else if (this.usesTimeSeriesMetrics())
+        else if ( ProjectConfigs.hasTimeSeriesMetrics( this.projectConfig ))
         {
             mode = PairingMode.TIME_SERIES;
         }
@@ -1484,23 +1484,6 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
         }
     }
 
-    @Deprecated
-    /**
-     * @return Indicates whether or not pairs will be fed into time series
-     * only metrics
-     * 
-     * TODO: replace this with a call to {@link ProjectConfigs#hasTimeSeriesMetrics(ProjectConfig)}. 
-     * JBr: unclear why this was explicitly duplicated again - the reason I haven't removed it again - but this check
-     * for nullity is not needed. Implementation details aside, we shouldn't duplicate such helpers.
-     */
-    public boolean usesTimeSeriesMetrics()
-    {
-        return Collections.exists(
-                this.projectConfig.getMetrics(),
-                metric -> !metric.getTimeSeriesMetric().isEmpty()
-        );
-    }
-
     public boolean usesGriddedData(DataSourceConfig dataSourceConfig)
             throws SQLException
     {
@@ -1621,7 +1604,7 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
         Integer end;
 
         // If we're using time series, we want to cover all leads
-        if ( this.usesTimeSeriesMetrics())
+        if ( ProjectConfigs.hasTimeSeriesMetrics( this.projectConfig ))
         {
             beginning = Integer.MIN_VALUE;
             end = Integer.MAX_VALUE;
@@ -1890,7 +1873,7 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
             throws IOException, SQLException
     {
         if (ConfigHelper.isSimulation( this.getRight() ) ||
-            this.usesTimeSeriesMetrics() ||
+            ProjectConfigs.hasTimeSeriesMetrics( this.projectConfig ) ||
             this.usesGriddedData( this.getRight() ))
         {
             return 0;

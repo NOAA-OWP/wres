@@ -9,6 +9,7 @@ import java.util.concurrent.Future;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 
+import wres.config.ProjectConfigs;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
 import wres.datamodel.VectorOfDoubles;
@@ -55,7 +56,7 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
         // threshold for the final step, the window number will increment,
         // indicating that we have moved on to the next window, which is
         // invalid for metrics using whole time series.
-        if (projectDetails.usesTimeSeriesMetrics())
+        if ( ProjectConfigs.hasTimeSeriesMetrics(projectDetails.getProjectConfig()))
         {
             this.incrementSequenceStep();
 

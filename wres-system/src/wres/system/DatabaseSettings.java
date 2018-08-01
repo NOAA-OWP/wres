@@ -727,7 +727,7 @@ final class DatabaseSettings
                             for ( InterfaceAddress interfaceAddress : networkInterface.getInterfaceAddresses() )
                             {
                                 String address = interfaceAddress.getAddress().getHostAddress();
-                                addresses.add( address + " (" + address + ")" );
+                                addresses.add( "%(" + address + ")%" );
                             }
                         }
                     }
@@ -750,7 +750,7 @@ final class DatabaseSettings
                     // system (the one that supposedly already owns the lock) from doing its work.
                     StringJoiner builder = new StringJoiner(
                             ",",
-                            "DELETE FROM databasechangeloglock WHERE lockedby = ANY('{",
+                            "DELETE FROM databasechangeloglock WHERE lockedby LIKE ANY('{",
                             "}');"
                     );
                     addresses.forEach( builder::add );
