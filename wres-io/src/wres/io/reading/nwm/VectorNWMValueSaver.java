@@ -231,7 +231,7 @@ class VectorNWMValueSaver extends WRESRunnable
                 String message = "The hashing process for the file '";
                 message += this.filePath.toString();
                 message += "' was interrupted and could not be completed.";
-                LOGGER.warn( message );
+                LOGGER.warn( message, e );
 
                 Thread.currentThread().interrupt();
             }

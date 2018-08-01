@@ -58,7 +58,7 @@ class GriddedNWMValueSaver extends WRESRunnable
             }
             catch ( InterruptedException e )
             {
-                this.getLogger().error("Gridded Data Ingest was interrupted for: {}", this.fileName);
+                this.getLogger().warn( "Gridded Data Ingest was interrupted for: {}", this.fileName, e );
                 Thread.currentThread().interrupt();
             }
 

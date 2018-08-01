@@ -165,6 +165,8 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
             }
             catch ( InterruptedException interruption )
             {
+                LOGGER.warn( "Interrupted while pausing before retry.",
+                             interruption );
                 Thread.currentThread().interrupt();
             }
         }

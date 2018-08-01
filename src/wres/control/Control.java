@@ -231,6 +231,7 @@ public class Control implements Function<String[], Integer>
         }
         catch ( InterruptedException ie )
         {
+            LOGGER.warn( "Interrupted while shutting down {}", executor, ie );
             Control.addException( ie );
             Thread.currentThread().interrupt();
         }
