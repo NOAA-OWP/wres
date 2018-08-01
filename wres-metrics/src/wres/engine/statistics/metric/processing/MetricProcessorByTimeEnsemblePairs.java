@@ -21,14 +21,15 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.Slicer;
+import wres.datamodel.inputs.pairs.DichotomousPair;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPair;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
-import wres.datamodel.inputs.pairs.EnsemblePairs;
-import wres.datamodel.inputs.pairs.DichotomousPair;
 import wres.datamodel.inputs.pairs.EnsemblePair;
+import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.SingleValuedPair;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
+import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.outputs.DoubleScoreOutput;
@@ -254,7 +255,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
 
         //Construct the default mapper from ensembles to single-values: this is not currently configurable
         toSingleValues = in -> SingleValuedPair.of( in.getLeft(),
-                                                   Arrays.stream( in.getRight() ).average().getAsDouble() );
+                                                    Arrays.stream( in.getRight() ).average().getAsDouble() );
 
         //Construct the default mapper from ensembles to probabilities: this is not currently configurable
         toDiscreteProbabilities = Slicer::toDiscreteProbabilityPair;
@@ -415,8 +416,18 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
 
             // Add quantiles to threshold
             Threshold useMe = addQuantilesToThreshold( threshold, sorted );
+            OneOrTwoThresholds oneOrTwo = OneOrTwoThresholds.of( useMe );
 
-            EnsemblePairs pairs = input;
+            // Add the threshold to the metadata, in order to fully qualify the pairs
+            Metadata baselineMeta = null;
+            if ( input.hasBaseline() )
+            {
+                baselineMeta = Metadata.of( input.getMetadataForBaseline(), oneOrTwo );
+            }
+
+            EnsemblePairs pairs = EnsemblePairs.of( input,
+                                                    Metadata.of( input.getMetadata(), oneOrTwo ),
+                                                    baselineMeta );
 
             //Filter the pairs if required
             if ( threshold.isFinite() )
@@ -424,7 +435,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                 Predicate<EnsemblePair> filter =
                         MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( useMe );
 
-                pairs = Slicer.filter( input, filter, null );
+                pairs = Slicer.filter( pairs, filter, null );
             }
 
             processEnsemblePairs( Pair.of( timeWindow, OneOrTwoThresholds.of( useMe ) ),
@@ -558,11 +569,23 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
 
             // Add quantiles to threshold
             Threshold useMe = addQuantilesToThreshold( threshold, sorted );
+            OneOrTwoThresholds oneOrTwo = OneOrTwoThresholds.of( useMe );
 
             // Transform the pairs
             DiscreteProbabilityPairs transformed = Slicer.toDiscreteProbabilityPairs( input,
                                                                                       useMe,
                                                                                       toDiscreteProbabilities );
+
+            // Add the threshold to the metadata, in order to fully qualify the pairs
+            Metadata baselineMeta = null;
+            if ( input.hasBaseline() )
+            {
+                baselineMeta = Metadata.of( transformed.getMetadataForBaseline(), oneOrTwo );
+            }
+
+            transformed = DiscreteProbabilityPairs.of( transformed,
+                                                       Metadata.of( transformed.getMetadata(), oneOrTwo ),
+                                                       baselineMeta );
 
             processDiscreteProbabilityPairs( Pair.of( timeWindow, OneOrTwoThresholds.of( useMe ) ),
                                              transformed,
@@ -718,6 +741,18 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                                                     innerThreshold.test( pair.getRight() ) );
                 //Transform the pairs
                 DichotomousPairs dichotomous = Slicer.toDichotomousPairs( transformed, mapper );
+
+                // Add the threshold to the metadata, in order to fully qualify the pairs
+                Metadata baselineMeta = null;
+                if ( input.hasBaseline() )
+                {
+                    baselineMeta = Metadata.of( dichotomous.getMetadataForBaseline(), compound );
+                }
+
+                dichotomous = DichotomousPairs.ofDichotomousPairs( dichotomous,
+                                                                   Metadata.of( dichotomous.getMetadata(), compound ),
+                                                                   baselineMeta );
+
                 processDichotomousPairs( nextKey, dichotomous, futures, outGroup, unionToIgnore );
             }
         }
