@@ -21,6 +21,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.ProjectConfigs;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.DestinationConfig;
@@ -315,7 +316,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
 
             if ( this.projectDetails.getRight().getType() == DatasourceType.ENSEMBLE_FORECASTS )
             {
-                if ( this.projectDetails.usesTimeSeriesMetrics())
+                if ( ProjectConfigs.hasTimeSeriesMetrics(this.projectDetails.getProjectConfig()))
                 {
                     input = this.createEnsembleTimeSeriesInput( metadata, baselineMetadata );
                 }
@@ -326,7 +327,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             }
             else
             {
-                if ( this.projectDetails.usesTimeSeriesMetrics())
+                if ( ProjectConfigs.hasTimeSeriesMetrics(this.projectDetails.getProjectConfig()))
                 {
                     input = this.createSingleValuedTimeSeriesInput( metadata, baselineMetadata );
                 }
@@ -1204,7 +1205,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                 || ConfigHelper.isPersistence( projectDetails.getProjectConfig(),
                                                sourceConfig ) )
         {
-            if (this.projectDetails.usesTimeSeriesMetrics())
+            if (ProjectConfigs.hasTimeSeriesMetrics(this.projectDetails.getProjectConfig()))
             {
                 if (this.lastLead == Long.MIN_VALUE || this.firstLead == Long.MAX_VALUE)
                 {

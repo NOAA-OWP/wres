@@ -875,7 +875,7 @@ public class ConfigHelper
         // Default reference time
         ReferenceTime referenceTime = ReferenceTime.VALID_TIME;
 
-        if ( projectDetails.usesTimeSeriesMetrics() )
+        if ( ProjectConfigs.hasTimeSeriesMetrics( projectDetails.getProjectConfig() ) )
         {
             beginningLead = firstLead;
 
