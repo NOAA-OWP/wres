@@ -667,6 +667,7 @@ public final class Database {
     /**
      * Executes the passed in query in the current thread
      * @param query The query to execute
+     * @param parameters The query parameters
      * @throws SQLException Thrown if an error occurred while attempting to
      * communicate with the database
      */
@@ -1231,6 +1232,7 @@ public final class Database {
      *     needs to be stored in a different object
      * </p>
      * @param query The query which will create the resulting set of data
+     * @param highPriority is <code>true</code> to execute with a high priority connection
      * @return All data resulting from the query
      * @throws SQLException Thrown if the query fails
      */
@@ -1592,6 +1594,7 @@ public final class Database {
      *
      * @param connection The connection used to connect to the database
      * @param query The text for the query to call
+     * @param parameters The query parameters
      * @return The results of the query
      * @throws SQLException Any issue caused by running the query in the database
      */
@@ -1669,6 +1672,8 @@ public final class Database {
      * Creates set of results from the given query through the given connection
      *
      * @param query The text for the query to call
+     * @param parameters The query parameters
+     * @param highPriority is true to execute with a high priority connection
      * @return The results of the query
      * @throws SQLException Any issue caused by running the query in the database
      */

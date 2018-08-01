@@ -25,12 +25,33 @@ public class MulticategoryPairs extends BasicPairs<MulticategoryPair>
      * @return the pairs
      * @throws MetricInputException if the inputs are invalid
      */
-    
+
     public static MulticategoryPairs ofMulticategoryPairs( List<MulticategoryPair> pairs, Metadata meta )
     {
         return MulticategoryPairs.ofMulticategoryPairs( pairs, null, meta, null, null );
     }
-    
+
+    /**
+     * Construct the input from an existing input and override metadata.
+     * 
+     * @param pairs the existing pairs
+     * @param overrideMainMeta the metadata for the main pairs
+     * @param overrideBaselineMeta the metadata for the baseline pairs (may be null, if the baseline pairs are null)
+     * @return the pairs
+     * @throws MetricInputException if the inputs are invalid
+     */
+
+    public static MulticategoryPairs ofMulticategoryPairs( MulticategoryPairs pairs,
+                                                           Metadata overrideMainMeta,
+                                                           Metadata overrideBaselineMeta )
+    {
+        return MulticategoryPairs.ofMulticategoryPairs( pairs.getRawData(),
+                                                        pairs.getRawDataForBaseline(),
+                                                        overrideMainMeta,
+                                                        overrideBaselineMeta,
+                                                        pairs.getClimatology() );
+    }
+
     /**
      * Construct the multicategory input without any pairs for a baseline.
      * 
@@ -42,7 +63,7 @@ public class MulticategoryPairs extends BasicPairs<MulticategoryPair>
      * @return the pairs
      * @throws MetricInputException if the inputs are invalid
      */
-    
+
     public static MulticategoryPairs ofMulticategoryPairs( List<MulticategoryPair> pairs,
                                                            List<MulticategoryPair> basePairs,
                                                            Metadata mainMeta,

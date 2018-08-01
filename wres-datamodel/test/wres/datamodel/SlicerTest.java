@@ -17,18 +17,18 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import wres.datamodel.inputs.pairs.DichotomousPair;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPair;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
-import wres.datamodel.inputs.pairs.EnsemblePairs;
-import wres.datamodel.inputs.pairs.DichotomousPair;
 import wres.datamodel.inputs.pairs.EnsemblePair;
+import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.SingleValuedPair;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairs;
+import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairs.TimeSeriesOfEnsemblePairsBuilder;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs.TimeSeriesOfSingleValuedPairsBuilder;
-import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairs.TimeSeriesOfEnsemblePairsBuilder;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.outputs.DataModelTestDataFactory;
 import wres.datamodel.outputs.DoubleScoreOutput;
@@ -67,7 +67,7 @@ public final class SlicerTest
         double[] expected = new double[] { 0, 0, 1, 1, 0, 1 };
         assertTrue( "The left side of the test data does not match the benchmark.",
                     Arrays.equals( Slicer.getLeftSide( SingleValuedPairs.of( values,
-                                                                                        Metadata.of() ) ),
+                                                                             Metadata.of() ) ),
                                    expected ) );
     }
 
@@ -88,7 +88,7 @@ public final class SlicerTest
         double[] expected = new double[] { 0, 0, 1, 1, 0, 1 };
         assertTrue( "The left side of the test data does not match the benchmark.",
                     Arrays.equals( Slicer.getLeftSide( EnsemblePairs.of( values,
-                                                                                    Metadata.of() ) ),
+                                                                         Metadata.of() ) ),
                                    expected ) );
     }
 
@@ -109,7 +109,7 @@ public final class SlicerTest
         double[] expected = new double[] { 3.0 / 5.0, 1.0 / 5.0, 2.0 / 5.0, 3.0 / 5.0, 0.0 / 5.0, 1.0 / 5.0 };
         assertTrue( "The right side of the test data does not match the benchmark.",
                     Arrays.equals( Slicer.getRightSide( SingleValuedPairs.of( values,
-                                                                                         Metadata.of() ) ),
+                                                                              Metadata.of() ) ),
                                    expected ) );
     }
 
@@ -129,8 +129,8 @@ public final class SlicerTest
         values.add( SingleValuedPair.of( 1, 1.0 / 5.0 ) );
         double[] expected = new double[] { 1, 1, 1 };
         Threshold threshold = Threshold.of( OneOrTwoDoubles.of( 0.0 ),
-                                                       Operator.GREATER,
-                                                       ThresholdDataType.LEFT );
+                                            Operator.GREATER,
+                                            ThresholdDataType.LEFT );
         Metadata meta = Metadata.of();
         SingleValuedPairs pairs = SingleValuedPairs.of( values, values, meta, meta, null );
         SingleValuedPairs sliced =
@@ -162,8 +162,8 @@ public final class SlicerTest
         values.add( EnsemblePair.of( 1, new double[] { 1, 2, 3 } ) );
         double[] expected = new double[] { 1, 1, 1 };
         Threshold threshold = Threshold.of( OneOrTwoDoubles.of( 0.0 ),
-                                                       Operator.GREATER,
-                                                       ThresholdDataType.LEFT );
+                                            Operator.GREATER,
+                                            ThresholdDataType.LEFT );
         Metadata meta = Metadata.of();
         EnsemblePairs pairs = EnsemblePairs.of( values, values, meta, meta, null );
         EnsemblePairs sliced =
@@ -237,10 +237,10 @@ public final class SlicerTest
         expectedValues.add( DichotomousPair.of( true, true ) );
         DichotomousPairs expectedNoBase = DichotomousPairs.ofDichotomousPairs( expectedValues, meta );
         DichotomousPairs expectedBase = DichotomousPairs.ofDichotomousPairs( expectedValues,
-                                                                        expectedValues,
-                                                                        meta,
-                                                                        meta,
-                                                                        null );
+                                                                             expectedValues,
+                                                                             meta,
+                                                                             meta,
+                                                                             null );
 
         //Test without baseline
         DichotomousPairs actualNoBase =
@@ -271,8 +271,8 @@ public final class SlicerTest
         values.add( EnsemblePair.of( 5, new double[] { 1, 1, 6, 6, 50 } ) );
         Metadata meta = Metadata.of();
         Threshold threshold = Threshold.of( OneOrTwoDoubles.of( 3.0 ),
-                                                       Operator.GREATER,
-                                                       ThresholdDataType.LEFT );
+                                            Operator.GREATER,
+                                            ThresholdDataType.LEFT );
         BiFunction<EnsemblePair, Threshold, DiscreteProbabilityPair> mapper =
                 Slicer::toDiscreteProbabilityPair;
 
@@ -318,8 +318,8 @@ public final class SlicerTest
         EnsemblePair e = EnsemblePair.of( 0, new double[] { 1, 2, 3, 4, 5 } );
         EnsemblePair f = EnsemblePair.of( 5, new double[] { 1, 1, 6, 6, 50 } );
         Threshold threshold = Threshold.of( OneOrTwoDoubles.of( 3.0 ),
-                                                       Operator.GREATER,
-                                                       ThresholdDataType.LEFT );
+                                            Operator.GREATER,
+                                            ThresholdDataType.LEFT );
         BiFunction<EnsemblePair, Threshold, DiscreteProbabilityPair> mapper =
                 Slicer::toDiscreteProbabilityPair;
         assertTrue( "The transformed pair does not match the benchmark",
@@ -395,56 +395,56 @@ public final class SlicerTest
         double tG = 0.01;
 
         Threshold testA = Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( tA ),
-                                                              Operator.GREATER,
-                                                              ThresholdDataType.LEFT );
+                                                            Operator.GREATER,
+                                                            ThresholdDataType.LEFT );
         Threshold testB = Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( tB ),
-                                                              Operator.LESS,
-                                                              ThresholdDataType.LEFT );
+                                                            Operator.LESS,
+                                                            ThresholdDataType.LEFT );
         Threshold testC = Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( tC ),
-                                                              Operator.GREATER,
-                                                              ThresholdDataType.LEFT );
+                                                            Operator.GREATER,
+                                                            ThresholdDataType.LEFT );
         Threshold testD = Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( tD ),
-                                                              Operator.GREATER,
-                                                              ThresholdDataType.LEFT );
+                                                            Operator.GREATER,
+                                                            ThresholdDataType.LEFT );
         Threshold testE = Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( tE[0], tE[1] ),
-                                                              Operator.BETWEEN,
-                                                              ThresholdDataType.LEFT );
+                                                            Operator.BETWEEN,
+                                                            ThresholdDataType.LEFT );
         Threshold testF = Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( tF ),
-                                                              Operator.GREATER,
-                                                              ThresholdDataType.LEFT );
+                                                            Operator.GREATER,
+                                                            ThresholdDataType.LEFT );
         Threshold testG = Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( tG ),
-                                                              Operator.GREATER,
-                                                              ThresholdDataType.LEFT );
+                                                            Operator.GREATER,
+                                                            ThresholdDataType.LEFT );
         Threshold expectedA = Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( 1.5 ),
-                                                               OneOrTwoDoubles.of( tA ),
-                                                               Operator.GREATER,
-                                                               ThresholdDataType.LEFT );
+                                                             OneOrTwoDoubles.of( tA ),
+                                                             Operator.GREATER,
+                                                             ThresholdDataType.LEFT );
         Threshold expectedB = Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( 17897.2 ),
-                                                               OneOrTwoDoubles.of( tB ),
-                                                               Operator.LESS,
-                                                               ThresholdDataType.LEFT );
+                                                             OneOrTwoDoubles.of( tB ),
+                                                             Operator.LESS,
+                                                             ThresholdDataType.LEFT );
         Threshold expectedC = Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( 1647.1818181818185 ),
-                                                               OneOrTwoDoubles.of( tC ),
-                                                               Operator.GREATER,
-                                                               ThresholdDataType.LEFT );
+                                                             OneOrTwoDoubles.of( tC ),
+                                                             Operator.GREATER,
+                                                             ThresholdDataType.LEFT );
         Threshold expectedD = Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( 8924.920568373052 ),
-                                                               OneOrTwoDoubles.of( tD ),
-                                                               Operator.GREATER,
-                                                               ThresholdDataType.LEFT );
+                                                             OneOrTwoDoubles.of( tD ),
+                                                             Operator.GREATER,
+                                                             ThresholdDataType.LEFT );
         Threshold expectedE = Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( 6.3,
-                                                                                   433.9 ),
-                                                               OneOrTwoDoubles.of( tE[0],
-                                                                                   tE[1] ),
-                                                               Operator.BETWEEN,
-                                                               ThresholdDataType.LEFT );
+                                                                                 433.9 ),
+                                                             OneOrTwoDoubles.of( tE[0],
+                                                                                 tE[1] ),
+                                                             Operator.BETWEEN,
+                                                             ThresholdDataType.LEFT );
         Threshold expectedF = Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( 1.5 ),
-                                                               OneOrTwoDoubles.of( tF ),
-                                                               Operator.GREATER,
-                                                               ThresholdDataType.LEFT );
+                                                             OneOrTwoDoubles.of( tF ),
+                                                             Operator.GREATER,
+                                                             ThresholdDataType.LEFT );
         Threshold expectedG = Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( 1.5 ),
-                                                               OneOrTwoDoubles.of( tG ),
-                                                               Operator.GREATER,
-                                                               ThresholdDataType.LEFT );
+                                                             OneOrTwoDoubles.of( tG ),
+                                                             Operator.GREATER,
+                                                             ThresholdDataType.LEFT );
 
         //Test for equality
         assertTrue( "The inverse cumulative probability does not match the benchmark",

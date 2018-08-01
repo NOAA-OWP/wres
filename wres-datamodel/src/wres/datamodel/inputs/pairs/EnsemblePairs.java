@@ -32,6 +32,27 @@ public class EnsemblePairs extends BasicPairs<EnsemblePair>
     }
 
     /**
+     * Construct the input from an existing input and override metadata.
+     * 
+     * @param pairs the existing pairs
+     * @param overrideMainMeta the metadata for the main pairs
+     * @param overrideBaselineMeta the metadata for the baseline pairs (may be null, if the baseline pairs are null)
+     * @return the pairs
+     * @throws MetricInputException if the inputs are invalid
+     */
+
+    public static EnsemblePairs of( EnsemblePairs pairs,
+                                    Metadata overrideMainMeta,
+                                    Metadata overrideBaselineMeta )
+    {
+        return EnsemblePairs.of( pairs.getRawData(),
+                                 pairs.getRawDataForBaseline(),
+                                 overrideMainMeta,
+                                 overrideBaselineMeta,
+                                 pairs.getClimatology() );
+    }
+
+    /**
      * Construct the ensemble input without any pairs for a baseline.
      * 
      * @param pairs the ensemble pairs

@@ -25,11 +25,13 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.Slicer;
-import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.DichotomousPair;
+import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.SingleValuedPair;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
+import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs.TimeSeriesOfSingleValuedPairsBuilder;
+import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.DurationScoreOutput;
 import wres.datamodel.outputs.MapKey;
@@ -379,6 +381,8 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
         {
 
             Threshold useMe = addQuantilesToThreshold( threshold, sorted );
+            OneOrTwoThresholds oneOrTwo = OneOrTwoThresholds.of( useMe );
+
             Set<MetricConstants> ignoreTheseMetrics = filtered.doesNotHaveTheseMetricsForThisThreshold( threshold );
 
             //Define a mapper to convert the single-valued pairs to dichotomous pairs
@@ -387,6 +391,17 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                                                 useMe.test( pair.getRight() ) );
             //Transform the pairs
             DichotomousPairs transformed = Slicer.toDichotomousPairs( input, mapper );
+
+            // Add the threshold to the metadata, in order to fully qualify the pairs
+            Metadata baselineMeta = null;
+            if ( input.hasBaseline() )
+            {
+                baselineMeta = Metadata.of( transformed.getMetadataForBaseline(), oneOrTwo );
+            }
+
+            transformed = DichotomousPairs.ofDichotomousPairs( transformed,
+                                                               Metadata.of( transformed.getMetadata(), oneOrTwo ),
+                                                               baselineMeta );
 
             processDichotomousPairs( Pair.of( timeWindow, OneOrTwoThresholds.of( useMe ) ),
                                      transformed,
@@ -429,8 +444,9 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
 
             // Add quantiles to threshold
             Threshold useMe = this.addQuantilesToThreshold( threshold, sorted );
+            OneOrTwoThresholds oneOrTwo = OneOrTwoThresholds.of( useMe );
 
-            final TimeSeriesOfSingleValuedPairs pairs;
+            TimeSeriesOfSingleValuedPairs pairs;
 
             // Filter the data if required
             if ( useMe.isFinite() )
@@ -445,9 +461,24 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                 pairs = input;
             }
 
+            // Add the threshold to the metadata, in order to fully qualify the pairs
+            Metadata baselineMeta = null;
+            if ( input.hasBaseline() )
+            {
+                baselineMeta = Metadata.of( pairs.getMetadataForBaseline(), oneOrTwo );
+            }
+
+            TimeSeriesOfSingleValuedPairsBuilder builder = new TimeSeriesOfSingleValuedPairsBuilder();
+            pairs = (TimeSeriesOfSingleValuedPairs) builder.addTimeSeries( pairs )
+                                                           .setMetadata( Metadata.of( pairs.getMetadata(),
+                                                                                      oneOrTwo ) )
+                                                           .setMetadataForBaseline( baselineMeta )
+                                                           .build();
+
             // Build the future result
+            final TimeSeriesOfSingleValuedPairs finalPairs = pairs;
             Future<MetricOutputMapByMetric<PairedOutput<Instant, Duration>>> output =
-                    CompletableFuture.supplyAsync( () -> timeSeries.apply( pairs, ignoreTheseMetrics ),
+                    CompletableFuture.supplyAsync( () -> timeSeries.apply( finalPairs, ignoreTheseMetrics ),
                                                    thresholdExecutor );
 
             // Add the future result to the store
