@@ -34,8 +34,8 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.OneOrTwoDoubles;
-import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.EnsemblePair;
+import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.DoubleScoreOutput;
@@ -76,32 +76,32 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         OneOrTwoDoubles doubles = OneOrTwoDoubles.of( 1.0 );
         Operator condition = Operator.GREATER;
         assertNotNull( MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( Threshold.of( doubles,
-                                                                                                              condition,
-                                                                                                              ThresholdDataType.LEFT ) ) );
+                                                                                                   condition,
+                                                                                                   ThresholdDataType.LEFT ) ) );
         assertNotNull( MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( Threshold.of( doubles,
-                                                                                                              condition,
-                                                                                                              ThresholdDataType.RIGHT ) ) );
+                                                                                                   condition,
+                                                                                                   ThresholdDataType.RIGHT ) ) );
         assertNotNull( MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( Threshold.of( doubles,
-                                                                                                              condition,
-                                                                                                              ThresholdDataType.LEFT_AND_RIGHT ) ) );
+                                                                                                   condition,
+                                                                                                   ThresholdDataType.LEFT_AND_RIGHT ) ) );
         assertNotNull( MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( Threshold.of( doubles,
-                                                                                                              condition,
-                                                                                                              ThresholdDataType.LEFT_AND_ANY_RIGHT ) ) );
+                                                                                                   condition,
+                                                                                                   ThresholdDataType.LEFT_AND_ANY_RIGHT ) ) );
         assertNotNull( MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( Threshold.of( doubles,
-                                                                                                              condition,
-                                                                                                              ThresholdDataType.LEFT_AND_RIGHT_MEAN ) ) );
+                                                                                                   condition,
+                                                                                                   ThresholdDataType.LEFT_AND_RIGHT_MEAN ) ) );
         assertNotNull( MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( Threshold.of( doubles,
-                                                                                                              condition,
-                                                                                                              ThresholdDataType.ANY_RIGHT ) ) );
+                                                                                                   condition,
+                                                                                                   ThresholdDataType.ANY_RIGHT ) ) );
         assertNotNull( MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( Threshold.of( doubles,
-                                                                                                              condition,
-                                                                                                              ThresholdDataType.RIGHT_MEAN ) ) );
+                                                                                                   condition,
+                                                                                                   ThresholdDataType.RIGHT_MEAN ) ) );
         // Check that average works        
         EnsemblePair pair = EnsemblePair.of( 1.0, new double[] { 1.5, 2.0 } );
 
         assertTrue( MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( Threshold.of( doubles,
-                                                                                                           condition,
-                                                                                                           ThresholdDataType.RIGHT_MEAN ) )
+                                                                                                condition,
+                                                                                                ThresholdDataType.RIGHT_MEAN ) )
                                                       .test( pair ) );
     }
 
@@ -1081,11 +1081,11 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         Pair<TimeWindow, OneOrTwoThresholds> first =
                 Pair.of( expectedWindow,
                          OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 50.0 ),
-                                                                         Operator.GREATER,
-                                                                         ThresholdDataType.LEFT ),
+                                                              Operator.GREATER,
+                                                              ThresholdDataType.LEFT ),
                                                 Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.05 ),
-                                                                                    Operator.GREATER,
-                                                                                    ThresholdDataType.LEFT ) ) );
+                                                                                  Operator.GREATER,
+                                                                                  ThresholdDataType.LEFT ) ) );
 
         assertTrue( "Unexpected results for the contingency table.",
                     expectedFirst.equals( results.get( MetricConstants.CONTINGENCY_TABLE )
@@ -1097,11 +1097,11 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         Pair<TimeWindow, OneOrTwoThresholds> second =
                 Pair.of( expectedWindow,
                          OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 50.0 ),
-                                                                         Operator.GREATER,
-                                                                         ThresholdDataType.LEFT ),
+                                                              Operator.GREATER,
+                                                              ThresholdDataType.LEFT ),
                                                 Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.25 ),
-                                                                                    Operator.GREATER,
-                                                                                    ThresholdDataType.LEFT ) ) );
+                                                                                  Operator.GREATER,
+                                                                                  ThresholdDataType.LEFT ) ) );
 
         assertTrue( "Unexpected results for the contingency table.",
                     expectedSecond.equals( results.get( MetricConstants.CONTINGENCY_TABLE )
@@ -1113,11 +1113,11 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         Pair<TimeWindow, OneOrTwoThresholds> third =
                 Pair.of( expectedWindow,
                          OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 50.0 ),
-                                                                         Operator.GREATER,
-                                                                         ThresholdDataType.LEFT ),
+                                                              Operator.GREATER,
+                                                              ThresholdDataType.LEFT ),
                                                 Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.5 ),
-                                                                                    Operator.GREATER,
-                                                                                    ThresholdDataType.LEFT ) ) );
+                                                                                  Operator.GREATER,
+                                                                                  ThresholdDataType.LEFT ) ) );
 
         assertTrue( "Unexpected results for the contingency table.",
                     expectedThird.equals( results.get( MetricConstants.CONTINGENCY_TABLE )
@@ -1129,11 +1129,11 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         Pair<TimeWindow, OneOrTwoThresholds> fourth =
                 Pair.of( expectedWindow,
                          OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 50.0 ),
-                                                                         Operator.GREATER,
-                                                                         ThresholdDataType.LEFT ),
+                                                              Operator.GREATER,
+                                                              ThresholdDataType.LEFT ),
                                                 Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.75 ),
-                                                                                    Operator.GREATER,
-                                                                                    ThresholdDataType.LEFT ) ) );
+                                                                                  Operator.GREATER,
+                                                                                  ThresholdDataType.LEFT ) ) );
 
         assertTrue( "Unexpected results for the contingency table.",
                     expectedFourth.equals( results.get( MetricConstants.CONTINGENCY_TABLE )
@@ -1145,11 +1145,11 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         Pair<TimeWindow, OneOrTwoThresholds> fifth =
                 Pair.of( expectedWindow,
                          OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 50.0 ),
-                                                                         Operator.GREATER,
-                                                                         ThresholdDataType.LEFT ),
+                                                              Operator.GREATER,
+                                                              ThresholdDataType.LEFT ),
                                                 Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.9 ),
-                                                                                    Operator.GREATER,
-                                                                                    ThresholdDataType.LEFT ) ) );
+                                                                                  Operator.GREATER,
+                                                                                  ThresholdDataType.LEFT ) ) );
 
         assertTrue( "Unexpected results for the contingency table.",
                     expectedFifth.equals( results.get( MetricConstants.CONTINGENCY_TABLE )
@@ -1161,11 +1161,11 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         Pair<TimeWindow, OneOrTwoThresholds> sixth =
                 Pair.of( expectedWindow,
                          OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 50.0 ),
-                                                                         Operator.GREATER,
-                                                                         ThresholdDataType.LEFT ),
+                                                              Operator.GREATER,
+                                                              ThresholdDataType.LEFT ),
                                                 Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.95 ),
-                                                                                    Operator.GREATER,
-                                                                                    ThresholdDataType.LEFT ) ) );
+                                                                                  Operator.GREATER,
+                                                                                  ThresholdDataType.LEFT ) ) );
 
         assertTrue( "Unexpected results for the contingency table.",
                     expectedSixth.equals( results.get( MetricConstants.CONTINGENCY_TABLE )

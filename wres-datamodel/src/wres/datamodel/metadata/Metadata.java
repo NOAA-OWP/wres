@@ -13,6 +13,12 @@ public class Metadata
 {
 
     /**
+     * Error message for null input.
+     */
+    
+    private static final String NULL_INPUT_ERROR = "Specify non-null input from which to build the metadata.";
+    
+    /**
      * The measurement unit associated with the data.
      */
 
@@ -78,11 +84,33 @@ public class Metadata
      * @param input the source metadata
      * @param unit the required measurement unit
      * @return a {@link Metadata} object
+     * @throws NullPointerException if the input is null
      */
 
     public static Metadata of( final Metadata input, final MeasurementUnit unit )
     {
+        Objects.requireNonNull( input, NULL_INPUT_ERROR );
+        
         return Metadata.of( unit, input.getIdentifier(), input.getTimeWindow() );
+    }
+
+    /**
+     * Builds a {@link Metadata} from a prescribed input source and a {@link OneOrTwoThresholds}.
+     * 
+     * @param input the source metadata
+     * @param thresholds the thresholds
+     * @return a {@link Metadata} object
+     * @throws NullPointerException if the input is null
+     */
+
+    public static Metadata of( final Metadata input, final OneOrTwoThresholds thresholds )
+    {
+        Objects.requireNonNull( input, NULL_INPUT_ERROR );
+        
+        return Metadata.of( input.getMeasurementUnit(),
+                            input.getIdentifier(),
+                            input.getTimeWindow(),
+                            thresholds );
     }
 
     /**
@@ -91,10 +119,13 @@ public class Metadata
      * @param input the source metadata
      * @param timeWindow the new time window
      * @return a {@link Metadata} object
+     * @throws NullPointerException if the input is null
      */
 
     public static Metadata of( final Metadata input, final TimeWindow timeWindow )
     {
+        Objects.requireNonNull( input, NULL_INPUT_ERROR );
+        
         return Metadata.of( input.getMeasurementUnit(), input.getIdentifier(), timeWindow );
     }
 
@@ -142,7 +173,7 @@ public class Metadata
         final Metadata p = (Metadata) o;
         boolean returnMe = this.equalsWithoutTimeWindowOrThresholds( p ) && this.hasTimeWindow() == p.hasTimeWindow()
                            && this.hasThresholds() == p.hasThresholds();
-        
+
         if ( returnMe && hasTimeWindow() )
         {
             returnMe = this.getTimeWindow().equals( p.getTimeWindow() );

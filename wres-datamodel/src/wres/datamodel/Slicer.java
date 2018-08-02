@@ -5,6 +5,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
@@ -21,26 +22,29 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
 
+import wres.datamodel.inputs.pairs.DichotomousPair;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPair;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
-import wres.datamodel.inputs.pairs.EnsemblePairs;
-import wres.datamodel.inputs.pairs.DichotomousPair;
 import wres.datamodel.inputs.pairs.EnsemblePair;
+import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.SingleValuedPair;
-import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairs.TimeSeriesOfEnsemblePairsBuilder;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairs;
+import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairs.TimeSeriesOfEnsemblePairsBuilder;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs.TimeSeriesOfSingleValuedPairsBuilder;
+import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
+import wres.datamodel.outputs.ListOfMetricOutput;
+import wres.datamodel.outputs.MetricOutput;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.ScoreOutput;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdType;
-import wres.datamodel.time.Event;
 import wres.datamodel.time.BasicTimeSeries;
+import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 
 /**
@@ -938,6 +942,42 @@ public final class Slicer
 
         //Return the time-series
         return builder.build();
+    }
+
+    /**
+     * Returns a subset of metric outputs whose {@link MetricOutputMetadata} matches the supplied predicate. 
+     * 
+     * @param <T> the output type
+     * @param outputs the outputs to filter
+     * @param predicate the predicate to use as a filter
+     * @return a filtered list whose elements meet the predicate supplied
+     * @throws NullPointerException if the outputs are null
+     */
+
+    public <T extends MetricOutput<?>> ListOfMetricOutput<T> filter( ListOfMetricOutput<T> outputs,
+                                                                     Predicate<MetricOutputMetadata> predicate )
+    {
+        Objects.requireNonNull( outputs, NULL_INPUT_EXCEPTION );
+
+        // No filters
+        if ( Objects.isNull( predicate ) )
+        {
+            return outputs;
+        }
+
+        List<T> results = new ArrayList<>();
+
+        // Filter
+        for ( T next : outputs )
+        {
+            if ( predicate.test( next.getMetadata() ) )
+            {
+                results.add( next );
+            }
+        }
+
+        return ListOfMetricOutput.of( Collections.unmodifiableList( results ), outputs.getMetadata() );
+
     }
 
     /**

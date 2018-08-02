@@ -1,6 +1,7 @@
 package wres.engine.statistics.metric.processing;
 
 import static org.junit.Assert.assertNotNull;
+
 import org.junit.Test;
 
 import wres.datamodel.OneOrTwoDoubles;
@@ -26,23 +27,23 @@ public final class MetricProcessorByTimeTest
         OneOrTwoDoubles doubles = OneOrTwoDoubles.of( 1.0 );
         Operator condition = Operator.GREATER;
         assertNotNull( MetricProcessorByTime.getFilterForSingleValuedPairs( Threshold.of( doubles,
-                                                                                                     condition,
-                                                                                                     ThresholdDataType.LEFT ) ) );
+                                                                                          condition,
+                                                                                          ThresholdDataType.LEFT ) ) );
         assertNotNull( MetricProcessorByTime.getFilterForSingleValuedPairs( Threshold.of( doubles,
-                                                                                                     condition,
-                                                                                                     ThresholdDataType.RIGHT ) ) );
+                                                                                          condition,
+                                                                                          ThresholdDataType.RIGHT ) ) );
         assertNotNull( MetricProcessorByTime.getFilterForSingleValuedPairs( Threshold.of( doubles,
-                                                                                                     condition,
-                                                                                                     ThresholdDataType.LEFT_AND_RIGHT ) ) );
+                                                                                          condition,
+                                                                                          ThresholdDataType.LEFT_AND_RIGHT ) ) );
         assertNotNull( MetricProcessorByTime.getFilterForSingleValuedPairs( Threshold.of( doubles,
-                                                                                                     condition,
-                                                                                                     ThresholdDataType.LEFT_AND_ANY_RIGHT ) ) );
+                                                                                          condition,
+                                                                                          ThresholdDataType.LEFT_AND_ANY_RIGHT ) ) );
         assertNotNull( MetricProcessorByTime.getFilterForSingleValuedPairs( Threshold.of( doubles,
-                                                                                                     condition,
-                                                                                                     ThresholdDataType.LEFT_AND_RIGHT_MEAN ) ) );
+                                                                                          condition,
+                                                                                          ThresholdDataType.LEFT_AND_RIGHT_MEAN ) ) );
         assertNotNull( MetricProcessorByTime.getFilterForSingleValuedPairs( Threshold.of( doubles,
-                                                                                                     condition,
-                                                                                                     ThresholdDataType.RIGHT_MEAN ) ) );
+                                                                                          condition,
+                                                                                          ThresholdDataType.RIGHT_MEAN ) ) );
     }
 
     /**
@@ -55,23 +56,23 @@ public final class MetricProcessorByTimeTest
         OneOrTwoDoubles doubles = OneOrTwoDoubles.of( 1.0 );
         Operator condition = Operator.GREATER;
         assertNotNull( MetricProcessorByTime.getFilterForTimeSeriesOfSingleValuedPairs( Threshold.of( doubles,
-                                                                                                                 condition,
-                                                                                                                 ThresholdDataType.LEFT ) ) );
+                                                                                                      condition,
+                                                                                                      ThresholdDataType.LEFT ) ) );
         assertNotNull( MetricProcessorByTime.getFilterForTimeSeriesOfSingleValuedPairs( Threshold.of( doubles,
-                                                                                                                 condition,
-                                                                                                                 ThresholdDataType.RIGHT ) ) );
+                                                                                                      condition,
+                                                                                                      ThresholdDataType.RIGHT ) ) );
         assertNotNull( MetricProcessorByTime.getFilterForTimeSeriesOfSingleValuedPairs( Threshold.of( doubles,
-                                                                                                                 condition,
-                                                                                                                 ThresholdDataType.LEFT_AND_RIGHT ) ) );
+                                                                                                      condition,
+                                                                                                      ThresholdDataType.LEFT_AND_RIGHT ) ) );
         assertNotNull( MetricProcessorByTime.getFilterForTimeSeriesOfSingleValuedPairs( Threshold.of( doubles,
-                                                                                                                 condition,
-                                                                                                                 ThresholdDataType.LEFT_AND_ANY_RIGHT ) ) );
+                                                                                                      condition,
+                                                                                                      ThresholdDataType.LEFT_AND_ANY_RIGHT ) ) );
         assertNotNull( MetricProcessorByTime.getFilterForTimeSeriesOfSingleValuedPairs( Threshold.of( doubles,
-                                                                                                                 condition,
-                                                                                                                 ThresholdDataType.LEFT_AND_RIGHT_MEAN ) ) );
+                                                                                                      condition,
+                                                                                                      ThresholdDataType.LEFT_AND_RIGHT_MEAN ) ) );
         assertNotNull( MetricProcessorByTime.getFilterForTimeSeriesOfSingleValuedPairs( Threshold.of( doubles,
-                                                                                                                 condition,
-                                                                                                                 ThresholdDataType.RIGHT_MEAN ) ) );
+                                                                                                      condition,
+                                                                                                      ThresholdDataType.RIGHT_MEAN ) ) );
     }
 
 }

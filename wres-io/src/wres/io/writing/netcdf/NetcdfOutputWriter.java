@@ -245,7 +245,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
                     }
                     catch ( InterruptedException e )
                     {
-                        LOGGER.error( "Output writing has been interrupted." );
+                        LOGGER.error( "Output writing has been interrupted.", e );
                         Thread.currentThread().interrupt();
                     }
                     catch ( ExecutionException e )

@@ -28,13 +28,13 @@ public class DichotomousPairs extends MulticategoryPairs
      * @return the pairs
      * @throws MetricInputException if the inputs are invalid
      */
-    
+
     public static DichotomousPairs ofDichotomousPairs( List<DichotomousPair> pairs,
                                                        Metadata meta )
     {
         return DichotomousPairs.ofDichotomousPairs( pairs, meta, null );
     }
-    
+
     /**
      * Construct the dichotomous input from atomic {@link DichotomousPair} without any pairs for a baseline and with
      * a climatological dataset.
@@ -45,14 +45,37 @@ public class DichotomousPairs extends MulticategoryPairs
      * @return the pairs
      * @throws MetricInputException if the inputs are invalid
      */
-    
+
     public static DichotomousPairs ofDichotomousPairs( List<DichotomousPair> pairs,
                                                        Metadata meta,
                                                        VectorOfDoubles climatology )
     {
         return DichotomousPairs.ofDichotomousPairs( pairs, null, meta, null, climatology );
     }
-    
+
+    /**
+     * Construct the input from an existing input and override metadata.
+     * 
+     * @param pairs the existing pairs
+     * @param overrideMainMeta the metadata for the main pairs
+     * @param overrideBaselineMeta the metadata for the baseline pairs (may be null, if the baseline pairs are null)
+     * @return the pairs
+     * @throws MetricInputException if the inputs are invalid
+     */
+
+    public static DichotomousPairs ofDichotomousPairs( DichotomousPairs pairs,
+                                                       Metadata overrideMainMeta,
+                                                       Metadata overrideBaselineMeta )
+    {
+        DichotomousPairs.DichotomousPairsBuilder b = new DichotomousPairs.DichotomousPairsBuilder();
+        return (DichotomousPairs) b.addData( pairs.getRawData() )
+                                   .addDataForBaseline( pairs.getRawDataForBaseline() )
+                                   .setMetadata( overrideMainMeta )
+                                   .setMetadataForBaseline( overrideBaselineMeta )
+                                   .setClimatology( pairs.getClimatology() )
+                                   .build();
+    }
+
     /**
      * Construct the dichotomous input from atomic {@link DichotomousPair} with pairs for a baseline.
      * 
@@ -64,7 +87,7 @@ public class DichotomousPairs extends MulticategoryPairs
      * @return the pairs
      * @throws MetricInputException if the inputs are invalid
      */
-    
+
     public static DichotomousPairs ofDichotomousPairs( List<DichotomousPair> pairs,
                                                        List<DichotomousPair> basePairs,
                                                        Metadata mainMeta,

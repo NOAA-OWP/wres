@@ -379,6 +379,7 @@ public abstract class BasicSource
                 }
                 catch ( InterruptedException ie )
                 {
+                    this.getLogger().warn( "Interrupted while getting hash.", ie );
                     Thread.currentThread().interrupt();
                 }
                 catch ( ExecutionException ee )
