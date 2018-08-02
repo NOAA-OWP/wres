@@ -157,7 +157,7 @@ class WresProcess implements Callable<Integer>
         }
         catch ( InterruptedException ie )
         {
-            LOGGER.warn( "Interrupted while waiting for {}.", process );
+            LOGGER.warn( "Interrupted while waiting for {}.", process, ie );
             byte[] response = WresProcess.prepareMetaFailureResponse( ie );
             this.sendResponse( response );
             WresProcess.shutdownExecutor( executorService );

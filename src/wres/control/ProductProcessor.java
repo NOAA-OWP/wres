@@ -255,10 +255,11 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
         }
         catch ( InterruptedException e)
         {
-            // Notify
+            String message = "Interrupted while processing intermediate results:";
+            LOGGER.warn( message, e );
             Thread.currentThread().interrupt();
             
-            throw new WresProcessingException( "Interrupted while processing intermediate results:", e );         
+            throw new WresProcessingException( message, e );
         }
         catch ( IOException e )
         {
