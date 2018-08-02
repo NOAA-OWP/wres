@@ -945,17 +945,22 @@ public final class Slicer
     }
 
     /**
-     * Returns a subset of metric outputs whose {@link MetricOutputMetadata} matches the supplied predicate. 
+     * <p>Returns a subset of metric outputs whose {@link MetricOutputMetadata} matches the supplied predicate. For 
+     * example, to filter by a particular {@link TimeWindow} and {@link OneOrTwoThresholds} associated with the 
+     * output metadata, consider the following:</p>
+     * 
+     * <p><code>Slicer.filter( list, a {@literal ->} a.getTimeWindow().equals( someWindow ) {@literal &&} 
+     *              a.getThresholds().equals( someThreshold ) );</code></p>
      * 
      * @param <T> the output type
      * @param outputs the outputs to filter
      * @param predicate the predicate to use as a filter
      * @return a filtered list whose elements meet the predicate supplied
-     * @throws NullPointerException if the outputs are null
+     * @throws NullPointerException if the input list is null
      */
 
-    public <T extends MetricOutput<?>> ListOfMetricOutput<T> filter( ListOfMetricOutput<T> outputs,
-                                                                     Predicate<MetricOutputMetadata> predicate )
+    public static <T extends MetricOutput<?>> ListOfMetricOutput<T> filter( ListOfMetricOutput<T> outputs,
+                                                                            Predicate<MetricOutputMetadata> predicate )
     {
         Objects.requireNonNull( outputs, NULL_INPUT_EXCEPTION );
 

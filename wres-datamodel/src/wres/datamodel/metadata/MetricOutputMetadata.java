@@ -416,7 +416,7 @@ public class MetricOutputMetadata extends Metadata
     public String toString()
     {
         String start = super.toString();
-        start = start.substring( 0, start.length() - 1 ); // Remove bookend char, ']'
+        start = start.substring( 0, start.length() - 1 ); // Remove bookend char, ')'
         final StringBuilder b = new StringBuilder( start );
         b.append( "," )
          .append( inputDim )
@@ -426,7 +426,7 @@ public class MetricOutputMetadata extends Metadata
          .append( metricID )
          .append( "," )
          .append( componentID )
-         .append( "]" );
+         .append( ")" );
         return b.toString();
     }
 

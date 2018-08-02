@@ -135,7 +135,7 @@ public final class MetricOutputMapByTimeAndThresholdTest
     }
 
     /**
-     * Tests {@link MetricOutputMapByTimeAndThreshold#setOfTimeWindowKeyByLeadTime()}.
+     * Tests {@link MetricOutputMapByTimeAndThreshold#setOfTimeWindowKeyByUniqueLeadTime()}.
      */
 
     @Test
@@ -188,7 +188,7 @@ public final class MetricOutputMapByTimeAndThresholdTest
                                            Duration.ofHours( 1 ),
                                            Duration.ofHours( 2 ) ) );
         assertTrue( "Unexpected windows in filtered dataset.",
-                    test.setOfTimeWindowKeyByLeadTime().equals( benchmarkTimes ) );
+                    test.setOfTimeWindowKeyByUniqueLeadTime().equals( benchmarkTimes ) );
     }
 
     /**

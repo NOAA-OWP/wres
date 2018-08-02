@@ -211,7 +211,7 @@ public class Metadata
         }
         else
         {
-            b.append( "[" );
+            b.append( "(" );
         }
         if ( hasTimeWindow() )
         {
@@ -221,7 +221,7 @@ public class Metadata
         {
             b.append( this.thresholds ).append( "," );
         }
-        b.append( this.unit ).append( "]" );
+        b.append( this.unit ).append( ")" );
         return b.toString();
     }
 

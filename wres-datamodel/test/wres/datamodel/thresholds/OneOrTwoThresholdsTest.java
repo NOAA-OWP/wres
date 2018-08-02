@@ -7,7 +7,6 @@ import static org.junit.Assert.fail;
 import org.junit.Test;
 
 import wres.datamodel.OneOrTwoDoubles;
-import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 
@@ -89,11 +88,11 @@ public final class OneOrTwoThresholdsTest
         // Consistent
         for ( int i = 0; i < 100; i++ )
         {
-            assertTrue( "The event does not meet the equals contract for consistency.",
+            assertTrue( "The threshold does not meet the equals contract for consistency.",
                         thresholds.equals( otherThresholds ) );
         }
         // Nullity
-        assertFalse( "The event does not meet the equals contract for nullity.", thresholds.equals( null ) );
+        assertFalse( "The threshold does not meet the equals contract for nullity.", thresholds.equals( null ) );
 
         // Check unequal cases
         OneOrTwoThresholds unequalOnFirst =
@@ -112,7 +111,7 @@ public final class OneOrTwoThresholdsTest
                                        Threshold.of( OneOrTwoDoubles.of( 0.3 ),
                                                                 Operator.GREATER,
                                                                 ThresholdDataType.LEFT ) );
-        assertFalse( "Expected the event to differ on value.", thresholds.equals( unequalOnNullity ) );
+        assertFalse( "Expected the threshold to differ on value.", thresholds.equals( unequalOnNullity ) );
         OneOrTwoThresholds unequalOnSecond =
                 OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 0.1 ),
                                                                 Operator.GREATER,
@@ -120,7 +119,7 @@ public final class OneOrTwoThresholdsTest
                                        Threshold.of( OneOrTwoDoubles.of( 0.4 ),
                                                                 Operator.GREATER,
                                                                 ThresholdDataType.LEFT ) );
-        assertFalse( "Expected the event to differ on value.", unequalOnNullity.equals( unequalOnSecond ) );
+        assertFalse( "Expected the threshold to differ on value.", unequalOnNullity.equals( unequalOnSecond ) );
     }
 
     /**

@@ -3,6 +3,7 @@ package wres.datamodel.outputs;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 
 import wres.datamodel.metadata.MetricOutputMetadata;
 
@@ -41,7 +42,7 @@ public class ListOfMetricOutput<T extends MetricOutput<?>> implements Iterable<T
     {
         return new ListOfMetricOutput<>( outputs, metadata );
     }
-    
+
     /**
      * Returns an immutable iterator over the outputs. An exception will be thrown on attempting to remove elements
      * from the iterator.
@@ -54,7 +55,7 @@ public class ListOfMetricOutput<T extends MetricOutput<?>> implements Iterable<T
     {
         return outputs.iterator();
     }
-    
+
     /**
      * Returns an immutable copy of the underlying data.
      * 
@@ -65,18 +66,61 @@ public class ListOfMetricOutput<T extends MetricOutput<?>> implements Iterable<T
     {
         return Collections.unmodifiableList( outputs );
     }
-    
+
     /**
      * Returns the metadata that summarizes the collection of outputs.
      * 
      * @return the metadata
      */
-    
+
     public MetricOutputMetadata getMetadata()
     {
         return metadata;
     }
-    
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( ! ( o instanceof ListOfMetricOutput ) )
+        {
+            return false;
+        }
+
+        ListOfMetricOutput<?> in = (ListOfMetricOutput<?>) o;
+
+        return this.getData().equals( in.getData() ) && this.getMetadata().equals( in.getMetadata() );
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash( this.getData(), this.getMetadata() );
+    }
+
+    @Override
+    public String toString()
+    {
+        StringBuilder b = new StringBuilder();
+        
+        // Add the metdata
+        b.append( this.getMetadata() )
+         .append( System.lineSeparator() );
+        
+        // Add the data
+        this.forEach( element -> b.append( "{" )
+                                  .append( element.getMetadata() )
+                                  .append( ": " )
+                                  .append( element.getData() )
+                                  .append( "}" )
+                                  .append( System.lineSeparator() ) );
+        
+        // Remove trailing newline
+        int lines = b.length();
+        b.delete( lines - System.lineSeparator().length(), lines );
+        
+        return b.toString();
+    }
+
     /**
      * Hidden constructor.
      * 
