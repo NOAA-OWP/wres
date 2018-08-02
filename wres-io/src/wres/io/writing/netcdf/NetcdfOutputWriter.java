@@ -171,7 +171,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
     {
         for ( Map.Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>> m : output.entrySet() )
         {
-            for ( TimeWindow window : m.getValue().setOfTimeWindowKeyByLeadTime() )
+            for ( TimeWindow window : m.getValue().setOfTimeWindowKeyByUniqueLeadTime() )
             {
                 NetcdfOutputWriter.write( window, output );
             }

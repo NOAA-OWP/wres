@@ -5,12 +5,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.function.Function;
@@ -116,6 +116,7 @@ public class MetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>>
      * Returns true if the map contains one or more quantile thresholds, false otherwise.
      * 
      * @return true if the store contains one or more quantile thresholds, false otherwise
+     * @deprecated
      */
 
     public boolean hasQuantileThresholds()
@@ -130,7 +131,7 @@ public class MetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>>
      * @return a view of the time window keys
      */
 
-    public Set<TimeWindow> setOfTimeWindowKeyByLeadTime()
+    public Set<TimeWindow> setOfTimeWindowKeyByUniqueLeadTime()
     {
         //Group by matching durations
         Function<Pair<TimeWindow, OneOrTwoThresholds>, Pair<Duration, Duration>> groupBy =

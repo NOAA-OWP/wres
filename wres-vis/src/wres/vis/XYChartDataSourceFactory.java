@@ -296,7 +296,7 @@ public abstract class XYChartDataSourceFactory
                 TimeSeriesCollection returnMe = new TimeSeriesCollection();
 
                 // Filter by the lead time window, as contained within the TimeWindow portion of the key.
-                for ( TimeWindow nextTime : input.setOfTimeWindowKeyByLeadTime() )
+                for ( TimeWindow nextTime : input.setOfTimeWindowKeyByUniqueLeadTime() )
                 {
                     // Slice the data by the lead time in the window.  The resulting output will span
                     // multiple issued time windows and thresholds.
@@ -341,7 +341,7 @@ public abstract class XYChartDataSourceFactory
 
         buildInitialParameters( source,
                                 orderIndex,
-                                input.setOfTimeWindowKeyByLeadTime().size() * input.setOfThresholdKey().size() ); //one series per lead and threshold
+                                input.setOfTimeWindowKeyByUniqueLeadTime().size() * input.setOfThresholdKey().size() ); //one series per lead and threshold
         source.getDefaultFullySpecifiedDataSourceDrawingParameters()
               .setDefaultDomainAxisTitle( "TIME AT CENTER OF WINDOW [UTC]" );
         source.getDefaultFullySpecifiedDataSourceDrawingParameters()
