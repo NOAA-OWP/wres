@@ -48,6 +48,11 @@
         <destination type="numeric" decimalFormat="0.000000">
             <path>output/</path>
         </destination>
+	<destination type="netcdf">
+            <path>output</path>
+            <netcdf vectorVariable="feature_id">
+            </netcdf>
+        </destination>
     </outputs>
 </project>
 

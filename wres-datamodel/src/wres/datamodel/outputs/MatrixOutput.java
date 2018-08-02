@@ -54,7 +54,7 @@ public class MatrixOutput implements MetricOutput<MatrixOfDoubles>, Iterable<Dou
     {
         return MatrixOutput.of( MatrixOfDoubles.of( output ), null, meta );
     }
-    
+
     /**
      * Construct the output.
      * 
@@ -71,7 +71,7 @@ public class MatrixOutput implements MetricOutput<MatrixOfDoubles>, Iterable<Dou
     {
         return MatrixOutput.of( MatrixOfDoubles.of( output ), names, meta );
     }
-    
+
     /**
      * Construct the output.
      * 
@@ -212,11 +212,13 @@ public class MatrixOutput implements MetricOutput<MatrixOfDoubles>, Iterable<Dou
         {
             return false;
         }
+
         final MatrixOutput m = (MatrixOutput) o;
         boolean start = meta.equals( m.getMetadata() );
         start = start && m.getData().rows() == output.rows() && m.getData().columns() == output.columns();
         start = start && Arrays.deepEquals( output.getDoubles(), m.getData().getDoubles() );
         start = start && Objects.equals( names, m.names );
+        
         return start;
     }
 

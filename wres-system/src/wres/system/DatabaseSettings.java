@@ -35,7 +35,6 @@ import liquibase.exception.LiquibaseException;
 import liquibase.resource.ClassLoaderResourceAccessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import wres.util.Strings;
 
 /**
@@ -101,8 +100,9 @@ final class DatabaseSettings
 				}
 			}
 			this.applySystemPropertyOverrides();
+            // If testConnection() prior to buildInstance() is incorrect, revert
+            testConnection();
 			this.buildInstance();
-			testConnection();
 			cleanPriorRuns();
 		}
 		catch ( XMLStreamException | SQLException | IOException e )
@@ -161,7 +161,7 @@ final class DatabaseSettings
 		this.applySystemPropertyOverrides();
 	}
 
-	private boolean urlIsValid() throws IOException
+	private boolean urlIsValid()
 	{
 		if (this.url.equalsIgnoreCase( "localhost" ))
 		{
@@ -175,16 +175,14 @@ final class DatabaseSettings
         }
         catch (IOException ioe)
         {
-            LOGGER.error( "The intended URL ({}) is not accessible due to {}", this.url, ioe.toString() );
+            LOGGER.warn( "The intended URL ({}) is not accessible due to",
+                         this.url, ioe );
             return false;
         }
 	}
 
 	private void testConnection() throws SQLException, IOException
 	{
-        Connection connection = null;
-        Statement test = null;
-
         boolean validURL = this.urlIsValid();
 
         if (!validURL)
@@ -192,10 +190,23 @@ final class DatabaseSettings
 			throw new IOException( "The given database URL ('" + this.url + "') is not accessible." );
 		}
 
-        try {
+        try
+        {
             Class.forName(DRIVER_MAPPING.get(getDatabaseType()));
-            connection = DriverManager.getConnection(this.getConnectionString(), this.username, this.password);
-            test = connection.createStatement();
+        }
+        catch (ClassNotFoundException classError)
+        {
+            String message = "The specified database type of '" +
+                             this.getDatabaseType() +
+                             "' is not valid and a connection could not be created. Shutting down...";
+            throw new SQLException( message, classError);
+        }
+
+        try ( Connection connection = DriverManager.getConnection( this.getConnectionString(),
+                                                                   this.username,
+                                                                   this.password );
+              Statement test = connection.createStatement() )
+        {
             test.execute("SELECT 1;");
         }
         catch (SQLException sqlError)
@@ -209,25 +220,6 @@ final class DatabaseSettings
             message += "4) An active connection to a network that may reach the requested database server" + System.lineSeparator() + System.lineSeparator();
             message += "The application will now exit.";
             throw new SQLException(message, sqlError);
-        }
-        catch (ClassNotFoundException classError)
-        {
-            String message = "The specified database type of '" +
-                    this.getDatabaseType() +
-                    "' is not valid and a connection could not be created. Shutting down...";
-            throw new SQLException( message, classError);
-        }
-        finally
-		{
-			if (test != null)
-			{
-				test.close();
-			}
-
-            if (connection != null)
-            {
-                connection.close();
-            }
         }
     }
 
@@ -263,7 +255,7 @@ final class DatabaseSettings
 		} 
 		catch (PropertyVetoException e)
         {
-			LOGGER.error(Strings.getStackTrace(e));
+			LOGGER.warn( "A property veto issue occurred", e );
 		}
 
         return datasource;

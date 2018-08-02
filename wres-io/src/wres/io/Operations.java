@@ -160,13 +160,15 @@ public final class Operations {
         }
         catch ( InterruptedException e )
         {
-            LOGGER.error("The process for loading unit conversions was interrupted.");
+            LOGGER.warn( "The process for pre-loading unit conversions was interrupted.",
+                         e );
             Thread.currentThread().interrupt();
         }
         catch ( ExecutionException e )
         {
             // If loading failed, it will attempt to try again later.
-            LOGGER.error("The process for loading unit conversions failed.", e);
+            LOGGER.warn( "The process for pre-loading unit conversions failed.",
+                         e );
         }
 
         // If we're performing gridded evaluation, we can't check if our
@@ -213,9 +215,9 @@ public final class Operations {
         }
         catch ( InterruptedException e )
         {
-            LOGGER.error("The process for determining if '"
+            LOGGER.warn( "The process for determining if '"
                          + projectDetails.getLeft().getVariable().getValue()
-                         + "' is a valid variable was interrupted.");
+                         + "' is a valid variable was interrupted.", e );
             Thread.currentThread().interrupt();
         }
         catch ( ExecutionException e )
@@ -280,9 +282,9 @@ public final class Operations {
         }
         catch ( InterruptedException e )
         {
-            LOGGER.error("The process for determining if '"
+            LOGGER.warn( "The process for determining if '"
                          + projectDetails.getRightVariableName()
-                         + "' is a valid variable was interrupted.");
+                         + "' is a valid variable was interrupted.", e );
             Thread.currentThread().interrupt();
         }
         catch ( ExecutionException e )
@@ -355,9 +357,9 @@ public final class Operations {
         }
         catch ( InterruptedException e )
         {
-            LOGGER.error("The process for determining if '"
+            LOGGER.warn( "The process for determining if '"
                          + projectDetails.getBaseline().getVariable().getValue()
-                         + "' is a valid variable was interrupted.");
+                         + "' is a valid variable was interrupted.", e );
             Thread.currentThread().interrupt();
         }
         catch ( ExecutionException e )
@@ -441,6 +443,7 @@ public final class Operations {
         }
         catch ( InterruptedException ie )
         {
+            LOGGER.warn( "Interrupted during ingest.", ie );
             Thread.currentThread().interrupt();
         }
         catch ( ExecutionException e )
@@ -480,7 +483,7 @@ public final class Operations {
         }
         catch ( InterruptedException ie )
         {
-            LOGGER.warn( "Interrupted while finalizing ingest." );
+            LOGGER.warn( "Interrupted while finalizing ingest.", ie );
             Thread.currentThread().interrupt();
         }
         catch ( SQLException | ExecutionException e )
@@ -518,6 +521,7 @@ public final class Operations {
         }
         catch ( InterruptedException ie )
         {
+            LOGGER.warn( "Interrupted while adding indices during shutdown.", ie );
             Thread.currentThread().interrupt();
         }
         catch ( SQLException | ExecutionException e )
@@ -546,6 +550,7 @@ public final class Operations {
         }
         catch ( InterruptedException ie )
         {
+            LOGGER.warn( "Interrupted while adding indices during shutdown.", ie );
             Thread.currentThread().interrupt();
         }
         catch ( SQLException | ExecutionException e )

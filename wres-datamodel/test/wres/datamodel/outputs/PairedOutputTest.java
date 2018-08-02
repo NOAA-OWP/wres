@@ -11,14 +11,11 @@ import java.util.List;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.MetricOutputException;
-import wres.datamodel.outputs.PairedOutput;
 
 /**
  * Tests the {@link PairedOutput}.

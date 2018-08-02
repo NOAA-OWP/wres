@@ -198,6 +198,8 @@ public class ZippedSource extends BasicSource {
         }
         catch ( InterruptedException ie )
         {
+            LOGGER.warn( "Interrupted while ingesting a zipped source from {}.",
+                         filename, ie );
             Thread.currentThread().interrupt();
         }
         catch ( ExecutionException | IOException e )
