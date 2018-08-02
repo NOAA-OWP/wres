@@ -32,6 +32,27 @@ public class SingleValuedPairs extends BasicPairs<SingleValuedPair>
     }
 
     /**
+     * Construct the input from an existing input and override metadata.
+     * 
+     * @param pairs the existing pairs
+     * @param overrideMainMeta the metadata for the main pairs
+     * @param overrideBaselineMeta the metadata for the baseline pairs (may be null, if the baseline pairs are null)
+     * @return the pairs
+     * @throws MetricInputException if the inputs are invalid
+     */
+
+    public static SingleValuedPairs of( SingleValuedPairs pairs,
+                                        Metadata overrideMainMeta,
+                                        Metadata overrideBaselineMeta )
+    {
+        return SingleValuedPairs.of( pairs.getRawData(),
+                                     pairs.getRawDataForBaseline(),
+                                     overrideMainMeta,
+                                     overrideBaselineMeta,
+                                     pairs.getClimatology() );
+    }
+
+    /**
      * Construct the single-valued input without any pairs for a baseline.
      * 
      * @param pairs the single-valued pairs

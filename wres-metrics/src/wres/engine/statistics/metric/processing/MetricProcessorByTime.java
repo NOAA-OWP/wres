@@ -13,14 +13,15 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import wres.config.MetricConfigException;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.Slicer;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
+import wres.datamodel.Slicer;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.SingleValuedPair;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
+import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.MatrixOutput;
 import wres.datamodel.outputs.MetricOutput;
@@ -281,21 +282,31 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
         {
             Set<MetricConstants> ignoreTheseMetrics = filtered.doesNotHaveTheseMetricsForThisThreshold( threshold );
 
-            // Add quantiles to threshold
+            // Add the quantiles to the threshold
             Threshold useMe = this.addQuantilesToThreshold( threshold, sorted );
+            OneOrTwoThresholds oneOrTwo = OneOrTwoThresholds.of( useMe );
 
-            SingleValuedPairs pairs = input;
+            // Add the threshold to the metadata, in order to fully qualify the pairs
+            Metadata baselineMeta = null;
+            if( input.hasBaseline() )
+            {
+                baselineMeta = Metadata.of( input.getMetadataForBaseline(), oneOrTwo );
+            }
 
+            SingleValuedPairs pairs = SingleValuedPairs.of( input,
+                                                            Metadata.of( input.getMetadata(), oneOrTwo ),
+                                                            baselineMeta );
+            
             // Filter the data if required
             if ( useMe.isFinite() )
             {
                 Predicate<SingleValuedPair> filter = MetricProcessorByTime.getFilterForSingleValuedPairs( useMe );
 
-                pairs = Slicer.filter( input, filter, null );
+                pairs = Slicer.filter( pairs, filter, null );
 
             }
 
-            processSingleValuedPairs( Pair.of( timeWindow, OneOrTwoThresholds.of( useMe ) ),
+            processSingleValuedPairs( Pair.of( timeWindow, oneOrTwo ),
                                       pairs,
                                       futures,
                                       outGroup,

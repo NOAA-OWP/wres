@@ -648,17 +648,15 @@ public class MetricOutputForProjectByTimeAndThreshold
             }
             catch ( InterruptedException e )
             {
-                // Propagate status
-                Thread.currentThread().interrupt();
-
-                // Decorate for context
-                throw new InterruptedException( "Interrupted while retrieving the results for group " + outGroup
-                                                + " "
-                                                + "at lead time "
-                                                + next.getKey().getLeft()
-                                                + " and threshold "
-                                                + next.getKey().getRight()
-                                                + "." );
+                // Decorate for context, use .initCause method to chain.
+                throw (InterruptedException)
+                        new InterruptedException( "Interrupted while retrieving the results for group "
+                                                  + outGroup + " at lead time "
+                                                  + next.getKey().getLeft()
+                                                  + " and threshold "
+                                                  + next.getKey().getRight()
+                                                  + "." )
+                                .initCause( e );
             }
             catch ( ExecutionException e )
             {
