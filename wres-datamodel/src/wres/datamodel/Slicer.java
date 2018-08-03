@@ -947,7 +947,7 @@ public final class Slicer
     /**
      * <p>Returns a subset of metric outputs whose {@link MetricOutputMetadata} matches the supplied predicate. For 
      * example, to filter by a particular {@link TimeWindow} and {@link OneOrTwoThresholds} associated with the 
-     * output metadata, consider the following:</p>
+     * output metadata:</p>
      * 
      * <p><code>Slicer.filter( list, a {@literal ->} a.getTimeWindow().equals( someWindow ) {@literal &&} 
      *              a.getThresholds().equals( someThreshold ) );</code></p>
@@ -982,7 +982,36 @@ public final class Slicer
         }
 
         return ListOfMetricOutput.of( Collections.unmodifiableList( results ), outputs.getMetadata() );
+    }
 
+    /**
+     * <p>Discovers the unique instances of a given type associated with a {@link ListOfMetricOutput}. The mapper 
+     * function identifies the type to discover. For example, to discover the unique thresholds contained in the list of
+     * outputs:</p>
+     * 
+     * <p><code>Slicer.discover( outputs, next {@literal ->} next.getMetadata().getThresholds() );</code></p>
+     * 
+     * <p>To discover the unique metrics contained in the list of outputs:</p>
+     * 
+     * <p><code>Slicer.discover( outputs, next {@literal ->} next.getMetadata().getMetricID() );</code></p>
+     * 
+     * @param <S> the metric output type
+     * @param <T> the type of information required about the output
+     * @param outputs the list of outputs
+     * @param mapper the mapper function that discovers the type of interest
+     * @return the unique instances of a given type associated with the output
+     * @throws NullPointerException if the input list is null
+     */
+
+    public static <S extends MetricOutput<?>, T extends Object> Set<T> discover( ListOfMetricOutput<S> outputs,
+                                                                                 Function<S, T> mapper )
+    {
+        Objects.requireNonNull( outputs, NULL_INPUT_EXCEPTION );
+
+        return Collections.unmodifiableSet( outputs.getData()
+                                                   .stream()
+                                                   .map( mapper )
+                                                   .collect( Collectors.toSet() ) );
     }
 
     /**
