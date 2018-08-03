@@ -8,10 +8,10 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.function.BiFunction;
 import java.util.function.DoubleUnaryOperator;
 import java.util.function.Function;
@@ -1133,7 +1133,7 @@ public final class SlicerTest
 
         // Discover the time windows available
         Set<TimeWindow> actualOutputTwo = Slicer.discover( listOfOutputs, next -> next.getMetadata().getTimeWindow() );
-        Set<TimeWindow> expectedOutputTwo = new HashSet<>( Arrays.asList( windowOne, windowTwo, windowThree ) );
+        Set<TimeWindow> expectedOutputTwo = new TreeSet<>( Arrays.asList( windowOne, windowTwo, windowThree ) );
 
         assertEquals( actualOutputTwo, expectedOutputTwo );
 
@@ -1141,10 +1141,9 @@ public final class SlicerTest
         Set<OneOrTwoThresholds> actualOutputThree =
                 Slicer.discover( listOfOutputs, next -> next.getMetadata().getThresholds() );
         Set<OneOrTwoThresholds> expectedOutputThree =
-                new HashSet<>( Arrays.asList( thresholdOne, thresholdTwo, thresholdThree ) );
+                new TreeSet<>( Arrays.asList( thresholdOne, thresholdTwo, thresholdThree ) );
 
         assertEquals( actualOutputThree, expectedOutputThree );
     }
-
 
 }

@@ -12,6 +12,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.function.BiFunction;
 import java.util.function.DoublePredicate;
 import java.util.function.DoubleUnaryOperator;
@@ -1003,15 +1005,15 @@ public final class Slicer
      * @throws NullPointerException if the input list is null
      */
 
-    public static <S extends MetricOutput<?>, T extends Object> Set<T> discover( ListOfMetricOutput<S> outputs,
-                                                                                 Function<S, T> mapper )
+    public static <S extends MetricOutput<?>, T extends Object> SortedSet<T> discover( ListOfMetricOutput<S> outputs,
+                                                                                       Function<S, T> mapper )
     {
         Objects.requireNonNull( outputs, NULL_INPUT_EXCEPTION );
 
-        return Collections.unmodifiableSet( outputs.getData()
-                                                   .stream()
-                                                   .map( mapper )
-                                                   .collect( Collectors.toSet() ) );
+        return Collections.unmodifiableSortedSet( outputs.getData()
+                                                         .stream()
+                                                         .map( mapper )
+                                                         .collect( Collectors.toCollection( TreeSet::new ) ) );
     }
 
     /**
@@ -1101,15 +1103,14 @@ public final class Slicer
     /**
      * Produces {@link DichotomousPairs} from a {@link SingleValuedPairs} by applying a mapper function to the input.
      * 
-     * @param <T> the type of single-valued pair
      * @param input the {@link SingleValuedPairs} pairs
      * @param mapper the function that maps from {@link SingleValuedPairs} to {@link DichotomousPairs}
      * @return the {@link DichotomousPairs}
      * @throws NullPointerException if either input is null
      */
 
-    public static <T extends SingleValuedPair> DichotomousPairs toDichotomousPairs( SingleValuedPairs input,
-                                                                                    Function<SingleValuedPair, DichotomousPair> mapper )
+    public static DichotomousPairs toDichotomousPairs( SingleValuedPairs input,
+                                                       Function<SingleValuedPair, DichotomousPair> mapper )
     {
         Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
 
@@ -1138,15 +1139,14 @@ public final class Slicer
      * Produces {@link DichotomousPairs} from a {@link DiscreteProbabilityPairs} by applying a mapper function to the 
      * input.
      * 
-     * @param <T> the type of single-valued pair
      * @param input the {@link SingleValuedPairs} pairs
      * @param mapper the function that maps from {@link SingleValuedPairs} to {@link DichotomousPairs}
      * @return the {@link DichotomousPairs}
      * @throws NullPointerException if either input is null
      */
 
-    public static <T extends SingleValuedPair> DichotomousPairs toDichotomousPairs( DiscreteProbabilityPairs input,
-                                                                                    Function<DiscreteProbabilityPair, DichotomousPair> mapper )
+    public static DichotomousPairs toDichotomousPairs( DiscreteProbabilityPairs input,
+                                                       Function<DiscreteProbabilityPair, DichotomousPair> mapper )
     {
         Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
 
