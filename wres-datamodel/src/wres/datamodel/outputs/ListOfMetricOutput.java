@@ -27,7 +27,7 @@ public class ListOfMetricOutput<T extends MetricOutput<?>> implements Iterable<T
     private final List<T> outputs;
 
     /**
-     * Metadata that summarizes the collection of outputs.
+     * Optional metadata that summarizes the collection of outputs.
      */
 
     private final MetricOutputMetadata metadata;
@@ -37,9 +37,24 @@ public class ListOfMetricOutput<T extends MetricOutput<?>> implements Iterable<T
      * 
      * @param <T> the metric output type
      * @param outputs the outputs used to populate the list
-     * @param metadata the output metadata
      * @return an instance of the container
-     * @throws NullPointerException if either input is null
+     * @throws NullPointerException if the output is null
+     * @throws MetricOutputException if the outputs contain one or more null entries
+     */
+
+    public static <T extends MetricOutput<?>> ListOfMetricOutput<T> of( List<T> outputs )
+    {
+        return ListOfMetricOutput.of( outputs, null );
+    }    
+    
+    /**
+     * Returns an instance from the inputs.
+     * 
+     * @param <T> the metric output type
+     * @param outputs the outputs used to populate the list
+     * @param metadata optional metadata that summarizes the list of outputs
+     * @return an instance of the container
+     * @throws NullPointerException if the output is null
      * @throws MetricOutputException if the outputs contain one or more null entries
      */
 
@@ -73,14 +88,25 @@ public class ListOfMetricOutput<T extends MetricOutput<?>> implements Iterable<T
     }
 
     /**
-     * Returns the metadata that summarizes the collection of outputs.
+     * Returns the optional metadata that summarizes the list of outputs.
      * 
-     * @return the metadata
+     * @return the metadata or null
      */
 
     public MetricOutputMetadata getMetadata()
     {
         return metadata;
+    }
+
+    /**
+     * Returns <code>true</code> if summary metadata is set for the list of outputs, otherwise <code>false</code>.
+     * 
+     * @return <code>true</code> if summary metadata is available, otherwise <code>false</code>
+     */
+
+    public boolean hasMetadata()
+    {
+        return Objects.nonNull( metadata );
     }
 
     @Override
@@ -93,7 +119,7 @@ public class ListOfMetricOutput<T extends MetricOutput<?>> implements Iterable<T
 
         ListOfMetricOutput<?> in = (ListOfMetricOutput<?>) o;
 
-        return this.getData().equals( in.getData() ) && this.getMetadata().equals( in.getMetadata() );
+        return this.getData().equals( in.getData() ) && Objects.equals( this.getMetadata(), in.getMetadata() );
     }
 
     @Override
@@ -106,11 +132,14 @@ public class ListOfMetricOutput<T extends MetricOutput<?>> implements Iterable<T
     public String toString()
     {
         StringBuilder b = new StringBuilder();
-        
-        // Add the metdata
-        b.append( this.getMetadata() )
-         .append( System.lineSeparator() );
-        
+
+        // Add the metadata
+        if ( this.hasMetadata() )
+        {
+            b.append( this.getMetadata() )
+             .append( System.lineSeparator() );
+        }
+
         // Add the data
         this.forEach( element -> b.append( "{" )
                                   .append( element.getMetadata() )
@@ -118,73 +147,73 @@ public class ListOfMetricOutput<T extends MetricOutput<?>> implements Iterable<T
                                   .append( element.getData() )
                                   .append( "}" )
                                   .append( System.lineSeparator() ) );
-        
+
         // Remove trailing newline
         int lines = b.length();
         b.delete( lines - System.lineSeparator().length(), lines );
-        
+
         return b.toString();
     }
-    
+
     /**
      * A thread-safe builder that allows for the incremental construction of a {@link ListOfMetricOutput} using one or 
      * more threads.
      */
-    
+
     public static class ListOfMetricOutputBuilder<T extends MetricOutput<?>>
     {
-        
+
         /**
          * The metadata.
          */
-        
+
         private MetricOutputMetadata metadata;
-        
+
         /**
          * The thread-safe queue of metric outputs.
          */
-        
-        private ConcurrentLinkedQueue<T> outputs = new ConcurrentLinkedQueue<>(); 
-        
+
+        private ConcurrentLinkedQueue<T> outputs = new ConcurrentLinkedQueue<>();
+
         /**
          * Sets the metadata.
          * 
          * @param metadata the metadata
          * @return the builder
          */
-        
+
         public ListOfMetricOutputBuilder<T> setMetadata( MetricOutputMetadata metadata )
         {
             this.metadata = metadata;
-            
+
             return this;
         }
-        
+
         /**
          * Adds an output to the list.
          * 
          * @param output the output to add
          * @return the builder
          */
-        
+
         public ListOfMetricOutputBuilder<T> addOutput( T output )
         {
             outputs.add( output );
 
             return this;
         }
-        
+
         /**
          * Return the container.
          * 
          * @return the list of outputs
          */
-        
+
         public ListOfMetricOutput<T> build()
         {
             return ListOfMetricOutput.of( Collections.unmodifiableList( new ArrayList<>( outputs ) ), metadata );
         }
-        
+
     }
 
     /**
@@ -192,22 +221,21 @@ public class ListOfMetricOutput<T extends MetricOutput<?>> implements Iterable<T
      * 
      * @param outputs the outputs used to populate the list
      * @param metadata the output metadata
-     * @throws NullPointerException if either input is null
+     * @throws NullPointerException if the output is null
      * @throws MetricOutputException if the outputs contain one or more null entries
      */
 
     private ListOfMetricOutput( List<T> outputs, MetricOutputMetadata metadata )
     {
         Objects.requireNonNull( outputs, "Specify a non-null list of outputs." );
-        
-        Objects.requireNonNull( metadata, "Specify non-null metadata for the outputs." );
-        
-        if( outputs.contains( null ) )
+
+        if ( outputs.contains( null ) )
         {
             throw new MetricOutputException( "Cannot build a list of outputs with one or more null entries." );
         }
-        
+
         this.outputs = Collections.unmodifiableList( outputs );
+        
         this.metadata = metadata;
     }
 
