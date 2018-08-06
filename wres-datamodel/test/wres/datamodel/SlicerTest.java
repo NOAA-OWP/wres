@@ -17,6 +17,7 @@ import java.util.function.DoubleUnaryOperator;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -1094,7 +1095,7 @@ public final class SlicerTest
                 TimeWindow.of( Instant.MIN, Instant.MAX, ReferenceTime.VALID_TIME, Duration.ofHours( 2 ) );
 
         TimeWindow windowThree =
-                TimeWindow.of( Instant.MIN, Instant.MAX, ReferenceTime.VALID_TIME, Duration.ofHours( 3 ) );
+                TimeWindow.of( Instant.MIN, Instant.MAX, ReferenceTime.ISSUE_TIME, Duration.ofHours( 2 ) );
 
         OneOrTwoThresholds thresholdOne =
                 OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 1.0 ),
@@ -1131,7 +1132,7 @@ public final class SlicerTest
 
         assertEquals( actualOutputOne, expectedOutputOne );
 
-        // Discover the time windows available
+        // Discover the unique time windows available
         Set<TimeWindow> actualOutputTwo = Slicer.discover( listOfOutputs, next -> next.getMetadata().getTimeWindow() );
         Set<TimeWindow> expectedOutputTwo = new TreeSet<>( Arrays.asList( windowOne, windowTwo, windowThree ) );
 
@@ -1144,6 +1145,19 @@ public final class SlicerTest
                 new TreeSet<>( Arrays.asList( thresholdOne, thresholdTwo, thresholdThree ) );
 
         assertEquals( actualOutputThree, expectedOutputThree );
+
+        // Discover the unique lead times available
+        Set<Pair<Duration, Duration>> actualOutputFour =
+                Slicer.discover( listOfOutputs,
+                                 next -> Pair.of( next.getMetadata().getTimeWindow().getEarliestLeadTime(),
+                                                  next.getMetadata().getTimeWindow().getLatestLeadTime() ) );
+
+        Set<Pair<Duration, Duration>> expectedOutputFour =
+                new TreeSet<>( Arrays.asList( Pair.of( Duration.ofHours( 1 ), Duration.ofHours( 1 ) ),
+                                              Pair.of( Duration.ofHours( 2 ), Duration.ofHours( 2 ) ) ) );
+
+        assertEquals( actualOutputFour, expectedOutputFour );        
+
     }
 
 }

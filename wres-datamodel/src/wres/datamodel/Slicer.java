@@ -997,6 +997,12 @@ public final class Slicer
      * 
      * <p><code>Slicer.discover( outputs, next {@literal ->} next.getMetadata().getMetricID() );</code></p>
      * 
+     * <p>To discover the unique pairs of lead times in the list of outputs:</p>
+     * 
+     * <p><code>Slicer.discover( outputs, next {@literal ->} 
+     * Pair.of( next.getMetadata().getTimeWindow().getEarliestLeadTime(), 
+     * next.getMetadata().getTimeWindow().getLatestLeadTime() );</code></p>
+     * 
      * @param <S> the metric output type
      * @param <T> the type of information required about the output
      * @param outputs the list of outputs
