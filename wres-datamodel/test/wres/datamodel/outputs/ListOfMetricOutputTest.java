@@ -68,7 +68,7 @@ public final class ListOfMetricOutputTest
     @Test
     public void testBuild()
     {
-        assertNotNull( ListOfMetricOutput.of( Collections.emptyList(), metadata ) );
+        assertNotNull( ListOfMetricOutput.of( Collections.emptyList() ) );
     }
 
     /**
@@ -149,21 +149,6 @@ public final class ListOfMetricOutputTest
         exception.expectMessage( "Specify a non-null list of outputs." );
 
         ListOfMetricOutput.of( null, metadata );
-    }
-
-    /**
-     * Tests that construction of a {@link ListOfMetricOutput} using the 
-     * {@link ListOfMetricOutput#of(List, MetricOutputMetadata)} throws an exception when the metadata is null.
-     */
-
-    @Test
-    public void testCannotBuildWithNullMetadata()
-    {
-        exception.expect( NullPointerException.class );
-
-        exception.expectMessage( "Specify non-null metadata for the outputs." );
-
-        ListOfMetricOutput.of( Arrays.asList(), null );
     }
 
     /**
