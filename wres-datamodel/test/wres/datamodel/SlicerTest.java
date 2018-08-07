@@ -1,18 +1,23 @@
 package wres.datamodel;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.function.BiFunction;
 import java.util.function.DoubleUnaryOperator;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -29,10 +34,16 @@ import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairs.TimeSeriesOfEnsemblePairsBuilder;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs.TimeSeriesOfSingleValuedPairsBuilder;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Metadata;
+import wres.datamodel.metadata.MetricOutputMetadata;
+import wres.datamodel.metadata.ReferenceTime;
+import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.DataModelTestDataFactory;
 import wres.datamodel.outputs.DoubleScoreOutput;
+import wres.datamodel.outputs.ListOfMetricOutput;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
+import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
@@ -989,6 +1000,163 @@ public final class SlicerTest
         exception.expect( NullPointerException.class );
         Slicer.filterByDuration( (TimeSeriesOfEnsemblePairs) null, null );
         Slicer.filterByDuration( ts, null );
+
+    }
+
+    /**
+     * Tests the {@link Slicer#filter(ListOfMetricOutput, java.util.function.Predicate)}.
+     */
+
+    @Test
+    public void testFilterListOfMetricOutputs()
+    {
+        // Populate a list of outputs
+        MetricOutputMetadata metadata = MetricOutputMetadata.of( 0,
+                                                                 MeasurementUnit.of(),
+                                                                 MeasurementUnit.of(),
+                                                                 MetricConstants.BIAS_FRACTION );
+
+        TimeWindow windowOne =
+                TimeWindow.of( Instant.MIN, Instant.MAX, ReferenceTime.VALID_TIME, Duration.ofHours( 1 ) );
+
+        TimeWindow windowTwo =
+                TimeWindow.of( Instant.MIN, Instant.MAX, ReferenceTime.VALID_TIME, Duration.ofHours( 2 ) );
+
+        TimeWindow windowThree =
+                TimeWindow.of( Instant.MIN, Instant.MAX, ReferenceTime.VALID_TIME, Duration.ofHours( 3 ) );
+
+        OneOrTwoThresholds thresholdOne =
+                OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 1.0 ),
+                                                     Operator.GREATER,
+                                                     ThresholdDataType.LEFT ) );
+        OneOrTwoThresholds thresholdTwo =
+                OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 2.0 ),
+                                                     Operator.GREATER,
+                                                     ThresholdDataType.LEFT ) );
+        OneOrTwoThresholds thresholdThree =
+                OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 3.0 ),
+                                                     Operator.GREATER,
+                                                     ThresholdDataType.LEFT ) );
+
+        ListOfMetricOutput<DoubleScoreOutput> listOfOutputs =
+                ListOfMetricOutput.of( Arrays.asList( DoubleScoreOutput.of( 0.1,
+                                                                            MetricOutputMetadata.of( metadata,
+                                                                                                     windowOne,
+                                                                                                     thresholdOne ) ),
+                                                      DoubleScoreOutput.of( 0.2,
+                                                                            MetricOutputMetadata.of( metadata,
+                                                                                                     windowTwo,
+                                                                                                     thresholdTwo ) ),
+                                                      DoubleScoreOutput.of( 0.3,
+                                                                            MetricOutputMetadata.of( metadata,
+                                                                                                     windowThree,
+                                                                                                     thresholdThree ) ) ),
+                                       metadata );
+
+        // Filter by the first lead time and the last lead time and threshold
+        Predicate<MetricOutputMetadata> filter = meta -> meta.getTimeWindow().equals( windowOne )
+                                                         || ( meta.getTimeWindow().equals( windowThree )
+                                                              && meta.getThresholds().equals( thresholdThree ) );
+
+        ListOfMetricOutput<DoubleScoreOutput> actualOutput = Slicer.filter( listOfOutputs, filter );
+
+        ListOfMetricOutput<DoubleScoreOutput> expectedOutput =
+                ListOfMetricOutput.of( Arrays.asList( DoubleScoreOutput.of( 0.1,
+                                                                            MetricOutputMetadata.of( metadata,
+                                                                                                     windowOne,
+                                                                                                     thresholdOne ) ),
+                                                      DoubleScoreOutput.of( 0.3,
+                                                                            MetricOutputMetadata.of( metadata,
+                                                                                                     windowThree,
+                                                                                                     thresholdThree ) ) ),
+                                       metadata );
+
+        assertEquals( actualOutput, expectedOutput );
+
+    }
+
+    /**
+     * Tests the {@link Slicer#discover(ListOfMetricOutput, Function)}.
+     */
+
+    @Test
+    public void testDiscoverListOfMetricOutputs()
+    {
+        // Populate a list of outputs
+        MetricOutputMetadata metadata = MetricOutputMetadata.of( 0,
+                                                                 MeasurementUnit.of(),
+                                                                 MeasurementUnit.of(),
+                                                                 MetricConstants.BIAS_FRACTION );
+
+        TimeWindow windowOne =
+                TimeWindow.of( Instant.MIN, Instant.MAX, ReferenceTime.VALID_TIME, Duration.ofHours( 1 ) );
+
+        TimeWindow windowTwo =
+                TimeWindow.of( Instant.MIN, Instant.MAX, ReferenceTime.VALID_TIME, Duration.ofHours( 2 ) );
+
+        TimeWindow windowThree =
+                TimeWindow.of( Instant.MIN, Instant.MAX, ReferenceTime.ISSUE_TIME, Duration.ofHours( 2 ) );
+
+        OneOrTwoThresholds thresholdOne =
+                OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 1.0 ),
+                                                     Operator.GREATER,
+                                                     ThresholdDataType.LEFT ) );
+        OneOrTwoThresholds thresholdTwo =
+                OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 2.0 ),
+                                                     Operator.GREATER,
+                                                     ThresholdDataType.LEFT ) );
+        OneOrTwoThresholds thresholdThree =
+                OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 3.0 ),
+                                                     Operator.GREATER,
+                                                     ThresholdDataType.LEFT ) );
+
+        ListOfMetricOutput<DoubleScoreOutput> listOfOutputs =
+                ListOfMetricOutput.of( Arrays.asList( DoubleScoreOutput.of( 0.1,
+                                                                            MetricOutputMetadata.of( metadata,
+                                                                                                     windowOne,
+                                                                                                     thresholdOne ) ),
+                                                      DoubleScoreOutput.of( 0.2,
+                                                                            MetricOutputMetadata.of( metadata,
+                                                                                                     windowTwo,
+                                                                                                     thresholdTwo ) ),
+                                                      DoubleScoreOutput.of( 0.3,
+                                                                            MetricOutputMetadata.of( metadata,
+                                                                                                     windowThree,
+                                                                                                     thresholdThree ) ) ),
+                                       metadata );
+
+        // Discover the metrics available
+        Set<MetricConstants> actualOutputOne =
+                Slicer.discover( listOfOutputs, next -> next.getMetadata().getMetricID() );
+        Set<MetricConstants> expectedOutputOne = Collections.singleton( MetricConstants.BIAS_FRACTION );
+
+        assertEquals( actualOutputOne, expectedOutputOne );
+
+        // Discover the unique time windows available
+        Set<TimeWindow> actualOutputTwo = Slicer.discover( listOfOutputs, next -> next.getMetadata().getTimeWindow() );
+        Set<TimeWindow> expectedOutputTwo = new TreeSet<>( Arrays.asList( windowOne, windowTwo, windowThree ) );
+
+        assertEquals( actualOutputTwo, expectedOutputTwo );
+
+        // Discover the thresholds available
+        Set<OneOrTwoThresholds> actualOutputThree =
+                Slicer.discover( listOfOutputs, next -> next.getMetadata().getThresholds() );
+        Set<OneOrTwoThresholds> expectedOutputThree =
+                new TreeSet<>( Arrays.asList( thresholdOne, thresholdTwo, thresholdThree ) );
+
+        assertEquals( actualOutputThree, expectedOutputThree );
+
+        // Discover the unique lead times available
+        Set<Pair<Duration, Duration>> actualOutputFour =
+                Slicer.discover( listOfOutputs,
+                                 next -> Pair.of( next.getMetadata().getTimeWindow().getEarliestLeadTime(),
+                                                  next.getMetadata().getTimeWindow().getLatestLeadTime() ) );
+
+        Set<Pair<Duration, Duration>> expectedOutputFour =
+                new TreeSet<>( Arrays.asList( Pair.of( Duration.ofHours( 1 ), Duration.ofHours( 1 ) ),
+                                              Pair.of( Duration.ofHours( 2 ), Duration.ofHours( 2 ) ) ) );
+
+        assertEquals( actualOutputFour, expectedOutputFour );        
 
     }
 

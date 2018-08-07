@@ -12,6 +12,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.function.BiFunction;
 import java.util.function.DoublePredicate;
 import java.util.function.DoubleUnaryOperator;
@@ -947,7 +949,7 @@ public final class Slicer
     /**
      * <p>Returns a subset of metric outputs whose {@link MetricOutputMetadata} matches the supplied predicate. For 
      * example, to filter by a particular {@link TimeWindow} and {@link OneOrTwoThresholds} associated with the 
-     * output metadata, consider the following:</p>
+     * output metadata:</p>
      * 
      * <p><code>Slicer.filter( list, a {@literal ->} a.getTimeWindow().equals( someWindow ) {@literal &&} 
      *              a.getThresholds().equals( someThreshold ) );</code></p>
@@ -982,7 +984,42 @@ public final class Slicer
         }
 
         return ListOfMetricOutput.of( Collections.unmodifiableList( results ), outputs.getMetadata() );
+    }
 
+    /**
+     * <p>Discovers the unique instances of a given type associated with a {@link ListOfMetricOutput}. The mapper 
+     * function identifies the type to discover. For example, to discover the unique thresholds contained in the list of
+     * outputs:</p>
+     * 
+     * <p><code>Slicer.discover( outputs, next {@literal ->} next.getMetadata().getThresholds() );</code></p>
+     * 
+     * <p>To discover the unique metrics contained in the list of outputs:</p>
+     * 
+     * <p><code>Slicer.discover( outputs, next {@literal ->} next.getMetadata().getMetricID() );</code></p>
+     * 
+     * <p>To discover the unique pairs of lead times in the list of outputs:</p>
+     * 
+     * <p><code>Slicer.discover( outputs, next {@literal ->} 
+     * Pair.of( next.getMetadata().getTimeWindow().getEarliestLeadTime(), 
+     * next.getMetadata().getTimeWindow().getLatestLeadTime() );</code></p>
+     * 
+     * @param <S> the metric output type
+     * @param <T> the type of information required about the output
+     * @param outputs the list of outputs
+     * @param mapper the mapper function that discovers the type of interest
+     * @return the unique instances of a given type associated with the output
+     * @throws NullPointerException if the input list is null
+     */
+
+    public static <S extends MetricOutput<?>, T extends Object> SortedSet<T> discover( ListOfMetricOutput<S> outputs,
+                                                                                       Function<S, T> mapper )
+    {
+        Objects.requireNonNull( outputs, NULL_INPUT_EXCEPTION );
+
+        return Collections.unmodifiableSortedSet( outputs.getData()
+                                                         .stream()
+                                                         .map( mapper )
+                                                         .collect( Collectors.toCollection( TreeSet::new ) ) );
     }
 
     /**
@@ -1072,15 +1109,14 @@ public final class Slicer
     /**
      * Produces {@link DichotomousPairs} from a {@link SingleValuedPairs} by applying a mapper function to the input.
      * 
-     * @param <T> the type of single-valued pair
      * @param input the {@link SingleValuedPairs} pairs
      * @param mapper the function that maps from {@link SingleValuedPairs} to {@link DichotomousPairs}
      * @return the {@link DichotomousPairs}
      * @throws NullPointerException if either input is null
      */
 
-    public static <T extends SingleValuedPair> DichotomousPairs toDichotomousPairs( SingleValuedPairs input,
-                                                                                    Function<SingleValuedPair, DichotomousPair> mapper )
+    public static DichotomousPairs toDichotomousPairs( SingleValuedPairs input,
+                                                       Function<SingleValuedPair, DichotomousPair> mapper )
     {
         Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
 
@@ -1109,15 +1145,14 @@ public final class Slicer
      * Produces {@link DichotomousPairs} from a {@link DiscreteProbabilityPairs} by applying a mapper function to the 
      * input.
      * 
-     * @param <T> the type of single-valued pair
      * @param input the {@link SingleValuedPairs} pairs
      * @param mapper the function that maps from {@link SingleValuedPairs} to {@link DichotomousPairs}
      * @return the {@link DichotomousPairs}
      * @throws NullPointerException if either input is null
      */
 
-    public static <T extends SingleValuedPair> DichotomousPairs toDichotomousPairs( DiscreteProbabilityPairs input,
-                                                                                    Function<DiscreteProbabilityPair, DichotomousPair> mapper )
+    public static DichotomousPairs toDichotomousPairs( DiscreteProbabilityPairs input,
+                                                       Function<DiscreteProbabilityPair, DichotomousPair> mapper )
     {
         Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
 

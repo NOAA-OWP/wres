@@ -9,6 +9,12 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
+import java.util.SortedSet;
+import java.util.TreeSet;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -17,9 +23,11 @@ import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.OneOrTwoDoubles;
+import wres.datamodel.Slicer;
 import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
+import wres.datamodel.outputs.ListOfMetricOutput.ListOfMetricOutputBuilder;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
@@ -58,9 +66,105 @@ public final class ListOfMetricOutputTest
      */
 
     @Test
-    public void testConstruction()
+    public void testBuild()
     {
-        assertNotNull( ListOfMetricOutput.of( Collections.emptyList(), null ) );
+        assertNotNull( ListOfMetricOutput.of( Collections.emptyList() ) );
+    }
+
+    /**
+     * Tests the construction of a {@link ListOfMetricOutput} using the 
+     * {@link ListOfMetricOutputBuilder}.
+     */
+
+    @Test
+    public void testBuildUsingBuilder()
+    {
+        ListOfMetricOutputBuilder<DoubleScoreOutput> builder = new ListOfMetricOutputBuilder<>();
+
+        ListOfMetricOutput<DoubleScoreOutput> actualOutput =
+                builder.setMetadata( metadata ).addOutput( DoubleScoreOutput.of( 0.1, metadata ) ).build();
+
+        ListOfMetricOutput<DoubleScoreOutput> expectedOutput =
+                ListOfMetricOutput.of( Arrays.asList( DoubleScoreOutput.of( 0.1, metadata ) ), metadata );
+
+        assertEquals( actualOutput, expectedOutput );
+    }
+
+    /**
+     * Tests the construction of a {@link ListOfMetricOutput} using the 
+     * {@link ListOfMetricOutputBuilder} with concurrent access.
+     */
+
+    @Test
+    public void testBuildUsingBuilderWithMultipleThreads()
+    {
+        ListOfMetricOutputBuilder<DoubleScoreOutput> builder =
+                new ListOfMetricOutputBuilder<DoubleScoreOutput>().setMetadata( metadata );
+
+        // Initialize 100 futures that add results to the builder
+        SortedSet<Double> expectedOutput = new TreeSet<>();
+        CompletableFuture<?>[] futures = new CompletableFuture<?>[100];
+
+        ExecutorService service = null;
+        try
+        {
+            service = Executors.newFixedThreadPool( 10 );
+            for ( int i = 0; i < 100; i++ )
+            {
+                double next = i;
+                expectedOutput.add( next );
+                futures[i] =
+                        CompletableFuture.supplyAsync( () -> builder.addOutput( DoubleScoreOutput.of( next,
+                                                                                                      metadata ) ),
+                                                       service );
+            }
+
+            // Complete all additions by joining
+            CompletableFuture.allOf( futures ).join();
+        }
+        finally
+        {
+            if ( Objects.nonNull( service ) )
+            {
+                service.shutdownNow();
+            }
+        }
+
+        // Build and validate
+        SortedSet<Double> actualOutput = Slicer.discover( builder.build(), output -> output.getData() );
+
+        assertEquals( actualOutput, expectedOutput );
+    }
+
+    /**
+     * Tests that construction of a {@link ListOfMetricOutput} using the 
+     * {@link ListOfMetricOutput#of(List, MetricOutputMetadata)} throws an exception when the outputs are null.
+     */
+
+    @Test
+    public void testCannotBuildWithNullOutput()
+    {
+        exception.expect( NullPointerException.class );
+
+        exception.expectMessage( "Specify a non-null list of outputs." );
+
+        ListOfMetricOutput.of( null, metadata );
+    }
+
+    /**
+     * Tests that construction of a {@link ListOfMetricOutput} using the 
+     * {@link ListOfMetricOutput#of(List, MetricOutputMetadata)} throws an exception when one or more of the listed 
+     * outputs is null.
+     */
+
+    @Test
+    public void testCannotBuildWithOneOrMoreNullOutputs()
+    {
+        exception.expect( MetricOutputException.class );
+
+        exception.expectMessage( "Cannot build a list of outputs with one or more null entries." );
+
+        ListOfMetricOutput.of( Collections.singletonList( null ), metadata );
     }
 
     /**
@@ -73,7 +177,7 @@ public final class ListOfMetricOutputTest
         exception.expect( UnsupportedOperationException.class );
 
         ListOfMetricOutput<DoubleScoreOutput> list =
-                ListOfMetricOutput.of( Arrays.asList( DoubleScoreOutput.of( 0.1, metadata ) ), null );
+                ListOfMetricOutput.of( Arrays.asList( DoubleScoreOutput.of( 0.1, metadata ) ), metadata );
 
         // Removing an element throws an exception
         list.iterator().remove();
@@ -100,7 +204,7 @@ public final class ListOfMetricOutputTest
     public void testGetData()
     {
         ListOfMetricOutput<DoubleScoreOutput> list =
-                ListOfMetricOutput.of( Arrays.asList( DoubleScoreOutput.of( 0.1, metadata ) ), null );
+                ListOfMetricOutput.of( Arrays.asList( DoubleScoreOutput.of( 0.1, metadata ) ), metadata );
 
         assertEquals( list.getData(), Arrays.asList( DoubleScoreOutput.of( 0.1, metadata ) ) );
     }
@@ -115,7 +219,7 @@ public final class ListOfMetricOutputTest
         exception.expect( UnsupportedOperationException.class );
 
         ListOfMetricOutput<DoubleScoreOutput> list =
-                ListOfMetricOutput.of( Arrays.asList( DoubleScoreOutput.of( 0.1, metadata ) ), null );
+                ListOfMetricOutput.of( Arrays.asList( DoubleScoreOutput.of( 0.1, metadata ) ), metadata );
 
         list.getData().add( DoubleScoreOutput.of( 0.1, metadata ) );
     }
