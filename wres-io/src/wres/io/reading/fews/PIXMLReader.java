@@ -121,6 +121,9 @@ public final class PIXMLReader extends XMLReader
 			throws IOException
 	{
         // Must determine if in charge of ingest
+        // TODO: actually evaluate inChargeOfIngest before checking it
+        // Why is inChargeOfIngest even involved? If this isn't in charge of the
+        // ingest, there's been a problem upstream
         if ( !inChargeOfIngest )
         {
             LOGGER.debug( "This PIXMLReader yields for source {}", hash );
@@ -341,11 +344,12 @@ public final class PIXMLReader extends XMLReader
                                                   dateTime );
             int leadTimeInHours = (int) leadTime.toHours();
 
+            Integer timeseriesID = this.getTimeSeriesID();
             if ( this.inChargeOfIngest )
             {
                 PIXMLReader.addForecastEvent( this.getValueToSave( value ),
                                               leadTimeInHours,
-                                              this.getTimeSeriesID() );
+                                              timeseriesID );
             }
             else
             {
