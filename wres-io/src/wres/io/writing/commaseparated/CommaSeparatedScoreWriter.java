@@ -9,10 +9,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.SortedSet;
 import java.util.StringJoiner;
 import java.util.function.Consumer;
-
-import org.apache.commons.lang3.tuple.Pair;
 
 import wres.config.ProjectConfigException;
 import wres.config.generated.DestinationConfig;
@@ -23,11 +22,10 @@ import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.Slicer;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.outputs.MapKey;
-import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
-import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
+import wres.datamodel.outputs.ListOfMetricOutput;
 import wres.datamodel.outputs.ScoreOutput;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
+import wres.datamodel.thresholds.Threshold;
 import wres.io.config.ConfigHelper;
 
 /**
@@ -38,7 +36,7 @@ import wres.io.config.ConfigHelper;
  */
 
 public class CommaSeparatedScoreWriter<T extends ScoreOutput<?, T>> extends CommaSeparatedWriter
-        implements Consumer<MetricOutputMultiMapByTimeAndThreshold<T>>
+        implements Consumer<ListOfMetricOutput<T>>
 {
 
     /**
@@ -65,7 +63,7 @@ public class CommaSeparatedScoreWriter<T extends ScoreOutput<?, T>> extends Comm
      */
 
     @Override
-    public void accept( final MetricOutputMultiMapByTimeAndThreshold<T> output )
+    public void accept( final ListOfMetricOutput<T> output )
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing box plot outputs." );
 
@@ -78,10 +76,9 @@ public class CommaSeparatedScoreWriter<T extends ScoreOutput<?, T>> extends Comm
 
             // Formatter required?
             Format formatter = null;
-            if ( !output.values().isEmpty()
-                 && output.values()
-                          .iterator()
-                          .next()
+            if ( !output.getData().isEmpty()
+                 && output.getData()
+                          .get( 0 )
                           .getMetadata()
                           .getMetricID()
                           .isInGroup( MetricOutputGroup.DOUBLE_SCORE ) )
@@ -114,39 +111,44 @@ public class CommaSeparatedScoreWriter<T extends ScoreOutput<?, T>> extends Comm
      */
 
     private static <T extends ScoreOutput<?, T>> void writeOneScoreOutputType( DestinationConfig destinationConfig,
-                                                                               MetricOutputMultiMapByTimeAndThreshold<T> output,
+                                                                               ListOfMetricOutput<T> output,
                                                                                Format formatter )
             throws IOException
     {
-
-        // Loop across scores
-        for ( Map.Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<T>> m : output.entrySet() )
+        // Loop across metrics
+        SortedSet<MetricConstants> metrics = Slicer.discover( output, next -> next.getMetadata().getMetricID() );
+        for ( MetricConstants m : metrics )
         {
+            ListOfMetricOutput<T> nextMetric = Slicer.filter( output, m );
+
+            SortedSet<Threshold> secondThreshold =
+                    Slicer.discover( nextMetric, next -> next.getMetadata().getThresholds().second() );
 
             // As many outputs as secondary thresholds if secondary thresholds are defined
             // and the output type is OutputTypeSelection.THRESHOLD_LEAD.
-            List<MetricOutputMapByTimeAndThreshold<T>> allOutputs = new ArrayList<>();
+            List<ListOfMetricOutput<T>> allOutputs = new ArrayList<>();
             if ( destinationConfig.getOutputType() == OutputTypeSelection.THRESHOLD_LEAD
-                 && !m.getValue().setOfThresholdTwo().isEmpty() )
+                 && !secondThreshold.isEmpty() )
             {
                 // Slice by threshold two
-                m.getValue()
-                 .setOfThresholdTwo()
-                 .forEach( next -> allOutputs.add( m.getValue().filterByThresholdTwo( next ) ) );
+                secondThreshold.forEach( next -> allOutputs.add( Slicer.filter( nextMetric,
+                                                                                data -> data.getThresholds()
+                                                                                            .second()
+                                                                                            .equals( next ) ) ) );
             }
             // One output only
             else
             {
-                allOutputs.add( m.getValue() );
+                allOutputs.add( nextMetric );
             }
 
             // Process each output
-            for ( MetricOutputMapByTimeAndThreshold<T> nextOutput : allOutputs )
+            for ( ListOfMetricOutput<T> nextOutput : allOutputs )
             {
                 StringJoiner headerRow = new StringJoiner( "," );
                 headerRow.merge( HEADER_DEFAULT );
                 List<RowCompareByLeft> rows =
-                        CommaSeparatedScoreWriter.getRowsForOneScore( m.getKey().getKey(),
+                        CommaSeparatedScoreWriter.getRowsForOneScore( m,
                                                                       nextOutput,
                                                                       headerRow,
                                                                       formatter );
@@ -157,12 +159,14 @@ public class CommaSeparatedScoreWriter<T extends ScoreOutput<?, T>> extends Comm
                 // Write the output
                 String append = null;
 
-                // Secondary threshold? If yes, only, one as this was sliced above
-                if ( !nextOutput.setOfThresholdTwo().isEmpty() )
+                // Secondary threshold? If yes, only one, as this was sliced above
+                SortedSet<Threshold> secondThresholds =
+                        Slicer.discover( nextOutput, next -> next.getMetadata().getThresholds().second() );
+                if ( !secondThresholds.isEmpty() )
                 {
-                    append = nextOutput.setOfThresholdTwo().iterator().next().toStringSafe();
+                    append = secondThresholds.iterator().next().toStringSafe();
                 }
-                MetricOutputMetadata meta = m.getValue().getMetadata();
+                MetricOutputMetadata meta = nextOutput.getData().get( 0 ).getMetadata();
                 Path outputPath = ConfigHelper.getOutputPathToWrite( destinationConfig, meta, append );
 
                 CommaSeparatedScoreWriter.writeTabularOutputToFile( rows, outputPath );
@@ -183,17 +187,17 @@ public class CommaSeparatedScoreWriter<T extends ScoreOutput<?, T>> extends Comm
 
     private static <T extends ScoreOutput<?, T>> List<RowCompareByLeft>
             getRowsForOneScore( MetricConstants scoreName,
-                                MetricOutputMapByTimeAndThreshold<T> output,
+                                ListOfMetricOutput<T> output,
                                 StringJoiner headerRow,
                                 Format formatter )
     {
         // Slice score by components
-        Map<MetricConstants, MetricOutputMapByTimeAndThreshold<T>> helper = Slicer.filterByMetricComponent( output );
+        Map<MetricConstants, ListOfMetricOutput<T>> helper = Slicer.filterByMetricComponent( output );
 
         String outerName = scoreName.toString();
         List<RowCompareByLeft> returnMe = new ArrayList<>();
         // Loop across components
-        for ( Entry<MetricConstants, MetricOutputMapByTimeAndThreshold<T>> e : helper.entrySet() )
+        for ( Entry<MetricConstants, ListOfMetricOutput<T>> e : helper.entrySet() )
         {
             // Add the component name unless there is only one component named "MAIN"
             String name = outerName;
@@ -218,25 +222,34 @@ public class CommaSeparatedScoreWriter<T extends ScoreOutput<?, T>> extends Comm
      */
 
     private static <T extends ScoreOutput<?, T>> void addRowsForOneScoreComponent( String name,
-                                                                                   MetricOutputMapByTimeAndThreshold<T> component,
+                                                                                   ListOfMetricOutput<T> component,
                                                                                    StringJoiner headerRow,
                                                                                    List<RowCompareByLeft> rows,
                                                                                    Format formatter )
     {
+
+        // Discover the time windows and thresholds
+        SortedSet<OneOrTwoThresholds> thresholds =
+                Slicer.discover( component, meta -> meta.getMetadata().getThresholds() );
+        SortedSet<TimeWindow> timeWindows = Slicer.discover( component, meta -> meta.getMetadata().getTimeWindow() );
+
         // Loop across the thresholds
-        for ( OneOrTwoThresholds t : component.setOfThresholdKey() )
+        for ( OneOrTwoThresholds t : thresholds )
         {
             String column = name + HEADER_DELIMITER + t;
             headerRow.add( column );
             // Loop across time windows
-            for ( TimeWindow timeWindow : component.setOfTimeWindowKey() )
+            for ( TimeWindow timeWindow : timeWindows )
             {
-                Pair<TimeWindow, OneOrTwoThresholds> key = Pair.of( timeWindow, t );
-                if ( component.containsKey( key ) )
+                // Find the next score
+                ListOfMetricOutput<T> nextScore = Slicer.filter( component,
+                                                                 next -> next.getThresholds().equals( t )
+                                                                         && next.getTimeWindow().equals( timeWindow ) );
+                if ( !nextScore.getData().isEmpty() )
                 {
                     CommaSeparatedWriter.addRowToInput( rows,
                                                         timeWindow,
-                                                        Arrays.asList( component.get( key ).getData() ),
+                                                        Arrays.asList( nextScore.getData().get( 0 ).getData() ),
                                                         formatter,
                                                         true );
                 }

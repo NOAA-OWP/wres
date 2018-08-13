@@ -1,5 +1,6 @@
 package wres.engine.statistics.metric.processing;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -11,10 +12,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map.Entry;
 import java.util.function.BiPredicate;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -34,17 +33,17 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.OneOrTwoDoubles;
+import wres.datamodel.Slicer;
 import wres.datamodel.inputs.pairs.EnsemblePair;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.DoubleScoreOutput;
+import wres.datamodel.outputs.ListOfMetricOutput;
 import wres.datamodel.outputs.MatrixOutput;
 import wres.datamodel.outputs.MetricOutputAccessException;
 import wres.datamodel.outputs.MetricOutputException;
-import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
-import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
-import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
+import wres.datamodel.outputs.MetricOutputForProject;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
@@ -124,40 +123,39 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessorByTime<EnsemblePairs> processor = MetricFactory.ofMetricProcessorByTimeEnsemblePairs( config,
                                                                                                              null );
-        MetricOutputForProjectByTimeAndThreshold results =
+        MetricOutputForProject results =
                 processor.apply( MetricTestDataFactory.getEnsemblePairsOne() );
-        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> bias = results.getDoubleScoreOutput()
-                                                                           .get( MetricConstants.BIAS_FRACTION );
-        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> cod =
-                results.getDoubleScoreOutput()
-                       .get( MetricConstants.COEFFICIENT_OF_DETERMINATION );
-        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> rho = results.getDoubleScoreOutput()
-                                                                          .get( MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
-        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> mae = results.getDoubleScoreOutput()
-                                                                          .get( MetricConstants.MEAN_ABSOLUTE_ERROR );
-        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> me =
-                results.getDoubleScoreOutput().get( MetricConstants.MEAN_ERROR );
-        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> rmse = results.getDoubleScoreOutput()
-                                                                           .get( MetricConstants.ROOT_MEAN_SQUARE_ERROR );
-        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> crps =
-                results.getDoubleScoreOutput()
-                       .get( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE );
+        DoubleScoreOutput bias =
+                Slicer.filter( results.getDoubleScoreOutput(), MetricConstants.BIAS_FRACTION ).getData().get( 0 );
+        DoubleScoreOutput cod =
+                Slicer.filter( results.getDoubleScoreOutput(), MetricConstants.COEFFICIENT_OF_DETERMINATION )
+                      .getData()
+                      .get( 0 );
+        DoubleScoreOutput rho =
+                Slicer.filter( results.getDoubleScoreOutput(), MetricConstants.PEARSON_CORRELATION_COEFFICIENT )
+                      .getData()
+                      .get( 0 );
+        DoubleScoreOutput mae =
+                Slicer.filter( results.getDoubleScoreOutput(), MetricConstants.MEAN_ABSOLUTE_ERROR ).getData().get( 0 );
+        DoubleScoreOutput me =
+                Slicer.filter( results.getDoubleScoreOutput(), MetricConstants.MEAN_ERROR ).getData().get( 0 );
+        DoubleScoreOutput rmse =
+                Slicer.filter( results.getDoubleScoreOutput(), MetricConstants.ROOT_MEAN_SQUARE_ERROR )
+                      .getData()
+                      .get( 0 );
+        DoubleScoreOutput crps =
+                Slicer.filter( results.getDoubleScoreOutput(), MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE )
+                      .getData()
+                      .get( 0 );
 
         //Test contents
-        assertTrue( "Unexpected difference in " + MetricConstants.BIAS_FRACTION,
-                    bias.getValue( 0 ).getData().equals( -0.032093836077598345 ) );
-        assertTrue( "Unexpected difference in " + MetricConstants.COEFFICIENT_OF_DETERMINATION,
-                    cod.getValue( 0 ).getData().equals( 0.7873367083297588 ) );
-        assertTrue( "Unexpected difference in " + MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
-                    rho.getValue( 0 ).getData().equals( 0.8873199582618204 ) );
-        assertTrue( "Unexpected difference in " + MetricConstants.MEAN_ABSOLUTE_ERROR,
-                    mae.getValue( 0 ).getData().equals( 11.009512537315405 ) );
-        assertTrue( "Unexpected difference in " + MetricConstants.MEAN_ERROR,
-                    me.getValue( 0 ).getData().equals( -1.157869354367079 ) );
-        assertTrue( "Unexpected difference in " + MetricConstants.ROOT_MEAN_SQUARE_ERROR,
-                    rmse.getValue( 0 ).getData().equals( 41.01563032408479 ) );
-        assertTrue( "Unexpected difference in " + MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE,
-                    Double.compare( crps.getValue( 0 ).getData(), 9.076475676968208 ) == 0 );
+        assertTrue( bias.getData().equals( -0.032093836077598345 ) );
+        assertTrue( cod.getData().equals( 0.7873367083297588 ) );
+        assertTrue( rho.getData().equals( 0.8873199582618204 ) );
+        assertTrue( mae.getData().equals( 11.009512537315405 ) );
+        assertTrue( me.getData().equals( -1.157869354367079 ) );
+        assertTrue( rmse.getData().equals( 41.01563032408479 ) );
+        assertTrue( Double.compare( crps.getData(), 9.076475676968208 ) == 0 );
     }
 
     /**
@@ -179,185 +177,78 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         String configPath = "testinput/metricProcessorEnsemblePairsByTimeTest/testApplyWithValueThresholds.xml";
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-        MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processor =
+        MetricProcessor<EnsemblePairs, MetricOutputForProject> processor =
                 MetricFactory.ofMetricProcessorByTimeEnsemblePairs( config,
                                                                     MetricOutputGroup.set() );
         processor.apply( MetricTestDataFactory.getEnsemblePairsOne() );
-        //Obtain the results
-        MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput> results = processor.getCachedMetricOutput()
-                                                                                     .getDoubleScoreOutput();
 
         //Validate bias
-        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> bias = results.get( MetricConstants.BIAS_FRACTION );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.BIAS_FRACTION
-                    + " at "
-                    + bias.getKey( 0 ),
-                    bias.getValue( 0 ).getData().equals( -0.032093836077598345 ) );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.BIAS_FRACTION
-                    + " at "
-                    + bias.getKey( 1 ),
-                    bias.getValue( 1 ).getData().equals( -0.032093836077598345 ) );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.BIAS_FRACTION
-                    + " at "
-                    + bias.getKey( 2 ),
-                    bias.getValue( 2 ).getData().equals( -0.0365931379807274 ) );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.BIAS_FRACTION
-                    + " at "
-                    + bias.getKey( 3 ),
-                    bias.getValue( 3 ).getData().equals( -0.039706682985140816 ) );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.BIAS_FRACTION
-                    + " at "
-                    + bias.getKey( 4 ),
-                    bias.getValue( 4 ).getData().equals( -0.0505708024162773 ) );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.BIAS_FRACTION
-                    + " at "
-                    + bias.getKey( 5 ),
-                    bias.getValue( 5 ).getData().equals( -0.056658160809530816 ) );
+        List<DoubleScoreOutput> bias = Slicer.filter( processor.getCachedMetricOutput()
+                                                               .getDoubleScoreOutput(),
+                                                      MetricConstants.BIAS_FRACTION )
+                                             .getData();
+        assertTrue( bias.get( 0 ).getData().equals( -0.032093836077598345 ) );
+        assertTrue( bias.get( 1 ).getData().equals( -0.032093836077598345 ) );
+        assertTrue( bias.get( 2 ).getData().equals( -0.0365931379807274 ) );
+        assertTrue( bias.get( 3 ).getData().equals( -0.039706682985140816 ) );
+        assertTrue( bias.get( 4 ).getData().equals( -0.0505708024162773 ) );
+        assertTrue( bias.get( 5 ).getData().equals( -0.056658160809530816 ) );
         //Validate CoD
-        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> cod =
-                results.get( MetricConstants.COEFFICIENT_OF_DETERMINATION );
-        assertTrue( "Expected results differ from actual results for "
-                    + MetricConstants.COEFFICIENT_OF_DETERMINATION
-                    + " at "
-                    + cod.getKey( 0 ),
-                    cod.getValue( 0 ).getData().equals( 0.7873367083297588 ) );
-        assertTrue( "Expected results differ from actual results for "
-                    + MetricConstants.COEFFICIENT_OF_DETERMINATION
-                    + " at "
-                    + cod.getKey( 1 ),
-                    cod.getValue( 1 ).getData().equals( 0.7873367083297588 ) );
-        assertTrue( "Expected results differ from actual results for "
-                    + MetricConstants.COEFFICIENT_OF_DETERMINATION
-                    + " at "
-                    + cod.getKey( 2 ),
-                    cod.getValue( 2 ).getData().equals( 0.7653639626077698 ) );
-        assertTrue( "Expected results differ from actual results for "
-                    + MetricConstants.COEFFICIENT_OF_DETERMINATION
-                    + " at "
-                    + cod.getKey( 3 ),
-                    cod.getValue( 3 ).getData().equals( 0.76063213080129 ) );
-        assertTrue( "Expected results differ from actual results for "
-                    + MetricConstants.COEFFICIENT_OF_DETERMINATION
-                    + " at "
-                    + cod.getKey( 4 ),
-                    cod.getValue( 4 ).getData().equals( 0.7542039364210298 ) );
-        assertTrue( "Expected results differ from actual results for "
-                    + MetricConstants.COEFFICIENT_OF_DETERMINATION
-                    + " at "
-                    + cod.getKey( 5 ),
-                    cod.getValue( 5 ).getData().equals( 0.7492338765733539 ) );
+        List<DoubleScoreOutput> cod = Slicer.filter( processor.getCachedMetricOutput()
+                                                              .getDoubleScoreOutput(),
+                                                     MetricConstants.COEFFICIENT_OF_DETERMINATION )
+                                            .getData();
+
+        assertTrue( cod.get( 0 ).getData().equals( 0.7873367083297588 ) );
+        assertTrue( cod.get( 1 ).getData().equals( 0.7873367083297588 ) );
+        assertTrue( cod.get( 2 ).getData().equals( 0.7653639626077698 ) );
+        assertTrue( cod.get( 3 ).getData().equals( 0.76063213080129 ) );
+        assertTrue( cod.get( 4 ).getData().equals( 0.7542039364210298 ) );
+        assertTrue( cod.get( 5 ).getData().equals( 0.7492338765733539 ) );
         //Validate rho
-        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> rho =
-                results.get( MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
-        assertTrue( "Expected results differ from actual results for "
-                    + MetricConstants.PEARSON_CORRELATION_COEFFICIENT
-                    + " at "
-                    + rho.getKey( 0 ),
-                    rho.getValue( 0 ).getData().equals( 0.8873199582618204 ) );
-        assertTrue( "Expected results differ from actual results for "
-                    + MetricConstants.PEARSON_CORRELATION_COEFFICIENT
-                    + " at "
-                    + rho.getKey( 1 ),
-                    rho.getValue( 1 ).getData().equals( 0.8873199582618204 ) );
-        assertTrue( "Expected results differ from actual results for "
-                    + MetricConstants.PEARSON_CORRELATION_COEFFICIENT
-                    + " at "
-                    + rho.getKey( 2 ),
-                    rho.getValue( 2 ).getData().equals( 0.8748508230594344 ) );
-        assertTrue( "Expected results differ from actual results for "
-                    + MetricConstants.PEARSON_CORRELATION_COEFFICIENT
-                    + " at "
-                    + rho.getKey( 3 ),
-                    rho.getValue( 3 ).getData().equals( 0.8721422652304439 ) );
-        assertTrue( "Expected results differ from actual results for "
-                    + MetricConstants.PEARSON_CORRELATION_COEFFICIENT
-                    + " at "
-                    + rho.getKey( 4 ),
-                    rho.getValue( 4 ).getData().equals( 0.868449155921652 ) );
-        assertTrue( "Expected results differ from actual results for "
-                    + MetricConstants.PEARSON_CORRELATION_COEFFICIENT
-                    + " at "
-                    + rho.getKey( 5 ),
-                    rho.getValue( 5 ).getData().equals( 0.8655829692024641 ) );
+        List<DoubleScoreOutput> rho = Slicer.filter( processor.getCachedMetricOutput()
+                                                              .getDoubleScoreOutput(),
+                                                     MetricConstants.PEARSON_CORRELATION_COEFFICIENT )
+                                            .getData();
+        assertTrue( rho.get( 0 ).getData().equals( 0.8873199582618204 ) );
+        assertTrue( rho.get( 1 ).getData().equals( 0.8873199582618204 ) );
+        assertTrue( rho.get( 2 ).getData().equals( 0.8748508230594344 ) );
+        assertTrue( rho.get( 3 ).getData().equals( 0.8721422652304439 ) );
+        assertTrue( rho.get( 4 ).getData().equals( 0.868449155921652 ) );
+        assertTrue( rho.get( 5 ).getData().equals( 0.8655829692024641 ) );
         //Validate mae
-        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> mae = results.get( MetricConstants.MEAN_ABSOLUTE_ERROR );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.MEAN_ABSOLUTE_ERROR
-                    + " at "
-                    + mae.getKey( 0 ),
-                    mae.getValue( 0 ).getData().equals( 11.009512537315405 ) );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.MEAN_ABSOLUTE_ERROR
-                    + " at "
-                    + mae.getKey( 1 ),
-                    mae.getValue( 1 ).getData().equals( 11.009512537315405 ) );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.MEAN_ABSOLUTE_ERROR
-                    + " at "
-                    + mae.getKey( 2 ),
-                    mae.getValue( 2 ).getData().equals( 17.675554578575642 ) );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.MEAN_ABSOLUTE_ERROR
-                    + " at "
-                    + mae.getKey( 3 ),
-                    mae.getValue( 3 ).getData().equals( 18.997815872635968 ) );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.MEAN_ABSOLUTE_ERROR
-                    + " at "
-                    + mae.getKey( 4 ),
-                    mae.getValue( 4 ).getData().equals( 20.625668563442147 ) );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.MEAN_ABSOLUTE_ERROR
-                    + " at "
-                    + mae.getKey( 5 ),
-                    mae.getValue( 5 ).getData().equals( 22.094227646773568 ) );
+        List<DoubleScoreOutput> mae = Slicer.filter( processor.getCachedMetricOutput()
+                                                              .getDoubleScoreOutput(),
+                                                     MetricConstants.MEAN_ABSOLUTE_ERROR )
+                                            .getData();
+        assertTrue( mae.get( 0 ).getData().equals( 11.009512537315405 ) );
+        assertTrue( mae.get( 1 ).getData().equals( 11.009512537315405 ) );
+        assertTrue( mae.get( 2 ).getData().equals( 17.675554578575642 ) );
+        assertTrue( mae.get( 3 ).getData().equals( 18.997815872635968 ) );
+        assertTrue( mae.get( 4 ).getData().equals( 20.625668563442147 ) );
+        assertTrue( mae.get( 5 ).getData().equals( 22.094227646773568 ) );
         //Validate me
-        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> me = results.get( MetricConstants.MEAN_ERROR );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.MEAN_ERROR
-                    + " at "
-                    + me.getKey( 0 ),
-                    me.getValue( 0 ).getData().equals( -1.157869354367079 ) );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.MEAN_ERROR
-                    + " at "
-                    + me.getKey( 1 ),
-                    me.getValue( 1 ).getData().equals( -1.157869354367079 ) );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.MEAN_ERROR
-                    + " at "
-                    + me.getKey( 2 ),
-                    me.getValue( 2 ).getData().equals( -2.1250409720950105 ) );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.MEAN_ERROR
-                    + " at "
-                    + me.getKey( 3 ),
-                    me.getValue( 3 ).getData().equals( -2.4855770739425846 ) );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.MEAN_ERROR
-                    + " at "
-                    + me.getKey( 4 ),
-                    me.getValue( 4 ).getData().equals( -3.4840043925326936 ) );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.MEAN_ERROR
-                    + " at "
-                    + me.getKey( 5 ),
-                    me.getValue( 5 ).getData().equals( -4.218543908073952 ) );
+        List<DoubleScoreOutput> me = Slicer.filter( processor.getCachedMetricOutput()
+                                                             .getDoubleScoreOutput(),
+                                                    MetricConstants.MEAN_ERROR )
+                                           .getData();
+        assertTrue( me.get( 0 ).getData().equals( -1.157869354367079 ) );
+        assertTrue( me.get( 1 ).getData().equals( -1.157869354367079 ) );
+        assertTrue( me.get( 2 ).getData().equals( -2.1250409720950105 ) );
+        assertTrue( me.get( 3 ).getData().equals( -2.4855770739425846 ) );
+        assertTrue( me.get( 4 ).getData().equals( -3.4840043925326936 ) );
+        assertTrue( me.get( 5 ).getData().equals( -4.218543908073952 ) );
         //Validate rmse
-        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> rmse =
-                results.get( MetricConstants.ROOT_MEAN_SQUARE_ERROR );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.ROOT_MEAN_SQUARE_ERROR
-                    + " at "
-                    + rmse.getKey( 0 ),
-                    rmse.getValue( 0 ).getData().equals( 41.01563032408479 ) );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.ROOT_MEAN_SQUARE_ERROR
-                    + " at "
-                    + rmse.getKey( 1 ),
-                    rmse.getValue( 1 ).getData().equals( 41.01563032408479 ) );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.ROOT_MEAN_SQUARE_ERROR
-                    + " at "
-                    + rmse.getKey( 2 ),
-                    rmse.getValue( 2 ).getData().equals( 52.55361580348336 ) );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.ROOT_MEAN_SQUARE_ERROR
-                    + " at "
-                    + rmse.getKey( 3 ),
-                    rmse.getValue( 3 ).getData().equals( 54.82426155439095 ) );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.ROOT_MEAN_SQUARE_ERROR
-                    + " at "
-                    + rmse.getKey( 4 ),
-                    rmse.getValue( 4 ).getData().equals( 58.12352988180837 ) );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.ROOT_MEAN_SQUARE_ERROR
-                    + " at "
-                    + rmse.getKey( 5 ),
-                    rmse.getValue( 5 ).getData().equals( 61.12163959516186 ) );
+        List<DoubleScoreOutput> rmse = Slicer.filter( processor.getCachedMetricOutput()
+                                                               .getDoubleScoreOutput(),
+                                                      MetricConstants.ROOT_MEAN_SQUARE_ERROR )
+                                             .getData();
+        assertTrue( rmse.get( 0 ).getData().equals( 41.01563032408479 ) );
+        assertTrue( rmse.get( 1 ).getData().equals( 41.01563032408479 ) );
+        assertTrue( rmse.get( 2 ).getData().equals( 52.55361580348336 ) );
+        assertTrue( rmse.get( 3 ).getData().equals( 54.82426155439095 ) );
+        assertTrue( rmse.get( 4 ).getData().equals( 58.12352988180837 ) );
+        assertTrue( rmse.get( 5 ).getData().equals( 61.12163959516186 ) );
     }
 
     /**
@@ -403,15 +294,18 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         processor.apply( MetricTestDataFactory.getEnsemblePairsOne() );
 
         // Obtain the results
-        MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput> actual = processor.getCachedMetricOutput()
-                                                                                    .getDoubleScoreOutput();
+        ListOfMetricOutput<DoubleScoreOutput> actual = processor.getCachedMetricOutput()
+                                                                .getDoubleScoreOutput();
 
         // Check for equality
         BiPredicate<Double, Double> testEqual = FunctionFactory.doubleEquals();
 
-        assertTrue( testEqual.test( actual.get( MetricConstants.THREAT_SCORE ).getValue( 0 ).getData(),
+        assertTrue( testEqual.test( Slicer.filter( actual, MetricConstants.THREAT_SCORE ).getData().get( 0 ).getData(),
                                     0.9160756501182034 ) );
-        assertTrue( testEqual.test( actual.get( MetricConstants.PEIRCE_SKILL_SCORE ).getValue( 0 ).getData(),
+        assertTrue( testEqual.test( Slicer.filter( actual, MetricConstants.PEIRCE_SKILL_SCORE )
+                                          .getData()
+                                          .get( 0 )
+                                          .getData(),
                                     -0.0012886597938144284 ) );
     }
 
@@ -434,189 +328,66 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         String configPath = "testinput/metricProcessorEnsemblePairsByTimeTest/testApplyWithProbabilityThresholds.xml";
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-        MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processor =
+        MetricProcessor<EnsemblePairs, MetricOutputForProject> processor =
                 MetricFactory.ofMetricProcessorByTimeEnsemblePairs( config,
                                                                     Collections.singleton( MetricOutputGroup.DOUBLE_SCORE ) );
         processor.apply( MetricTestDataFactory.getEnsemblePairsOne() );
 
         //Obtain the results
-        MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput> results = processor.getCachedMetricOutput()
-                                                                                     .getDoubleScoreOutput();
+        ListOfMetricOutput<DoubleScoreOutput> results = processor.getCachedMetricOutput()
+                                                                 .getDoubleScoreOutput();
 
         //Validate a selection of the outputs only
 
         //Validate bias
-        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> bias = results.get( MetricConstants.BIAS_FRACTION );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.BIAS_FRACTION
-                    + " at "
-                    + bias.getKey( 0 ),
-                    bias.getValue( 0 ).getData().equals( -0.032093836077598345 ) );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.BIAS_FRACTION
-                    + " at "
-                    + bias.getKey( 1 ),
-                    bias.getValue( 1 ).getData().equals( -0.032093836077598345 ) );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.BIAS_FRACTION
-                    + " at "
-                    + bias.getKey( 2 ),
-                    bias.getValue( 2 ).getData().equals( -0.0365931379807274 ) );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.BIAS_FRACTION
-                    + " at "
-                    + bias.getKey( 3 ),
-                    bias.getValue( 3 ).getData().equals( -0.039706682985140816 ) );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.BIAS_FRACTION
-                    + " at "
-                    + bias.getKey( 4 ),
-                    bias.getValue( 4 ).getData().equals( -0.05090288343061958 ) );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.BIAS_FRACTION
-                    + " at "
-                    + bias.getKey( 5 ),
-                    bias.getValue( 5 ).getData().equals( -0.056658160809530816 ) );
+        List<DoubleScoreOutput> bias = Slicer.filter( results, MetricConstants.BIAS_FRACTION ).getData();
+        assertTrue( bias.get( 0 ).getData().equals( -0.032093836077598345 ) );
+        assertTrue( bias.get( 1 ).getData().equals( -0.032093836077598345 ) );
+        assertTrue( bias.get( 2 ).getData().equals( -0.0365931379807274 ) );
+        assertTrue( bias.get( 3 ).getData().equals( -0.039706682985140816 ) );
+        assertTrue( bias.get( 4 ).getData().equals( -0.05090288343061958 ) );
+        assertTrue( bias.get( 5 ).getData().equals( -0.056658160809530816 ) );
         //Validate CoD
-        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> cod =
-                results.get( MetricConstants.COEFFICIENT_OF_DETERMINATION );
-        assertTrue( "Expected results differ from actual results for "
-                    + MetricConstants.COEFFICIENT_OF_DETERMINATION
-                    + " at "
-                    + cod.getKey( 0 ),
-                    cod.getValue( 0 ).getData().equals( 0.7873367083297588 ) );
-        assertTrue( "Expected results differ from actual results for "
-                    + MetricConstants.COEFFICIENT_OF_DETERMINATION
-                    + " at "
-                    + cod.getKey( 1 ),
-                    cod.getValue( 1 ).getData().equals( 0.7873367083297588 ) );
-        assertTrue( "Expected results differ from actual results for "
-                    + MetricConstants.COEFFICIENT_OF_DETERMINATION
-                    + " at "
-                    + cod.getKey( 2 ),
-                    cod.getValue( 2 ).getData().equals( 0.7653639626077698 ) );
-        assertTrue( "Expected results differ from actual results for "
-                    + MetricConstants.COEFFICIENT_OF_DETERMINATION
-                    + " at "
-                    + cod.getKey( 3 ),
-                    cod.getValue( 3 ).getData().equals( 0.76063213080129 ) );
-        assertTrue( "Expected results differ from actual results for "
-                    + MetricConstants.COEFFICIENT_OF_DETERMINATION
-                    + " at "
-                    + cod.getKey( 4 ),
-                    cod.getValue( 4 ).getData().equals( 0.7540690263086123 ) );
-        assertTrue( "Expected results differ from actual results for "
-                    + MetricConstants.COEFFICIENT_OF_DETERMINATION
-                    + " at "
-                    + cod.getKey( 5 ),
-                    cod.getValue( 5 ).getData().equals( 0.7492338765733539 ) );
+        List<DoubleScoreOutput> cod = Slicer.filter( results, MetricConstants.COEFFICIENT_OF_DETERMINATION ).getData();
+        assertTrue( cod.get( 0 ).getData().equals( 0.7873367083297588 ) );
+        assertTrue( cod.get( 1 ).getData().equals( 0.7873367083297588 ) );
+        assertTrue( cod.get( 2 ).getData().equals( 0.7653639626077698 ) );
+        assertTrue( cod.get( 3 ).getData().equals( 0.76063213080129 ) );
+        assertTrue( cod.get( 4 ).getData().equals( 0.7540690263086123 ) );
+        assertTrue( cod.get( 5 ).getData().equals( 0.7492338765733539 ) );
         //Validate rho
-        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> rho =
-                results.get( MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
-        assertTrue( "Expected results differ from actual results for "
-                    + MetricConstants.PEARSON_CORRELATION_COEFFICIENT
-                    + " at "
-                    + rho.getKey( 0 ),
-                    rho.getValue( 0 ).getData().equals( 0.8873199582618204 ) );
-        assertTrue( "Expected results differ from actual results for "
-                    + MetricConstants.PEARSON_CORRELATION_COEFFICIENT
-                    + " at "
-                    + rho.getKey( 1 ),
-                    rho.getValue( 1 ).getData().equals( 0.8873199582618204 ) );
-        assertTrue( "Expected results differ from actual results for "
-                    + MetricConstants.PEARSON_CORRELATION_COEFFICIENT
-                    + " at "
-                    + rho.getKey( 2 ),
-                    rho.getValue( 2 ).getData().equals( 0.8748508230594344 ) );
-        assertTrue( "Expected results differ from actual results for "
-                    + MetricConstants.PEARSON_CORRELATION_COEFFICIENT
-                    + " at "
-                    + rho.getKey( 3 ),
-                    rho.getValue( 3 ).getData().equals( 0.8721422652304439 ) );
-        assertTrue( "Expected results differ from actual results for "
-                    + MetricConstants.PEARSON_CORRELATION_COEFFICIENT
-                    + " at "
-                    + rho.getKey( 4 ),
-                    rho.getValue( 4 ).getData().equals( 0.8683714794421868 ) );
-        assertTrue( "Expected results differ from actual results for "
-                    + MetricConstants.PEARSON_CORRELATION_COEFFICIENT
-                    + " at "
-                    + rho.getKey( 5 ),
-                    rho.getValue( 5 ).getData().equals( 0.8655829692024641 ) );
+        List<DoubleScoreOutput> rho =
+                Slicer.filter( results, MetricConstants.PEARSON_CORRELATION_COEFFICIENT ).getData();
+        assertTrue( rho.get( 0 ).getData().equals( 0.8873199582618204 ) );
+        assertTrue( rho.get( 1 ).getData().equals( 0.8873199582618204 ) );
+        assertTrue( rho.get( 2 ).getData().equals( 0.8748508230594344 ) );
+        assertTrue( rho.get( 3 ).getData().equals( 0.8721422652304439 ) );
+        assertTrue( rho.get( 4 ).getData().equals( 0.8683714794421868 ) );
+        assertTrue( rho.get( 5 ).getData().equals( 0.8655829692024641 ) );
         //Validate mae
-        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> mae = results.get( MetricConstants.MEAN_ABSOLUTE_ERROR );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.MEAN_ABSOLUTE_ERROR
-                    + " at "
-                    + mae.getKey( 0 ),
-                    mae.getValue( 0 ).getData().equals( 11.009512537315405 ) );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.MEAN_ABSOLUTE_ERROR
-                    + " at "
-                    + mae.getKey( 1 ),
-                    mae.getValue( 1 ).getData().equals( 11.009512537315405 ) );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.MEAN_ABSOLUTE_ERROR
-                    + " at "
-                    + mae.getKey( 2 ),
-                    mae.getValue( 2 ).getData().equals( 17.675554578575642 ) );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.MEAN_ABSOLUTE_ERROR
-                    + " at "
-                    + mae.getKey( 3 ),
-                    mae.getValue( 3 ).getData().equals( 18.997815872635968 ) );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.MEAN_ABSOLUTE_ERROR
-                    + " at "
-                    + mae.getKey( 4 ),
-                    mae.getValue( 4 ).getData().equals( 20.653785159500924 ) );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.MEAN_ABSOLUTE_ERROR
-                    + " at "
-                    + mae.getKey( 5 ),
-                    mae.getValue( 5 ).getData().equals( 22.094227646773568 ) );
+        List<DoubleScoreOutput> mae = Slicer.filter( results, MetricConstants.MEAN_ABSOLUTE_ERROR ).getData();
+        assertTrue( mae.get( 0 ).getData().equals( 11.009512537315405 ) );
+        assertTrue( mae.get( 1 ).getData().equals( 11.009512537315405 ) );
+        assertTrue( mae.get( 2 ).getData().equals( 17.675554578575642 ) );
+        assertTrue( mae.get( 3 ).getData().equals( 18.997815872635968 ) );
+        assertTrue( mae.get( 4 ).getData().equals( 20.653785159500924 ) );
+        assertTrue( mae.get( 5 ).getData().equals( 22.094227646773568 ) );
         //Validate me
-        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> me = results.get( MetricConstants.MEAN_ERROR );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.MEAN_ERROR
-                    + " at "
-                    + me.getKey( 0 ),
-                    me.getValue( 0 ).getData().equals( -1.157869354367079 ) );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.MEAN_ERROR
-                    + " at "
-                    + me.getKey( 1 ),
-                    me.getValue( 1 ).getData().equals( -1.157869354367079 ) );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.MEAN_ERROR
-                    + " at "
-                    + me.getKey( 2 ),
-                    me.getValue( 2 ).getData().equals( -2.1250409720950105 ) );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.MEAN_ERROR
-                    + " at "
-                    + me.getKey( 3 ),
-                    me.getValue( 3 ).getData().equals( -2.4855770739425846 ) );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.MEAN_ERROR
-                    + " at "
-                    + me.getKey( 4 ),
-                    me.getValue( 4 ).getData().equals( -3.5134287820490364 ) );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.MEAN_ERROR
-                    + " at "
-                    + me.getKey( 5 ),
-                    me.getValue( 5 ).getData().equals( -4.218543908073952 ) );
+        List<DoubleScoreOutput> me = Slicer.filter( results, MetricConstants.MEAN_ERROR ).getData();
+        assertTrue( me.get( 0 ).getData().equals( -1.157869354367079 ) );
+        assertTrue( me.get( 1 ).getData().equals( -1.157869354367079 ) );
+        assertTrue( me.get( 2 ).getData().equals( -2.1250409720950105 ) );
+        assertTrue( me.get( 3 ).getData().equals( -2.4855770739425846 ) );
+        assertTrue( me.get( 4 ).getData().equals( -3.5134287820490364 ) );
+        assertTrue( me.get( 5 ).getData().equals( -4.218543908073952 ) );
         //Validate rmse
-        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> rmse =
-                results.get( MetricConstants.ROOT_MEAN_SQUARE_ERROR );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.ROOT_MEAN_SQUARE_ERROR
-                    + " at "
-                    + rmse.getKey( 0 ),
-                    rmse.getValue( 0 ).getData().equals( 41.01563032408479 ) );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.ROOT_MEAN_SQUARE_ERROR
-                    + " at "
-                    + rmse.getKey( 1 ),
-                    rmse.getValue( 1 ).getData().equals( 41.01563032408479 ) );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.ROOT_MEAN_SQUARE_ERROR
-                    + " at "
-                    + rmse.getKey( 2 ),
-                    rmse.getValue( 2 ).getData().equals( 52.55361580348336 ) );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.ROOT_MEAN_SQUARE_ERROR
-                    + " at "
-                    + rmse.getKey( 3 ),
-                    rmse.getValue( 3 ).getData().equals( 54.82426155439095 ) );
-
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.ROOT_MEAN_SQUARE_ERROR
-                    + " at "
-                    + rmse.getKey( 4 ),
-                    rmse.getValue( 4 ).getData().equals( 58.19124412599005 ) );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.ROOT_MEAN_SQUARE_ERROR
-                    + " at "
-                    + rmse.getKey( 5 ),
-                    rmse.getValue( 5 ).getData().equals( 61.12163959516186 ) );
+        List<DoubleScoreOutput> rmse = Slicer.filter( results, MetricConstants.ROOT_MEAN_SQUARE_ERROR ).getData();
+        assertTrue( rmse.get( 0 ).getData().equals( 41.01563032408479 ) );
+        assertTrue( rmse.get( 1 ).getData().equals( 41.01563032408479 ) );
+        assertTrue( rmse.get( 2 ).getData().equals( 52.55361580348336 ) );
+        assertTrue( rmse.get( 3 ).getData().equals( 54.82426155439095 ) );
+        assertTrue( rmse.get( 4 ).getData().equals( 58.19124412599005 ) );
+        assertTrue( rmse.get( 5 ).getData().equals( 61.12163959516186 ) );
     }
 
     /**
@@ -630,7 +401,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
     {
         exception.expect( NullPointerException.class );
         exception.expectMessage( "Expected non-null input to the metric processor." );
-        MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processor =
+        MetricProcessor<EnsemblePairs, MetricOutputForProject> processor =
                 MetricFactory.ofMetricProcessorByTimeEnsemblePairs( new ProjectConfig( null,
                                                                                        null,
                                                                                        null,
@@ -659,7 +430,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                 new MetricsConfig( null,
                                    Arrays.asList( new MetricConfig( null, null, MetricConfigName.BRIER_SCORE ) ),
                                    null );
-        MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processor =
+        MetricProcessor<EnsemblePairs, MetricOutputForProject> processor =
                 MetricFactory.ofMetricProcessorByTimeEnsemblePairs( new ProjectConfig( null,
                                                                                        null,
                                                                                        Arrays.asList( metrics ),
@@ -705,7 +476,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                    null );
 
 
-        MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processor =
+        MetricProcessor<EnsemblePairs, MetricOutputForProject> processor =
                 MetricFactory.ofMetricProcessorByTimeEnsemblePairs( mockedConfig,
                                                                     Collections.singleton( MetricOutputGroup.DOUBLE_SCORE ) );
         processor.apply( MetricTestDataFactory.getEnsemblePairsThree() );
@@ -737,7 +508,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                    null,
                                    null );
 
-        MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processor =
+        MetricProcessor<EnsemblePairs, MetricOutputForProject> processor =
                 MetricFactory.ofMetricProcessorByTimeEnsemblePairs( mockedConfig,
                                                                     Collections.singleton( MetricOutputGroup.DOUBLE_SCORE ) );
         processor.apply( MetricTestDataFactory.getEnsemblePairsThree() );
@@ -833,7 +604,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         String configPath = "testinput/metricProcessorEnsemblePairsByTimeTest/testAllValid.xml";
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-        MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processor =
+        MetricProcessor<EnsemblePairs, MetricOutputForProject> processor =
                 MetricFactory.ofMetricProcessorByTimeEnsemblePairs( config,
                                                                     MetricOutputGroup.set() );
         //Check for the expected number of metrics
@@ -863,185 +634,64 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         String configPath = "testinput/metricProcessorEnsemblePairsByTimeTest/testApplyWithValueThresholds.xml";
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-        MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processor =
+        MetricProcessor<EnsemblePairs, MetricOutputForProject> processor =
                 MetricFactory.ofMetricProcessorByTimeEnsemblePairs( config,
                                                                     MetricOutputGroup.set() );
         processor.apply( MetricTestDataFactory.getEnsemblePairsOneWithMissings() );
 
         //Obtain the results
-        MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput> results = processor.getCachedMetricOutput()
-                                                                                     .getDoubleScoreOutput();
+        ListOfMetricOutput<DoubleScoreOutput> results = processor.getCachedMetricOutput()
+                                                                 .getDoubleScoreOutput();
         //Validate bias
-        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> bias = results.get( MetricConstants.BIAS_FRACTION );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.BIAS_FRACTION
-                    + " at "
-                    + bias.getKey( 0 ),
-                    bias.getValue( 0 ).getData().equals( -0.032093836077598345 ) );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.BIAS_FRACTION
-                    + " at "
-                    + bias.getKey( 1 ),
-                    bias.getValue( 1 ).getData().equals( -0.032093836077598345 ) );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.BIAS_FRACTION
-                    + " at "
-                    + bias.getKey( 2 ),
-                    bias.getValue( 2 ).getData().equals( -0.0365931379807274 ) );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.BIAS_FRACTION
-                    + " at "
-                    + bias.getKey( 3 ),
-                    bias.getValue( 3 ).getData().equals( -0.039706682985140816 ) );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.BIAS_FRACTION
-                    + " at "
-                    + bias.getKey( 4 ),
-                    bias.getValue( 4 ).getData().equals( -0.0505708024162773 ) );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.BIAS_FRACTION
-                    + " at "
-                    + bias.getKey( 5 ),
-                    bias.getValue( 5 ).getData().equals( -0.056658160809530816 ) );
+        List<DoubleScoreOutput> bias = Slicer.filter( results, MetricConstants.BIAS_FRACTION ).getData();
+
+        assertTrue( bias.get( 0 ).getData().equals( -0.032093836077598345 ) );
+        assertTrue( bias.get( 1 ).getData().equals( -0.032093836077598345 ) );
+        assertTrue( bias.get( 2 ).getData().equals( -0.0365931379807274 ) );
+        assertTrue( bias.get( 3 ).getData().equals( -0.039706682985140816 ) );
+        assertTrue( bias.get( 4 ).getData().equals( -0.0505708024162773 ) );
+        assertTrue( bias.get( 5 ).getData().equals( -0.056658160809530816 ) );
         //Validate CoD
-        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> cod =
-                results.get( MetricConstants.COEFFICIENT_OF_DETERMINATION );
-        assertTrue( "Expected results differ from actual results for "
-                    + MetricConstants.COEFFICIENT_OF_DETERMINATION
-                    + " at "
-                    + cod.getKey( 0 ),
-                    cod.getValue( 0 ).getData().equals( 0.7873367083297588 ) );
-        assertTrue( "Expected results differ from actual results for "
-                    + MetricConstants.COEFFICIENT_OF_DETERMINATION
-                    + " at "
-                    + cod.getKey( 1 ),
-                    cod.getValue( 1 ).getData().equals( 0.7873367083297588 ) );
-        assertTrue( "Expected results differ from actual results for "
-                    + MetricConstants.COEFFICIENT_OF_DETERMINATION
-                    + " at "
-                    + cod.getKey( 2 ),
-                    cod.getValue( 2 ).getData().equals( 0.7653639626077698 ) );
-        assertTrue( "Expected results differ from actual results for "
-                    + MetricConstants.COEFFICIENT_OF_DETERMINATION
-                    + " at "
-                    + cod.getKey( 3 ),
-                    cod.getValue( 3 ).getData().equals( 0.76063213080129 ) );
-        assertTrue( "Expected results differ from actual results for "
-                    + MetricConstants.COEFFICIENT_OF_DETERMINATION
-                    + " at "
-                    + cod.getKey( 4 ),
-                    cod.getValue( 4 ).getData().equals( 0.7542039364210298 ) );
-        assertTrue( "Expected results differ from actual results for "
-                    + MetricConstants.COEFFICIENT_OF_DETERMINATION
-                    + " at "
-                    + cod.getKey( 5 ),
-                    cod.getValue( 5 ).getData().equals( 0.7492338765733539 ) );
+        List<DoubleScoreOutput> cod = Slicer.filter( results, MetricConstants.COEFFICIENT_OF_DETERMINATION ).getData();
+        assertTrue( cod.get( 0 ).getData().equals( 0.7873367083297588 ) );
+        assertTrue( cod.get( 1 ).getData().equals( 0.7873367083297588 ) );
+        assertTrue( cod.get( 2 ).getData().equals( 0.7653639626077698 ) );
+        assertTrue( cod.get( 3 ).getData().equals( 0.76063213080129 ) );
+        assertTrue( cod.get( 4 ).getData().equals( 0.7542039364210298 ) );
+        assertTrue( cod.get( 5 ).getData().equals( 0.7492338765733539 ) );
         //Validate rho
-        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> rho =
-                results.get( MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
-        assertTrue( "Expected results differ from actual results for "
-                    + MetricConstants.PEARSON_CORRELATION_COEFFICIENT
-                    + " at "
-                    + rho.getKey( 0 ),
-                    rho.getValue( 0 ).getData().equals( 0.8873199582618204 ) );
-        assertTrue( "Expected results differ from actual results for "
-                    + MetricConstants.PEARSON_CORRELATION_COEFFICIENT
-                    + " at "
-                    + rho.getKey( 1 ),
-                    rho.getValue( 1 ).getData().equals( 0.8873199582618204 ) );
-        assertTrue( "Expected results differ from actual results for "
-                    + MetricConstants.PEARSON_CORRELATION_COEFFICIENT
-                    + " at "
-                    + rho.getKey( 2 ),
-                    rho.getValue( 2 ).getData().equals( 0.8748508230594344 ) );
-        assertTrue( "Expected results differ from actual results for "
-                    + MetricConstants.PEARSON_CORRELATION_COEFFICIENT
-                    + " at "
-                    + rho.getKey( 3 ),
-                    rho.getValue( 3 ).getData().equals( 0.8721422652304439 ) );
-        assertTrue( "Expected results differ from actual results for "
-                    + MetricConstants.PEARSON_CORRELATION_COEFFICIENT
-                    + " at "
-                    + rho.getKey( 4 ),
-                    rho.getValue( 4 ).getData().equals( 0.868449155921652 ) );
-        assertTrue( "Expected results differ from actual results for "
-                    + MetricConstants.PEARSON_CORRELATION_COEFFICIENT
-                    + " at "
-                    + rho.getKey( 5 ),
-                    rho.getValue( 5 ).getData().equals( 0.8655829692024641 ) );
+        List<DoubleScoreOutput> rho =
+                Slicer.filter( results, MetricConstants.PEARSON_CORRELATION_COEFFICIENT ).getData();
+        assertTrue( rho.get( 0 ).getData().equals( 0.8873199582618204 ) );
+        assertTrue( rho.get( 1 ).getData().equals( 0.8873199582618204 ) );
+        assertTrue( rho.get( 2 ).getData().equals( 0.8748508230594344 ) );
+        assertTrue( rho.get( 3 ).getData().equals( 0.8721422652304439 ) );
+        assertTrue( rho.get( 4 ).getData().equals( 0.868449155921652 ) );
+        assertTrue( rho.get( 5 ).getData().equals( 0.8655829692024641 ) );
         //Validate mae
-        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> mae = results.get( MetricConstants.MEAN_ABSOLUTE_ERROR );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.MEAN_ABSOLUTE_ERROR
-                    + " at "
-                    + mae.getKey( 0 ),
-                    mae.getValue( 0 ).getData().equals( 11.009512537315405 ) );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.MEAN_ABSOLUTE_ERROR
-                    + " at "
-                    + mae.getKey( 1 ),
-                    mae.getValue( 1 ).getData().equals( 11.009512537315405 ) );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.MEAN_ABSOLUTE_ERROR
-                    + " at "
-                    + mae.getKey( 2 ),
-                    mae.getValue( 2 ).getData().equals( 17.675554578575642 ) );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.MEAN_ABSOLUTE_ERROR
-                    + " at "
-                    + mae.getKey( 3 ),
-                    mae.getValue( 3 ).getData().equals( 18.997815872635968 ) );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.MEAN_ABSOLUTE_ERROR
-                    + " at "
-                    + mae.getKey( 4 ),
-                    mae.getValue( 4 ).getData().equals( 20.625668563442147 ) );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.MEAN_ABSOLUTE_ERROR
-                    + " at "
-                    + mae.getKey( 5 ),
-                    mae.getValue( 5 ).getData().equals( 22.094227646773568 ) );
+        List<DoubleScoreOutput> mae = Slicer.filter( results, MetricConstants.MEAN_ABSOLUTE_ERROR ).getData();
+        assertTrue( mae.get( 0 ).getData().equals( 11.009512537315405 ) );
+        assertTrue( mae.get( 1 ).getData().equals( 11.009512537315405 ) );
+        assertTrue( mae.get( 2 ).getData().equals( 17.675554578575642 ) );
+        assertTrue( mae.get( 3 ).getData().equals( 18.997815872635968 ) );
+        assertTrue( mae.get( 4 ).getData().equals( 20.625668563442147 ) );
+        assertTrue( mae.get( 5 ).getData().equals( 22.094227646773568 ) );
         //Validate me
-        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> me = results.get( MetricConstants.MEAN_ERROR );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.MEAN_ERROR
-                    + " at "
-                    + me.getKey( 0 ),
-                    me.getValue( 0 ).getData().equals( -1.157869354367079 ) );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.MEAN_ERROR
-                    + " at "
-                    + me.getKey( 1 ),
-                    me.getValue( 1 ).getData().equals( -1.157869354367079 ) );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.MEAN_ERROR
-                    + " at "
-                    + me.getKey( 2 ),
-                    me.getValue( 2 ).getData().equals( -2.1250409720950105 ) );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.MEAN_ERROR
-                    + " at "
-                    + me.getKey( 3 ),
-                    me.getValue( 3 ).getData().equals( -2.4855770739425846 ) );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.MEAN_ERROR
-                    + " at "
-                    + me.getKey( 4 ),
-                    me.getValue( 4 ).getData().equals( -3.4840043925326936 ) );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.MEAN_ERROR
-                    + " at "
-                    + me.getKey( 5 ),
-                    me.getValue( 5 ).getData().equals( -4.218543908073952 ) );
+        List<DoubleScoreOutput> me = Slicer.filter( results, MetricConstants.MEAN_ERROR ).getData();
+        assertTrue( me.get( 0 ).getData().equals( -1.157869354367079 ) );
+        assertTrue( me.get( 1 ).getData().equals( -1.157869354367079 ) );
+        assertTrue( me.get( 2 ).getData().equals( -2.1250409720950105 ) );
+        assertTrue( me.get( 3 ).getData().equals( -2.4855770739425846 ) );
+        assertTrue( me.get( 4 ).getData().equals( -3.4840043925326936 ) );
+        assertTrue( me.get( 5 ).getData().equals( -4.218543908073952 ) );
         //Validate rmse
-        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> rmse =
-                results.get( MetricConstants.ROOT_MEAN_SQUARE_ERROR );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.ROOT_MEAN_SQUARE_ERROR
-                    + " at "
-                    + rmse.getKey( 0 ),
-                    rmse.getValue( 0 ).getData().equals( 41.01563032408479 ) );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.ROOT_MEAN_SQUARE_ERROR
-                    + " at "
-                    + rmse.getKey( 1 ),
-                    rmse.getValue( 1 ).getData().equals( 41.01563032408479 ) );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.ROOT_MEAN_SQUARE_ERROR
-                    + " at "
-                    + rmse.getKey( 2 ),
-                    rmse.getValue( 2 ).getData().equals( 52.55361580348336 ) );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.ROOT_MEAN_SQUARE_ERROR
-                    + " at "
-                    + rmse.getKey( 3 ),
-                    rmse.getValue( 3 ).getData().equals( 54.82426155439095 ) );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.ROOT_MEAN_SQUARE_ERROR
-                    + " at "
-                    + rmse.getKey( 4 ),
-                    rmse.getValue( 4 ).getData().equals( 58.12352988180837 ) );
-        assertTrue( "Expected results differ from actual results for " + MetricConstants.ROOT_MEAN_SQUARE_ERROR
-                    + " at "
-                    + rmse.getKey( 5 ),
-                    rmse.getValue( 5 ).getData().equals( 61.12163959516186 ) );
+        List<DoubleScoreOutput> rmse = Slicer.filter( results, MetricConstants.ROOT_MEAN_SQUARE_ERROR ).getData();
+        assertTrue( rmse.get( 0 ).getData().equals( 41.01563032408479 ) );
+        assertTrue( rmse.get( 1 ).getData().equals( 41.01563032408479 ) );
+        assertTrue( rmse.get( 2 ).getData().equals( 52.55361580348336 ) );
+        assertTrue( rmse.get( 3 ).getData().equals( 54.82426155439095 ) );
+        assertTrue( rmse.get( 4 ).getData().equals( 58.12352988180837 ) );
+        assertTrue( rmse.get( 5 ).getData().equals( 61.12163959516186 ) );
     }
 
     /**
@@ -1063,114 +713,112 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         String configPath = "testinput/metricProcessorEnsemblePairsByTimeTest/testContingencyTable.xml";
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-        MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processor =
+        MetricProcessor<EnsemblePairs, MetricOutputForProject> processor =
                 MetricFactory.ofMetricProcessorByTimeEnsemblePairs( config, MetricOutputGroup.set() );
         processor.apply( MetricTestDataFactory.getEnsemblePairsTwo() );
-        //Obtain the results
-        MetricOutputMultiMapByTimeAndThreshold<MatrixOutput> results = processor.getCachedMetricOutput()
-                                                                                .getMatrixOutput();
-
 
         // Expected result
         final TimeWindow expectedWindow = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                          Instant.parse( "2010-12-31T11:59:59Z" ),
                                                          ReferenceTime.VALID_TIME,
                                                          Duration.ofHours( 24 ) );
+
+        //Obtain the results
+        ListOfMetricOutput<MatrixOutput> results =
+                Slicer.filter( processor.getCachedMetricOutput().getMatrixOutput(),
+                               meta -> meta.getMetricID().equals( MetricConstants.CONTINGENCY_TABLE )
+                                       && meta.getTimeWindow().equals( expectedWindow ) );
+
+
         // Exceeds 50.0 with occurrences > 0.05
         MatrixOfDoubles expectedFirst = MatrixOfDoubles.of( new double[][] { { 40.0, 32.0 }, { 2.0, 91.0 } } );
-        Pair<TimeWindow, OneOrTwoThresholds> first =
-                Pair.of( expectedWindow,
-                         OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 50.0 ),
-                                                              Operator.GREATER,
-                                                              ThresholdDataType.LEFT ),
-                                                Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.05 ),
-                                                                                  Operator.GREATER,
-                                                                                  ThresholdDataType.LEFT ) ) );
+        OneOrTwoThresholds first = OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 50.0 ),
+                                                                        Operator.GREATER,
+                                                                        ThresholdDataType.LEFT ),
+                                                          Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.05 ),
+                                                                                            Operator.GREATER,
+                                                                                            ThresholdDataType.LEFT ) );
 
-        assertTrue( "Unexpected results for the contingency table.",
-                    expectedFirst.equals( results.get( MetricConstants.CONTINGENCY_TABLE )
-                                                 .get( first )
-                                                 .getData() ) );
+        assertEquals( expectedFirst,
+                      Slicer.filter( results, meta -> meta.getThresholds().equals( first ) )
+                            .getData()
+                            .get( 0 )
+                            .getData() );
 
         // Exceeds 50.0 with occurrences > 0.25
         MatrixOfDoubles expectedSecond = MatrixOfDoubles.of( new double[][] { { 39.0, 17.0 }, { 3.0, 106.0 } } );
-        Pair<TimeWindow, OneOrTwoThresholds> second =
-                Pair.of( expectedWindow,
-                         OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 50.0 ),
-                                                              Operator.GREATER,
-                                                              ThresholdDataType.LEFT ),
-                                                Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.25 ),
-                                                                                  Operator.GREATER,
-                                                                                  ThresholdDataType.LEFT ) ) );
+        OneOrTwoThresholds second = OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 50.0 ),
+                                                                         Operator.GREATER,
+                                                                         ThresholdDataType.LEFT ),
+                                                           Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.25 ),
+                                                                                             Operator.GREATER,
+                                                                                             ThresholdDataType.LEFT ) );
 
-        assertTrue( "Unexpected results for the contingency table.",
-                    expectedSecond.equals( results.get( MetricConstants.CONTINGENCY_TABLE )
-                                                  .get( second )
-                                                  .getData() ) );
+        assertEquals( expectedSecond,
+                      Slicer.filter( results, meta -> meta.getThresholds().equals( second ) )
+                            .getData()
+                            .get( 0 )
+                            .getData() );
 
         // Exceeds 50.0 with occurrences > 0.5
         MatrixOfDoubles expectedThird = MatrixOfDoubles.of( new double[][] { { 39.0, 15.0 }, { 3.0, 108.0 } } );
-        Pair<TimeWindow, OneOrTwoThresholds> third =
-                Pair.of( expectedWindow,
-                         OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 50.0 ),
-                                                              Operator.GREATER,
-                                                              ThresholdDataType.LEFT ),
-                                                Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.5 ),
-                                                                                  Operator.GREATER,
-                                                                                  ThresholdDataType.LEFT ) ) );
+        OneOrTwoThresholds third = OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 50.0 ),
+                                                                        Operator.GREATER,
+                                                                        ThresholdDataType.LEFT ),
+                                                          Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.5 ),
+                                                                                            Operator.GREATER,
+                                                                                            ThresholdDataType.LEFT ) );
 
-        assertTrue( "Unexpected results for the contingency table.",
-                    expectedThird.equals( results.get( MetricConstants.CONTINGENCY_TABLE )
-                                                 .get( third )
-                                                 .getData() ) );
+        assertEquals( expectedThird,
+                      Slicer.filter( results, meta -> meta.getThresholds().equals( third ) )
+                            .getData()
+                            .get( 0 )
+                            .getData() );
 
         // Exceeds 50.0 with occurrences > 0.75
         MatrixOfDoubles expectedFourth = MatrixOfDoubles.of( new double[][] { { 37.0, 14.0 }, { 5.0, 109.0 } } );
-        Pair<TimeWindow, OneOrTwoThresholds> fourth =
-                Pair.of( expectedWindow,
-                         OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 50.0 ),
-                                                              Operator.GREATER,
-                                                              ThresholdDataType.LEFT ),
-                                                Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.75 ),
-                                                                                  Operator.GREATER,
-                                                                                  ThresholdDataType.LEFT ) ) );
+        OneOrTwoThresholds fourth = OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 50.0 ),
+                                                                         Operator.GREATER,
+                                                                         ThresholdDataType.LEFT ),
+                                                           Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.75 ),
+                                                                                             Operator.GREATER,
+                                                                                             ThresholdDataType.LEFT ) );
 
-        assertTrue( "Unexpected results for the contingency table.",
-                    expectedFourth.equals( results.get( MetricConstants.CONTINGENCY_TABLE )
-                                                  .get( fourth )
-                                                  .getData() ) );
+        assertEquals( expectedFourth,
+                      Slicer.filter( results, meta -> meta.getThresholds().equals( fourth ) )
+                            .getData()
+                            .get( 0 )
+                            .getData() );
 
         // Exceeds 50.0 with occurrences > 0.9
         MatrixOfDoubles expectedFifth = MatrixOfDoubles.of( new double[][] { { 37.0, 11.0 }, { 5.0, 112.0 } } );
-        Pair<TimeWindow, OneOrTwoThresholds> fifth =
-                Pair.of( expectedWindow,
-                         OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 50.0 ),
-                                                              Operator.GREATER,
-                                                              ThresholdDataType.LEFT ),
-                                                Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.9 ),
-                                                                                  Operator.GREATER,
-                                                                                  ThresholdDataType.LEFT ) ) );
+        OneOrTwoThresholds fifth = OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 50.0 ),
+                                                                        Operator.GREATER,
+                                                                        ThresholdDataType.LEFT ),
+                                                          Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.9 ),
+                                                                                            Operator.GREATER,
+                                                                                            ThresholdDataType.LEFT ) );
 
-        assertTrue( "Unexpected results for the contingency table.",
-                    expectedFifth.equals( results.get( MetricConstants.CONTINGENCY_TABLE )
-                                                 .get( fifth )
-                                                 .getData() ) );
+        assertEquals( expectedFifth,
+                      Slicer.filter( results, meta -> meta.getThresholds().equals( fifth ) )
+                            .getData()
+                            .get( 0 )
+                            .getData() );
 
         // Exceeds 50.0 with occurrences > 0.95
         MatrixOfDoubles expectedSixth = MatrixOfDoubles.of( new double[][] { { 36.0, 10.0 }, { 6.0, 113.0 } } );
-        Pair<TimeWindow, OneOrTwoThresholds> sixth =
-                Pair.of( expectedWindow,
-                         OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 50.0 ),
-                                                              Operator.GREATER,
-                                                              ThresholdDataType.LEFT ),
-                                                Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.95 ),
-                                                                                  Operator.GREATER,
-                                                                                  ThresholdDataType.LEFT ) ) );
+        OneOrTwoThresholds sixth = OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 50.0 ),
+                                                                        Operator.GREATER,
+                                                                        ThresholdDataType.LEFT ),
+                                                          Threshold.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.95 ),
+                                                                                            Operator.GREATER,
+                                                                                            ThresholdDataType.LEFT ) );
 
-        assertTrue( "Unexpected results for the contingency table.",
-                    expectedSixth.equals( results.get( MetricConstants.CONTINGENCY_TABLE )
-                                                 .get( sixth )
-                                                 .getData() ) );
+        assertEquals( expectedSixth,
+                      Slicer.filter( results, meta -> meta.getThresholds().equals( sixth ) )
+                            .getData()
+                            .get( 0 )
+                            .getData() );
 
     }
 
@@ -1193,27 +841,19 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         String configPath = "testinput/metricProcessorEnsemblePairsByTimeTest/testApplyWithValueThresholds.xml";
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-        MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processor =
+        MetricProcessor<EnsemblePairs, MetricOutputForProject> processor =
                 MetricFactory.ofMetricProcessorByTimeEnsemblePairs( config, MetricOutputGroup.set() );
         processor.apply( MetricTestDataFactory.getEnsemblePairsFour() );
 
         //Obtain the results
-        MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput> results = processor.getCachedMetricOutput()
-                                                                                     .getDoubleScoreOutput();
+        ListOfMetricOutput<DoubleScoreOutput> results = processor.getCachedMetricOutput().getDoubleScoreOutput();
 
         //Validate the score outputs
-        for ( MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> nextMetric : results.values() )
+        for ( DoubleScoreOutput nextMetric : results )
         {
             if ( nextMetric.getMetadata().getMetricID() != MetricConstants.SAMPLE_SIZE )
             {
-                for ( Entry<Pair<TimeWindow, OneOrTwoThresholds>, DoubleScoreOutput> nextOutput : nextMetric.entrySet() )
-                {
-                    assertTrue( "Expected results differ from actual results for "
-                                + nextMetric.getMetadata().getMetricID()
-                                + " at "
-                                + nextOutput.getKey(),
-                                nextOutput.getValue().getData().isNaN() );
-                }
+                assertTrue( nextMetric.getData().isNaN() );
             }
         }
     }

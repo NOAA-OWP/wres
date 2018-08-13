@@ -15,7 +15,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
 import wres.config.ProjectConfigException;
@@ -26,15 +25,15 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
+import wres.datamodel.outputs.ListOfMetricOutput;
 import wres.datamodel.outputs.MatrixOutput;
 import wres.datamodel.outputs.MetricOutputAccessException;
-import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
-import wres.datamodel.outputs.MetricOutputMapByMetric;
+import wres.datamodel.outputs.MetricOutputForProject;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
@@ -44,7 +43,7 @@ import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
  * Tests the writing of matrix outputs to a file of Comma Separated Values (CSV).
  */
 
-public class CommaSeparatedMatrixWriterTest extends CommaSeparatedWriterTest
+public class CommaSeparatedMatrixWriterTest extends CommaSeparatedWriterTestHelper
 {
 
     /**
@@ -67,7 +66,7 @@ public class CommaSeparatedMatrixWriterTest extends CommaSeparatedWriterTest
         final String LID = "BDAC1";
 
         // Create fake outputs
-        MetricOutputForProjectByTimeAndThreshold.MetricOutputForProjectByTimeAndThresholdBuilder outputBuilder =
+        MetricOutputForProject.MetricOutputForProjectBuilder outputBuilder =
                 DataFactory.ofMetricOutputForProjectByTimeAndThreshold();
 
         TimeWindow timeOne =
@@ -76,6 +75,11 @@ public class CommaSeparatedMatrixWriterTest extends CommaSeparatedWriterTest
                                ReferenceTime.VALID_TIME,
                                Duration.ofHours( 24 ),
                                Duration.ofHours( 24 ) );
+
+        OneOrTwoThresholds threshold =
+                OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                                                     Operator.GREATER,
+                                                     ThresholdDataType.LEFT ) );
 
         // Output requires a future... which requires a metadata...
         // which requires a datasetidentifier...
@@ -89,40 +93,32 @@ public class CommaSeparatedMatrixWriterTest extends CommaSeparatedWriterTest
 
         MetricOutputMetadata fakeMetadata =
                 MetricOutputMetadata.of( 1000,
-                                                   MeasurementUnit.of(),
-                                                   MeasurementUnit.of( "CMS" ),
-                                                   MetricConstants.CONTINGENCY_TABLE,
-                                                   null,
-                                                   datasetIdentifier );
+                                         MeasurementUnit.of(),
+                                         MeasurementUnit.of( "CMS" ),
+                                         MetricConstants.CONTINGENCY_TABLE,
+                                         null,
+                                         datasetIdentifier,
+                                         timeOne,
+                                         threshold );
 
         double[][] fakeOutputs = new double[][] { { 23, 79 }, { 56, 342 } };
 
 
         // Fake output wrapper.
-        MetricOutputMapByMetric<MatrixOutput> fakeOutputData =
-                DataFactory.ofMetricOutputMapByMetric( Collections.singletonMap( MetricConstants.CONTINGENCY_TABLE,
-                                                                                 MatrixOutput.of( fakeOutputs,
-                                                                                                             Arrays.asList( MetricDimension.TRUE_POSITIVES,
-                                                                                                                            MetricDimension.FALSE_POSITIVES,
-                                                                                                                            MetricDimension.FALSE_NEGATIVES,
-                                                                                                                            MetricDimension.TRUE_NEGATIVES ),
-                                                                                                             fakeMetadata ) ) );
+        ListOfMetricOutput<MatrixOutput> fakeOutputData =
+                ListOfMetricOutput.of( Collections.singletonList( MatrixOutput.of( fakeOutputs,
+                                                                                   Arrays.asList( MetricDimension.TRUE_POSITIVES,
+                                                                                                  MetricDimension.FALSE_POSITIVES,
+                                                                                                  MetricDimension.FALSE_NEGATIVES,
+                                                                                                  MetricDimension.TRUE_NEGATIVES ),
+                                                                                   fakeMetadata ) ) );
         // wrap outputs in future
-        Future<MetricOutputMapByMetric<MatrixOutput>> outputMapByMetricFuture =
+        Future<ListOfMetricOutput<MatrixOutput>> outputMapByMetricFuture =
                 CompletableFuture.completedFuture( fakeOutputData );
 
+        outputBuilder.addMatrixOutput( outputMapByMetricFuture );
 
-        // Fake lead time and threshold
-        Pair<TimeWindow, OneOrTwoThresholds> mapKeyByLeadThreshold =
-                Pair.of( timeOne,
-                         OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                                         Operator.GREATER,
-                                                                         ThresholdDataType.LEFT ) ) );
-
-        outputBuilder.addMatrixOutput( mapKeyByLeadThreshold,
-                                       outputMapByMetricFuture );
-
-        MetricOutputForProjectByTimeAndThreshold output = outputBuilder.build();
+        MetricOutputForProject output = outputBuilder.build();
 
         // Construct a fake configuration file.
         Feature feature = getMockedFeature( LID );

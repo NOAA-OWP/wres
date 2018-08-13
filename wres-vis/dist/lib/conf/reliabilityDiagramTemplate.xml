@@ -18,7 +18,6 @@
 		<seriesDrawingParameters createdIndexOfSeriesToModify="-1">
 			<nameInLegend></nameInLegend>
 			<showInLegend>false</showInLegend>
-            <shape>circle</shape>
 		</seriesDrawingParameters>
 	</datasourceDrawingParameters>
 

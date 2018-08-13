@@ -21,12 +21,11 @@ import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.SingleValuedPair;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.outputs.MapKey;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
@@ -356,108 +355,5 @@ public final class DataFactoryTest
                                                                               ThresholdDataType.LEFT ) );
         assertTrue( "Expected inequality.", !fifth.equals( sixth ) );
     }
-
-    /**
-     * Tests for the correct implementation of {@link Comparable} by the {@link DefaultMapKey}.
-     */
-
-    @Test
-    public void compareDefaultMapKeyTest()
-    {
-        //Test equality
-        MapKey<TimeWindow> first = MapKey.of( TimeWindow.of( Instant.MIN,
-                                                             Instant.MAX,
-                                                             ReferenceTime.ISSUE_TIME ) );
-        MapKey<TimeWindow> second = MapKey.of( TimeWindow.of( Instant.MIN,
-                                                              Instant.MAX,
-                                                              ReferenceTime.ISSUE_TIME ) );
-        assertTrue( "Expected equality.",
-                    first.compareTo( second ) == 0 && second.compareTo( first ) == 0 && first.equals( second ) );
-        //Test inequality and anticommutativity 
-        //Earliest date
-        MapKey<TimeWindow> third =
-                MapKey.of( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                          Instant.MAX,
-                                          ReferenceTime.ISSUE_TIME ) );
-        assertTrue( "Expected greater than.", third.compareTo( first ) > 0 );
-        assertTrue( "Expected anticommutativity.",
-                    Math.abs( first.compareTo( third ) ) == Math.abs( third.compareTo( first ) ) );
-        //Latest date
-        MapKey<TimeWindow> fourth =
-                MapKey.of( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                          Instant.parse( "1986-01-01T00:00:00Z" ),
-                                          ReferenceTime.ISSUE_TIME ) );
-        assertTrue( "Expected greater than.", third.compareTo( fourth ) > 0 );
-        assertTrue( "Expected anticommutativity.",
-                    Math.abs( third.compareTo( fourth ) ) == Math.abs( fourth.compareTo( third ) ) );
-        //Reference time
-        MapKey<TimeWindow> fifth =
-                MapKey.of( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                          Instant.parse( "1986-01-01T00:00:00Z" ),
-                                          ReferenceTime.VALID_TIME ) );
-        assertTrue( "Expected greater than.", fourth.compareTo( fifth ) > 0 );
-        assertTrue( "Expected anticommutativity.",
-                    Math.abs( fourth.compareTo( fifth ) ) == Math.abs( fifth.compareTo( fourth ) ) );
-        //Check nullity contract
-        try
-        {
-            first.compareTo( null );
-            fail( "Expected null pointer on comparing." );
-        }
-        catch ( NullPointerException e )
-        {
-        }
-    }
-
-    /**
-     * Tests the {@link DefaultMapKey#equals(Object)} and {@link DefaultMapKey#hashCode()}.
-     */
-
-    @Test
-    public void equalsHashCodeDefaultMapKeyTest()
-    {
-        //Equality
-        MapKey<TimeWindow> zeroeth = MapKey.of( TimeWindow.of( Instant.MIN,
-                                                               Instant.MAX,
-                                                               ReferenceTime.ISSUE_TIME ) );
-        MapKey<TimeWindow> first = MapKey.of( TimeWindow.of( Instant.MIN,
-                                                             Instant.MAX,
-                                                             ReferenceTime.ISSUE_TIME ) );
-        MapKey<TimeWindow> second = MapKey.of( TimeWindow.of( Instant.MIN,
-                                                              Instant.MAX,
-                                                              ReferenceTime.ISSUE_TIME ) );
-        //Reflexive
-        assertEquals( "Expected reflexive equality.", first, first );
-        //Symmetric 
-        assertTrue( "Expected symmetric equality.", first.equals( second ) && second.equals( first ) );
-        //Transitive 
-        assertTrue( "Expected transitive equality.",
-                    zeroeth.equals( first ) && first.equals( second ) && zeroeth.equals( second ) );
-        //Nullity
-        assertTrue( "Expected inequality on null.", !first.equals( null ) );
-        //Check hashcode
-        assertEquals( "Expected equal hashcodes.", first.hashCode(), second.hashCode() );
-
-        //Test inequalities
-        //Earliest date
-        MapKey<TimeWindow> third =
-                MapKey.of( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                          Instant.MAX,
-                                          ReferenceTime.ISSUE_TIME ) );
-        assertTrue( "Expected inequality.", !third.equals( first ) );
-        //Latest date
-        MapKey<TimeWindow> fourth =
-                MapKey.of( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                          Instant.parse( "1986-01-01T00:00:00Z" ),
-                                          ReferenceTime.ISSUE_TIME ) );
-        assertTrue( "Expected inequality.", !third.equals( fourth ) );
-        //Reference time
-        MapKey<TimeWindow> fifth =
-                MapKey.of( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                          Instant.parse( "1986-01-01T00:00:00Z" ),
-                                          ReferenceTime.VALID_TIME ) );
-        assertTrue( "Expected inequality.", !fourth.equals( fifth ) );
-    }
-
 
 }

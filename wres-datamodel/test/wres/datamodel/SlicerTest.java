@@ -42,7 +42,7 @@ import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.DataModelTestDataFactory;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.ListOfMetricOutput;
-import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
+import wres.datamodel.outputs.MetricOutput;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
@@ -547,15 +547,16 @@ public final class SlicerTest
     public void testFilterByMetricComponent()
     {
         //Obtain input and slice
-        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> toSlice =
-                DataModelTestDataFactory.getVectorMetricOutputMapByLeadThresholdOne();
-        Map<MetricConstants, MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>> sliced =
+        ListOfMetricOutput<DoubleScoreOutput> toSlice =
+                DataModelTestDataFactory.getVectorMetricOutputOne();
+        Map<MetricConstants, ListOfMetricOutput<DoubleScoreOutput>> sliced =
                 Slicer.filterByMetricComponent( toSlice );
 
         //Check the results
-        assertTrue( "Expected five slices of data.",
-                    sliced.size() == toSlice.getMetadata().getMetricComponentID().getAllComponents().size() );
-        sliced.forEach( ( key, value ) -> assertTrue( "Expected 638 elements in each slice.", value.size() == 638 ) );
+        assertTrue( "Expected five slices of data.", sliced.size() == 5 );
+
+        sliced.forEach( ( key, value ) -> assertTrue( "Expected 638 elements in each slice.",
+                                                      value.getData().size() == 638 ) );
     }
 
     /**
@@ -1050,8 +1051,7 @@ public final class SlicerTest
                                                       DoubleScoreOutput.of( 0.3,
                                                                             MetricOutputMetadata.of( metadata,
                                                                                                      windowThree,
-                                                                                                     thresholdThree ) ) ),
-                                       metadata );
+                                                                                                     thresholdThree ) ) ) );
 
         // Filter by the first lead time and the last lead time and threshold
         Predicate<MetricOutputMetadata> filter = meta -> meta.getTimeWindow().equals( windowOne )
@@ -1068,11 +1068,9 @@ public final class SlicerTest
                                                       DoubleScoreOutput.of( 0.3,
                                                                             MetricOutputMetadata.of( metadata,
                                                                                                      windowThree,
-                                                                                                     thresholdThree ) ) ),
-                                       metadata );
+                                                                                                     thresholdThree ) ) ) );
 
         assertEquals( actualOutput, expectedOutput );
-
     }
 
     /**
@@ -1122,8 +1120,7 @@ public final class SlicerTest
                                                       DoubleScoreOutput.of( 0.3,
                                                                             MetricOutputMetadata.of( metadata,
                                                                                                      windowThree,
-                                                                                                     thresholdThree ) ) ),
-                                       metadata );
+                                                                                                     thresholdThree ) ) ) );
 
         // Discover the metrics available
         Set<MetricConstants> actualOutputOne =
@@ -1156,8 +1153,63 @@ public final class SlicerTest
                 new TreeSet<>( Arrays.asList( Pair.of( Duration.ofHours( 1 ), Duration.ofHours( 1 ) ),
                                               Pair.of( Duration.ofHours( 2 ), Duration.ofHours( 2 ) ) ) );
 
-        assertEquals( actualOutputFour, expectedOutputFour );        
+        assertEquals( actualOutputFour, expectedOutputFour );
 
+        // Discover the second thresholds, which are not available
+        assertTrue( Slicer.discover( listOfOutputs, next -> next.getMetadata().getThresholds().second() ).isEmpty() );
+
+    }
+    
+    /**
+     * Tests the {@link Slicer#filter(ListOfMetricOutput, java.util.function.Predicate)} produces an expected 
+     * {@link NullPointerException} when the input list is null.
+     */
+
+    @Test
+    public void testFilterListOfMetricOutputsWithNullListProducesNPE()
+    {
+        exception.expect( NullPointerException.class );
+
+        Slicer.filter( (ListOfMetricOutput<MetricOutput<?>>) null, (Predicate<MetricOutputMetadata>) null );
+    }
+    
+    /**
+     * Tests the {@link Slicer#filter(ListOfMetricOutput, java.util.function.Predicate)} produces an expected 
+     * {@link NullPointerException} when the input predicate is null.
+     */
+
+    @Test
+    public void testFilterListOfMetricOutputsWithNullPredicateProducesNPE()
+    {
+        exception.expect( NullPointerException.class );
+
+        Slicer.filter( ListOfMetricOutput.of( Arrays.asList() ), (Predicate<MetricOutputMetadata>) null );
+    }
+    
+    /**
+     * Tests the {@link Slicer#discover(ListOfMetricOutput, Function)} produces an expected 
+     * {@link NullPointerException} when the input list is null.
+     */
+
+    @Test
+    public void testDiscoverListOfMetricOutputsWithNullListProducesNPE()
+    {
+        exception.expect( NullPointerException.class );
+
+        Slicer.discover( (ListOfMetricOutput<MetricOutput<?>>) null, (Function<MetricOutput<?>,?>) null );
+    }
+    
+    /**
+     * Tests the {@link Slicer#discover(ListOfMetricOutput, Function)} produces an expected 
+     * {@link NullPointerException} when the input predicate is null.
+     */
+
+    @Test
+    public void testDiscoverListOfMetricOutputsWithNullFunctionProducesNPE()
+    {
+        exception.expect( NullPointerException.class );
+
+        Slicer.discover( ListOfMetricOutput.of( Arrays.asList() ), (Function<MetricOutput<?>,?>) null );
     }
 
 }

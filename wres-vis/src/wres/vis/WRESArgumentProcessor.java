@@ -3,9 +3,9 @@ package wres.vis;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.Objects;
+import java.util.SortedSet;
 import java.util.TimeZone;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,14 +15,17 @@ import ohd.hseb.hefs.utils.datetime.HEFSTimeZoneTools;
 import ohd.hseb.hefs.utils.plugins.UniqueGenericParameterList;
 import ohd.hseb.util.misc.HString;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.Slicer;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
-import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
+import wres.datamodel.outputs.ListOfMetricOutput;
+import wres.datamodel.outputs.MetricOutput;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
+import wres.datamodel.thresholds.Threshold;
 import wres.vis.ChartEngineFactory.ChartType;
 
 /**
@@ -74,10 +77,9 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
      * An arguments processor intended for use in displaying a box-plot of errors.  It is assumed that there is 
      * only a single time window associated with the data, specified in the meta data for the displayed plot input.
      * 
-     * @param inputKeyInstance the input key
      * @param displayPlotInput the input data
      */
-    public WRESArgumentProcessor( Pair<TimeWindow, OneOrTwoThresholds> inputKeyInstance, BoxPlotOutput displayPlotInput )
+    public WRESArgumentProcessor( BoxPlotOutput displayPlotInput )
     {
         super();
         MetricOutputMetadata meta = displayPlotInput.getMetadata();
@@ -86,9 +88,9 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         recordWindowingArguments( meta );
 
         addArgument( "diagramInstanceDescription",
-                     "at Lead Hour " + inputKeyInstance.getLeft().getLatestLeadTimeInHours()
+                     "at Lead Hour " + meta.getTimeWindow().getLatestLeadTimeInHours()
                                                    + " for "
-                                                   + inputKeyInstance.getRight() );
+                                                   + meta.getThresholds() );
         addArgument( "probabilities",
                      HString.buildStringFromArray( displayPlotInput.getProbabilities().getDoubles(), ", " )
                             .replaceAll( "0.0,", "min," )
@@ -100,24 +102,27 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
     /**
      * An arguments processor intended for use in displaying metric output FOR POOLING WINDOWS, whether scalar or vector.
      * 
+     * @param <T> the output type
      * @param displayedPlotInput the plot input
      * @param plotType the plot type; null is allowed, which will trigger recording arguments as if this were anything but
      *     a pooling window plot.
      */
-    public WRESArgumentProcessor( MetricOutputMapByTimeAndThreshold<?> displayedPlotInput, ChartType plotType )
+    public <T extends MetricOutput<?>> WRESArgumentProcessor( ListOfMetricOutput<T> displayedPlotInput, ChartType plotType )
     {
         super();
 
-        MetricOutputMetadata meta = displayedPlotInput.getMetadata();
+        MetricOutputMetadata meta = displayedPlotInput.getData().get( 0 ).getMetadata();
         extractStandardArgumentsFromMetadata( meta );
 
         if ( plotType != null && plotType == ChartType.POOLING_WINDOW )
         {
-            recordWindowingArguments( displayedPlotInput.firstKey().getLeft().getEarliestTime(),
-                                      displayedPlotInput.lastKey().getLeft().getLatestTime(),
-                                      displayedPlotInput.firstKey().getLeft().getEarliestLeadTimeInHours(),
-                                      displayedPlotInput.lastKey().getLeft().getLatestLeadTimeInHours(),
-                                      displayedPlotInput.firstKey().getLeft().getReferenceTime() );
+            SortedSet<TimeWindow> timeWindows =
+                    Slicer.discover( displayedPlotInput, next -> next.getMetadata().getTimeWindow() );
+            recordWindowingArguments( timeWindows.first().getEarliestTime(),
+                                      timeWindows.last().getLatestTime(),
+                                      timeWindows.first().getEarliestLeadTimeInHours(),
+                                      timeWindows.last().getLatestLeadTimeInHours(),
+                                      timeWindows.first().getReferenceTime() );
         }
         else
         {
@@ -224,18 +229,21 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
 
     /**
      * Adds arguments for plots where the lead time is on the domain axis and threshold is in the legend.
+     * @param <T> the output type
      * @param displayedPlotInput the plot input
      * @param plotTimeWindow the time window
      */
-    public void addLeadThresholdArguments(
-                                           MetricOutputMapByTimeAndThreshold<?> displayedPlotInput,
+    public <T extends MetricOutput<?>> void addLeadThresholdArguments( ListOfMetricOutput<T> displayedPlotInput,
                                            TimeWindow plotTimeWindow )
     {
-        final MetricOutputMetadata meta = displayedPlotInput.getMetadata();
+        final MetricOutputMetadata meta = displayedPlotInput.getData().get( 0 ).getMetadata();
 
         final String legendTitle = "Threshold";
         String legendUnitsText = "";
-        if ( ( displayedPlotInput.hasQuantileThresholds() ) || ( displayedPlotInput.setOfThresholdKey().size() > 1 ) )
+        SortedSet<Boolean> thresholds =
+                Slicer.discover( displayedPlotInput, next -> next.getMetadata().getThresholds().first().isQuantile() );
+        
+        if ( thresholds.contains( true ) || ( thresholds.size() > 1 ) )
         {
             legendUnitsText += " [" + meta.getInputDimension() + "]";
         }
@@ -253,19 +261,22 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
 
     /**
      * Adds arguments for plots where the threshold value is on the domain axis and lead time is in the legend.
+     * @param <T> the output type
      * @param displayedPlotInput the plot input
      * @param threshold the threshold
      */
-    public void addThresholdLeadArguments( MetricOutputMapByTimeAndThreshold<?> displayedPlotInput,
+    public <T extends MetricOutput<?>> void addThresholdLeadArguments( ListOfMetricOutput<T> displayedPlotInput,
                                            OneOrTwoThresholds threshold )
     {
 
         // Augment the plot title when the input dataset contains a secondary threshold/classifier
         // Create a string from the set of secondary thresholds
         String supplementary = "";
-        if( !displayedPlotInput.setOfThresholdTwo().isEmpty() )
+        SortedSet<Threshold> secondThresholds =
+                Slicer.discover( displayedPlotInput, next -> next.getMetadata().getThresholds().second() );
+        if( !secondThresholds.isEmpty() )
         {
-            String set = displayedPlotInput.setOfThresholdTwo().toString();
+            String set = secondThresholds.toString();
             supplementary = " with occurrences defined as " + set;
         }
         addArgument( "plotTitleSupplementary", supplementary );
@@ -283,17 +294,14 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
     /**
      * Adds arguments for plots where the pooling window (as in rolling window) is displayed along the domain axis 
      * and the legend includes both lead time and threshold.
+     * @param <T> the output type
      * @param displayedPlotInput the plot input
      */
-    public void addPoolingWindowArguments(MetricOutputMapByTimeAndThreshold<?> displayedPlotInput )
+    public <T extends MetricOutput<?>> void addPoolingWindowArguments(ListOfMetricOutput<T> displayedPlotInput )
     {
-        final MetricOutputMetadata meta = displayedPlotInput.getMetadata();
-        if ( !displayedPlotInput.firstKey()
-                                .getLeft()
-                                .getEarliestLeadTime()
-                                .equals( displayedPlotInput.firstKey().getLeft().getLatestLeadTime() ) )
+        final MetricOutputMetadata meta = displayedPlotInput.getData().get( 0 ).getMetadata();
+        if ( !meta.getTimeWindow().getEarliestLeadTime().equals( meta.getTimeWindow().getLatestLeadTime() ) )
         {
-
             addArgument( "legendTitle", "Lead time window [HOUR], Threshold " );
         }
         else
@@ -311,11 +319,12 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
     
     /**
      * Custom method created for the time-to-peak plots.
+     * @param <T> the output type
      * @param displayedPlotInput the plot input
      */
-    public void addTimeToPeakArguments(MetricOutputMapByTimeAndThreshold<?> displayedPlotInput )
+    public <T extends MetricOutput<?>> void addTimeToPeakArguments(ListOfMetricOutput<T> displayedPlotInput )
     {
-        final MetricOutputMetadata meta = displayedPlotInput.getMetadata();
+        final MetricOutputMetadata meta = displayedPlotInput.getData().get( 0 ).getMetadata();
         addArgument( "legendTitle", "Threshold " );
         addArgument( "legendUnitsText", "[" + meta.getInputDimension() + "]" );
     }
