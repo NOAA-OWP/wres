@@ -5,8 +5,8 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
-import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.SortedSet;
 import java.util.function.Consumer;
 
 import ohd.hseb.charter.ChartEngine;
@@ -15,10 +15,9 @@ import wres.config.ProjectConfigException;
 import wres.config.ProjectConfigPlus;
 import wres.config.generated.DestinationConfig;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.Slicer;
 import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.MapKey;
-import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
-import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
+import wres.datamodel.outputs.ListOfMetricOutput;
 import wres.datamodel.outputs.PairedOutput;
 import wres.io.config.ConfigHelper;
 import wres.vis.ChartEngineFactory;
@@ -30,7 +29,7 @@ import wres.vis.ChartEngineFactory;
  */
 
 public class PNGPairedWriter extends PNGWriter
-        implements Consumer<MetricOutputMultiMapByTimeAndThreshold<PairedOutput<Instant, Duration>>>
+        implements Consumer<ListOfMetricOutput<PairedOutput<Instant, Duration>>>
 {
 
     /**
@@ -56,7 +55,7 @@ public class PNGPairedWriter extends PNGWriter
      */
 
     @Override
-    public void accept( final MetricOutputMultiMapByTimeAndThreshold<PairedOutput<Instant, Duration>> output )
+    public void accept( final ListOfMetricOutput<PairedOutput<Instant, Duration>> output )
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing diagram outputs." );
 
@@ -69,11 +68,12 @@ public class PNGPairedWriter extends PNGWriter
         {
 
             // Iterate through each metric 
-            for ( final Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<PairedOutput<Instant, Duration>>> e : output.entrySet() )
+            SortedSet<MetricConstants> metrics = Slicer.discover( output, meta -> meta.getMetadata().getMetricID() );
+            for ( MetricConstants next : metrics )
             {
                 PNGPairedWriter.writePairedOutputByInstantDurationCharts( projectConfigPlus,
                                                                           destinationConfig,
-                                                                          e.getValue() );
+                                                                          Slicer.filter( output, next ) );
             }
 
         }
@@ -81,7 +81,7 @@ public class PNGPairedWriter extends PNGWriter
 
     /**
      * Writes a set of charts associated with {@link PairedOutput} for a single metric and time window,
-     * stored in a {@link MetricOutputMapByTimeAndThreshold}.
+     * stored in a {@link ListOfMetricOutput}.
      *
      * @param projectConfigPlus the project configuration
      * @param destinationConfig the destination configuration for the written output
@@ -91,12 +91,12 @@ public class PNGPairedWriter extends PNGWriter
 
     private static void writePairedOutputByInstantDurationCharts( ProjectConfigPlus projectConfigPlus,
                                                                   DestinationConfig destinationConfig,
-                                                                  MetricOutputMapByTimeAndThreshold<PairedOutput<Instant, Duration>> output )
+                                                                  ListOfMetricOutput<PairedOutput<Instant, Duration>> output )
     {
         // Build charts
         try
         {
-            MetricOutputMetadata meta = output.getMetadata();
+            MetricOutputMetadata meta = output.getData().get( 0 ).getMetadata();
 
             GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, destinationConfig, meta.getMetricID() );
 

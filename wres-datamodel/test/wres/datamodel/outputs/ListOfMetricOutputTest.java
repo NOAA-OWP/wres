@@ -82,24 +82,24 @@ public final class ListOfMetricOutputTest
         ListOfMetricOutputBuilder<DoubleScoreOutput> builder = new ListOfMetricOutputBuilder<>();
 
         ListOfMetricOutput<DoubleScoreOutput> actualOutput =
-                builder.setMetadata( metadata ).addOutput( DoubleScoreOutput.of( 0.1, metadata ) ).build();
+                builder.addOutput( DoubleScoreOutput.of( 0.1, metadata ) ).build();
 
         ListOfMetricOutput<DoubleScoreOutput> expectedOutput =
-                ListOfMetricOutput.of( Arrays.asList( DoubleScoreOutput.of( 0.1, metadata ) ), metadata );
+                ListOfMetricOutput.of( Arrays.asList( DoubleScoreOutput.of( 0.1, metadata ) ) );
 
         assertEquals( actualOutput, expectedOutput );
     }
 
     /**
-     * Tests the construction of a {@link ListOfMetricOutput} using the 
-     * {@link ListOfMetricOutputBuilder} with concurrent access.
+     * Tests the incremental construction of a {@link ListOfMetricOutput} using the 
+     * {@link ListOfMetricOutputBuilder} with multiple threads operating concurrently.
      */
 
     @Test
     public void testBuildUsingBuilderWithMultipleThreads()
     {
         ListOfMetricOutputBuilder<DoubleScoreOutput> builder =
-                new ListOfMetricOutputBuilder<DoubleScoreOutput>().setMetadata( metadata );
+                new ListOfMetricOutputBuilder<DoubleScoreOutput>();
 
         // Initialize 100 futures that add results to the builder
         SortedSet<Double> expectedOutput = new TreeSet<>();
@@ -148,7 +148,7 @@ public final class ListOfMetricOutputTest
 
         exception.expectMessage( "Specify a non-null list of outputs." );
 
-        ListOfMetricOutput.of( null, metadata );
+        ListOfMetricOutput.of( null );
     }
 
     /**
@@ -164,7 +164,7 @@ public final class ListOfMetricOutputTest
 
         exception.expectMessage( "Cannot build a list of outputs with one or more null entries." );
 
-        ListOfMetricOutput.of( Collections.singletonList( null ), metadata );
+        ListOfMetricOutput.of( Collections.singletonList( null ) );
     }
 
     /**
@@ -177,23 +177,10 @@ public final class ListOfMetricOutputTest
         exception.expect( UnsupportedOperationException.class );
 
         ListOfMetricOutput<DoubleScoreOutput> list =
-                ListOfMetricOutput.of( Arrays.asList( DoubleScoreOutput.of( 0.1, metadata ) ), metadata );
+                ListOfMetricOutput.of( Arrays.asList( DoubleScoreOutput.of( 0.1, metadata ) ) );
 
         // Removing an element throws an exception
         list.iterator().remove();
-    }
-
-    /**
-     * Tests that the expected metadata is returned by {@link ListOfMetricOutput#getMetadata()}.
-     */
-
-    @Test
-    public void testGetMetadata()
-    {
-        ListOfMetricOutput<DoubleScoreOutput> list =
-                ListOfMetricOutput.of( Arrays.asList(), metadata );
-
-        assertTrue( list.getMetadata().equals( metadata ) );
     }
 
     /**
@@ -204,7 +191,7 @@ public final class ListOfMetricOutputTest
     public void testGetData()
     {
         ListOfMetricOutput<DoubleScoreOutput> list =
-                ListOfMetricOutput.of( Arrays.asList( DoubleScoreOutput.of( 0.1, metadata ) ), metadata );
+                ListOfMetricOutput.of( Arrays.asList( DoubleScoreOutput.of( 0.1, metadata ) ) );
 
         assertEquals( list.getData(), Arrays.asList( DoubleScoreOutput.of( 0.1, metadata ) ) );
     }
@@ -219,7 +206,7 @@ public final class ListOfMetricOutputTest
         exception.expect( UnsupportedOperationException.class );
 
         ListOfMetricOutput<DoubleScoreOutput> list =
-                ListOfMetricOutput.of( Arrays.asList( DoubleScoreOutput.of( 0.1, metadata ) ), metadata );
+                ListOfMetricOutput.of( Arrays.asList( DoubleScoreOutput.of( 0.1, metadata ) ) );
 
         list.getData().add( DoubleScoreOutput.of( 0.1, metadata ) );
     }
@@ -228,26 +215,27 @@ public final class ListOfMetricOutputTest
      * Tests the {@link ListOfMetricOutput#equals(Object)}.
      */
 
+    @SuppressWarnings( "unlikely-arg-type" )
     @Test
     public void testEquals()
     {
         // Reflexive 
         ListOfMetricOutput<DoubleScoreOutput> first =
-                ListOfMetricOutput.of( Arrays.asList( DoubleScoreOutput.of( 0.1, metadata ) ), metadata );
+                ListOfMetricOutput.of( Arrays.asList( DoubleScoreOutput.of( 0.1, metadata ) ) );
 
         assertTrue( "The output list does not meet the equals contract for reflexivity.",
                     first.equals( first ) );
 
         // Symmetric
         ListOfMetricOutput<DoubleScoreOutput> second =
-                ListOfMetricOutput.of( Arrays.asList( DoubleScoreOutput.of( 0.1, metadata ) ), metadata );
+                ListOfMetricOutput.of( Arrays.asList( DoubleScoreOutput.of( 0.1, metadata ) ) );
 
         assertTrue( "The output list does not meet the equals contract for symmetry.",
                     second.equals( first ) && first.equals( second ) );
 
         // Transitive
         ListOfMetricOutput<DoubleScoreOutput> third =
-                ListOfMetricOutput.of( Arrays.asList( DoubleScoreOutput.of( 0.1, metadata ) ), metadata );
+                ListOfMetricOutput.of( Arrays.asList( DoubleScoreOutput.of( 0.1, metadata ) ) );
 
         assertTrue( "The output list does not meet the equals contract for transitivity.",
                     first.equals( third ) && third.equals( second ) && first.equals( second ) );
@@ -259,29 +247,19 @@ public final class ListOfMetricOutputTest
                         first.equals( second ) );
         }
 
-        // Nullity
-        assertFalse( "The output list not meet the equals contract for nullity.", first.equals( metadata ) );
+        // Different non-null type
+        assertFalse( "Unexpected equality.", first.equals( metadata ) );
 
         // Check unequal cases
 
         // Unequal on data
         ListOfMetricOutput<DoubleScoreOutput> fourth =
-                ListOfMetricOutput.of( Arrays.asList( DoubleScoreOutput.of( 0.2, metadata ) ), metadata );
+                ListOfMetricOutput.of( Arrays.asList( DoubleScoreOutput.of( 0.2, metadata ) ) );
 
         assertFalse( "Expected unequal data.", first.equals( fourth ) );
 
         // Unequal on null type
         assertFalse( "Expected unequal outputs.", first.equals( null ) );
-
-        // Unequal on metadata
-        MetricOutputMetadata outerMeta = MetricOutputMetadata.of( 0,
-                                                                  MeasurementUnit.of(),
-                                                                  MeasurementUnit.of(),
-                                                                  MetricConstants.COEFFICIENT_OF_DETERMINATION );
-        ListOfMetricOutput<DoubleScoreOutput> fifth =
-                ListOfMetricOutput.of( Arrays.asList( DoubleScoreOutput.of( 0.2, metadata ) ), outerMeta );
-
-        assertFalse( "Expected unequal metadata.", fifth.equals( fourth ) );
 
     }
 
@@ -294,10 +272,10 @@ public final class ListOfMetricOutputTest
     {
         // Consistent with equals
         ListOfMetricOutput<DoubleScoreOutput> first =
-                ListOfMetricOutput.of( Arrays.asList( DoubleScoreOutput.of( 0.1, metadata ) ), metadata );
+                ListOfMetricOutput.of( Arrays.asList( DoubleScoreOutput.of( 0.1, metadata ) ) );
 
         ListOfMetricOutput<DoubleScoreOutput> second =
-                ListOfMetricOutput.of( Arrays.asList( DoubleScoreOutput.of( 0.1, metadata ) ), metadata );
+                ListOfMetricOutput.of( Arrays.asList( DoubleScoreOutput.of( 0.1, metadata ) ) );
 
         assertTrue( "The hashcode of the output list is inconsistent with equals.",
                     first.equals( second ) && first.hashCode() == second.hashCode() );
@@ -344,13 +322,10 @@ public final class ListOfMetricOutputTest
                                                       DoubleScoreOutput.of( 0.3,
                                                                             MetricOutputMetadata.of( metadata,
                                                                                                      window,
-                                                                                                     thresholdThree ) ) ),
-                                       metadata );
+                                                                                                     thresholdThree ) ) ) );
 
         StringBuilder expected = new StringBuilder();
-        expected.append( "(DIMENSIONLESS,DIMENSIONLESS,0,BIAS FRACTION,MAIN)" )
-                .append( System.lineSeparator() )
-                .append( "{([-1000000000-01-01T00:00:00Z, +1000000000-12-31T23:59:59.999999999Z, VALID TIME, PT0S, "
+        expected.append( "{([-1000000000-01-01T00:00:00Z, +1000000000-12-31T23:59:59.999999999Z, VALID TIME, PT0S, "
                          + "PT0S],> 1.0,DIMENSIONLESS,DIMENSIONLESS,0,BIAS FRACTION,MAIN): 0.1}" )
                 .append( System.lineSeparator() )
                 .append( "{([-1000000000-01-01T00:00:00Z, +1000000000-12-31T23:59:59.999999999Z, VALID TIME, PT0S, "

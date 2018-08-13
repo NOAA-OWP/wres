@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.SortedSet;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Consumer;
 
@@ -16,11 +17,11 @@ import wres.config.ProjectConfigPlus;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.OutputTypeSelection;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.Slicer;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
-import wres.datamodel.outputs.MapKey;
-import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
-import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
+import wres.datamodel.outputs.ListOfMetricOutput;
+import wres.datamodel.thresholds.Threshold;
 import wres.io.config.ConfigHelper;
 import wres.vis.ChartEngineFactory;
 
@@ -31,7 +32,7 @@ import wres.vis.ChartEngineFactory;
  */
 
 public class PNGDoubleScoreWriter extends PNGWriter
-        implements Consumer<MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput>>
+        implements Consumer<ListOfMetricOutput<DoubleScoreOutput>>
 {
 
     /**
@@ -57,7 +58,7 @@ public class PNGDoubleScoreWriter extends PNGWriter
      */
 
     @Override
-    public void accept( final MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput> output )
+    public void accept( final ListOfMetricOutput<DoubleScoreOutput> output )
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing diagram outputs." );
 
@@ -70,17 +71,19 @@ public class PNGDoubleScoreWriter extends PNGWriter
         {
 
             // Iterate through each metric 
-            for ( final Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>> e : output.entrySet() )
+            SortedSet<MetricConstants> metrics = Slicer.discover( output, meta -> meta.getMetadata().getMetricID() );
+            for ( MetricConstants next : metrics )
             {
-                PNGDoubleScoreWriter.writeScoreCharts( projectConfigPlus, destinationConfig, e.getValue() );
+                PNGDoubleScoreWriter.writeScoreCharts( projectConfigPlus,
+                                                       destinationConfig,
+                                                       Slicer.filter( output, next ) );
             }
-
         }
     }
 
     /**
      * Writes a set of charts associated with {@link DoubleScoreOutput} for a single metric and time window,
-     * stored in a {@link MetricOutputMapByTimeAndThreshold}.
+     * stored in a {@link ListOfMetricOutput}.
      *
      * @param projectConfigPlus the project configuration
      * @param destinationConfig the destination configuration for the written output
@@ -90,31 +93,37 @@ public class PNGDoubleScoreWriter extends PNGWriter
 
     private static void writeScoreCharts( ProjectConfigPlus projectConfigPlus,
                                           DestinationConfig destinationConfig,
-                                          MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> output )
+                                          ListOfMetricOutput<DoubleScoreOutput> output )
     {
         // Build charts
         try
         {
-            MetricOutputMetadata meta = output.getMetadata();
+            MetricOutputMetadata meta = output.getData().get( 0 ).getMetadata();
 
             GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, destinationConfig, meta.getMetricID() );
 
             // As many outputs as secondary thresholds if secondary thresholds are defined
             // and the output type is OutputTypeSelection.THRESHOLD_LEAD.
-            List<MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>> allOutputs = new ArrayList<>();
+            List<ListOfMetricOutput<DoubleScoreOutput>> allOutputs = new ArrayList<>();
+
+            SortedSet<Threshold> secondThreshold =
+                    Slicer.discover( output, next -> next.getMetadata().getThresholds().second() );
+
             if ( destinationConfig.getOutputType() == OutputTypeSelection.THRESHOLD_LEAD
-                 && !output.setOfThresholdTwo().isEmpty() )
+                 && !secondThreshold.isEmpty() )
             {
-                // Slice by threshold two
-                output.setOfThresholdTwo().forEach( next -> allOutputs.add( output.filterByThresholdTwo( next ) ) );
+                // Slice by the second threshold
+                secondThreshold.forEach( next -> allOutputs.add( Slicer.filter( output,
+                                                                                value -> next.equals( value.getThresholds()
+                                                                                                           .second() ) ) ) );
             }
             // One output only
-            else 
+            else
             {
                 allOutputs.add( output );
             }
-            
-            for ( MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> nextOutput : allOutputs )
+
+            for ( ListOfMetricOutput<DoubleScoreOutput> nextOutput : allOutputs )
             {
                 ConcurrentMap<MetricConstants, ChartEngine> engines =
                         ChartEngineFactory.buildScoreOutputChartEngine( projectConfigPlus.getProjectConfig(),
@@ -124,10 +133,13 @@ public class PNGDoubleScoreWriter extends PNGWriter
                                                                         helper.getGraphicsString() );
 
                 String append = null;
+
                 // Secondary threshold? If yes, only, one as this was sliced above
-                if ( !nextOutput.setOfThresholdTwo().isEmpty() )
+                SortedSet<Threshold> second =
+                        Slicer.discover( nextOutput, next -> next.getMetadata().getThresholds().second() );
+                if ( !second.isEmpty() )
                 {
-                    append = nextOutput.setOfThresholdTwo().iterator().next().toStringSafe();
+                    append = second.iterator().next().toStringSafe();
                 }
 
                 // Build the outputs

@@ -86,7 +86,7 @@ import wres.engine.statistics.metric.config.MetricConfigHelper;
  * @author james.brown@hydrosolved.com
  */
 
-public abstract class MetricProcessor<S extends MetricInput<?>, T extends MetricOutputForProject<?>>
+public abstract class MetricProcessor<S extends MetricInput<?>, T extends MetricOutputForProject>
         implements Function<S, T>
 {
 

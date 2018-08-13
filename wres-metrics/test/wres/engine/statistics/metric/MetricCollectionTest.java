@@ -7,7 +7,6 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -23,8 +22,8 @@ import org.junit.rules.ExpectedException;
 import org.mockito.Mockito;
 import org.slf4j.Logger;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.Slicer;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
@@ -33,8 +32,8 @@ import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
+import wres.datamodel.outputs.ListOfMetricOutput;
 import wres.datamodel.outputs.MetricOutput;
-import wres.datamodel.outputs.MetricOutputMapByMetric;
 import wres.engine.statistics.metric.MetricCollection.MetricCollectionBuilder;
 import wres.engine.statistics.metric.categorical.EquitableThreatScore;
 import wres.engine.statistics.metric.categorical.PeirceSkillScore;
@@ -86,7 +85,7 @@ public class MetricCollectionTest
                                                              MetricConstants.ROOT_MEAN_SQUARE_ERROR );
 
         //Compute them
-        final MetricOutputMapByMetric<DoubleScoreOutput> d = collection.apply( input );
+        final ListOfMetricOutput<DoubleScoreOutput> d = collection.apply( input );
 
         //Print them
         //d.stream().forEach(g -> System.out.println(g.getData()));
@@ -95,9 +94,11 @@ public class MetricCollectionTest
         final Double expectedFirst = 200.55;
         final Double expectedSecond = 201.37;
         final Double expectedThird = 632.4586381732801;
-        final Double actualFirst = d.get( MetricConstants.MEAN_ERROR ).getData();
-        final Double actualSecond = d.get( MetricConstants.MEAN_ABSOLUTE_ERROR ).getData();
-        final Double actualThird = d.get( MetricConstants.ROOT_MEAN_SQUARE_ERROR ).getData();
+        final Double actualFirst = Slicer.filter( d, MetricConstants.MEAN_ERROR ).getData().get( 0 ).getData();
+        final Double actualSecond =
+                Slicer.filter( d, MetricConstants.MEAN_ABSOLUTE_ERROR ).getData().get( 0 ).getData();
+        final Double actualThird =
+                Slicer.filter( d, MetricConstants.ROOT_MEAN_SQUARE_ERROR ).getData().get( 0 ).getData();
 
         final BiPredicate<Double, Double> testMe = FunctionFactory.doubleEquals();
 
@@ -149,7 +150,7 @@ public class MetricCollectionTest
         final MetricCollection<DichotomousPairs, MetricOutput<?>, DoubleScoreOutput> collection = m.build();
 
         //Compute them
-        final MetricOutputMapByMetric<DoubleScoreOutput> c = collection.apply( input );
+        final ListOfMetricOutput<DoubleScoreOutput> c = collection.apply( input );
 
         //Print them
         //c.stream().forEach(g -> System.out.println(g.getData().doubleValue()));
@@ -160,11 +161,14 @@ public class MetricCollectionTest
         final Double expectedThird = 0.14615384615384616;
         final Double expectedFourth = 0.6347985347985348;
         final Double expectedFifth = 0.43768152544513195;
-        final Double actualFirst = c.get( MetricConstants.THREAT_SCORE ).getData();
-        final Double actualSecond = c.get( MetricConstants.PROBABILITY_OF_DETECTION ).getData();
-        final Double actualThird = c.get( MetricConstants.PROBABILITY_OF_FALSE_DETECTION ).getData();
-        final Double actualFourth = c.get( MetricConstants.PEIRCE_SKILL_SCORE ).getData();
-        final Double actualFifth = c.get( MetricConstants.EQUITABLE_THREAT_SCORE ).getData();
+        final Double actualFirst = Slicer.filter( c, MetricConstants.THREAT_SCORE ).getData().get( 0 ).getData();
+        final Double actualSecond =
+                Slicer.filter( c, MetricConstants.PROBABILITY_OF_DETECTION ).getData().get( 0 ).getData();
+        final Double actualThird =
+                Slicer.filter( c, MetricConstants.PROBABILITY_OF_FALSE_DETECTION ).getData().get( 0 ).getData();
+        final Double actualFourth = Slicer.filter( c, MetricConstants.PEIRCE_SKILL_SCORE ).getData().get( 0 ).getData();
+        final Double actualFifth =
+                Slicer.filter( c, MetricConstants.EQUITABLE_THREAT_SCORE ).getData().get( 0 ).getData();
 
         final BiPredicate<Double, Double> testMe = FunctionFactory.doubleEquals();
 
@@ -222,7 +226,7 @@ public class MetricCollectionTest
                 n.build();
 
         //Compute them
-        final MetricOutputMapByMetric<DoubleScoreOutput> d = collection.apply( input );
+        final ListOfMetricOutput<DoubleScoreOutput> d = collection.apply( input );
 
         //Print them
         //d.stream().forEach(g -> System.out.println(((ScalarOutput)g).getData().valueOf()));
@@ -230,9 +234,9 @@ public class MetricCollectionTest
         //Check them
         final Double expectedFirst = 0.26;
         final Double expectedSecond = 0.11363636363636376;
-        final Double actualFirst = d.get( MetricConstants.BRIER_SCORE ).getData();
+        final Double actualFirst = Slicer.filter( d, MetricConstants.BRIER_SCORE ).getData().get( 0 ).getData();
         final Double actualSecond =
-                d.get( MetricConstants.BRIER_SKILL_SCORE ).getData();
+                Slicer.filter( d, MetricConstants.BRIER_SKILL_SCORE ).getData().get( 0 ).getData();
 
         final BiPredicate<Double, Double> testMe = FunctionFactory.doubleEquals();
 
@@ -274,7 +278,7 @@ public class MetricCollectionTest
         final MetricCollection<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput> collection = n.build();
 
         //Compute them
-        final MetricOutputMapByMetric<DoubleScoreOutput> d = collection.apply( input );
+        final ListOfMetricOutput<DoubleScoreOutput> d = collection.apply( input );
 
         //Print them
         //d.stream().forEach(g -> System.out.println(((ScalarOutput)g).getData().valueOf()));
@@ -283,9 +287,9 @@ public class MetricCollectionTest
         final Double expectedFirst = 400003.929;
         final Double expectedSecond = 0.8007025335093799;
         final Double actualFirst =
-                d.get( MetricConstants.MEAN_SQUARE_ERROR ).getData();
+                Slicer.filter( d, MetricConstants.MEAN_SQUARE_ERROR ).getData().get( 0 ).getData();
         final Double actualSecond =
-                d.get( MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE ).getData();
+                Slicer.filter( d, MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE ).getData().get( 0 ).getData();
 
         final BiPredicate<Double, Double> testMe = FunctionFactory.doubleEquals();
 
@@ -326,14 +330,14 @@ public class MetricCollectionTest
         final MetricCollection<MulticategoryPairs, MetricOutput<?>, DoubleScoreOutput> collection = n.build();
 
         //Compute them
-        final MetricOutputMapByMetric<DoubleScoreOutput> c = collection.apply( input );
+        final ListOfMetricOutput<DoubleScoreOutput> c = collection.apply( input );
 
         //Print them
         //c.stream().forEach(g -> System.out.println(g.getData().doubleValue()));
 
         //Check them
         final Double expectedFirst = 0.05057466520850963;
-        final Double actualFirst = c.get( MetricConstants.PEIRCE_SKILL_SCORE ).getData();
+        final Double actualFirst = Slicer.filter( c, MetricConstants.PEIRCE_SKILL_SCORE ).getData().get( 0 ).getData();
 
         final BiPredicate<Double, Double> testMe = FunctionFactory.doubleEquals();
 
@@ -519,13 +523,14 @@ public class MetricCollectionTest
     {
         MetricCollection<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput> collection =
                 MetricFactory.ofSingleValuedScoreCollection( MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
-        Method logEnd = collection.getClass().getDeclaredMethod( "logEndOfCalculation", Logger.class, Map.class );
+        Method logEnd = collection.getClass()
+                                  .getDeclaredMethod( "logEndOfCalculation", Logger.class, ListOfMetricOutput.class );
         logEnd.setAccessible( true );
 
         Logger logger = Mockito.mock( Logger.class );
         Mockito.when( logger.isTraceEnabled() ).thenReturn( true );
 
-        logEnd.invoke( collection, logger, Collections.emptyMap() );
+        logEnd.invoke( collection, logger, ListOfMetricOutput.of( Arrays.asList() ) );
 
         Mockito.verify( logger ).trace( "Finished computing metrics for a collection that contains {} "
                                         + "ordinary metric(s) and {} collectable metric(s). Obtained {} result(s) of "
@@ -619,7 +624,7 @@ public class MetricCollectionTest
                                                              MetricConstants.ROOT_MEAN_SQUARE_ERROR );
 
         //Compute them
-        final MetricOutputMapByMetric<DoubleScoreOutput> d = n.apply( input );
+        final ListOfMetricOutput<DoubleScoreOutput> d = n.apply( input );
 
         //Print them
         //d.forEach( ( a, b ) -> System.out.println( a.getKey() + " " + b.getData() ) );
@@ -631,11 +636,14 @@ public class MetricCollectionTest
         final Double expectedFourth = 400003.929;
         final Double expectedFifth = 632.4586381732801;
 
-        final Double actualFirst = d.get( MetricConstants.PEARSON_CORRELATION_COEFFICIENT ).getData();
-        final Double actualSecond = d.get( MetricConstants.COEFFICIENT_OF_DETERMINATION ).getData();
-        final Double actualThird = d.get( MetricConstants.SUM_OF_SQUARE_ERROR ).getData();
-        final Double actualFourth = d.get( MetricConstants.MEAN_SQUARE_ERROR ).getData();
-        final Double actualFifth = d.get( MetricConstants.ROOT_MEAN_SQUARE_ERROR ).getData();
+        final Double actualFirst =
+                Slicer.filter( d, MetricConstants.PEARSON_CORRELATION_COEFFICIENT ).getData().get( 0 ).getData();
+        final Double actualSecond =
+                Slicer.filter( d, MetricConstants.COEFFICIENT_OF_DETERMINATION ).getData().get( 0 ).getData();
+        final Double actualThird = Slicer.filter( d, MetricConstants.SUM_OF_SQUARE_ERROR ).getData().get( 0 ).getData();
+        final Double actualFourth = Slicer.filter( d, MetricConstants.MEAN_SQUARE_ERROR ).getData().get( 0 ).getData();
+        final Double actualFifth =
+                Slicer.filter( d, MetricConstants.ROOT_MEAN_SQUARE_ERROR ).getData().get( 0 ).getData();
 
         final BiPredicate<Double, Double> testMe = FunctionFactory.doubleEquals();
 
@@ -693,15 +701,14 @@ public class MetricCollectionTest
         //Compute them, ignoring two metrics
         Set<MetricConstants> ignore = new HashSet<>( Arrays.asList( MetricConstants.COEFFICIENT_OF_DETERMINATION,
                                                                     MetricConstants.MEAN_SQUARE_ERROR ) );
-        final MetricOutputMapByMetric<DoubleScoreOutput> actual = collection.apply( input, ignore );
+        final ListOfMetricOutput<DoubleScoreOutput> actual = collection.apply( input, ignore );
         MetricOutputMetadata outM =
                 MetricOutputMetadata.of( 10,
-                                                   MeasurementUnit.of(),
-                                                   MeasurementUnit.of(),
-                                                   MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
-        MetricOutputMapByMetric<DoubleScoreOutput> expected =
-                DataFactory.ofMetricOutputMapByMetric( Collections.singletonMap( MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
-                                                                                 DoubleScoreOutput.of( 0.9999999910148981, outM ) ) );
+                                         MeasurementUnit.of(),
+                                         MeasurementUnit.of(),
+                                         MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
+        ListOfMetricOutput<DoubleScoreOutput> expected =
+                ListOfMetricOutput.of( Arrays.asList( DoubleScoreOutput.of( 0.9999999910148981, outM ) ) );
         //Check them   
         assertTrue( "Difference between the actual and expected output when ignoring some metrics in the "
                     + "collection.",

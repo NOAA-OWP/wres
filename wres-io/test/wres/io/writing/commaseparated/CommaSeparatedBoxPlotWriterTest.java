@@ -15,7 +15,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
 import wres.config.ProjectConfigException;
@@ -28,15 +27,15 @@ import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.inputs.pairs.EnsemblePair;
 import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
+import wres.datamodel.outputs.ListOfMetricOutput;
 import wres.datamodel.outputs.MetricOutputAccessException;
-import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
-import wres.datamodel.outputs.MetricOutputMapByMetric;
+import wres.datamodel.outputs.MetricOutputForProject;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
@@ -46,7 +45,7 @@ import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
  * Tests the writing of box plot outputs to a file of Comma Separated Values (CSV).
  */
 
-public class CommaSeparatedBoxPlotWriterTest extends CommaSeparatedWriterTest
+public class CommaSeparatedBoxPlotWriterTest extends CommaSeparatedWriterTestHelper
 {
 
     /**
@@ -70,7 +69,7 @@ public class CommaSeparatedBoxPlotWriterTest extends CommaSeparatedWriterTest
 
         // Create fake outputs
 
-        MetricOutputForProjectByTimeAndThreshold.MetricOutputForProjectByTimeAndThresholdBuilder outputBuilder =
+        MetricOutputForProject.MetricOutputForProjectBuilder outputBuilder =
                 DataFactory.ofMetricOutputForProjectByTimeAndThreshold();
 
         TimeWindow timeOne =
@@ -80,6 +79,11 @@ public class CommaSeparatedBoxPlotWriterTest extends CommaSeparatedWriterTest
                                Duration.ofHours( 24 ),
                                Duration.ofHours( 24 ) );
 
+        OneOrTwoThresholds threshold =
+                OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                                                     Operator.GREATER,
+                                                     ThresholdDataType.LEFT ) );
+
         // Output requires a future... which requires a metadata...
         // which requires a datasetidentifier..
 
@@ -88,11 +92,13 @@ public class CommaSeparatedBoxPlotWriterTest extends CommaSeparatedWriterTest
 
         MetricOutputMetadata fakeMetadata =
                 MetricOutputMetadata.of( 1000,
-                                                   MeasurementUnit.of(),
-                                                   MeasurementUnit.of( "CMS" ),
-                                                   MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
-                                                   null,
-                                                   datasetIdentifier );
+                                         MeasurementUnit.of(),
+                                         MeasurementUnit.of( "CMS" ),
+                                         MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
+                                         null,
+                                         datasetIdentifier,
+                                         timeOne,
+                                         threshold );
 
         List<EnsemblePair> fakeOutputs = new ArrayList<>();
         VectorOfDoubles probs = VectorOfDoubles.of( new double[] { 0, 0.25, 0.5, 0.75, 1.0 } );
@@ -102,25 +108,19 @@ public class CommaSeparatedBoxPlotWriterTest extends CommaSeparatedWriterTest
         fakeOutputs.add( EnsemblePair.of( 5, new double[] { 21, 24, 27, 30, 33 } ) );
 
         // Fake output wrapper.
-        MetricOutputMapByMetric<BoxPlotOutput> fakeOutputData =
-                DataFactory.ofMetricOutputMapByMetric( Collections.singletonMap( MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
-                                                                                 BoxPlotOutput.of( fakeOutputs, probs, fakeMetadata, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR ) ) );
+        ListOfMetricOutput<BoxPlotOutput> fakeOutputData =
+                ListOfMetricOutput.of( Collections.singletonList( BoxPlotOutput.of( fakeOutputs,
+                                                                                    probs,
+                                                                                    fakeMetadata,
+                                                                                    MetricDimension.OBSERVED_VALUE,
+                                                                                    MetricDimension.FORECAST_ERROR ) ) );
         // wrap outputs in future
-        Future<MetricOutputMapByMetric<BoxPlotOutput>> outputMapByMetricFuture =
+        Future<ListOfMetricOutput<BoxPlotOutput>> outputMapByMetricFuture =
                 CompletableFuture.completedFuture( fakeOutputData );
 
+        outputBuilder.addBoxPlotOutput( outputMapByMetricFuture );
 
-        // Fake lead time and threshold
-        Pair<TimeWindow, OneOrTwoThresholds> mapKeyByLeadThreshold =
-                Pair.of( timeOne,
-                         OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                                         Operator.GREATER,
-                                                                         ThresholdDataType.LEFT ) ) );
-
-        outputBuilder.addBoxPlotOutput( mapKeyByLeadThreshold,
-                                        outputMapByMetricFuture );
-
-        MetricOutputForProjectByTimeAndThreshold output = outputBuilder.build();
+        MetricOutputForProject output = outputBuilder.build();
 
         // Construct a fake configuration file.
         Feature feature = getMockedFeature( LID );
@@ -129,7 +129,7 @@ public class CommaSeparatedBoxPlotWriterTest extends CommaSeparatedWriterTest
         // Begin the actual test now that we have constructed dependencies.
         CommaSeparatedBoxPlotWriter.of( projectConfig ).accept( output.getBoxPlotOutput() );
 
-        // read the file, verify it has what we wanted:
+        // Read the file, verify it has what we wanted:
         Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ),
                                      "JUNP1_SQIN_HEFS_BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE_24_HOUR.csv" );
         List<String> result = Files.readAllLines( pathToFile );

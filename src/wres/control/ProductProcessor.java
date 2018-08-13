@@ -25,13 +25,13 @@ import wres.config.generated.DestinationType;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Outputs;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
-import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.DurationScoreOutput;
+import wres.datamodel.outputs.ListOfMetricOutput;
 import wres.datamodel.outputs.MatrixOutput;
-import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
-import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
+import wres.datamodel.outputs.MetricOutput;
+import wres.datamodel.outputs.MetricOutputForProject;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.PairedOutput;
 import wres.io.writing.SharedWriters;
@@ -61,7 +61,7 @@ import wres.io.writing.png.PNGPairedWriter;
  * @author jesse.bickel@***REMOVED***
  */
 
-class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThreshold>,
+class ProductProcessor implements Consumer<MetricOutputForProject>,
                                   Closeable
 {
 
@@ -94,42 +94,42 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
      * Store of consumers for processing {@link DoubleScoreOutput} by {@link DestinationType} format.
      */
 
-    private final Map<DestinationType, Consumer<MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput>>> doubleScoreConsumers =
+    private final Map<DestinationType, Consumer<ListOfMetricOutput<DoubleScoreOutput>>> doubleScoreConsumers =
             new EnumMap<>( DestinationType.class );
 
     /**
      * Store of consumers for processing {@link DurationScoreOutput} by {@link DestinationType} format.
      */
 
-    private final Map<DestinationType, Consumer<MetricOutputMultiMapByTimeAndThreshold<DurationScoreOutput>>> durationScoreConsumers =
+    private final Map<DestinationType, Consumer<ListOfMetricOutput<DurationScoreOutput>>> durationScoreConsumers =
             new EnumMap<>( DestinationType.class );
 
     /**
      * Store of consumers for processing {@link MultiVectorOutput} by {@link DestinationType} format.
      */
 
-    private final Map<DestinationType, Consumer<MetricOutputMultiMapByTimeAndThreshold<MultiVectorOutput>>> diagramConsumers =
+    private final Map<DestinationType, Consumer<ListOfMetricOutput<MultiVectorOutput>>> diagramConsumers =
             new EnumMap<>( DestinationType.class );
 
     /**
      * Store of consumers for processing {@link BoxPlotOutput} by {@link DestinationType} format.
      */
 
-    private final Map<DestinationType, Consumer<MetricOutputMultiMapByTimeAndThreshold<BoxPlotOutput>>> boxPlotConsumers =
+    private final Map<DestinationType, Consumer<ListOfMetricOutput<BoxPlotOutput>>> boxPlotConsumers =
             new EnumMap<>( DestinationType.class );
 
     /**
      * Store of consumers for processing {@link MatrixOutput} by {@link DestinationType} format.
      */
 
-    private final Map<DestinationType, Consumer<MetricOutputMultiMapByTimeAndThreshold<MatrixOutput>>> matrixConsumers =
+    private final Map<DestinationType, Consumer<ListOfMetricOutput<MatrixOutput>>> matrixConsumers =
             new EnumMap<>( DestinationType.class );
 
     /**
      * Store of consumers for processing {@link PairedOutput} by {@link DestinationType} format.
      */
 
-    private final Map<DestinationType, Consumer<MetricOutputMultiMapByTimeAndThreshold<PairedOutput<Instant, Duration>>>> pairedConsumers =
+    private final Map<DestinationType, Consumer<ListOfMetricOutput<PairedOutput<Instant, Duration>>>> pairedConsumers =
             new EnumMap<>( DestinationType.class );
 
     /**
@@ -212,7 +212,7 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
      */
 
     @Override
-    public void accept( final MetricOutputForProjectByTimeAndThreshold input )
+    public void accept( final MetricOutputForProject input )
     {
 
         try
@@ -415,27 +415,23 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
      * @throws NullPointerException if the input is null
      */
 
-    private void processDiagramOutputs( MetricOutputMultiMapByTimeAndThreshold<MultiVectorOutput> outputs )
+    private void processDiagramOutputs( ListOfMetricOutput<MultiVectorOutput> outputs )
             throws IOException
     {
         Objects.requireNonNull( outputs, NULL_OUTPUT_STRING );
 
-        // Metadata for logging
-        MetricOutputMetadata meta =
-                outputs.values().iterator().next().getMetadata();
-
         // Iterate through the consumers
-        for ( Entry<DestinationType, Consumer<MetricOutputMultiMapByTimeAndThreshold<MultiVectorOutput>>> next : diagramConsumers.entrySet() )
+        for ( Entry<DestinationType, Consumer<ListOfMetricOutput<MultiVectorOutput>>> next : diagramConsumers.entrySet() )
         {
             // Consume conditionally
             if ( writeWhenTrue.test( MetricOutputGroup.MULTIVECTOR, next.getKey() ) )
             {
-                log( meta, next.getKey(), true );
+                log( outputs, next.getKey(), true );
 
                 // Consume the output
                 next.getValue().accept( outputs );
 
-                log( meta, next.getKey(), false );
+                log( outputs, next.getKey(), false );
             }
         }
     }
@@ -448,27 +444,23 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
      * @throws NullPointerException if the input is null
      */
 
-    private void processBoxPlotOutputs( MetricOutputMultiMapByTimeAndThreshold<BoxPlotOutput> outputs )
+    private void processBoxPlotOutputs( ListOfMetricOutput<BoxPlotOutput> outputs )
             throws IOException
     {
         Objects.requireNonNull( outputs, NULL_OUTPUT_STRING );
 
-        // Metadata for logging
-        MetricOutputMetadata meta =
-                outputs.values().iterator().next().getMetadata();
-
         // Iterate through the consumers
-        for ( Entry<DestinationType, Consumer<MetricOutputMultiMapByTimeAndThreshold<BoxPlotOutput>>> next : boxPlotConsumers.entrySet() )
+        for ( Entry<DestinationType, Consumer<ListOfMetricOutput<BoxPlotOutput>>> next : boxPlotConsumers.entrySet() )
         {
             // Consume conditionally
             if ( writeWhenTrue.test( MetricOutputGroup.BOXPLOT, next.getKey() ) )
             {
-                log( meta, next.getKey(), true );
+                log( outputs, next.getKey(), true );
 
                 // Consume the output
                 next.getValue().accept( outputs );
 
-                log( meta, next.getKey(), false );
+                log( outputs, next.getKey(), false );
             }
         }
     }
@@ -481,27 +473,23 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
      * @throws NullPointerException if the input is null
      */
 
-    private void processMatrixOutputs( MetricOutputMultiMapByTimeAndThreshold<MatrixOutput> outputs )
+    private void processMatrixOutputs( ListOfMetricOutput<MatrixOutput> outputs )
             throws IOException
     {
         Objects.requireNonNull( outputs, NULL_OUTPUT_STRING );
 
-        // Metadata for logging
-        MetricOutputMetadata meta =
-                outputs.values().iterator().next().getMetadata();
-
         // Iterate through the consumers
-        for ( Entry<DestinationType, Consumer<MetricOutputMultiMapByTimeAndThreshold<MatrixOutput>>> next : matrixConsumers.entrySet() )
+        for ( Entry<DestinationType, Consumer<ListOfMetricOutput<MatrixOutput>>> next : matrixConsumers.entrySet() )
         {
             // Consume conditionally
             if ( writeWhenTrue.test( MetricOutputGroup.MATRIX, next.getKey() ) )
             {
-                log( meta, next.getKey(), true );
+                log( outputs, next.getKey(), true );
 
                 // Consume the output
                 next.getValue().accept( outputs );
 
-                log( meta, next.getKey(), false );
+                log( outputs, next.getKey(), false );
             }
         }
 
@@ -515,27 +503,23 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
      * @throws NullPointerException if the input is null
      */
 
-    private void processDoubleScoreOutputs( MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput> outputs )
+    private void processDoubleScoreOutputs( ListOfMetricOutput<DoubleScoreOutput> outputs )
             throws IOException
     {
         Objects.requireNonNull( outputs, NULL_OUTPUT_STRING );
 
-        // Metadata for logging
-        MetricOutputMetadata meta =
-                outputs.values().iterator().next().getMetadata();
-
         // Iterate through the consumers
-        for ( Entry<DestinationType, Consumer<MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput>>> next : doubleScoreConsumers.entrySet() )
+        for ( Entry<DestinationType, Consumer<ListOfMetricOutput<DoubleScoreOutput>>> next : doubleScoreConsumers.entrySet() )
         {
             // Consume conditionally
             if ( writeWhenTrue.test( MetricOutputGroup.DOUBLE_SCORE, next.getKey() ) )
             {
-                log( meta, next.getKey(), true );
+                log( outputs, next.getKey(), true );
 
                 // Consume the output
                 next.getValue().accept( outputs );
 
-                log( meta, next.getKey(), false );
+                log( outputs, next.getKey(), false );
             }
         }
 
@@ -549,27 +533,23 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
      * @throws NullPointerException if the input is null
      */
 
-    private void processDurationScoreOutputs( MetricOutputMultiMapByTimeAndThreshold<DurationScoreOutput> outputs )
+    private void processDurationScoreOutputs( ListOfMetricOutput<DurationScoreOutput> outputs )
             throws IOException
     {
         Objects.requireNonNull( outputs, NULL_OUTPUT_STRING );
 
-        // Metadata for logging
-        MetricOutputMetadata meta =
-                outputs.values().iterator().next().getMetadata();
-
         // Iterate through the consumers
-        for ( Entry<DestinationType, Consumer<MetricOutputMultiMapByTimeAndThreshold<DurationScoreOutput>>> next : durationScoreConsumers.entrySet() )
+        for ( Entry<DestinationType, Consumer<ListOfMetricOutput<DurationScoreOutput>>> next : durationScoreConsumers.entrySet() )
         {
             // Consume conditionally
             if ( writeWhenTrue.test( MetricOutputGroup.DURATION_SCORE, next.getKey() ) )
             {
-                log( meta, next.getKey(), true );
+                log( outputs, next.getKey(), true );
 
                 // Consume the output
                 next.getValue().accept( outputs );
 
-                log( meta, next.getKey(), false );
+                log( outputs, next.getKey(), false );
             }
         }
     }
@@ -583,27 +563,23 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
      */
 
     private void
-            processPairedOutputByInstantDuration( MetricOutputMultiMapByTimeAndThreshold<PairedOutput<Instant, Duration>> outputs )
+            processPairedOutputByInstantDuration( ListOfMetricOutput<PairedOutput<Instant, Duration>> outputs )
                     throws IOException
     {
         Objects.requireNonNull( outputs, NULL_OUTPUT_STRING );
 
-        // Metadata for logging
-        MetricOutputMetadata meta =
-                outputs.values().iterator().next().getMetadata();
-
         // Iterate through the consumers
-        for ( Entry<DestinationType, Consumer<MetricOutputMultiMapByTimeAndThreshold<PairedOutput<Instant, Duration>>>> next : pairedConsumers.entrySet() )
+        for ( Entry<DestinationType, Consumer<ListOfMetricOutput<PairedOutput<Instant, Duration>>>> next : pairedConsumers.entrySet() )
         {
             // Consume conditionally
             if ( writeWhenTrue.test( MetricOutputGroup.PAIRED, next.getKey() ) )
             {
-                log( meta, next.getKey(), true );
+                log( outputs, next.getKey(), true );
 
                 // Consume the output
                 next.getValue().accept( outputs );
 
-                log( meta, next.getKey(), false );
+                log( outputs, next.getKey(), false );
             }
         }
     }
@@ -667,12 +643,14 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
     /**
      * Logs the status of product generation.
      * 
-     * @param meta the metadata to assist with logging
+     * @param <T> the output type
+     * @param output the output
      * @param type the output type
      * @param startOfProcess is true to log the start, false to log the end
      */
 
-    private void log( MetricOutputMetadata meta, DestinationType type, boolean startOfProcess )
+    private <T extends MetricOutput<?>> void
+            log( ListOfMetricOutput<T> output, DestinationType type, boolean startOfProcess )
     {
 
         String positionString = "Completed ";
@@ -681,14 +659,14 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
             positionString = "Started ";
         }
 
-        if ( Objects.nonNull( meta ) )
+        if ( ! output.getData().isEmpty() )
         {
             LOGGER.debug( "{} processing of result type '{}' for '{}' "
                           + "at time window {}.",
                           positionString,
                           type,
-                          meta.getIdentifier(),
-                          meta.getTimeWindow() );
+                          output.getData().get( 0 ).getMetadata().getIdentifier(),
+                          output.getData().get( 0 ).getMetadata().getTimeWindow() );
         }
         else
         {

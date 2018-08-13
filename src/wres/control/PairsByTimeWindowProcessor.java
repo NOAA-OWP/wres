@@ -11,14 +11,14 @@ import org.slf4j.LoggerFactory;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
-import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
+import wres.datamodel.outputs.MetricOutputForProject;
 import wres.engine.statistics.metric.processing.MetricProcessorException;
 import wres.engine.statistics.metric.processing.MetricProcessorForProject;
 
 /**
  * Task that computes a set of metric results for a particular time window.
  */
-class PairsByTimeWindowProcessor implements Supplier<MetricOutputForProjectByTimeAndThreshold>
+class PairsByTimeWindowProcessor implements Supplier<MetricOutputForProject>
 {
     private static final Logger LOGGER =
             LoggerFactory.getLogger( PairsByTimeWindowProcessor.class );
@@ -52,9 +52,9 @@ class PairsByTimeWindowProcessor implements Supplier<MetricOutputForProjectByTim
     }
 
     @Override
-    public MetricOutputForProjectByTimeAndThreshold get()
+    public MetricOutputForProject get()
     {
-        MetricOutputForProjectByTimeAndThreshold returnMe = null;
+        MetricOutputForProject returnMe = null;
         try
         {
             MetricInput<?> input = futureInput.get();

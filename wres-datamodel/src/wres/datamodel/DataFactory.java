@@ -3,25 +3,16 @@ package wres.datamodel;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.outputs.MapKey;
 import wres.datamodel.outputs.MetricOutput;
-import wres.datamodel.outputs.MetricOutputException;
-import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
-import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold.MetricOutputForProjectByTimeAndThresholdBuilder;
-import wres.datamodel.outputs.MetricOutputMapByMetric;
-import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
-import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
-import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold.MetricOutputMultiMapByTimeAndThresholdBuilder;
+import wres.datamodel.outputs.MetricOutputForProject;
+import wres.datamodel.outputs.MetricOutputForProject.MetricOutputForProjectBuilder;
 import wres.datamodel.outputs.PairedOutput;
-import wres.datamodel.outputs.MetricOutputMapByMetric.MetricOutputMapByMetricBuilder;
-import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold.MetricOutputMapByTimeAndThresholdBuilder;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
@@ -130,123 +121,15 @@ public final class DataFactory
     }
 
     /**
-     * Returns a {@link MetricOutputMapByTimeAndThreshold} from the raw map of inputs.
+     * Returns a builder for a {@link MetricOutputForProject}.
      * 
-     * @param <T> the type of output
-     * @param input the map of metric outputs
-     * @return a {@link MetricOutputMapByTimeAndThreshold} of metric outputs
-     */
-
-    public static <T extends MetricOutput<?>> MetricOutputMapByTimeAndThreshold<T>
-            ofMetricOutputMapByTimeAndThreshold( Map<Pair<TimeWindow, OneOrTwoThresholds>, T> input )
-    {
-        Objects.requireNonNull( input, "Specify a non-null map of inputs by lead time and threshold." );
-        final MetricOutputMapByTimeAndThresholdBuilder<T> builder =
-                new MetricOutputMapByTimeAndThresholdBuilder<>();
-        input.forEach( builder::put );
-        return builder.build();
-    }
-
-    /**
-     * Returns a {@link MetricOutputMultiMapByTimeAndThreshold} from a map of inputs by {@link TimeWindow} and 
-     * {@link OneOrTwoThresholds}.
-     * 
-     * @param <T> the type of output
-     * @param input the input map of metric outputs by time window and threshold
-     * @return a map of metric outputs by lead time and threshold for several metrics
-     * @throws MetricOutputException if attempting to add multiple results for the same metric by time and threshold
-     */
-
-    public static <T extends MetricOutput<?>> MetricOutputMultiMapByTimeAndThreshold<T>
-            ofMetricOutputMultiMapByTimeAndThreshold( Map<Pair<TimeWindow, OneOrTwoThresholds>, List<MetricOutputMapByMetric<T>>> input )
-    {
-        Objects.requireNonNull( input, "Specify a non-null map of inputs by threshold." );
-        final MetricOutputMultiMapByTimeAndThresholdBuilder<T> builder =
-                new MetricOutputMultiMapByTimeAndThresholdBuilder<>();
-        input.forEach( ( key, value ) -> {
-            //Merge the outputs for different metrics
-            final MetricOutputMapByMetricBuilder<T> mBuilder = new MetricOutputMapByMetricBuilder<>();
-            value.forEach( mBuilder::put );
-            builder.put( key, mBuilder.build() );
-        } );
-        return builder.build();
-    }
-
-    /**
-     * Returns a builder for a {@link MetricOutputMultiMapByTimeAndThreshold} that allows for the incremental addition of
-     * {@link MetricOutputMapByTimeAndThreshold} as they are computed.
-     * 
-     * @param <T> the type of output
-     * @return a {@link MetricOutputMultiMapByTimeAndThresholdBuilder} for a map of metric outputs by time window and
+     * @return a {@link MetricOutputForProjectBuilder} for a map of metric outputs by time window and
      *         threshold
      */
 
-    public static <T extends MetricOutput<?>> MetricOutputMultiMapByTimeAndThresholdBuilder<T>
-            ofMetricOutputMultiMapByTimeAndThresholdBuilder()
+    public static MetricOutputForProjectBuilder ofMetricOutputForProjectByTimeAndThreshold()
     {
-        return new MetricOutputMultiMapByTimeAndThresholdBuilder<>();
-    }
-
-    /**
-     * Returns a builder for a {@link MetricOutputForProjectByTimeAndThreshold}.
-     * 
-     * @return a {@link MetricOutputForProjectByTimeAndThresholdBuilder} for a map of metric outputs by time window and
-     *         threshold
-     */
-
-    public static MetricOutputForProjectByTimeAndThresholdBuilder ofMetricOutputForProjectByTimeAndThreshold()
-    {
-        return new MetricOutputForProjectByTimeAndThreshold.MetricOutputForProjectByTimeAndThresholdBuilder();
-    }
-
-    /**
-     * Returns a {@link MetricOutputMapByMetric} from the raw map of inputs.
-     * 
-     * @param <T> the type of output
-     * @param input the map of metric outputs
-     * @return a {@link MetricOutputMapByMetric} of metric outputs
-     */
-
-    public static <T extends MetricOutput<?>> MetricOutputMapByMetric<T>
-            ofMetricOutputMapByMetric( Map<MetricConstants, T> input )
-    {
-        Objects.requireNonNull( input, "Specify a non-null list of inputs." );
-        final MetricOutputMapByMetricBuilder<T> builder = new MetricOutputMapByMetricBuilder<>();
-        input.forEach( ( key, value ) -> builder.put( MapKey.of( key ), value ) );
-        return builder.build();
-    }
-
-    /**
-     * Combines a list of {@link MetricOutputMapByTimeAndThreshold} into a single map.
-     * 
-     * @param <T> the type of output
-     * @param input the list of input maps
-     * @return a combined {@link MetricOutputMapByTimeAndThreshold} of metric outputs
-     */
-
-    public static <T extends MetricOutput<?>> MetricOutputMapByTimeAndThreshold<T>
-            combine( List<MetricOutputMapByTimeAndThreshold<T>> input )
-    {
-        Objects.requireNonNull( input, "Specify a non-null map of inputs to combine." );
-        final MetricOutputMapByTimeAndThreshold.MetricOutputMapByTimeAndThresholdBuilder<T> builder =
-                new MetricOutputMapByTimeAndThreshold.MetricOutputMapByTimeAndThresholdBuilder<>();
-        //If the input contains time windows, find the union of them
-        List<TimeWindow> windows = new ArrayList<>();
-        for ( MetricOutputMapByTimeAndThreshold<T> next : input )
-        {
-            next.forEach( builder::put );
-            if ( next.getMetadata().hasTimeWindow() )
-            {
-                windows.add( next.getMetadata().getTimeWindow() );
-            }
-        }
-        MetricOutputMetadata override = input.get( 0 ).getMetadata();
-        if ( !windows.isEmpty() )
-        {
-            override = MetricOutputMetadata.of( override, TimeWindow.unionOf( windows ), null );
-        }
-        builder.setOverrideMetadata( override );
-        return builder.build();
+        return new MetricOutputForProject.MetricOutputForProjectBuilder();
     }
 
     /**

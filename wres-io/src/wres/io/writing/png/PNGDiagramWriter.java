@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.SortedSet;
 import java.util.function.Consumer;
 
 import ohd.hseb.charter.ChartEngine;
@@ -14,11 +15,10 @@ import wres.config.ProjectConfigException;
 import wres.config.ProjectConfigPlus;
 import wres.config.generated.DestinationConfig;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.Slicer;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.outputs.MapKey;
-import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
-import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
+import wres.datamodel.outputs.ListOfMetricOutput;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.io.config.ConfigHelper;
@@ -31,7 +31,7 @@ import wres.vis.ChartEngineFactory;
  */
 
 public class PNGDiagramWriter extends PNGWriter
-        implements Consumer<MetricOutputMultiMapByTimeAndThreshold<MultiVectorOutput>>
+        implements Consumer<ListOfMetricOutput<MultiVectorOutput>>
 {
 
     /**
@@ -57,7 +57,7 @@ public class PNGDiagramWriter extends PNGWriter
      */
 
     @Override
-    public void accept( final MetricOutputMultiMapByTimeAndThreshold<MultiVectorOutput> output )
+    public void accept( final ListOfMetricOutput<MultiVectorOutput> output )
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing diagram outputs." );
 
@@ -70,9 +70,12 @@ public class PNGDiagramWriter extends PNGWriter
         {
 
             // Iterate through each metric 
-            for ( final Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<MultiVectorOutput>> e : output.entrySet() )
+            SortedSet<MetricConstants> metrics = Slicer.discover( output, meta -> meta.getMetadata().getMetricID() );
+            for ( MetricConstants next : metrics )
             {
-                PNGDiagramWriter.writeMultiVectorCharts( projectConfigPlus, destinationConfig, e.getValue() );
+                PNGDiagramWriter.writeMultiVectorCharts( projectConfigPlus,
+                                                         destinationConfig,
+                                                         Slicer.filter( output, next ) );
             }
 
         }
@@ -81,7 +84,7 @@ public class PNGDiagramWriter extends PNGWriter
 
     /**
      * Writes a set of charts associated with {@link MultiVectorOutput} for a single metric and time window, 
-     * stored in a {@link MetricOutputMapByTimeAndThreshold}.
+     * stored in a {@link ListOfMetricOutput}.
      *
      * @param projectConfigPlus the project configuration
      * @param destinationConfig the destination configuration for the written output
@@ -91,12 +94,12 @@ public class PNGDiagramWriter extends PNGWriter
 
     private static void writeMultiVectorCharts( ProjectConfigPlus projectConfigPlus,
                                                 DestinationConfig destinationConfig,
-                                                MetricOutputMapByTimeAndThreshold<MultiVectorOutput> output )
+                                                ListOfMetricOutput<MultiVectorOutput> output )
     {
         // Build charts
         try
         {
-            MetricOutputMetadata meta = output.getMetadata();
+            MetricOutputMetadata meta = output.getData().get( 0 ).getMetadata();
 
             GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, destinationConfig, meta.getMetricID() );
 

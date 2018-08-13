@@ -7,26 +7,26 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZonedDateTime;
-import java.util.List;
 import java.util.Map;
+import java.util.SortedSet;
 import java.util.StringJoiner;
 import java.util.TreeMap;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import ucar.ma2.ArrayInt;
 import ucar.ma2.DataType;
 import ucar.ma2.InvalidRangeException;
 import ucar.nc2.NetcdfFileWriter;
-
 import wres.config.generated.DestinationConfig;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.Slicer;
+import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.DoubleScoreOutput;
-import wres.datamodel.outputs.MapKey;
-import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
-import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
+import wres.datamodel.outputs.ListOfMetricOutput;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.io.utilities.NoDataException;
 
@@ -40,9 +40,10 @@ class NetcdfOutputFileCreator
 
     static String create( final String templatePath,
                                     final DestinationConfig destinationConfig,
-                                    final TimeWindow window,
+                                    final Duration earliestLeadTime,
+                                    final Duration latestLeadTime,
                                     final ZonedDateTime analysisTime,
-                                    final MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput> output)
+                                    final ListOfMetricOutput<DoubleScoreOutput> output)
             throws IOException
     {
         // We're locking because each created output will be using the same
@@ -50,7 +51,7 @@ class NetcdfOutputFileCreator
         // worth experimenting with no locking
         synchronized ( NetcdfOutputFileCreator.CREATION_LOCK )
         {
-            Path targetPath = getFileName( destinationConfig, window, output );
+            Path targetPath = getFileName( destinationConfig, earliestLeadTime, latestLeadTime, output );
             if ( targetPath.toFile().exists())
             {
                 LOGGER.warn("The file '{}' will be overwritten.", targetPath);
@@ -66,34 +67,40 @@ class NetcdfOutputFileCreator
             NetCDFCopier copier = new NetCDFCopier( templatePath, targetPath.toString(), analysisTime);
 
             // Iterate through each metric
-            for ( Map.Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>> metrics : output
-                    .entrySet() )
+            SortedSet<MetricConstants> metrics = Slicer.discover( output, next -> next.getMetadata().getMetricID() );
+            
+            for ( MetricConstants nextMetric : metrics )
             {
-                MetricConstants metricConstants = metrics.getKey().getKey();
+                // Obtain the values for the next metric
+                ListOfMetricOutput<DoubleScoreOutput> values = Slicer.filter( output, nextMetric );
 
-                MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>
-                        values = metrics.getValue();
-
+                // Obtain the unique pairs of thresholds and time windows available in the output
+                // Discover the available pairs of time windows and thresholds
+                SortedSet<Pair<TimeWindow, OneOrTwoThresholds>> pairsOfTimesAndThresholds =
+                        Slicer.discover( output,
+                                         next -> Pair.of( next.getMetadata().getTimeWindow(),
+                                                          next.getMetadata().getThresholds() ) );
+                
+                // Find the metadata for the first element, which is sufficient here
+                MetricOutputMetadata meta = values.getData().get( 0 ).getMetadata();
+                
                 // Now iterate through each threshold for said metric
-                for ( Map.Entry<Pair<TimeWindow, OneOrTwoThresholds>, DoubleScoreOutput> outputWindow : values.entrySet() )
+                for ( Pair<TimeWindow, OneOrTwoThresholds> nextPair : pairsOfTimesAndThresholds )
                 {
                     // TODO: Use getOutputDimension(), not getInputDimension()
                     // Extra handling is required in cases where there is no output dimension
-                    NetcdfOutputFileCreator.addVariable(
-                            copier,
-                            metricConstants,
-                            values.getMetadata()
-                                  .getMeasurementUnit()
-                                  .getUnit(),
-                            outputWindow
-                    );
+                    NetcdfOutputFileCreator.addVariable( copier,
+                                                         nextMetric,
+                                                         meta.getMeasurementUnit().getUnit(),
+                                                         nextPair.getLeft(),
+                                                         nextPair.getRight() );
                 }
             }
 
             NetcdfFileWriter writer = copier.write();
 
             ArrayInt.D1 duration = new ArrayInt.D1( 1, false );
-            duration.set( 0, (int)window.getLatestLeadTime().toMinutes() );
+            duration.set( 0, (int)latestLeadTime.toMinutes() );
 
             try
             {
@@ -127,18 +134,24 @@ class NetcdfOutputFileCreator
     }
 
     private static Path getFileName(final DestinationConfig destinationConfig,
-                                      final TimeWindow window,
-                                      final MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput> output)
+                                      final Duration earliestLeadTime,
+                                      final Duration latestLeadTime,
+                                      final ListOfMetricOutput<DoubleScoreOutput> output)
             throws NoDataException
     {
-        StringJoiner filename = new StringJoiner("_", "wres.", ".nc");
-        filename.add( NetcdfOutputFileCreator.getVariableName( output ) );
-        filename.add("lead");
-        filename.add(window.getLatestLeadTime().toString());
-
-        if (!window.getLatestTime().equals( Instant.MAX ))
+        if( output.getData().isEmpty() )
         {
-            String lastTime = window.getLatestTime().toString();
+            throw new NoDataException("No data available to write.");
+        }
+        
+        StringJoiner filename = new StringJoiner("_", "wres.", ".nc");
+        filename.add( output.getData().get( 0 ).getMetadata().getIdentifier().getVariableID() );
+        filename.add("lead");
+        filename.add(latestLeadTime.toString());
+
+        if (!latestLeadTime.equals( Instant.MAX ))
+        {
+            String lastTime = latestLeadTime.toString();
 
             // TODO: Format the last time in the style of "20180505T2046"
             // instead of "2018-05-05 20:46:00.000-0000"
@@ -148,21 +161,6 @@ class NetcdfOutputFileCreator
         }
 
         return Paths.get( destinationConfig.getPath(), filename.toString());
-    }
-
-    private static String getVariableName( final MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput> output )
-            throws NoDataException
-    {
-        // We want to write data for each encountered metric
-        for ( Map.Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>> scoreOutput : output.entrySet() )
-        {
-            if (scoreOutput.getValue().getMetadata() != null)
-            {
-                return scoreOutput.getValue().getMetadata().getIdentifier().getVariableID();
-            }
-        }
-
-        throw new NoDataException( "There wasn't any metadata attached to output for " + output.toString() );
     }
 
     static String getMetricVariableName( final String metricName,
@@ -187,53 +185,49 @@ class NetcdfOutputFileCreator
         return name;
     }
 
+    //Map.Entry<Pair<TimeWindow, OneOrTwoThresholds>, DoubleScoreOutput> output
+    
     private static void addVariable(final NetCDFCopier copier,
                              final MetricConstants metric,
                              final String measurementUnit,
-                             final Map.Entry<Pair<TimeWindow, OneOrTwoThresholds>, DoubleScoreOutput> output)
+                             final TimeWindow timeWindow,
+                             final OneOrTwoThresholds threshold )
             throws IOException
     {
-        String name = NetcdfOutputFileCreator.getMetricVariableName( metric.toString(), output.getKey().getRight() );
+        String name = NetcdfOutputFileCreator.getMetricVariableName( metric.toString(), threshold );
 
-        String longName = metric.toString() + " " + output.getKey().getValue().toString();
-        String firstCondition = output.getKey().getValue().first().getCondition().name();
+        String longName = metric.toString() + " " + threshold;
+        String firstCondition = threshold.first().getCondition().name();
         String secondCondition = "None";
 
-        if (output.getKey().getValue().second() != null)
-        {
-            secondCondition = output.getKey().getValue().second().getCondition().name();
-        }
-
-        Double firstBound = output.getKey().getValue().first().getValues().first();
+        Double firstBound = threshold.first().getValues().first();
         Double secondBound = null;
-
-        if (output.getKey().getValue().second() != null)
-        {
-            secondBound = output.getKey().getValue().second().getValues().first();
-        }
-
-        String firstDataType = output.getKey().getValue().first().getDataType().name();
+        
+        String firstDataType = threshold.first().getDataType().name();
         String secondDataType = "None";
-
-        if (output.getKey().getValue().second() != null)
+        
+        // Two thresholds available
+        if (threshold.hasTwo())
         {
-            secondDataType = output.getKey().getValue().second().getDataType().name();
+            secondCondition = threshold.second().getCondition().name();
+            secondBound = threshold.second().getValues().first();
+            secondDataType = threshold.second().getDataType().name();
         }
-
+        
         // We only add timing information until we get a lead variable in
         String earliestTime = "ALL";
         String latestTime = "ALL";
-        int earliestLead = (int)output.getKey().getKey().getEarliestLeadTimeInHours();
-        int latestLead = (int)output.getKey().getKey().getLatestLeadTimeInHours();
+        int earliestLead = (int)timeWindow.getEarliestLeadTimeInHours();
+        int latestLead = (int)timeWindow.getLatestLeadTimeInHours();
 
-        if (!output.getKey().getKey().getEarliestTime().equals( Instant.MIN ))
+        if (!timeWindow.getEarliestTime().equals( Instant.MIN ))
         {
-            earliestTime = output.getKey().getKey().getEarliestTime().toString();
+            earliestTime = timeWindow.getEarliestTime().toString();
         }
 
-        if (!output.getKey().getKey().getLatestTime().equals( Instant.MAX ))
+        if (!timeWindow.getLatestTime().equals( Instant.MAX ))
         {
-            latestTime = output.getKey().getKey().getLatestTime().toString();
+            latestTime = timeWindow.getLatestTime().toString();
         }
 
         Map<String, Object> attributes = new TreeMap<>(  );
