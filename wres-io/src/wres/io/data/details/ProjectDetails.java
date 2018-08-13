@@ -300,7 +300,7 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
         }
 
         // Sort for deterministic hash result for same list of ingested
-        List<String> sortedLeftHashes =
+        Collection<String> sortedLeftHashes =
                 Collections.copyAndSort( leftHashesIngested );
 
         for ( String leftHash : sortedLeftHashes )
@@ -321,7 +321,7 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
         }
 
         // Sort for deterministic hash result for same list of ingested
-        List<String> sortedRightHashes =
+        Collection<String> sortedRightHashes =
                 Collections.copyAndSort( rightHashesIngested );
 
         for ( String rightHash : sortedRightHashes )
@@ -346,7 +346,7 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
 
 
             // Sort for deterministic hash result for same list of ingested
-            List<String> sortedBaselineHashes =
+            Collection<String> sortedBaselineHashes =
                     Collections.copyAndSort( baselineHashesIngested );
 
             for ( String baselineHash : sortedBaselineHashes )

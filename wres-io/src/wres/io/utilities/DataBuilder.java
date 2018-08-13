@@ -5,10 +5,27 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+/*
+ * Builder used to programmatically create data providers rather than retrieving
+ * the data from an outside source
+ */
 public class DataBuilder
 {
+    /**
+     * The mapping between column names and their indexes
+     */
     private final Map<String, Integer> columnNames;
+
+    /**
+     * The listing of each row
+     * <br>
+     * Each row is represented as an array of objects
+     */
     private final List<Object[]> rows;
+
+    /**
+     * The index of the row that is currently having values added
+     */
     private int currentRow;
 
     private DataBuilder()
@@ -19,6 +36,11 @@ public class DataBuilder
         this.currentRow = -1;
     }
 
+    /**
+     * Create a builder with the specified columns
+     * @param columnNames The names of each column in the data
+     * @return A new builder
+     */
     public static DataBuilder with(String... columnNames)
     {
         DataBuilder builder = new DataBuilder();
@@ -38,6 +60,10 @@ public class DataBuilder
         return builder;
     }
 
+    /**
+     * Progress to the next row
+     * @return The modified builder
+     */
     public DataBuilder addRow()
     {
         this.currentRow += 1;
@@ -45,6 +71,11 @@ public class DataBuilder
         return this;
     }
 
+    /**
+     * Adds a new row with a copy of the given data
+     * @param data The data to insert into the new row
+     * @return The updated builder
+     */
     public DataBuilder addRow(final Object[] data)
     {
         if (data.length > this.columnNames.size())
@@ -64,6 +95,12 @@ public class DataBuilder
         return this;
     }
 
+    /**
+     * Sets the value of the specific column
+     * @param columnName The name of the column
+     * @param value The value to place in the column
+     * @return The updated builder
+     */
     public DataBuilder set(final String columnName, final Object value)
     {
         if (!this.columnNames.containsKey( columnName ))
@@ -83,6 +120,9 @@ public class DataBuilder
         return this;
     }
 
+    /**
+     * @return A {@link DataProvider} populated with the built data
+     */
     public DataProvider build()
     {
         return DataSetProvider.from(this.columnNames, this.rows);

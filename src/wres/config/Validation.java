@@ -10,6 +10,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.MonthDay;
 import java.time.temporal.ChronoUnit;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.SortedSet;
@@ -207,7 +208,7 @@ public class Validation
         }
 
         // Look for destinations that aren't for Netcdf but have netcdf specifications
-        List<DestinationConfig> incorrectDestinations = Collections.where(
+        Collection<DestinationConfig> incorrectDestinations = Collections.where(
                 destinations,
                 config -> config.getType() != DestinationType.NETCDF && config.getNetcdf() != null
         );
@@ -1433,7 +1434,7 @@ public class Validation
                 warning.append( System.lineSeparator() );
             }
 
-            warning.append("Both an earliest and latest date is required if "
+            warning.append("Both an earliest and latest date are required if "
                            + "data pooling is to be used. Please set the "
                            + "earliest and latest issue dates.");
         }
@@ -1585,10 +1586,63 @@ public class Validation
                         Validation.isDateConfigValid( projectConfigPlus,
                                                       s )
                         && dataSourcesValid;
+
+                dataSourcesValid = Validation.isS3SourceValid( projectConfigPlus, s )
+                                   && dataSourcesValid;
             }
         }
 
         result = dataSourcesValid && result;
+
+        return result;
+    }
+
+    private static boolean isS3SourceValid(ProjectConfigPlus projectConfigPlus,
+                                           DataSourceConfig.Source source)
+    {
+        if (source.getFormat() == null || !source.getFormat().equals( Format.S_3 ))
+        {
+            // If this isn't an S3 format, then S3 rules don't apply
+            return true;
+        }
+
+        boolean result = true;
+
+        if (!Strings.hasValue(source.getPattern()))
+        {
+            result = false;
+
+            if (LOGGER.isWarnEnabled())
+            {
+                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                             + "A file name pattern is required for S3 data sources.",
+                             projectConfigPlus,
+                             source.sourceLocation()
+                                             .getLineNumber(),
+                             source.sourceLocation()
+                                             .getColumnNumber() );
+            }
+        }
+
+        PairConfig pairConfig = projectConfigPlus.getProjectConfig().getPair();
+
+        if ((pairConfig.getDates() == null || pairConfig.getDates().getEarliest() == null) &&
+            (pairConfig.getIssuedDates() == null || pairConfig.getIssuedDates().getEarliest() == null))
+        {
+            result = false;
+            if ( LOGGER.isWarnEnabled() )
+            {
+                String msg = FILE_LINE_COLUMN_BOILERPLATE
+                             + " An earliest date or earliest issued date must be supplied to use S3 data.";
+
+                LOGGER.warn( msg,
+                             projectConfigPlus.getPath(),
+                             pairConfig.sourceLocation().getLineNumber(),
+                             pairConfig.sourceLocation()
+                                       .getColumnNumber() );
+            }
+
+        }
 
         return result;
     }

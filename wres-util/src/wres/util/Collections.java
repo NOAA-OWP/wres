@@ -10,9 +10,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NavigableMap;
 import java.util.Objects;
-import java.util.Set;
-import java.util.StringJoiner;
-import java.util.TreeSet;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 
@@ -23,8 +20,7 @@ import org.apache.commons.math3.stat.descriptive.rank.Min;
 import org.apache.commons.math3.stat.descriptive.summary.Sum;
 
 /**
- * @author Christopher Tubbs
- *
+ * Helper functions used to operate on collections and arrays
  */
 public final class Collections
 {
@@ -36,8 +32,6 @@ public final class Collections
      * @param index The index of the element to remove
      * @return A new array without the item at the given index
      * @throws IndexOutOfBoundsException if the index is out of bounds
-     * TODO: Modify to take advantage of Arrays.copyOfRange to copy the
-     * array from before and after and combine the two
      */
     public static <T> T[] removeIndexFromArray(T[] array, int index)
     {
@@ -66,25 +60,6 @@ public final class Collections
         }
         
         return copy;
-    }
-    
-    /**
-     * Combines two arrays
-     * @param <U> the type of object in the array
-     * @param left The array to place on the left
-     * @param right The array to place on the right
-     * @return An array containing the values from the two passed in arrays
-     */
-    public static <U> U[] combine(U[] left, U[] right) {
-        int length = left.length + right.length;
-
-        U[] result = Arrays.copyOf(left, length);
-
-        System.arraycopy(left, 0, result, 0, left.length);
-
-        System.arraycopy(right, 0, result, left.length, right.length);
-        
-        return result;
     }
     
     /**
@@ -149,7 +124,7 @@ public final class Collections
      * @param expression The expression used to determine what should be in the list
      * @return A new list containing  all elements that passed through the filter
      */
-    public static <U> List<U> where(Collection<U> source, Predicate<U> expression) {
+    public static <U> Collection<U> where(Collection<U> source, Predicate<U> expression) {
         List<U> filteredValues = null;
 
         if (source != null)
@@ -210,27 +185,29 @@ public final class Collections
      * @param expression The expression used to test elements against
      * @return The found value. Null if nothing was found
      */
-    public static <U> U find(Collection<U> source, Predicate<U> expression) {
+    public static <U> U find(Collection<U> source, Predicate<U> expression)
+    {
         U val = null;
-        List<U> collection = where(source, expression);
-        if (collection != null && collection.size() > 0) {
-            val = collection.get(0);
+        for (U value : source)
+        {
+            if (expression.test( value ))
+            {
+                val = value;
+                break;
+            }
         }
         
         return val;
     }
-    
-    public static <U> U find(Collection<U> source, U comparator, BiPredicate<U, U> expression) {
-        U foundElement = null;
-        for (U element : source) {
-            if (expression.test(element, comparator)) {
-                foundElement = element;
-                break;
-            }
-        }
-        return foundElement;
-    }
-    
+
+    /**
+     * Determines if a value matching the passed in expression exists in the collection
+     * @param source The collection of values to look in
+     * @param expression a boolean function that will operate on the elements in source
+     * @param <U> The type of object in the source collection
+     * @return Whether or not an element that fulfills the requirements in the passed
+     * in function is within the passed in collection
+     */
     public static <U> boolean exists(Collection<U> source, Predicate<U> expression)
     {
         Collection<U> filteredCollection = where(source, expression);
@@ -243,6 +220,14 @@ public final class Collections
         return valueExists;
     }
 
+    /**
+     * Determines if a value matching the passed in expression exists in the array
+     * @param source The array of values to look in
+     * @param expression a boolean function that will operate on the elements in source
+     * @param <U> The type of object in the source array
+     * @return Whether or not an element that fulfills the requirements in the passed
+     * in function is within the passed in array
+     */
     public static <U> boolean exists(U[] source, Predicate<U> expression)
     {
         boolean exists = false;
@@ -292,7 +277,7 @@ public final class Collections
      * @param <U> The type of the key
      * @param <V> The type of the value
      * @return The first key found with the correct value. If multiple keys have the same value, you're not
-     * guarenteed to get the same value each time
+     * guaranteed to get the same value each time
      */
     public static <U, V> U getKeyByValue(Map<U, V> mapping, V value)
     {
@@ -308,46 +293,16 @@ public final class Collections
         return key;
     }
 
-    public static <U> String formAnyStatement(Collection<U> items, String typeName)
-    {
-        if (items.size() == 1)
-        {
-            String item = String.valueOf( items.toArray()[0] );
-
-            if (typeName.equalsIgnoreCase( "text" ) || typeName.contains( "char" ))
-            {
-                item = "'" + item + "'";
-            }
-
-            return item;
-        }
-
-        StringJoiner anyJoiner = new StringJoiner( ",", "ANY('{", "}'::" + typeName + "[])" );
-        Set<U> foundKeys = new TreeSet<>(  );
-
-        for (U item : items)
-        {
-            if (!foundKeys.contains( item ))
-            {
-                anyJoiner.add( String.valueOf( item ) );
-                foundKeys.add( item );
-            }
-        }
-
-        return anyJoiner.toString();
-    }
-
-    public static <U extends Comparable<U>> List<U> copyAndSort(Collection<U> someCollection)
+    /**
+     * Copies the items from a collection into a new one, then sorts it
+     * @param someCollection A collection of objects
+     * @param <U> The type of the object
+     * @return A sorted list containing the passed in objects
+     */
+    public static <U extends Comparable<U>> Collection<U> copyAndSort(Collection<U> someCollection)
     {
         List<U> result = new ArrayList<>(someCollection);
         result.sort(Comparator.naturalOrder());
-        return java.util.Collections.unmodifiableList( result );
-    }
-
-    public static <U> List<U> copyAndSort(Collection<U> someCollection, Comparator<U> comparator)
-    {
-        List<U> result = new ArrayList<>(someCollection);
-        result.sort(comparator);
         return java.util.Collections.unmodifiableList( result );
     }
 
@@ -355,8 +310,7 @@ public final class Collections
      * Translates a listing of values and a specified function to an aggregated
      * value.
      * <p>
-     *     <b>Note:</b> If there are missing values or the function is not valid,
-     *     NaN is returned
+     *     <b>Note:</b> NaN is returned if there are missing values
      * </p>
      * @param values The collection of values to aggregate
      * @param function The function to use to aggregate
@@ -366,9 +320,9 @@ public final class Collections
     {
         function = function.trim().toLowerCase();
 
-        double aggregatedValue = Double.NaN;
+        double aggregatedValue;
 
-        AbstractUnivariateStatistic operation = null;
+        AbstractUnivariateStatistic operation;
 
         switch ( function )
         {
@@ -394,24 +348,47 @@ public final class Collections
                                                      "' is not a valid aggregation function.");
         }
 
-        if (operation != null)
-        {
-            aggregatedValue = operation.evaluate(
-                    values.stream()
-                          .mapToDouble(
-                                  value -> {
-                                      if (value == null)
-                                          return Double.NaN;
-                                      else
-                                          return value.doubleValue();
-                                  } ).toArray()
-            );
-        }
+        aggregatedValue = operation.evaluate(
+                values.stream()
+                      .mapToDouble(
+                              value -> {
+                                  if (value == null)
+                                      return Double.NaN;
+                                  else
+                                      return value;
+                              } ).toArray()
+        );
 
         return aggregatedValue;
     }
 
-    public static <U extends Comparable<? super U>, V> List<V> getValuesInRange(
+    /**
+     * Returns each value held between two keys
+     * <br>
+     * For the map, m:<br>
+     * <ul>
+     *     <li>1 : "all kinds"</li>
+     *     <li>2 : "of",</li>
+     *     <li>3 : "s"</li>
+     *     <li>4 : "t"</li>
+     *     <li>5 : "u"</li>
+     *     <li>6 : "f"</li>
+     *     <li>7 : "f"</li>
+     *     <li>8 : "to"</li>
+     *     <li>9 : "look"</li>
+     *     <li>10 : "at"</li>
+     * </ul>
+     * getValuesInRange(m, 2, 7) should return
+     * ["s", "t", "u", "f", "f"]
+     *
+     * @param map A map containing data of interest
+     * @param minimum The exclusive minimum key
+     * @param maximum The inclusive maximum key
+     * @param <U> The type of the key
+     * @param <V> The type of the value
+     * @return A list containing each value between the minimum and maximum keys
+     */
+    public static <U extends Comparable<? super U>, V> Collection<V> getValuesInRange(
             NavigableMap<U, V> map,
             U minimum,
             U maximum)

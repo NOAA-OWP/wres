@@ -1058,56 +1058,6 @@ public final class Database {
     }
 
     /**
-     * Populates the passed in collection with values of the indicated data type
-     * originating from the column with the name of the passed in fieldLabel
-     * in the passed in query
-     * @param collection The collection to populate
-     * @param query The query used to retrieve data
-     * @param fieldLabel The name of the column containing data
-     * @return The updated collection
-     * @throws SQLException Thrown if the database could not be communicated
-     * with successfully
-     */
-    @SuppressWarnings( "unchecked" )
-	public static Collection populateCollection(final Collection collection,
-                                                final String query,
-                                                final String fieldLabel)
-            throws SQLException
-	{
-        Objects.requireNonNull( collection,
-                                "The collection passed into "
-                                + "'populateCollection' must have been "
-                                + "instantiated." );
-
-        if (LOGGER.isTraceEnabled())
-        {
-            LOGGER.trace( "" );
-            LOGGER.trace(query);
-            LOGGER.trace("");
-            LOGGER.trace("The value is '{}'", fieldLabel);
-            LOGGER.trace("");
-        }
-
-		try
-		{
-            Database.consume( query, collectionRow -> {
-                if (collectionRow.getObject( fieldLabel ) != null)
-                {
-                    collection.add(collectionRow.getObject( fieldLabel ));
-                }
-            } );
-		}
-		catch (SQLException error)
-		{
-            String message = "The following query failed:" + NEWLINE + query;
-            // Decorate SQLException with additional information.
-			throw new SQLException( message, error );
-		}
-
-		return collection;
-	}
-
-    /**
      * Populates the given map with the key column and value column from the
      * given query
      *

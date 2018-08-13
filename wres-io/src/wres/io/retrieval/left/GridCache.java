@@ -1,11 +1,11 @@
 package wres.io.retrieval.left;
 
 import java.io.IOException;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.NavigableMap;
 import java.util.TreeMap;
@@ -21,7 +21,6 @@ import wres.io.config.ConfigHelper;
 import wres.io.data.caching.UnitConversions;
 import wres.io.data.details.ProjectDetails;
 import wres.io.utilities.DataProvider;
-import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
 import wres.io.utilities.ScriptBuilder;
 import wres.util.Collections;
@@ -39,9 +38,9 @@ class GridCache implements LeftHandCache
     }
 
     @Override
-    public List<Double> getLeftValues( Feature feature,
-                                       LocalDateTime earliestDate,
-                                       LocalDateTime latestDateTime )
+    public Collection<Double> getLeftValues( Feature feature,
+                                             LocalDateTime earliestDate,
+                                             LocalDateTime latestDateTime )
             throws IOException
     {
         Request gridRequest;
@@ -64,7 +63,7 @@ class GridCache implements LeftHandCache
         gridRequest.setEarliestValidTime( earliestDate.toInstant( ZoneOffset.UTC ) );
         gridRequest.setLatestValidTime( latestDateTime.toInstant( ZoneOffset.UTC ) );
 
-        List<String> paths = Collections.getValuesInRange( this.cachedSources, earliestDate, latestDateTime );
+        Collection<String> paths = Collections.getValuesInRange( this.cachedSources, earliestDate, latestDateTime );
         if (paths.size() == 0)
         {
             LOGGER.debug("There are no gridded data files for left hand "
