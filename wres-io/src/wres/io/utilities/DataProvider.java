@@ -13,6 +13,9 @@ import java.util.List;
 import wres.util.functional.ExceptionalConsumer;
 import wres.util.functional.ExceptionalFunction;
 
+/**
+ * Provides access and operations on tabular data
+ */
 public interface DataProvider extends AutoCloseable
 {
     /**

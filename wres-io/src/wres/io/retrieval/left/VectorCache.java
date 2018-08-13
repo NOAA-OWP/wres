@@ -3,6 +3,7 @@ package wres.io.retrieval.left;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.NavigableMap;
 import java.util.TreeMap;
@@ -164,9 +165,9 @@ class VectorCache implements LeftHandCache
     private final Feature feature;
 
     @Override
-    public List<Double> getLeftValues( Feature feature,
-                                       LocalDateTime earliestDate,
-                                       LocalDateTime latestDateTime )
+    public Collection<Double> getLeftValues( Feature feature,
+                                             LocalDateTime earliestDate,
+                                             LocalDateTime latestDateTime )
     {
         return Collections.getValuesInRange(this.values, earliestDate, latestDateTime);
     }

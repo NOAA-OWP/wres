@@ -1,9 +1,9 @@
 package wres.io.retrieval;
 
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -157,7 +157,7 @@ class IngestedValueCollection
                 ingestedValue -> ingestedValue.getLead() == lastBlockLead &&
                                  (ingestedValue.getLead() - period >= earliestLead || scalingNotNecessary));
 
-        List<IngestedValue> subset;
+        Collection<IngestedValue> subset;
 
         if ( canCondense )
         {

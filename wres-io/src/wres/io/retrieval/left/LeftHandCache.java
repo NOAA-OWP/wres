@@ -3,6 +3,7 @@ package wres.io.retrieval.left;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 
 import wres.config.generated.Feature;
@@ -28,7 +29,7 @@ public interface LeftHandCache
         return cache;
     }
 
-    List<Double> getLeftValues(
+    Collection<Double> getLeftValues(
             final Feature feature,
             final LocalDateTime earliestDate,
             final LocalDateTime latestDateTime)

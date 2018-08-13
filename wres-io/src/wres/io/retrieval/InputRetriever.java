@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -97,7 +98,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
     /**
      * Function used to find all left side data based on a range of dates for a specific feature
      */
-    private final ExceptionalTriFunction<Feature, LocalDateTime, LocalDateTime, List<Double>, IOException> getLeftValues;
+    private final ExceptionalTriFunction<Feature, LocalDateTime, LocalDateTime, Collection<Double>, IOException> getLeftValues;
 
     /**
      * The total set of climatology data to group with the pairs
@@ -122,7 +123,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
     private Map<Integer, UnitConversions.Conversion> conversionMap;
 
     InputRetriever ( ProjectDetails projectDetails,
-                     ExceptionalTriFunction<Feature, LocalDateTime, LocalDateTime, List<Double>, IOException> getLeftValues )
+                     ExceptionalTriFunction<Feature, LocalDateTime, LocalDateTime, Collection<Double>, IOException> getLeftValues )
     {
         this.projectDetails = projectDetails;
         this.getLeftValues = getLeftValues;
@@ -1328,7 +1329,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         LocalDateTime endDate = LocalDateTime.ofInstant(end, ZoneId.of( "Z" ) );
 
         //List<Double> leftValues = this.getLeftValues.apply( startDate, endDate );
-        List<Double> leftValues = this.getLeftValues.call( this.feature, startDate, endDate );
+        Collection<Double> leftValues = this.getLeftValues.call( this.feature, startDate, endDate );
 
         if (leftValues == null || leftValues.isEmpty())
         {
@@ -1349,7 +1350,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         }
         else
         {
-            leftAggregation = leftValues.get( 0 );
+            leftAggregation = leftValues.iterator().next();
         }
 
         return leftAggregation;
