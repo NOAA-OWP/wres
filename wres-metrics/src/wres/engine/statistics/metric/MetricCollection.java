@@ -1,8 +1,10 @@
 package wres.engine.statistics.metric;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -16,11 +18,11 @@ import java.util.function.BiFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.Slicer;
 import wres.datamodel.inputs.MetricInput;
+import wres.datamodel.outputs.ListOfMetricOutput;
 import wres.datamodel.outputs.MetricOutput;
-import wres.datamodel.outputs.MetricOutputMapByMetric;
 import wres.engine.statistics.metric.categorical.ContingencyTable;
 
 /**
@@ -52,7 +54,7 @@ import wres.engine.statistics.metric.categorical.ContingencyTable;
  */
 
 public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?>, U extends MetricOutput<?>>
-        implements BiFunction<S, Set<MetricConstants>, MetricOutputMapByMetric<U>>
+        implements BiFunction<S, Set<MetricConstants>, ListOfMetricOutput<U>>
 {
 
     /**
@@ -88,7 +90,7 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
      * @throws MetricCalculationException if the calculation fails for any reason
      */
 
-    public MetricOutputMapByMetric<U> apply( final S input )
+    public ListOfMetricOutput<U> apply( final S input )
     {
         return this.apply( input, Collections.emptySet() );
     }
@@ -102,7 +104,7 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
      */
 
     @Override
-    public MetricOutputMapByMetric<U> apply( final S input, final Set<MetricConstants> ignoreTheseMetrics )
+    public ListOfMetricOutput<U> apply( final S input, final Set<MetricConstants> ignoreTheseMetrics )
     {
         try
         {
@@ -233,7 +235,7 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
      * @throws MetricCalculationException if one or more of the inputs is invalid
      */
 
-    private MetricOutputMapByMetric<U> applyInternal( final S input, final Set<MetricConstants> ignoreTheseMetrics )
+    private ListOfMetricOutput<U> applyInternal( final S input, final Set<MetricConstants> ignoreTheseMetrics )
             throws InterruptedException, ExecutionException
     {
         //Bounds checks
@@ -266,7 +268,7 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
         localCollectableMetrics.forEach( ( key, value ) -> value.keySet().removeAll( ignoreTheseMetrics ) );
 
         //Collection of future metric results
-        final Map<MetricConstants, CompletableFuture<U>> metricFutures = new EnumMap<>( MetricConstants.class );
+        final List<CompletableFuture<U>> metricFutures = new ArrayList<>();
 
         //Create the futures for the collectable metrics
         for ( Map<MetricConstants, Collectable<S, T, U>> next : localCollectableMetrics.values() )
@@ -281,30 +283,28 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
                         CompletableFuture.supplyAsync( () -> baseMetric.getInputForAggregation( input ),
                                                        this.metricPool );
                 //Using the future dependent result, compute a future of each of the independent results
-                next.forEach( ( id, metric ) -> metricFutures.put( id,
-                                                                   baseFuture.thenApplyAsync( metric::aggregate,
+                next.forEach( ( id, metric ) -> metricFutures.add( baseFuture.thenApplyAsync( metric::aggregate,
                                                                                               this.metricPool ) ) );
             }
         }
         //Create the futures for the ordinary metrics
-        localMetrics.forEach( ( key, value ) -> metricFutures.put( key,
-                                                                   CompletableFuture.supplyAsync( () -> value.apply( input ),
+        localMetrics.forEach( ( key, value ) -> metricFutures.add( CompletableFuture.supplyAsync( () -> value.apply( input ),
                                                                                                   this.metricPool ) ) );
         //Compute the results
-        Map<MetricConstants, U> returnMe = new EnumMap<>( MetricConstants.class );
-        MetricConstants nextMetric = null;
+        List<U> unpacked = new ArrayList<>();
 
         this.logStartOfCalculation( LOGGER );
 
-        for ( Map.Entry<MetricConstants, CompletableFuture<U>> nextResult : metricFutures.entrySet() )
+        for ( CompletableFuture<U> nextResult : metricFutures )
         {
-            nextMetric = nextResult.getKey();
-            returnMe.put( nextMetric, nextResult.getValue().get() ); //This is blocking
+            unpacked.add( nextResult.get() ); //This is blocking
         }
+        
+        ListOfMetricOutput<U> returnMe = ListOfMetricOutput.of( Collections.unmodifiableList( unpacked ) );
 
         this.logEndOfCalculation( LOGGER, returnMe );
 
-        return DataFactory.ofMetricOutputMapByMetric( returnMe );
+        return returnMe;
     }
 
     /**
@@ -389,21 +389,21 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
      * @param results the results to log
      */
 
-    private void logEndOfCalculation( Logger logger, Map<MetricConstants, U> results )
+    private void logEndOfCalculation( Logger logger, ListOfMetricOutput<U> results )
     {
         if ( logger.isTraceEnabled() )
         {
             // Determine the metrics computed
             Set<MetricConstants> collected = new TreeSet<>();
             collectableMetrics.values().forEach( next -> collected.addAll( next.keySet() ) );
-            Set<MetricConstants> completed = results.keySet();
+            Set<MetricConstants> completed = Slicer.discover( results, meta -> meta.getMetadata().getMetricID() );
 
             logger.trace( "Finished computing metrics for a collection that contains {} ordinary metric(s) and {} "
                           + "collectable metric(s). Obtained {} result(s) of the {} result(s) expected. Results were "
                           + "obtained for these metrics {}.",
                           metrics.size(),
                           collected.size(),
-                          results.size(),
+                          completed.size(),
                           metrics.size() + collected.size(),
                           completed );
         }

@@ -25,16 +25,17 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
+import wres.datamodel.outputs.ListOfMetricOutput;
 import wres.datamodel.outputs.MetricOutputAccessException;
-import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
-import wres.datamodel.outputs.MetricOutputMapByMetric;
+import wres.datamodel.outputs.MetricOutputForProject;
 import wres.datamodel.outputs.PairedOutput;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
+import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 
@@ -42,7 +43,7 @@ import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
  * Tests the writing of paired outputs to a file of Comma Separated Values (CSV).
  */
 
-public class CommaSeparatedPairedWriterTest extends CommaSeparatedWriterTest
+public class CommaSeparatedPairedWriterTest extends CommaSeparatedWriterTestHelper
 {
 
     /**
@@ -66,7 +67,7 @@ public class CommaSeparatedPairedWriterTest extends CommaSeparatedWriterTest
         final String LID = "FTSC1";
 
         // Create fake outputs
-        MetricOutputForProjectByTimeAndThreshold.MetricOutputForProjectByTimeAndThresholdBuilder outputBuilder =
+        MetricOutputForProject.MetricOutputForProjectBuilder outputBuilder =
                 DataFactory.ofMetricOutputForProjectByTimeAndThreshold();
 
         TimeWindow timeOne =
@@ -76,6 +77,11 @@ public class CommaSeparatedPairedWriterTest extends CommaSeparatedWriterTest
                                Duration.ofHours( 1 ),
                                Duration.ofHours( 18 ) );
 
+        OneOrTwoThresholds threshold =
+                OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                                                     Operator.GREATER,
+                                                     ThresholdDataType.LEFT ) );
+
         // Output requires a future... which requires a metadata...
         // which requires a datasetidentifier..
 
@@ -84,11 +90,13 @@ public class CommaSeparatedPairedWriterTest extends CommaSeparatedWriterTest
 
         MetricOutputMetadata fakeMetadata =
                 MetricOutputMetadata.of( 1000,
-                                                   MeasurementUnit.of(),
-                                                   MeasurementUnit.of( "CMS" ),
-                                                   MetricConstants.TIME_TO_PEAK_ERROR,
-                                                   null,
-                                                   datasetIdentifier );
+                                         MeasurementUnit.of(),
+                                         MeasurementUnit.of( "CMS" ),
+                                         MetricConstants.TIME_TO_PEAK_ERROR,
+                                         null,
+                                         datasetIdentifier,
+                                         timeOne,
+                                         threshold );
 
         List<Pair<Instant, Duration>> fakeOutputs = new ArrayList<>();
         fakeOutputs.add( Pair.of( Instant.parse( "1985-01-01T00:00:00Z" ), Duration.ofHours( 1 ) ) );
@@ -96,25 +104,16 @@ public class CommaSeparatedPairedWriterTest extends CommaSeparatedWriterTest
         fakeOutputs.add( Pair.of( Instant.parse( "1985-01-03T00:00:00Z" ), Duration.ofHours( 3 ) ) );
 
         // Fake output wrapper.
-        MetricOutputMapByMetric<PairedOutput<Instant, Duration>> fakeOutputData =
-                DataFactory.ofMetricOutputMapByMetric( Collections.singletonMap( MetricConstants.TIME_TO_PEAK_ERROR,
-                                                                                 PairedOutput.of( fakeOutputs, fakeMetadata ) ) );
+        ListOfMetricOutput<PairedOutput<Instant, Duration>> fakeOutputData =
+                ListOfMetricOutput.of( Collections.singletonList( PairedOutput.of( fakeOutputs, fakeMetadata ) ) );
 
         // wrap outputs in future
-        Future<MetricOutputMapByMetric<PairedOutput<Instant, Duration>>> outputMapByMetricFuture =
+        Future<ListOfMetricOutput<PairedOutput<Instant, Duration>>> outputMapByMetricFuture =
                 CompletableFuture.completedFuture( fakeOutputData );
 
-        // Fake lead time and threshold
-        Pair<TimeWindow, OneOrTwoThresholds> mapKeyByLeadThreshold =
-                DataFactory.ofMapKeyByTimeThreshold( timeOne,
-                                                     OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                     Operator.GREATER,
-                                                     ThresholdDataType.LEFT );
+        outputBuilder.addPairedOutput( outputMapByMetricFuture );
 
-        outputBuilder.addPairedOutput( mapKeyByLeadThreshold,
-                                       outputMapByMetricFuture );
-
-        MetricOutputForProjectByTimeAndThreshold output = outputBuilder.build();
+        MetricOutputForProject output = outputBuilder.build();
 
         // Construct a fake configuration file.
         Feature feature = getMockedFeature( LID );

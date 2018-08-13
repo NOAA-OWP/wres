@@ -1,5 +1,6 @@
 package wres.datamodel.metadata;
 
+import java.util.Comparator;
 import java.util.Objects;
 
 import wres.datamodel.MetricConstants;
@@ -11,7 +12,7 @@ import wres.datamodel.thresholds.OneOrTwoThresholds;
  * 
  * @author james.brown@hydrosolved.com
  */
-public class MetricOutputMetadata extends Metadata
+public class MetricOutputMetadata extends Metadata implements Comparable<MetricOutputMetadata>
 {
     /**
      * The sample size.
@@ -219,7 +220,7 @@ public class MetricOutputMetadata extends Metadata
                                         null,
                                         null );
     }
-    
+
 
     /**
      * Returns an instance from the inputs.
@@ -410,6 +411,69 @@ public class MetricOutputMetadata extends Metadata
                              getMetricID(),
                              getMetricComponentID(),
                              getInputDimension() );
+    }
+
+    @Override
+    public int compareTo( MetricOutputMetadata input )
+    {
+        Objects.requireNonNull( input, "Specify non-null metadata for comparison." );
+
+        // Check measurement units, which are always available
+        int returnMe = this.getMeasurementUnit().compareTo( input.getMeasurementUnit() );
+        if ( returnMe != 0 )
+        {
+            return returnMe;
+        }
+
+        // Check identifier via the string representation
+        returnMe = Objects.compare( this.getIdentifier() + "", input.getIdentifier() + "", Comparator.naturalOrder() );
+        if ( returnMe != 0 )
+        {
+            return returnMe;
+        }
+
+        // Check the time window
+        Comparator<TimeWindow> compareWindows = Comparator.nullsFirst( Comparator.naturalOrder() );
+        returnMe = Objects.compare( this.getTimeWindow(), input.getTimeWindow(), compareWindows );
+        if ( returnMe != 0 )
+        {
+            return returnMe;
+        }
+
+        // Check the thresholds
+        Comparator<OneOrTwoThresholds> compareThresholds = Comparator.nullsFirst( Comparator.naturalOrder() );
+        returnMe = Objects.compare( this.getThresholds(), input.getThresholds(), compareThresholds );
+        if ( returnMe != 0 )
+        {
+            return returnMe;
+        }
+
+        // Compare sample sizes
+        returnMe = Integer.compare( this.getSampleSize(), input.getSampleSize() );
+        if ( returnMe != 0 )
+        {
+            return returnMe;
+        }
+
+        // Compare metric identifiers
+        Comparator<MetricConstants> compareMetrics = Comparator.nullsFirst( Comparator.naturalOrder() );
+        returnMe = Objects.compare( this.getMetricID(), input.getMetricID(), compareMetrics );
+        if ( returnMe != 0 )
+        {
+            return returnMe;
+        }
+
+        // Compare metric component identifiers
+        Comparator<MetricConstants> compareMetricComps = Comparator.nullsFirst( Comparator.naturalOrder() );
+        returnMe = Objects.compare( this.getMetricComponentID(), input.getMetricComponentID(), compareMetricComps );
+        if ( returnMe != 0 )
+        {
+            return returnMe;
+        }
+
+        // Compare the input dimension
+        Comparator<MeasurementUnit> compareInputUnits = Comparator.nullsFirst( Comparator.naturalOrder() );
+        return Objects.compare( this.getInputDimension(), input.getInputDimension(), compareInputUnits );
     }
 
     @Override

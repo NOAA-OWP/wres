@@ -4,18 +4,18 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
+import java.util.SortedSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-
-import org.apache.commons.lang3.tuple.Pair;
 
 import wres.config.MetricConfigException;
 import wres.config.ProjectConfigs;
@@ -34,10 +34,8 @@ import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs.TimeSeriesOfSin
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.DurationScoreOutput;
-import wres.datamodel.outputs.MapKey;
-import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
-import wres.datamodel.outputs.MetricOutputMapByMetric;
-import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
+import wres.datamodel.outputs.ListOfMetricOutput;
+import wres.datamodel.outputs.MetricOutputForProject;
 import wres.datamodel.outputs.PairedOutput;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
@@ -80,11 +78,12 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
     private final Map<MetricConstants, TimingErrorDurationStatistics> timingErrorDurationStatistics;
 
     @Override
-    public MetricOutputForProjectByTimeAndThreshold apply( SingleValuedPairs input )
+    public MetricOutputForProject apply( SingleValuedPairs input )
     {
         Objects.requireNonNull( input, "Expected non-null input to the metric processor." );
-        TimeWindow timeWindow = input.getMetadata().getTimeWindow();
-        Objects.requireNonNull( timeWindow, "Expected a non-null time window in the input metadata." );
+
+        Objects.requireNonNull( input.getMetadata().getTimeWindow(),
+                                "Expected a non-null time window in the input metadata." );
 
         //Remove missing values, except for ordered input, such as time-series
         SingleValuedPairs inputNoMissing = input;
@@ -105,26 +104,23 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
         //Process the metrics that consume single-valued pairs
         if ( this.hasMetrics( MetricInputGroup.SINGLE_VALUED ) )
         {
-            this.processSingleValuedPairs( timeWindow, inputNoMissing, futures );
+            this.processSingleValuedPairs( inputNoMissing, futures );
         }
         if ( this.hasMetrics( MetricInputGroup.DICHOTOMOUS ) )
         {
-            this.processDichotomousPairs( timeWindow, inputNoMissing, futures );
+            this.processDichotomousPairs( inputNoMissing, futures );
         }
         if ( this.hasMetrics( MetricInputGroup.SINGLE_VALUED_TIME_SERIES ) )
         {
-            // For time-series inputs, use the actual time period as the time window; there is no need to trust the 
-            // metadata. This should avoid unnecessary merge exceptions when the caller is using the same metadata to
-            // identify different data across multiple, incremental, calls. Such calls are common for time-series.
             TimeSeriesOfSingleValuedPairs data = (TimeSeriesOfSingleValuedPairs) inputNoMissing;
-            TimeWindow actualTimeWindow = TimeWindow.of( data.getEarliestBasisTime(),
-                                                         data.getLatestBasisTime(),
-                                                         timeWindow.getReferenceTime(),
-                                                         timeWindow.getEarliestLeadTime(),
-                                                         timeWindow.getLatestLeadTime() );
+            TimeWindow timeWindow = input.getMetadata().getTimeWindow();
+            TimeSeriesOfSingleValuedPairsBuilder builder = new TimeSeriesOfSingleValuedPairsBuilder();
+            data = (TimeSeriesOfSingleValuedPairs) builder.addTimeSeries( data )
+                                                          .setMetadata( Metadata.of( data.getMetadata(),
+                                                                                     timeWindow ) )
+                                                          .build();
 
-            this.processTimeSeriesPairs( actualTimeWindow,
-                                         data,
+            this.processTimeSeriesPairs( data,
                                          futures,
                                          MetricOutputGroup.PAIRED );
         }
@@ -275,49 +271,39 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
             // Iterate through the timing error metrics
             for ( Entry<MetricConstants, TimingErrorDurationStatistics> nextStats : this.timingErrorDurationStatistics.entrySet() )
             {
-                // Output available
-                if ( this.getCachedMetricOutputInternal()
-                         .getPairedOutput()
-                         .containsKey( MapKey.of( nextStats.getKey() ) ) )
+                // Obtain the output for the current statistic
+                ListOfMetricOutput<PairedOutput<Instant, Duration>> output =
+                        Slicer.filter( this.getCachedMetricOutputInternal().getPairedOutput(), nextStats.getKey() );
+
+                // Compute the collection of statistics for the next timing error metric
+                TimingErrorDurationStatistics timeToPeakErrorStats = nextStats.getValue();
+
+                SortedSet<OneOrTwoThresholds> thresholds =
+                        Slicer.discover( output, meta -> meta.getMetadata().getThresholds() );
+
+                // Iterate through the thresholds
+                for ( OneOrTwoThresholds threshold : thresholds )
                 {
-                    // Obtain the paired output
-                    MetricOutputMapByTimeAndThreshold<PairedOutput<Instant, Duration>> output =
-                            getCachedMetricOutputInternal().getPairedOutput().get( nextStats.getKey() );
+                    // Filter by current threshold  
+                    ListOfMetricOutput<PairedOutput<Instant, Duration>> sliced =
+                            Slicer.filter( output, next -> next.getThresholds().equals( threshold ) );
 
-                    // Compute the collection of statistics for the next timing error metric
-                    TimingErrorDurationStatistics timeToPeakErrorStats = nextStats.getValue();
+                    // Find the union of the paired output
+                    PairedOutput<Instant, Duration> union = DataFactory.unionOf( sliced.getData() );
 
-                    // Iterate through the thresholds
-                    for ( OneOrTwoThresholds threshold : output.setOfThresholdKey() )
-                    {
-                        // Slice  
-                        MetricOutputMapByTimeAndThreshold<PairedOutput<Instant, Duration>> sliced =
-                                output.filterByThreshold( threshold );
+                    //Build the future result
+                    Supplier<ListOfMetricOutput<DurationScoreOutput>> supplier = () -> {
+                        DurationScoreOutput result = timeToPeakErrorStats.apply( union );
+                        List<DurationScoreOutput> input = Collections.singletonList( result );
+                        return ListOfMetricOutput.of( input );
+                    };
 
-                        // Find the union of the paired output
-                        PairedOutput<Instant, Duration> union = DataFactory.unionOf( sliced.values() );
+                    // Execute
+                    Future<ListOfMetricOutput<DurationScoreOutput>> addMe =
+                            CompletableFuture.supplyAsync( supplier, thresholdExecutor );
 
-                        // Find the union of the metadata
-                        TimeWindow unionWindow = union.getMetadata().getTimeWindow();
-
-                        Pair<TimeWindow, OneOrTwoThresholds> key =
-                                Pair.of( unionWindow, threshold );
-
-                        //Build the future result
-                        Supplier<MetricOutputMapByMetric<DurationScoreOutput>> supplier = () -> {
-                            DurationScoreOutput result = timeToPeakErrorStats.apply( union );
-                            Map<MetricConstants, DurationScoreOutput> input =
-                                    Collections.singletonMap( result.getMetadata().getMetricID(), result );
-                            return DataFactory.ofMetricOutputMapByMetric( input );
-                        };
-
-                        // Execute
-                        Future<MetricOutputMapByMetric<DurationScoreOutput>> addMe =
-                                CompletableFuture.supplyAsync( supplier, thresholdExecutor );
-
-                        // Add the future result to the store
-                        addFutures.addDurationScoreOutput( key, addMe );
-                    }
+                    // Add the future result to the store
+                    addFutures.addDurationScoreOutput( addMe );
                 }
             }
 
@@ -330,23 +316,21 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
      * Processes a set of metric futures that consume {@link DichotomousPairs}, which are mapped from the input
      * pairs, {@link SingleValuedPairs}, using a configured mapping function.
      * 
-     * @param timeWindow the time window
      * @param input the input pairs
      * @param futures the metric futures
      * @throws MetricCalculationException if the metrics cannot be computed
      */
 
-    private void processDichotomousPairs( TimeWindow timeWindow,
-                                          SingleValuedPairs input,
+    private void processDichotomousPairs( SingleValuedPairs input,
                                           MetricFuturesByTimeBuilder futures )
     {
         if ( hasMetrics( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.DOUBLE_SCORE ) )
         {
-            processDichotomousPairsByThreshold( timeWindow, input, futures, MetricOutputGroup.DOUBLE_SCORE );
+            processDichotomousPairsByThreshold( input, futures, MetricOutputGroup.DOUBLE_SCORE );
         }
         if ( hasMetrics( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.MATRIX ) )
         {
-            processDichotomousPairsByThreshold( timeWindow, input, futures, MetricOutputGroup.MATRIX );
+            processDichotomousPairsByThreshold( input, futures, MetricOutputGroup.MATRIX );
         }
     }
 
@@ -354,15 +338,13 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
      * Processes a set of metric futures that consume {@link DichotomousPairs}, which are mapped from the input pairs,
      * {@link SingleValuedPairs}, using a configured mapping function. 
      * 
-     * @param timeWindow the time window
      * @param input the input pairs
      * @param futures the metric futures
      * @param outGroup the metric output type
      * @throws MetricCalculationException if the metrics cannot be computed
      */
 
-    private void processDichotomousPairsByThreshold( TimeWindow timeWindow,
-                                                     SingleValuedPairs input,
+    private void processDichotomousPairsByThreshold( SingleValuedPairs input,
                                                      MetricFuturesByTimeBuilder futures,
                                                      MetricOutputGroup outGroup )
     {
@@ -403,11 +385,10 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                                                                Metadata.of( transformed.getMetadata(), oneOrTwo ),
                                                                baselineMeta );
 
-            processDichotomousPairs( Pair.of( timeWindow, OneOrTwoThresholds.of( useMe ) ),
-                                     transformed,
-                                     futures,
-                                     outGroup,
-                                     ignoreTheseMetrics );
+            this.processDichotomousPairs( transformed,
+                                          futures,
+                                          outGroup,
+                                          ignoreTheseMetrics );
 
         }
     }
@@ -415,15 +396,13 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
     /**
      * Processes a set of metric futures that consume {@link TimeSeriesOfSingleValuedPairs}. 
      * 
-     * @param timeWindow the time window
      * @param input the input pairs
      * @param futures the metric futures
      * @param outGroup the output group
      * @throws MetricCalculationException if the metrics cannot be computed
      */
 
-    private void processTimeSeriesPairs( TimeWindow timeWindow,
-                                         TimeSeriesOfSingleValuedPairs input,
+    private void processTimeSeriesPairs( TimeSeriesOfSingleValuedPairs input,
                                          MetricFuturesByTimeBuilder futures,
                                          MetricOutputGroup outGroup )
     {
@@ -477,13 +456,12 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
 
             // Build the future result
             final TimeSeriesOfSingleValuedPairs finalPairs = pairs;
-            Future<MetricOutputMapByMetric<PairedOutput<Instant, Duration>>> output =
+            Future<ListOfMetricOutput<PairedOutput<Instant, Duration>>> output =
                     CompletableFuture.supplyAsync( () -> timeSeries.apply( finalPairs, ignoreTheseMetrics ),
                                                    thresholdExecutor );
 
             // Add the future result to the store
-            futures.addPairedOutput( Pair.of( timeWindow, OneOrTwoThresholds.of( threshold ) ),
-                                     output );
+            futures.addPairedOutput( output );
         }
 
     }

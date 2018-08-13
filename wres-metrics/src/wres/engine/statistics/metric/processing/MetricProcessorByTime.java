@@ -9,8 +9,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.function.Predicate;
 
-import org.apache.commons.lang3.tuple.Pair;
-
 import wres.config.MetricConfigException;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants;
@@ -23,10 +21,10 @@ import wres.datamodel.inputs.pairs.SingleValuedPair;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.TimeWindow;
+import wres.datamodel.outputs.ListOfMetricOutput;
 import wres.datamodel.outputs.MatrixOutput;
 import wres.datamodel.outputs.MetricOutput;
-import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
-import wres.datamodel.outputs.MetricOutputMapByMetric;
+import wres.datamodel.outputs.MetricOutputForProject;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdGroup;
@@ -43,7 +41,7 @@ import wres.engine.statistics.metric.MetricParameterException;
  */
 
 public abstract class MetricProcessorByTime<S extends MetricInput<?>>
-        extends MetricProcessor<S, MetricOutputForProjectByTimeAndThreshold>
+        extends MetricProcessor<S, MetricOutputForProject>
 {
 
     /**
@@ -66,7 +64,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
     }
 
     @Override
-    MetricOutputForProjectByTimeAndThreshold getCachedMetricOutputInternal()
+    MetricOutputForProject getCachedMetricOutputInternal()
     {
         MetricFuturesByTime.MetricFuturesByTimeBuilder builder =
                 new MetricFuturesByTime.MetricFuturesByTimeBuilder();
@@ -108,39 +106,34 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
      * 
      * TODO: collapse this with a generic call to futures.addOutput and take an input collection of metrics
      * 
-     * @param timeWindow the time window
      * @param input the input pairs
      * @param futures the metric futures
      * @throws MetricCalculationException if the metrics cannot be computed
      */
 
-    void processSingleValuedPairs( TimeWindow timeWindow,
-                                   SingleValuedPairs input,
+    void processSingleValuedPairs( SingleValuedPairs input,
                                    MetricFuturesByTime.MetricFuturesByTimeBuilder futures )
     {
-
         if ( hasMetrics( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.DOUBLE_SCORE ) )
         {
-            processSingleValuedPairsByThreshold( timeWindow, input, futures, MetricOutputGroup.DOUBLE_SCORE );
+            processSingleValuedPairsByThreshold( input, futures, MetricOutputGroup.DOUBLE_SCORE );
         }
         if ( hasMetrics( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.MULTIVECTOR ) )
         {
-            processSingleValuedPairsByThreshold( timeWindow, input, futures, MetricOutputGroup.MULTIVECTOR );
+            processSingleValuedPairsByThreshold( input, futures, MetricOutputGroup.MULTIVECTOR );
         }
     }
 
     /**
      * Processes one threshold for metrics that consume {@link DichotomousPairs}. 
      * 
-     * @param key the key against which to store the metric results
      * @param input the input pairs
      * @param futures the metric futures
      * @param outGroup the metric output type
      * @param ignoreTheseMetrics a set of metrics within the prescribed group that should be ignored
      */
 
-    void processDichotomousPairs( Pair<TimeWindow, OneOrTwoThresholds> key,
-                                  DichotomousPairs input,
+    void processDichotomousPairs( DichotomousPairs input,
                                   MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
                                   MetricOutputGroup outGroup,
                                   Set<MetricConstants> ignoreTheseMetrics )
@@ -148,15 +141,13 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
 
         if ( outGroup == MetricOutputGroup.DOUBLE_SCORE )
         {
-            futures.addDoubleScoreOutput( key,
-                                          processDichotomousPairs( input,
+            futures.addDoubleScoreOutput( processDichotomousPairs( input,
                                                                    dichotomousScalar,
                                                                    ignoreTheseMetrics ) );
         }
         else if ( outGroup == MetricOutputGroup.MATRIX )
         {
-            futures.addMatrixOutput( key,
-                                     processDichotomousPairs( input,
+            futures.addMatrixOutput( processDichotomousPairs( input,
                                                               dichotomousMatrix,
                                                               ignoreTheseMetrics ) );
         }
@@ -255,15 +246,13 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
      * Processes all thresholds for metrics that consume {@link SingleValuedPairs} and produce a specified 
      * {@link MetricOutputGroup}. 
      * 
-     * @param timeWindow the time window
      * @param input the input pairs
      * @param futures the metric futures
      * @param outGroup the metric output type
      * @throws MetricCalculationException if the metrics cannot be computed
      */
 
-    private void processSingleValuedPairsByThreshold( TimeWindow timeWindow,
-                                                      SingleValuedPairs input,
+    private void processSingleValuedPairsByThreshold( SingleValuedPairs input,
                                                       MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
                                                       MetricOutputGroup outGroup )
     {
@@ -288,7 +277,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
 
             // Add the threshold to the metadata, in order to fully qualify the pairs
             Metadata baselineMeta = null;
-            if( input.hasBaseline() )
+            if ( input.hasBaseline() )
             {
                 baselineMeta = Metadata.of( input.getMetadataForBaseline(), oneOrTwo );
             }
@@ -296,7 +285,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
             SingleValuedPairs pairs = SingleValuedPairs.of( input,
                                                             Metadata.of( input.getMetadata(), oneOrTwo ),
                                                             baselineMeta );
-            
+
             // Filter the data if required
             if ( useMe.isFinite() )
             {
@@ -306,8 +295,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
 
             }
 
-            processSingleValuedPairs( Pair.of( timeWindow, oneOrTwo ),
-                                      pairs,
+            processSingleValuedPairs( pairs,
                                       futures,
                                       outGroup,
                                       ignoreTheseMetrics );
@@ -318,30 +306,26 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
      * Processes one threshold for metrics that consume {@link SingleValuedPairs} and produce a specified 
      * {@link MetricOutputGroup}. 
      * 
-     * @param key the key against which to store the metric results
      * @param input the input pairs
      * @param futures the metric futures
      * @param outGroup the metric output type
      * @param ignoreTheseMetrics a set of metrics within the prescribed group that should be ignored
      */
 
-    private void processSingleValuedPairs( Pair<TimeWindow, OneOrTwoThresholds> key,
-                                           SingleValuedPairs input,
+    private void processSingleValuedPairs( SingleValuedPairs input,
                                            MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
                                            MetricOutputGroup outGroup,
                                            Set<MetricConstants> ignoreTheseMetrics )
     {
         if ( outGroup == MetricOutputGroup.DOUBLE_SCORE )
         {
-            futures.addDoubleScoreOutput( key,
-                                          processSingleValuedPairs( input,
+            futures.addDoubleScoreOutput( processSingleValuedPairs( input,
                                                                     singleValuedScore,
                                                                     ignoreTheseMetrics ) );
         }
         else if ( outGroup == MetricOutputGroup.MULTIVECTOR )
         {
-            futures.addMultiVectorOutput( key,
-                                          processSingleValuedPairs( input,
+            futures.addMultiVectorOutput( processSingleValuedPairs( input,
                                                                     singleValuedMultiVector,
                                                                     ignoreTheseMetrics ) );
         }
@@ -358,7 +342,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
      * @return the future result
      */
 
-    private <T extends MetricOutput<?>> Future<MetricOutputMapByMetric<T>>
+    private <T extends MetricOutput<?>> Future<ListOfMetricOutput<T>>
             processSingleValuedPairs( SingleValuedPairs pairs,
                                       MetricCollection<SingleValuedPairs, T, T> collection,
                                       Set<MetricConstants> ignoreTheseMetrics )
@@ -379,7 +363,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
      * @return true if the future was added successfully
      */
 
-    private <T extends MetricOutput<?>> Future<MetricOutputMapByMetric<T>>
+    private <T extends MetricOutput<?>> Future<ListOfMetricOutput<T>>
             processDichotomousPairs( DichotomousPairs pairs,
                                      MetricCollection<DichotomousPairs, MatrixOutput, T> collection,
                                      Set<MetricConstants> ignoreTheseMetrics )

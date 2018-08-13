@@ -34,31 +34,31 @@ public final class PairedOutputTest
     {
         final Location l1 = Location.of( "A" );
         final MetricOutputMetadata m1 = MetricOutputMetadata.of( 10,
-                                                                           MeasurementUnit.of(),
-                                                                           MeasurementUnit.of( "CMS" ),
-                                                                           MetricConstants.TIME_TO_PEAK_ERROR,
-                                                                           MetricConstants.MAIN,
-                                                                           DatasetIdentifier.of( l1,
-                                                                                                                 "B",
-                                                                                                                 "C" ) );
+                                                                 MeasurementUnit.of(),
+                                                                 MeasurementUnit.of( "CMS" ),
+                                                                 MetricConstants.TIME_TO_PEAK_ERROR,
+                                                                 MetricConstants.MAIN,
+                                                                 DatasetIdentifier.of( l1,
+                                                                                       "B",
+                                                                                       "C" ) );
         final Location l2 = Location.of( "A" );
         final MetricOutputMetadata m2 = MetricOutputMetadata.of( 11,
-                                                                           MeasurementUnit.of(),
-                                                                           MeasurementUnit.of( "CMS" ),
-                                                                           MetricConstants.TIME_TO_PEAK_ERROR,
-                                                                           MetricConstants.MAIN,
-                                                                           DatasetIdentifier.of( l2,
-                                                                                                                 "B",
-                                                                                                                 "C" ) );
+                                                                 MeasurementUnit.of(),
+                                                                 MeasurementUnit.of( "CMS" ),
+                                                                 MetricConstants.TIME_TO_PEAK_ERROR,
+                                                                 MetricConstants.MAIN,
+                                                                 DatasetIdentifier.of( l2,
+                                                                                       "B",
+                                                                                       "C" ) );
         final Location l3 = Location.of( "B" );
         final MetricOutputMetadata m3 = MetricOutputMetadata.of( 10,
-                                                                           MeasurementUnit.of(),
-                                                                           MeasurementUnit.of( "CMS" ),
-                                                                           MetricConstants.TIME_TO_PEAK_ERROR,
-                                                                           MetricConstants.MAIN,
-                                                                           DatasetIdentifier.of( l3,
-                                                                                                                 "B",
-                                                                                                                 "C" ) );
+                                                                 MeasurementUnit.of(),
+                                                                 MeasurementUnit.of( "CMS" ),
+                                                                 MetricConstants.TIME_TO_PEAK_ERROR,
+                                                                 MetricConstants.MAIN,
+                                                                 DatasetIdentifier.of( l3,
+                                                                                       "B",
+                                                                                       "C" ) );
         List<Pair<Instant, Duration>> input = new ArrayList<>();
         input.add( Pair.of( Instant.parse( "1985-01-01T00:00:00Z" ), Duration.ofHours( 1 ) ) );
         final PairedOutput<Instant, Duration> s = PairedOutput.of( input, m1 );
@@ -95,13 +95,13 @@ public final class PairedOutputTest
     {
         final Location l1 = Location.of( "A" );
         final MetricOutputMetadata m1 = MetricOutputMetadata.of( 10,
-                                                                           MeasurementUnit.of(),
-                                                                           MeasurementUnit.of( "CMS" ),
-                                                                           MetricConstants.TIME_TO_PEAK_ERROR,
-                                                                           MetricConstants.MAIN,
-                                                                           DatasetIdentifier.of( l1,
-                                                                                                                 "B",
-                                                                                                                 "C" ) );
+                                                                 MeasurementUnit.of(),
+                                                                 MeasurementUnit.of( "CMS" ),
+                                                                 MetricConstants.TIME_TO_PEAK_ERROR,
+                                                                 MetricConstants.MAIN,
+                                                                 DatasetIdentifier.of( l1,
+                                                                                       "B",
+                                                                                       "C" ) );
         List<Pair<Instant, Duration>> input = new ArrayList<>();
         input.add( Pair.of( Instant.parse( "1985-01-01T00:00:00Z" ), Duration.ofHours( 1 ) ) );
         input.add( Pair.of( Instant.parse( "1985-01-01T00:00:00Z" ), Duration.ofHours( 1 ) ) );
@@ -119,22 +119,22 @@ public final class PairedOutputTest
     {
         final Location l1 = Location.of( "A" );
         final MetricOutputMetadata m1 = MetricOutputMetadata.of( 10,
-                                                                           MeasurementUnit.of(),
-                                                                           MeasurementUnit.of( "CMS" ),
-                                                                           MetricConstants.TIME_TO_PEAK_ERROR,
-                                                                           MetricConstants.MAIN,
-                                                                           DatasetIdentifier.of( l1,
-                                                                                                                 "B",
-                                                                                                                 "C" ) );
+                                                                 MeasurementUnit.of(),
+                                                                 MeasurementUnit.of( "CMS" ),
+                                                                 MetricConstants.TIME_TO_PEAK_ERROR,
+                                                                 MetricConstants.MAIN,
+                                                                 DatasetIdentifier.of( l1,
+                                                                                       "B",
+                                                                                       "C" ) );
         final Location l2 = Location.of( "B" );
         final MetricOutputMetadata m2 = MetricOutputMetadata.of( 10,
-                                                                           MeasurementUnit.of(),
-                                                                           MeasurementUnit.of( "CMS" ),
-                                                                           MetricConstants.TIME_TO_PEAK_ERROR,
-                                                                           MetricConstants.MAIN,
-                                                                           DatasetIdentifier.of( l2,
-                                                                                                                 "B",
-                                                                                                                 "C" ) );
+                                                                 MeasurementUnit.of(),
+                                                                 MeasurementUnit.of( "CMS" ),
+                                                                 MetricConstants.TIME_TO_PEAK_ERROR,
+                                                                 MetricConstants.MAIN,
+                                                                 DatasetIdentifier.of( l2,
+                                                                                       "B",
+                                                                                       "C" ) );
         List<Pair<Instant, Duration>> inputThird = new ArrayList<>();
         inputThird.add( Pair.of( Instant.parse( "1985-01-01T00:00:00Z" ), Duration.ofHours( 1 ) ) );
         final PairedOutput<Instant, Duration> q = PairedOutput.of( inputThird, m1 );
@@ -151,31 +151,31 @@ public final class PairedOutputTest
     {
         final Location l1 = Location.of( "A" );
         final MetricOutputMetadata m1 = MetricOutputMetadata.of( 10,
-                                                                           MeasurementUnit.of(),
-                                                                           MeasurementUnit.of( "CMS" ),
-                                                                           MetricConstants.CONTINGENCY_TABLE,
-                                                                           MetricConstants.MAIN,
-                                                                           DatasetIdentifier.of( l1,
-                                                                                                                 "B",
-                                                                                                                 "C" ) );
+                                                                 MeasurementUnit.of(),
+                                                                 MeasurementUnit.of( "CMS" ),
+                                                                 MetricConstants.CONTINGENCY_TABLE,
+                                                                 MetricConstants.MAIN,
+                                                                 DatasetIdentifier.of( l1,
+                                                                                       "B",
+                                                                                       "C" ) );
         final Location l2 = Location.of( "A" );
         final MetricOutputMetadata m2 = MetricOutputMetadata.of( 10,
-                                                                           MeasurementUnit.of(),
-                                                                           MeasurementUnit.of( "CMS" ),
-                                                                           MetricConstants.CONTINGENCY_TABLE,
-                                                                           MetricConstants.MAIN,
-                                                                           DatasetIdentifier.of( l2,
-                                                                                                                 "B",
-                                                                                                                 "C" ) );
+                                                                 MeasurementUnit.of(),
+                                                                 MeasurementUnit.of( "CMS" ),
+                                                                 MetricConstants.CONTINGENCY_TABLE,
+                                                                 MetricConstants.MAIN,
+                                                                 DatasetIdentifier.of( l2,
+                                                                                       "B",
+                                                                                       "C" ) );
         final Location l3 = Location.of( "B" );
         final MetricOutputMetadata m3 = MetricOutputMetadata.of( 10,
-                                                                           MeasurementUnit.of(),
-                                                                           MeasurementUnit.of( "CMS" ),
-                                                                           MetricConstants.CONTINGENCY_TABLE,
-                                                                           MetricConstants.MAIN,
-                                                                           DatasetIdentifier.of( l3,
-                                                                                                                 "B",
-                                                                                                                 "C" ) );
+                                                                 MeasurementUnit.of(),
+                                                                 MeasurementUnit.of( "CMS" ),
+                                                                 MetricConstants.CONTINGENCY_TABLE,
+                                                                 MetricConstants.MAIN,
+                                                                 DatasetIdentifier.of( l3,
+                                                                                       "B",
+                                                                                       "C" ) );
         List<Pair<Instant, Duration>> inputThird = new ArrayList<>();
         inputThird.add( Pair.of( Instant.parse( "1985-01-01T00:00:00Z" ), Duration.ofHours( 1 ) ) );
         final PairedOutput<Instant, Duration> q = PairedOutput.of( inputThird, m1 );
@@ -194,13 +194,13 @@ public final class PairedOutputTest
     {
         final Location l1 = Location.of( "A" );
         final MetricOutputMetadata m1 = MetricOutputMetadata.of( 10,
-                                                                           MeasurementUnit.of(),
-                                                                           MeasurementUnit.of( "CMS" ),
-                                                                           MetricConstants.CONTINGENCY_TABLE,
-                                                                           MetricConstants.MAIN,
-                                                                           DatasetIdentifier.of( l1,
-                                                                                                                 "B",
-                                                                                                                 "C" ) );
+                                                                 MeasurementUnit.of(),
+                                                                 MeasurementUnit.of( "CMS" ),
+                                                                 MetricConstants.CONTINGENCY_TABLE,
+                                                                 MetricConstants.MAIN,
+                                                                 DatasetIdentifier.of( l1,
+                                                                                       "B",
+                                                                                       "C" ) );
         List<Pair<Instant, Duration>> input = new ArrayList<>();
         input.add( Pair.of( Instant.parse( "1985-01-01T00:00:00Z" ), Duration.ofHours( 1 ) ) );
         // Null output

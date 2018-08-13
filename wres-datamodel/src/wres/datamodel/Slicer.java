@@ -7,11 +7,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumMap;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.function.BiFunction;
@@ -21,8 +19,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.ToDoubleFunction;
 import java.util.stream.Collectors;
-
-import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.inputs.pairs.DichotomousPair;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
@@ -40,7 +36,6 @@ import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.ListOfMetricOutput;
 import wres.datamodel.outputs.MetricOutput;
-import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.ScoreOutput;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
@@ -509,6 +504,7 @@ public final class Slicer
 
     /**
      * Returns the subset of pairs where the condition is met. Applies to both the main pairs and any baseline pairs.
+     * Does not modify the metadata associated with the input.
      * 
      * @param input the pairs to slice
      * @param condition the condition on which to slice
@@ -555,6 +551,7 @@ public final class Slicer
 
     /**
      * Returns the subset of pairs where the condition is met. Applies to both the main pairs and any baseline pairs.
+     * Does not modify the metadata associated with the input.
      * 
      * @param input the pairs to slice
      * @param condition the condition on which to slice
@@ -603,7 +600,7 @@ public final class Slicer
     /**
      * Filters {@link EnsemblePairs} by applying a mapper function to the input. This allows for fine-grain filtering
      * of specific elements of the right side of a pair. For example, filter all elements of the right side that 
-     * correspond to {@link Double#isNaN()}.
+     * correspond to {@link Double#isNaN()}. Does not modify the metadata associated with the input.
      * 
      * @param input the {@link EnsemblePairs}
      * @param mapper the function that maps from {@link EnsemblePairs} to a new {@link EnsemblePairs}
@@ -665,7 +662,7 @@ public final class Slicer
 
     /**
      * Returns a subset of pairs where the condition is met for each atomic time-series in the container. Applies to 
-     * both the main pairs and any baseline pairs.
+     * both the main pairs and any baseline pairs. Does not modify the metadata associated with the input.
      * 
      * @param input the pairs to slice
      * @param condition the condition on which to slice
@@ -725,7 +722,7 @@ public final class Slicer
 
     /**
      * Filters the input time-series by the {@link Duration} associated with each pair. Applies to both the main pairs 
-     * and any baseline pairs.
+     * and any baseline pairs. Does not modify the metadata associated with the input.
      * 
      * @param input the pairs to slice
      * @param duration the duration condition on which to slice
@@ -759,7 +756,8 @@ public final class Slicer
     }
 
     /**
-     * Filters the input time-series by basis time. Applies to both the main pairs and any baseline pairs.
+     * Filters the input time-series by basis time. Applies to both the main pairs and any baseline pairs. Does not 
+     * modify the metadata associated with the input.
      * 
      * @param input the pairs to slice
      * @param basisTime the basis time condition on which to slice
@@ -793,7 +791,7 @@ public final class Slicer
 
     /**
      * Filters the input time-series by the {@link Duration} associated with each pair. Applies to both the main pairs 
-     * and any baseline pairs.
+     * and any baseline pairs. Does not modify the metadata associated with the input.
      * 
      * @param input the pairs to slice
      * @param condition the condition on which to slice
@@ -827,7 +825,8 @@ public final class Slicer
     }
 
     /**
-     * Filters the input time-series by the {@link Duration} associated with each value. 
+     * Filters the input time-series by the {@link Duration} associated with each value. Does not modify the metadata 
+     * associated with the input.
      * 
      * @param <T> the type of time-series data
      * @param input the input to slice
@@ -857,7 +856,8 @@ public final class Slicer
     }
 
     /**
-     * Filters the input time-series by basis time. Applies to both the main pairs and any baseline pairs.
+     * Filters the input time-series by basis time. Applies to both the main pairs and any baseline pairs. Does not 
+     * modify the metadata associated with the input.
      * 
      * @param input the pairs to slice
      * @param basisTime the basis time condition on which to slice
@@ -953,12 +953,12 @@ public final class Slicer
      * 
      * <p><code>Slicer.filter( list, a {@literal ->} a.getTimeWindow().equals( someWindow ) {@literal &&} 
      *              a.getThresholds().equals( someThreshold ) );</code></p>
-     * 
+     *              
      * @param <T> the output type
      * @param outputs the outputs to filter
      * @param predicate the predicate to use as a filter
      * @return a filtered list whose elements meet the predicate supplied
-     * @throws NullPointerException if the input list is null
+     * @throws NullPointerException if the input list is null or the predicate is null
      */
 
     public static <T extends MetricOutput<?>> ListOfMetricOutput<T> filter( ListOfMetricOutput<T> outputs,
@@ -966,12 +966,8 @@ public final class Slicer
     {
         Objects.requireNonNull( outputs, NULL_INPUT_EXCEPTION );
 
-        // No filters
-        if ( Objects.isNull( predicate ) )
-        {
-            return outputs;
-        }
-
+        Objects.requireNonNull( predicate, NULL_INPUT_EXCEPTION );
+        
         List<T> results = new ArrayList<>();
 
         // Filter
@@ -983,7 +979,7 @@ public final class Slicer
             }
         }
 
-        return ListOfMetricOutput.of( Collections.unmodifiableList( results ), outputs.getMetadata() );
+        return ListOfMetricOutput.of( Collections.unmodifiableList( results ) );
     }
 
     /**
@@ -1003,23 +999,51 @@ public final class Slicer
      * Pair.of( next.getMetadata().getTimeWindow().getEarliestLeadTime(), 
      * next.getMetadata().getTimeWindow().getLatestLeadTime() );</code></p>
      * 
+     * <p>Returns the empty set if no elements are mapped.</p>
+     * 
      * @param <S> the metric output type
      * @param <T> the type of information required about the output
      * @param outputs the list of outputs
      * @param mapper the mapper function that discovers the type of interest
      * @return the unique instances of a given type associated with the output
-     * @throws NullPointerException if the input list is null
+     * @throws NullPointerException if the input list is null or the mapper is null
      */
 
     public static <S extends MetricOutput<?>, T extends Object> SortedSet<T> discover( ListOfMetricOutput<S> outputs,
                                                                                        Function<S, T> mapper )
     {
         Objects.requireNonNull( outputs, NULL_INPUT_EXCEPTION );
-
+        
+        Objects.requireNonNull( mapper, NULL_INPUT_EXCEPTION );
+        
         return Collections.unmodifiableSortedSet( outputs.getData()
                                                          .stream()
                                                          .map( mapper )
+                                                         .filter( Objects::nonNull )
                                                          .collect( Collectors.toCollection( TreeSet::new ) ) );
+    }
+
+    /**
+     * <p>Convenience method that returns the metric output in the store whose identifier matches the 
+     * input. This is equivalent to:</p>
+     * 
+     * <p><code>Slicer.filter( out, meta {@literal ->} meta.getMetricID() == metricIdentifier )</code></p>
+     * 
+     * @param <T> the metric output type
+     * @param outputs the list of outputs
+     * @param metricIdentifier the metric identifier                     
+     * @throws NullPointerException if the input list is null or the identifier is null
+     * @return the first available output that matches the input identifier or null if no such output is available
+     */
+
+    public static <T extends MetricOutput<?>> ListOfMetricOutput<T> filter( ListOfMetricOutput<T> outputs,
+                                                                            MetricConstants metricIdentifier )
+    {
+        Objects.requireNonNull( outputs, NULL_INPUT_EXCEPTION );
+
+        Objects.requireNonNull( metricIdentifier, NULL_INPUT_EXCEPTION );
+
+        return Slicer.filter( outputs, meta -> meta.getMetricID() == metricIdentifier );
     }
 
     /**
@@ -1051,37 +1075,33 @@ public final class Slicer
      * @throws NullPointerException if the input is null
      */
 
-    public static <T extends ScoreOutput<?, T>> Map<MetricConstants, MetricOutputMapByTimeAndThreshold<T>>
-            filterByMetricComponent( MetricOutputMapByTimeAndThreshold<T> input )
+    public static <T extends ScoreOutput<?, T>> Map<MetricConstants, ListOfMetricOutput<T>>
+            filterByMetricComponent( ListOfMetricOutput<T> input )
     {
         Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
 
-        Map<MetricConstants, Map<Pair<TimeWindow, OneOrTwoThresholds>, T>> sourceMap =
-                new EnumMap<>( MetricConstants.class );
-        input.forEach( ( key, value ) -> {
-            Set<MetricConstants> components = value.getComponents();
-            for ( MetricConstants next : components )
+        Map<MetricConstants, ListOfMetricOutput<T>> returnMe = new EnumMap<>( MetricConstants.class );
+        
+        // Find the components
+        SortedSet<MetricConstants> components = new TreeSet<>();
+        input.forEach( next -> components.addAll( next.getComponents() ) );
+        
+        // Loop the components
+        for ( MetricConstants nextComponent : components )
+        {
+            List<T> listOfComponent = new ArrayList<>();
+            // Loop the entries
+            for( T nextItem : input )
             {
-                Map<Pair<TimeWindow, OneOrTwoThresholds>, T> nextMap = null;
-                if ( sourceMap.containsKey( next ) )
+                if( nextItem.hasComponent( nextComponent ) )
                 {
-                    nextMap = sourceMap.get( next );
+                    listOfComponent.add( nextItem.getComponent( nextComponent ) );
                 }
-                else
-                {
-                    nextMap = new HashMap<>();
-                    sourceMap.put( next, nextMap );
-                }
-                //Add the output
-                nextMap.put( key, value.getComponent( next ) );
             }
-        } );
-        //Build the score result
-        Map<MetricConstants, MetricOutputMapByTimeAndThreshold<T>> returnMe =
-                new EnumMap<>( MetricConstants.class );
-        sourceMap.forEach( ( key, value ) -> returnMe.put( key,
-                                                           DataFactory.ofMetricOutputMapByTimeAndThreshold( value ) ) );
-        return returnMe;
+            returnMe.put( nextComponent, ListOfMetricOutput.of( listOfComponent ) );
+        }
+
+        return Collections.unmodifiableMap( returnMe );
     }
 
     /**

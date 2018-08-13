@@ -26,7 +26,7 @@ import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.DurationScoreOutput;
-import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
+import wres.datamodel.outputs.ListOfMetricOutput;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.PairedOutput;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
@@ -61,7 +61,7 @@ public class Chart2DTestOutput
         outputImageFile.delete();
 
         //Construct some single-valued pairs
-        final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> input =
+        final ListOfMetricOutput<DoubleScoreOutput> input =
                 Chart2DTestDataGenerator.getMetricOutputMapByLeadThresholdOne();
 
         //Call the factory.
@@ -90,7 +90,7 @@ public class Chart2DTestOutput
         outputImageFile.delete();
 
         //Construct some single-valued pairs
-        final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> input =
+        final ListOfMetricOutput<DoubleScoreOutput> input =
                 Chart2DTestDataGenerator.getMetricOutputMapByLeadThresholdTwo();
 
         //Call the factory.
@@ -119,7 +119,7 @@ public class Chart2DTestOutput
 
         FileTools.deleteFiles( new File( "testoutput/chart2DTest/" ), outputImageFileSuffix );
 
-        final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> results =
+        final ListOfMetricOutput<MultiVectorOutput> results =
                 Chart2DTestDataGenerator.getReliabilityDiagramByLeadThreshold();
 
 //DEBUG OUTPUT:
@@ -163,7 +163,7 @@ public class Chart2DTestOutput
 
         FileTools.deleteFiles( new File( "testoutput/chart2DTest/" ), outputImageFileSuffix );
 
-        final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> results =
+        final ListOfMetricOutput<MultiVectorOutput> results =
                 Chart2DTestDataGenerator.getReliabilityDiagramByLeadThreshold();
 
         //Call the factory.
@@ -201,7 +201,7 @@ public class Chart2DTestOutput
 
 
         //Construct some single-valued pairs
-        final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> input =
+        final ListOfMetricOutput<DoubleScoreOutput> input =
                 Chart2DTestDataGenerator.getScoreMetricOutputMapByLeadThreshold();
 
         //Call the factory.
@@ -237,7 +237,7 @@ public class Chart2DTestOutput
 
         FileTools.deleteFiles( new File( "testoutput/chart2DTest/" ), outputImageFileSuffix );
 
-        final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> results =
+        final ListOfMetricOutput<MultiVectorOutput> results =
                 Chart2DTestDataGenerator.getROCDiagramByLeadThreshold();
 
         //Call the factory.
@@ -273,7 +273,7 @@ public class Chart2DTestOutput
 
         FileTools.deleteFiles( new File( "testoutput/chart2DTest/" ), outputImageFileSuffix );
 
-        final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> results =
+        final ListOfMetricOutput<MultiVectorOutput> results =
                 Chart2DTestDataGenerator.getROCDiagramByLeadThreshold();
 
         //Call the factory.
@@ -308,7 +308,7 @@ public class Chart2DTestOutput
 
         FileTools.deleteFiles( new File( "testoutput/chart2DTest/" ), outputImageFileSuffix );
 
-        final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> results =
+        final ListOfMetricOutput<MultiVectorOutput> results =
                 Chart2DTestDataGenerator.getQQDiagramByLeadThreshold();
 
         //Call the factory.
@@ -343,7 +343,7 @@ public class Chart2DTestOutput
 
         FileTools.deleteFiles( new File( "testoutput/chart2DTest/" ), outputImageFileSuffix );
 
-        final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> results =
+        final ListOfMetricOutput<MultiVectorOutput> results =
                 Chart2DTestDataGenerator.getQQDiagramByLeadThreshold();
 
         //Call the factory.
@@ -377,7 +377,7 @@ public class Chart2DTestOutput
 
         FileTools.deleteFiles( new File( "testoutput/chart2DTest/" ), outputImageFileSuffix );
 
-        final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> results =
+        final ListOfMetricOutput<MultiVectorOutput> results =
                 Chart2DTestDataGenerator.getRankHistogramByLeadThreshold();
 
         //Call the factory.
@@ -414,7 +414,7 @@ public class Chart2DTestOutput
 
         FileTools.deleteFiles( new File( "testoutput/chart2DTest/" ), outputImageFileSuffix );
 
-        final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> results =
+        final ListOfMetricOutput<MultiVectorOutput> results =
                 Chart2DTestDataGenerator.getRankHistogramByLeadThreshold();
 
         //Call the factory.
@@ -455,7 +455,7 @@ public class Chart2DTestOutput
 
         FileTools.deleteFiles( new File( "testoutput/chart2DTest/" ), outputImageFileSuffix );
 
-        final MetricOutputMapByTimeAndThreshold<BoxPlotOutput> results =
+        final ListOfMetricOutput<BoxPlotOutput> results =
                 Chart2DTestDataGenerator.getBoxPlotErrorsByObservedAndLeadThreshold();
 
         //Get an implementation of the factory to use for testing.
@@ -505,7 +505,7 @@ public class Chart2DTestOutput
 
         FileTools.deleteFiles( new File( "testoutput/chart2DTest/" ), outputImageFileSuffix );
 
-        final MetricOutputMapByTimeAndThreshold<BoxPlotOutput> results =
+        final ListOfMetricOutput<BoxPlotOutput> results =
                 Chart2DTestDataGenerator.getBoxPlotErrorsByForecastAndLeadThreshold();
 
         //Get an implementation of the factory to use for testing.
@@ -553,7 +553,7 @@ public class Chart2DTestOutput
         outputImageFile.delete();
 
         //Construct some single-valued pairs
-        final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> input =
+        final ListOfMetricOutput<DoubleScoreOutput> input =
                 Chart2DTestDataGenerator.getScoreOutputForPoolingWindowsFirst();
 
         //Call the factory.
@@ -601,7 +601,7 @@ public class Chart2DTestOutput
 
         FileTools.deleteFiles( new File( "testoutput/chart2DTest/" ), outputImageFileSuffix );
 
-        final MetricOutputMapByTimeAndThreshold<PairedOutput<Instant, Duration>> input =
+        final ListOfMetricOutput<PairedOutput<Instant, Duration>> input =
                 Chart2DTestDataGenerator.getTimeToPeakErrors();
 
         //Call the factory.
@@ -630,7 +630,7 @@ public class Chart2DTestOutput
 
         FileTools.deleteFiles( new File( "testoutput/chart2DTest/" ), outputImageFileSuffix );
 
-        final MetricOutputMapByTimeAndThreshold<DurationScoreOutput> input =
+        final ListOfMetricOutput<DurationScoreOutput> input =
                 Chart2DTestDataGenerator.getTimeToPeakErrorStatistics();
 
         //Call the factory.
@@ -659,7 +659,7 @@ public class Chart2DTestOutput
         outputImageFile.delete();
 
         //Construct some single-valued pairs
-        final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> input =
+        final ListOfMetricOutput<DoubleScoreOutput> input =
                 Chart2DTestDataGenerator.getScoreOutputForPoolingWindowsSecond();
 
         //Call the factory.

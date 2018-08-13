@@ -13,7 +13,7 @@ import wres.config.generated.ProjectConfig;
 //@RunWith( PowerMockRunner.class )
 //@PrepareForTest( { Files.class, BufferedWriter.class, Writer.class } )
 //@PowerMockIgnore( "javax.management.*" )
-public class CommaSeparatedWriterTest
+public class CommaSeparatedWriterTestHelper
 {
 
 // what follows is a started attempt at avoiding filesystem (use powermockito)

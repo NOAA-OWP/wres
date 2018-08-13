@@ -2,6 +2,7 @@ package wres.datamodel.outputs;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
@@ -27,12 +28,6 @@ public class ListOfMetricOutput<T extends MetricOutput<?>> implements Iterable<T
     private final List<T> outputs;
 
     /**
-     * Optional metadata that summarizes the collection of outputs.
-     */
-
-    private final MetricOutputMetadata metadata;
-
-    /**
      * Returns an instance from the inputs.
      * 
      * @param <T> the metric output type
@@ -44,23 +39,7 @@ public class ListOfMetricOutput<T extends MetricOutput<?>> implements Iterable<T
 
     public static <T extends MetricOutput<?>> ListOfMetricOutput<T> of( List<T> outputs )
     {
-        return ListOfMetricOutput.of( outputs, null );
-    }    
-    
-    /**
-     * Returns an instance from the inputs.
-     * 
-     * @param <T> the metric output type
-     * @param outputs the outputs used to populate the list
-     * @param metadata optional metadata that summarizes the list of outputs
-     * @return an instance of the container
-     * @throws NullPointerException if the output is null
-     * @throws MetricOutputException if the outputs contain one or more null entries
-     */
-
-    public static <T extends MetricOutput<?>> ListOfMetricOutput<T> of( List<T> outputs, MetricOutputMetadata metadata )
-    {
-        return new ListOfMetricOutput<>( outputs, metadata );
+        return new ListOfMetricOutput<>( outputs );
     }
 
     /**
@@ -87,28 +66,6 @@ public class ListOfMetricOutput<T extends MetricOutput<?>> implements Iterable<T
         return Collections.unmodifiableList( outputs );
     }
 
-    /**
-     * Returns the optional metadata that summarizes the list of outputs.
-     * 
-     * @return the metadata or null
-     */
-
-    public MetricOutputMetadata getMetadata()
-    {
-        return metadata;
-    }
-
-    /**
-     * Returns <code>true</code> if summary metadata is set for the list of outputs, otherwise <code>false</code>.
-     * 
-     * @return <code>true</code> if summary metadata is available, otherwise <code>false</code>
-     */
-
-    public boolean hasMetadata()
-    {
-        return Objects.nonNull( metadata );
-    }
-
     @Override
     public boolean equals( Object o )
     {
@@ -119,26 +76,19 @@ public class ListOfMetricOutput<T extends MetricOutput<?>> implements Iterable<T
 
         ListOfMetricOutput<?> in = (ListOfMetricOutput<?>) o;
 
-        return this.getData().equals( in.getData() ) && Objects.equals( this.getMetadata(), in.getMetadata() );
+        return this.getData().equals( in.getData() );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( this.getData(), this.getMetadata() );
+        return Objects.hash( this.getData() );
     }
 
     @Override
     public String toString()
     {
         StringBuilder b = new StringBuilder();
-
-        // Add the metadata
-        if ( this.hasMetadata() )
-        {
-            b.append( this.getMetadata() )
-             .append( System.lineSeparator() );
-        }
 
         // Add the data
         this.forEach( element -> b.append( "{" )
@@ -156,18 +106,19 @@ public class ListOfMetricOutput<T extends MetricOutput<?>> implements Iterable<T
     }
 
     /**
-     * A thread-safe builder that allows for the incremental construction of a {@link ListOfMetricOutput} using one or 
-     * more threads.
+     * <p>A thread-safe builder that allows for the incremental construction of a {@link ListOfMetricOutput}. 
+     * For convenience, the outputs may be sorted immediately prior to construction using a prescribed sorter. 
+     * For example, to sort the final list by order of the {@link MetricOutputMetadata}:</p>
+     * 
+     * <p><code>
+     * builder.setSorter( ( first, second ) { {@literal ->} first.getMetadata().compareTo( second.getMetadata() ) )
+     * </code></p>;
+     * 
+     * @author james.brown@hydrosolved.com
      */
 
     public static class ListOfMetricOutputBuilder<T extends MetricOutput<?>>
     {
-
-        /**
-         * The metadata.
-         */
-
-        private MetricOutputMetadata metadata;
 
         /**
          * The thread-safe queue of metric outputs.
@@ -176,18 +127,10 @@ public class ListOfMetricOutput<T extends MetricOutput<?>> implements Iterable<T
         private ConcurrentLinkedQueue<T> outputs = new ConcurrentLinkedQueue<>();
 
         /**
-         * Sets the metadata.
-         * 
-         * @param metadata the metadata
-         * @return the builder
+         * An optional sorter to sort the list on construction.
          */
 
-        public ListOfMetricOutputBuilder<T> setMetadata( MetricOutputMetadata metadata )
-        {
-            this.metadata = metadata;
-
-            return this;
-        }
+        private Comparator<? super T> sorter;
 
         /**
          * Adds an output to the list.
@@ -204,6 +147,20 @@ public class ListOfMetricOutput<T extends MetricOutput<?>> implements Iterable<T
         }
 
         /**
+         * Sets a sorter to sort the output on construction. 
+         * 
+         * @param sorter the sorter
+         * @return the builder
+         */
+
+        public ListOfMetricOutputBuilder<T> setSorter( Comparator<? super T> sorter )
+        {
+            this.sorter = sorter;
+
+            return this;
+        }
+
+        /**
          * Return the container.
          * 
          * @return the list of outputs
@@ -211,7 +168,14 @@ public class ListOfMetricOutput<T extends MetricOutput<?>> implements Iterable<T
 
         public ListOfMetricOutput<T> build()
         {
-            return ListOfMetricOutput.of( Collections.unmodifiableList( new ArrayList<>( outputs ) ), metadata );
+            List<T> sorted = new ArrayList<>( this.outputs );
+
+            if ( Objects.nonNull( this.sorter ) )
+            {
+                Collections.sort( sorted, this.sorter );
+            }
+
+            return new ListOfMetricOutput<>( sorted );
         }
 
     }
@@ -220,12 +184,11 @@ public class ListOfMetricOutput<T extends MetricOutput<?>> implements Iterable<T
      * Hidden constructor.
      * 
      * @param outputs the outputs used to populate the list
-     * @param metadata the output metadata
      * @throws NullPointerException if the output is null
      * @throws MetricOutputException if the outputs contain one or more null entries
      */
 
-    private ListOfMetricOutput( List<T> outputs, MetricOutputMetadata metadata )
+    private ListOfMetricOutput( List<T> outputs )
     {
         Objects.requireNonNull( outputs, "Specify a non-null list of outputs." );
 
@@ -235,8 +198,6 @@ public class ListOfMetricOutput<T extends MetricOutput<?>> implements Iterable<T
         }
 
         this.outputs = Collections.unmodifiableList( outputs );
-        
-        this.metadata = metadata;
     }
 
 }

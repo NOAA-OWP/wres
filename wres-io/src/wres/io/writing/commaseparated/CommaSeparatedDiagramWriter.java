@@ -10,11 +10,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
+import java.util.SortedSet;
 import java.util.StringJoiner;
 import java.util.TreeMap;
 import java.util.function.Consumer;
-
-import org.apache.commons.lang3.tuple.Pair;
 
 import wres.config.ProjectConfigException;
 import wres.config.generated.DestinationConfig;
@@ -22,12 +21,11 @@ import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
+import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.outputs.MapKey;
-import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
-import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
+import wres.datamodel.outputs.ListOfMetricOutput;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.io.config.ConfigHelper;
@@ -39,7 +37,7 @@ import wres.io.config.ConfigHelper;
  */
 
 public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
-        implements Consumer<MetricOutputMultiMapByTimeAndThreshold<MultiVectorOutput>>
+        implements Consumer<ListOfMetricOutput<MultiVectorOutput>>
 {
 
     /**
@@ -65,7 +63,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
      */
 
     @Override
-    public void accept( final MetricOutputMultiMapByTimeAndThreshold<MultiVectorOutput> output )
+    public void accept( final ListOfMetricOutput<MultiVectorOutput> output )
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing diagram outputs." );
 
@@ -107,7 +105,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
 
     private static void writeOneDiagramOutputType( ProjectConfig projectConfig,
                                                    DestinationConfig destinationConfig,
-                                                   MetricOutputMultiMapByTimeAndThreshold<MultiVectorOutput> output,
+                                                   ListOfMetricOutput<MultiVectorOutput> output,
                                                    Format formatter )
             throws IOException
     {
@@ -115,7 +113,8 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
         OutputTypeSelection diagramType = ConfigHelper.getOutputTypeSelection( projectConfig, destinationConfig );
 
         // Loop across diagrams
-        for ( Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<MultiVectorOutput>> m : output.entrySet() )
+        SortedSet<MetricConstants> metrics = Slicer.discover( output, next -> next.getMetadata().getMetricID() );
+        for ( MetricConstants m : metrics )
         {
 
             StringJoiner headerRow = new StringJoiner( "," );
@@ -125,7 +124,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
             if ( diagramType == OutputTypeSelection.DEFAULT || diagramType == OutputTypeSelection.LEAD_THRESHOLD )
             {
                 CommaSeparatedDiagramWriter.writeOneDiagramOutputTypePerTimeWindow( destinationConfig,
-                                                                                    m.getValue(),
+                                                                                    Slicer.filter( output, m ),
                                                                                     headerRow,
                                                                                     formatter );
             }
@@ -133,7 +132,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
             else if ( diagramType == OutputTypeSelection.THRESHOLD_LEAD )
             {
                 CommaSeparatedDiagramWriter.writeOneDiagramOutputTypePerThreshold( destinationConfig,
-                                                                                   m.getValue(),
+                                                                                   Slicer.filter( output, m ),
                                                                                    headerRow,
                                                                                    formatter );
             }
@@ -151,16 +150,20 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
      */
 
     private static void writeOneDiagramOutputTypePerTimeWindow( DestinationConfig destinationConfig,
-                                                                MetricOutputMapByTimeAndThreshold<MultiVectorOutput> output,
+                                                                ListOfMetricOutput<MultiVectorOutput> output,
                                                                 StringJoiner headerRow,
                                                                 Format formatter )
             throws IOException
     {
         // Loop across time windows
-        for ( TimeWindow timeWindow : output.setOfTimeWindowKey() )
+        SortedSet<TimeWindow> timeWindows = Slicer.discover( output, next -> next.getMetadata().getTimeWindow() );
+        for ( TimeWindow timeWindow : timeWindows )
         {
-            MetricOutputMetadata meta = output.getMetadata();
-            MetricOutputMapByTimeAndThreshold<MultiVectorOutput> next = output.filterByTime( timeWindow );
+            ListOfMetricOutput<MultiVectorOutput> next =
+                    Slicer.filter( output, data -> data.getTimeWindow().equals( timeWindow ) );
+            
+            MetricOutputMetadata meta = next.getData().get( 0 ).getMetadata();
+            
             List<RowCompareByLeft> rows = getRowsForOneDiagram( next, formatter );
 
             // Add the header row
@@ -184,16 +187,22 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
      */
 
     private static void writeOneDiagramOutputTypePerThreshold( DestinationConfig destinationConfig,
-                                                               MetricOutputMapByTimeAndThreshold<MultiVectorOutput> output,
+                                                               ListOfMetricOutput<MultiVectorOutput> output,
                                                                StringJoiner headerRow,
                                                                Format formatter )
             throws IOException
     {
         // Loop across thresholds
-        for ( OneOrTwoThresholds threshold : output.setOfThresholdKey() )
+        SortedSet<OneOrTwoThresholds> thresholds =
+                Slicer.discover( output, meta -> meta.getMetadata().getThresholds() );
+        for ( OneOrTwoThresholds threshold : thresholds )
         {
-            MetricOutputMetadata meta = output.getMetadata();
-            MetricOutputMapByTimeAndThreshold<MultiVectorOutput> next = output.filterByThreshold( threshold );
+            
+            ListOfMetricOutput<MultiVectorOutput> next =
+                    Slicer.filter( output, data -> data.getThresholds().equals( threshold ) );
+            
+            MetricOutputMetadata meta = next.getData().get( 0 ).getMetadata();
+            
             List<RowCompareByLeft> rows = CommaSeparatedDiagramWriter.getRowsForOneDiagram( next, formatter );
 
             // Add the header row
@@ -216,21 +225,29 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
      */
 
     private static List<RowCompareByLeft>
-            getRowsForOneDiagram( MetricOutputMapByTimeAndThreshold<MultiVectorOutput> output,
+            getRowsForOneDiagram( ListOfMetricOutput<MultiVectorOutput> output,
                                   Format formatter )
     {
         List<RowCompareByLeft> returnMe = new ArrayList<>();
 
-        // Add the rows
+        // Discover the time windows and thresholds to loop
+        SortedSet<OneOrTwoThresholds> thresholds =
+                Slicer.discover( output, meta -> meta.getMetadata().getThresholds() );
+        SortedSet<TimeWindow> timeWindows = Slicer.discover( output, meta -> meta.getMetadata().getTimeWindow() );
         // Loop across time windows
-        for ( TimeWindow timeWindow : output.setOfTimeWindowKey() )
+        for ( TimeWindow timeWindow : timeWindows )
         {
             // Loop across the thresholds, merging results when multiple thresholds occur
             Map<Integer, List<Double>> merge = new TreeMap<>();
-            for ( OneOrTwoThresholds threshold : output.setOfThresholdKey() )
+            for ( OneOrTwoThresholds threshold : thresholds )
             {
-                Pair<TimeWindow, OneOrTwoThresholds> key = Pair.of( timeWindow, threshold );
-                CommaSeparatedDiagramWriter.addRowsForOneDiagramAtOneTimeWindowAndThreshold( output, key, merge );
+                // One output per time window and threshold
+                MultiVectorOutput nextOutput = Slicer.filter( output,
+                                                              data -> data.getThresholds().equals( threshold )
+                                                                      && data.getTimeWindow().equals( timeWindow ) )
+                                                     .getData()
+                                                     .get( 0 );
+                CommaSeparatedDiagramWriter.addRowsForOneDiagramAtOneTimeWindowAndThreshold( nextOutput, merge );
             }
             // Add the merged rows
             for ( List<Double> next : merge.values() )
@@ -255,30 +272,28 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
      */
 
     private static void
-            addRowsForOneDiagramAtOneTimeWindowAndThreshold( MetricOutputMapByTimeAndThreshold<MultiVectorOutput> output,
-                                                             Pair<TimeWindow, OneOrTwoThresholds> key,
+            addRowsForOneDiagramAtOneTimeWindowAndThreshold( MultiVectorOutput output,
                                                              Map<Integer, List<Double>> merge )
     {
 
         // Check that the output exists
-        if ( output.containsKey( key ) )
+        if ( Objects.nonNull( output ) )
         {
-            MultiVectorOutput next = output.get( key );
 
             // For safety, find the largest vector and use Double.NaN in place for vectors of differing size
             // In practice, all should be the same length
-            int maxRows = next.getData()
-                              .values()
-                              .stream()
-                              .max( Comparator.comparingInt( VectorOfDoubles::size ) )
-                              .get()
-                              .size();
+            int maxRows = output.getData()
+                                .values()
+                                .stream()
+                                .max( Comparator.comparingInt( VectorOfDoubles::size ) )
+                                .get()
+                                .size();
 
             // Loop until the maximum row 
             for ( int rowIndex = 0; rowIndex < maxRows; rowIndex++ )
             {
                 // Add the row
-                List<Double> row = CommaSeparatedDiagramWriter.getOneRowForOneDiagram( next, rowIndex );
+                List<Double> row = CommaSeparatedDiagramWriter.getOneRowForOneDiagram( output, rowIndex );
                 if ( merge.containsKey( rowIndex ) )
                 {
                     merge.get( rowIndex ).addAll( row );
@@ -323,17 +338,21 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
      * @return the mutated header
      */
 
-    private static StringJoiner getDiagramHeader( MetricOutputMapByTimeAndThreshold<MultiVectorOutput> output,
+    private static StringJoiner getDiagramHeader( ListOfMetricOutput<MultiVectorOutput> output,
                                                   StringJoiner headerRow )
     {
         // Append to header
         StringJoiner returnMe = new StringJoiner( "," );
         returnMe.merge( headerRow );
-        String metricName = output.getMetadata().getMetricID().toString();
-        MultiVectorOutput data = output.getValue( 0 );
+        // Discover first item to help
+        MultiVectorOutput data = output.getData().get( 0 );
+        String metricName = data.getMetadata().getMetricID().toString();
+        
         Set<MetricDimension> dimensions = data.getData().keySet();
         //Add the metric name, dimension, and threshold for each column-vector
-        for ( OneOrTwoThresholds nextThreshold : output.setOfThresholdKey() )
+        SortedSet<OneOrTwoThresholds> thresholds =
+                Slicer.discover( output, meta -> meta.getMetadata().getThresholds() );
+        for ( OneOrTwoThresholds nextThreshold : thresholds )
         {
             for ( MetricDimension nextDimension : dimensions )
             {

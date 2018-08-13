@@ -6,7 +6,6 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
-import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.FunctionFactory;
@@ -72,21 +71,12 @@ public class MeanSquareError extends SumOfSquareError
 
         final MetricOutputMetadata metIn = output.getMetadata();
 
-        // Set the output dimension
-        MeasurementUnit outputDimension = MeasurementUnit.of();
-        if ( hasRealUnits() )
-        {
-            outputDimension = metIn.getMeasurementUnit();
-        }
-        final MeasurementUnit outputDim = outputDimension;
-        MetricOutputMetadata meta = MetricOutputMetadata.of( metIn.getSampleSize(),
-                                                             outputDim,
-                                                             metIn.getMeasurementUnit(),
+        MetricOutputMetadata meta = MetricOutputMetadata.of( metIn,
                                                              this.getID(),
                                                              MetricConstants.MAIN,
-                                                             metIn.getIdentifier(),
-                                                             metIn.getTimeWindow(),
-                                                             metIn.getThresholds() );
+                                                             this.hasRealUnits(),
+                                                             metIn.getSampleSize(),
+                                                             null );
 
         double mse = FunctionFactory.finiteOrMissing()
                                     .applyAsDouble( output.getData() / metIn.getSampleSize() );
