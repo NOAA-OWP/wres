@@ -11,7 +11,7 @@ import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.outputs.MetricOutputException;
-import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
+import wres.datamodel.outputs.MetricOutputForProject;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
@@ -181,7 +181,7 @@ public class MetricProcessorForProject
      * @throws MetricOutputException if the output could not be retrieved
      */
 
-    public MetricOutputForProjectByTimeAndThreshold getCachedMetricOutput() throws InterruptedException
+    public MetricOutputForProject getCachedMetricOutput() throws InterruptedException
     {
         if ( Objects.nonNull( singleValuedProcessor ) )
         {

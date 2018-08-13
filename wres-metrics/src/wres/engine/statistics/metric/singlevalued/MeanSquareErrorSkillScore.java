@@ -90,11 +90,11 @@ public class MeanSquareErrorSkillScore extends DecomposableScore<SingleValuedPai
             baselineIdentifier = s.getMetadataForBaseline().getIdentifier();
         }
         final MetricOutputMetadata metOut = MetricOutputMetadata.of( s.getMetadata(),
-                                                                this.getID(),
-                                                                MetricConstants.MAIN,
-                                                                this.hasRealUnits(),
-                                                                s.getRawData().size(),
-                                                                baselineIdentifier );
+                                                                     this.getID(),
+                                                                     MetricConstants.MAIN,
+                                                                     this.hasRealUnits(),
+                                                                     s.getRawData().size(),
+                                                                     baselineIdentifier );
         return DoubleScoreOutput.of( result, metOut );
     }
 

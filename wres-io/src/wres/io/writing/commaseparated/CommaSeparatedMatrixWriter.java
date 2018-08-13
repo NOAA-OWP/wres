@@ -5,25 +5,22 @@ import java.nio.file.Path;
 import java.text.Format;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.SortedSet;
 import java.util.StringJoiner;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
-
-import org.apache.commons.lang3.tuple.Pair;
 
 import wres.config.ProjectConfigException;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.Slicer;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.outputs.MapKey;
+import wres.datamodel.outputs.ListOfMetricOutput;
 import wres.datamodel.outputs.MatrixOutput;
-import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
-import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.io.config.ConfigHelper;
 
@@ -34,7 +31,7 @@ import wres.io.config.ConfigHelper;
  */
 
 public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
-        implements Consumer<MetricOutputMultiMapByTimeAndThreshold<MatrixOutput>>
+        implements Consumer<ListOfMetricOutput<MatrixOutput>>
 {
 
     /**
@@ -60,7 +57,7 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
      */
 
     @Override
-    public void accept( final MetricOutputMultiMapByTimeAndThreshold<MatrixOutput> output )
+    public void accept( final ListOfMetricOutput<MatrixOutput> output )
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing box plot outputs." );
 
@@ -86,7 +83,6 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
             {
                 throw new CommaSeparatedWriteException( "While writing comma separated output: ", e );
             }
-
         }
     }
 
@@ -102,17 +98,18 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
 
     private static void writeOneMatrixOutputType( ProjectConfig projectConfig,
                                                   DestinationConfig destinationConfig,
-                                                  MetricOutputMultiMapByTimeAndThreshold<MatrixOutput> output,
+                                                  ListOfMetricOutput<MatrixOutput> output,
                                                   Format formatter )
             throws IOException
     {
         // Obtain the output type configuration with any override for ALL_VALID metrics
         OutputTypeSelection diagramType = ConfigHelper.getOutputTypeSelection( projectConfig, destinationConfig );
 
-        // Loop across diagrams
-        for ( Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<MatrixOutput>> m : output.entrySet() )
+        // Loop across metrics
+        SortedSet<MetricConstants> metrics = Slicer.discover( output, next -> next.getMetadata().getMetricID() );
+        for ( MetricConstants m : metrics )
         {
-            
+
             StringJoiner headerRow = new StringJoiner( "," );
             headerRow.merge( HEADER_DEFAULT );
 
@@ -120,7 +117,7 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
             if ( diagramType == OutputTypeSelection.DEFAULT || diagramType == OutputTypeSelection.LEAD_THRESHOLD )
             {
                 CommaSeparatedMatrixWriter.writeOneMatrixOutputTypePerTimeWindow( destinationConfig,
-                                                                                  m.getValue(),
+                                                                                  Slicer.filter( output, m ),
                                                                                   headerRow,
                                                                                   formatter );
             }
@@ -128,7 +125,7 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
             else if ( diagramType == OutputTypeSelection.THRESHOLD_LEAD )
             {
                 CommaSeparatedMatrixWriter.writeOneMatrixOutputTypePerThreshold( destinationConfig,
-                                                                                 m.getValue(),
+                                                                                 Slicer.filter( output, m ),
                                                                                  headerRow,
                                                                                  formatter );
             }
@@ -146,16 +143,20 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
      */
 
     private static void writeOneMatrixOutputTypePerTimeWindow( DestinationConfig destinationConfig,
-                                                               MetricOutputMapByTimeAndThreshold<MatrixOutput> output,
+                                                               ListOfMetricOutput<MatrixOutput> output,
                                                                StringJoiner headerRow,
                                                                Format formatter )
             throws IOException
     {
         // Loop across time windows
-        for ( TimeWindow timeWindow : output.setOfTimeWindowKey() )
+        SortedSet<TimeWindow> timeWindows = Slicer.discover( output, next -> next.getMetadata().getTimeWindow() );
+        for ( TimeWindow timeWindow : timeWindows )
         {
-            MetricOutputMetadata meta = output.getMetadata();
-            MetricOutputMapByTimeAndThreshold<MatrixOutput> next = output.filterByTime( timeWindow );
+            ListOfMetricOutput<MatrixOutput> next =
+                    Slicer.filter( output, data -> data.getTimeWindow().equals( timeWindow ) );
+            
+            MetricOutputMetadata meta = next.getData().get( 0 ).getMetadata();
+            
             List<RowCompareByLeft> rows = CommaSeparatedMatrixWriter.getRowsForOneMatrixOutput( next, formatter );
 
             // Add the header row
@@ -180,16 +181,21 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
      */
 
     private static void writeOneMatrixOutputTypePerThreshold( DestinationConfig destinationConfig,
-                                                              MetricOutputMapByTimeAndThreshold<MatrixOutput> output,
+                                                              ListOfMetricOutput<MatrixOutput> output,
                                                               StringJoiner headerRow,
                                                               Format formatter )
             throws IOException
     {
         // Loop across thresholds
-        for ( OneOrTwoThresholds threshold : output.setOfThresholdKey() )
+        SortedSet<OneOrTwoThresholds> thresholds =
+                Slicer.discover( output, meta -> meta.getMetadata().getThresholds() );
+        for ( OneOrTwoThresholds threshold : thresholds )
         {
-            MetricOutputMetadata meta = output.getMetadata();
-            MetricOutputMapByTimeAndThreshold<MatrixOutput> next = output.filterByThreshold( threshold );
+            ListOfMetricOutput<MatrixOutput> next =
+                    Slicer.filter( output, data -> data.getThresholds().equals( threshold ) );
+            
+            MetricOutputMetadata meta = next.getData().get( 0 ).getMetadata();
+            
             List<RowCompareByLeft> rows = CommaSeparatedMatrixWriter.getRowsForOneMatrixOutput( next, formatter );
 
             // Add the header row
@@ -211,14 +217,14 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
      * @return the mutated header
      */
 
-    private static StringJoiner getMatrixOutputHeader( MetricOutputMapByTimeAndThreshold<MatrixOutput> output,
+    private static StringJoiner getMatrixOutputHeader( ListOfMetricOutput<MatrixOutput> output,
                                                        StringJoiner headerRow )
     {
         // Append to header
         StringJoiner returnMe = new StringJoiner( "," );
         returnMe.merge( headerRow );
-        String metricName = output.getMetadata().getMetricID().toString();
-        MatrixOutput data = output.getValue( 0 );
+        MatrixOutput data = output.getData().get( 0 );
+        String metricName = data.getMetadata().getMetricID().toString();
         List<String> dimensions = new ArrayList<>();
         // Add names
         if ( data.hasComponentNames() )
@@ -237,7 +243,9 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
         }
 
         //Add the metric name, dimension, and threshold for each column-vector
-        for ( OneOrTwoThresholds nextThreshold : output.setOfThresholdKey() )
+        SortedSet<OneOrTwoThresholds> thresholds =
+                Slicer.discover( output, next -> next.getMetadata().getThresholds() );
+        for ( OneOrTwoThresholds nextThreshold : thresholds )
         {
             for ( String nextDimension : dimensions )
             {
@@ -261,27 +269,31 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
      */
 
     private static List<RowCompareByLeft>
-            getRowsForOneMatrixOutput( MetricOutputMapByTimeAndThreshold<MatrixOutput> output,
+            getRowsForOneMatrixOutput( ListOfMetricOutput<MatrixOutput> output,
                                        Format formatter )
     {
         List<RowCompareByLeft> returnMe = new ArrayList<>();
 
         // Add the rows
         // Loop across time windows
-        for ( TimeWindow timeWindow : output.setOfTimeWindowKey() )
+        SortedSet<OneOrTwoThresholds> thresholds =
+                Slicer.discover( output, meta -> meta.getMetadata().getThresholds() );
+        SortedSet<TimeWindow> timeWindows = Slicer.discover( output, meta -> meta.getMetadata().getTimeWindow() );
+        for ( TimeWindow timeWindow : timeWindows )
         {
             // Loop across the thresholds, merging results when multiple thresholds occur
             List<Double> merge = new ArrayList<>();
-            for ( OneOrTwoThresholds threshold : output.setOfThresholdKey() )
+            for ( OneOrTwoThresholds threshold : thresholds )
             {
-                Pair<TimeWindow, OneOrTwoThresholds> key = Pair.of( timeWindow, threshold );
-                if ( output.containsKey( key ) )
-                {
-                    MatrixOutput next = output.get( key );
+                // One output per time window and threshold
+                MatrixOutput nextOutput = Slicer.filter( output,
+                                                         data -> data.getThresholds().equals( threshold )
+                                                                 && data.getTimeWindow().equals( timeWindow ) )
+                                                .getData()
+                                                .get( 0 );
 
-                    // Add the row
-                    next.iterator().forEachRemaining( merge::add );
-                }
+                // Add the row
+                nextOutput.iterator().forEachRemaining( merge::add );
             }
             // Add the merged row
             CommaSeparatedWriter.addRowToInput( returnMe,

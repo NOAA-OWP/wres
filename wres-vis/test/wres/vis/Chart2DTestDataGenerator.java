@@ -11,7 +11,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -23,22 +22,23 @@ import evs.metric.results.MetricResult;
 import evs.metric.results.MetricResultByLeadTime;
 import evs.metric.results.MetricResultByThreshold;
 import evs.metric.results.MetricResultKey;
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.OneOrTwoDoubles;
+import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.inputs.pairs.EnsemblePair;
 import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.DurationScoreOutput;
-import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
+import wres.datamodel.outputs.ListOfMetricOutput;
+import wres.datamodel.outputs.ListOfMetricOutput.ListOfMetricOutputBuilder;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.PairedOutput;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
@@ -48,68 +48,74 @@ import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 
 public abstract class Chart2DTestDataGenerator
 {
-    
+
     /**
-     * Returns a {@link MetricOutputMapByTimeAndThreshold} of {@link DoubleScoreOutput} comprising the CRPSS for a
+     * Returns a {@link ListOfMetricOutput} of {@link DoubleScoreOutput} comprising the CRPSS for a
      * subset of thresholds and forecast lead times. Reads the input data from
      * {@link #getScalarMetricOutputMapByLeadThreshold()} and slices.
      *
      * @return an output map of verification scores
      */
 
-    public static MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> getMetricOutputMapByLeadThresholdOne()
+    public static ListOfMetricOutput<DoubleScoreOutput> getMetricOutputMapByLeadThresholdOne()
             throws IOException
     {
+        ListOfMetricOutput<DoubleScoreOutput> full = getScalarMetricOutputMapByLeadThreshold();
+        ListOfMetricOutputBuilder<DoubleScoreOutput> builder = new ListOfMetricOutputBuilder<>();
 
-        final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> full = getScalarMetricOutputMapByLeadThreshold();
-        final List<MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>> combine = new ArrayList<>();
-        final double[][] allow =
+        double[][] allow =
                 new double[][] { { Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY }, { 0.5, 2707.5 },
                                  { 0.95, 13685.0 }, { 0.99, 26648.0 } };
         for ( final double[] next : allow )
         {
-            combine.add( full.filterByThreshold( OneOrTwoThresholds.of( Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( next[1] ),
-                                                                                             OneOrTwoDoubles.of( next[0] ),
-                                                                                             Operator.GREATER, ThresholdDataType.LEFT ) ) ) );
+            OneOrTwoThresholds filter =
+                    OneOrTwoThresholds.of( Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( next[1] ),
+                                                                          OneOrTwoDoubles.of( next[0] ),
+                                                                          Operator.GREATER,
+                                                                          ThresholdDataType.LEFT ) );
+            Slicer.filter( full, data -> data.getThresholds().equals( filter ) ).forEach( builder::addOutput );
         }
-        return DataFactory.combine( combine );
+
+        return builder.build();
     }
 
     /**
-     * Returns a {@link MetricOutputMapByTimeAndThreshold} of {@link DoubleScoreOutput} comprising the CRPSS for a
+     * Returns a {@link ListOfMetricOutput} of {@link DoubleScoreOutput} comprising the CRPSS for a
      * subset of thresholds and forecast lead times. Reads the input data from {@link #getScalarMetricOutputMapByLeadThreshold()}
      * and slices.
      *
      * @return an output map of verification scores
      */
-    public static MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> getMetricOutputMapByLeadThresholdTwo()
+    public static ListOfMetricOutput<DoubleScoreOutput> getMetricOutputMapByLeadThresholdTwo()
             throws IOException
     {
+        ListOfMetricOutput<DoubleScoreOutput> full = getScalarMetricOutputMapByLeadThreshold();
+        ListOfMetricOutputBuilder<DoubleScoreOutput> builder = new ListOfMetricOutputBuilder<>();
 
-        final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> full = getScalarMetricOutputMapByLeadThreshold();
-        final List<MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>> combine = new ArrayList<>();
         final int[] allow = new int[] { 42, 258, 474, 690 };
         for ( final int next : allow )
         {
-            combine.add( full.filterByTime( TimeWindow.of( Instant.MIN,
-                                                          Instant.MAX,
-                                                          ReferenceTime.VALID_TIME,
-                                                          Duration.ofHours( next ) ) ) );
+            TimeWindow filter = TimeWindow.of( Instant.MIN,
+                                               Instant.MAX,
+                                               ReferenceTime.VALID_TIME,
+                                               Duration.ofHours( next ) );
+            Slicer.filter( full, data -> data.getTimeWindow().equals( filter ) ).forEach( builder::addOutput );
         }
-        return DataFactory.combine( combine );
+
+        return builder.build();
     }
 
     /**
-     * Returns a {@link MetricOutputMapByTimeAndThreshold} of {@link DoubleScoreOutput} comprising the CRPSS for various
+     * Returns a {@link ListOfMetricOutput} of {@link DoubleScoreOutput} comprising the CRPSS for various
      * thresholds and forecast lead times. Reads the input data from
      * testinput/chart2DTest/getMetricOutputMapByLeadThreshold.xml.
      *
      * @return an output map of verification scores
      */
-    static MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> getScalarMetricOutputMapByLeadThreshold()
-    throws IOException
+    static ListOfMetricOutput<DoubleScoreOutput> getScalarMetricOutputMapByLeadThreshold()
+            throws IOException
     {
-        final Map<Pair<TimeWindow, OneOrTwoThresholds>, DoubleScoreOutput> rawData = new TreeMap<>();
+        final List<DoubleScoreOutput> rawData = new ArrayList<>();
 
         //Create the input file
         final File resultFile = new File( "testinput/chart2DTest/getMetricOutputMapByLeadThreshold.xml" );
@@ -119,60 +125,65 @@ public abstract class Chart2DTestDataGenerator
 
         //Metric output metadata: add fake sample sizes as these are not available in the test input file
         final MetricOutputMetadata meta = MetricOutputMetadata.of( 1000,
-                                                                         MeasurementUnit.of(),
-                                                                         MeasurementUnit.of( "CMS" ),
-                                                                         MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
-                                                                         MetricConstants.MAIN,
-                                                                         DatasetIdentifier.of( Location.of("NPTP1"), "STREAMFLOW", "HEFS", "ESP" ) );
+                                                                   MeasurementUnit.of(),
+                                                                   MeasurementUnit.of( "CMS" ),
+                                                                   MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
+                                                                   MetricConstants.MAIN,
+                                                                   DatasetIdentifier.of( Location.of( "NPTP1" ),
+                                                                                         "STREAMFLOW",
+                                                                                         "HEFS",
+                                                                                         "ESP" ) );
 
         //Iterate through the lead times
         while ( d.hasNext() )
         {
             //Set the lead time
-            final double leadTime = ( Double ) d.next().getKey();
-            final MetricResultByThreshold t = ( MetricResultByThreshold ) data.getResult( leadTime );
+            final double leadTime = (Double) d.next().getKey();
+            final MetricResultByThreshold t = (MetricResultByThreshold) data.getResult( leadTime );
             final Iterator<MetricResultKey> e = t.getIterator();
 
             //Iterate through the thresholds
             while ( e.hasNext() )
             {
                 //Build the quantile
-                final DoubleProcedureParameter f = ( DoubleProcedureParameter ) e.next().getKey();
+                final DoubleProcedureParameter f = (DoubleProcedureParameter) e.next().getKey();
                 final double[] constants = f.getParValReal().getConstants();
                 final double[] probConstants = f.getParVal().getConstants();
-                final Threshold q = Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( constants[0] ),
-                                                                 OneOrTwoDoubles.of( probConstants[0] ),
-                                                                 Operator.GREATER, ThresholdDataType.LEFT );
+                final OneOrTwoThresholds q =
+                        OneOrTwoThresholds.of( Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( constants[0] ),
+                                                                              OneOrTwoDoubles.of( probConstants[0] ),
+                                                                              Operator.GREATER,
+                                                                              ThresholdDataType.LEFT ) );
                 TimeWindow window = TimeWindow.of( Instant.MIN,
                                                    Instant.MAX,
                                                    ReferenceTime.VALID_TIME,
-                                                   Duration.ofHours( ( long ) leadTime ) );
-                final Pair<TimeWindow, OneOrTwoThresholds> key = Pair.of( window, OneOrTwoThresholds.of( q ) );
+                                                   Duration.ofHours( (long) leadTime ) );
 
                 //Build the scalar result
                 final MetricResult result = t.getResult( f );
-                final double[] res = ( ( DoubleMatrix1DResult ) result ).getResult().toArray();
-                final DoubleScoreOutput value = DoubleScoreOutput.of( res[0], meta );
+                final double[] res = ( (DoubleMatrix1DResult) result ).getResult().toArray();
+                final DoubleScoreOutput value =
+                        DoubleScoreOutput.of( res[0], MetricOutputMetadata.of( meta, window, q ) );
 
                 //Append result
-                rawData.put( key, value );
+                rawData.add( value );
             }
         }
 
-        return DataFactory.ofMetricOutputMapByTimeAndThreshold( rawData );
+        return ListOfMetricOutput.of( rawData );
     }
 
     /**
-     * Returns a {@link MetricOutputMapByTimeAndThreshold} of {@link DoubleScoreOutput} comprising the CRPSS for
+     * Returns a {@link ListOfMetricOutput} of {@link DoubleScoreOutput} comprising the CRPSS for
      * various thresholds and forecast lead times. Reads the input data from
      * testinput/chart2DTest/getMetricOutputMapByLeadThreshold.xml.
      *
      * @return an output map of verification scores
      */
-    static MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> getScoreMetricOutputMapByLeadThreshold()
+    static ListOfMetricOutput<DoubleScoreOutput> getScoreMetricOutputMapByLeadThreshold()
             throws IOException
     {
-        final Map<Pair<TimeWindow, OneOrTwoThresholds>, DoubleScoreOutput> rawData = new TreeMap<>();
+        final List<DoubleScoreOutput> rawData = new ArrayList<>();
 
         //Create the input file
         final File resultFile = new File( "testinput/chart2DTest/getMetricOutputMapByLeadThreshold.xml" );
@@ -182,60 +193,64 @@ public abstract class Chart2DTestDataGenerator
 
         //Metric output metadata: add fake sample sizes as these are not available in the test input file
         final MetricOutputMetadata meta = MetricOutputMetadata.of( 1000,
-                                                                         MeasurementUnit.of(),
-                                                                         MeasurementUnit.of( "CMS" ),
-                                                                         MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
-                                                                         MetricConstants.MAIN,
-                                                                         DatasetIdentifier.of( Location.of("NPTP1"), "STREAMFLOW", "HEFS", "ESP" ) );
+                                                                   MeasurementUnit.of(),
+                                                                   MeasurementUnit.of( "CMS" ),
+                                                                   MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
+                                                                   MetricConstants.MAIN,
+                                                                   DatasetIdentifier.of( Location.of( "NPTP1" ),
+                                                                                         "STREAMFLOW",
+                                                                                         "HEFS",
+                                                                                         "ESP" ) );
 
         //Iterate through the lead times
         while ( d.hasNext() )
         {
             //Set the lead time
-            final double leadTime = ( Double ) d.next().getKey();
-            final MetricResultByThreshold t = ( MetricResultByThreshold ) data.getResult( leadTime );
+            final double leadTime = (Double) d.next().getKey();
+            final MetricResultByThreshold t = (MetricResultByThreshold) data.getResult( leadTime );
             final Iterator<MetricResultKey> e = t.getIterator();
             //Iterate through the thresholds
             while ( e.hasNext() )
             {
                 //Build the quantile
-                final DoubleProcedureParameter f = ( DoubleProcedureParameter ) e.next().getKey();
+                final DoubleProcedureParameter f = (DoubleProcedureParameter) e.next().getKey();
                 final double[] constants = f.getParValReal().getConstants();
                 final double[] probConstants = f.getParVal().getConstants();
-                final Threshold q = Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( constants[0] ),
-                                                                 OneOrTwoDoubles.of( probConstants[0] ),
-                                                                 Operator.GREATER, ThresholdDataType.LEFT );
+                final OneOrTwoThresholds q =
+                        OneOrTwoThresholds.of( Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( constants[0] ),
+                                                                              OneOrTwoDoubles.of( probConstants[0] ),
+                                                                              Operator.GREATER,
+                                                                              ThresholdDataType.LEFT ) );
                 TimeWindow window = TimeWindow.of( Instant.MIN,
                                                    Instant.MAX,
                                                    ReferenceTime.VALID_TIME,
-                                                   Duration.ofHours( ( long ) leadTime ) );
-                final Pair<TimeWindow, OneOrTwoThresholds> key = Pair.of( window, OneOrTwoThresholds.of( q ) );
+                                                   Duration.ofHours( (long) leadTime ) );
 
                 //Build the scalar result
                 final MetricResult result = t.getResult( f );
-                final double res = ( ( DoubleMatrix1DResult ) result ).getResult().toArray()[0];
-                final DoubleScoreOutput value = DoubleScoreOutput.of( res, meta );
+                final double res = ( (DoubleMatrix1DResult) result ).getResult().toArray()[0];
+                final DoubleScoreOutput value = DoubleScoreOutput.of( res, MetricOutputMetadata.of( meta, window, q ) );
 
                 //Append result
-                rawData.put( key, value );
+                rawData.add( value );
             }
         }
 
-        return DataFactory.ofMetricOutputMapByTimeAndThreshold( rawData );
+        return ListOfMetricOutput.of( rawData );
     }
 
     /**
-     * Returns a {@link MetricOutputMapByTimeAndThreshold} of {@link MultiVectorOutput} that contains the components of the
+     * Returns a {@link ListOfMetricOutput} of {@link MultiVectorOutput} that contains the components of the
      * reliability diagram (forecast probabilities, observed given forecast probabilities, and sample sizes) for various
      * thresholds and forecast lead times. Reads the input data from
      * testinput/chart2DTest/getReliabilityDiagramByLeadThreshold.xml.
      *
      * @return an output map of reliability diagrams
      */
-    static MetricOutputMapByTimeAndThreshold<MultiVectorOutput> getReliabilityDiagramByLeadThreshold()
+    static ListOfMetricOutput<MultiVectorOutput> getReliabilityDiagramByLeadThreshold()
             throws IOException
     {
-        final Map<Pair<TimeWindow, OneOrTwoThresholds>, MultiVectorOutput> rawData = new TreeMap<>();
+        final List<MultiVectorOutput> rawData = new ArrayList<>();
         //Read only selected quantiles
         final List<Threshold> allowed = new ArrayList<>();
         final double[][] allow =
@@ -243,8 +258,9 @@ public abstract class Chart2DTestDataGenerator
         for ( final double[] next : allow )
         {
             allowed.add( Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( next[1] ),
-                                                      OneOrTwoDoubles.of( next[0] ),
-                                                      Operator.GREATER, ThresholdDataType.LEFT ) );
+                                                        OneOrTwoDoubles.of( next[0] ),
+                                                        Operator.GREATER,
+                                                        ThresholdDataType.LEFT ) );
         }
 
         //Create the input file
@@ -255,13 +271,13 @@ public abstract class Chart2DTestDataGenerator
 
         //Metric output metadata: add fake sample sizes as these are not available in the test input file
         final MetricOutputMetadata meta = MetricOutputMetadata.of( 1000,
-                                                                         MeasurementUnit.of(),
-                                                                         MeasurementUnit.of( "CMS" ),
-                                                                         MetricConstants.RELIABILITY_DIAGRAM,
-                                                                         MetricConstants.MAIN,
-                                                                         DatasetIdentifier.of( Location.of("NPTP1"),
-                                                                                                           "STREAMFLOW",
-                                                                                                           "HEFS" ) );
+                                                                   MeasurementUnit.of(),
+                                                                   MeasurementUnit.of( "CMS" ),
+                                                                   MetricConstants.RELIABILITY_DIAGRAM,
+                                                                   MetricConstants.MAIN,
+                                                                   DatasetIdentifier.of( Location.of( "NPTP1" ),
+                                                                                         "STREAMFLOW",
+                                                                                         "HEFS" ) );
 
         //Iterate through the lead times.
         int count = -1;
@@ -276,8 +292,8 @@ public abstract class Chart2DTestDataGenerator
             }
 
             //Set the lead time
-            final double leadTime = ( Double ) d.next().getKey();
-            final MetricResultByThreshold t = ( MetricResultByThreshold ) data.getResult( leadTime );
+            final double leadTime = (Double) d.next().getKey();
+            final MetricResultByThreshold t = (MetricResultByThreshold) data.getResult( leadTime );
             final Iterator<MetricResultKey> e = t.getIterator();
             boolean firstOne = true; //Used to track if this is the first time through the e loop.  See HDH comment below.
 
@@ -285,24 +301,24 @@ public abstract class Chart2DTestDataGenerator
             while ( e.hasNext() )
             {
                 //Build the quantile
-                final DoubleProcedureParameter f = ( DoubleProcedureParameter ) e.next().getKey();
+                final DoubleProcedureParameter f = (DoubleProcedureParameter) e.next().getKey();
                 final double[] constants = f.getParValReal().getConstants();
                 final double[] probConstants = f.getParVal().getConstants();
                 final Threshold q = Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( constants[0] ),
-                                                                 OneOrTwoDoubles.of( probConstants[0] ),
-                                                                 Operator.GREATER, ThresholdDataType.LEFT );
+                                                                   OneOrTwoDoubles.of( probConstants[0] ),
+                                                                   Operator.GREATER,
+                                                                   ThresholdDataType.LEFT );
                 //Read only selected quantiles
                 if ( allowed.contains( q ) )
                 {
                     TimeWindow window = TimeWindow.of( Instant.MIN,
                                                        Instant.MAX,
                                                        ReferenceTime.VALID_TIME,
-                                                       Duration.ofHours( ( long ) leadTime ) );
-                    final Pair<TimeWindow, OneOrTwoThresholds> key = Pair.of( window, OneOrTwoThresholds.of( q ) );
+                                                       Duration.ofHours( (long) leadTime ) );
 
                     //Build the result
                     final MetricResult result = t.getResult( f );
-                    final double[][] res = ( ( DoubleMatrix2DResult ) result ).getResult().toArray();
+                    final double[][] res = ( (DoubleMatrix2DResult) result ).getResult().toArray();
 
                     //Ensure missings are NaN by brute force.
                     for ( int i = 0; i < res.length; i++ )
@@ -327,20 +343,24 @@ public abstract class Chart2DTestDataGenerator
                     output.put( MetricDimension.FORECAST_PROBABILITY, res[0] ); //Forecast probabilities
                     output.put( MetricDimension.OBSERVED_RELATIVE_FREQUENCY, res[1] ); //Observed | forecast probabilities
                     output.put( MetricDimension.SAMPLE_SIZE, res[2] ); //Observed | forecast probabilities
-                    final MultiVectorOutput value = MultiVectorOutput.ofMultiVectorOutput( output, meta );
+                    final MultiVectorOutput value =
+                            MultiVectorOutput.ofMultiVectorOutput( output,
+                                                                   MetricOutputMetadata.of( meta,
+                                                                                            window,
+                                                                                            OneOrTwoThresholds.of( q ) ) );
 
                     //Append result
-                    rawData.put( key, value );
+                    rawData.add( value );
                 }
             }
         }
 
         //Return the results
-        return DataFactory.ofMetricOutputMapByTimeAndThreshold( rawData );
+        return ListOfMetricOutput.of( rawData );
     }
 
     /**
-     * Returns a {@link MetricOutputMapByTimeAndThreshold} of {@link MultiVectorOutput} that contains the components of the
+     * Returns a {@link ListOfMetricOutput} of {@link MultiVectorOutput} that contains the components of the
      * Relative Operating Characteristic (ROC) diagram (probability of detection and probability of false detection) for
      * various thresholds and forecast lead times. Reads the input data from
      * testinput/chart2DTest/getROCDiagramByLeadThreshold.xml.
@@ -348,10 +368,10 @@ public abstract class Chart2DTestDataGenerator
      * @return an output map of ROC diagrams
      */
 
-    static MetricOutputMapByTimeAndThreshold<MultiVectorOutput> getROCDiagramByLeadThreshold()
+    static ListOfMetricOutput<MultiVectorOutput> getROCDiagramByLeadThreshold()
             throws IOException
     {
-        final Map<Pair<TimeWindow, OneOrTwoThresholds>, MultiVectorOutput> rawData = new TreeMap<>();
+        final List<MultiVectorOutput> rawData = new ArrayList<>();
         //Read only selected quantiles
         final List<Threshold> allowed = new ArrayList<>();
         final double[][] allow =
@@ -359,8 +379,9 @@ public abstract class Chart2DTestDataGenerator
         for ( final double[] next : allow )
         {
             allowed.add( Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( next[1] ),
-                                                      OneOrTwoDoubles.of( next[0] ),
-                                                      Operator.GREATER, ThresholdDataType.LEFT ) );
+                                                        OneOrTwoDoubles.of( next[0] ),
+                                                        Operator.GREATER,
+                                                        ThresholdDataType.LEFT ) );
         }
 
         //Create the input file
@@ -371,44 +392,44 @@ public abstract class Chart2DTestDataGenerator
 
         //Metric output metadata
         final MetricOutputMetadata meta = MetricOutputMetadata.of( 1000,
-                                                                         MeasurementUnit.of(),
-                                                                         MeasurementUnit.of( "CMS" ),
-                                                                         MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
-                                                                         MetricConstants.MAIN,
-                                                                         DatasetIdentifier.of( Location.of("NPTP1"),
-                                                                                                           "STREAMFLOW",
-                                                                                                           "HEFS" ) );
+                                                                   MeasurementUnit.of(),
+                                                                   MeasurementUnit.of( "CMS" ),
+                                                                   MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
+                                                                   MetricConstants.MAIN,
+                                                                   DatasetIdentifier.of( Location.of( "NPTP1" ),
+                                                                                         "STREAMFLOW",
+                                                                                         "HEFS" ) );
 
         //Iterate through the lead times.
         while ( d.hasNext() )
         {
             //Set the lead time
-            final double leadTime = ( Double ) d.next().getKey();
-            final MetricResultByThreshold t = ( MetricResultByThreshold ) data.getResult( leadTime );
+            final double leadTime = (Double) d.next().getKey();
+            final MetricResultByThreshold t = (MetricResultByThreshold) data.getResult( leadTime );
             final Iterator<MetricResultKey> e = t.getIterator();
 
             //Iterate through the thresholds
             while ( e.hasNext() )
             {
                 //Build the quantile
-                final DoubleProcedureParameter f = ( DoubleProcedureParameter ) e.next().getKey();
+                final DoubleProcedureParameter f = (DoubleProcedureParameter) e.next().getKey();
                 final double[] constants = f.getParValReal().getConstants();
                 final double[] probConstants = f.getParVal().getConstants();
                 final Threshold q = Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( constants[0] ),
-                                                                 OneOrTwoDoubles.of( probConstants[0] ),
-                                                                 Operator.GREATER, ThresholdDataType.LEFT );
+                                                                   OneOrTwoDoubles.of( probConstants[0] ),
+                                                                   Operator.GREATER,
+                                                                   ThresholdDataType.LEFT );
                 //Read only selected quantiles
                 if ( allowed.contains( q ) )
                 {
                     TimeWindow window = TimeWindow.of( Instant.MIN,
                                                        Instant.MAX,
                                                        ReferenceTime.VALID_TIME,
-                                                       Duration.ofHours( ( long ) leadTime ) );
-                    final Pair<TimeWindow, OneOrTwoThresholds> key = Pair.of( window, OneOrTwoThresholds.of( q ) );
+                                                       Duration.ofHours( (long) leadTime ) );
 
                     //Build the result
                     final MetricResult result = t.getResult( f );
-                    final double[][] roc = ( ( DoubleMatrix2DResult ) result ).getResult().toArray();
+                    final double[][] roc = ( (DoubleMatrix2DResult) result ).getResult().toArray();
 
                     //Ensure missings are NaN by brute force.
                     for ( int i = 0; i < roc.length; i++ )
@@ -425,20 +446,24 @@ public abstract class Chart2DTestDataGenerator
                     final Map<MetricDimension, double[]> output = new EnumMap<>( MetricDimension.class );
                     output.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, roc[0] ); //PoFD
                     output.put( MetricDimension.PROBABILITY_OF_DETECTION, roc[1] ); //PoD
-                    final MultiVectorOutput value = MultiVectorOutput.ofMultiVectorOutput( output, meta );
+                    final MultiVectorOutput value =
+                            MultiVectorOutput.ofMultiVectorOutput( output,
+                                                                   MetricOutputMetadata.of( meta,
+                                                                                            window,
+                                                                                            OneOrTwoThresholds.of( q ) ) );
 
                     //Append result
-                    rawData.put( key, value );
+                    rawData.add( value );
                 }
             }
         }
 
         //Return the results
-        return DataFactory.ofMetricOutputMapByTimeAndThreshold( rawData );
+        return ListOfMetricOutput.of( rawData );
     }
 
     /**
-     * Returns a {@link MetricOutputMapByTimeAndThreshold} of {@link MultiVectorOutput} that contains the components of the
+     * Returns a {@link ListOfMetricOutput} of {@link MultiVectorOutput} that contains the components of the
      * Rank Histogram (rank position, which represents the number of gaps between ensemble members plus one) and
      * the relative frequency of observations that fall within each gap. The results include various thresholds and
      * forecast lead times. Reads the input data from testinput/chart2DTest/getRankHistogramByLeadThreshold.xml.
@@ -446,10 +471,10 @@ public abstract class Chart2DTestDataGenerator
      * @return an output map of rank histograms
      */
 
-    static MetricOutputMapByTimeAndThreshold<MultiVectorOutput> getRankHistogramByLeadThreshold()
+    static ListOfMetricOutput<MultiVectorOutput> getRankHistogramByLeadThreshold()
             throws IOException
     {
-        final Map<Pair<TimeWindow, OneOrTwoThresholds>, MultiVectorOutput> rawData = new TreeMap<>();
+        final List<MultiVectorOutput> rawData = new ArrayList<>();
 
         //Create the input file
         final File resultFile = new File( "testinput/chart2DTest/getRankHistogramByLeadThreshold.xml" );
@@ -459,21 +484,21 @@ public abstract class Chart2DTestDataGenerator
 
         //Metric output metadata
         final MetricOutputMetadata meta = MetricOutputMetadata.of( 1000,
-                                                                         MeasurementUnit.of(),
-                                                                         MeasurementUnit.of( "CMS" ),
-                                                                         MetricConstants.RANK_HISTOGRAM,
-                                                                         MetricConstants.MAIN,
-                                                                         DatasetIdentifier.of( Location.of("NPTP1"),
-                                                                                                           "STREAMFLOW",
-                                                                                                           "HEFS" ) );
+                                                                   MeasurementUnit.of(),
+                                                                   MeasurementUnit.of( "CMS" ),
+                                                                   MetricConstants.RANK_HISTOGRAM,
+                                                                   MetricConstants.MAIN,
+                                                                   DatasetIdentifier.of( Location.of( "NPTP1" ),
+                                                                                         "STREAMFLOW",
+                                                                                         "HEFS" ) );
 
         //Iterate through the lead times.
         while ( d.hasNext() )
         {
 
             //Set the lead time
-            final double leadTime = ( Double ) d.next().getKey();
-            final MetricResultByThreshold t = ( MetricResultByThreshold ) data.getResult( leadTime );
+            final double leadTime = (Double) d.next().getKey();
+            final MetricResultByThreshold t = (MetricResultByThreshold) data.getResult( leadTime );
             final Iterator<MetricResultKey> e = t.getIterator();
 
             //HDH - Limiting the lead times to 42h and every 4 days thereafter (there are way too many lead times!).
@@ -486,21 +511,21 @@ public abstract class Chart2DTestDataGenerator
             while ( e.hasNext() )
             {
                 //Build the quantile
-                final DoubleProcedureParameter f = ( DoubleProcedureParameter ) e.next().getKey();
+                final DoubleProcedureParameter f = (DoubleProcedureParameter) e.next().getKey();
                 final double[] constants = f.getParValReal().getConstants();
                 final double[] probConstants = f.getParVal().getConstants();
                 final Threshold q = Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( constants[0] ),
-                                                                 OneOrTwoDoubles.of( probConstants[0] ),
-                                                                 Operator.GREATER, ThresholdDataType.LEFT );
+                                                                   OneOrTwoDoubles.of( probConstants[0] ),
+                                                                   Operator.GREATER,
+                                                                   ThresholdDataType.LEFT );
                 TimeWindow window = TimeWindow.of( Instant.MIN,
                                                    Instant.MAX,
                                                    ReferenceTime.VALID_TIME,
-                                                   Duration.ofHours( ( long ) leadTime ) );
-                final Pair<TimeWindow, OneOrTwoThresholds> key = Pair.of( window, OneOrTwoThresholds.of( q ) );
+                                                   Duration.ofHours( (long) leadTime ) );
 
                 //Build the result
                 final MetricResult result = t.getResult( f );
-                final double[][] rh = ( ( DoubleMatrix2DResult ) result ).getResult().toArray();
+                final double[][] rh = ( (DoubleMatrix2DResult) result ).getResult().toArray();
 
                 //Ensure missings are NaN by brute force.
                 for ( int i = 0; i < rh.length; i++ )
@@ -517,29 +542,33 @@ public abstract class Chart2DTestDataGenerator
                 final Map<MetricDimension, double[]> output = new EnumMap<>( MetricDimension.class );
                 output.put( MetricDimension.RANK_ORDER, rh[0] );
                 output.put( MetricDimension.OBSERVED_RELATIVE_FREQUENCY, rh[1] );
-                final MultiVectorOutput value = MultiVectorOutput.ofMultiVectorOutput( output, meta );
+                final MultiVectorOutput value =
+                        MultiVectorOutput.ofMultiVectorOutput( output,
+                                                               MetricOutputMetadata.of( meta,
+                                                                                        window,
+                                                                                        OneOrTwoThresholds.of( q ) ) );
 
                 //Append result
-                rawData.put( key, value );
+                rawData.add( value );
             }
         }
 
         //Return the results
-        return DataFactory.ofMetricOutputMapByTimeAndThreshold( rawData );
+        return ListOfMetricOutput.of( rawData );
     }
 
     /**
-     * Returns a {@link MetricOutputMapByTimeAndThreshold} of {@link MultiVectorOutput} that contains the components of the
+     * Returns a {@link ListOfMetricOutput} of {@link MultiVectorOutput} that contains the components of the
      * Quantile-Quantile Diagram (predicted quantiles and observed quantiles) for various thresholds and forecast lead
      * times. Reads the input data from testinput/chart2DTest/getQQDiagramByLeadThreshold.xml.
      *
      * @return an output map of QQ diagrams
      */
 
-    static MetricOutputMapByTimeAndThreshold<MultiVectorOutput> getQQDiagramByLeadThreshold()
+    static ListOfMetricOutput<MultiVectorOutput> getQQDiagramByLeadThreshold()
             throws IOException
     {
-        final Map<Pair<TimeWindow, OneOrTwoThresholds>, MultiVectorOutput> rawData = new TreeMap<>();
+        final List<MultiVectorOutput> rawData = new ArrayList<>();
 
         //Create the input file
         final File resultFile = new File( "testinput/chart2DTest/getQQDiagramByLeadThreshold.xml" );
@@ -563,53 +592,59 @@ public abstract class Chart2DTestDataGenerator
                                                                                          "PRECIPITATION",
                                                                                          "HEFS" ),
                                                                    timeWindow,
-                                                                   null);
+                                                                   null );
 
         //Single threshold
-        final Threshold threshold = Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                                 OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                                 Operator.GREATER, ThresholdDataType.LEFT );
+        final OneOrTwoThresholds threshold =
+                OneOrTwoThresholds.of( Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                                                                      OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                                                                      Operator.GREATER,
+                                                                      ThresholdDataType.LEFT ) );
 
         //Iterate through the lead times.
         while ( d.hasNext() )
         {
 
             //Set the lead time
-            final double leadTime = ( Double ) d.next().getKey();
+            final double leadTime = (Double) d.next().getKey();
             TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                Instant.parse( "2015-12-31T11:59:59Z" ),
                                                ReferenceTime.VALID_TIME,
-                                               Duration.ofHours( ( long ) leadTime ) );
-            final Pair<TimeWindow, OneOrTwoThresholds> key = Pair.of( window, OneOrTwoThresholds.of( threshold ) );
-            final DoubleMatrix2DResult t = ( DoubleMatrix2DResult ) data.getResult( leadTime );
+                                               Duration.ofHours( (long) leadTime ) );
+
+            final DoubleMatrix2DResult t = (DoubleMatrix2DResult) data.getResult( leadTime );
             final double[][] qq = t.getResult().toArray();
 
             final Map<MetricDimension, double[]> output = new EnumMap<>( MetricDimension.class );
             output.put( MetricDimension.PREDICTED_QUANTILES, qq[0] );
             output.put( MetricDimension.OBSERVED_QUANTILES, qq[1] );
-            final MultiVectorOutput value = MultiVectorOutput.ofMultiVectorOutput( output, meta );
+            final MultiVectorOutput value =
+                    MultiVectorOutput.ofMultiVectorOutput( output,
+                                                           MetricOutputMetadata.of( meta,
+                                                                                    window,
+                                                                                    threshold ) );
 
             //Append result
-            rawData.put( key, value );
+            rawData.add( value );
 
         }
 
         //Return the results
-        return DataFactory.ofMetricOutputMapByTimeAndThreshold( rawData );
+        return ListOfMetricOutput.of( rawData );
     }
 
     /**
-     * Returns a {@link MetricOutputMapByTimeAndThreshold} of {@link BoxPlotOutput} that contains a box plot of forecast
+     * Returns a {@link ListOfMetricOutput} of {@link BoxPlotOutput} that contains a box plot of forecast
      * errors against observed value for a single threshold (all data) and for several forecast lead times.
      * Reads the input data from testinput/chart2DTest/getBoxPlotErrorsByObservedAndLeadThreshold.xml.
      *
      * @return an output map of verification scores
      */
 
-    static MetricOutputMapByTimeAndThreshold<BoxPlotOutput> getBoxPlotErrorsByObservedAndLeadThreshold()
+    static ListOfMetricOutput<BoxPlotOutput> getBoxPlotErrorsByObservedAndLeadThreshold()
             throws IOException
     {
-        final Map<Pair<TimeWindow, OneOrTwoThresholds>, BoxPlotOutput> rawData = new TreeMap<>();
+        final List<BoxPlotOutput> rawData = new ArrayList<>();
 
         //Create the input file
         final File resultFile = new File( "testinput/chart2DTest/getBoxPlotErrorsByObservedAndLeadThreshold.xml" );
@@ -619,29 +654,31 @@ public abstract class Chart2DTestDataGenerator
 
         //Metric output metadata
         final MetricOutputMetadata meta = MetricOutputMetadata.of( 1000,
-                                                                         MeasurementUnit.of( "INCH" ),
-                                                                         MeasurementUnit.of( "INCH" ),
-                                                                         MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
-                                                                         MetricConstants.MAIN,
-                                                                         DatasetIdentifier.of( Location.of("NBBC1"),
-                                                                                                           "PRECIPITATION",
-                                                                                                           "HEFS" ) );
+                                                                   MeasurementUnit.of( "INCH" ),
+                                                                   MeasurementUnit.of( "INCH" ),
+                                                                   MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
+                                                                   MetricConstants.MAIN,
+                                                                   DatasetIdentifier.of( Location.of( "NBBC1" ),
+                                                                                         "PRECIPITATION",
+                                                                                         "HEFS" ) );
         //Single threshold
-        final Threshold threshold = Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                                 OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                                 Operator.GREATER, ThresholdDataType.LEFT );
+        final OneOrTwoThresholds threshold =
+                OneOrTwoThresholds.of( Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                                                                      OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                                                                      Operator.GREATER,
+                                                                      ThresholdDataType.LEFT ) );
 
         //Iterate through the lead times.
         while ( d.hasNext() )
         {
             //Set the lead time
-            final double leadTime = ( Double ) d.next().getKey();
+            final double leadTime = (Double) d.next().getKey();
             TimeWindow window = TimeWindow.of( Instant.MIN,
                                                Instant.MAX,
                                                ReferenceTime.VALID_TIME,
-                                               Duration.ofHours( ( long ) leadTime ) );
-            final Pair<TimeWindow, OneOrTwoThresholds> key = Pair.of( window, OneOrTwoThresholds.of(  threshold ) );
-            final DoubleMatrix2DResult t = ( DoubleMatrix2DResult ) data.getResult( leadTime );
+                                               Duration.ofHours( (long) leadTime ) );
+
+            final DoubleMatrix2DResult t = (DoubleMatrix2DResult) data.getResult( leadTime );
             final double[][] bp = t.getResult().toArray();
             //Thresholds in the first row
             VectorOfDoubles probabilities = VectorOfDoubles.of( Arrays.copyOfRange( bp[0], 1, bp[0].length ) );
@@ -654,28 +691,32 @@ public abstract class Chart2DTestDataGenerator
                     output.add( EnsemblePair.of( next[0], Arrays.copyOfRange( next, 1, next.length ) ) );
                 }
             }
-            final BoxPlotOutput out = BoxPlotOutput.of( output, probabilities, meta, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
+            final BoxPlotOutput out = BoxPlotOutput.of( output,
+                                                        probabilities,
+                                                        MetricOutputMetadata.of( meta, window, threshold ),
+                                                        MetricDimension.OBSERVED_VALUE,
+                                                        MetricDimension.FORECAST_ERROR );
 
             //Append result
-            rawData.put( key, out );
+            rawData.add( out );
         }
 
         //Return the results
-        return DataFactory.ofMetricOutputMapByTimeAndThreshold( rawData );
+        return ListOfMetricOutput.of( rawData );
     }
 
     /**
-     * Returns a {@link MetricOutputMapByTimeAndThreshold} of {@link BoxPlotOutput} that contains a box plot of forecast
+     * Returns a {@link ListOfMetricOutput} of {@link BoxPlotOutput} that contains a box plot of forecast
      * errors against observed value for a single threshold (all data) and for several forecast lead times.
      * Reads the input data from testinput/chart2DTest/getBoxPlotErrorsByForecastAndLeadThreshold.xml.
      *
      * @return an output map of verification scores
      */
 
-    static MetricOutputMapByTimeAndThreshold<BoxPlotOutput> getBoxPlotErrorsByForecastAndLeadThreshold()
+    static ListOfMetricOutput<BoxPlotOutput> getBoxPlotErrorsByForecastAndLeadThreshold()
             throws IOException
     {
-        final Map<Pair<TimeWindow, OneOrTwoThresholds>, BoxPlotOutput> rawData = new TreeMap<>();
+        final List<BoxPlotOutput> rawData = new ArrayList<>();
 
         //Create the input file
         final File resultFile = new File( "testinput/chart2DTest/getBoxPlotErrorsByForecastAndLeadThreshold.xml" );
@@ -685,30 +726,31 @@ public abstract class Chart2DTestDataGenerator
 
         //Metric output metadata
         final MetricOutputMetadata meta = MetricOutputMetadata.of( 1000,
-                                                                         MeasurementUnit.of( "INCH" ),
-                                                                         MeasurementUnit.of( "INCH" ),
-                                                                         MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE,
-                                                                         MetricConstants.MAIN,
-                                                                         DatasetIdentifier.of( Location.of("NBBC1"),
-                                                                                                           "PRECIPITATION",
-                                                                                                           "HEFS" ) );
+                                                                   MeasurementUnit.of( "INCH" ),
+                                                                   MeasurementUnit.of( "INCH" ),
+                                                                   MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE,
+                                                                   MetricConstants.MAIN,
+                                                                   DatasetIdentifier.of( Location.of( "NBBC1" ),
+                                                                                         "PRECIPITATION",
+                                                                                         "HEFS" ) );
         //Single threshold
-        final Threshold threshold =
-                Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                   OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                   Operator.GREATER, ThresholdDataType.LEFT );
+        final OneOrTwoThresholds threshold =
+                OneOrTwoThresholds.of( Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                                                                      OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                                                                      Operator.GREATER,
+                                                                      ThresholdDataType.LEFT ) );
 
         //Iterate through the lead times.
         while ( d.hasNext() )
         {
             //Set the lead time
-            final double leadTime = ( Double ) d.next().getKey();
+            final double leadTime = (Double) d.next().getKey();
             TimeWindow window = TimeWindow.of( Instant.MIN,
                                                Instant.MAX,
                                                ReferenceTime.VALID_TIME,
-                                               Duration.ofHours( ( long ) leadTime ) );
-            final Pair<TimeWindow, OneOrTwoThresholds> key = Pair.of( window, OneOrTwoThresholds.of( threshold ) );
-            final DoubleMatrix2DResult t = ( DoubleMatrix2DResult ) data.getResult( leadTime );
+                                               Duration.ofHours( (long) leadTime ) );
+
+            final DoubleMatrix2DResult t = (DoubleMatrix2DResult) data.getResult( leadTime );
             final double[][] bp = t.getResult().toArray();
             //Thresholds in the first row
             VectorOfDoubles probabilities = VectorOfDoubles.of( Arrays.copyOfRange( bp[0], 1, bp[0].length ) );
@@ -721,25 +763,36 @@ public abstract class Chart2DTestDataGenerator
                     output.add( EnsemblePair.of( next[0], Arrays.copyOfRange( next, 1, next.length ) ) );
                 }
             }
-            final BoxPlotOutput out = BoxPlotOutput.of( output, probabilities, meta, MetricDimension.ENSEMBLE_MEAN, MetricDimension.FORECAST_ERROR );
+            final BoxPlotOutput out = BoxPlotOutput.of( output,
+                                                        probabilities,
+                                                        MetricOutputMetadata.of( meta, window, threshold ),
+                                                        MetricDimension.ENSEMBLE_MEAN,
+                                                        MetricDimension.FORECAST_ERROR );
 
             //Append result
-            rawData.put( key, out );
+            rawData.add( out );
         }
 
         //Return the results
-        return DataFactory.ofMetricOutputMapByTimeAndThreshold( rawData );
+        return ListOfMetricOutput.of( rawData );
     }
 
     /**
-     * Returns a {@link MetricOutputMapByTimeAndThreshold} of {@link DoubleScoreOutput} comprising the CRPSS for various
+     * Returns a {@link ListOfMetricOutput} of {@link DoubleScoreOutput} comprising the CRPSS for various
      * rolling time windows at one threshold (all data). Corresponds to the use case in Redmine ticket #40785.
      *
      * @return an output map of verification scores
      */
-    static MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> getScoreOutputForPoolingWindowsFirst()
+    static ListOfMetricOutput<DoubleScoreOutput> getScoreOutputForPoolingWindowsFirst()
     {
-        final Map<Pair<TimeWindow, OneOrTwoThresholds>, DoubleScoreOutput> rawData = new TreeMap<>();
+        final List<DoubleScoreOutput> rawData = new ArrayList<>();
+
+        // Threshold
+        final OneOrTwoThresholds threshold =
+                OneOrTwoThresholds.of( Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                                                                      OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                                                                      Operator.GREATER,
+                                                                      ThresholdDataType.LEFT ) );
 
         // Create the metric output metadata: add fake sample sizes as these are not available in the test input file
         final MetricOutputMetadata meta = MetricOutputMetadata.of( 90,
@@ -750,17 +803,15 @@ public abstract class Chart2DTestDataGenerator
                                                                    DatasetIdentifier.of( Location.of( "DOSC1" ),
                                                                                          "STREAMFLOW",
                                                                                          "HEFS",
-                                                                                         "ESP" ) );
+                                                                                         "ESP" ),
+                                                                   null,
+                                                                   threshold );
+
 
         // Rolling window parameters
         Instant start = Instant.parse( "2015-12-01T00:00:00Z" );
         Duration period = Duration.ofDays( 91 );
         Duration frequency = Duration.ofDays( 30 );
-
-        // Threshold
-        final Threshold threshold = Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                                 OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                                 Operator.GREATER, ThresholdDataType.LEFT );
 
         // Source data for the outputs
         double[] sixHourOutputs = new double[] { 0.42, 0.32, 0.54, 0.56, 0.52, 0.82, 0.85, 0.63, 0.79, 0.86 };
@@ -780,23 +831,25 @@ public abstract class Chart2DTestDataGenerator
                                                       Duration.ofHours( 6 ) );
             DoubleScoreOutput sixHourOutput =
                     DoubleScoreOutput.of( sixHourOutputs[i], MetricOutputMetadata.of( meta, sixHourWindow, null ) );
-            rawData.put( Pair.of( sixHourWindow, OneOrTwoThresholds.of( threshold ) ), sixHourOutput );
+            rawData.add( sixHourOutput );
             //Add the 12h data
             TimeWindow twelveHourWindow = TimeWindow.of( begin,
                                                          end,
                                                          ReferenceTime.ISSUE_TIME,
                                                          Duration.ofHours( 12 ) );
             DoubleScoreOutput twelveHourOutput =
-                    DoubleScoreOutput.of( twelveHourOutputs[i], MetricOutputMetadata.of( meta, twelveHourWindow, null ) );
-            rawData.put( Pair.of( twelveHourWindow, OneOrTwoThresholds.of( threshold ) ), twelveHourOutput );
+                    DoubleScoreOutput.of( twelveHourOutputs[i],
+                                          MetricOutputMetadata.of( meta, twelveHourWindow, null ) );
+            rawData.add( twelveHourOutput );
             //Add the 18h data
             TimeWindow eighteenHourWindow = TimeWindow.of( begin,
                                                            end,
                                                            ReferenceTime.ISSUE_TIME,
                                                            Duration.ofHours( 18 ) );
             DoubleScoreOutput eighteenHourOutput =
-                    DoubleScoreOutput.of( eighteenHourOutputs[i], MetricOutputMetadata.of( meta, eighteenHourWindow, null ) );
-            rawData.put( Pair.of( eighteenHourWindow, OneOrTwoThresholds.of( threshold ) ), eighteenHourOutput );
+                    DoubleScoreOutput.of( eighteenHourOutputs[i],
+                                          MetricOutputMetadata.of( meta, eighteenHourWindow, null ) );
+            rawData.add( eighteenHourOutput );
             //Add the 24h data
             TimeWindow twentyFourHourWindow = TimeWindow.of( begin,
                                                              end,
@@ -805,31 +858,31 @@ public abstract class Chart2DTestDataGenerator
             DoubleScoreOutput twentyFourHourOutput =
                     DoubleScoreOutput.of( twentyFourHourOutputs[i],
                                           MetricOutputMetadata.of( meta, twentyFourHourWindow, null ) );
-            rawData.put( Pair.of( twentyFourHourWindow, OneOrTwoThresholds.of( threshold ) ), twentyFourHourOutput );
+            rawData.add( twentyFourHourOutput );
         }
 
-        return DataFactory.ofMetricOutputMapByTimeAndThreshold( rawData );
+        return ListOfMetricOutput.of( rawData );
     }
 
     /**
-     * Returns a {@link MetricOutputMapByTimeAndThreshold} of {@link DoubleScoreOutput} comprising the bias fraction
+     * Returns a {@link ListOfMetricOutput} of {@link DoubleScoreOutput} comprising the bias fraction
      * for various pooling windows at one threshold (all data). Corresponds to the use case in Redmine ticket #46461.
      *
      * @return an output map of verification scores
      */
-    static MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> getScoreOutputForPoolingWindowsSecond()
+    static ListOfMetricOutput<DoubleScoreOutput> getScoreOutputForPoolingWindowsSecond()
     {
-        final Map<Pair<TimeWindow, OneOrTwoThresholds>, DoubleScoreOutput> rawData = new TreeMap<>();
+        final List<DoubleScoreOutput> rawData = new ArrayList<>();
 
         // Create the metric output metadata: add fake sample sizes as these are not available in the test input file
         final MetricOutputMetadata meta = MetricOutputMetadata.of( 18,
-                                                                         MeasurementUnit.of(),
-                                                                         MeasurementUnit.of( "CMS" ),
-                                                                         MetricConstants.BIAS_FRACTION,
-                                                                         MetricConstants.MAIN,
-                                                                         DatasetIdentifier.of( Location.of("ABEC2"),
-                                                                                                           "STREAMFLOW",
-                                                                                                           "NWM" ) );
+                                                                   MeasurementUnit.of(),
+                                                                   MeasurementUnit.of( "CMS" ),
+                                                                   MetricConstants.BIAS_FRACTION,
+                                                                   MetricConstants.MAIN,
+                                                                   DatasetIdentifier.of( Location.of( "ABEC2" ),
+                                                                                         "STREAMFLOW",
+                                                                                         "NWM" ) );
         double[] scores = new double[] {
                                          -0.39228763627058233,
                                          -0.38540392640098137,
@@ -857,20 +910,24 @@ public abstract class Chart2DTestDataGenerator
                                          -0.28105802405674500
         };
         // Build the map
-        Threshold threshold =
-                Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ), Operator.GREATER, ThresholdDataType.LEFT );
+        OneOrTwoThresholds threshold =
+                OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                                                     Operator.GREATER,
+                                                     ThresholdDataType.LEFT ) );
         for ( int i = 0; i < scores.length; i++ )
         {
             String nextDate = "2017-08-08T" + String.format( "%02d", i ) + ":00:00Z";
-            rawData.put( Pair.of( TimeWindow.of( Instant.parse( nextDate ),
-                                                 Instant.parse( nextDate ),
-                                                 ReferenceTime.ISSUE_TIME,
-                                                 Duration.ofHours( 0 ),
-                                                 Duration.ofHours( 18 ) ),
-                                  OneOrTwoThresholds.of( threshold ) ),
-                         DoubleScoreOutput.of( scores[i], meta ) );
+
+            TimeWindow timeWindow = TimeWindow.of( Instant.parse( nextDate ),
+                                                   Instant.parse( nextDate ),
+                                                   ReferenceTime.ISSUE_TIME,
+                                                   Duration.ofHours( 0 ),
+                                                   Duration.ofHours( 18 ) );
+
+            rawData.add( DoubleScoreOutput.of( scores[i], MetricOutputMetadata.of( meta, timeWindow, threshold ) ) );
         }
-        return DataFactory.ofMetricOutputMapByTimeAndThreshold( rawData );
+
+        return ListOfMetricOutput.of( rawData );
     }
 
     /**
@@ -882,7 +939,7 @@ public abstract class Chart2DTestDataGenerator
      * @return a paired output of timing errors by basis time
      */
 
-    public static MetricOutputMapByTimeAndThreshold<PairedOutput<Instant,Duration>> getTimeToPeakErrors()
+    public static ListOfMetricOutput<PairedOutput<Instant, Duration>> getTimeToPeakErrors()
     {
         // Create a list of pairs
         List<Pair<Instant, Duration>> input = new ArrayList<>();
@@ -897,13 +954,19 @@ public abstract class Chart2DTestDataGenerator
         input.add( Pair.of( Instant.parse( "1985-01-08T12:00:00Z" ), Duration.ofHours( -22 ) ) );
         input.add( Pair.of( Instant.parse( "1985-01-09T12:00:00Z" ), Duration.ofHours( 0 ) ) );
         input.add( Pair.of( Instant.parse( "1985-01-10T12:00:00Z" ), Duration.ofHours( 24 ) ) );
+
         // Create the metadata
         TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                            Instant.parse( "1985-01-10T00:00:00Z" ),
                                            ReferenceTime.ISSUE_TIME,
                                            Duration.ofHours( 6 ),
                                            Duration.ofHours( 336 ) );
-        final TimeWindow timeWindow = window;
+
+        OneOrTwoThresholds threshold =
+                OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                                                     Operator.GREATER,
+                                                     ThresholdDataType.LEFT ) );
+
         MetricOutputMetadata meta = MetricOutputMetadata.of( input.size(),
                                                              MeasurementUnit.of( "DURATION" ),
                                                              MeasurementUnit.of( "CMS" ),
@@ -912,15 +975,10 @@ public abstract class Chart2DTestDataGenerator
                                                              DatasetIdentifier.of( Location.of( "DRRC2" ),
                                                                                    "Streamflow",
                                                                                    "HEFS" ),
-                                                             timeWindow,
-                                                             null );
+                                                             window,
+                                                             threshold );
         // Build and return
-        Map<Pair<TimeWindow, OneOrTwoThresholds>, PairedOutput<Instant, Duration>> rawData = new TreeMap<>();
-        rawData.put( Pair.of( window,
-                              OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                                  Operator.GREATER, ThresholdDataType.LEFT ) ) ),
-                     PairedOutput.of( input, meta ) );
-        return DataFactory.ofMetricOutputMapByTimeAndThreshold( rawData );
+        return ListOfMetricOutput.of( Arrays.asList( PairedOutput.of( input, meta ) ) );
     }
 
     /**
@@ -938,7 +996,7 @@ public abstract class Chart2DTestDataGenerator
      * @return a set of summary statistics for time-to-peak errors
      */
 
-    public static MetricOutputMapByTimeAndThreshold<DurationScoreOutput> getTimeToPeakErrorStatistics()
+    public static ListOfMetricOutput<DurationScoreOutput> getTimeToPeakErrorStatistics()
     {
         // Create a list of pairs
         Map<MetricConstants, Duration> returnMe = new HashMap<>();
@@ -955,7 +1013,11 @@ public abstract class Chart2DTestDataGenerator
                                            ReferenceTime.ISSUE_TIME,
                                            Duration.ofHours( 6 ),
                                            Duration.ofHours( 336 ) );
-        final TimeWindow timeWindow = window;
+
+        OneOrTwoThresholds threshold = OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                                                                            Operator.GREATER,
+                                                                            ThresholdDataType.LEFT ) );
+        
         MetricOutputMetadata meta = MetricOutputMetadata.of( 10,
                                                              MeasurementUnit.of( "DURATION" ),
                                                              MeasurementUnit.of( "CMS" ),
@@ -964,14 +1026,10 @@ public abstract class Chart2DTestDataGenerator
                                                              DatasetIdentifier.of( Location.of( "DRRC2" ),
                                                                                    "Streamflow",
                                                                                    "HEFS" ),
-                                                             timeWindow,
-                                                             null );
-        Map<Pair<TimeWindow, OneOrTwoThresholds>, DurationScoreOutput> rawData = new TreeMap<>();
-        rawData.put( Pair.of( window,
-                              OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                                   Operator.GREATER, ThresholdDataType.LEFT ) ) ),
-                     DurationScoreOutput.of( returnMe, meta ) );
-        return DataFactory.ofMetricOutputMapByTimeAndThreshold( rawData );
+                                                             window,
+                                                             threshold );
+
+        return ListOfMetricOutput.of( Arrays.asList( DurationScoreOutput.of( returnMe, meta ) ) );
     }
 
 }

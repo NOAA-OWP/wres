@@ -17,8 +17,8 @@ import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
+import wres.datamodel.outputs.ListOfMetricOutput;
 import wres.datamodel.outputs.MatrixOutput;
-import wres.datamodel.outputs.MetricOutputMapByMetric;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.engine.statistics.metric.Diagram;
 import wres.engine.statistics.metric.MetricCollection;
@@ -93,14 +93,17 @@ public class RelativeOperatingCharacteristicDiagram extends Diagram<DiscreteProb
                 double prob = Precision.round( 1.0 - ( i * constant ), 5 );
                 //Compute the PoD/PoFD using the probability threshold to determine whether the event occurred
                 //according to the probability on the RHS
-                MetricOutputMapByMetric<DoubleScoreOutput> out =
+                ListOfMetricOutput<DoubleScoreOutput> out =
                         roc.apply( Slicer.toDichotomousPairs( s,
                                                               in -> DichotomousPair.of( Double.compare( in.getLeft(),
                                                                                                         1.0 ) == 0,
                                                                                         in.getRight() > prob ) ) );
                 //Store
-                pOD[i] = out.get( MetricConstants.PROBABILITY_OF_DETECTION ).getData();
-                pOFD[i] = out.get( MetricConstants.PROBABILITY_OF_FALSE_DETECTION ).getData();
+                pOD[i] = Slicer.filter( out, MetricConstants.PROBABILITY_OF_DETECTION ).getData().get( 0 ).getData();
+                pOFD[i] = Slicer.filter( out, MetricConstants.PROBABILITY_OF_FALSE_DETECTION )
+                                .getData()
+                                .get( 0 )
+                                .getData();
             }
 
             //Set the lower and upper margins to (0.0, 0.0) and (1.0, 1.0), respectively            
@@ -116,11 +119,11 @@ public class RelativeOperatingCharacteristicDiagram extends Diagram<DiscreteProb
         output.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, pOFD );
         final MetricOutputMetadata metOut =
                 MetricOutputMetadata.of( s.getMetadata(),
-                                    this.getID(),
-                                    MetricConstants.MAIN,
-                                    this.hasRealUnits(),
-                                    s.getRawData().size(),
-                                    null );
+                                         this.getID(),
+                                         MetricConstants.MAIN,
+                                         this.hasRealUnits(),
+                                         s.getRawData().size(),
+                                         null );
         return MultiVectorOutput.ofMultiVectorOutput( output, metOut );
     }
 

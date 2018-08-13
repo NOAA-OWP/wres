@@ -6,8 +6,8 @@ import java.text.Format;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.SortedSet;
 import java.util.StringJoiner;
 import java.util.function.Consumer;
 
@@ -17,11 +17,9 @@ import wres.config.ProjectConfigException;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.Slicer;
 import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.outputs.MapKey;
-import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
-import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
+import wres.datamodel.outputs.ListOfMetricOutput;
 import wres.datamodel.outputs.PairedOutput;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.io.config.ConfigHelper;
@@ -35,7 +33,7 @@ import wres.io.config.ConfigHelper;
  */
 
 public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedWriter
-        implements Consumer<MetricOutputMultiMapByTimeAndThreshold<PairedOutput<S, T>>>
+        implements Consumer<ListOfMetricOutput<PairedOutput<S, T>>>
 {
 
     /**
@@ -63,7 +61,7 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedWriter
      */
 
     @Override
-    public void accept( final MetricOutputMultiMapByTimeAndThreshold<PairedOutput<S, T>> output )
+    public void accept( final ListOfMetricOutput<PairedOutput<S, T>> output )
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing box plot outputs." );
 
@@ -103,18 +101,22 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedWriter
      */
 
     private static <S, T> void writeOnePairedOutputType( DestinationConfig destinationConfig,
-                                                         MetricOutputMultiMapByTimeAndThreshold<PairedOutput<S, T>> output,
+                                                         ListOfMetricOutput<PairedOutput<S, T>> output,
                                                          Format formatter )
             throws IOException
     {
-        // Loop across paired output
-        for ( Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<PairedOutput<S, T>>> m : output.entrySet() )
+        // Loop across metrics
+        SortedSet<MetricConstants> metrics = Slicer.discover( output, next -> next.getMetadata().getMetricID() );
+        for ( MetricConstants m : metrics )
         {
             StringJoiner headerRow = new StringJoiner( "," );
             headerRow.merge( HEADER_DEFAULT );
+            
+            ListOfMetricOutput<PairedOutput<S, T>> nextOutput = Slicer.filter( output, m );
+            
             List<RowCompareByLeft> rows =
-                    CommaSeparatedPairedWriter.getRowsForOnePairedOutput( m.getKey().getKey(),
-                                                                          m.getValue(),
+                    CommaSeparatedPairedWriter.getRowsForOnePairedOutput( m,
+                                                                          nextOutput,
                                                                           headerRow,
                                                                           formatter );
 
@@ -122,7 +124,8 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedWriter
             rows.add( RowCompareByLeft.of( HEADER_INDEX, headerRow ) );
 
             // Write the output
-            MetricOutputMetadata meta = m.getValue().getMetadata();
+            MetricOutputMetadata meta = nextOutput.getData().get( 0 ).getMetadata();
+            
             Path outputPath = ConfigHelper.getOutputPathToWrite( destinationConfig, meta );
 
             CommaSeparatedWriter.writeTabularOutputToFile( rows, outputPath );
@@ -144,36 +147,40 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedWriter
 
     private static <S, T> List<RowCompareByLeft>
             getRowsForOnePairedOutput( MetricConstants metricName,
-                                       MetricOutputMapByTimeAndThreshold<PairedOutput<S, T>> output,
+                                       ListOfMetricOutput<PairedOutput<S, T>> output,
                                        StringJoiner headerRow,
                                        Format formatter )
     {
         String outerName = metricName.toString() + HEADER_DELIMITER;
         List<RowCompareByLeft> returnMe = new ArrayList<>();
 
+        // Discover the time windows and thresholds
+        SortedSet<OneOrTwoThresholds> thresholds =
+                Slicer.discover( output, meta -> meta.getMetadata().getThresholds() );
+
         // Add the rows
         // Loop across the thresholds
-        for ( OneOrTwoThresholds t : output.setOfThresholdKey() )
+        for ( OneOrTwoThresholds t : thresholds )
         {
             // Append to header
             headerRow.add( outerName + "BASIS TIME" + HEADER_DELIMITER + t );
             headerRow.add( outerName + "DURATION" + HEADER_DELIMITER + t );
-            // Loop across time windows
-            for ( TimeWindow timeWindow : output.setOfTimeWindowKey() )
+            
+            // Slice by threshold
+            ListOfMetricOutput<PairedOutput<S, T>> sliced = Slicer.filter( output,
+                                                                           data -> data.getThresholds().equals( t ) );            
+            // Loop across the outputs
+            for ( PairedOutput<S, T> next : sliced )
             {
-                Pair<TimeWindow, OneOrTwoThresholds> key = Pair.of( timeWindow, t );
-                if ( output.containsKey( key ) )
+                // Loop across the pairs
+                for ( Pair<S, T> nextPair : next )
                 {
-                    List<Pair<S, T>> nextValues = output.get( key ).getData();
-                    for ( Pair<S, T> nextPair : nextValues )
-                    {
-                        CommaSeparatedWriter.addRowToInput( returnMe,
-                                                            timeWindow,
-                                                            Arrays.asList( nextPair.getLeft(), nextPair.getRight() ),
-                                                            formatter,
-                                                            true,
-                                                            nextPair.getLeft().toString() );
-                    }
+                    CommaSeparatedWriter.addRowToInput( returnMe,
+                                                        next.getMetadata().getTimeWindow(),
+                                                        Arrays.asList( nextPair.getLeft(), nextPair.getRight() ),
+                                                        formatter,
+                                                        true,
+                                                        nextPair.getLeft().toString() );
                 }
             }
         }

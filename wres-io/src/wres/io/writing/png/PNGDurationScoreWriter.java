@@ -3,8 +3,8 @@ package wres.io.writing.png;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.SortedSet;
 import java.util.function.Consumer;
 
 import ohd.hseb.charter.ChartEngine;
@@ -13,11 +13,10 @@ import wres.config.ProjectConfigException;
 import wres.config.ProjectConfigPlus;
 import wres.config.generated.DestinationConfig;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.Slicer;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DurationScoreOutput;
-import wres.datamodel.outputs.MapKey;
-import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
-import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
+import wres.datamodel.outputs.ListOfMetricOutput;
 import wres.io.config.ConfigHelper;
 import wres.vis.ChartEngineFactory;
 
@@ -28,7 +27,7 @@ import wres.vis.ChartEngineFactory;
  */
 
 public class PNGDurationScoreWriter extends PNGWriter
-        implements Consumer<MetricOutputMultiMapByTimeAndThreshold<DurationScoreOutput>>
+        implements Consumer<ListOfMetricOutput<DurationScoreOutput>>
 {
 
     /**
@@ -54,7 +53,7 @@ public class PNGDurationScoreWriter extends PNGWriter
      */
 
     @Override
-    public void accept( final MetricOutputMultiMapByTimeAndThreshold<DurationScoreOutput> output )
+    public void accept( final ListOfMetricOutput<DurationScoreOutput> output )
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing diagram outputs." );
 
@@ -67,9 +66,12 @@ public class PNGDurationScoreWriter extends PNGWriter
         {
 
             // Iterate through each metric 
-            for ( final Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<DurationScoreOutput>> e : output.entrySet() )
+            SortedSet<MetricConstants> metrics = Slicer.discover( output, meta -> meta.getMetadata().getMetricID() );
+            for ( MetricConstants next : metrics )
             {
-                PNGDurationScoreWriter.writeScoreCharts( projectConfigPlus, destinationConfig, e.getValue() );
+                PNGDurationScoreWriter.writeScoreCharts( projectConfigPlus,
+                                                         destinationConfig,
+                                                         Slicer.filter( output, next ) );
             }
 
         }
@@ -77,7 +79,7 @@ public class PNGDurationScoreWriter extends PNGWriter
 
     /**
      * Writes a set of charts associated with {@link DurationScoreOutput} for a single metric and time window,
-     * stored in a {@link MetricOutputMapByTimeAndThreshold}.
+     * stored in a {@link ListOfMetricOutput}.
      *
      * @param projectConfigPlus the project configuration
      * @param destinationConfig the destination configuration for the written output
@@ -87,12 +89,12 @@ public class PNGDurationScoreWriter extends PNGWriter
 
     private static void writeScoreCharts( ProjectConfigPlus projectConfigPlus,
                                           DestinationConfig destinationConfig,
-                                          MetricOutputMapByTimeAndThreshold<DurationScoreOutput> output )
+                                          ListOfMetricOutput<DurationScoreOutput> output )
     {
         // Build charts
         try
         {
-            MetricOutputMetadata meta = output.getMetadata();
+            MetricOutputMetadata meta = output.getData().get( 0 ).getMetadata();
 
             GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, destinationConfig, meta.getMetricID() );
 

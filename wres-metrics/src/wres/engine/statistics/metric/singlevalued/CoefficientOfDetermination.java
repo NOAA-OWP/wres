@@ -47,13 +47,15 @@ public class CoefficientOfDetermination extends CorrelationPearsons
         {
             throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
         }
-        MetricOutputMetadata in = output.getMetadata();
-        MetricOutputMetadata meta = MetricOutputMetadata.of( in.getSampleSize(),
-                                                                                             in.getMeasurementUnit(),
-                                                                                             in.getInputDimension(),
-                                                                                             MetricConstants.COEFFICIENT_OF_DETERMINATION,
-                                                                                             MetricConstants.MAIN,
-                                                                                             in.getIdentifier() );
+
+        MetricOutputMetadata metIn = output.getMetadata();
+        MetricOutputMetadata meta = MetricOutputMetadata.of( metIn,
+                                                             MetricConstants.COEFFICIENT_OF_DETERMINATION,
+                                                             MetricConstants.MAIN,
+                                                             this.hasRealUnits(),
+                                                             metIn.getSampleSize(),
+                                                             null );
+
         return DoubleScoreOutput.of( Math.pow(output.getData(), 2), meta );
     }
 

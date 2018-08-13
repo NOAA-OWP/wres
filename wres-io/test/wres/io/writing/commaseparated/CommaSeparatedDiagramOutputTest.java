@@ -16,7 +16,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
 import wres.config.ProjectConfigException;
@@ -27,14 +26,14 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
+import wres.datamodel.outputs.ListOfMetricOutput;
 import wres.datamodel.outputs.MetricOutputAccessException;
-import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
-import wres.datamodel.outputs.MetricOutputMapByMetric;
+import wres.datamodel.outputs.MetricOutputForProject;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
@@ -45,7 +44,7 @@ import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
  * Tests the writing of diagram outputs to a file of Comma Separated Values (CSV).
  */
 
-public class CommaSeparatedDiagramOutputTest extends CommaSeparatedWriterTest
+public class CommaSeparatedDiagramOutputTest extends CommaSeparatedWriterTestHelper
 {
 
     /**
@@ -68,7 +67,7 @@ public class CommaSeparatedDiagramOutputTest extends CommaSeparatedWriterTest
         final String LID = "CREC1";
 
         // Create fake outputs
-        MetricOutputForProjectByTimeAndThreshold.MetricOutputForProjectByTimeAndThresholdBuilder outputBuilder =
+        MetricOutputForProject.MetricOutputForProjectBuilder outputBuilder =
                 DataFactory.ofMetricOutputForProjectByTimeAndThreshold();
 
         TimeWindow timeOne =
@@ -78,6 +77,12 @@ public class CommaSeparatedDiagramOutputTest extends CommaSeparatedWriterTest
                                Duration.ofHours( 24 ),
                                Duration.ofHours( 24 ) );
 
+        OneOrTwoThresholds threshold =
+                OneOrTwoThresholds.of( Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( 11.94128 ),
+                                                                      OneOrTwoDoubles.of( 0.9 ),
+                                                                      Operator.GREATER_EQUAL,
+                                                                      ThresholdDataType.LEFT ) );
+        
         // Output requires a future... which requires a metadata...
         // which requires a datasetidentifier..
 
@@ -86,11 +91,13 @@ public class CommaSeparatedDiagramOutputTest extends CommaSeparatedWriterTest
 
         MetricOutputMetadata fakeMetadata =
                 MetricOutputMetadata.of( 1000,
-                                                   MeasurementUnit.of(),
-                                                   MeasurementUnit.of( "CMS" ),
-                                                   MetricConstants.RELIABILITY_DIAGRAM,
-                                                   null,
-                                                   datasetIdentifier );
+                                         MeasurementUnit.of(),
+                                         MeasurementUnit.of( "CMS" ),
+                                         MetricConstants.RELIABILITY_DIAGRAM,
+                                         null,
+                                         datasetIdentifier,
+                                         timeOne,
+                                         threshold );
 
         Map<MetricDimension, double[]> fakeOutputs = new HashMap<>();
         fakeOutputs.put( MetricDimension.FORECAST_PROBABILITY,
@@ -100,28 +107,17 @@ public class CommaSeparatedDiagramOutputTest extends CommaSeparatedWriterTest
         fakeOutputs.put( MetricDimension.SAMPLE_SIZE, new double[] { 5926, 371, 540, 650, 1501 } );
 
         // Fake output wrapper.
-        MetricOutputMapByMetric<MultiVectorOutput> fakeOutputData =
-                DataFactory.ofMetricOutputMapByMetric( Collections.singletonMap( MetricConstants.RELIABILITY_DIAGRAM,
-                                                                                 MultiVectorOutput.ofMultiVectorOutput( fakeOutputs,
-                                                                                                                  fakeMetadata ) ) );
+        ListOfMetricOutput<MultiVectorOutput> fakeOutputData =
+                ListOfMetricOutput.of( Collections.singletonList( MultiVectorOutput.ofMultiVectorOutput( fakeOutputs,
+                                                                                                         fakeMetadata ) ) );
 
         // wrap outputs in future
-        Future<MetricOutputMapByMetric<MultiVectorOutput>> outputMapByMetricFuture =
+        Future<ListOfMetricOutput<MultiVectorOutput>> outputMapByMetricFuture =
                 CompletableFuture.completedFuture( fakeOutputData );
 
+        outputBuilder.addMultiVectorOutput( outputMapByMetricFuture );
 
-        // Fake lead time and threshold
-        Pair<TimeWindow, OneOrTwoThresholds> mapKeyByLeadThreshold =
-                Pair.of( timeOne,
-                         OneOrTwoThresholds.of( Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( 11.94128 ),
-                                                                                 OneOrTwoDoubles.of( 0.9 ),
-                                                                                 Operator.GREATER_EQUAL,
-                                                                                 ThresholdDataType.LEFT ) ) );
-
-        outputBuilder.addMultiVectorOutput( mapKeyByLeadThreshold,
-                                            outputMapByMetricFuture );
-
-        MetricOutputForProjectByTimeAndThreshold output = outputBuilder.build();
+        MetricOutputForProject output = outputBuilder.build();
 
         // Construct a fake configuration file.
         Feature feature = getMockedFeature( LID );

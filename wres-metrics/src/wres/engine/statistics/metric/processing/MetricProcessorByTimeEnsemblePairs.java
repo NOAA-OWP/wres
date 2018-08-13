@@ -13,8 +13,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.ToDoubleFunction;
 
-import org.apache.commons.lang3.tuple.Pair;
-
 import wres.config.MetricConfigException;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants;
@@ -30,12 +28,11 @@ import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.SingleValuedPair;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.Metadata;
-import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.outputs.DoubleScoreOutput;
+import wres.datamodel.outputs.ListOfMetricOutput;
 import wres.datamodel.outputs.MetricOutput;
-import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
-import wres.datamodel.outputs.MetricOutputMapByMetric;
+import wres.datamodel.outputs.MetricOutputForProject;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.ScoreOutput;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
@@ -116,11 +113,12 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
     private final BiFunction<EnsemblePair, Threshold, DiscreteProbabilityPair> toDiscreteProbabilities;
 
     @Override
-    public MetricOutputForProjectByTimeAndThreshold apply( EnsemblePairs input )
+    public MetricOutputForProject apply( EnsemblePairs input )
     {
         Objects.requireNonNull( input, "Expected non-null input to the metric processor." );
-        TimeWindow timeWindow = input.getMetadata().getTimeWindow();
-        Objects.requireNonNull( timeWindow, "Expected a non-null time window in the input metadata." );
+
+        Objects.requireNonNull( input.getMetadata().getTimeWindow(),
+                                "Expected a non-null time window in the input metadata." );
 
         //Metric futures 
         MetricFuturesByTimeBuilder futures = new MetricFuturesByTimeBuilder();
@@ -133,7 +131,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         //Process the metrics that consume ensemble pairs
         if ( hasMetrics( MetricInputGroup.ENSEMBLE ) )
         {
-            processEnsemblePairs( timeWindow, inputNoMissing, futures );
+            processEnsemblePairs( inputNoMissing, futures );
         }
 
         //Process the metrics that consume single-valued pairs
@@ -141,19 +139,19 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         {
             //Derive the single-valued pairs from the ensemble pairs using the configured mapper
             SingleValuedPairs singleValued = Slicer.toSingleValuedPairs( inputNoMissing, toSingleValues );
-            processSingleValuedPairs( timeWindow, singleValued, futures );
+            processSingleValuedPairs( singleValued, futures );
         }
 
         //Process the metrics that consume discrete probability pairs
         if ( hasMetrics( MetricInputGroup.DISCRETE_PROBABILITY ) )
         {
-            processDiscreteProbabilityPairs( timeWindow, inputNoMissing, futures );
+            processDiscreteProbabilityPairs( inputNoMissing, futures );
         }
 
         //Process the metrics that consume dichotomous pairs
         if ( hasMetrics( MetricInputGroup.DICHOTOMOUS ) )
         {
-            processDichotomousPairs( timeWindow, inputNoMissing, futures );
+            processDichotomousPairs( inputNoMissing, futures );
         }
 
         // Log
@@ -361,25 +359,24 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
      * 
      * TODO: collapse this with a generic call to futures.addOutput and take an input collection of metrics
      * 
-     * @param timeWindow the time window
      * @param input the input pairs
      * @param futures the metric futures
      * @throws MetricCalculationException if the metrics cannot be computed
      */
 
-    private void processEnsemblePairs( TimeWindow timeWindow, EnsemblePairs input, MetricFuturesByTimeBuilder futures )
+    private void processEnsemblePairs( EnsemblePairs input, MetricFuturesByTimeBuilder futures )
     {
         if ( hasMetrics( MetricInputGroup.ENSEMBLE, MetricOutputGroup.DOUBLE_SCORE ) )
         {
-            processEnsemblePairsByThreshold( timeWindow, input, futures, MetricOutputGroup.DOUBLE_SCORE );
+            processEnsemblePairsByThreshold( input, futures, MetricOutputGroup.DOUBLE_SCORE );
         }
         if ( hasMetrics( MetricInputGroup.ENSEMBLE, MetricOutputGroup.MULTIVECTOR ) )
         {
-            processEnsemblePairsByThreshold( timeWindow, input, futures, MetricOutputGroup.MULTIVECTOR );
+            processEnsemblePairsByThreshold( input, futures, MetricOutputGroup.MULTIVECTOR );
         }
         if ( hasMetrics( MetricInputGroup.ENSEMBLE, MetricOutputGroup.BOXPLOT ) )
         {
-            processEnsemblePairsByThreshold( timeWindow, input, futures, MetricOutputGroup.BOXPLOT );
+            processEnsemblePairsByThreshold( input, futures, MetricOutputGroup.BOXPLOT );
         }
     }
 
@@ -387,15 +384,13 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
      * Processes all thresholds for metrics that consume {@link EnsemblePairs} and produce a specified 
      * {@link MetricOutputGroup}. 
      * 
-     * @param timeWindow the time window
      * @param input the input pairs
      * @param futures the metric futures
      * @param outGroup the metric output type
      * @throws MetricCalculationException if the metrics cannot be computed
      */
 
-    private void processEnsemblePairsByThreshold( TimeWindow timeWindow,
-                                                  EnsemblePairs input,
+    private void processEnsemblePairsByThreshold( EnsemblePairs input,
                                                   MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
                                                   MetricOutputGroup outGroup )
     {
@@ -438,8 +433,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                 pairs = Slicer.filter( pairs, filter, null );
             }
 
-            processEnsemblePairs( Pair.of( timeWindow, OneOrTwoThresholds.of( useMe ) ),
-                                  pairs,
+            processEnsemblePairs( pairs,
                                   futures,
                                   outGroup,
                                   ignoreTheseMetrics );
@@ -451,37 +445,32 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
      * Processes one threshold for metrics that consume {@link EnsemblePairs} and produce a specified 
      * {@link MetricOutputGroup}. 
      * 
-     * @param key the key against which the results should be stored
      * @param input the input pairs
      * @param futures the metric futures
      * @param outGroup the metric output type
      * @param ignoreTheseMetrics a set of metrics within the prescribed group that should be ignored
      */
 
-    private void processEnsemblePairs( Pair<TimeWindow, OneOrTwoThresholds> key,
-                                       EnsemblePairs input,
+    private void processEnsemblePairs( EnsemblePairs input,
                                        MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
                                        MetricOutputGroup outGroup,
                                        Set<MetricConstants> ignoreTheseMetrics )
     {
         if ( outGroup == MetricOutputGroup.DOUBLE_SCORE )
         {
-            futures.addDoubleScoreOutput( key,
-                                          processEnsemblePairs( input,
+            futures.addDoubleScoreOutput( processEnsemblePairs( input,
                                                                 ensembleScore,
                                                                 ignoreTheseMetrics ) );
         }
         else if ( outGroup == MetricOutputGroup.MULTIVECTOR )
         {
-            futures.addMultiVectorOutput( key,
-                                          processEnsemblePairs( input,
+            futures.addMultiVectorOutput( processEnsemblePairs( input,
                                                                 ensembleMultiVector,
                                                                 ignoreTheseMetrics ) );
         }
         else if ( outGroup == MetricOutputGroup.BOXPLOT )
         {
-            futures.addBoxPlotOutput( key,
-                                      processEnsemblePairs( input,
+            futures.addBoxPlotOutput( processEnsemblePairs( input,
                                                             ensembleBoxPlot,
                                                             ignoreTheseMetrics ) );
         }
@@ -491,23 +480,21 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
      * Processes a set of metric futures that consume {@link DiscreteProbabilityPairs}, which are mapped from the input
      * pairs, {@link EnsemblePairs}, using a configured mapping function.
      * 
-     * @param timeWindow the time window
      * @param input the input pairs
      * @param futures the metric futures
      * @throws MetricCalculationException if the metrics cannot be computed
      */
 
-    private void processDiscreteProbabilityPairs( TimeWindow timeWindow,
-                                                  EnsemblePairs input,
+    private void processDiscreteProbabilityPairs( EnsemblePairs input,
                                                   MetricFuturesByTimeBuilder futures )
     {
         if ( hasMetrics( MetricInputGroup.DISCRETE_PROBABILITY, MetricOutputGroup.DOUBLE_SCORE ) )
         {
-            processDiscreteProbabilityPairsByThreshold( timeWindow, input, futures, MetricOutputGroup.DOUBLE_SCORE );
+            processDiscreteProbabilityPairsByThreshold( input, futures, MetricOutputGroup.DOUBLE_SCORE );
         }
         if ( hasMetrics( MetricInputGroup.DISCRETE_PROBABILITY, MetricOutputGroup.MULTIVECTOR ) )
         {
-            processDiscreteProbabilityPairsByThreshold( timeWindow, input, futures, MetricOutputGroup.MULTIVECTOR );
+            processDiscreteProbabilityPairsByThreshold( input, futures, MetricOutputGroup.MULTIVECTOR );
         }
     }
 
@@ -515,23 +502,21 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
      * Processes a set of metric futures that consume {@link DichotomousPairs}, which are mapped from the input
      * pairs, {@link EnsemblePairs}. 
      * 
-     * @param timeWindow the time window
      * @param input the input pairs
      * @param futures the metric futures
      * @throws MetricCalculationException if the metrics cannot be computed
      */
 
-    private void processDichotomousPairs( TimeWindow timeWindow,
-                                          EnsemblePairs input,
+    private void processDichotomousPairs( EnsemblePairs input,
                                           MetricFuturesByTimeBuilder futures )
     {
         if ( hasMetrics( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.DOUBLE_SCORE ) )
         {
-            processDichotomousPairsByThreshold( timeWindow, input, futures, MetricOutputGroup.DOUBLE_SCORE );
+            processDichotomousPairsByThreshold( input, futures, MetricOutputGroup.DOUBLE_SCORE );
         }
         if ( hasMetrics( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.MATRIX ) )
         {
-            processDichotomousPairsByThreshold( timeWindow, input, futures, MetricOutputGroup.MATRIX );
+            processDichotomousPairsByThreshold( input, futures, MetricOutputGroup.MATRIX );
         }
     }
 
@@ -540,15 +525,13 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
      * {@link MetricOutputGroup}. The {@link DiscreteProbabilityPairs} are produced from the input 
      * {@link EnsemblePairs} using a configured transformation. 
      * 
-     * @param timeWindow the time window
      * @param input the input pairs
      * @param futures the metric futures
      * @param outGroup the metric output type
      * @throws MetricCalculationException if the metrics cannot be computed
      */
 
-    private void processDiscreteProbabilityPairsByThreshold( TimeWindow timeWindow,
-                                                             EnsemblePairs input,
+    private void processDiscreteProbabilityPairsByThreshold( EnsemblePairs input,
                                                              MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
                                                              MetricOutputGroup outGroup )
     {
@@ -587,8 +570,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                                                        Metadata.of( transformed.getMetadata(), oneOrTwo ),
                                                        baselineMeta );
 
-            processDiscreteProbabilityPairs( Pair.of( timeWindow, OneOrTwoThresholds.of( useMe ) ),
-                                             transformed,
+            processDiscreteProbabilityPairs( transformed,
                                              futures,
                                              outGroup,
                                              ignoreTheseMetrics );
@@ -600,7 +582,6 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
      * Processes one threshold for metrics that consume {@link DiscreteProbabilityPairs} for a given 
      * {@link MetricOutputGroup}.
      * 
-     * @param key the key against which the results should be stored
      * @param input the input pairs
      * @param futures the metric futures
      * @param outGroup the metric output type
@@ -608,23 +589,20 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
      * @param ignoreTheseMetrics a set of metrics within the prescribed group that should be ignored
      */
 
-    private void processDiscreteProbabilityPairs( Pair<TimeWindow, OneOrTwoThresholds> key,
-                                                  DiscreteProbabilityPairs input,
+    private void processDiscreteProbabilityPairs( DiscreteProbabilityPairs input,
                                                   MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
                                                   MetricOutputGroup outGroup,
                                                   Set<MetricConstants> ignoreTheseMetrics )
     {
         if ( outGroup == MetricOutputGroup.DOUBLE_SCORE )
         {
-            futures.addDoubleScoreOutput( key,
-                                          processDiscreteProbabilityPairs( input,
+            futures.addDoubleScoreOutput( processDiscreteProbabilityPairs( input,
                                                                            discreteProbabilityScore,
                                                                            ignoreTheseMetrics ) );
         }
         else if ( outGroup == MetricOutputGroup.MULTIVECTOR )
         {
-            futures.addMultiVectorOutput( key,
-                                          processDiscreteProbabilityPairs( input,
+            futures.addMultiVectorOutput( processDiscreteProbabilityPairs( input,
                                                                            discreteProbabilityMultiVector,
                                                                            ignoreTheseMetrics ) );
         }
@@ -640,7 +618,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
      * @return the future result
      */
 
-    private <T extends MetricOutput<?>> Future<MetricOutputMapByMetric<T>>
+    private <T extends MetricOutput<?>> Future<ListOfMetricOutput<T>>
             processDiscreteProbabilityPairs( DiscreteProbabilityPairs pairs,
                                              MetricCollection<DiscreteProbabilityPairs, T, T> collection,
                                              Set<MetricConstants> ignoreTheseMetrics )
@@ -661,7 +639,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
      * @return the future result
      */
 
-    private <T extends MetricOutput<?>> Future<MetricOutputMapByMetric<T>>
+    private <T extends MetricOutput<?>> Future<ListOfMetricOutput<T>>
             processEnsemblePairs( EnsemblePairs pairs,
                                   MetricCollection<EnsemblePairs, T, T> collection,
                                   Set<MetricConstants> ignoreTheseMetrics )
@@ -675,15 +653,13 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
      * {@link MetricOutputGroup}. The {@link DichotomousPairs} are produced from the input 
      * {@link EnsemblePairs} using a configured transformation. 
      * 
-     * @param timeWindow the time window
      * @param input the input pairs
      * @param futures the metric futures
      * @param outGroup the metric output type
      * @throws MetricCalculationException if the metrics cannot be computed
      */
 
-    private void processDichotomousPairsByThreshold( TimeWindow timeWindow,
-                                                     EnsemblePairs input,
+    private void processDichotomousPairsByThreshold( EnsemblePairs input,
                                                      MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
                                                      MetricOutputGroup outGroup )
     {
@@ -733,8 +709,6 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                 // Derive compound threshold from outerThreshold and innerThreshold
                 OneOrTwoThresholds compound = OneOrTwoThresholds.of( outerThreshold, innerThreshold );
 
-                Pair<TimeWindow, OneOrTwoThresholds> nextKey = Pair.of( timeWindow, compound );
-
                 //Define a mapper to convert the discrete probability pairs to dichotomous pairs
                 Function<DiscreteProbabilityPair, DichotomousPair> mapper =
                         pair -> DichotomousPair.of( innerThreshold.test( pair.getLeft() ),
@@ -753,7 +727,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                                                                    Metadata.of( dichotomous.getMetadata(), compound ),
                                                                    baselineMeta );
 
-                processDichotomousPairs( nextKey, dichotomous, futures, outGroup, unionToIgnore );
+                this.processDichotomousPairs( dichotomous, futures, outGroup, unionToIgnore );
             }
         }
     }

@@ -5,7 +5,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Iterator;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Assert;
 
 import evs.io.xml.ProductFileIO;
@@ -24,7 +23,7 @@ import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold.MetricOutputMapByTimeAndThresholdBuilder;
+import wres.datamodel.outputs.ListOfMetricOutput.ListOfMetricOutputBuilder;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
@@ -39,34 +38,37 @@ public final class DataModelTestDataFactory
 {
 
     /**
-     * Returns a {@link MetricOutputMapByTimeAndThreshold} of {@link ScoreOutput} comprising the CRPSS for selected
+     * Returns a {@link ListOfMetricOutput} of {@link ScoreOutput} comprising the CRPSS for selected
      * thresholds and forecast lead times. Reads the input data from
-     * testinput/wres/datamodel/metric/getScalarMetricOutputMapByLeadThresholdOne.xml.
+     * testinput/wres/datamodel/metric/getScalarMetricOutputOne.xml.
      * 
      * @return an output map of verification scores
      */
 
-    public static MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> getScalarMetricOutputMapByLeadThresholdOne()
+    public static ListOfMetricOutput<DoubleScoreOutput> getScalarMetricOutputOne()
     {
 
-        final MetricOutputMapByTimeAndThresholdBuilder<DoubleScoreOutput> builder =
-                new MetricOutputMapByTimeAndThreshold.MetricOutputMapByTimeAndThresholdBuilder<>();
+        ListOfMetricOutputBuilder<DoubleScoreOutput> builder = new ListOfMetricOutputBuilder<>();
+
         try
         {
             //Create the input file
             final File resultFile =
-                    new File( "testinput/wres/datamodel/getScalarMetricOutputMapByLeadThresholdOne.xml" );
+                    new File( "testinput/wres/datamodel/getScalarMetricOutputOne.xml" );
             final MetricResultByLeadTime data = ProductFileIO.read( resultFile );
 
             final Iterator<MetricResultKey> d = data.getIterator();
 
             //Metric output metadata: add fake sample sizes as these are not readily available
             final MetricOutputMetadata meta = MetricOutputMetadata.of( 1000,
-                                                                                 MeasurementUnit.of(),
-                                                                                 MeasurementUnit.of( "CMS" ),
-                                                                                 MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
-                                                                                 MetricConstants.MAIN,
-                                                                                 DatasetIdentifier.of( Location.of( "DRRC2" ), "SQIN", "HEFS", "ESP" ) );
+                                                                       MeasurementUnit.of(),
+                                                                       MeasurementUnit.of( "CMS" ),
+                                                                       MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
+                                                                       MetricConstants.MAIN,
+                                                                       DatasetIdentifier.of( Location.of( "DRRC2" ),
+                                                                                             "SQIN",
+                                                                                             "HEFS",
+                                                                                             "ESP" ) );
 
             //Iterate through the lead times
             while ( d.hasNext() )
@@ -89,18 +91,18 @@ public final class DataModelTestDataFactory
                     final double[] probConstants = f.getParVal().getConstants();
                     final OneOrTwoThresholds q =
                             OneOrTwoThresholds.of( Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( constants[0] ),
-                                                                                    OneOrTwoDoubles.of( probConstants[0] ),
-                                                                                    Operator.GREATER,
-                                                                                    ThresholdDataType.LEFT ) );
-                    final Pair<TimeWindow, OneOrTwoThresholds> key = Pair.of( timeWindow, q );
+                                                                                  OneOrTwoDoubles.of( probConstants[0] ),
+                                                                                  Operator.GREATER,
+                                                                                  ThresholdDataType.LEFT ) );
 
                     //Build the scalar result
                     final MetricResult result = t.getResult( f );
                     final double[] res = ( (DoubleMatrix1DResult) result ).getResult().toArray();
-                    final DoubleScoreOutput value = DoubleScoreOutput.of( res[0], meta );
+                    final DoubleScoreOutput value =
+                            DoubleScoreOutput.of( res[0], MetricOutputMetadata.of( meta, timeWindow, q ) );
 
                     //Append result
-                    builder.put( key, value );
+                    builder.addOutput( value );
                 }
 
             }
@@ -114,25 +116,27 @@ public final class DataModelTestDataFactory
     }
 
     /**
-     * Returns a {@link MetricOutputMapByTimeAndThreshold} of {@link ScoreOutput} comprising the MAE for selected
+     * Returns a {@link ListOfMetricOutput} of {@link ScoreOutput} comprising the MAE for selected
      * thresholds and forecast lead times using fake data.
      * 
      * @return an output map of verification scores
      */
 
-    public static MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> getScalarMetricOutputMapByLeadThresholdTwo()
+    public static ListOfMetricOutput<DoubleScoreOutput> getScalarMetricOutputTwo()
     {
 
-        MetricOutputMapByTimeAndThresholdBuilder<DoubleScoreOutput> builder =
-                new MetricOutputMapByTimeAndThreshold.MetricOutputMapByTimeAndThresholdBuilder<>();
+        ListOfMetricOutputBuilder<DoubleScoreOutput> builder = new ListOfMetricOutputBuilder<>();
 
         //Fake metadata
         MetricOutputMetadata meta = MetricOutputMetadata.of( 1000,
-                                                                       MeasurementUnit.of(),
-                                                                       MeasurementUnit.of( "CMS" ),
-                                                                       MetricConstants.MEAN_ABSOLUTE_ERROR,
-                                                                       MetricConstants.MAIN,
-                                                                       DatasetIdentifier.of( Location.of( "DRRC2" ), "SQIN", "HEFS", "ESP" ) );
+                                                             MeasurementUnit.of(),
+                                                             MeasurementUnit.of( "CMS" ),
+                                                             MetricConstants.MEAN_ABSOLUTE_ERROR,
+                                                             MetricConstants.MAIN,
+                                                             DatasetIdentifier.of( Location.of( "DRRC2" ),
+                                                                                   "SQIN",
+                                                                                   "HEFS",
+                                                                                   "ESP" ) );
 
         int[] leadTimes = new int[] { 1, 2, 3, 4, 5 };
 
@@ -147,47 +151,50 @@ public final class DataModelTestDataFactory
             // Add first result
             OneOrTwoThresholds first =
                     OneOrTwoThresholds.of( Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( 1.0 ),
-                                                                            OneOrTwoDoubles.of( 0.1 ),
-                                                                            Operator.GREATER,
-                                                                            ThresholdDataType.LEFT ),
+                                                                          OneOrTwoDoubles.of( 0.1 ),
+                                                                          Operator.GREATER,
+                                                                          ThresholdDataType.LEFT ),
                                            Threshold.of( OneOrTwoDoubles.of( 5.0 ),
-                                                                    Operator.GREATER,
-                                                                    ThresholdDataType.LEFT ) );
+                                                         Operator.GREATER,
+                                                         ThresholdDataType.LEFT ) );
 
-            DoubleScoreOutput firstValue = DoubleScoreOutput.of( 66.0, meta );
+            DoubleScoreOutput firstValue =
+                    DoubleScoreOutput.of( 66.0, MetricOutputMetadata.of( meta, timeWindow, first ) );
 
-            builder.put( Pair.of( timeWindow, first ), firstValue );
+            builder.addOutput( firstValue );
 
 
             // Add second result
             OneOrTwoThresholds second =
                     OneOrTwoThresholds.of( Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( 2.0 ),
-                                                                            OneOrTwoDoubles.of( 0.2 ),
-                                                                            Operator.GREATER,
-                                                                            ThresholdDataType.LEFT ),
+                                                                          OneOrTwoDoubles.of( 0.2 ),
+                                                                          Operator.GREATER,
+                                                                          ThresholdDataType.LEFT ),
                                            Threshold.of( OneOrTwoDoubles.of( 5.0 ),
-                                                                    Operator.GREATER,
-                                                                    ThresholdDataType.LEFT ) );
+                                                         Operator.GREATER,
+                                                         ThresholdDataType.LEFT ) );
 
-            DoubleScoreOutput secondValue = DoubleScoreOutput.of( 67.0, meta );
+            DoubleScoreOutput secondValue =
+                    DoubleScoreOutput.of( 67.0, MetricOutputMetadata.of( meta, timeWindow, second ) );
 
-            builder.put( Pair.of( timeWindow, second ), secondValue );
+            builder.addOutput( secondValue );
 
 
             // Add third result
             OneOrTwoThresholds third =
                     OneOrTwoThresholds.of( Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( 3.0 ),
-                                                                            OneOrTwoDoubles.of( 0.3 ),
-                                                                            Operator.GREATER,
-                                                                            ThresholdDataType.LEFT ),
+                                                                          OneOrTwoDoubles.of( 0.3 ),
+                                                                          Operator.GREATER,
+                                                                          ThresholdDataType.LEFT ),
                                            Threshold.of( OneOrTwoDoubles.of( 6.0 ),
-                                                                    Operator.GREATER,
-                                                                    ThresholdDataType.LEFT ) );
+                                                         Operator.GREATER,
+                                                         ThresholdDataType.LEFT ) );
 
 
-            DoubleScoreOutput thirdValue = DoubleScoreOutput.of( 68.0, meta );
+            DoubleScoreOutput thirdValue =
+                    DoubleScoreOutput.of( 68.0, MetricOutputMetadata.of( meta, timeWindow, third ) );
 
-            builder.put( Pair.of( timeWindow, third ), thirdValue );
+            builder.addOutput( thirdValue );
 
         }
 
@@ -195,34 +202,36 @@ public final class DataModelTestDataFactory
     }
 
     /**
-     * Returns a {@link MetricOutputMapByTimeAndThreshold} of {@link DoubleScoreOutput} comprising the CRPSS for selected
+     * Returns a {@link ListOfMetricOutput} of {@link DoubleScoreOutput} comprising the CRPSS for selected
      * thresholds and forecast lead times. Reads the input data from
-     * testinput/wres/datamodel/metric/getVectorMetricOutputMapByLeadThresholdOne.xml.
+     * testinput/wres/datamodel/metric/getVectorMetricOutputOne.xml.
      * 
      * @return an output map of verification scores
      */
 
-    public static MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> getVectorMetricOutputMapByLeadThresholdOne()
+    public static ListOfMetricOutput<DoubleScoreOutput> getVectorMetricOutputOne()
     {
 
-        final MetricOutputMapByTimeAndThresholdBuilder<DoubleScoreOutput> builder =
-                new MetricOutputMapByTimeAndThreshold.MetricOutputMapByTimeAndThresholdBuilder<>();
+        final ListOfMetricOutputBuilder<DoubleScoreOutput> builder = new ListOfMetricOutputBuilder<>();
         try
         {
             //Create the input file
             final File resultFile =
-                    new File( "testinput/wres/datamodel/getVectorMetricOutputMapByLeadThresholdOne.xml" );
+                    new File( "testinput/wres/datamodel/getVectorMetricOutputOne.xml" );
             final MetricResultByLeadTime data = ProductFileIO.read( resultFile );
 
             final Iterator<MetricResultKey> d = data.getIterator();
 
             //Metric output metadata: add fake sample sizes as these are not readily available
             final MetricOutputMetadata meta = MetricOutputMetadata.of( 1000,
-                                                                                 MeasurementUnit.of(),
-                                                                                 MeasurementUnit.of( "CFS" ),
-                                                                                 MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
-                                                                                 MetricConstants.CR_POT,
-                                                                                 DatasetIdentifier.of( Location.of( "NPTP1" ), "SQIN", "HEFS", "ESP" ) );
+                                                                       MeasurementUnit.of(),
+                                                                       MeasurementUnit.of( "CFS" ),
+                                                                       MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
+                                                                       MetricConstants.CR_POT,
+                                                                       DatasetIdentifier.of( Location.of( "NPTP1" ),
+                                                                                             "SQIN",
+                                                                                             "HEFS",
+                                                                                             "ESP" ) );
 
             //Iterate through the lead times
             while ( d.hasNext() )
@@ -245,19 +254,20 @@ public final class DataModelTestDataFactory
                     final double[] probConstants = f.getParVal().getConstants();
                     final OneOrTwoThresholds q =
                             OneOrTwoThresholds.of( Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( constants[0] ),
-                                                                                    OneOrTwoDoubles.of( probConstants[0] ),
-                                                                                    Operator.GREATER,
-                                                                                    ThresholdDataType.LEFT ) );
-                    final Pair<TimeWindow, OneOrTwoThresholds> key = Pair.of( timeWindow, q );
+                                                                                  OneOrTwoDoubles.of( probConstants[0] ),
+                                                                                  Operator.GREATER,
+                                                                                  ThresholdDataType.LEFT ) );
 
                     //Build the scalar result
                     final MetricResult result = t.getResult( f );
                     final double[] res = ( (DoubleMatrix1DResult) result ).getResult().toArray();
                     final DoubleScoreOutput value =
-                            DoubleScoreOutput.of( res, ScoreOutputGroup.CR_POT, meta );
+                            DoubleScoreOutput.of( res,
+                                                  ScoreOutputGroup.CR_POT,
+                                                  MetricOutputMetadata.of( meta, timeWindow, q ) );
 
                     //Append result
-                    builder.put( key, value );
+                    builder.addOutput( value );
                 }
 
             }

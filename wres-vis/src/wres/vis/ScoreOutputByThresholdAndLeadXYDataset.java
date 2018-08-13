@@ -2,16 +2,18 @@ package wres.vis;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.SortedSet;
 
 import org.jfree.data.xy.AbstractXYDataset;
 
+import wres.datamodel.Slicer;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.DoubleScoreOutput;
-import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
+import wres.datamodel.outputs.ListOfMetricOutput;
 import wres.datamodel.outputs.ScoreOutput;
 
 /**
- * An {@link AbstractXYDataset} that wraps a {@link MetricOutputMapByTimeAndThreshold} which contains a set of
+ * An {@link AbstractXYDataset} that wraps a {@link ListOfMetricOutput} which contains a set of
  * {@link ScoreOutput} for a single verification metric, indexed by forecast lead time and threshold. Slices the data
  * by lead time to form plots by threshold on the domain axis.
  * 
@@ -21,17 +23,18 @@ import wres.datamodel.outputs.ScoreOutput;
  */
 
 public class ScoreOutputByThresholdAndLeadXYDataset extends
-        WRESAbstractXYDataset<List<MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>>, MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>>
+        WRESAbstractXYDataset<List<ListOfMetricOutput<DoubleScoreOutput>>, ListOfMetricOutput<DoubleScoreOutput>>
 {
     private static final long serialVersionUID = 1598160458133121056L;
 
-    public ScoreOutputByThresholdAndLeadXYDataset(final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> input)
+    public ScoreOutputByThresholdAndLeadXYDataset(final ListOfMetricOutput<DoubleScoreOutput> input)
     {
         super(input);
 
         //Handling the legend name in here because otherwise the key will be lost (I don't keep the raw data).
         int seriesIndex = 0;
-        for(final TimeWindow lead: input.setOfTimeWindowKey())
+        SortedSet<TimeWindow> timeWindows = Slicer.discover( input, next -> next.getMetadata().getTimeWindow() );
+        for(final TimeWindow lead: timeWindows)
         {
             setOverrideLegendName( seriesIndex, Long.toString( lead.getLatestLeadTimeInHours() ) );
             seriesIndex++;
@@ -42,17 +45,18 @@ public class ScoreOutputByThresholdAndLeadXYDataset extends
      * The legend names are handled here with calls to {@link #setOverrideLegendName(int, String)} because the first
      * keys (the thresholds) will otherwise be lost when the data is populated.
      * 
-     * @param rawData the input data must be of type {@link MetricOutputMapByTimeAndThreshold} with generic
+     * @param rawData the input data must be of type {@link ListOfMetricOutput} with generic
      *            {@link DoubleScoreOutput}.
      */
     @Override
-    protected void preparePlotData(final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> rawData)
+    protected void preparePlotData(final ListOfMetricOutput<DoubleScoreOutput> rawData)
     {
         //Cast the raw data input and check the size.
-        final List<MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>> data = new ArrayList<>();
-        for(final TimeWindow lead: rawData.setOfTimeWindowKey())
+        final List<ListOfMetricOutput<DoubleScoreOutput>> data = new ArrayList<>();
+        SortedSet<TimeWindow> timeWindows = Slicer.discover( rawData, next -> next.getMetadata().getTimeWindow() );
+        for(final TimeWindow lead: timeWindows)
         {
-            data.add( rawData.filterByTime( lead ) );
+            data.add( Slicer.filter( rawData, next -> next.getTimeWindow().equals( lead ) ) );
         }
         setPlotData(data);
     }
@@ -60,15 +64,22 @@ public class ScoreOutputByThresholdAndLeadXYDataset extends
     @Override
     public int getItemCount(final int series)
     {
-        return getPlotData().get(series).size();
+        return getPlotData().get(series).getData().size();
     }
 
     @Override
     public Number getX(final int series, final int item)
     {
         //Cannot allow all data (infinite) threshold. Use lower bound if this is a "BETWEEN" threshold
-        final double test = getPlotData().get(series).getKey(item).getRight().first().getValues().first();
-        if(Double.isInfinite(test))
+        final double test = getPlotData().get( series )
+                                         .getData()
+                                         .get( item )
+                                         .getMetadata()
+                                         .getThresholds()
+                                         .first()
+                                         .getValues()
+                                         .first();
+        if ( Double.isInfinite( test ) )
         {
             return Double.MIN_VALUE; //JFreeChart missing protocol is to return finite double for X and null for Y
         }
@@ -84,7 +95,7 @@ public class ScoreOutputByThresholdAndLeadXYDataset extends
         {
             return null;
         }
-        return getPlotData().get(series).getValue(item).getData();
+        return getPlotData().get(series).getData().get(item).getData();
     }
 
     @Override

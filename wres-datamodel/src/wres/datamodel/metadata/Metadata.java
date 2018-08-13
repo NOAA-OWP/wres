@@ -15,9 +15,9 @@ public class Metadata
     /**
      * Error message for null input.
      */
-    
+
     private static final String NULL_INPUT_ERROR = "Specify non-null input from which to build the metadata.";
-    
+
     /**
      * The measurement unit associated with the data.
      */
@@ -90,7 +90,7 @@ public class Metadata
     public static Metadata of( final Metadata input, final MeasurementUnit unit )
     {
         Objects.requireNonNull( input, NULL_INPUT_ERROR );
-        
+
         return Metadata.of( unit, input.getIdentifier(), input.getTimeWindow() );
     }
 
@@ -106,7 +106,7 @@ public class Metadata
     public static Metadata of( final Metadata input, final OneOrTwoThresholds thresholds )
     {
         Objects.requireNonNull( input, NULL_INPUT_ERROR );
-        
+
         return Metadata.of( input.getMeasurementUnit(),
                             input.getIdentifier(),
                             input.getTimeWindow(),
@@ -125,7 +125,7 @@ public class Metadata
     public static Metadata of( final Metadata input, final TimeWindow timeWindow )
     {
         Objects.requireNonNull( input, NULL_INPUT_ERROR );
-        
+
         return Metadata.of( input.getMeasurementUnit(), input.getIdentifier(), timeWindow );
     }
 
@@ -190,13 +190,13 @@ public class Metadata
     @Override
     public int hashCode()
     {
-        return Objects.hash( getMeasurementUnit(),
-                             hasIdentifier(),
-                             hasTimeWindow(),
-                             hasThresholds(),
-                             getIdentifier(),
-                             getTimeWindow(),
-                             getThresholds() );
+        return Objects.hash( this.getMeasurementUnit(),
+                             this.hasIdentifier(),
+                             this.hasTimeWindow(),
+                             this.hasThresholds(),
+                             this.getIdentifier(),
+                             this.getTimeWindow(),
+                             this.getThresholds() );
     }
 
     @Override
@@ -206,22 +206,25 @@ public class Metadata
         if ( hasIdentifier() )
         {
             String appendMe = this.identifier.toString();
-            appendMe = appendMe.replaceAll( "]", "," );
+            appendMe = appendMe.replaceAll( "\\]", "," );
+            appendMe = appendMe.replaceAll( "\\[", "(" );
             b.append( appendMe );
         }
         else
         {
             b.append( "(" );
         }
-        if ( hasTimeWindow() )
+        if ( this.hasTimeWindow() )
         {
-            b.append( this.timeWindow ).append( "," );
+            b.append( this.getTimeWindow() ).append( "," );
         }
-        if ( hasThresholds() )
+        if ( this.hasThresholds() )
         {
-            b.append( this.thresholds ).append( "," );
+            b.append( this.getThresholds() ).append( "," );
         }
-        b.append( this.unit ).append( ")" );
+        
+        b.append( this.getMeasurementUnit() ).append( ")" );
+        
         return b.toString();
     }
 

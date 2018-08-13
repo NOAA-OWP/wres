@@ -3,16 +3,12 @@ package wres.engine.statistics.metric.processing;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Future;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -23,18 +19,17 @@ import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.DurationScoreOutput;
+import wres.datamodel.outputs.ListOfMetricOutput;
 import wres.datamodel.outputs.MatrixOutput;
-import wres.datamodel.outputs.MetricOutput;
-import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
-import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold.MetricOutputForProjectByTimeAndThresholdBuilder;
-import wres.datamodel.outputs.MetricOutputMapByMetric;
+import wres.datamodel.outputs.MetricOutputForProject;
+import wres.datamodel.outputs.MetricOutputForProject.MetricOutputForProjectBuilder;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.PairedOutput;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 
 /**
  * Store of metric futures for each output type. Use {@link #getMetricOutput()} to obtain the processed
- * {@link MetricOutputForProjectByTimeAndThreshold}.
+ * {@link MetricOutputForProject}.
  * 
  * @author james.brown@hydrosolved.com
  */
@@ -46,43 +41,37 @@ class MetricFuturesByTime
      * {@link DoubleScoreOutput} results.
      */
 
-    private final ConcurrentMap<Pair<TimeWindow, OneOrTwoThresholds>, List<Future<MetricOutputMapByMetric<DoubleScoreOutput>>>> doubleScore =
-            new ConcurrentHashMap<>();
+    private final List<Future<ListOfMetricOutput<DoubleScoreOutput>>> doubleScore = new ArrayList<>();
 
     /**
      * {@link DurationScoreOutput} results.
      */
 
-    private final ConcurrentMap<Pair<TimeWindow, OneOrTwoThresholds>, List<Future<MetricOutputMapByMetric<DurationScoreOutput>>>> durationScore =
-            new ConcurrentHashMap<>();
+    private final List<Future<ListOfMetricOutput<DurationScoreOutput>>> durationScore = new ArrayList<>();
 
     /**
      * {@link MultiVectorOutput} results.
      */
 
-    private final ConcurrentMap<Pair<TimeWindow, OneOrTwoThresholds>, List<Future<MetricOutputMapByMetric<MultiVectorOutput>>>> multiVector =
-            new ConcurrentHashMap<>();
+    private final List<Future<ListOfMetricOutput<MultiVectorOutput>>> multiVector = new ArrayList<>();
 
     /**
      * {@link BoxPlotOutput} results.
      */
 
-    private final ConcurrentMap<Pair<TimeWindow, OneOrTwoThresholds>, List<Future<MetricOutputMapByMetric<BoxPlotOutput>>>> boxplot =
-            new ConcurrentHashMap<>();
+    private final List<Future<ListOfMetricOutput<BoxPlotOutput>>> boxplot = new ArrayList<>();
 
     /**
      * {@link PairedOutput} results.
      */
 
-    private final ConcurrentMap<Pair<TimeWindow, OneOrTwoThresholds>, List<Future<MetricOutputMapByMetric<PairedOutput<Instant, Duration>>>>> paired =
-            new ConcurrentHashMap<>();
+    private final List<Future<ListOfMetricOutput<PairedOutput<Instant, Duration>>>> paired = new ArrayList<>();
 
     /**
      * {@link MatrixOutput} results.
      */
 
-    private final ConcurrentMap<Pair<TimeWindow, OneOrTwoThresholds>, List<Future<MetricOutputMapByMetric<MatrixOutput>>>> matrix =
-            new ConcurrentHashMap<>();
+    private final List<Future<ListOfMetricOutput<MatrixOutput>>> matrix = new ArrayList<>();
 
     /**
      * Returns the results associated with the futures.
@@ -90,19 +79,18 @@ class MetricFuturesByTime
      * @return the metric results
      */
 
-    MetricOutputForProjectByTimeAndThreshold getMetricOutput()
+    MetricOutputForProject getMetricOutput()
     {
-        MetricOutputForProjectByTimeAndThresholdBuilder builder =
+        MetricOutputForProjectBuilder builder =
                 DataFactory.ofMetricOutputForProjectByTimeAndThreshold();
 
         //Add outputs for current futures
-        doubleScore.forEach( ( key, list ) -> list.forEach( value -> builder.addDoubleScoreOutput( key, value ) ) );
-        durationScore.forEach( ( key,
-                                 list ) -> list.forEach( value -> builder.addDurationScoreOutput( key, value ) ) );
-        multiVector.forEach( ( key, list ) -> list.forEach( value -> builder.addMultiVectorOutput( key, value ) ) );
-        boxplot.forEach( ( key, list ) -> list.forEach( value -> builder.addBoxPlotOutput( key, value ) ) );
-        paired.forEach( ( key, list ) -> list.forEach( value -> builder.addPairedOutput( key, value ) ) );
-        matrix.forEach( ( key, list ) -> list.forEach( value -> builder.addMatrixOutput( key, value ) ) );
+        doubleScore.forEach( builder::addDoubleScoreOutput );
+        durationScore.forEach( builder::addDurationScoreOutput );
+        multiVector.forEach( builder::addMultiVectorOutput );
+        boxplot.forEach( builder::addBoxPlotOutput );
+        paired.forEach( builder::addPairedOutput );
+        matrix.forEach( builder::addMatrixOutput );
         return builder.build();
     }
 
@@ -171,141 +159,201 @@ class MetricFuturesByTime
          * {@link DoubleScoreOutput} results.
          */
 
-        private final ConcurrentMap<Pair<TimeWindow, OneOrTwoThresholds>, List<Future<MetricOutputMapByMetric<DoubleScoreOutput>>>> doubleScore =
-                new ConcurrentHashMap<>();
+        private final ConcurrentLinkedQueue<Future<ListOfMetricOutput<DoubleScoreOutput>>> doubleScore =
+                new ConcurrentLinkedQueue<>();
 
         /**
          * {@link DurationScoreOutput} results.
          */
 
-        private final ConcurrentMap<Pair<TimeWindow, OneOrTwoThresholds>, List<Future<MetricOutputMapByMetric<DurationScoreOutput>>>> durationScore =
-                new ConcurrentHashMap<>();
+        private final ConcurrentLinkedQueue<Future<ListOfMetricOutput<DurationScoreOutput>>> durationScore =
+                new ConcurrentLinkedQueue<>();
 
         /**
          * {@link MultiVectorOutput} results.
          */
 
-        private final ConcurrentMap<Pair<TimeWindow, OneOrTwoThresholds>, List<Future<MetricOutputMapByMetric<MultiVectorOutput>>>> multiVector =
-                new ConcurrentHashMap<>();
+        private final ConcurrentLinkedQueue<Future<ListOfMetricOutput<MultiVectorOutput>>> multiVector =
+                new ConcurrentLinkedQueue<>();
 
         /**
          * {@link BoxPlotOutput} results.
          */
 
-        private final ConcurrentMap<Pair<TimeWindow, OneOrTwoThresholds>, List<Future<MetricOutputMapByMetric<BoxPlotOutput>>>> boxplot =
-                new ConcurrentHashMap<>();
+        private final ConcurrentLinkedQueue<Future<ListOfMetricOutput<BoxPlotOutput>>> boxplot =
+                new ConcurrentLinkedQueue<>();
 
         /**
          * {@link PairedOutput} results.
          */
 
-        private final ConcurrentMap<Pair<TimeWindow, OneOrTwoThresholds>, List<Future<MetricOutputMapByMetric<PairedOutput<Instant, Duration>>>>> paired =
-                new ConcurrentHashMap<>();
+        private final ConcurrentLinkedQueue<Future<ListOfMetricOutput<PairedOutput<Instant, Duration>>>> paired =
+                new ConcurrentLinkedQueue<>();
 
         /**
          * {@link MatrixOutput} results.
          */
 
-        private final ConcurrentMap<Pair<TimeWindow, OneOrTwoThresholds>, List<Future<MetricOutputMapByMetric<MatrixOutput>>>> matrix =
-                new ConcurrentHashMap<>();
+        private final ConcurrentLinkedQueue<Future<ListOfMetricOutput<MatrixOutput>>> matrix =
+                new ConcurrentLinkedQueue<>();
 
         /**
          * Adds a set of future {@link DoubleScoreOutput} to the appropriate internal store.
          * 
-         * @param key the key
          * @param value the future result
          * @return the builder
          */
 
-        MetricFuturesByTimeBuilder addDoubleScoreOutput( Pair<TimeWindow, OneOrTwoThresholds> key,
-                                                         Future<MetricOutputMapByMetric<DoubleScoreOutput>> value )
+        MetricFuturesByTimeBuilder addDoubleScoreOutput( Future<ListOfMetricOutput<DoubleScoreOutput>> value )
         {
-            List<Future<MetricOutputMapByMetric<DoubleScoreOutput>>> result =
-                    doubleScore.putIfAbsent( key, new ArrayList<>( Arrays.asList( value ) ) );
-            if ( Objects.nonNull( result ) )
-            {
-                result.add( value );
-            }
+            this.doubleScore.add( value );
+
             return this;
         }
 
         /**
          * Adds a set of future {@link DurationScoreOutput} to the appropriate internal store.
          * 
-         * @param key the key
          * @param value the future result
          * @return the builder
          */
 
-        MetricFuturesByTimeBuilder addDurationScoreOutput( Pair<TimeWindow, OneOrTwoThresholds> key,
-                                                           Future<MetricOutputMapByMetric<DurationScoreOutput>> value )
+        MetricFuturesByTimeBuilder addDurationScoreOutput( Future<ListOfMetricOutput<DurationScoreOutput>> value )
         {
-            List<Future<MetricOutputMapByMetric<DurationScoreOutput>>> result =
-                    durationScore.putIfAbsent( key, new ArrayList<>( Arrays.asList( value ) ) );
-            if ( Objects.nonNull( result ) )
-            {
-                result.add( value );
-            }
+            this.durationScore.add( value );
+
             return this;
         }
 
         /**
          * Adds a set of future {@link MultiVectorOutput} to the appropriate internal store.
          * 
-         * @param key the key
          * @param value the future result
          * @return the builder
          */
 
-        MetricFuturesByTimeBuilder addMultiVectorOutput( Pair<TimeWindow, OneOrTwoThresholds> key,
-                                                         Future<MetricOutputMapByMetric<MultiVectorOutput>> value )
+        MetricFuturesByTimeBuilder addMultiVectorOutput( Future<ListOfMetricOutput<MultiVectorOutput>> value )
         {
-            List<Future<MetricOutputMapByMetric<MultiVectorOutput>>> result =
-                    multiVector.putIfAbsent( key, new ArrayList<>( Arrays.asList( value ) ) );
-            if ( Objects.nonNull( result ) )
-            {
-                result.add( value );
-            }
+            this.multiVector.add( value );
+
             return this;
         }
 
         /**
          * Adds a set of future {@link BoxPlotOutput} to the appropriate internal store.
          * 
-         * @param key the key
+         * @param value the future result
+         * @return the builder
+         */
+
+        MetricFuturesByTimeBuilder addBoxPlotOutput( Future<ListOfMetricOutput<BoxPlotOutput>> value )
+        {
+            this.boxplot.add( value );
+
+            return this;
+        }
+
+        /**
+         * Adds a set of future {@link MatrixOutput} to the appropriate internal store.
+         * 
+         * @param value the future result
+         * @return the builder
+         */
+
+        MetricFuturesByTimeBuilder addPairedOutput( Future<ListOfMetricOutput<PairedOutput<Instant, Duration>>> value )
+        {
+            this.paired.add( value );
+
+            return this;
+        }
+
+        /**
+         * Adds a set of future {@link MatrixOutput} to the appropriate internal store.
+         * 
+         * @param value the future result
+         * @return the builder
+         */
+
+        MetricFuturesByTimeBuilder addMatrixOutput( Future<ListOfMetricOutput<MatrixOutput>> value )
+        {
+            this.matrix.add( value );
+
+            return this;
+        }
+
+        /**
+         * Adds a set of future {@link DoubleScoreOutput} to the appropriate internal store.
+         * 
+         * @param value the future result
+         * @return the builder
+         */
+
+        MetricFuturesByTimeBuilder addDoubleScoreOutput( Pair<TimeWindow, OneOrTwoThresholds> key,
+                                                         Future<ListOfMetricOutput<DoubleScoreOutput>> value )
+        {
+            Objects.requireNonNull( key.getLeft() );
+            
+            this.doubleScore.add( value );
+
+            return this;
+        }
+
+        /**
+         * Adds a set of future {@link DurationScoreOutput} to the appropriate internal store.
+         * 
+         * @param value the future result
+         * @return the builder
+         */
+
+        MetricFuturesByTimeBuilder addDurationScoreOutput( Pair<TimeWindow, OneOrTwoThresholds> key,
+                                                           Future<ListOfMetricOutput<DurationScoreOutput>> value )
+        {
+            this.durationScore.add( value );
+
+            return this;
+        }
+
+        /**
+         * Adds a set of future {@link MultiVectorOutput} to the appropriate internal store.
+         * 
+         * @param value the future result
+         * @return the builder
+         */
+
+        MetricFuturesByTimeBuilder addMultiVectorOutput( Pair<TimeWindow, OneOrTwoThresholds> key,
+                                                         Future<ListOfMetricOutput<MultiVectorOutput>> value )
+        {
+            this.multiVector.add( value );
+
+            return this;
+        }
+
+        /**
+         * Adds a set of future {@link BoxPlotOutput} to the appropriate internal store.
+         * 
          * @param value the future result
          * @return the builder
          */
 
         MetricFuturesByTimeBuilder addBoxPlotOutput( Pair<TimeWindow, OneOrTwoThresholds> key,
-                                                     Future<MetricOutputMapByMetric<BoxPlotOutput>> value )
+                                                     Future<ListOfMetricOutput<BoxPlotOutput>> value )
         {
-            List<Future<MetricOutputMapByMetric<BoxPlotOutput>>> result =
-                    boxplot.putIfAbsent( key, new ArrayList<>( Arrays.asList( value ) ) );
-            if ( Objects.nonNull( result ) )
-            {
-                result.add( value );
-            }
+            this.boxplot.add( value );
+
             return this;
         }
 
         /**
          * Adds a set of future {@link MatrixOutput} to the appropriate internal store.
          * 
-         * @param key the key
          * @param value the future result
          * @return the builder
          */
 
         MetricFuturesByTimeBuilder addPairedOutput( Pair<TimeWindow, OneOrTwoThresholds> key,
-                                                    Future<MetricOutputMapByMetric<PairedOutput<Instant, Duration>>> value )
+                                                    Future<ListOfMetricOutput<PairedOutput<Instant, Duration>>> value )
         {
-            List<Future<MetricOutputMapByMetric<PairedOutput<Instant, Duration>>>> result =
-                    paired.putIfAbsent( key, new ArrayList<>( Arrays.asList( value ) ) );
-            if ( Objects.nonNull( result ) )
-            {
-                result.add( value );
-            }
+            this.paired.add( value );
 
             return this;
         }
@@ -313,20 +361,15 @@ class MetricFuturesByTime
         /**
          * Adds a set of future {@link MatrixOutput} to the appropriate internal store.
          * 
-         * @param key the key
          * @param value the future result
          * @return the builder
          */
 
         MetricFuturesByTimeBuilder addMatrixOutput( Pair<TimeWindow, OneOrTwoThresholds> key,
-                                                    Future<MetricOutputMapByMetric<MatrixOutput>> value )
+                                                    Future<ListOfMetricOutput<MatrixOutput>> value )
         {
-            List<Future<MetricOutputMapByMetric<MatrixOutput>>> result =
-                    matrix.putIfAbsent( key, new ArrayList<>( Arrays.asList( value ) ) );
-            if ( Objects.nonNull( result ) )
-            {
-                result.add( value );
-            }
+            this.matrix.add( value );
+
             return this;
         }
 
@@ -368,7 +411,7 @@ class MetricFuturesByTime
          */
 
         MetricFuturesByTimeBuilder addFutures( MetricFuturesByTime futures,
-                                                       Set<MetricOutputGroup> mergeSet )
+                                               Set<MetricOutputGroup> mergeSet )
         {
             if ( Objects.nonNull( mergeSet ) )
             {
@@ -376,62 +419,31 @@ class MetricFuturesByTime
                 {
                     if ( nextGroup == MetricOutputGroup.DOUBLE_SCORE )
                     {
-                        this.safePut( MetricOutputGroup.DOUBLE_SCORE, doubleScore, futures.doubleScore );
+                        this.doubleScore.addAll( futures.doubleScore );
                     }
                     else if ( nextGroup == MetricOutputGroup.DURATION_SCORE )
                     {
-                        this.safePut( MetricOutputGroup.DURATION_SCORE, durationScore, futures.durationScore );
+                        this.durationScore.addAll( futures.durationScore );
                     }
                     else if ( nextGroup == MetricOutputGroup.MULTIVECTOR )
                     {
-                        this.safePut( MetricOutputGroup.MULTIVECTOR, multiVector, futures.multiVector );
+                        this.multiVector.addAll( futures.multiVector );
                     }
                     else if ( nextGroup == MetricOutputGroup.BOXPLOT )
                     {
-                        this.safePut( MetricOutputGroup.BOXPLOT, boxplot, futures.boxplot );
+                        this.boxplot.addAll( futures.boxplot );
                     }
                     else if ( nextGroup == MetricOutputGroup.PAIRED )
                     {
-                        this.safePut( MetricOutputGroup.PAIRED, paired, futures.paired );
+                        this.paired.addAll( futures.paired );
                     }
                     else if ( nextGroup == MetricOutputGroup.MATRIX )
                     {
-                        this.safePut( MetricOutputGroup.MATRIX, matrix, futures.matrix );
+                        this.matrix.addAll( futures.matrix );
                     }
                 }
             }
             return this;
-        }
-
-        /**
-         * Adds the specified input to the specified store, throwing an exception if the store already contains
-         * this input.
-         * 
-         * @throws MetricOutputMergeException if the outputs cannot be merged across calls
-         */
-
-        private <T extends MetricOutput<?>> void
-                safePut( MetricOutputGroup outGroup,
-                         Map<Pair<TimeWindow, OneOrTwoThresholds>, List<Future<MetricOutputMapByMetric<T>>>> mutate,
-                         Map<Pair<TimeWindow, OneOrTwoThresholds>, List<Future<MetricOutputMapByMetric<T>>>> newInput )
-        {
-            for ( Entry<Pair<TimeWindow, OneOrTwoThresholds>, List<Future<MetricOutputMapByMetric<T>>>> next : newInput.entrySet() )
-            {
-                Object returned = mutate.putIfAbsent( next.getKey(), next.getValue() );
-                if ( Objects.nonNull( returned ) )
-                {
-                    throw new MetricOutputMergeException( "A metric result already exists in this processor for "
-                                                          + "metric output group '"
-                                                          + outGroup
-                                                          + "' at time window '"
-                                                          + next.getKey().getLeft()
-                                                          + "' and threshold '"
-                                                          + next.getKey().getRight()
-                                                          + "': change the input data or corresponding metadata "
-                                                          + "to ensure that a unique time window and threshold "
-                                                          + "is provided for each metric output." );
-                }
-            }
         }
     }
 
@@ -443,14 +455,12 @@ class MetricFuturesByTime
 
     private MetricFuturesByTime( MetricFuturesByTimeBuilder builder )
     {
-        // Builder does not allow for overwrites.
-        // Thus, putAll is safe in this context.
-        doubleScore.putAll( builder.doubleScore );
-        durationScore.putAll( builder.durationScore );
-        multiVector.putAll( builder.multiVector );
-        boxplot.putAll( builder.boxplot );
-        paired.putAll( builder.paired );
-        matrix.putAll( builder.matrix );
+        doubleScore.addAll( builder.doubleScore );
+        durationScore.addAll( builder.durationScore );
+        multiVector.addAll( builder.multiVector );
+        boxplot.addAll( builder.boxplot );
+        paired.addAll( builder.paired );
+        matrix.addAll( builder.matrix );
     }
 
 }
