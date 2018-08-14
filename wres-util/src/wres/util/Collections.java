@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -18,6 +19,8 @@ import org.apache.commons.math3.stat.descriptive.moment.Mean;
 import org.apache.commons.math3.stat.descriptive.rank.Max;
 import org.apache.commons.math3.stat.descriptive.rank.Min;
 import org.apache.commons.math3.stat.descriptive.summary.Sum;
+
+import wres.util.functional.ExceptionalFunction;
 
 /**
  * Helper functions used to operate on collections and arrays
@@ -143,6 +146,28 @@ public final class Collections
             }
         }
         return filteredValues;
+    }
+
+    public static <K, V, W extends Exception> Map<K, List<V>> group(
+            Iterable<V> values,
+            ExceptionalFunction<V, K, W> mapper
+    ) throws W
+    {
+        Map<K, List<V>> groups = new HashMap<>(  );
+
+        for (V value : values)
+        {
+            K key = mapper.call( value );
+
+            if (!groups.containsKey( key ))
+            {
+                groups.put( key, new ArrayList<>() );
+            }
+
+            groups.get(key).add(value);
+        }
+
+        return groups;
     }
 
     /**

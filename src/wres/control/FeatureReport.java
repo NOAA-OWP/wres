@@ -148,7 +148,9 @@ class FeatureReport implements Consumer<FeatureProcessingResult>
                 Collections.unmodifiableList( new ArrayList<>( missingDataFeatures ) );
 
         // Detailed report
-        if ( LOGGER.isInfoEnabled() && this.printDetailedReport )
+        if ( LOGGER.isInfoEnabled() &&
+             this.printDetailedReport &&
+             !(successfulFeaturesToReport.isEmpty() || missingDataFeaturesToReport.isEmpty()))
         {
             LOGGER.info( "The following features succeeded: {}",
                          ConfigHelper.getFeaturesDescription( successfulFeaturesToReport ) );
@@ -161,10 +163,14 @@ class FeatureReport implements Consumer<FeatureProcessingResult>
         }
 
         // Exception after detailed report
-        if ( successfulFeaturesToReport.isEmpty() )
+        if ( successfulFeaturesToReport.isEmpty() && !missingDataFeaturesToReport.isEmpty() )
         {
             throw new WresProcessingException( "No features were successful.",
                                                null );
+        }
+        else if (successfulFeaturesToReport.isEmpty() && missingDataFeaturesToReport.isEmpty())
+        {
+            throw new WresProcessingException( "No features could be found to evaluate.", null );
         }
 
         // Summary report
