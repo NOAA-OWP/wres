@@ -88,7 +88,7 @@ public class DataProviderTest
         Assert.assertEquals( provider.getLong( "long" ), testLong);
         Assert.assertEquals( provider.getFloat( "float" ), testFloat, 0.00001F );
         Assert.assertEquals( provider.getDouble( "double" ), testDouble, 0.000001 );
-        Assert.assertEquals( provider.getDoubleArray( "double[]" ), testDoubles );
+        Assert.assertArrayEquals( provider.getDoubleArray( "double[]" ), testDoubles );
         Assert.assertEquals( provider.getBigDecimal( "bigdecimal" ), testDecimal);
         Assert.assertEquals( provider.getBoolean( "boolean" ), testBoolean);
         Assert.assertEquals( provider.getDate( "localdate" ), testDate);

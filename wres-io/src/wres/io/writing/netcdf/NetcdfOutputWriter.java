@@ -3,12 +3,11 @@ package wres.io.writing.netcdf;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.URL;
-import java.time.Duration;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -25,7 +24,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,6 +50,7 @@ import wres.datamodel.outputs.ListOfMetricOutput;
 import wres.io.concurrency.Executor;
 import wres.io.config.ConfigHelper;
 import wres.io.writing.WriteException;
+import wres.util.Collections;
 import wres.util.Strings;
 
 public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
@@ -62,7 +61,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
     private static final String DEFAULT_GRID_TEMPLATE = "lcc_grid_template.nc";
 
     private static final Object WINDOW_LOCK = new Object();
-    private static final Map<Pair<Duration,Duration>, TimeWindowWriter> WRITERS = new ConcurrentHashMap<>();
+    private static final Map<TimeWindow, TimeWindowWriter> WRITERS = new ConcurrentHashMap<>();
     private static final Map<Object, Integer> VECTOR_COORDINATES = new ConcurrentHashMap<>();
     private static final int VALUE_SAVE_LIMIT = 500;
 
@@ -85,11 +84,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
     {
         if ( NetcdfOutputWriter.destinationConfig == null )
         {
-            NetcdfOutputWriter.destinationConfig =
-                    Collections.unmodifiableList(
-                                                  ConfigHelper.getDestinationsOfType( projectConfig,
-                                                                                      DestinationType.NETCDF ) )
-                               .get( 0 );
+            NetcdfOutputWriter.destinationConfig = ConfigHelper.getDestinationsOfType( projectConfig, DestinationType.NETCDF ).get( 0 );
 
             NetcdfOutputWriter.netcdfConfiguration = NetcdfOutputWriter.destinationConfig.getNetcdf();
 
@@ -124,74 +119,59 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
         return NetcdfOutputWriter.destinationConfig;
     }
 
-    public static void write( final Duration earliestLeadTime,
-                              final Duration latestLeadTime,
-                              final ListOfMetricOutput<DoubleScoreOutput> output )
-    {
-        synchronized ( NetcdfOutputWriter.WINDOW_LOCK )
-        {
-            Pair<Duration, Duration> nextLeadTime = Pair.of( earliestLeadTime, latestLeadTime );
-
-            if ( !NetcdfOutputWriter.WRITERS.containsKey( nextLeadTime ) )
-                ;
-            {
-                NetcdfOutputWriter.WRITERS.put( nextLeadTime,
-                                                new TimeWindowWriter( earliestLeadTime,
-                                                                      latestLeadTime ) );
-            }
-
-            Callable<Object> writerTask = new Callable<Object>()
-            {
-                @Override
-                public Object call() throws Exception
-                {
-                    try
-                    {
-                        NetcdfOutputWriter.WRITERS.get( nextLeadTime ).write( output );
-                    }
-                    catch ( Exception e )
-                    {
-                        LOGGER.error( "Writing to output failed.", e );
-                        LOGGER.error( Strings.getStackTrace( e ) );
-                        throw e;
-                    }
-                    return null;
-                }
-
-                Callable<Object> initialize( final ListOfMetricOutput<DoubleScoreOutput> output )
-                {
-                    this.output = output;
-                    return this;
-                }
-
-                private ListOfMetricOutput<DoubleScoreOutput> output;
-            }.initialize( output );
-
-            LOGGER.debug( "Submitting a task to write to a netcdf file." );
-            Executor.submit( writerTask );
-        }
-    }
-
     @Override
     public void accept( ListOfMetricOutput<DoubleScoreOutput> output )
     {
-        // Discover the metrics to write
-        SortedSet<MetricConstants> metrics = Slicer.discover( output, next -> next.getMetadata().getMetricID() );
+        Map<TimeWindow, List<DoubleScoreOutput>> outputByTimeWindow = Collections.group(
+                output,
+                score -> score.getMetadata().getTimeWindow()
+        );
 
-        for ( MetricConstants nextMetric : metrics )
+        for (TimeWindow window : outputByTimeWindow.keySet())
         {
-            // Obtain output for one metric by filtering
-            ListOfMetricOutput<DoubleScoreOutput> nextMetricData = Slicer.filter( output, nextMetric );
+            List<DoubleScoreOutput> scores = outputByTimeWindow.get( window );
 
-            // Find the unique pairs of earliest and latest lead times to write
-            SortedSet<Pair<Duration, Duration>> leadTimes =
-                    Slicer.discover( nextMetricData,
-                                     next -> Pair.of( next.getMetadata().getTimeWindow().getEarliestLeadTime(),
-                                                      next.getMetadata().getTimeWindow().getLatestLeadTime() ) );
-
-            for ( Pair<Duration, Duration> nextLead : leadTimes )
+            synchronized ( NetcdfOutputWriter.WINDOW_LOCK )
             {
-                NetcdfOutputWriter.write( nextLead.getLeft(), nextLead.getRight(), nextMetricData );
+                if ( !NetcdfOutputWriter.WRITERS.containsKey( window ) )
+                {
+                    Collection<MetricVariable> variables = MetricVariable.getAll( scores );
+                    NetcdfOutputWriter.WRITERS.put( window,
+                                                    new TimeWindowWriter( window, variables ) );
+                }
+
+                Callable<Object> writerTask = new Callable<Object>()
+                {
+                    @Override
+                    public Object call() throws Exception
+                    {
+                        try
+                        {
+                            NetcdfOutputWriter.WRITERS.get( this.window ).write( this.output );
+                        }
+                        catch ( Exception e )
+                        {
+                            LOGGER.error( "Writing to output failed.", e );
+                            LOGGER.error( Strings.getStackTrace( e ) );
+                            throw e;
+                        }
+                        return null;
+                    }
+
+                    Callable<Object> initialize( final TimeWindow window,
+                                                 final List<DoubleScoreOutput> scores )
+                    {
+                        this.output = scores;
+                        this.window = window;
+                        return this;
+                    }
+
+                    private List<DoubleScoreOutput> output;
+                    private TimeWindow window;
+                }.initialize( window, scores );
+
+                LOGGER.debug( "Submitting a task to write to a netcdf file." );
+                Executor.submit( writerTask );
             }
         }
     }
@@ -299,61 +279,35 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
     
     private static class TimeWindowWriter implements Closeable
     {
-        TimeWindowWriter( final Duration earliestLeadTime, final Duration latestLeadTime )
+        TimeWindowWriter( final TimeWindow timeWindow, final Collection<MetricVariable> metricVariables )
         {
-            this.earliestLeadTime = earliestLeadTime;
-            this.latestLeadTime = latestLeadTime;
+            this.timeWindow = timeWindow;
+            this.metricVariables = metricVariables;
             this.creationLock = new ReentrantLock();
             this.writeLock = new ReentrantLock();
         }
 
-        void write( ListOfMetricOutput<DoubleScoreOutput> output )
+        void write( Collection<DoubleScoreOutput> output )
                 throws IOException, InvalidRangeException
         {
+            //this now needs to somehow get all metadata for all metrics
             // Ensure that the output file exists
-            this.buildWriter( output );
+            this.buildWriter( output, this.metricVariables );
 
-            // We want to write data for each encountered metric
-            // Start by discovering the available metrics
-            SortedSet<MetricConstants> metrics = Slicer.discover( output, next -> next.getMetadata().getMetricID() );
-            for ( MetricConstants nextMetric : metrics )
+            for (DoubleScoreOutput score : output)
             {
-                // Determine the name of the metric
-                String metricName = nextMetric.toString();
-
-                // Now that we know the name of the metric, we now want the
-                // collection of all values recorded for the metric at all
-                // thresholds for the given pair of lead times, so slice by metric and each lead time
-                ListOfMetricOutput<DoubleScoreOutput> metricOutputList =
-                        Slicer.filter( output,
-                                       next -> next.getMetricID() == nextMetric
-                                               && next.getTimeWindow()
-                                                      .getEarliestLeadTime()
-                                                      .equals( this.earliestLeadTime )
-                                               && next.getTimeWindow()
-                                                      .getLatestLeadTime()
-                                                      .equals( this.latestLeadTime ) );
-
+                String name = MetricVariable.getName( score );
                 // Figure out the location of all values and build the origin in each variable grid
-                Location location = metricOutputList.getData().get( 0 ).getMetadata().getIdentifier().getGeospatialID();
+                Location location = score.getMetadata().getIdentifier().getGeospatialID();
 
-                // Iterate through each score output
-                for ( DoubleScoreOutput nextOutput : metricOutputList )
-                {
-                    // Determine the name of the Netcdf Variable by combining
-                    // the name of the metric and its threshold
-                    String name =
-                            NetcdfOutputFileCreator.getMetricVariableName( metricName,
-                                                                           nextOutput.getMetadata().getThresholds() );
-                    int[] origin = this.getOrigin( name, location );
-                    Double actualValue = nextOutput.getData();
+                int[] origin = this.getOrigin( name, location );
+                Double actualValue = score.getData();
 
-                    this.saveValues( name, origin, actualValue );
-                }
+                this.saveValues( name, origin, actualValue );
             }
         }
 
-        private void buildWriter( ListOfMetricOutput<DoubleScoreOutput> output )
+        private void buildWriter(final Collection<DoubleScoreOutput> output, final Collection<MetricVariable> variables )
                 throws IOException
         {
             this.creationLock.lock();
@@ -364,13 +318,12 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
                 {
                     this.outputPath = NetcdfOutputFileCreator.create( getTemplatePath(),
                                                                       getDestinationConfig(),
-                                                                      this.earliestLeadTime,
-                                                                      this.latestLeadTime,
+                                                                      this.timeWindow,
                                                                       NetcdfOutputWriter.ANALYSIS_TIME,
+                                                                      variables,
                                                                       output );
                 }
             }
-            // TODO: catch something more precise than Exception; seems to be IOException?
             // Exception is being caught because the threads calling metric
             // writing are currently eating runtime errors.
             catch ( Exception e )
@@ -589,9 +542,9 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
             {
                 representation = this.outputPath;
             }
-            else if ( this.earliestLeadTime != null && this.latestLeadTime != null )
+            else if ( this.timeWindow != null )
             {
-                representation = "["+this.earliestLeadTime.toString()+", "+this.latestLeadTime.toString()+"]";
+                representation = this.timeWindow.toString();
             }
 
             return representation;
@@ -600,8 +553,8 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
         private final List<NetcdfValueKey> valuesToSave = new ArrayList<>();
 
         private String outputPath = null;
-        private final Duration earliestLeadTime;
-        private final Duration latestLeadTime;
+        private final TimeWindow timeWindow;
+        private final Collection<MetricVariable> metricVariables;
         private final ReentrantLock creationLock;
         private final ReentrantLock writeLock;
 
