@@ -5,8 +5,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Queue;
 
-import org.apache.commons.lang3.tuple.Pair;
-
 import wres.config.generated.Feature;
 
 /**

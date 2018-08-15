@@ -8,7 +8,9 @@ import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import wres.util.functional.ExceptionalConsumer;
 import wres.util.functional.ExceptionalFunction;
@@ -94,6 +96,152 @@ public interface DataProvider extends AutoCloseable
      * @return Whether or not the data provider contains data
      */
     boolean isEmpty();
+
+    /**
+     * Groups the remaining data in the provider based on the given function.
+     * <br></br>
+     * <br></br>
+     * Given the function: provider -> provider.getString("location")
+     * <br></br>
+     * The following dataset:
+     * <table>
+     *     <caption>Initial Dataset</caption>
+     *     <tr>
+     *         <th>lead</th>
+     *         <th>location</th>
+     *         <th>forecast_value</th>
+     *         <th>observed_value</th>
+     *         <th>date</th>
+     *     </tr>
+     *     <tr>
+     *         <td>1</td>
+     *         <td>DRRC2</td>
+     *         <td>0.5</td>
+     *         <td>0.45</td>
+     *         <td>2018-08-15T00:00:00Z</td>
+     *     </tr>
+     *     <tr>
+     *         <td>1</td>
+     *         <td>LGNN5</td>
+     *         <td>1.23</td>
+     *         <td>2.5</td>
+     *         <td>2018-08-15T00:00:00Z</td>
+     *     </tr>
+     *     <tr>
+     *         <td>2</td>
+     *         <td>DRRC2</td>
+     *         <td>0.6</td>
+     *         <td>0.61</td>
+     *         <td>2018-08-15T01:00:00Z</td>
+     *     </tr>
+     *     <tr>
+     *         <td>2</td>
+     *         <td>LGNN5</td>
+     *         <td>1.4</td>
+     *         <td>45.73</td>
+     *         <td>2018-08-15T01:00:00Z</td>
+     *     </tr>
+     * </table>
+     * Will become:
+     * <ul>
+     *     <li>
+     *         DRRC2
+     *         <table>
+     *     <caption></caption>
+     *     <tr>
+     *         <th>lead</th>
+     *         <th>location</th>
+     *         <th>forecast_value</th>
+     *         <th>observed_value</th>
+     *         <th>date</th>
+     *     </tr>
+     *     <tr>
+     *         <td>1</td>
+     *         <td>DRRC2</td>
+     *         <td>0.5</td>
+     *         <td>0.45</td>
+     *         <td>2018-08-15T00:00:00Z</td>
+     *     </tr>
+     *     <tr>
+     *         <td>2</td>
+     *         <td>DRRC2</td>
+     *         <td>0.6</td>
+     *         <td>0.61</td>
+     *         <td>2018-08-15T01:00:00Z</td>
+     *     </tr>
+     *      </table>
+     *     </li>
+     *     <li>
+     *         LGNN5
+     *         <table>
+     *     <caption></caption>
+     *     <tr>
+     *         <th>lead</th>
+     *         <th>location</th>
+     *         <th>forecast_value</th>
+     *         <th>observed_value</th>
+     *         <th>date</th>
+     *     </tr>
+     *     <tr>
+     *         <td>1</td>
+     *         <td>LGNN5</td>
+     *         <td>1.23</td>
+     *         <td>2.5</td>
+     *         <td>2018-08-15T00:00:00Z</td>
+     *     </tr>
+     *     <tr>
+     *         <td>2</td>
+     *         <td>LGNN5</td>
+     *         <td>1.4</td>
+     *         <td>45.73</td>
+     *         <td>2018-08-15T01:00:00Z</td>
+     *     </tr>
+     * </table>
+     * </li>
+     * </ul>
+     * <strong>Note:</strong> The grouping function will move through the data to the very end. If the data comes
+     * via a stream, there is no turning back.
+     * @param mapper A function used to define the keys for the groups
+     * @param <K> The data type of the key
+     * @param <E> The type of exception that the function may throw
+     * @return A map with the key from the mapping function linked to the rows that belong to it.
+     * @throws E Thrown if the mapping function hits an exception
+     */
+    default <K, E extends Exception> Map<K, DataProvider> group( ExceptionalFunction<DataProvider, K, E> mapper) throws E
+    {
+        Map<K, DataBuilder> builders = new HashMap<>(  );
+
+        List<String> columnNames = new ArrayList<>(  );
+
+        for (String name : this.getColumnNames())
+        {
+            columnNames.add(name);
+        }
+
+        while (this.next())
+        {
+            K key = mapper.call( this );
+
+            if (!builders.containsKey( key ))
+            {
+                builders.put(
+                        key,
+                        DataBuilder.with( columnNames.toArray(new String[columnNames.size()]) )
+                );
+            }
+
+            builders.get(key).addRow( this.getRowValues() );
+        }
+
+        Map<K, DataProvider> providers = new HashMap<>(  );
+
+        for (Map.Entry<K, DataBuilder> groupBuilder : builders.entrySet())
+        {
+            providers.put(groupBuilder.getKey(), groupBuilder.getValue().build());
+        }
+
+        return providers;
+    }
 
     /**
      * Executes a method on every row in the data
