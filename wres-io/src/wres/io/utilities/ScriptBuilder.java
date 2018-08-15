@@ -280,38 +280,7 @@ public class ScriptBuilder
      */
     public <V> V retrieve(String label) throws SQLException
     {
-        V value;
-        Connection connection = null;
-
-        try
-        {
-            if (this.isHighPriority)
-            {
-                connection = Database.getHighPriorityConnection();
-            }
-            else
-            {
-                connection = Database.getConnection();
-            }
-
-            value = Database.getResult( this.toString(), label );
-        }
-        finally
-        {
-            if (connection != null)
-            {
-                if (this.isHighPriority)
-                {
-                    Database.returnHighPriorityConnection( connection );
-                }
-                else
-                {
-                    Database.returnConnection( connection );
-                }
-            }
-        }
-
-        return value;
+        return Database.getResult( this.toString(), label );
     }
 
     /**

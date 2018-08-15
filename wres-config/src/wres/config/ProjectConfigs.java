@@ -1,6 +1,7 @@
 package wres.config;
 
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.Objects;
@@ -146,7 +147,8 @@ public class ProjectConfigs
                 // Unrecognized type
                 else
                 {
-                    throw new MetricConfigException( next, "Unexpected input type for time-series metrics '"
+                    throw new MetricConfigException( next,
+                                                     "Unexpected input type for time-series metrics '"
                                                            + inGroup
                                                            + "'." );
                 }
@@ -178,7 +180,7 @@ public class ProjectConfigs
      */
 
     public static Set<MetricConstants> getOrdinaryMetricsFromConfig( MetricsConfig metricsConfig,
-                                                                      ProjectConfig projectConfig )
+                                                                     ProjectConfig projectConfig )
     {
         Objects.requireNonNull( projectConfig, NULL_CONFIGURATION_ERROR );
 
@@ -206,7 +208,8 @@ public class ProjectConfigs
                 // Unrecognized type
                 else
                 {
-                    throw new MetricConfigException( next, "Unexpected input type for metrics '" + inGroup
+                    throw new MetricConfigException( next,
+                                                     "Unexpected input type for metrics '" + inGroup
                                                            + "'." );
                 }
 
@@ -251,8 +254,11 @@ public class ProjectConfigs
 
         if ( !METRIC_CONFIG_NAME_MAP.containsKey( metricConfig.getName() ) )
         {
-            throw new MetricConfigException( metricConfig, " Unable to find a metric with a configured identifier of "
-                                                           + "'" + metricConfig.getName() + "'." );
+            throw new MetricConfigException( metricConfig,
+                                             " Unable to find a metric with a configured identifier of "
+                                                           + "'"
+                                                           + metricConfig.getName()
+                                                           + "'." );
         }
 
         return METRIC_CONFIG_NAME_MAP.get( metricConfig.getName() );
@@ -285,7 +291,8 @@ public class ProjectConfigs
 
         if ( !TIME_SERIES_METRIC_CONFIG_NAME_MAP.containsKey( timeSeriesMetricConfig.getName() ) )
         {
-            throw new MetricConfigException( timeSeriesMetricConfig, " Unable to find a metric with a configured "
+            throw new MetricConfigException( timeSeriesMetricConfig,
+                                             " Unable to find a metric with a configured "
                                                                      + "identifier of '"
                                                                      + timeSeriesMetricConfig.getName()
                                                                      + "'." );
@@ -345,7 +352,9 @@ public class ProjectConfigs
         {
             throw new MetricConfigException( thresholdsConfig,
                                              " Unable to find a threshold type with a configured identifier "
-                                                               + "of '" + thresholdsConfig.getType() + "'." );
+                                                               + "of '"
+                                                               + thresholdsConfig.getType()
+                                                               + "'." );
         }
         return THRESHOLD_TYPE_MAP.get( thresholdsConfig.getType() );
     }
@@ -380,7 +389,8 @@ public class ProjectConfigs
             default:
                 throw new MetricConfigException( thresholdsConfig,
                                                  "Unrecognized threshold operator in project configuration '"
-                                                                   + thresholdsConfig.getOperator() + "'." );
+                                                                   + thresholdsConfig.getOperator()
+                                                                   + "'." );
         }
     }
 
@@ -426,6 +436,34 @@ public class ProjectConfigs
         Objects.requireNonNull( projectConfig, NULL_CONFIGURATION_ERROR );
 
         return projectConfig.getMetrics().stream().anyMatch( next -> !next.getTimeSeriesMetric().isEmpty() );
+    }
+
+    /**
+     * Compares the input instances of {@link ProjectConfig}. Returns a negative, zero, or positive value when the first
+     * input is less than, equal to, or greater than the second input, respectively. This is a minimal implementation
+     * that is consistent with {@link Object#equals(Object)} and otherwise compares the inputs according to the value
+     * of the {@link ProjectConfig#getName()} alone.
+     * 
+     * @param first the first input
+     * @param second the second input
+     * @return a negative, zero or positive integer when the first input is less than, equal to, or greater than
+     *            the second input
+     * @throws NullPointerException if either input is null
+     */
+
+    public static int compare( ProjectConfig first, ProjectConfig second )
+    {
+        Objects.requireNonNull( first, "The first input is null, which is not allowed. " );
+
+        Objects.requireNonNull( second, "The second input is null, which is not allowed. " );
+
+        if ( first.equals( second ) )
+        {
+            return 0;
+        }
+
+        // Null friendly natural order on project name
+        return Objects.compare( first.getName(), second.getName(), Comparator.nullsFirst( Comparator.naturalOrder() ) );
     }
 
     /**
@@ -556,8 +594,8 @@ public class ProjectConfigs
         }
 
         return Collections.unmodifiableSet( returnMe );
-    }    
-    
+    }
+
     /**
      * Returns <code>true</code> if the project configuration contains thresholds, <code>false</code> otherwise.
      * 
@@ -586,8 +624,8 @@ public class ProjectConfigs
                      .stream()
                      .anyMatch( testType -> testType.getType() == type
                                             || ( Objects.isNull( testType.getType() ) && type == defaultType ) );
-    }    
-    
+    }
+
     /**
      * Builds the mapping between the {@link MetricConstants} and the {@link MetricConfigName} 
      */
