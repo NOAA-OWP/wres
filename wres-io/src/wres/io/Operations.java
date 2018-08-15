@@ -192,25 +192,27 @@ public final class Operations {
                         ProjectDetails.LEFT_MEMBER
                 );
 
-                String message = "There is no '"
-                                 + projectDetails.getLeft().getVariable().getValue()
-                                 + "' data available for the left hand data "
-                                 + "evaluation dataset.";
+                StringBuilder message = new StringBuilder(  );
+                message = message.append( "There is no '")
+                                 .append(projectDetails.getLeft().getVariable().getValue())
+                                 .append("' data available for the left hand data ")
+                                 .append("evaluation dataset.");
 
-                if (availableVariables.size() > 0)
+                if (availableVariables.isEmpty())
                 {
-                    message += " Available variable(s):";
+                    message = message.append(" Available variable(s):");
                     for (String variable : availableVariables)
                     {
-                        message += System.lineSeparator() + "    " + variable;
+                        message = message.append(System.lineSeparator())
+                                         .append("    ").append(variable);
                     }
                 }
                 else
                 {
-                    message += " There are no other available variables for use.";
+                    message = message.append(" There are no other variables available for use.");
                 }
 
-                throw new NoDataException( message );
+                throw new NoDataException( message.toString() );
             }
         }
         catch ( InterruptedException e )
