@@ -199,6 +199,7 @@ project(':wres-datamodel')
     {
         compile 'org.slf4j:slf4j-api:1.7.25'
         compile 'org.apache.commons:commons-lang3:3.6'
+        compile project(':wres-config')
 
         testCompile 'junit:junit:4.12'
 
@@ -318,7 +319,6 @@ project(':wres-config')
 
     dependencies
     {
-        compile project(':wres-datamodel')
         // For Java 9+ compatibility:
         compile 'javax.xml.bind:jaxb-api:2.2.11'
 

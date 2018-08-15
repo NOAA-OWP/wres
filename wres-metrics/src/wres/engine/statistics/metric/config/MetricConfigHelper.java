@@ -14,7 +14,6 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import wres.config.MetricConfigException;
-import wres.config.ProjectConfigs;
 import wres.config.generated.MetricConfigName;
 import wres.config.generated.MetricsConfig;
 import wres.config.generated.OutputTypeSelection;
@@ -24,6 +23,7 @@ import wres.config.generated.ThresholdType;
 import wres.config.generated.ThresholdsConfig;
 import wres.config.generated.TimeSeriesMetricConfig;
 import wres.config.generated.TimeSeriesMetricConfigName;
+import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
@@ -519,7 +519,7 @@ public final class MetricConfigHelper
         // Iterate through the ordinary metrics and populate the map
         for ( MetricsConfig metrics : projectConfig.getMetrics() )
         {
-            returnMe.addAll( ProjectConfigs.getOrdinaryMetricsFromConfig( metrics, projectConfig ) );
+            returnMe.addAll( DataFactory.getOrdinaryMetricsFromConfig( metrics, projectConfig ) );
         }
 
         return Collections.unmodifiableSet( returnMe );
@@ -545,7 +545,7 @@ public final class MetricConfigHelper
         // Iterate through the metric groups
         for ( MetricsConfig metrics : projectConfig.getMetrics() )
         {
-            returnMe.addAll( ProjectConfigs.getTimeSeriesMetricsFromConfig( metrics, projectConfig ) );
+            returnMe.addAll( DataFactory.getTimeSeriesMetricsFromConfig( metrics, projectConfig ) );
         }
 
         return Collections.unmodifiableSet( returnMe );
@@ -599,7 +599,7 @@ public final class MetricConfigHelper
     {
 
         // Find the metrics
-        Set<MetricConstants> metrics = ProjectConfigs.getMetricsFromMetricsConfig( metricsConfig, projectConfig );
+        Set<MetricConstants> metrics = DataFactory.getMetricsFromMetricsConfig( metricsConfig, projectConfig );
 
         // No explicit thresholds, add an "all data" threshold
         if ( metricsConfig.getThresholds().isEmpty() )
@@ -629,7 +629,7 @@ public final class MetricConfigHelper
             ThresholdConstants.ThresholdGroup thresholdType = ThresholdConstants.ThresholdGroup.PROBABILITY;
             if ( Objects.nonNull( nextThresholds.getType() ) )
             {
-                thresholdType = ProjectConfigs.getThresholdGroup( nextThresholds );
+                thresholdType = DataFactory.getThresholdGroup( nextThresholds );
             }
 
             // Adjust the thresholds, adding "all data" where required, then append
@@ -670,7 +670,7 @@ public final class MetricConfigHelper
         // Operator specified
         if ( Objects.nonNull( thresholds.getOperator() ) )
         {
-            operator = ProjectConfigs.getThresholdOperator( thresholds );
+            operator = DataFactory.getThresholdOperator( thresholds );
         }
 
         ThresholdConstants.ThresholdDataType dataType = ThresholdConstants.ThresholdDataType.LEFT;
@@ -678,7 +678,7 @@ public final class MetricConfigHelper
         // Operator specified
         if ( Objects.nonNull( thresholds.getApplyTo() ) )
         {
-            dataType = ProjectConfigs.getThresholdDataType( thresholds );
+            dataType = DataFactory.getThresholdDataType( thresholds );
         }
 
         // Must be internally sourced: thresholds with global scope should be provided directly 

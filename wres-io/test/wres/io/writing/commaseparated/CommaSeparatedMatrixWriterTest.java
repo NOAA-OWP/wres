@@ -99,7 +99,8 @@ public class CommaSeparatedMatrixWriterTest extends CommaSeparatedWriterTestHelp
                                          null,
                                          datasetIdentifier,
                                          timeOne,
-                                         threshold );
+                                         threshold,
+                                         null  );
 
         double[][] fakeOutputs = new double[][] { { 23, 79 }, { 56, 342 } };
 

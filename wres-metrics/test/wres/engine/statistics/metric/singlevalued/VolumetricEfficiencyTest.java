@@ -18,8 +18,8 @@ import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
@@ -76,7 +76,8 @@ public final class VolumetricEfficiencyTest
                                                                                        "QME",
                                                                                        "NVE" ),
                                                                  window,
-                                                                 null );
+                                                                 null,
+                                                                 null  );
         //Check the results
         DoubleScoreOutput actual = ve.apply( input );
         DoubleScoreOutput expected = DoubleScoreOutput.of( 0.657420176533252, m1 );

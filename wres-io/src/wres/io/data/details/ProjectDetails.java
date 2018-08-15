@@ -49,7 +49,6 @@ import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.Variables;
 import wres.io.utilities.DataProvider;
-import wres.io.utilities.DataSetProvider;
 import wres.io.utilities.Database;
 import wres.io.utilities.LRUMap;
 import wres.io.utilities.NoDataException;
@@ -1873,7 +1872,7 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
             throws IOException, SQLException
     {
         if (ConfigHelper.isSimulation( this.getRight() ) ||
-            ProjectConfigs.hasTimeSeriesMetrics( this.projectConfig ) ||
+                ProjectConfigs.hasTimeSeriesMetrics( this.projectConfig ) ||
             this.usesGriddedData( this.getRight() ))
         {
             return 0;

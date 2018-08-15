@@ -97,7 +97,8 @@ public class CommaSeparatedDiagramOutputTest extends CommaSeparatedWriterTestHel
                                          null,
                                          datasetIdentifier,
                                          timeOne,
-                                         threshold );
+                                         threshold,
+                                         null  );
 
         Map<MetricDimension, double[]> fakeOutputs = new HashMap<>();
         fakeOutputs.put( MetricDimension.FORECAST_PROBABILITY,
