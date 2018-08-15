@@ -10,8 +10,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
+import wres.config.MetricConfigException;
+import wres.config.ProjectConfigs;
+import wres.config.generated.ThresholdOperator;
+import wres.config.generated.ThresholdsConfig;
 import wres.datamodel.inputs.pairs.DichotomousPair;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPair;
@@ -41,6 +47,9 @@ import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 public final class DataFactoryTest
 {
 
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
+    
     public static final double THRESHOLD = 0.00001;
 
     /**
@@ -356,4 +365,55 @@ public final class DataFactoryTest
         assertTrue( "Expected inequality.", !fifth.equals( sixth ) );
     }
 
+    /**
+     * Tests the {@link ProjectConfigs#getThresholdOperator(ThresholdsConfig)}.
+     * @throws MetricConfigException if a mapping could not be created
+     */
+
+    @Test
+    public void testGetThresholdOperator()
+    {
+        ThresholdsConfig first = new ThresholdsConfig( null,
+                                                       null,
+                                                       null,
+                                                       ThresholdOperator.GREATER_THAN );
+        assertTrue( "Failed to convert '" + ThresholdOperator.GREATER_THAN
+                    + "'.",
+                    DataFactory.getThresholdOperator( first ) == Operator.GREATER );
+
+        ThresholdsConfig second = new ThresholdsConfig( null,
+                                                        null,
+                                                        null,
+                                                        ThresholdOperator.LESS_THAN );
+        assertTrue( "Failed to convert '" + ThresholdOperator.LESS_THAN
+                    + "'.",
+                    DataFactory.getThresholdOperator( second ) == Operator.LESS );
+
+        ThresholdsConfig third = new ThresholdsConfig( null,
+                                                       null,
+                                                       null,
+                                                       ThresholdOperator.GREATER_THAN_OR_EQUAL_TO );
+        assertTrue( "Failed to convert '" + ThresholdOperator.GREATER_THAN_OR_EQUAL_TO
+                    + "'.",
+                    DataFactory.getThresholdOperator( third ) == Operator.GREATER_EQUAL );
+
+        ThresholdsConfig fourth = new ThresholdsConfig( null,
+                                                        null,
+                                                        null,
+                                                        ThresholdOperator.LESS_THAN_OR_EQUAL_TO );
+        assertTrue( "Failed to convert '" + ThresholdOperator.LESS_THAN_OR_EQUAL_TO
+                    + "'.",
+                    DataFactory.getThresholdOperator( fourth ) == Operator.LESS_EQUAL );
+
+        //Test exception cases
+        exception.expect( NullPointerException.class );
+        
+        DataFactory.getThresholdOperator( (ThresholdsConfig) null );
+
+        DataFactory.getThresholdOperator( new ThresholdsConfig( null,
+                                                                   null,
+                                                                   null,
+                                                                   null ) );
+    }
+    
 }

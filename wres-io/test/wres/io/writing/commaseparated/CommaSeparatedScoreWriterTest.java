@@ -90,7 +90,8 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTestHelpe
                                          MetricConstants.MAIN,
                                          datasetIdentifier,
                                          timeOne,
-                                         threshold );
+                                         threshold,
+                                         null  );
         MetricOutputMetadata fakeMetadataB =
                 MetricOutputMetadata.of( 1000,
                                          MeasurementUnit.of(),
@@ -99,7 +100,8 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTestHelpe
                                          MetricConstants.MAIN,
                                          datasetIdentifier,
                                          timeOne,
-                                         threshold );
+                                         threshold,
+                                         null  );
         MetricOutputMetadata fakeMetadataC =
                 MetricOutputMetadata.of( 1000,
                                          MeasurementUnit.of(),
@@ -108,7 +110,8 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTestHelpe
                                          MetricConstants.MAIN,
                                          datasetIdentifier,
                                          timeOne,
-                                         threshold );
+                                         threshold,
+                                         null  );
 
         List<DoubleScoreOutput> fakeOutputs = new ArrayList<>();
         fakeOutputs.add( DoubleScoreOutput.of( 1.0, fakeMetadataA ) );
@@ -219,7 +222,8 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTestHelpe
                                          null,
                                          datasetIdentifier,
                                          timeOne,
-                                         threshold );
+                                         threshold,
+                                         null  );
 
         Map<MetricConstants, Duration> fakeOutputs = new HashMap<>();
         fakeOutputs.put( MetricConstants.MEAN, Duration.ofHours( 1 ) );
@@ -306,7 +310,8 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTestHelpe
                                          MetricConstants.MAIN,
                                          datasetIdentifier,
                                          timeOne,
-                                         thresholdOne );
+                                         thresholdOne,
+                                         null  );
 
         List<DoubleScoreOutput> fakeOutputs =
                 Collections.singletonList( DoubleScoreOutput.of( 1.0, fakeMetadataA ) );
@@ -335,7 +340,8 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTestHelpe
                                          MetricConstants.MAIN,
                                          datasetIdentifier,
                                          timeOne,
-                                         thresholdTwo );
+                                         thresholdTwo,
+                                         null  );
 
         List<DoubleScoreOutput> fakeOutputsB =
                 Collections.singletonList( DoubleScoreOutput.of( 1.0, fakeMetadataB ) );
@@ -359,7 +365,8 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTestHelpe
                                          MetricConstants.MAIN,
                                          datasetIdentifier,
                                          timeTwo,
-                                         thresholdOne );
+                                         thresholdOne,
+                                         null  );
 
         List<DoubleScoreOutput> fakeOutputsC =
                 Collections.singletonList( DoubleScoreOutput.of( 1.0, fakeMetadataC ) );

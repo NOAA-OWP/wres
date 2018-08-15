@@ -2,7 +2,6 @@ package wres.io.retrieval;
 
 import java.io.IOException;
 import java.sql.Connection;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
@@ -37,8 +36,8 @@ import wres.datamodel.inputs.pairs.SingleValuedPair;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs.TimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.time.Event;
@@ -1262,8 +1261,9 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                                                             this.issueDatesPool );
 
         return Metadata.of( dim,
-                                            datasetIdentifier,
-                                            timeWindow );
+                            datasetIdentifier,
+                            timeWindow,
+                            projectConfig );
     }
 
     private EnsemblePair getPair(CondensedIngestedValue condensedIngestedValue)

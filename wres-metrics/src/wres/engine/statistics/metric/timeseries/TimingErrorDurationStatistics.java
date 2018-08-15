@@ -112,7 +112,8 @@ public class TimingErrorDurationStatistics implements Function<PairedOutput<Inst
                                                              componentID,
                                                              in.getIdentifier(),
                                                              in.getTimeWindow(),
-                                                             in.getThresholds() );
+                                                             in.getThresholds(),
+                                                             in.getProjectConfig() );
         return DurationScoreOutput.of( returnMe, meta );
     }
 

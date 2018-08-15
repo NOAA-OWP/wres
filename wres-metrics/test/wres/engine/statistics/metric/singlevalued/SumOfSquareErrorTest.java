@@ -15,8 +15,8 @@ import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
@@ -58,11 +58,13 @@ public final class SumOfSquareErrorTest
 
         //Metadata for the output
         final MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getRawData().size(),
-                                                                           MeasurementUnit.of( "CMS" ),
-                                                                           MeasurementUnit.of( "CMS" ),
-                                                                           MetricConstants.SUM_OF_SQUARE_ERROR,
-                                                                           MetricConstants.MAIN,
-                                                                           DatasetIdentifier.of( Location.of( "DRRC2" ), "SQIN", "HEFS", "ESP" ) );
+                                                                 MeasurementUnit.of( "CMS" ),
+                                                                 MeasurementUnit.of( "CMS" ),
+                                                                 MetricConstants.SUM_OF_SQUARE_ERROR,
+                                                                 MetricConstants.MAIN,
+                                                                 DatasetIdentifier.of( Location.of( "DRRC2" ),
+                                                                                       "SQIN",
+                                                                                       "HEFS" ) );
         //Check the results
         DoubleScoreOutput actual = sse.apply( input );
 
