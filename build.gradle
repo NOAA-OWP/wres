@@ -321,6 +321,12 @@ project(':wres-config')
         compile project(':wres-datamodel')
         // For Java 9+ compatibility:
         compile 'javax.xml.bind:jaxb-api:2.2.11'
+
+        // TODO: check that this is consistent with the declaration of dependencies elsewhere
+        // and update if not. Added in the context of #44996
+        // https://mvnrepository.com/artifact/org.jvnet.jaxb2_commons/jaxb2-basics-runtime
+        compile group: 'org.jvnet.jaxb2_commons', name: 'jaxb2-basics-runtime', version: '1.11.1'
+
         runtime 'com.sun.xml.bind:jaxb-core:2.2.11'
         runtime 'com.sun.xml.bind:jaxb-impl:2.2.11'
     }
@@ -353,7 +359,12 @@ project(':wres-config')
             // For location information to be in classes, -Xlocator is needed
             // here. For location information to be in instances at runtime, the
             // eclipselink moxy library is required at runtime (see runtime dep)
-            args = ['-Xinheritance', '-Xannotate', '-immutable', '-Xlocator']
+
+            // JBr: added -Xequals and -XhashCode implementations. Also added 
+            // -Xinject-code to allow for wres.config.generated.ProjectConfig 
+            // to implement java.lang.Comparable. See discussion in #44996
+
+            args = ['-Xinject-code', '-Xinheritance', '-Xannotate', '-immutable', '-Xlocator', '-Xequals', '-XhashCode' ]
             // May help in future with #37380:
             //args = ['-Xinheritance', '-Xannotate', '-immutable', '-Xlocator', '-Xdv']
             producesDir = "${xsdDir}"
