@@ -5,8 +5,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 import org.junit.Test;
 import org.xml.sax.Locator;
@@ -19,11 +17,10 @@ public class ValidationTest
 
     @Test
     public void specifyingOffsetForPIXMLFailsValidation()
-            throws IOException
     {
         ProjectConfigPlus mockProjectConfigPlus = mock( ProjectConfigPlus.class );
-        Path mockPath = Paths.get("fake.xml");
-        when(mockProjectConfigPlus.getPath()).thenReturn( mockPath );
+        String mockPath = "fake.xml";
+        when( mockProjectConfigPlus.getOrigin() ).thenReturn( mockPath );
 
         Locator mockSourceLocator =
                 new Locator() {
