@@ -290,8 +290,8 @@ public final class PIXMLReader extends XMLReader
      * @throws ProjectConfigException when a forecast is missing a forecast date
 	 */
 	private void parseEvent(XMLStreamReader reader)
-			throws SQLException
-	{
+            throws SQLException, IngestException
+    {
 		String value = null;
 		String localName;
         LocalDate localDate = null;
@@ -327,6 +327,15 @@ public final class PIXMLReader extends XMLReader
                           this.getFilename());
             return;
         }
+        else if (localDate == null || localTime == null)
+        {
+            throw new IngestException("An event for " + this.currentLID + " at "
+                                      + this.creationDate + " " + this.startDate
+                                      + " in " + this.getFilename() + " didn't have "
+                                      + "information about when the value was valid. "
+                                      + "The source is not properly formed and parsing "
+                                      + "cannot continue.");
+        }
 
         LocalDateTime dateTime = LocalDateTime.of( localDate, localTime );
         if (this.getIsForecast())
@@ -345,7 +354,7 @@ public final class PIXMLReader extends XMLReader
             int leadTimeInHours = (int) leadTime.toHours();
 
             Integer timeseriesID = this.getTimeSeriesID();
-            if ( this.inChargeOfIngest )
+            if ( this.inChargeOfIngest  )
             {
                 PIXMLReader.addForecastEvent( this.getValueToSave( value ),
                                               leadTimeInHours,

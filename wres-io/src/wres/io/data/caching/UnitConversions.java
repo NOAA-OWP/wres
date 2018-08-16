@@ -1,8 +1,10 @@
 package wres.io.data.caching;
 
+import java.io.IOException;
 import java.sql.SQLException;
 import java.util.Map;
 import java.util.Objects;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
@@ -58,7 +60,7 @@ public final class UnitConversions
             this.fromUnitName = MeasurementUnits.getNameByID( this.fromUnitID );
         }
 
-        private ConversionKey (DataProvider data) throws SQLException
+        private ConversionKey (DataProvider data)
         {
             String unitName = data.getValue( "unit_name" );
             this.toUnitName = unitName.toLowerCase();
@@ -77,40 +79,21 @@ public final class UnitConversions
         {
             if ( instance == null)
             {
-                instance = new UnitConversions();
+                UnitConversions.initialize();
             }
             return instance;
         }
     }
 
-    private UnitConversions ()
+    private UnitConversions(DataProvider data)
     {
         this.conversionMap = new ConcurrentHashMap<>(  );
-        try
-        {
-            ScriptBuilder script = new ScriptBuilder(  );
-            script.setHighPriority( true );
-
-            script.addLine("SELECT UC.*, M.unit_name");
-            script.addLine("FROM wres.UnitConversion UC");
-            script.addLine("INNER JOIN wres.MeasurementUnit M");
-            script.addTab().add("ON M.measurementunit_id = UC.to_unit;");
-
-            script.consume(
-                    conversionRow -> this.conversionMap.put(
-                            new ConversionKey( conversionRow ),
-                            new Conversion( conversionRow )
-                    )
-            );
-        }
-        catch (SQLException e)
-        {
-            // Failure to pre-populate cache should not affect primary outputs.
-            LOGGER.warn( "Failed to pre-populate unit conversions cache.", e );
-        }
+        data.consume(
+                row -> this.conversionMap.put(new ConversionKey( row ),
+                                              new Conversion( row ))
+        );
     }
 
-    // TODO: Find a better solution
     /**
      * Loads all unit conversions for later use
      */
@@ -118,7 +101,26 @@ public final class UnitConversions
     {
         synchronized ( UnitConversions.CACHE_LOCK )
         {
-            UnitConversions.getCache();
+            if (UnitConversions.instance == null)
+            {
+                ScriptBuilder script = new ScriptBuilder(  );
+                script.setHighPriority( true );
+
+                script.addLine("SELECT UC.*, M.unit_name");
+                script.addLine("FROM wres.UnitConversion UC");
+                script.addLine("INNER JOIN wres.MeasurementUnit M");
+                script.addTab().add("ON M.measurementunit_id = UC.to_unit;");
+
+                try
+                {
+                    UnitConversions.instance = new UnitConversions( script.getData() );
+                }
+                catch ( SQLException e )
+                {
+                    // Failure to pre-populate cache should not affect primary outputs.
+                    LOGGER.warn( "Failed to pre-populate unit conversions cache.", e );
+                }
+            }
         }
     }
 
@@ -140,14 +142,6 @@ public final class UnitConversions
     public static double convert(double value, int fromMeasurementUnitID, String toMeasurementUnit)
     {
         Conversion conversion = getConversion( fromMeasurementUnitID, toMeasurementUnit );
-
-        if (conversion == null)
-        {
-            throw new NotImplementedException("There is not currently a conversion from the measurement unit " +
-                                                      fromMeasurementUnitID +
-                                                      " to the measurement unit " +
-                                                        toMeasurementUnit);
-        }
         return conversion.convert(value);
     }
 
@@ -169,7 +163,7 @@ public final class UnitConversions
         private final double initialOffset;
         private final double finalOffset;
 
-        Conversion (DataProvider data) throws SQLException
+        Conversion (DataProvider data)
         {
             this.factor = data.getDouble("factor");
             this.initialOffset = data.getDouble("initial_offset");

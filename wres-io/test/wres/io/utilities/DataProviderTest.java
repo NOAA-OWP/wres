@@ -13,11 +13,15 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Stream;
 
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.internal.runners.statements.ExpectException;
+import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.powermock.core.classloader.annotations.PowerMockIgnore;
 import org.powermock.modules.junit4.PowerMockRunner;
@@ -225,5 +229,152 @@ public class DataProviderTest
 
             rowNumber++;
         }
+    }
+
+    @Test
+    /*
+     * Tests if numerical values may be converted to one another
+     */
+    public void numericalConversionTests()
+    {
+        String[] columns = {
+                "byte",
+                "short",
+                "int",
+                "long",
+                "float",
+                "double",
+                "string",
+                "bad_string",
+                "bad_object"
+        };
+
+        Object[] values = {
+                (byte)0,
+                (short)1,
+                2,
+                (long)3,
+                4.0F,
+                5.0,
+                "6",
+                "tokyo",
+                new Object()
+        };
+        DataProvider data = DataBuilder.with(columns )
+                                       .addRow( values )
+                                       .build();
+
+        // "byte" column conversions
+        String column = "byte";
+        Assert.assertEquals( (byte)0, data.getByte( column ) );
+        Assert.assertEquals( (short)0, data.getShort( column ) );
+        Assert.assertEquals( 0, data.getInt( column ) );
+        Assert.assertEquals( (long)0, data.getLong( column ) );
+        Assert.assertEquals( (float)0, data.getFloat( column ), 0.00001 );
+        Assert.assertEquals( (double)0, data.getDouble( column ), 0.00001 );
+        Assert.assertEquals( new BigDecimal( 0 ), data.getBigDecimal( column ) );
+        Assert.assertEquals( "0", data.getString( column ) );
+
+        // "short" column conversions
+        column = "short";
+        Assert.assertEquals( (byte)1, data.getByte( column ) );
+        Assert.assertEquals( (short)1, data.getShort( column ) );
+        Assert.assertEquals( 1, data.getInt( column ) );
+        Assert.assertEquals( (long)1, data.getLong( column ) );
+        Assert.assertEquals( (float)1, data.getFloat( column ), 0.00001 );
+        Assert.assertEquals( (double)1, data.getDouble( column ), 0.00001 );
+        Assert.assertEquals( new BigDecimal( 1 ), data.getBigDecimal( column ) );
+        Assert.assertEquals( "1", data.getString( column ) );
+
+        // "int" column conversions
+        column = "int";
+        Assert.assertEquals( (byte)2, data.getByte( column ) );
+        Assert.assertEquals( (short)2, data.getShort( column ) );
+        Assert.assertEquals( 2, data.getInt( column ) );
+        Assert.assertEquals( (long)2, data.getLong( column ) );
+        Assert.assertEquals( (float)2, data.getFloat( column ), 0.00001 );
+        Assert.assertEquals( (double)2, data.getDouble( column ), 0.00001 );
+        Assert.assertEquals( new BigDecimal( 2 ), data.getBigDecimal( column ) );
+        Assert.assertEquals( "2", data.getString( column ) );
+
+        // "long" column conversions
+        column = "long";
+        Assert.assertEquals( (byte)3, data.getByte( column ) );
+        Assert.assertEquals( (short)3, data.getShort( column ) );
+        Assert.assertEquals( 3, data.getInt( column ) );
+        Assert.assertEquals( (long)3, data.getLong( column ) );
+        Assert.assertEquals( (float)3, data.getFloat( column ), 0.00001 );
+        Assert.assertEquals( (double)3, data.getDouble( column ), 0.00001 );
+        Assert.assertEquals( new BigDecimal( 3 ), data.getBigDecimal( column ) );
+        Assert.assertEquals( "3", data.getString( column ) );
+
+        // "float" column conversions
+        column = "float";
+        Assert.assertEquals( (byte)4, data.getByte( column ) );
+        Assert.assertEquals( (short)4, data.getShort( column ) );
+        Assert.assertEquals( 4, data.getInt( column ) );
+        Assert.assertEquals( (long)4, data.getLong( column ) );
+        Assert.assertEquals( (float)4, data.getFloat( column ), 0.00001 );
+        Assert.assertEquals( (double)4, data.getDouble( column ), 0.00001 );
+        Assert.assertEquals( new BigDecimal( 4 ), data.getBigDecimal( column ) );
+        Assert.assertEquals( "4.0", data.getString( column ) );
+
+        // "double" column conversions
+        column = "double";
+        Assert.assertEquals( (byte)5, data.getByte( column ) );
+        Assert.assertEquals( (short)5, data.getShort( column ) );
+        Assert.assertEquals( 5, data.getInt( column ) );
+        Assert.assertEquals( (long)5, data.getLong( column ) );
+        Assert.assertEquals( (float)5, data.getFloat( column ), 0.00001 );
+        Assert.assertEquals( (double)5, data.getDouble( column ), 0.00001 );
+        Assert.assertEquals( new BigDecimal( 5 ), data.getBigDecimal( column ) );
+        Assert.assertEquals( "5.0", data.getString( column ) );
+
+        // "String" column conversions
+        column = "string";
+        Assert.assertEquals( (byte)6, data.getByte( column ) );
+        Assert.assertEquals( (short)6, data.getShort( column ) );
+        Assert.assertEquals( 6, data.getInt( column ) );
+        Assert.assertEquals( (long)6, data.getLong( column ) );
+        Assert.assertEquals( 6.0F, data.getFloat( column ), 0.00001 );
+        Assert.assertEquals( 6.0, data.getDouble( column ), 0.00001 );
+        Assert.assertEquals( new BigDecimal( 6 ), data.getBigDecimal( column ) );
+        Assert.assertEquals( "6", data.getString( column ) );
+
+        // "bad_string" column conversions
+        failsOnNumericConversion( data, "bad_string" );
+
+        // "bad_object" column conversions
+        failsOnNumericConversion( data, "bad_object" );
+    }
+
+    private void failsOnNumericConversion(final DataProvider data, final String column)
+    {
+        Stream.Builder<Function<String, ?>> builder = Stream.builder();
+        Stream<Function<String, ?>> conversions = builder.add(data::getByte)
+                                                         .add(data::getShort)
+                                                         .add(data::getInt)
+                                                         .add(data::getLong)
+                                                         .add(data::getFloat)
+                                                         .add(data::getDouble)
+                                                         .add(data::getBigDecimal)
+                                                         .build();
+
+        conversions.forEach( function -> {
+            boolean thrown = false;
+            try
+            {
+                function.apply( column );
+            }
+            catch (ClassCastException c)
+            {
+                thrown = true;
+            }
+
+            Assert.assertTrue( "'" + function.toString() +
+                               "' should not have been able to convert the value in '" +
+                               column,
+                               thrown );
+        } );
     }
 }

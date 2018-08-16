@@ -99,10 +99,10 @@ public interface DataProvider extends AutoCloseable
 
     /**
      * Groups the remaining data in the provider based on the given function.
-     * <br></br>
-     * <br></br>
-     * Given the function: provider -> provider.getString("location")
-     * <br></br>
+     * <br>
+     * <br>
+     * Given the function: provider -&gt; provider.getString("location")
+     * <br>
      * The following dataset:
      * <table>
      *     <caption>Initial Dataset</caption>

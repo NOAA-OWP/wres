@@ -28,6 +28,7 @@ import wres.util.Strings;
  */
 public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
 {
+    private static final int MAX_DETAILS = 5000;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Features.class);
     private static final Object CACHE_LOCK = new Object();
@@ -53,6 +54,11 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
      */
 	private static Features instance = null;
 
+	private Features()
+    {
+        this.initializeDetails();
+    }
+
 	private static Features getCache ()
 	{
 		synchronized (CACHE_LOCK)
@@ -60,7 +66,6 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
 			if ( instance == null)
 			{
                 instance = new Features();
-				instance.init();
 			}
 			return instance;
 		}
@@ -686,16 +691,6 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
 	
 	@Override
 	protected int getMaxDetails() {
-		return 5000;
-	}
-
-	/**
-	 * Loads all pre-existing Features into the instanced cache
-	 */
-	@Override
-    public synchronized void init()
-	{
-        LOGGER.trace("The features cache is being created");
-        getDetails();
+		return MAX_DETAILS;
 	}
 }

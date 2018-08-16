@@ -65,21 +65,6 @@ abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
 	 */
 	protected abstract int getMaxDetails();
 
-	 /**
-     * Loads all preexisting data into the cache
-     */
-	protected abstract void init();
-	
-	/**
-	 * Removes all items from the details and keys caches for the instance
-	 */
-    void clearCache () {
-	    synchronized(this.getKeyLock())
-	    {
-	        this.getKeyIndex().clear();
-	    }
-	}
-
 	T get (int id)
 	{
 		return this.getDetails().get(id);

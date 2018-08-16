@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.generated.DataSourceConfig;
 import wres.io.data.details.VariableDetails;
+import wres.io.utilities.DataProvider;
 import wres.io.utilities.ScriptBuilder;
 
 /**
@@ -17,6 +18,7 @@ import wres.io.utilities.ScriptBuilder;
  */
 public final class Variables extends Cache<VariableDetails, String>
 {
+    private static final int MAX_DETAILS = 30;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Variables.class);
     /**
@@ -46,12 +48,23 @@ public final class Variables extends Cache<VariableDetails, String>
 		{
 			if ( instance == null)
 			{
-				instance = new Variables();
-				instance.init();
+			    Variables.initialize();
 			}
 			return instance;
 		}
 	}
+
+	private Variables(DataProvider data)
+    {
+        this.initializeDetails();
+        if (data == null)
+        {
+            LOGGER.warn("The Variables cache was created with no data.");
+            return;
+        }
+
+        data.consume( variable -> this.add( VariableDetails.from( variable ) ) );
+    }
 
 	public static List<String> getAvailableForecastVariables(final Integer projectID,
                                                              final String projectMember)
@@ -300,47 +313,28 @@ public final class Variables extends Cache<VariableDetails, String>
 		return name;
 	}
 
-	public static VariableDetails getByName(String name) throws SQLException
-	{
-		VariableDetails details = null;
-
-		if (Variables.getCache().hasID( name ))
-		{
-			Integer id = Variables.getCache().getID( name );
-			details = Variables.getCache().get( id );
-		}
-
-		return details;
-	}
-
 	@Override
 	protected int getMaxDetails() {
-		return 100;
+		return MAX_DETAILS;
 	}
 
-    @Override
-    protected void init()
-    {       
-        synchronized(this.getKeyIndex())
+	private static void initialize()
+    {
+        try
         {
-            this.initializeDetails();
+            ScriptBuilder script = new ScriptBuilder(  );
+            script.setHighPriority( true );
 
-            try
-            {
-            	ScriptBuilder script = new ScriptBuilder(  );
-            	script.setHighPriority( true );
+            script.addLine("SELECT variable_id, variable_name");
+            script.add("FROM wres.Variable;");
 
-            	script.addLine("SELECT variable_id, variable_name");
-            	script.add("FROM wres.Variable;");
-
-            	script.consume( variable -> this.add(VariableDetails.from(variable)) );
-            }
-            catch ( SQLException sqlException )
-            {
-				// Failure to pre-populate cache should not affect primary outputs.
-                LOGGER.warn( "An error was encountered when trying to populate "
-                             + "the Variable cache.", sqlException );
-            }
+            Variables.instance = new Variables(script.getData());
+        }
+        catch ( SQLException sqlException )
+        {
+            // Failure to pre-populate cache should not affect primary outputs.
+            LOGGER.warn( "An error was encountered when trying to populate "
+                         + "the Variable cache.", sqlException );
         }
     }
 }

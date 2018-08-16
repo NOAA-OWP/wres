@@ -466,7 +466,7 @@ public final class SystemSettings extends XMLReader
 
     public static Connection getRawDatabaseConnection() throws SQLException
     {
-        return instance.databaseConfiguration.getRawConnection();
+        return instance.databaseConfiguration.getRawConnection(null);
     }
 
 	@Override

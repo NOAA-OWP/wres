@@ -652,7 +652,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
 
                 while (condensedValue != null)
                 {
-                    pairs = this.addPair( pairs, condensedValue, dataSourceConfig );
+                    this.addPair( pairs, condensedValue, dataSourceConfig );
                     aggregationStep++;
                     condensedValue = ingestedValues.condense(
                             aggregationStep,
@@ -764,7 +764,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
 
                         while ( condensedValue != null )
                         {
-                            pairs = this.addPair( pairs, condensedValue, dataSourceConfig );
+                            this.addPair( pairs, condensedValue, dataSourceConfig );
                             aggregationStep++;
                             condensedValue = ingestedValues.condense(
                                     aggregationStep,
@@ -800,7 +800,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
 
                     while ( condensedValue != null )
                     {
-                        pairs = this.addPair( pairs, condensedValue, dataSourceConfig );
+                        this.addPair( pairs, condensedValue, dataSourceConfig );
                         aggregationStep++;
                         condensedValue = ingestedValues.condense(
                                 aggregationStep,
@@ -1116,7 +1116,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
      * @throws NoDataException Thrown if there wasn't enough data to determine
      * if a pair is viable
      */
-    private List<ForecastedPair> addPair(
+    private void addPair(
             List<ForecastedPair> pairs,
             CondensedIngestedValue condensedIngestedValue,
             DataSourceConfig dataSourceConfig)
@@ -1149,7 +1149,6 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                 pairs.add( packagedPair );
             }
         }
-        return pairs;
     }
 
     /**
