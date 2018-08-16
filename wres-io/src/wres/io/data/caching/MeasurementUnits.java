@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.io.data.details.MeasurementDetails;
+import wres.io.utilities.DataProvider;
 import wres.io.utilities.Database;
 import wres.io.utilities.ScriptBuilder;
 import wres.util.Collections;
@@ -14,7 +15,9 @@ import wres.util.Collections;
  * Caches details mapping units of measurements to their IDs
  * @author Christopher Tubbs
  */
-public class MeasurementUnits extends Cache<MeasurementDetails, String> {
+public class MeasurementUnits extends Cache<MeasurementDetails, String>
+{
+    private static final int MAX_DETAILS = 100;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MeasurementUnits.class);
     /**
@@ -38,14 +41,24 @@ public class MeasurementUnits extends Cache<MeasurementDetails, String> {
         return MeasurementUnits.KEY_LOCK;
     }
 
+    private MeasurementUnits(DataProvider data)
+    {
+        while (data.next())
+        {
+            if (!data.isNull( "unit_name" ))
+            {
+                this.getKeyIndex().put( data.getString( "unit_name" ), data.getInt( "measurementunit_id" ) );
+            }
+        }
+    }
+
     private static MeasurementUnits getCache()
     {
         synchronized (CACHE_LOCK)
         {
             if ( instance == null)
             {
-                instance = new MeasurementUnits();
-                instance.init();
+                MeasurementUnits.initialize();
             }
             return instance;
         }
@@ -81,14 +94,13 @@ public class MeasurementUnits extends Cache<MeasurementDetails, String> {
 
 	@Override
 	protected int getMaxDetails() {
-		return 100;
+		return MAX_DETAILS;
 	}
 	
 	/**
 	 * Loads all pre-existing data into the instance cache
 	 */
-	@Override
-    protected synchronized void init()
+    private static synchronized void initialize()
 	{
         try
         {
@@ -97,12 +109,9 @@ public class MeasurementUnits extends Cache<MeasurementDetails, String> {
 
             script.addLine("SELECT measurementunit_id, unit_name");
             script.addLine("FROM wres.MeasurementUnit");
-            script.add("LIMIT ", this.getMaxDetails(), ";");
+            script.add("LIMIT ", MAX_DETAILS, ";");
 
-            Database.populateMap( this.getKeyIndex(),
-                                  script.toString(),
-                                  "unit_name",
-                                  "measurementunit_id" );
+            MeasurementUnits.instance = new MeasurementUnits( script.getData() );
         }
         catch (SQLException error)
         {

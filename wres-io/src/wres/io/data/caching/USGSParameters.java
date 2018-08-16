@@ -79,7 +79,7 @@ public class USGSParameters
             this.aggregation = lineParts[4].replaceAll("\"", "");
         }
 
-        public USGSParameter (DataProvider data) throws SQLException
+        public USGSParameter (DataProvider data)
         {
             this.name = data.getString("name");
             this.description = data.getString( "description" );
@@ -87,23 +87,6 @@ public class USGSParameters
             this.measurementUnit = data.getString("measurement_unit");
             this.aggregation = data.getString("aggregation");
             this.measurementUnitID = data.getInt( "measurementunit_id" );
-        }
-
-        private USGSParameter (
-                final String name,
-                final String description,
-                final String parameterCode,
-                final String aggregation,
-                final String measurementUnit,
-                final Integer measurementUnitID
-        )
-        {
-            this.name = name;
-            this.description = description;
-            this.parameterCode = parameterCode;
-            this.aggregation = aggregation;
-            this.measurementUnit = measurementUnit;
-            this.measurementUnitID = measurementUnitID;
         }
 
         @Override
@@ -165,33 +148,39 @@ public class USGSParameters
 
     private static final Object PARAMETER_LOCK = new Object();
 
-    private static ConcurrentMap<ParameterKey, USGSParameter> parameterStore;
+    private static final ConcurrentMap<ParameterKey, USGSParameter> parameterStore = new ConcurrentSkipListMap<>(  );
 
     private static ConcurrentMap<ParameterKey, USGSParameter> getParameterStore()
             throws SQLException
     {
         synchronized ( PARAMETER_LOCK )
         {
-            if (USGSParameters.parameterStore == null)
+            if (USGSParameters.parameterStore == null || USGSParameters.parameterStore.isEmpty())
             {
-                USGSParameters.parameterStore = new ConcurrentSkipListMap<>(  );
-                USGSParameters.init();
+                USGSParameters.initialize();
             }
 
             return USGSParameters.parameterStore;
         }
     }
 
-    private static void init() throws SQLException
+    private static void initialize() throws SQLException
     {
         ScriptBuilder script = new ScriptBuilder(  );
         script.setHighPriority( true );
 
         script.add("SELECT * FROM wres.USGSParameter;");
-        script.consume( parameter -> {
-            USGSParameter usgsParameter = new USGSParameter( parameter );
-            USGSParameters.parameterStore.putIfAbsent( usgsParameter.getKey(), usgsParameter );
-        } );
+
+        USGSParameters.populate( script.getData() );
+    }
+
+    private static void populate(DataProvider data)
+    {
+        while (data.next())
+        {
+            USGSParameter parameter = new USGSParameter( data );
+            USGSParameters.parameterStore.putIfAbsent( parameter.getKey(), parameter );
+        }
     }
 
     public static USGSParameter getParameterByCode(final String code)

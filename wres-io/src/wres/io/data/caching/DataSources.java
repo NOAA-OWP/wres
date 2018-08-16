@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import ohd.hseb.util.data.DataSetSortComparator;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,6 +30,7 @@ import wres.util.TimeHelper;
  */
 public class DataSources extends Cache<SourceDetails, SourceKey>
 {
+    private static final int MAX_DETAILS = 10000;
     private static final Logger LOGGER = LoggerFactory.getLogger(DataSources.class);
     private static final Object CACHE_LOCK = new Object();
 
@@ -52,14 +54,38 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
      */
 	private static DataSources instance = null;
 
+	public DataSources(final DataProvider data)
+    {
+        this.initializeDetails();
+        if (data == null)
+        {
+            LOGGER.warn("The DataSources cache was created with no data.");
+            return;
+        }
+
+        SourceDetails detail;
+
+        while ( data.next() )
+        {
+            detail = new SourceDetails();
+            detail.setOutputTime( data.getString( "output_time" ) );
+            detail.setSourcePath( data.getString( "path" ) );
+            detail.setHash( data.getString( "hash" ) );
+            detail.setIsPointData( data.getBoolean( "is_point_data" ) );
+            detail.setID( data.getInt( "source_id" ) );
+
+            this.getKeyIndex().put( detail.getKey(), detail.getId() );
+            this.getDetails().put( detail.getId(), detail );
+        }
+    }
+
 	private static DataSources getCache()
     {
         synchronized (CACHE_LOCK)
         {
             if ( instance == null)
             {
-                instance = new DataSources();
-                instance.init();
+                DataSources.initialize();
             }
             return instance;
         }
@@ -316,43 +342,23 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
 
 	@Override
 	protected int getMaxDetails() {
-		return 10000;
+		return MAX_DETAILS;
 	}
 
-    @Override
-    protected synchronized void init()
+	private static void initialize()
     {
-        // Exit if there are details populated and the keys and details are synced
-        if (getKeyIndex().size() > 0) {
-            this.clearCache();
-        }
-
         Connection connection = null;
-        this.initializeDetails();
 
         try
         {
             connection = Database.getHighPriorityConnection();
             String loadScript = "SELECT source_id, path, CAST(output_time AS TEXT) AS output_time, hash, is_point_data" + System.lineSeparator();
             loadScript += "FROM wres.Source" + System.lineSeparator();
-            loadScript += "LIMIT " + getMaxDetails();
-            
+            loadScript += "LIMIT " + MAX_DETAILS;
+
             try (DataProvider sources = Database.getResults(connection, loadScript))
             {
-                SourceDetails detail;
-
-                while ( sources.next() )
-                {
-                    detail = new SourceDetails();
-                    detail.setOutputTime( sources.getString( "output_time" ) );
-                    detail.setSourcePath( sources.getString( "path" ) );
-                    detail.setHash( sources.getString( "hash" ) );
-                    detail.setIsPointData( sources.getBoolean( "is_point_data" ) );
-                    detail.setID( sources.getInt( "source_id" ) );
-
-                    this.getKeyIndex().put( detail.getKey(), detail.getId() );
-                    this.getDetails().put( detail.getId(), detail );
-                }
+                DataSources.instance = new DataSources(sources);
             }
         }
         catch (SQLException error)

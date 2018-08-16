@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import wres.config.generated.EnsembleCondition;
 import wres.io.data.details.EnsembleDetails;
 import wres.io.data.details.EnsembleDetails.EnsembleKey;
+import wres.io.utilities.DataProvider;
 import wres.io.utilities.Database;
 import wres.io.utilities.ScriptBuilder;
 import wres.util.NetCDF;
@@ -24,6 +25,8 @@ import wres.util.NetCDF;
  * @author Christopher Tubbs
  */
 public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
+
+    private static final int MAX_DETAILS = 500;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Ensembles.class);
     private static final Object CACHE_LOCK = new Object();
@@ -48,14 +51,28 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
      */
 	private static Ensembles instance = null;
 
+	private Ensembles(DataProvider data)
+    {
+        EnsembleDetails detail;
+
+        while (data.next()) {
+            detail = new EnsembleDetails();
+            detail.setEnsembleName(data.getString("ensemble_name"));
+            detail.setEnsembleMemberID(String.valueOf(data.getInt("ensemblemember_id")));
+            detail.setQualifierID(data.getString("qualifier_id"));
+            detail.setID(data.getInt("ensemble_id"));
+
+            this.add(detail.getKey(), detail.getId());
+        }
+    }
+
 	private static Ensembles getCache()
 	{
 		synchronized (CACHE_LOCK)
 		{
 			if ( instance == null)
 			{
-				instance = new Ensembles();
-				instance.init();
+			    Ensembles.initialize();
 			}
 			return instance;
 		}
@@ -171,39 +188,27 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
 	
 	@Override
 	protected int getMaxDetails() {
-		return 500;
+		return Ensembles.MAX_DETAILS;
 	}
 	
 	/**
 	 * Loads all pre-existing Ensembles into the instanced cache
 	 */
-	@Override
-    protected synchronized void init()
+    private static synchronized void initialize()
 	{
         Connection connection = null;
-        Statement ensembleQuery = null;
-        ResultSet ensembles = null;
+
         try
         {
             connection = Database.getHighPriorityConnection();
-            ensembleQuery = connection.createStatement();
             
             String loadScript = "SELECT ensemble_id, ensemble_name, qualifier_id, ensemblemember_id" + NEWLINE;
             loadScript += "FROM wres.ensemble" + NEWLINE;
-            loadScript += "LIMIT " + getMaxDetails();
-            
-            ensembles = ensembleQuery.executeQuery(loadScript);
-            
-            EnsembleDetails detail;
-            
-            while (ensembles.next()) {
-                detail = new EnsembleDetails();
-                detail.setEnsembleName(ensembles.getString("ensemble_name"));
-                detail.setEnsembleMemberID(String.valueOf(ensembles.getInt("ensemblemember_id")));
-                detail.setQualifierID(ensembles.getString("qualifier_id"));
-                detail.setID(ensembles.getInt("ensemble_id"));
-                
-                this.add(detail.getKey(), detail.getId());
+            loadScript += "LIMIT " + MAX_DETAILS;
+
+            try (DataProvider data = Database.getResults( connection, loadScript ))
+            {
+                Ensembles.instance = new Ensembles( data );
             }
         }
         catch (SQLException error)
@@ -213,32 +218,6 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
         }
         finally
         {
-            if (ensembles != null)
-            {
-                try
-                {
-                    ensembles.close();
-                }
-                catch(SQLException e)
-                {
-                    // Exception on close should not affect primary outputs.
-                    LOGGER.warn( "An error was encountered when trying to close the result set containing ensemble information.", e);
-                }
-            }
-
-            if (ensembleQuery != null)
-            {
-                try
-                {
-                    ensembleQuery.close();
-                }
-                catch(SQLException e)
-                {
-                    // Exception on close should not affect primary outputs.
-                    LOGGER.warn( "An error was encountered when trying to close the query that loaded ensemble information.", e );
-                }
-            }
-
             if (connection != null)
             {
                 Database.returnHighPriorityConnection(connection);

@@ -15,6 +15,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.mchange.v2.c3p0.ComboPooledDataSource;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -23,6 +24,7 @@ import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PowerMockIgnore;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
+import org.powermock.reflect.Whitebox;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.yandex.qatools.embed.postgresql.EmbeddedPostgres;
@@ -32,7 +34,11 @@ import static org.junit.Assert.assertTrue;
 import static ru.yandex.qatools.embed.postgresql.EmbeddedPostgres.cachedRuntimeConfig;
 import static ru.yandex.qatools.embed.postgresql.distribution.Version.Main.V9_6;
 
+import wres.io.data.details.SourceDetails;
+import wres.io.utilities.DataBuilder;
+import wres.io.utilities.DataProvider;
 import wres.io.utilities.Database;
+import wres.system.DatabaseSchema;
 import wres.system.SystemSettings;
 
 @Ignore
@@ -217,10 +223,13 @@ java.lang.NullPointerException
         int portNumber = port.getAndIncrement();
 
         LOGGER.debug("Port number is {}", portNumber);
+
+        final String databaseName = "wrestest";
+
         String jdbcUrl = pgInstance.start(cachedRuntimeConfig(Paths.get(".postgres_testinstance")),
                 "localhost",
                 portNumber,
-                "wrestest",
+                databaseName,
                 "wres",
                 "test",
                 new ArrayList<>());
@@ -239,8 +248,10 @@ java.lang.NullPointerException
         try (Connection con = connectionPoolDataSource.getConnection();
              Statement s = con.createStatement())
         {
-            s.execute(readStringFromFile("SQL/wres.Source.sql",
-                    StandardCharsets.US_ASCII));
+            DatabaseSchema schema = new DatabaseSchema( databaseName );
+            schema.applySchema( con );
+            /*s.execute(readStringFromFile("SQL/wres.Source.sql",
+                    StandardCharsets.US_ASCII));*/
         }
 
         // Because SystemSettings is static, and parses XML in constructor,
@@ -258,7 +269,34 @@ java.lang.NullPointerException
         // run of two tests, the first connectionPoolDataSource ended up
         // being used during the second test, and of course that one was closed.
 
+        // TODO: A process for running liquibase on the connection needs to be setup
+
+        this.initializeDataSources();
+
         LOGGER.trace("setup ended");
+    }
+
+    private void initializeDataSources()
+    {
+        DataProvider data = DataBuilder.with( "output_time", "path", "hash", "is_point_data", "source_id" )
+                                       .addRow( "2018-08-08T00:00:00Z",
+                                                "/somewhere/somewhere/1.ext",
+                                                "1234",
+                                                false,
+                                                1 )
+                                       .addRow( "2018-08-08T01:00:00Z",
+                                                "/somewhere/somewhere/2.ext",
+                                                "12345",
+                                                false,
+                                                2 )
+                                       .addRow( "2018-08-08T02:00:00Z",
+                                                "/somewhere/somewhere/3.ext",
+                                                "123456",
+                                                false,
+                                                3 )
+                                       .build();
+
+        Whitebox.setInternalState( DataSources.class, "instance", new DataSources(data) );
     }
 
     @Test
@@ -302,21 +340,103 @@ java.lang.NullPointerException
         LOGGER.trace("initializeCacheWithExistingData began");
 
         // Create one cache that inserts data to set us up for 2nd cache init.
-        DataSources sc = new DataSources();
-        sc.init();
+        DataSources sc = new DataSources(null);
+
         final String path = "/this/is/just/a/test";
         final String time = "2017-06-20 16:55:00";
         Integer firstId = sc.getID(path, time, null, "test");
 
         // Initialize a second cache, it should find the same data already present
-        DataSources scTwo = new DataSources();
-        scTwo.init();
+        DataSources scTwo = new DataSources(null);
+
         Integer secondId = scTwo.getID(path, time, null, "test");
 
         assertEquals("Second cache should find id in database from first cache",
                     firstId, secondId);
 
         LOGGER.trace("initializeCacheWithExistingData ended");
+    }
+
+    @Test
+    public void testAccess()
+    {
+        SourceDetails firstDetails = DataSources.getById( 1 );
+
+        Assert.assertNotEquals( firstDetails, null );
+
+        Assert.assertEquals(firstDetails.getId(), (Integer)1);
+        Assert.assertFalse(firstDetails.getIsPointData());
+        Assert.assertFalse(firstDetails.performedInsert());
+        Assert.assertEquals( firstDetails.getHash(), "1234" );
+
+        SourceDetails.SourceKey firstKey = firstDetails.getKey();
+        Assert.assertEquals( firstKey.getSourcePath(), "/somewhere/somewhere/1.ext" );
+        Assert.assertEquals( firstKey.getLead(), null );
+        Assert.assertEquals( firstKey.getSourceTime(), "2018-08-08T00:00:00Z");
+        Assert.assertEquals( firstKey.getHash(), firstDetails.getHash() );
+
+        SourceDetails secondDetails = null;
+
+        try
+        {
+            secondDetails = DataSources.get(
+                    "/somewhere/somewhere/1.ext",
+                    "2018-08-08T00:00:00Z",
+                    null,
+                    "1234" );
+        }
+        catch(SQLException e)
+        {
+            Assert.fail("The DataSources cache tried to retrieve data "
+                        + "from the database and failed, when it shouldn't "
+                        + "have tried to go in the first place.");
+        }
+
+        Assert.assertNotEquals( secondDetails, null );
+
+        Assert.assertEquals( firstDetails.getId(), secondDetails.getId() );
+        Assert.assertEquals( firstDetails.getHash(), secondDetails.getHash() );
+        Assert.assertEquals( firstDetails.getIsPointData(), secondDetails.getIsPointData() );
+
+        SourceDetails.SourceKey secondKey = secondDetails.getKey();
+
+        Assert.assertEquals( firstKey.getHash(), secondKey.getHash() );
+        Assert.assertEquals( firstKey.getSourceTime(), secondKey.getSourceTime() );
+        Assert.assertEquals( firstKey.getSourcePath(), secondKey.getSourcePath() );
+        Assert.assertEquals(firstKey.getLead(), secondKey.getLead());
+
+        Assert.assertEquals( firstKey, secondKey );
+
+        Assert.assertEquals(firstDetails, secondDetails);
+
+        SourceDetails thirdDetails = DataSources.getById( 3 );
+
+        Assert.assertNotEquals( thirdDetails, null );
+
+        Assert.assertEquals(thirdDetails.getId(), (Integer)3);
+        Assert.assertFalse(thirdDetails.getIsPointData());
+        Assert.assertFalse(thirdDetails.performedInsert());
+        Assert.assertEquals( thirdDetails.getHash(), "123456" );
+
+        SourceDetails.SourceKey thirdKey = firstDetails.getKey();
+        Assert.assertEquals( thirdKey.getSourcePath(), "/somewhere/somewhere/3.ext" );
+        Assert.assertEquals( thirdKey.getLead(), null );
+        Assert.assertEquals( thirdKey.getSourceTime(), "2018-08-08T02:00:00Z");
+        Assert.assertEquals( thirdKey.getHash(), firstDetails.getHash() );
+
+        Assert.assertNotEquals( secondKey.getSourcePath(), thirdKey.getSourcePath());
+        Assert.assertNotEquals( secondKey.getSourceTime(), thirdKey.getSourceTime());
+        Assert.assertNotEquals( secondKey.getHash(), thirdKey.getHash());
+
+        Assert.assertNotEquals( secondKey, thirdKey );
+
+        Assert.assertNotEquals(secondDetails.getHash(), thirdDetails.getHash());
+        Assert.assertNotEquals(secondDetails.getId(), thirdDetails.getId());
+
+        Assert.assertNotEquals( secondDetails, thirdDetails );
+
+        Assert.assertEquals(-1, secondDetails.compareTo(firstDetails));
+        Assert.assertEquals(1, thirdDetails.compareTo( secondDetails ));
     }
 
     @After

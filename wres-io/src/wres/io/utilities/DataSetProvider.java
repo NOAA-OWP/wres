@@ -320,12 +320,37 @@ public class DataSetProvider implements DataProvider
             throw new IllegalStateException( "The data set is inaccessible." );
         }
 
-        if (this.isNull( columnName ))
+        Object value = this.getObject(columnName);
+
+        if (value == null)
         {
+            // Return the default byte
             return 0;
         }
+        else if (value instanceof Byte)
+        {
+            return (byte)value;
+        }
+        else if (value instanceof Number)
+        {
+            // Use Number to convert a numerical type to a byte
+            return ((Number)value).byteValue();
+        }
 
-        return (byte)this.getObject( columnName );
+        try
+        {
+            // If the string representation of whatever object can be used as a byte, use that
+            // This should work in cases where the value is "1" or an object whose "toString()" returns a number.
+            return Byte.parseByte( value.toString() );
+        }
+        catch (NumberFormatException c)
+        {
+            throw new ClassCastException(
+                    "The type '" + value.getClass().toString() +
+                    "' with the value '" + value.toString() +
+                    "' in the column '" + columnName +
+                    "' cannot be casted as a byte." );
+        }
     }
 
     @Override
@@ -336,12 +361,35 @@ public class DataSetProvider implements DataProvider
             throw new IllegalStateException( "The data set is inaccessible." );
         }
 
-        if (this.isNull( columnName ))
+        Object value = this.getObject(columnName);
+
+        if (value == null)
         {
             return 0;
         }
+        else if (value instanceof Integer)
+        {
+            return (int)value;
+        }
+        else if (value instanceof Number)
+        {
+            return ((Number)value).intValue();
+        }
 
-        return (int)this.getObject( columnName );
+        try
+        {
+            // If the string representation of whatever object can be used as a int, use that
+            // This should work in cases where the value is "1" or an object whose "toString()" returns a number.
+            return Integer.parseInt( value.toString() );
+        }
+        catch (NumberFormatException c)
+        {
+            throw new ClassCastException(
+                    "The type '" + value.getClass().toString() +
+                    "' with the value '" + value.toString() +
+                    "' in the column '" + columnName +
+                    "' cannot be casted as an integer." );
+        }
     }
 
     @Override
@@ -352,12 +400,35 @@ public class DataSetProvider implements DataProvider
             throw new IllegalStateException( "The data set is inaccessible." );
         }
 
-        if (this.isNull( columnName ))
+        Object value = this.getObject(columnName);
+
+        if (value == null)
         {
             return 0;
         }
+        else if (value instanceof Short)
+        {
+            return (short)value;
+        }
+        else if (value instanceof Number)
+        {
+            return ((Number)value).shortValue();
+        }
 
-        return (short)this.getObject( columnName );
+        try
+        {
+            // If the string representation of whatever object can be used as a short, use that
+            // This should work in cases where the value is "1" or an object whose "toString()" returns a number.
+            return Short.parseShort( value.toString() );
+        }
+        catch (NumberFormatException c)
+        {
+            throw new ClassCastException(
+                    "The type '" + value.getClass().toString() +
+                    "' with the value '" + value.toString() +
+                    "' in the column '" + columnName +
+                    "' cannot be casted as a short." );
+        }
     }
 
     @Override
@@ -368,12 +439,35 @@ public class DataSetProvider implements DataProvider
             throw new IllegalStateException( "The data set is inaccessible." );
         }
 
-        if (this.isNull( columnName ))
+        Object value = this.getObject( columnName );
+
+        if (value == null)
         {
-            return 0;
+            return 0L;
+        }
+        else if (value instanceof Long)
+        {
+            return (long)value;
+        }
+        else if (value instanceof Number)
+        {
+            return ((Number)value).longValue();
         }
 
-        return (long)this.getObject( columnName );
+        try
+        {
+            // If the string representation of whatever object can be used as a long, use that
+            // This should work in cases where the value is "1" or an object whose "toString()" returns a number.
+            return Long.parseLong( value.toString() );
+        }
+        catch (NumberFormatException c)
+        {
+            throw new ClassCastException(
+                    "The type '" + value.getClass().toString() +
+                    "' with the value '" + value.toString() +
+                    "' in the column '" + columnName +
+                    "' cannot be casted as a long." );
+        }
     }
 
     @Override
@@ -384,12 +478,35 @@ public class DataSetProvider implements DataProvider
             throw new IllegalStateException( "The data set is inaccessible." );
         }
 
-        if (this.isNull( columnName ))
+        Object value = this.getObject(columnName);
+
+        if (value == null)
         {
-            return 0;
+            return 0.0F;
+        }
+        else if (value instanceof Float)
+        {
+            return (float)value;
+        }
+        else if (value instanceof Number)
+        {
+            return ( ( Number ) value ).floatValue();
         }
 
-        return (float)this.getObject( columnName );
+        try
+        {
+            // If the string representation of whatever object can be used as a float, use that
+            // This should work in cases where the value is "1.0" or an object whose "toString()" returns a number.
+            return Float.parseFloat( value.toString() );
+        }
+        catch (NumberFormatException c)
+        {
+            throw new ClassCastException(
+                    "The type '" + value.getClass().toString() +
+                    "' with the value '" + value.toString() +
+                    "' in the column '" + columnName +
+                    "' cannot be casted as a float." );
+        }
     }
 
     @Override
@@ -400,12 +517,35 @@ public class DataSetProvider implements DataProvider
             throw new IllegalStateException( "The data set is inaccessible." );
         }
 
-        if (this.isNull( columnName ))
+        Object value = this.getObject(columnName);
+
+        if (value == null)
         {
-            return 0;
+            return 0.0;
+        }
+        else if (value instanceof Double)
+        {
+            return (double)this.getObject( columnName );
+        }
+        else if (value instanceof Number)
+        {
+            return ((Number)value).doubleValue();
         }
 
-        return (double)this.getObject( columnName );
+        try
+        {
+            // If the string representation of whatever object can be used as a double, use that
+            // This should work in cases where the value is "1.0" or an object whose "toString()" returns a number.
+            return Double.parseDouble( value.toString() );
+        }
+        catch (NumberFormatException c)
+        {
+            throw new ClassCastException(
+                    "The type '" + value.getClass().toString() +
+                    "' with the value '" + value.toString() +
+                    "' in the column '" + columnName +
+                    "' cannot be casted as a double." );
+        }
     }
 
     @Override
@@ -415,7 +555,46 @@ public class DataSetProvider implements DataProvider
         {
             throw new IllegalStateException( "The data set is inaccessible." );
         }
-        return (Double[])this.getObject(columnName);
+
+        Object array = this.getObject(columnName);
+
+        if (array == null)
+        {
+            return null;
+        }
+        else if (array instanceof Double[])
+        {
+            return (Double[])this.getObject(columnName);
+        }
+        else if (array instanceof Number[])
+        {
+            Number[] numbers = (Number[])array;
+            Double[] result = new Double[numbers.length];
+
+            for (int i = 0; i < numbers.length; ++i)
+            {
+                result[i] = numbers[i].doubleValue();
+            }
+
+            return result;
+        }
+        else if (array instanceof String[])
+        {
+            String[] numbers = (String[])array;
+            Double[] result = new Double[numbers.length];
+
+            for (int i = 0; i < numbers.length; ++i)
+            {
+                result[i] = Double.parseDouble( numbers[i] );
+            }
+
+            return result;
+        }
+
+        throw new ClassCastException( "The type '" +
+                                      array.getClass().toString() +
+                                      "' in the column '" + columnName +
+                                      "' cannot be casted as a double array." );
     }
 
     @Override
@@ -425,7 +604,52 @@ public class DataSetProvider implements DataProvider
         {
             throw new IllegalStateException( "The data set is inaccessible." );
         }
-        return (BigDecimal)this.getObject( columnName );
+
+        Object value = this.getObject(columnName);
+
+        if (value == null)
+        {
+            return null;
+        }
+        else if (value instanceof Double)
+        {
+            return new BigDecimal( (Double)value );
+        }
+        else if (value instanceof Float)
+        {
+            return new BigDecimal( (Float)value );
+        }
+        else if (value instanceof Integer)
+        {
+            return new BigDecimal( (Integer)value );
+        }
+        else if (value instanceof Long)
+        {
+            return new BigDecimal( (Long)value );
+        }
+        else if (value instanceof Short)
+        {
+            return new BigDecimal( (Short)value );
+        }
+        else if (value instanceof Byte)
+        {
+            return new BigDecimal( (Byte)value );
+        }
+
+        try
+        {
+            // If the string representation of whatever object can be used as a BigDecimal, use that
+            // This should work in cases where the value is "1" or an object whose "toString()" returns a number.
+            return new BigDecimal( value.toString() );
+        }
+        catch (NumberFormatException c)
+        {
+            throw new ClassCastException(
+                    "The type '" + value.getClass().toString() +
+                    "' with the value '" + value.toString() +
+                    "' in the column '" + columnName +
+                    "' cannot be casted as a BigDecimal." );
+        }
     }
 
     @Override

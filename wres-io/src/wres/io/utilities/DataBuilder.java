@@ -76,7 +76,7 @@ public class DataBuilder
      * @param data The data to insert into the new row
      * @return The updated builder
      */
-    public DataBuilder addRow(final Object[] data)
+    public DataBuilder addRow(final Object... data)
     {
         if (data.length > this.columnNames.size())
         {

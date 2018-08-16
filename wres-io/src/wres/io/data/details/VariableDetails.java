@@ -27,7 +27,7 @@ public final class VariableDetails extends CachedDetail<VariableDetails, String>
 	 */
 	private static final Object VARIABLE_SAVE_LOCK = new Object();
 
-	public static VariableDetails from (DataProvider data) throws SQLException
+	public static VariableDetails from (DataProvider data)
 	{
 	    VariableDetails details = new VariableDetails();
         details.setVariableName(data.getString("variable_name"));

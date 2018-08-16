@@ -100,9 +100,30 @@ final class DatabaseSettings
 				}
 			}
 			this.applySystemPropertyOverrides();
-            // If testConnection() prior to buildInstance() is incorrect, revert
+
+            DatabaseSchema schema = new DatabaseSchema(this.getDatabaseName());
+
+            String rootDatabaseName = null;
+
+            // TODO: If we're in a postgresql instance, the default db is postgres. We'll need to add other
+            // defaults for other types
+            if (this.getDatabaseType().equalsIgnoreCase( "postgresql" ))
+            {
+                rootDatabaseName = "postgres";
+            }
+
+            try (Connection connection = this.getRawConnection( this.getConnectionString( rootDatabaseName ) ))
+            {
+                schema.createDatabase( connection );
+            }
+
+            try (Connection connection = this.getRawConnection( this.getConnectionString( this.getDatabaseName() ) ))
+            {
+                schema.applySchema( connection );
+            }
+
             testConnection();
-			this.buildInstance();
+
 			cleanPriorRuns();
 		}
 		catch ( XMLStreamException | SQLException | IOException e )
@@ -137,10 +158,7 @@ final class DatabaseSettings
 			throw new SQLException( "The database driver could not be found.", e );
 		}
 
-		try (Connection connection = DriverManager.getConnection(
-		        this.getConnectionString(),
-                this.username,
-                this.password );
+		try (Connection connection = this.getRawConnection( null );
              Statement clean = connection.createStatement()
         )
         {
@@ -202,9 +220,7 @@ final class DatabaseSettings
             throw new SQLException( message, classError);
         }
 
-        try ( Connection connection = DriverManager.getConnection( this.getConnectionString(),
-                                                                   this.username,
-                                                                   this.password );
+        try ( Connection connection = this.getRawConnection( null );
               Statement test = connection.createStatement() )
         {
             test.execute("SELECT 1;");
@@ -223,8 +239,13 @@ final class DatabaseSettings
         }
     }
 
-    Connection getRawConnection() throws SQLException
+    Connection getRawConnection(String connectionString) throws SQLException
 	{
+	    if (!Strings.hasValue( connectionString ))
+        {
+            connectionString = this.getConnectionString( this.databaseName);
+        }
+
 		try
 		{
 			Class.forName(DRIVER_MAPPING.get(getDatabaseType()));
@@ -234,7 +255,7 @@ final class DatabaseSettings
 			throw new SQLException( "The driver that will call the database "
 									+ "could not be found.", e );
 		}
-		return DriverManager.getConnection(this.getConnectionString(), this.username, this.password);
+		return DriverManager.getConnection(connectionString, this.username, this.password);
 	}
 
 	ComboPooledDataSource createDatasource()
@@ -243,7 +264,7 @@ final class DatabaseSettings
 
 		try {
 			datasource.setDriverClass(DRIVER_MAPPING.get(getDatabaseType()));
-			datasource.setJdbcUrl(getConnectionString());
+			datasource.setJdbcUrl(getConnectionString(this.databaseName));
 			datasource.setUser(username);
 			datasource.setPassword(password);
 			datasource.setAutoCommitOnClose(true);
@@ -268,7 +289,7 @@ final class DatabaseSettings
 		try
 		{
 			highPrioritySource.setDriverClass(DRIVER_MAPPING.get(getDatabaseType()));
-			highPrioritySource.setJdbcUrl(getConnectionString());
+			highPrioritySource.setJdbcUrl(getConnectionString(this.databaseName));
 			highPrioritySource.setUser(username);
 			highPrioritySource.setPassword(password);
 			highPrioritySource.setAutoCommitOnClose(true);
@@ -358,8 +379,13 @@ final class DatabaseSettings
 	 * Creates the connection string used to access the database
 	 * @return The connection string used to connect to the database of interest
 	 */
-    private String getConnectionString ()
+    private String getConnectionString (String databaseName)
     {
+        if (!Strings.hasValue( databaseName ))
+        {
+            databaseName = this.getDatabaseName();
+        }
+
         StringBuilder connectionString = new StringBuilder();
         connectionString.append( "jdbc:" );
         connectionString.append( this.getDatabaseType() );
@@ -373,7 +399,7 @@ final class DatabaseSettings
         }
 
         connectionString.append( "/" );
-        connectionString.append( this.getDatabaseName() );
+        connectionString.append( databaseName );
 
         return connectionString.toString();
     }
@@ -553,7 +579,7 @@ final class DatabaseSettings
         Database database = null;
         Liquibase liquibase;
 
-        try (Connection connection = DriverManager.getConnection(this.getConnectionString(), this.username, this.password);  )
+        try (Connection connection = this.getRawConnection( null ) )
         {
             database = DatabaseFactory.getInstance().findCorrectDatabaseImplementation( new JdbcConnection( connection));
             URL changelogURL = this.getClass().getClassLoader().getResource( "database/db.changelog-master.xml" );
@@ -596,16 +622,6 @@ final class DatabaseSettings
 
     private void addDatabase() throws SQLException
     {
-        try
-        {
-            Class.forName(DRIVER_MAPPING.get(getDatabaseType()));
-        }
-        catch ( ClassNotFoundException e )
-        {
-            throw new SQLException( "The driver that will call the database "
-                                    + "could not be found.", e );
-        }
-
         StringBuilder directConnectionString = new StringBuilder();
         directConnectionString.append( "jdbc:" );
         directConnectionString.append( this.getDatabaseType() );
@@ -627,9 +643,7 @@ final class DatabaseSettings
             directConnectionString.append( "postgres" );
         }
 
-        try (Connection connection = DriverManager.getConnection(
-                directConnectionString.toString(), this.username, this.password)
-        )
+        try (Connection connection = this.getRawConnection( directConnectionString.toString() ))
         {
             boolean databaseExists = false;
             boolean canAddDatabase = false;
@@ -682,7 +696,7 @@ final class DatabaseSettings
 
     private void removePriorLocks() throws SQLException, IOException
     {
-        try (Connection connection = this.getRawConnection())
+        try (Connection connection = this.getRawConnection(null))
         {
             // Determine whether or not the changeloglock exists in the database
             String script = "SELECT EXISTS (" + System.lineSeparator();

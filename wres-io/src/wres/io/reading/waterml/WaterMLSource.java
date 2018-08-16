@@ -127,7 +127,7 @@ public class WaterMLSource
             }
             catch ( SQLException e )
             {
-                e.printStackTrace();
+                LOGGER.error("Data couldn't be added to the database.", e);
             }
         }
 
