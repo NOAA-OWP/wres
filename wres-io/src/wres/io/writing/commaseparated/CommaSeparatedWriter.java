@@ -9,10 +9,13 @@ import java.nio.file.StandardOpenOption;
 import java.text.Format;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.StringJoiner;
 
 import wres.config.ProjectConfigException;
@@ -94,12 +97,14 @@ abstract class CommaSeparatedWriter
      * @param rows the tabular data to write
      * @param outputPath the path to which the file should be written
      * @throws IOException if the output cannot be written
+     * @return set of paths actually written to (empty if none)
      */
 
-    static void writeTabularOutputToFile( List<RowCompareByLeft> rows,
-                                          Path outputPath )
+    static Set<Path> writeTabularOutputToFile( List<RowCompareByLeft> rows,
+                                               Path outputPath )
             throws IOException
     {
+        Set<Path> pathsActuallyWrittenTo = new HashSet<>( 1 );
         // Sort the rows before writing them
         Collections.sort( rows );
 
@@ -112,8 +117,14 @@ abstract class CommaSeparatedWriter
             {
                 w.write( row.getRight().toString() );
                 w.write( System.lineSeparator() );
+
+                // Only add to set if writing happens, repeated adds will be
+                // OK since this is a Set.
+                pathsActuallyWrittenTo.add( outputPath );
             }
         }
+
+        return Collections.unmodifiableSet( pathsActuallyWrittenTo );
     }
 
     /**
