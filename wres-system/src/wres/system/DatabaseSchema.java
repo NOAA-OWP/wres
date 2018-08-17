@@ -24,6 +24,7 @@ import liquibase.database.jvm.JdbcConnection;
 import liquibase.exception.DatabaseException;
 import liquibase.exception.LiquibaseException;
 import liquibase.resource.ClassLoaderResourceAccessor;
+import liquibase.resource.FileSystemResourceAccessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -86,11 +87,11 @@ public class DatabaseSchema
         }
     }
 
-    private String getChangelogURL()
+    public String getChangelogURL()
     {
         URL changelogURL = this.getClass().getClassLoader().getResource( "database/db.changelog-master.xml" );
         Objects.requireNonNull( changelogURL, "The definition for the WRES data model could not be found.");
-        return "database/db.changelog-master.xml";
+        return changelogURL.getPath();
     }
 
     public void applySchema(final Connection connection) throws SQLException, IOException
@@ -109,16 +110,11 @@ public class DatabaseSchema
             throw new IOException("A database instance could not be accessed.");
         }
 
-        /*URL changelogURL = this.getClass().getClassLoader().getResource( "database/db.changelog-master.xml" );
-
-        Objects.requireNonNull( changelogURL, "The definition for the WRES data model could not be found.");*/
-
         try
         {
             Liquibase liquibase = new Liquibase(
-                    //"database/db.changelog-master.xml",
                     this.getChangelogURL(),
-                    new ClassLoaderResourceAccessor(),
+                    new FileSystemResourceAccessor(  ),
                     database
             );
 
