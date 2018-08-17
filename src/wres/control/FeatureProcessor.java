@@ -1,6 +1,8 @@
 package wres.control;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -181,7 +183,8 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
             {
                 return new FeatureProcessingResult( this.feature.getFeature(),
                                                     false,
-                                                    re );
+                                                    re,
+                                                    Collections.emptySet() );
             }
 
             // Otherwise, chain and propagate the exception up to the top.
@@ -195,10 +198,12 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
             ProcessorHelper.doAllOrException( listOfFutures ).join();
 
             // Generate cached output if available
-            this.generateEndOfPipelineProducts( processor );
+            Set<Path> paths = this.generateEndOfPipelineProducts( processor );
 
-            return new FeatureProcessingResult( this.feature.getFeature(), true, null );
-
+            return new FeatureProcessingResult( this.feature.getFeature(),
+                                                true,
+                                                null,
+                                                paths );
         }
         catch ( CompletionException e )
         {
@@ -207,7 +212,8 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
             {
                 return new FeatureProcessingResult( this.feature.getFeature(),
                                                     false,
-                                                    e );
+                                                    e,
+                                                    Collections.emptySet() );
             }
 
             // Otherwise, chain and propagate the exception up to the top.
@@ -223,7 +229,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
      * @param processor the processor from which to obtain the inputs for product generation
      */
 
-    private void generateEndOfPipelineProducts( MetricProcessorForProject processor )
+    private Set<Path> generateEndOfPipelineProducts( MetricProcessorForProject processor )
     {
         if ( processor.hasCachedMetricOutput() )
         {
@@ -245,6 +251,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                 {
                     // Generate output
                     endOfPipeline.accept( processor.getCachedMetricOutput() );
+                    return endOfPipeline.get();
                 }
             }
             catch ( InterruptedException e )
@@ -255,6 +262,8 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                 throw new WresProcessingException( this.errorMessage, e );
             }
         }
+
+        return Collections.emptySet();
     }
 
 }

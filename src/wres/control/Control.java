@@ -5,9 +5,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
@@ -19,6 +21,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.eclipse.persistence.internal.sessions.factories.model.project.ProjectConfig;
 import org.slf4j.Logger;
@@ -38,8 +41,11 @@ import wres.system.SystemSettings;
  * @author james.brown@hydrosolved.com
  * @author jesse
  */
-public class Control implements Function<String[], Integer>, Consumer<ProjectConfigPlus>
+public class Control implements Function<String[], Integer>,
+                                Consumer<ProjectConfigPlus>,
+                                Supplier<Set<Path>>
 {
+    private final Set<Path> pathsWrittenTo = new HashSet<>();
 
     /**
      * Processes one or more projects whose paths are provided in the input arguments.
@@ -109,6 +115,7 @@ public class Control implements Function<String[], Integer>, Consumer<ProjectCon
      * @throws InternalWresException when WRES detects problem not with project
      */
 
+    @Override
     public void accept( ProjectConfigPlus projectConfigPlus )
     {
         // Build a processing pipeline
@@ -201,8 +208,10 @@ public class Control implements Function<String[], Integer>, Consumer<ProjectCon
             }
 
             // Process the configuration
-            ProcessorHelper.processProjectConfig( projectConfigPlus,
-                                                  executors );
+            Set<Path> innerPathsWrittenTo =
+                    ProcessorHelper.processProjectConfig( projectConfigPlus,
+                                                          executors );
+            this.pathsWrittenTo.addAll( innerPathsWrittenTo );
         }
         catch ( WresProcessingException | IOException internalException)
         {
@@ -230,6 +239,11 @@ public class Control implements Function<String[], Integer>, Consumer<ProjectCon
         }
     }
 
+    @Override
+    public Set<Path> get()
+    {
+        return Collections.unmodifiableSet( this.pathsWrittenTo );
+    }
 
     /**
      * Kill off the executors passed in even if there are remaining tasks.
