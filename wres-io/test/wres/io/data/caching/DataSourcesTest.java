@@ -41,7 +41,6 @@ import wres.io.utilities.Database;
 import wres.system.DatabaseSchema;
 import wres.system.SystemSettings;
 
-@Ignore
 @RunWith(PowerMockRunner.class)
 @PrepareForTest({SystemSettings.class, Database.class})
 @PowerMockIgnore("javax.management.*") // thanks https://stackoverflow.com/questions/16520699/mockito-powermock-linkageerror-while-mocking-system-class#21268013
@@ -217,7 +216,7 @@ java.lang.NullPointerException
     {
         LOGGER.trace("setup began");
         // Create a temporary db instance, but keep the binaries in one place.
-        pgInstance = new EmbeddedPostgres(V9_6);
+        /*pgInstance = new EmbeddedPostgres(V9_6);
 
         // Guarantee test isolation with a different port for different tests
         int portNumber = port.getAndIncrement();
@@ -249,10 +248,10 @@ java.lang.NullPointerException
              Statement s = con.createStatement())
         {
             DatabaseSchema schema = new DatabaseSchema( databaseName );
-            schema.applySchema( con );
+            schema.applySchema( con );*/
             /*s.execute(readStringFromFile("SQL/wres.Source.sql",
                     StandardCharsets.US_ASCII));*/
-        }
+        /*}
 
         // Because SystemSettings is static, and parses XML in constructor,
         // and referred to elsewhere, need to use powermock to replace it
@@ -270,7 +269,7 @@ java.lang.NullPointerException
         // being used during the second test, and of course that one was closed.
 
         // TODO: A process for running liquibase on the connection needs to be setup
-
+*/
         this.initializeDataSources();
 
         LOGGER.trace("setup ended");
@@ -299,6 +298,7 @@ java.lang.NullPointerException
         Whitebox.setInternalState( DataSources.class, "instance", new DataSources(data) );
     }
 
+    @Ignore
     @Test
     public void getTwiceFromDataSources()
             throws Exception // TODO: update when DataSources throws checked exceptions
@@ -333,6 +333,7 @@ java.lang.NullPointerException
         LOGGER.trace("getTwiceFromDataSources ended");
     }
 
+    @Ignore
     @Test
     public void initializeCacheWithExistingData()
             throws Exception // TODO: update when DataSources throws checked exceptions
@@ -418,11 +419,11 @@ java.lang.NullPointerException
         Assert.assertFalse(thirdDetails.performedInsert());
         Assert.assertEquals( thirdDetails.getHash(), "123456" );
 
-        SourceDetails.SourceKey thirdKey = firstDetails.getKey();
+        SourceDetails.SourceKey thirdKey = thirdDetails.getKey();
         Assert.assertEquals( thirdKey.getSourcePath(), "/somewhere/somewhere/3.ext" );
         Assert.assertEquals( thirdKey.getLead(), null );
         Assert.assertEquals( thirdKey.getSourceTime(), "2018-08-08T02:00:00Z");
-        Assert.assertEquals( thirdKey.getHash(), firstDetails.getHash() );
+        Assert.assertEquals( thirdKey.getHash(), thirdDetails.getHash() );
 
         Assert.assertNotEquals( secondKey.getSourcePath(), thirdKey.getSourcePath());
         Assert.assertNotEquals( secondKey.getSourceTime(), thirdKey.getSourceTime());
@@ -435,7 +436,7 @@ java.lang.NullPointerException
 
         Assert.assertNotEquals( secondDetails, thirdDetails );
 
-        Assert.assertEquals(-1, secondDetails.compareTo(firstDetails));
+        Assert.assertEquals(-1, secondDetails.compareTo(thirdDetails));
         Assert.assertEquals(1, thirdDetails.compareTo( secondDetails ));
     }
 
@@ -444,9 +445,9 @@ java.lang.NullPointerException
     {
         LOGGER.trace("tearDown began");
 
-        connectionPoolDataSource.close();
+        /*connectionPoolDataSource.close();
 
-        pgInstance.stop();
+        pgInstance.stop();*/
 
         LOGGER.trace("tearDown ended");
     }

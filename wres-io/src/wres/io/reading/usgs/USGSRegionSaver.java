@@ -195,8 +195,17 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
 
         IngestResult result = null;
 
-        // Request observation data from USGS
-        WebResponse response = this.load();
+        WebResponse response;
+        try
+        {
+            // Request observation data from USGS
+            response = this.load();
+        }
+        catch(Exception ie)
+        {
+            LOGGER.debug(String.format("A USGS Request failed. The URL was: %s", this.requestURL), ie);
+            throw ie;
+        }
 
         // Throw an error if absolutely nothing came back from USGS (this
         // is unlikely to ever happen, considering that an error should
