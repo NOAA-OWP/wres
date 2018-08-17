@@ -1636,7 +1636,7 @@ public class Validation
                              + " An earliest date or earliest issued date must be supplied to use S3 data.";
 
                 LOGGER.warn( msg,
-                             projectConfigPlus.getPath(),
+                             projectConfigPlus.getOrigin(),
                              pairConfig.sourceLocation().getLineNumber(),
                              pairConfig.sourceLocation()
                                        .getColumnNumber() );
