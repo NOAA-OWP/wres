@@ -7,9 +7,6 @@ import wres.datamodel.MetricConstants.MissingValues;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
-import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.Collectable;
@@ -78,7 +75,12 @@ public class SumOfSquareError extends DecomposableScore<SingleValuedPairs>
         }
 
         //Metadata
-        final MetricOutputMetadata metOut = this.getMetadata( input );
+        MetricOutputMetadata metOut = MetricOutputMetadata.of( input.getMetadata(),
+                                                               MetricConstants.SUM_OF_SQUARE_ERROR,
+                                                               MetricConstants.MAIN,
+                                                               this.hasRealUnits(),
+                                                               input.getRawData().size(),
+                                                               null );
 
         return DoubleScoreOutput.of( returnMe, metOut );
     }
@@ -108,44 +110,6 @@ public class SumOfSquareError extends DecomposableScore<SingleValuedPairs>
     public MetricConstants getCollectionOf()
     {
         return MetricConstants.SUM_OF_SQUARE_ERROR;
-    }
-
-    /**
-     * Returns the {@link MetricOutputMetadata} associated with the score.
-     * 
-     * @param input the input
-     * @return the metdata
-     */
-
-    protected MetricOutputMetadata getMetadata( SingleValuedPairs input )
-    {
-        final Metadata metIn = input.getMetadata();
-
-        DatasetIdentifier identifier = metIn.getIdentifier();
-        // Add the baseline scenario identifier
-        if ( input.hasBaseline() )
-        {
-            identifier = DatasetIdentifier.of( identifier,
-                                               input.getMetadataForBaseline()
-                                                    .getIdentifier()
-                                                    .getScenarioID() );
-        }
-        // Set the output dimension
-        MeasurementUnit outputDimension = MeasurementUnit.of();
-        if ( hasRealUnits() )
-        {
-            outputDimension = metIn.getMeasurementUnit();
-        }
-        final MeasurementUnit outputDim = outputDimension;
-        final DatasetIdentifier identifier1 = identifier;
-        return MetricOutputMetadata.of( input.getRawData().size(),
-                                        outputDim,
-                                        metIn.getMeasurementUnit(),
-                                        this.getID(),
-                                        MetricConstants.MAIN,
-                                        identifier1,
-                                        metIn.getTimeWindow(),
-                                        metIn.getThresholds() );
     }
 
     /**

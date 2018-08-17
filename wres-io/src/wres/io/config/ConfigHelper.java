@@ -63,6 +63,7 @@ import wres.config.generated.ProjectConfig.Outputs;
 import wres.config.generated.ThresholdFormat;
 import wres.config.generated.ThresholdsConfig;
 import wres.config.generated.TimeScaleConfig;
+import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.MetricOutputMetadata;
@@ -1605,7 +1606,7 @@ public class ConfigHelper
         Objects.requireNonNull( group, "Specify non-null threshold configuration." );
 
         // Obtain the metrics
-        Set<MetricConstants> metrics = ProjectConfigs.getMetricsFromMetricsConfig( group, projectConfig );
+        Set<MetricConstants> metrics = DataFactory.getMetricsFromMetricsConfig( group, projectConfig );
 
         // Obtain the thresholds
         Map<FeaturePlus, ThresholdsByMetric> thresholdsByFeature =
@@ -1683,21 +1684,21 @@ public class ConfigHelper
         ThresholdConstants.Operator operator = ThresholdConstants.Operator.GREATER;
         if ( Objects.nonNull( threshold.getOperator() ) )
         {
-            operator = ProjectConfigs.getThresholdOperator( threshold );
+            operator = DataFactory.getThresholdOperator( threshold );
         }
 
         // Data type: default to left
         ThresholdConstants.ThresholdDataType dataType = ThresholdConstants.ThresholdDataType.LEFT;
         if ( Objects.nonNull( threshold.getApplyTo() ) )
         {
-            dataType = ProjectConfigs.getThresholdDataType( threshold );
+            dataType = DataFactory.getThresholdDataType( threshold );
         }
         
         // Threshold type: default to probability
         ThresholdConstants.ThresholdGroup thresholdType = ThresholdConstants.ThresholdGroup.PROBABILITY;
         if ( Objects.nonNull( threshold.getType() ) )
         {
-            thresholdType = ProjectConfigs.getThresholdGroup( threshold );
+            thresholdType = DataFactory.getThresholdGroup( threshold );
         }
 
         // Default to probability

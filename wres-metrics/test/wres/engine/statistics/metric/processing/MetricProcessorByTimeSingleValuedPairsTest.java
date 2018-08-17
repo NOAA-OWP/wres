@@ -206,7 +206,8 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                                            "SQIN",
                                                                                            "HEFS" ),
                                                                      expectedWindow,
-                                                                     expectedThreshold );
+                                                                     expectedThreshold,
+                                                                     null );
 
         MatrixOutput expected =
                 MatrixOutput.of( new double[][] { { 400.0, 100.0 }, { 0.0, 0.0 } },
@@ -317,7 +318,8 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                            DatasetIdentifier.of( Location.of( "A" ),
                                                                                  "Streamflow" ),
                                                            timeWindow,
-                                                           null );
+                                                           null,
+                                                           null  );
 
         OneOrTwoThresholds thresholds =
                 OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
@@ -418,7 +420,8 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                            DatasetIdentifier.of( Location.of( "A" ),
                                                                                  "Streamflow" ),
                                                            timeWindow,
-                                                           null );
+                                                           null,
+                                                           null  );
 
         List<PairedOutput<Instant, Duration>> inList = new ArrayList<>();
 
@@ -506,7 +509,8 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                   DatasetIdentifier.of( Location.of( "A" ),
                                                                                         "Streamflow" ),
                                                                   timeWindow,
-                                                                  thresholds );
+                                                                  thresholds,
+                                                                  null  );
         DurationScoreOutput expectedScoresSource = DurationScoreOutput.of( expectedSource, scoreMeta );
         List<DurationScoreOutput> scoreInList = new ArrayList<>();
         scoreInList.add( expectedScoresSource );
@@ -614,7 +618,8 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                                            "SQIN",
                                                                                            "HEFS" ),
                                                                      expectedWindow,
-                                                                     expectedThreshold );
+                                                                     expectedThreshold,
+                                                                     null  );
 
         MatrixOutput expected =
                 MatrixOutput.of( new double[][] { { 500.0, 0.0 }, { 0.0, 0.0 } },
@@ -702,7 +707,8 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                                            "SQIN",
                                                                                            "HEFS" ),
                                                                      expectedWindow,
-                                                                     expectedThreshold );
+                                                                     expectedThreshold,
+                                                                     null  );
 
         MatrixOutput expected =
                 MatrixOutput.of( new double[][] { { 0.0, 0.0 }, { 0.0, 0.0 } },
@@ -783,7 +789,8 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                   DatasetIdentifier.of( Location.of( "A" ),
                                                                                         "Streamflow" ),
                                                                   timeWindow,
-                                                                  thresholds );
+                                                                  thresholds,
+                                                                  null );
 
         DurationScoreOutput expectedScoresSource = DurationScoreOutput.of( expectedSource, scoreMeta );
         List<DurationScoreOutput> scoreInList = new ArrayList<>();

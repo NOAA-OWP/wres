@@ -17,11 +17,11 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.EnsemblePair;
+import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
@@ -82,6 +82,7 @@ public final class BoxPlotErrorByForecastTest
                                                                  DatasetIdentifier.of( Location.of( "A" ),
                                                                                        "MAP" ),
                                                                  timeWindow,
+                                                                 null,
                                                                  null );
 
         //Compute normally
@@ -133,6 +134,7 @@ public final class BoxPlotErrorByForecastTest
                                                                  DatasetIdentifier.of( Location.of( "A" ),
                                                                                        "MAP" ),
                                                                  timeWindow,
+                                                                 null,
                                                                  null );
 
         //Build the metric

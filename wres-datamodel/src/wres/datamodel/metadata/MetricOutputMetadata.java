@@ -3,6 +3,7 @@ package wres.datamodel.metadata;
 import java.util.Comparator;
 import java.util.Objects;
 
+import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.outputs.MetricOutput;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
@@ -56,7 +57,8 @@ public class MetricOutputMetadata extends Metadata implements Comparable<MetricO
                                         source.getMetricComponentID(),
                                         source.getIdentifier(),
                                         source.getTimeWindow(),
-                                        source.getThresholds() );
+                                        source.getThresholds(),
+                                        source.getProjectConfig() );
     }
 
     /**
@@ -79,7 +81,8 @@ public class MetricOutputMetadata extends Metadata implements Comparable<MetricO
                                         source.getMetricComponentID(),
                                         source.getIdentifier(),
                                         timeWindow,
-                                        thresholds );
+                                        thresholds,
+                                        source.getProjectConfig() );
     }
 
     /**
@@ -100,7 +103,8 @@ public class MetricOutputMetadata extends Metadata implements Comparable<MetricO
                                         componentID,
                                         source.getIdentifier(),
                                         source.getTimeWindow(),
-                                        source.getThresholds() );
+                                        source.getThresholds(),
+                                        source.getProjectConfig() );
     }
 
     /**
@@ -124,6 +128,7 @@ public class MetricOutputMetadata extends Metadata implements Comparable<MetricO
                                         inputDim,
                                         metricID,
                                         MetricConstants.MAIN,
+                                        null,
                                         null,
                                         null,
                                         null );
@@ -154,6 +159,7 @@ public class MetricOutputMetadata extends Metadata implements Comparable<MetricO
                                         componentID,
                                         null,
                                         null,
+                                        null,
                                         null );
     }
 
@@ -162,32 +168,33 @@ public class MetricOutputMetadata extends Metadata implements Comparable<MetricO
      * copied, together with a sample size, a {@link MeasurementUnit} for the output, and {@link MetricConstants} identifiers
      * for the metric and the metric component, respectively.
      * 
+     * @param source the source metadata
      * @param sampleSize the sample size
      * @param outputDim the output dimension
-     * @param metadata the source metadata
      * @param metricID the metric identifier
      * @param componentID the metric component identifier or decomposition template
      * @return a {@link MetricOutputMetadata} object
      * @throws NullPointerException if the input metadata is null
      */
 
-    public static MetricOutputMetadata of( final int sampleSize,
+    public static MetricOutputMetadata of( final Metadata source,
+                                           final int sampleSize,
                                            final MeasurementUnit outputDim,
-                                           final Metadata metadata,
                                            final MetricConstants metricID,
                                            final MetricConstants componentID )
     {
-        Objects.requireNonNull( metadata,
+        Objects.requireNonNull( source,
                                 "Specify a non-null source of input metadata from which to build the output metadata." );
 
         return MetricOutputMetadata.of( sampleSize,
                                         outputDim,
-                                        metadata.getMeasurementUnit(),
+                                        source.getMeasurementUnit(),
                                         metricID,
                                         componentID,
-                                        metadata.getIdentifier(),
-                                        metadata.getTimeWindow(),
-                                        metadata.getThresholds() );
+                                        source.getIdentifier(),
+                                        source.getTimeWindow(),
+                                        source.getThresholds(),
+                                        source.getProjectConfig() );
     }
 
     /**
@@ -217,6 +224,7 @@ public class MetricOutputMetadata extends Metadata implements Comparable<MetricO
                                         metricID,
                                         componentID,
                                         identifier,
+                                        null,
                                         null,
                                         null );
     }
@@ -262,14 +270,15 @@ public class MetricOutputMetadata extends Metadata implements Comparable<MetricO
                     DatasetIdentifier.of( identifier, baselineID.getScenarioID() );
         }
 
-        return of( sampleSize,
+        return MetricOutputMetadata.of( sampleSize,
                    outputDim,
                    metIn.getMeasurementUnit(),
                    metricId,
                    componentId,
                    identifier,
                    metIn.getTimeWindow(),
-                   metIn.getThresholds() );
+                   metIn.getThresholds(),
+                   metIn.getProjectConfig() );
     }
 
     /**
@@ -283,6 +292,7 @@ public class MetricOutputMetadata extends Metadata implements Comparable<MetricO
      * @param identifier the optional dataset identifier
      * @param timeWindow the optional time window
      * @param thresholds the optional thresholds
+     * @param projectConfig the optional project configuration
      * @return a {@link MetricOutputMetadata} object
      * @throws NullPointerException if the output dimension is null
      */
@@ -294,7 +304,8 @@ public class MetricOutputMetadata extends Metadata implements Comparable<MetricO
                                            MetricConstants componentID,
                                            DatasetIdentifier identifier,
                                            TimeWindow timeWindow,
-                                           OneOrTwoThresholds thresholds )
+                                           OneOrTwoThresholds thresholds,
+                                           ProjectConfig projectConfig )
     {
         return new MetricOutputMetadata( sampleSize,
                                          outputDim,
@@ -303,7 +314,8 @@ public class MetricOutputMetadata extends Metadata implements Comparable<MetricO
                                          componentID,
                                          identifier,
                                          timeWindow,
-                                         thresholds );
+                                         thresholds,
+                                         projectConfig );
     }
 
     /**
@@ -505,6 +517,7 @@ public class MetricOutputMetadata extends Metadata implements Comparable<MetricO
      * @param identifier the optional dataset identifier
      * @param timeWindow the optional time window
      * @param thresholds the optional thresholds
+     * @param projectConfig the optional project configuration
      * @return a {@link MetricOutputMetadata} object
      * @throws NullPointerException if the output dimension is null
      */
@@ -516,9 +529,10 @@ public class MetricOutputMetadata extends Metadata implements Comparable<MetricO
                                   MetricConstants componentID,
                                   DatasetIdentifier identifier,
                                   TimeWindow timeWindow,
-                                  OneOrTwoThresholds thresholds )
+                                  OneOrTwoThresholds thresholds,
+                                  ProjectConfig projectConfig )
     {
-        super( outputDim, identifier, timeWindow, thresholds );
+        super( outputDim, identifier, timeWindow, thresholds, projectConfig );
 
         this.sampleSize = sampleSize;
         this.inputDim = inputDim;

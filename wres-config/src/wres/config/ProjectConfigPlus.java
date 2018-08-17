@@ -1,5 +1,6 @@
 package wres.config;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -12,6 +13,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.stream.Collectors;
 import javax.xml.XMLConstants;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBElement;
@@ -58,27 +61,24 @@ public class ProjectConfigPlus
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(ProjectConfigPlus.class);
 
-    private final Path path;
+    private final String origin;
     private final String rawConfig;
     private final ProjectConfig projectConfig;
     private final Map<DestinationConfig, String> graphicsStrings;
     private final List<ValidationEvent> validationEvents;
-    private final String canonicalPath;
 
     /** Used to find the end of the graphics custom configuration */
     private static final String GFX_END_TAG = "</config>";
 
     private static final String XSD_NAME = "ProjectConfig.xsd";
 
-    private ProjectConfigPlus( Path path,
+    private ProjectConfigPlus( String origin,
                                String rawConfig,
                                ProjectConfig projectConfig,
                                Map<DestinationConfig, String> graphicsStrings,
                                List<ValidationEvent> validationEvents )
-            throws IOException
     {
-        this.path = path;
-        this.canonicalPath = ProjectConfigPlus.getCanonicalPath( path );
+        this.origin = origin;
         this.rawConfig = rawConfig;
         this.projectConfig = projectConfig;
         this.graphicsStrings = Collections.unmodifiableMap(graphicsStrings);
@@ -86,33 +86,14 @@ public class ProjectConfigPlus
         this.validationEvents = Collections.unmodifiableList(copiedList);
     }
 
-
     /**
-     * Retrieve the canonical path string for a given Path
-     * @param path the path to look up
-     * @return the canonical path from the file
-     * @throws IOException when resolving the path could not happen
+     * Return a description of where this project config came from.
+     * In the case of a file, the path to the file.
+     * @return the origin of the project config
      */
-
-    private static String getCanonicalPath( Path path )
-            throws IOException
+    public String getOrigin()
     {
-        File file = path.toFile();
-        return file.getCanonicalPath();
-    }
-
-    public Path getPath()
-    {
-        return this.path;
-    }
-
-    /**
-     * Get the full path and filename for this ProjectConfig
-     * @return the full path and filename
-     */
-    public String getCanonicalPath()
-    {
-        return this.canonicalPath;
+        return this.origin;
     }
 
     public String getRawConfig()
@@ -138,46 +119,48 @@ public class ProjectConfigPlus
         return this.validationEvents;
     }
 
+
     /**
-     * Parse a config file, store validation events, get the vis config strings.
-     *
-     * @param path The path to xml file to unmarshal
-     * @return a handy bundle including the projectconfig and path to it
-     * @throws IOException when the file cannot be successfully parsed
+     * An event handler that collects validation events during xml parsing
+     * and can return the list of events.
      */
-    public static ProjectConfigPlus from(Path path) throws IOException
+
+    private static class ProjValidationEventHandler
+            implements ValidationEventHandler, Callable<List<ValidationEvent>>
     {
-        List<ValidationEvent> events = new ArrayList<>();
-        class ProjValidationEventHandler implements ValidationEventHandler
+        private static final List<ValidationEvent> events = new ArrayList<>();
+
+        @Override
+        public boolean handleEvent(final ValidationEvent validationEvent)
         {
-            @Override
-            public boolean handleEvent(final ValidationEvent validationEvent)
-            {
-                events.add(validationEvent);
-                return true;
-            }
+            events.add(validationEvent);
+            return true;
         }
 
-        List<String> xmlLines;
-
-        /** To get the full path to display information about it */
-        File configFileForInformation = path.toFile();
-
-        try
+        @Override
+        public List<ValidationEvent> call()
         {
-            xmlLines = Files.readAllLines( path );
+            return Collections.unmodifiableList( events );
         }
-        catch ( IOException ioe )
-        {
-            String message = "Could not read file "
-                             + configFileForInformation.getCanonicalPath();
-            // communicate failure back up the stack
-            throw new IOException( message, ioe );
-        }
+    }
 
-        String rawConfig = String.join(System.lineSeparator(), xmlLines);
 
+    /**
+     * Parse a projectconfig from a string, store validation events, get
+     * the vis config strings.
+     * @param rawConfig the config to unmarshal
+     * @param origin a description of where this projectConfig came from
+     * @return a handy bundle including the projectconfig, validation events
+     * @throws IOException when the string cannot be successfully parsed
+     */
+
+    public static ProjectConfigPlus from( String rawConfig, String origin )
+            throws IOException
+    {
         ProjectConfig projectConfig;
+
+        ProjValidationEventHandler validationEventCollector = new ProjValidationEventHandler();
+
         try
         {
             Reader reader = new StringReader( rawConfig );
@@ -193,14 +176,13 @@ public class ProjectConfigPlus
 
             Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
             jaxbUnmarshaller.setSchema( schema );
-            jaxbUnmarshaller.setEventHandler(new ProjValidationEventHandler());
+            jaxbUnmarshaller.setEventHandler( validationEventCollector );
             final JAXBElement<ProjectConfig> wrappedConfig = jaxbUnmarshaller.unmarshal(xmlSource, ProjectConfig.class);
             projectConfig = wrappedConfig.getValue();
 
             if ( LOGGER.isInfoEnabled() )
             {
-                LOGGER.info( "Unmarshalled project configuration file "
-                             + configFileForInformation.getCanonicalPath() );
+                LOGGER.info( "Unmarshalled project configuration from " + origin );
             }
 
             if (projectConfig == null
@@ -208,8 +190,8 @@ public class ProjectConfigPlus
                 || projectConfig.getOutputs() == null
                 || projectConfig.getPair() == null)
             {
-                throw new IOException("Please add required sections in project config file "
-                                      + path + " : <inputs>, <outputs>, <pair>");
+                throw new IOException("Please add required sections in project config from "
+                                      + origin + " : <inputs>, <outputs>, <pair>");
             }
 
             for (final DestinationConfig d : projectConfig.getOutputs().getDestination())
@@ -217,22 +199,23 @@ public class ProjectConfigPlus
                 if (d.getGraphical() != null && d.getGraphical().getConfig() != null)
                 {
                     final GraphicalType.Config conf = d.getGraphical().getConfig();
-                    LOGGER.debug("Location of config for {} is line {} col {}",
-                            d,
-                            conf.sourceLocation().getLineNumber(),
-                            conf.sourceLocation().getColumnNumber());
+                    LOGGER.debug("Location of project for {} is line {} col {}",
+                                 d,
+                                 conf.sourceLocation().getLineNumber(),
+                                 conf.sourceLocation().getColumnNumber());
                 }
             }
         }
         catch (final JAXBException je)
         {
-            String message = "Could not parse file " + path;
+            String message = "Could not parse project from " + origin;
             // communicate failure back up the stack
             throw new IOException(message, je);
         }
         catch (final NumberFormatException nfe)
         {
-            String message = "A value in the file " + path + " was unable to be converted to a number.";
+            String message = "A value in the project from " + origin
+                             + " was unable to be converted to a number.";
             // communicate failure back up the stack
             throw new IOException(message, nfe);
         }
@@ -245,28 +228,83 @@ public class ProjectConfigPlus
 
         Map<DestinationConfig, String> visConfigs =
                 ProjectConfigPlus.getVisConfigs( projectConfig,
-                                                 xmlLines );
+                                                 rawConfig );
 
-        return new ProjectConfigPlus( path,
+        List<ValidationEvent> validationEvents = validationEventCollector.call();
+
+        return new ProjectConfigPlus( origin,
                                       rawConfig,
                                       projectConfig,
                                       visConfigs,
-                                      events );
+                                      validationEvents );
+    }
+
+
+    /**
+     * Parse a WRES project from a file, store validation events,
+     * get the vis config strings.
+     *
+     * @param path The path to xml file to unmarshal
+     * @return a handy bundle including the projectconfig and path to it
+     * @throws IOException when the file cannot be successfully parsed
+     */
+    public static ProjectConfigPlus from( Path path )
+            throws IOException
+    {
+        List<String> xmlLines;
+
+        // Default to the path passed in
+        String projectConfigOrigin = path.toString();
+
+        // Try to get the full path for more detailed information in logs
+        File configFileForInformation = path.toFile();
+
+        try
+        {
+            projectConfigOrigin = configFileForInformation.getCanonicalPath();
+        }
+        catch ( IOException ioe )
+        {
+            // Leave it at the default of what was passed in, warn.
+            LOGGER.warn( "Unable to get the full path of file {}",
+                         configFileForInformation );
+        }
+
+        try
+        {
+            xmlLines = Files.readAllLines( path );
+        }
+        catch ( IOException ioe )
+        {
+            String message = "Could not read file " + projectConfigOrigin;
+            // communicate failure back up the stack
+            throw new IOException( message, ioe );
+        }
+
+        String rawConfig = String.join(System.lineSeparator(), xmlLines);
+
+        return ProjectConfigPlus.from( rawConfig, projectConfigOrigin );
     }
 
 
     /**
      * Get wres-vis graphical configuration xml strings mapped to Destinations
      * @param projectConfig the config containing the destinations
-     * @param xmlLines the raw xml lines that were parsed to produce projectConfig
+     * @param rawConfig the raw xml String that was parsed to produce projectConfig
      * @return a Map of DestinationConfig to graphical configuration xml
      */
 
     private static Map<DestinationConfig, String> getVisConfigs( ProjectConfig projectConfig,
-                                                                 List<String> xmlLines )
+                                                                 String rawConfig )
     {
         // To read the xml configuration for vis into a string, we go find the
         // start of each, then find the first occurance of </config> ?
+
+        // Convert the rawConfig into lines for historical reasons.
+        // Could change the logic to only reference the string and skip this step.
+        List<String> xmlLines = new BufferedReader( new StringReader( rawConfig) )
+                .lines()
+                .collect( Collectors.toList() );
 
         Map<DestinationConfig, String> visConfigs = new HashMap<>();
 
@@ -308,6 +346,6 @@ public class ProjectConfigPlus
     @Override
     public String toString()
     {
-        return this.getCanonicalPath();
+        return this.getOrigin();
     }
 }

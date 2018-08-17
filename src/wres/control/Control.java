@@ -17,6 +17,7 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.eclipse.persistence.internal.sessions.factories.model.project.ProjectConfig;
@@ -37,13 +38,15 @@ import wres.system.SystemSettings;
  * @author james.brown@hydrosolved.com
  * @author jesse
  */
-public class Control implements Function<String[], Integer>
+public class Control implements Function<String[], Integer>, Consumer<ProjectConfigPlus>
 {
 
     /**
      * Processes one or more projects whose paths are provided in the input arguments.
      * possible TODO: propagate exceptions and return void rather than Integer
      * @param args the paths to one or more project configurations
+     * @throws UserInputException when WRES detects problem with project config
+     * @throws InternalWresException when WRES detects problem not with project
      */
 
     @Override
@@ -63,7 +66,7 @@ public class Control implements Function<String[], Integer>
         try
         {
             // Unmarshal the configuration
-             projectConfigPlus = ProjectConfigPlus.from( configPath );
+            projectConfigPlus = ProjectConfigPlus.from( configPath );
         }
         catch ( IOException ioe )
         {
@@ -77,7 +80,8 @@ public class Control implements Function<String[], Integer>
                      projectConfigPlus );
 
         // Validate unmarshalled configurations
-        final boolean validated = Validation.isProjectValid( projectConfigPlus );
+        final boolean validated =
+                Validation.isProjectValid( projectConfigPlus );
 
         if ( validated )
         {
@@ -88,10 +92,25 @@ public class Control implements Function<String[], Integer>
         else
         {
             LOGGER.error( "Validation failed for project configuration at {}.",
-                          projectConfigPlus);
+                          projectConfigPlus );
             return 1; // Or return 400 - Bad Request (see #41467)
         }
 
+        this.accept( projectConfigPlus );
+
+        return 0;
+    }
+
+
+    /**
+     * Runs a WRES project.
+     * @param projectConfigPlus the project configuration to run
+     * @throws UserInputException when WRES detects problem with project config
+     * @throws InternalWresException when WRES detects problem not with project
+     */
+
+    public void accept( ProjectConfigPlus projectConfigPlus )
+    {
         // Build a processing pipeline
         // Essential to use a separate thread pool for thresholds and metrics as ArrayBlockingQueue operates a FIFO 
         // policy. If dependent tasks (thresholds) are queued ahead of independent ones (metrics) in the same pool, 
@@ -184,19 +203,20 @@ public class Control implements Function<String[], Integer>
             // Process the configuration
             ProcessorHelper.processProjectConfig( projectConfigPlus,
                                                   executors );
-            return 0; // Or return 200 - OK (see #41467)
         }
         catch ( WresProcessingException | IOException internalException)
         {
-            LOGGER.error( "Could not complete project execution due to:", internalException );
+            String message = "Could not complete project execution";
+            LOGGER.error( "{} due to:", message, internalException );
             Control.addException( internalException );
-            return -1; // Or return 500 - Internal Server Error (see #41467)
+            throw new InternalWresException( message, internalException );
         }
         catch ( ProjectConfigException userException )
         {
-            LOGGER.error( "Please correct the project configuration. Details:", userException );
+            String message = "Please correct the project configuration.";
+            LOGGER.error( "{} Details:", message, userException );
             Control.addException( userException );
-            return -1; // Or return 400 - Bad Request (see #41467)
+            throw new UserInputException( message, userException );
         }
         // Shutdown
         finally

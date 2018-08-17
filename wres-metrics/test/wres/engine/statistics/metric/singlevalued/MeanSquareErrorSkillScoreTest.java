@@ -17,8 +17,8 @@ import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
@@ -109,7 +109,8 @@ public final class MeanSquareErrorSkillScoreTest
                                                                                  "QME",
                                                                                  "NVE" ),
                                                            timeWindow,
-                                                           null );
+                                                           null,
+                                                           null  );
 
         //Check the results
         DoubleScoreOutput actual = msess.apply( input );

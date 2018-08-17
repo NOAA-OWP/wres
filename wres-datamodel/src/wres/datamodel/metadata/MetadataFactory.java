@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import wres.datamodel.thresholds.OneOrTwoThresholds;
+
 /**
  * A factory class for manipulating metadata.
  * 
@@ -36,12 +38,9 @@ public final class MetadataFactory
         }
         List<TimeWindow> unionWindow = new ArrayList<>();
         
-        // First entry
+        // Test entry
         Metadata test = input.get( 0 );
-        
-        // Remove any threshold information from the first entry
-        test = Metadata.of( test.getMeasurementUnit(), test.getIdentifier() );
-        
+
         // Validate for equivalence with the first entry and add window to list
         for ( Metadata next : input )
         {
@@ -59,6 +58,10 @@ public final class MetadataFactory
                 unionWindow.add( next.getTimeWindow() );
             }
         }
+        
+        // Remove any threshold information from the result
+        test = Metadata.of( test, (OneOrTwoThresholds) null );
+
         if ( !unionWindow.isEmpty() )
         {
             test = Metadata.of( test, TimeWindow.unionOf( unionWindow ) );

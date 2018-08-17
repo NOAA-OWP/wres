@@ -98,7 +98,8 @@ public class CommaSeparatedBoxPlotWriterTest extends CommaSeparatedWriterTestHel
                                          null,
                                          datasetIdentifier,
                                          timeOne,
-                                         threshold );
+                                         threshold,
+                                         null );
 
         List<EnsemblePair> fakeOutputs = new ArrayList<>();
         VectorOfDoubles probs = VectorOfDoubles.of( new double[] { 0, 0.25, 0.5, 0.75, 1.0 } );

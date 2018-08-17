@@ -79,9 +79,9 @@ public final class MetricTaskTest
         pairPool.submit( futureInput );
 
         //Should not throw an exception
-        MetricOutputMetadata benchmarkMeta = MetricOutputMetadata.of( 10,
+        MetricOutputMetadata benchmarkMeta = MetricOutputMetadata.of( input.getMetadata(),
+                                                                                10,
                                                                                 MeasurementUnit.of(),
-                                                                                input.getMetadata(),
                                                                                 MetricConstants.MEAN_ERROR,
                                                                                 MetricConstants.MAIN );
         DoubleScoreOutput benchmark = DoubleScoreOutput.of( 200.55, benchmarkMeta );

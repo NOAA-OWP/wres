@@ -18,8 +18,8 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
@@ -78,7 +78,8 @@ public final class TimeToPeakErrorTest
                                                            DatasetIdentifier.of( Location.of( "A" ),
                                                                                  "Streamflow" ),
                                                            timeWindow,
-                                                           null );
+                                                           null,
+                                                           null  );
 
         // Check the parameters
         assertTrue( "Unexpected name for the Time-to-Peak Error.",
