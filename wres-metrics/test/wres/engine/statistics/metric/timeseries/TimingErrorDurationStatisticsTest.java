@@ -18,8 +18,8 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
@@ -65,7 +65,8 @@ public final class TimingErrorDurationStatisticsTest
                                                            DatasetIdentifier.of( Location.of( "A" ),
                                                                                  "Streamflow" ),
                                                            timeWindow,
-                                                           null );
+                                                           null,
+                                                           null  );
         // Build a metric
         TimeToPeakError peakError = TimeToPeakError.of();
 
@@ -139,7 +140,8 @@ public final class TimingErrorDurationStatisticsTest
                                                            DatasetIdentifier.of( Location.of( "A" ),
                                                                                  "Streamflow" ),
                                                            timeWindow,
-                                                           null );
+                                                           null,
+                                                           null  );
 
         // Build a metric
         TimeToPeakError peakError = TimeToPeakError.of();
@@ -193,7 +195,8 @@ public final class TimingErrorDurationStatisticsTest
                                                            DatasetIdentifier.of( Location.of( "A" ),
                                                                                  "Streamflow" ),
                                                            timeWindow,
-                                                           null );
+                                                           null,
+                                                           null  );
 
         // Build a metric
         TimeToPeakError peakError = TimeToPeakError.of();

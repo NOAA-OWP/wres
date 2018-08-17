@@ -98,7 +98,7 @@ public class Validation
                 {
                     LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
                                  + " The parser said: {}",
-                                 projectConfigPlus.getPath(),
+                                 projectConfigPlus.getOrigin(),
                                  ve.getLocator().getLineNumber(),
                                  ve.getLocator().getColumnNumber(),
                                  ve.getMessage(),
@@ -108,7 +108,7 @@ public class Validation
                 {
                     LOGGER.warn( "In file {}, WRES found an issue with the "
                                  + "project configuration. The parser said: {}",
-                                 projectConfigPlus.getPath(),
+                                 projectConfigPlus.getOrigin(),
                                  ve.getMessage(),
                                  ve.getLinkedException() );
                 }
@@ -395,7 +395,7 @@ public class Validation
                             LOGGER.warn( "In file {}, a metric named {} was requested, but is not allowed. "
                                          + "Only verification scores are allowed in "
                                          + "combination with a poolingWindow configuration.",
-                                         projectConfigPlus.getPath(),
+                                         projectConfigPlus.getOrigin(),
                                          next.getName() );
                         }
                     }
@@ -409,7 +409,7 @@ public class Validation
                         {
                             LOGGER.warn( "In file {}, a metric named {} was requested, which requires an explicit "
                                     + "baseline. Remove this metric or add the required baseline configuration.",
-                                         projectConfigPlus.getPath(),
+                                         projectConfigPlus.getOrigin(),
                                          next.getName() );
                         }
                     }
@@ -420,7 +420,7 @@ public class Validation
                 catch ( MetricConfigException e )
                 {
                     LOGGER.warn( "In file {}, a metric named {} was requested, but is not recognized by the system.",
-                                  projectConfigPlus.getPath(),
+                                  projectConfigPlus.getOrigin(),
                                   next.getName() );
                     result = false;
                 }
@@ -473,7 +473,7 @@ public class Validation
                             LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
                                          + " The path {} could not be found. "
                                          + PLEASE_UPDATE,
-                                         projectConfigPlus.getPath(),
+                                         projectConfigPlus.getOrigin(),
                                          nextThreshold.sourceLocation().getLineNumber(),
                                          nextThreshold.sourceLocation().getColumnNumber(),
                                          pathString );
@@ -493,7 +493,7 @@ public class Validation
                                          + " The path {} is not a readable file."
                                          + " "
                                          + PLEASE_UPDATE,
-                                         projectConfigPlus.getPath(),
+                                         projectConfigPlus.getOrigin(),
                                          nextThreshold.sourceLocation().getLineNumber(),
                                          nextThreshold.sourceLocation().getColumnNumber(),
                                          pathString );
@@ -529,7 +529,7 @@ public class Validation
             if ( LOGGER.isWarnEnabled() )
             {
                 LOGGER.warn( "In file {}, no output configuration was found.",
-                             projectConfigPlus.getPath() );
+                             projectConfigPlus.getOrigin() );
             }
 
             return false;
@@ -556,7 +556,7 @@ public class Validation
                     LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
                                  + " The path {} could not be found. "
                                  + PLEASE_UPDATE,
-                                 projectConfigPlus.getPath(),
+                                 projectConfigPlus.getOrigin(),
                                  d.sourceLocation().getLineNumber(),
                                  d.sourceLocation().getColumnNumber(),
                                  d.getPath() );
@@ -575,7 +575,7 @@ public class Validation
                     LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
                                  + " The path {} was not a writeable directory."
                                  + " " + PLEASE_UPDATE,
-                                 projectConfigPlus.getPath(),
+                                 projectConfigPlus.getOrigin(),
                                  d.sourceLocation().getLineNumber(),
                                  d.sourceLocation().getColumnNumber(),
                                  d.getPath() );
@@ -597,7 +597,7 @@ public class Validation
                                  + " The path {} contains one or more files or directories. "
                                  + "Please empty the output directory before proceeding or specify an "
                                  + "alternative, empty, directory.",
-                                 projectConfigPlus.getPath(),
+                                 projectConfigPlus.getOrigin(),
                                  d.sourceLocation().getLineNumber(),
                                  d.sourceLocation().getColumnNumber(),
                                  d.getPath() );
@@ -685,7 +685,7 @@ public class Validation
                              + " If custom graphics configuration is "
                              + "provided, please start it with "
                              + BEGIN_TAG,
-                             projectConfigPlus.getPath(),
+                             projectConfigPlus.getOrigin(),
                              nearbyTag.sourceLocation().getLineNumber(),
                              nearbyTag.sourceLocation()
                                       .getColumnNumber() );
@@ -703,7 +703,7 @@ public class Validation
                              + " If custom graphics configuration is "
                              + "provided, please end it with "
                              + END_TAG,
-                             projectConfigPlus.getPath(),
+                             projectConfigPlus.getOrigin(),
                              nearbyTag.sourceLocation().getLineNumber(),
                              nearbyTag.sourceLocation()
                                       .getColumnNumber() );
@@ -762,7 +762,7 @@ public class Validation
                              + "one of the other time units such as 'hour'.";
 
                 LOGGER.warn( msg,
-                             projectConfigPlus.getPath(),
+                             projectConfigPlus.getOrigin(),
                              aggregationConfig.sourceLocation().getLineNumber(),
                              aggregationConfig.sourceLocation()
                                               .getColumnNumber() );
@@ -871,7 +871,7 @@ public class Validation
                                      + "invalid.";
 
                         LOGGER.warn( msg,
-                                     projectConfigPlus.getPath(),
+                                     projectConfigPlus.getOrigin(),
                                      dates.sourceLocation().getLineNumber(),
                                      dates.sourceLocation()
                                               .getColumnNumber() );
@@ -910,7 +910,7 @@ public class Validation
                              + "'2017-11-27 17:36:00Z'.";
 
                 LOGGER.warn( msg,
-                             projectConfigPlus.getPath(),
+                             projectConfigPlus.getOrigin(),
                              locatable.sourceLocation().getLineNumber(),
                              locatable.sourceLocation()
                                       .getColumnNumber() );
@@ -971,7 +971,7 @@ public class Validation
                 {
                     LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
                                  + ALREADY_USED,
-                                 projectConfigPlus.getPath(),
+                                 projectConfigPlus.getOrigin(),
                                  featureConfig.sourceLocation().getLineNumber(),
                                  featureConfig.sourceLocation().getColumnNumber(),
                                  name, name, name, name );
@@ -989,7 +989,7 @@ public class Validation
                              + " within the actual data. It cannot be missing. "
                              + "Please use the lid found in data, e.g. <name>"
                              + "DRRC2</name>.",
-                             projectConfigPlus.getPath(),
+                             projectConfigPlus.getOrigin(),
                              featureConfig.sourceLocation().getLineNumber(),
                              featureConfig.sourceLocation().getColumnNumber() );
             }
@@ -1005,7 +1005,7 @@ public class Validation
                 {
                     LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
                                  + ALREADY_USED,
-                                 projectConfigPlus.getPath(),
+                                 projectConfigPlus.getOrigin(),
                                  featureConfig.sourceLocation().getLineNumber(),
                                  featureConfig.sourceLocation().getColumnNumber(),
                                  alias, name, name, name );
@@ -1022,7 +1022,7 @@ public class Validation
                                  + " At least one non-empty <alias> must be "
                                  + "specified in each <featureAlias>. (Feature "
                                  + "aliases as a whole are optional.)",
-                                 projectConfigPlus.getPath(),
+                                 projectConfigPlus.getOrigin(),
                                  featureConfig.sourceLocation().getLineNumber(),
                                  featureConfig.sourceLocation().getColumnNumber() );
                 }
@@ -1064,7 +1064,7 @@ public class Validation
                                  + "not appear to be valid. Please use numeric "
                                  + "month and numeric day, such as 4 for April "
                                  + "and 20 for 20th.",
-                                 projectConfigPlus.getPath(),
+                                 projectConfigPlus.getOrigin(),
                                  season.sourceLocation().getLineNumber(),
                                  season.sourceLocation().getColumnNumber(),
                                  season.getEarliestMonth(),
@@ -1087,7 +1087,7 @@ public class Validation
                                  + "not appear to be valid. Please use numeric "
                                  + "month and numeric day, such as 8 for August"
                                  + " and 30 for 30th.",
-                                 projectConfigPlus.getPath(),
+                                 projectConfigPlus.getOrigin(),
                                  season.sourceLocation().getLineNumber(),
                                  season.sourceLocation().getColumnNumber(),
                                  season.getLatestMonth(),
@@ -1255,7 +1255,7 @@ public class Validation
             {
                 LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
                              + message,
-                             projectConfigPlus.getPath(),
+                             projectConfigPlus.getOrigin(),
                              inputConfig.sourceLocation().getLineNumber(),
                              inputConfig.sourceLocation().getColumnNumber(),
                              helper );
@@ -1276,7 +1276,7 @@ public class Validation
             {
                 LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
                              + message,
-                             projectConfigPlus.getPath(),
+                             projectConfigPlus.getOrigin(),
                              inputConfig.sourceLocation().getLineNumber(),
                              inputConfig.sourceLocation().getColumnNumber(),
                              helper );
@@ -1387,7 +1387,7 @@ public class Validation
                 LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
                              + " The desired time aggregation of the pairs is smaller than the existing time "
                              + "aggregation of the {}: disaggregation is not supported.",
-                             projectConfigPlus.getPath(),
+                             projectConfigPlus.getOrigin(),
                              helper.sourceLocation().getLineNumber(),
                              helper.sourceLocation().getColumnNumber(),
                              helperString );
@@ -1402,7 +1402,7 @@ public class Validation
                 LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
                              + " The desired time aggregation of the pairs is not an integer multiple of the "
                              + "existing time aggregation of the {}.",
-                             projectConfigPlus.getPath(),
+                             projectConfigPlus.getOrigin(),
                              helper.sourceLocation().getLineNumber(),
                              helper.sourceLocation().getColumnNumber(),
                              helperString );
@@ -1678,7 +1678,7 @@ public class Validation
                              + "travel for whatever reason, there is a "
                              + "separate <timeShift> configuration option " +
                              "for that purpose.",
-                             projectConfigPlus.getPath(),
+                             projectConfigPlus.getOrigin(),
                              source.sourceLocation().getLineNumber(),
                              source.sourceLocation().getColumnNumber() );
             }

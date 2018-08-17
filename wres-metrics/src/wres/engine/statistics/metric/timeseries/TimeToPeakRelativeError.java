@@ -102,7 +102,8 @@ public class TimeToPeakRelativeError extends TimingError
                                                              MetricConstants.MAIN,
                                                              in.getIdentifier(),
                                                              in.getTimeWindow(),
-                                                             in.getThresholds() );
+                                                             in.getThresholds(),
+                                                             in.getProjectConfig() );
 
         return PairedOutput.of( returnMe, meta );
     }

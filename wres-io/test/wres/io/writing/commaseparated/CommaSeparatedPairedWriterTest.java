@@ -96,7 +96,8 @@ public class CommaSeparatedPairedWriterTest extends CommaSeparatedWriterTestHelp
                                          null,
                                          datasetIdentifier,
                                          timeOne,
-                                         threshold );
+                                         threshold,
+                                         null  );
 
         List<Pair<Instant, Duration>> fakeOutputs = new ArrayList<>();
         fakeOutputs.add( Pair.of( Instant.parse( "1985-01-01T00:00:00Z" ), Duration.ofHours( 1 ) ) );

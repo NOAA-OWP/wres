@@ -4,9 +4,17 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.time.Instant;
+import java.util.Arrays;
 
 import org.junit.Test;
 
+import wres.config.generated.DataSourceConfig;
+import wres.config.generated.DatasourceType;
+import wres.config.generated.MetricConfig;
+import wres.config.generated.MetricConfigName;
+import wres.config.generated.MetricsConfig;
+import wres.config.generated.ProjectConfig;
+import wres.config.generated.ProjectConfig.Inputs;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
@@ -26,6 +34,7 @@ public class MetadataTest
      * Test {@link Metadata#equals(Object)}.
      */
 
+    @SuppressWarnings( "unlikely-arg-type" )
     @Test
     public void testEquals()
     {
@@ -86,7 +95,7 @@ public class MetadataTest
         assertTrue( "Unexpected inequality between two metadata instances.", m6.equals( m7 ) );
         assertTrue( "Unexpected inequality between two metadata instances.", m7.equals( m6 ) );
         assertFalse( "Unexpected equality between two metadata instances.", m3.equals( m6 ) );
-        
+
         TimeWindow thirdWindow = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                 Instant.parse( "1986-01-01T00:00:00Z" ),
                                                 ReferenceTime.ISSUE_TIME );
@@ -95,29 +104,89 @@ public class MetadataTest
                                    DatasetIdentifier.of( l8, "SQIN", "HEFS" ),
                                    thirdWindow );
         assertFalse( "Unexpected equality between two metadata instances.", m6.equals( m8 ) );
-        
+
         // Add a threshold
         OneOrTwoThresholds thresholds =
                 OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                      Operator.GREATER,
                                                      ThresholdDataType.LEFT ) );
-        
+
         Metadata m9 = Metadata.of( MeasurementUnit.of( "SOME_DIM" ),
                                    DatasetIdentifier.of( l8, "SQIN", "HEFS" ),
                                    thirdWindow,
                                    thresholds );
-        
+
         assertFalse( "Unexpected equality between two metadata instances.", m8.equals( m9 ) );
-        
+
         Metadata m10 = Metadata.of( MeasurementUnit.of( "SOME_DIM" ),
-                                   DatasetIdentifier.of( l8, "SQIN", "HEFS" ),
-                                   thirdWindow,
-                                   thresholds );
-        
+                                    DatasetIdentifier.of( l8, "SQIN", "HEFS" ),
+                                    thirdWindow,
+                                    thresholds );
+
         assertTrue( "Unexpected inequality between two metadata instances.", m9.equals( m10 ) );
-        
+
+        // Add a project configuration
+        ProjectConfig mockConfigOne =
+                new ProjectConfig( new Inputs( null,
+                                               new DataSourceConfig( DatasourceType.SINGLE_VALUED_FORECASTS,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null ),
+                                               null ),
+                                   null,
+                                   Arrays.asList( new MetricsConfig( null,
+                                                                     Arrays.asList( new MetricConfig( null,
+                                                                                                      null,
+                                                                                                      MetricConfigName.BIAS_FRACTION ) ),
+                                                                     null ) ),
+                                   null,
+                                   null,
+                                   null );
+
+        ProjectConfig mockConfigTwo =
+                new ProjectConfig( new Inputs( null,
+                                               new DataSourceConfig( DatasourceType.SINGLE_VALUED_FORECASTS,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null ),
+                                               null ),
+                                   null,
+                                   Arrays.asList( new MetricsConfig( null,
+                                                                     Arrays.asList( new MetricConfig( null,
+                                                                                                      null,
+                                                                                                      MetricConfigName.BIAS_FRACTION ) ),
+                                                                     null ) ),
+                                   null,
+                                   null,
+                                   null );
+
+        Metadata m11 = Metadata.of( MeasurementUnit.of( "SOME_DIM" ),
+                                    DatasetIdentifier.of( l8, "SQIN", "HEFS" ),
+                                    thirdWindow,
+                                    thresholds,
+                                    mockConfigOne );
+
+        Metadata m12 = Metadata.of( MeasurementUnit.of( "SOME_DIM" ),
+                                    DatasetIdentifier.of( l8, "SQIN", "HEFS" ),
+                                    thirdWindow,
+                                    thresholds,
+                                    mockConfigTwo );
+
+        assertTrue( "Unexpected inequality between two metadata instances.", m11.equals( m12 ) );
+
         // Null check
         assertFalse( "Unexpected equality between two metadata instances.", m6.equals( null ) );
+
         // Other type check
         assertFalse( "Unexpected equality between two metadata instances.", m6.equals( Double.valueOf( 2 ) ) );
     }
@@ -192,26 +261,84 @@ public class MetadataTest
                                    DatasetIdentifier.of( l8, "SQIN", "HEFS" ),
                                    thirdWindow );
         assertFalse( "Unexpected equality between two metadata hashcodes.", m6.hashCode() == m8.hashCode() );
-        
+
         // Add a threshold
         OneOrTwoThresholds thresholds =
                 OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                      Operator.GREATER,
                                                      ThresholdDataType.LEFT ) );
-        
+
         Metadata m9 = Metadata.of( MeasurementUnit.of( "SOME_DIM" ),
                                    DatasetIdentifier.of( l8, "SQIN", "HEFS" ),
                                    thirdWindow,
                                    thresholds );
 
         Metadata m10 = Metadata.of( MeasurementUnit.of( "SOME_DIM" ),
-                                   DatasetIdentifier.of( l8, "SQIN", "HEFS" ),
-                                   thirdWindow,
-                                   thresholds );
-        
+                                    DatasetIdentifier.of( l8, "SQIN", "HEFS" ),
+                                    thirdWindow,
+                                    thresholds );
+
         assertTrue( "Unexpected inequality between two metadata hashcode instances.", m9.equals( m10 ) );
         
+        // Add a project configuration
+        ProjectConfig mockConfigOne =
+        new ProjectConfig( new Inputs( null,
+                                       new DataSourceConfig( DatasourceType.SINGLE_VALUED_FORECASTS,
+                                                             null,
+                                                             null,
+                                                             null,
+                                                             null,
+                                                             null,
+                                                             null,
+                                                             null,
+                                                             null ),
+                                       null ),
+                           null,
+                           Arrays.asList( new MetricsConfig( null,
+                                                             Arrays.asList( new MetricConfig( null,
+                                                                                              null,
+                                                                                              MetricConfigName.BIAS_FRACTION ) ),
+                                                             null ) ),
+                           null,
+                           null,
+                           null );
         
+        ProjectConfig mockConfigTwo =
+                new ProjectConfig( new Inputs( null,
+                                               new DataSourceConfig( DatasourceType.SINGLE_VALUED_FORECASTS,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null ),
+                                               null ),
+                                   null,
+                                   Arrays.asList( new MetricsConfig( null,
+                                                                     Arrays.asList( new MetricConfig( null,
+                                                                                                      null,
+                                                                                                      MetricConfigName.BIAS_FRACTION ) ),
+                                                                     null ) ),
+                                   null,
+                                   null,
+                                   null );
+
+        Metadata m11 = Metadata.of( MeasurementUnit.of( "SOME_DIM" ),
+                                    DatasetIdentifier.of( l8, "SQIN", "HEFS" ),
+                                    thirdWindow,
+                                    thresholds,
+                                    mockConfigOne );
+
+        Metadata m12 = Metadata.of( MeasurementUnit.of( "SOME_DIM" ),
+                                    DatasetIdentifier.of( l8, "SQIN", "HEFS" ),
+                                    thirdWindow,
+                                    thresholds,
+                                    mockConfigTwo );
+        
+        assertTrue( "Unexpected inequality between two metadata hashcode instances.", m11.equals( m12 ) );
+
         // Other type check
         assertFalse( "Unexpected equality between two metadata hashcodes.",
                      m6.hashCode() == Double.valueOf( 2 ).hashCode() );

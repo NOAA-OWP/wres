@@ -592,7 +592,8 @@ public abstract class Chart2DTestDataGenerator
                                                                                          "PRECIPITATION",
                                                                                          "HEFS" ),
                                                                    timeWindow,
-                                                                   null );
+                                                                   null,
+                                                                   null  );
 
         //Single threshold
         final OneOrTwoThresholds threshold =
@@ -805,7 +806,8 @@ public abstract class Chart2DTestDataGenerator
                                                                                          "HEFS",
                                                                                          "ESP" ),
                                                                    null,
-                                                                   threshold );
+                                                                   threshold,
+                                                                   null  );
 
 
         // Rolling window parameters
@@ -976,7 +978,8 @@ public abstract class Chart2DTestDataGenerator
                                                                                    "Streamflow",
                                                                                    "HEFS" ),
                                                              window,
-                                                             threshold );
+                                                             threshold,
+                                                             null  );
         // Build and return
         return ListOfMetricOutput.of( Arrays.asList( PairedOutput.of( input, meta ) ) );
     }
@@ -1027,7 +1030,8 @@ public abstract class Chart2DTestDataGenerator
                                                                                    "Streamflow",
                                                                                    "HEFS" ),
                                                              window,
-                                                             threshold );
+                                                             threshold,
+                                                             null  );
 
         return ListOfMetricOutput.of( Arrays.asList( DurationScoreOutput.of( returnMe, meta ) ) );
     }
