@@ -12,6 +12,7 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.StringJoiner;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.stream.IntStream;
 
 import wres.config.ProjectConfigException;
@@ -34,8 +35,12 @@ import wres.io.config.ConfigHelper;
  */
 
 public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
-        implements Consumer<ListOfMetricOutput<MatrixOutput>>
+        implements Consumer<ListOfMetricOutput<MatrixOutput>>, Supplier<Set<Path>>
 {
+    /**
+     * Set of paths that this writer actually wrote to
+     */
+    private final Set<Path> pathsWrittenTo = new HashSet<>();
 
     /**
      * Returns an instance of a writer.
@@ -77,10 +82,12 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
             // Default, per time-window
             try
             {
-                CommaSeparatedMatrixWriter.writeOneMatrixOutputType( projectConfig,
-                                                                     destinationConfig,
-                                                                     output,
-                                                                     formatter );
+                Set<Path> innerPathsWrittenTo =
+                        CommaSeparatedMatrixWriter.writeOneMatrixOutputType( projectConfig,
+                                                                             destinationConfig,
+                                                                             output,
+                                                                             formatter );
+                this.pathsWrittenTo.addAll( innerPathsWrittenTo );
             }
             catch ( IOException e )
             {
@@ -99,12 +106,14 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
      * @throws IOException if the output cannot be written
      */
 
-    private static void writeOneMatrixOutputType( ProjectConfig projectConfig,
-                                                  DestinationConfig destinationConfig,
-                                                  ListOfMetricOutput<MatrixOutput> output,
-                                                  Format formatter )
+    private static Set<Path> writeOneMatrixOutputType( ProjectConfig projectConfig,
+                                                       DestinationConfig destinationConfig,
+                                                       ListOfMetricOutput<MatrixOutput> output,
+                                                       Format formatter )
             throws IOException
     {
+        Set<Path> pathsWrittenTo = new HashSet<>( 1 );
+
         // Obtain the output type configuration with any override for ALL_VALID metrics
         OutputTypeSelection diagramType = ConfigHelper.getOutputTypeSelection( projectConfig, destinationConfig );
 
@@ -116,23 +125,31 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
             StringJoiner headerRow = new StringJoiner( "," );
             headerRow.merge( HEADER_DEFAULT );
 
+            Set<Path> innerPathsWrittenTo = Collections.emptySet();
+
             // Default, per time-window
             if ( diagramType == OutputTypeSelection.DEFAULT || diagramType == OutputTypeSelection.LEAD_THRESHOLD )
             {
-                CommaSeparatedMatrixWriter.writeOneMatrixOutputTypePerTimeWindow( destinationConfig,
-                                                                                  Slicer.filter( output, m ),
-                                                                                  headerRow,
-                                                                                  formatter );
+                innerPathsWrittenTo =
+                        CommaSeparatedMatrixWriter.writeOneMatrixOutputTypePerTimeWindow( destinationConfig,
+                                                                                          Slicer.filter( output, m ),
+                                                                                          headerRow,
+                                                                                          formatter );
             }
             // Per threshold
             else if ( diagramType == OutputTypeSelection.THRESHOLD_LEAD )
             {
-                CommaSeparatedMatrixWriter.writeOneMatrixOutputTypePerThreshold( destinationConfig,
-                                                                                 Slicer.filter( output, m ),
-                                                                                 headerRow,
-                                                                                 formatter );
+                innerPathsWrittenTo =
+                        CommaSeparatedMatrixWriter.writeOneMatrixOutputTypePerThreshold( destinationConfig,
+                                                                                         Slicer.filter( output, m ),
+                                                                                         headerRow,
+                                                                                         formatter );
             }
+
+            pathsWrittenTo.addAll( innerPathsWrittenTo );
         }
+
+        return Collections.unmodifiableSet( pathsWrittenTo );
     }
 
     /**
@@ -319,6 +336,25 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
         }
 
         return returnMe;
+    }
+
+    /**
+     * Return a snapshot of the paths written to (so far)
+     */
+
+    @Override
+    public Set<Path> get()
+    {
+        return this.getPathsWrittenTo();
+    }
+
+    /**
+     * Return a snapshot of the paths written to (so far)
+     */
+
+    private Set<Path> getPathsWrittenTo()
+    {
+        return Collections.unmodifiableSet( this.pathsWrittenTo );
     }
 
     /**

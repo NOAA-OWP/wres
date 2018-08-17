@@ -15,6 +15,7 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.StringJoiner;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,9 +43,14 @@ import wres.io.config.ConfigHelper;
  */
 
 public class CommaSeparatedScoreWriter<T extends ScoreOutput<?, T>> extends CommaSeparatedWriter
-        implements Consumer<ListOfMetricOutput<T>>
+        implements Consumer<ListOfMetricOutput<T>>, Supplier<Set<Path>>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( CommaSeparatedWriter.class );
+
+    /**
+     * Set of paths that this writer actually wrote to
+     */
+    private final Set<Path> pathsWrittenTo = new HashSet<>();
 
     /**
      * Returns an instance of a writer.
@@ -74,8 +80,6 @@ public class CommaSeparatedScoreWriter<T extends ScoreOutput<?, T>> extends Comm
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing box plot outputs." );
 
-        Set<Path> pathsWrittenTo = new HashSet<>();
-
         // Write output
         // In principle, each destination could have a different formatter, so 
         // the output must be generated separately for each destination
@@ -102,17 +106,15 @@ public class CommaSeparatedScoreWriter<T extends ScoreOutput<?, T>> extends Comm
                         CommaSeparatedScoreWriter.writeOneScoreOutputType( destinationConfig,
                                                                            output,
                                                                            formatter );
-                pathsWrittenTo.addAll( innerPathsWrittenTo );
+                this.pathsWrittenTo.addAll( innerPathsWrittenTo );
             }
             catch ( IOException e )
             {
                 throw new CommaSeparatedWriteException( "While writing comma separated output: ", e );
             }
-
         }
-
-        LOGGER.debug( "Wrote these CSV files: {}", pathsWrittenTo );
     }
+
 
     /**
      * Writes all output for one score type.
@@ -284,6 +286,25 @@ public class CommaSeparatedScoreWriter<T extends ScoreOutput<?, T>> extends Comm
                 }
             }
         }
+    }
+
+    /**
+     * Return a snapshot of the paths written to (so far)
+     */
+
+    @Override
+    public Set<Path> get()
+    {
+        return this.getPathsWrittenTo();
+    }
+
+    /**
+     * Return a snapshot of the paths written to (so far)
+     */
+
+    private Set<Path> getPathsWrittenTo()
+    {
+        return Collections.unmodifiableSet( this.pathsWrittenTo );
     }
 
     /**

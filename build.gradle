@@ -744,6 +744,8 @@ dependencies
     compile 'org.eclipse.jetty:jetty-webapp:9.4.8.v20171121'
     compile 'org.glassfish.jersey.containers:jersey-container-servlet-core:2.26'
 
+    compile 'com.github.ben-manes.caffeine:caffeine:2.6.2'
+
     runtime 'org.glassfish.jersey.core:jersey-server:2.26'
     runtime 'org.glassfish.jersey.containers:jersey-container-jetty-http:2.26'
     runtime 'org.glassfish.jersey.inject:jersey-hk2:2.26'
@@ -778,7 +780,7 @@ sourceSets
 
         resources
         {
-            srcDirs = ['testNonsrc]']
+            srcDirs = ['testNonsrc']
         }
     }
 }

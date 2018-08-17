@@ -1,13 +1,17 @@
 package wres.control;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
+import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,6 +48,12 @@ class FeatureReport implements Consumer<FeatureProcessingResult>
      */
 
     private final ConcurrentLinkedQueue<Feature> missingDataFeatures;
+
+    /**
+     * Set of paths modified by this feature.
+     */
+
+    private final Set<Path> pathsWrittenTo;
 
     /**
      * The total number of features to process.
@@ -90,6 +100,7 @@ class FeatureReport implements Consumer<FeatureProcessingResult>
         this.successfulFeatures = new ConcurrentLinkedQueue<>();
         this.missingDataFeatures = new ConcurrentLinkedQueue<>();
         this.processed = new AtomicInteger( 1 );
+        this.pathsWrittenTo = new ConcurrentSkipListSet<>();
     }
 
     /**
@@ -131,6 +142,8 @@ class FeatureReport implements Consumer<FeatureProcessingResult>
                              result.getCause() );
             }
         }
+
+        this.pathsWrittenTo.addAll( result.getPathsWrittenTo() );
     }
 
     /**
@@ -195,4 +208,8 @@ class FeatureReport implements Consumer<FeatureProcessingResult>
         }
     }
 
+    Set<Path> getPathsWrittenTo()
+    {
+        return Collections.unmodifiableSet( this.pathsWrittenTo );
+    }
 }
