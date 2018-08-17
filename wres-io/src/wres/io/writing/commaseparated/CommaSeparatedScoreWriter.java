@@ -5,13 +5,19 @@ import java.nio.file.Path;
 import java.text.Format;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.StringJoiner;
 import java.util.function.Consumer;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import wres.config.ProjectConfigException;
 import wres.config.generated.DestinationConfig;
@@ -38,6 +44,7 @@ import wres.io.config.ConfigHelper;
 public class CommaSeparatedScoreWriter<T extends ScoreOutput<?, T>> extends CommaSeparatedWriter
         implements Consumer<ListOfMetricOutput<T>>
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger( CommaSeparatedWriter.class );
 
     /**
      * Returns an instance of a writer.
@@ -67,6 +74,8 @@ public class CommaSeparatedScoreWriter<T extends ScoreOutput<?, T>> extends Comm
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing box plot outputs." );
 
+        Set<Path> pathsWrittenTo = new HashSet<>();
+
         // Write output
         // In principle, each destination could have a different formatter, so 
         // the output must be generated separately for each destination
@@ -89,7 +98,11 @@ public class CommaSeparatedScoreWriter<T extends ScoreOutput<?, T>> extends Comm
             // Write per time-window
             try
             {
-                CommaSeparatedScoreWriter.writeOneScoreOutputType( destinationConfig, output, formatter );
+                Set<Path> innerPathsWrittenTo =
+                        CommaSeparatedScoreWriter.writeOneScoreOutputType( destinationConfig,
+                                                                           output,
+                                                                           formatter );
+                pathsWrittenTo.addAll( innerPathsWrittenTo );
             }
             catch ( IOException e )
             {
@@ -98,6 +111,7 @@ public class CommaSeparatedScoreWriter<T extends ScoreOutput<?, T>> extends Comm
 
         }
 
+        LOGGER.debug( "Wrote these CSV files: {}", pathsWrittenTo );
     }
 
     /**
@@ -108,13 +122,16 @@ public class CommaSeparatedScoreWriter<T extends ScoreOutput<?, T>> extends Comm
      * @param output the score output to iterate through
      * @param formatter optional formatter, can be null
      * @throws IOException if the output cannot be written
+     * @return set of paths actually written to
      */
 
-    private static <T extends ScoreOutput<?, T>> void writeOneScoreOutputType( DestinationConfig destinationConfig,
-                                                                               ListOfMetricOutput<T> output,
-                                                                               Format formatter )
+    private static <T extends ScoreOutput<?, T>> Set<Path> writeOneScoreOutputType( DestinationConfig destinationConfig,
+                                                                                    ListOfMetricOutput<T> output,
+                                                                                    Format formatter )
             throws IOException
     {
+        Set<Path> pathsWrittenTo = new HashSet<>( 1 );
+
         // Loop across metrics
         SortedSet<MetricConstants> metrics = Slicer.discover( output, next -> next.getMetadata().getMetricID() );
         for ( MetricConstants m : metrics )
@@ -169,9 +186,12 @@ public class CommaSeparatedScoreWriter<T extends ScoreOutput<?, T>> extends Comm
                 MetricOutputMetadata meta = nextOutput.getData().get( 0 ).getMetadata();
                 Path outputPath = ConfigHelper.getOutputPathToWrite( destinationConfig, meta, append );
 
-                CommaSeparatedScoreWriter.writeTabularOutputToFile( rows, outputPath );
+                Set<Path> innerPathsWrittenTo = CommaSeparatedScoreWriter.writeTabularOutputToFile( rows, outputPath );
+                pathsWrittenTo.addAll( innerPathsWrittenTo );
             }
         }
+
+        return Collections.unmodifiableSet( pathsWrittenTo );
     }
 
     /**

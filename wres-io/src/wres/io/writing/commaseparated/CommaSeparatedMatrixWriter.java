@@ -4,8 +4,11 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.text.Format;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.StringJoiner;
 import java.util.function.Consumer;
@@ -140,14 +143,17 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
      * @param headerRow the header row
      * @param formatter optional formatter, can be null
      * @throws IOException if the output cannot be written
+     * @return set of paths actually written to
      */
 
-    private static void writeOneMatrixOutputTypePerTimeWindow( DestinationConfig destinationConfig,
-                                                               ListOfMetricOutput<MatrixOutput> output,
-                                                               StringJoiner headerRow,
-                                                               Format formatter )
+    private static Set<Path> writeOneMatrixOutputTypePerTimeWindow( DestinationConfig destinationConfig,
+                                                                    ListOfMetricOutput<MatrixOutput> output,
+                                                                    StringJoiner headerRow,
+                                                                    Format formatter )
             throws IOException
     {
+        Set<Path> pathsWrittenTo = new HashSet<>( 1 );
+
         // Loop across time windows
         SortedSet<TimeWindow> timeWindows = Slicer.discover( output, next -> next.getMetadata().getTimeWindow() );
         for ( TimeWindow timeWindow : timeWindows )
@@ -166,8 +172,11 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
             // Write the output
             Path outputPath = ConfigHelper.getOutputPathToWrite( destinationConfig, meta, timeWindow );
 
-            CommaSeparatedWriter.writeTabularOutputToFile( rows, outputPath );
+            Set<Path> innerPathsWrittenTo = CommaSeparatedWriter.writeTabularOutputToFile( rows, outputPath );
+            pathsWrittenTo.addAll( innerPathsWrittenTo );
         }
+
+        return Collections.unmodifiableSet( pathsWrittenTo );
     }
 
     /**
@@ -177,15 +186,18 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
      * @param output the matrix output
      * @param headerRow the header row
      * @param formatter optional formatter, can be null
-     * @throws IOException if the output cannot be written 
+     * @throws IOException if the output cannot be written
+     * @return set of paths actually written to
      */
 
-    private static void writeOneMatrixOutputTypePerThreshold( DestinationConfig destinationConfig,
-                                                              ListOfMetricOutput<MatrixOutput> output,
-                                                              StringJoiner headerRow,
-                                                              Format formatter )
+    private static Set<Path> writeOneMatrixOutputTypePerThreshold( DestinationConfig destinationConfig,
+                                                                   ListOfMetricOutput<MatrixOutput> output,
+                                                                   StringJoiner headerRow,
+                                                                   Format formatter )
             throws IOException
     {
+        Set<Path> pathsWrittenTo = new HashSet<>( 1 );
+
         // Loop across thresholds
         SortedSet<OneOrTwoThresholds> thresholds =
                 Slicer.discover( output, meta -> meta.getMetadata().getThresholds() );
@@ -205,8 +217,11 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
             // Write the output
             Path outputPath = ConfigHelper.getOutputPathToWrite( destinationConfig, meta, threshold );
 
-            CommaSeparatedWriter.writeTabularOutputToFile( rows, outputPath );
+            Set<Path> innerPathsWrittenTo = CommaSeparatedWriter.writeTabularOutputToFile( rows, outputPath );
+            pathsWrittenTo.addAll( innerPathsWrittenTo );
         }
+
+        return Collections.unmodifiableSet( pathsWrittenTo );
     }
 
     /**

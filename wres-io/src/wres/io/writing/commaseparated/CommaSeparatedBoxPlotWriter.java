@@ -5,8 +5,11 @@ import java.nio.file.Path;
 import java.text.Format;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.StringJoiner;
 import java.util.function.Consumer;
@@ -116,13 +119,16 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedWriter
      * @param output the box plot output
      * @param formatter optional formatter, can be null
      * @throws IOException if the output cannot be written
+     * @return set of paths actually written to
      */
 
-    private static void writeOneBoxPlotOutputTypePerTimeWindow( DestinationConfig destinationConfig,
-                                                                ListOfMetricOutput<BoxPlotOutput> output,
-                                                                Format formatter )
+    private static Set<Path> writeOneBoxPlotOutputTypePerTimeWindow( DestinationConfig destinationConfig,
+                                                                     ListOfMetricOutput<BoxPlotOutput> output,
+                                                                     Format formatter )
             throws IOException
     {
+        Set<Path> pathsWrittenTo = new HashSet<>( 1 );
+
         // Loop across time windows
         SortedSet<TimeWindow> timeWindows = Slicer.discover( output, meta -> meta.getMetadata().getTimeWindow() );
         for ( TimeWindow nextWindow : timeWindows )
@@ -142,8 +148,11 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedWriter
             // Write the output
             Path outputPath = ConfigHelper.getOutputPathToWrite( destinationConfig, meta, nextWindow );
 
-            CommaSeparatedWriter.writeTabularOutputToFile( rows, outputPath );
+            Set<Path> innerPathsWrittenTo = CommaSeparatedWriter.writeTabularOutputToFile( rows, outputPath );
+            pathsWrittenTo.addAll( innerPathsWrittenTo );
         }
+
+        return Collections.unmodifiableSet( pathsWrittenTo );
     }
 
     /**
