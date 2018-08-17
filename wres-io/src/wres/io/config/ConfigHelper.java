@@ -745,6 +745,17 @@ public class ConfigHelper
         else
         {
             File outputLocation = outputDirectory.toFile();
+
+            try
+            {
+                outputLocation = outputDirectory.toFile().getCanonicalFile();
+            }
+            catch ( IOException ioe )
+            {
+                LOGGER.warn( "Could not determine canonical file location of {}",
+                             outputDirectory );
+            }
+
             if ( outputLocation.isDirectory() )
             {
                 return outputLocation;
