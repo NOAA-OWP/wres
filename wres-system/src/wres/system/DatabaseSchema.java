@@ -86,6 +86,13 @@ public class DatabaseSchema
         }
     }
 
+    private String getChangelogURL()
+    {
+        URL changelogURL = this.getClass().getClassLoader().getResource( "database/db.changelog-master.xml" );
+        Objects.requireNonNull( changelogURL, "The definition for the WRES data model could not be found.");
+        return "database/db.changelog-master.xml";
+    }
+
     public void applySchema(final Connection connection) throws SQLException, IOException
     {
         this.removePriorLocks( connection );
@@ -102,14 +109,15 @@ public class DatabaseSchema
             throw new IOException("A database instance could not be accessed.");
         }
 
-        URL changelogURL = this.getClass().getClassLoader().getResource( "database/db.changelog-master.xml" );
+        /*URL changelogURL = this.getClass().getClassLoader().getResource( "database/db.changelog-master.xml" );
 
-        Objects.requireNonNull( changelogURL, "The definition for the WRES data model could not be found.");
+        Objects.requireNonNull( changelogURL, "The definition for the WRES data model could not be found.");*/
 
         try
         {
             Liquibase liquibase = new Liquibase(
-                    "database/db.changelog-master.xml",
+                    //"database/db.changelog-master.xml",
+                    this.getChangelogURL(),
                     new ClassLoaderResourceAccessor(),
                     database
             );
