@@ -4,7 +4,9 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.text.Format;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -139,6 +141,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
         }
     }
 
+
     /**
      * Writes one diagram for all thresholds at each time window in the input.
      * 
@@ -147,14 +150,17 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
      * @param headerRow the header row
      * @param formatter optional formatter, can be null
      * @throws IOException if the output cannot be written
+     * @return set of paths actually written to
      */
 
-    private static void writeOneDiagramOutputTypePerTimeWindow( DestinationConfig destinationConfig,
-                                                                ListOfMetricOutput<MultiVectorOutput> output,
-                                                                StringJoiner headerRow,
-                                                                Format formatter )
+    private static Set<Path> writeOneDiagramOutputTypePerTimeWindow( DestinationConfig destinationConfig,
+                                                                     ListOfMetricOutput<MultiVectorOutput> output,
+                                                                     StringJoiner headerRow,
+                                                                     Format formatter )
             throws IOException
     {
+        Set<Path> pathsWrittenTo = new HashSet<>( 1 );
+
         // Loop across time windows
         SortedSet<TimeWindow> timeWindows = Slicer.discover( output, next -> next.getMetadata().getTimeWindow() );
         for ( TimeWindow timeWindow : timeWindows )
@@ -172,9 +178,13 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
             // Write the output
             Path outputPath = ConfigHelper.getOutputPathToWrite( destinationConfig, meta, timeWindow );
 
-            CommaSeparatedWriter.writeTabularOutputToFile( rows, outputPath );
+            Set<Path> innerPathsWrittenTo = CommaSeparatedWriter.writeTabularOutputToFile( rows, outputPath );
+            pathsWrittenTo.addAll( innerPathsWrittenTo );
         }
+
+        return Collections.unmodifiableSet( pathsWrittenTo );
     }
+
 
     /**
      * Writes one diagram for all time windows at each threshold in the input.
@@ -184,14 +194,17 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
      * @param headerRow the header row
      * @param formatter optional formatter, can be null
      * @throws IOException if the output cannot be written
+     * @return set of paths actually written to
      */
 
-    private static void writeOneDiagramOutputTypePerThreshold( DestinationConfig destinationConfig,
-                                                               ListOfMetricOutput<MultiVectorOutput> output,
-                                                               StringJoiner headerRow,
-                                                               Format formatter )
+    private static Set<Path> writeOneDiagramOutputTypePerThreshold( DestinationConfig destinationConfig,
+                                                                    ListOfMetricOutput<MultiVectorOutput> output,
+                                                                    StringJoiner headerRow,
+                                                                    Format formatter )
             throws IOException
     {
+        Set<Path> pathsWrittenTo = new HashSet<>( 1 );
+
         // Loop across thresholds
         SortedSet<OneOrTwoThresholds> thresholds =
                 Slicer.discover( output, meta -> meta.getMetadata().getThresholds() );
@@ -212,8 +225,11 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
             // Write the output
             Path outputPath = ConfigHelper.getOutputPathToWrite( destinationConfig, meta, threshold );
 
-            CommaSeparatedWriter.writeTabularOutputToFile( rows, outputPath );
+            Set<Path> innerPathsWrittenTo = CommaSeparatedWriter.writeTabularOutputToFile( rows, outputPath );
+            pathsWrittenTo.addAll( innerPathsWrittenTo );
         }
+
+        return Collections.unmodifiableSet( pathsWrittenTo );
     }
 
     /**

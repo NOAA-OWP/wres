@@ -5,8 +5,11 @@ import java.nio.file.Path;
 import java.text.Format;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.StringJoiner;
 import java.util.function.Consumer;
@@ -98,13 +101,16 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedWriter
      * @param output the paired output to iterate through
      * @param formatter optional formatter, can be null
      * @throws IOException if the output cannot be written
+     * @return set of paths actually written to
      */
 
-    private static <S, T> void writeOnePairedOutputType( DestinationConfig destinationConfig,
-                                                         ListOfMetricOutput<PairedOutput<S, T>> output,
-                                                         Format formatter )
+    private static <S, T> Set<Path> writeOnePairedOutputType( DestinationConfig destinationConfig,
+                                                              ListOfMetricOutput<PairedOutput<S, T>> output,
+                                                              Format formatter )
             throws IOException
     {
+        Set<Path> pathsWrittenTo = new HashSet<>( 1 );
+
         // Loop across metrics
         SortedSet<MetricConstants> metrics = Slicer.discover( output, next -> next.getMetadata().getMetricID() );
         for ( MetricConstants m : metrics )
@@ -128,8 +134,11 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedWriter
             
             Path outputPath = ConfigHelper.getOutputPathToWrite( destinationConfig, meta );
 
-            CommaSeparatedWriter.writeTabularOutputToFile( rows, outputPath );
+            Set<Path> innerPathsWrittenTo = CommaSeparatedWriter.writeTabularOutputToFile( rows, outputPath );
+            pathsWrittenTo.addAll( innerPathsWrittenTo );
         }
+
+        return Collections.unmodifiableSet( pathsWrittenTo );
     }
 
 
