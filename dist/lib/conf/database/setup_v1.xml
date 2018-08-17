@@ -42,11 +42,16 @@
     </changeSet>
     <changeSet id="Add Self to WRES v1.0" author="Christopher Tubbs" dbms="PostgreSQL" failOnError="true" runAlways="true">
         <preConditions onFail="CONTINUE">
-            <sqlCheck expectedResult="t">
-                SELECT rolcreaterole
-                FROM pg_roles
-                WHERE rolname = CURRENT_USER;
-            </sqlCheck>
+            <and>
+                <sqlCheck expectedResult="t">
+                    SELECT CURRENT_USER != 'wres';
+                </sqlCheck>
+                <sqlCheck expectedResult="t">
+                    SELECT rolcreaterole
+                    FROM pg_roles
+                    WHERE rolname = CURRENT_USER;
+                </sqlCheck>
+            </and>
         </preConditions>
         <sql>
             GRANT wres TO CURRENT_USER;
