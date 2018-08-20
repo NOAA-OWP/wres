@@ -17,9 +17,6 @@ import java.util.StringJoiner;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import wres.config.ProjectConfigException;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.OutputTypeSelection;
@@ -45,8 +42,6 @@ import wres.io.config.ConfigHelper;
 public class CommaSeparatedScoreWriter<T extends ScoreOutput<?, T>> extends CommaSeparatedWriter
         implements Consumer<ListOfMetricOutput<T>>, Supplier<Set<Path>>
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger( CommaSeparatedWriter.class );
-
     /**
      * Set of paths that this writer actually wrote to
      */
