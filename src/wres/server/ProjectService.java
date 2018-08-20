@@ -35,7 +35,7 @@ public class ProjectService
     private static final Random RANDOM =
             new Random( System.currentTimeMillis() );
 
-    /** A shared bag of output file names by request id */
+    /** A shared bag of output resource references by request id */
     // The cache is here for expedience, this information could be persisted
     // elsewhere, such as a database or a local file. Cleanup of outputs is a
     // related concern.
@@ -115,10 +115,10 @@ public class ProjectService
     }
 
     @GET
-    @Path( "/{id}/{fileName}" )
+    @Path( "/{id}/{resourceName}" )
     @Produces( MediaType.TEXT_PLAIN )
-    public Response getProjectFile( @PathParam( "id" ) Long id,
-                                    @PathParam( "fileName" ) String fileName )
+    public Response getProjectResource( @PathParam( "id" ) Long id,
+                                        @PathParam( "resourceName" ) String resourceName )
     {
         Set<java.nio.file.Path> paths = OUTPUTS.getIfPresent( id );
 
@@ -131,24 +131,24 @@ public class ProjectService
 
         for ( java.nio.file.Path path : paths )
         {
-            if ( path.getFileName().toString().equals( fileName ) )
+            if ( path.getFileName().toString().equals( resourceName ) )
             {
                 File actualFile = path.toFile();
 
                 if ( !actualFile.exists() )
                 {
                     return Response.status( Response.Status.NOT_FOUND )
-                                   .entity( "Could not see file " + fileName
-                                            + "." )
+                                   .entity( "Could not see resource "
+                                            + resourceName + "." )
                                    .build();
                 }
 
                 if ( !actualFile.canRead() )
                 {
-                        return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
-                                       .entity( "Found but could not read file "
-                                                + fileName + "." )
-                                       .build();
+                    return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
+                                   .entity( "Found but could not read resource "
+                                            + resourceName + "." )
+                                   .build();
                 }
 
                 return Response.ok( actualFile )
@@ -157,8 +157,8 @@ public class ProjectService
         }
 
         return Response.status( Response.Status.NOT_FOUND )
-                       .entity( "Could not find fileName " + fileName
-                                + " in project " + id )
+                       .entity( "Could not find resource " + resourceName
+                                + " from project " + id )
                        .build();
     }
 
