@@ -2,6 +2,8 @@ package wres.server;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
 import javax.ws.rs.Consumes;
@@ -34,6 +36,9 @@ public class ProjectService
             new Random( System.currentTimeMillis() );
 
     /** A shared bag of output file names by request id */
+    // The cache is here for expedience, this information could be persisted
+    // elsewhere, such as a database or a local file. Cleanup of outputs is a
+    // related concern.
     private static final Cache<Long, Set<java.nio.file.Path>> OUTPUTS
             = Caffeine.newBuilder()
                       .maximumSize( 100 )
@@ -103,7 +108,9 @@ public class ProjectService
                            .build();
         }
 
-        return Response.ok( "Here is a list of files: " + paths )
+        Set<String> resources = getSetOfResources( id, paths );
+
+        return Response.ok( "Here are result resources: " + resources )
                        .build();
     }
 
@@ -155,4 +162,17 @@ public class ProjectService
                        .build();
     }
 
+    private static Set<String> getSetOfResources( long projectId,
+                                                  Set<java.nio.file.Path> pathSet )
+    {
+        Set<String> resources = new HashSet<>();
+
+        for ( java.nio.file.Path path : pathSet )
+        {
+            resources.add( "project/" + Long.toString( projectId )
+                           + "/" + path.getFileName() );
+        }
+
+        return Collections.unmodifiableSet( resources );
+    }
 }
