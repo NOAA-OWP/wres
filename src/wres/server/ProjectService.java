@@ -2,6 +2,7 @@ package wres.server;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Random;
@@ -17,6 +18,8 @@ import javax.ws.rs.core.Response;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import wres.config.ProjectConfigPlus;
 import wres.control.Control;
@@ -32,6 +35,8 @@ import wres.control.UserInputException;
 @Path( "/project")
 public class ProjectService
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger( ProjectService.class );
+
     private static final Random RANDOM =
             new Random( System.currentTimeMillis() );
 
@@ -116,11 +121,12 @@ public class ProjectService
 
     @GET
     @Path( "/{id}/{resourceName}" )
-    @Produces( MediaType.TEXT_PLAIN )
     public Response getProjectResource( @PathParam( "id" ) Long id,
                                         @PathParam( "resourceName" ) String resourceName )
     {
         Set<java.nio.file.Path> paths = OUTPUTS.getIfPresent( id );
+
+        String type = MediaType.TEXT_PLAIN_TYPE.getType();
 
         if ( paths == null )
         {
@@ -151,12 +157,30 @@ public class ProjectService
                                    .build();
                 }
 
+                try
+                {
+                    // Successfully translates .nc to application/x-netcdf
+                    // Successfully translates .csv to text/csv
+                    String probedType = Files.probeContentType( path );
+
+                    if ( probedType != null )
+                    {
+                        type = probedType;
+                    }
+                }
+                catch ( IOException ioe )
+                {
+                    LOGGER.warn( "Could not probe content type of {}", path, ioe );
+                }
+
                 return Response.ok( actualFile )
+                               .type( type )
                                .build();
             }
         }
 
         return Response.status( Response.Status.NOT_FOUND )
+                       .type( type )
                        .entity( "Could not find resource " + resourceName
                                 + " from project " + id )
                        .build();
