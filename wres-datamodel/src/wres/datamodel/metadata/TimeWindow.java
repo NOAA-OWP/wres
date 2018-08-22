@@ -30,8 +30,6 @@ import java.util.StringJoiner;
  * <p>TODO: If a future JDK implements something equivalent to an Interval in joda.time, consider replacing the 
  * earliest time and latest time with an Interval.</p>
  * 
- * <p><b>Implementation Requirements:</b></p>
- * 
  * <p>This class is immutable and thread-safe.</p>
  * 
  * @author james.brown@hydrosolved.com

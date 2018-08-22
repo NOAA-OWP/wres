@@ -13,8 +13,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.MetricOutputException;
-import wres.datamodel.outputs.ScoreOutput;
 
 /**
  * An abstract base class for an immutable score output.
@@ -152,7 +150,7 @@ abstract class BasicScoreOutput<T,U extends ScoreOutput<T,?>> implements ScoreOu
     public U getComponent( MetricConstants component )
     {
         return getScoreOutput( output.get( component ),
-                               MetricOutputMetadata.of( meta, component ) );
+                               MetricOutputMetadata.of( meta, meta.getMetricID(), component ) );
     }        
 
     @Override

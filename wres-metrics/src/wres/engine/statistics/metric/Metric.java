@@ -71,19 +71,7 @@ public interface Metric<S extends MetricInput<?>, T extends MetricOutput<?>> ext
 
     default String getName()
     {
-        return getID().toString();
-    }
-
-    /**
-     * Returns true when the input is a {@link Metric} and the metrics have equivalent names, i.e. {@link #getName()}
-     * returns an equivalent string.
-     * 
-     * @param o the object to test for equality with the current object
-     * @return true if the input is a metric and has an equivalent name to the current metric, false otherwise
-     */
-    default boolean nameEquals( final Object o )
-    {
-        return o instanceof Metric && ( (Metric<?, ?>) o ).getName().equals( getName() );
+        return this.getID().toString();
     }
 
 }

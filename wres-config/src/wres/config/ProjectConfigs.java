@@ -1,9 +1,12 @@
 package wres.config;
 
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.Objects;
 
 import wres.config.generated.ProjectConfig;
+import wres.config.generated.TimeScaleConfig;
 
 /**
  * Provides static methods that help with ProjectConfig and its children.
@@ -54,11 +57,29 @@ public class ProjectConfigs
         // Null friendly natural order on project name
         return Objects.compare( first.getName(), second.getName(), Comparator.nullsFirst( Comparator.naturalOrder() ) );
     }
+    
+    /**
+     * Get a duration of a period from a timescale config
+     * 
+     * @param timeScaleConfig the config
+     * @return the duration
+     * @throws NullPointerException if the input is null
+     */
+    
+    public static Duration getDurationFromTimeScale( TimeScaleConfig timeScaleConfig )
+    {
+        Objects.requireNonNull( timeScaleConfig, "Specify non-null input configuration " );
+        
+        ChronoUnit unit = ChronoUnit.valueOf( timeScaleConfig.getUnit()
+                                                             .value()
+                                                             .toUpperCase() );
+        return Duration.of( timeScaleConfig.getPeriod(), unit );
+    }
 
     private ProjectConfigs()
     {
         // Prevent construction, this is a static helper class.
     }
-
+    
 }
 

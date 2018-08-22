@@ -1280,20 +1280,6 @@ public class ConfigHelper
     }
 
     /**
-     * Get a duration of a period from a timescale config
-     * @param timeScaleConfig the config
-     * @return the duration
-     */
-    public static Duration getDurationFromTimeScale( TimeScaleConfig timeScaleConfig )
-    {
-        ChronoUnit unit = ChronoUnit.valueOf( timeScaleConfig.getUnit()
-                                                             .value()
-                                                             .toUpperCase() );
-        return Duration.of( timeScaleConfig.getPeriod(), unit );
-    }
-
-
-    /**
      * Returns a {@link DecimalFormat} from the input configuration or null if no formatter is required.
      * 
      * @param destinationConfig the destination configuration

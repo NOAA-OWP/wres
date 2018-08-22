@@ -114,7 +114,8 @@ public final class MetricFuturesByTimeTest
                                                                                     MetricOutputMetadata.of( 1,
                                                                                                              MeasurementUnit.of(),
                                                                                                              MeasurementUnit.of(),
-                                                                                                             MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE ),
+                                                                                                             MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
+                                                                                                             MetricConstants.MAIN ),
                                                                                     MetricDimension.OBSERVED_VALUE,
                                                                                     MetricDimension.FORECAST_ERROR ) ) );
 
@@ -127,7 +128,8 @@ public final class MetricFuturesByTimeTest
                                                                                         MetricOutputMetadata.of( 1,
                                                                                                                  MeasurementUnit.of(),
                                                                                                                  MeasurementUnit.of(),
-                                                                                                                 MetricConstants.MEAN_ERROR ) ) ) );
+                                                                                                                 MetricConstants.MEAN_ERROR,
+                                                                                                                 MetricConstants.MAIN ) ) ) );
 
         builder.addDoubleScoreOutput( key,
                                       CompletableFuture.completedFuture( doubleScore ) );
@@ -139,7 +141,8 @@ public final class MetricFuturesByTimeTest
                                                                                           MetricOutputMetadata.of( 1,
                                                                                                                    MeasurementUnit.of(),
                                                                                                                    MeasurementUnit.of(),
-                                                                                                                   MetricConstants.TIME_TO_PEAK_ERROR ) ) ) );
+                                                                                                                   MetricConstants.TIME_TO_PEAK_ERROR,
+                                                                                                                   MetricConstants.MAIN ) ) ) );
 
         builder.addDurationScoreOutput( key,
                                         CompletableFuture.completedFuture( durationScore ) );
@@ -152,7 +155,8 @@ public final class MetricFuturesByTimeTest
                                                                                    MetricOutputMetadata.of( 1,
                                                                                                             MeasurementUnit.of(),
                                                                                                             MeasurementUnit.of(),
-                                                                                                            MetricConstants.CONTINGENCY_TABLE ) ) ) );
+                                                                                                            MetricConstants.CONTINGENCY_TABLE,
+                                                                                                            MetricConstants.MAIN ) ) ) );
 
         builder.addMatrixOutput( key,
                                  CompletableFuture.completedFuture( matrix ) );
@@ -164,7 +168,8 @@ public final class MetricFuturesByTimeTest
                                                                                                          MetricOutputMetadata.of( 1,
                                                                                                                                   MeasurementUnit.of(),
                                                                                                                                   MeasurementUnit.of(),
-                                                                                                                                  MetricConstants.CONTINGENCY_TABLE ) ) ) );
+                                                                                                                                  MetricConstants.CONTINGENCY_TABLE,
+                                                                                                                                  MetricConstants.MAIN ) ) ) );
 
         builder.addMultiVectorOutput( key,
                                       CompletableFuture.completedFuture( multivector ) );
@@ -175,7 +180,8 @@ public final class MetricFuturesByTimeTest
                                                                                    MetricOutputMetadata.of( 1,
                                                                                                             MeasurementUnit.of(),
                                                                                                             MeasurementUnit.of(),
-                                                                                                            MetricConstants.CONTINGENCY_TABLE ) ) ) );
+                                                                                                            MetricConstants.CONTINGENCY_TABLE,
+                                                                                                            MetricConstants.MAIN ) ) ) );
 
         builder.addPairedOutput( key,
                                  CompletableFuture.completedFuture( paired ) );
