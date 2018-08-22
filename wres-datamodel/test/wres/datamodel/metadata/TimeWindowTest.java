@@ -13,15 +13,10 @@ import java.util.Objects;
 
 import org.junit.Test;
 
-import wres.datamodel.metadata.ReferenceTime;
-import wres.datamodel.metadata.TimeWindow;
-
 /**
  * Tests the {@link TimeWindow}.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 public final class TimeWindowTest
 {

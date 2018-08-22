@@ -162,7 +162,6 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                 // 1. Get some pairs from the database
                 // 2. Compute the metrics
                 // 3. Process any intermediate verification results
-                // 4. Monitor progress
                 final CompletableFuture<Void> c =
                         CompletableFuture.supplyAsync( new PairsByTimeWindowProcessor( nextInput,
                                                                                        processor ),

@@ -1,5 +1,7 @@
 package wres.io.utilities;
 
+import static ru.yandex.qatools.embed.postgresql.distribution.Version.Main.V9_6;
+
 import java.beans.PropertyVetoException;
 import java.io.IOException;
 import java.nio.file.Paths;
@@ -8,7 +10,6 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.mchange.v2.c3p0.ComboPooledDataSource;
 import org.junit.runner.RunWith;
 import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
@@ -16,10 +17,10 @@ import org.powermock.modules.junit4.PowerMockRunner;
 import org.powermock.reflect.Whitebox;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.mchange.v2.c3p0.ComboPooledDataSource;
+
 import ru.yandex.qatools.embed.postgresql.EmbeddedPostgres;
-
-import static ru.yandex.qatools.embed.postgresql.distribution.Version.Main.V9_6;
-
 import wres.system.DatabaseSchema;
 import wres.system.SystemSettings;
 

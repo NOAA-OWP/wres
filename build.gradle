@@ -252,7 +252,7 @@ project(':wres-io')
         testCompile 'org.powermock:powermock-module-junit4:1.7.1'
 
         // try out an embedded postgres
-        testCompile 'ru.yandex.qatools.embed:postgresql-embedded:2.2'
+        testCompile 'ru.yandex.qatools.embed:postgresql-embedded:2.9'
     }
 }
 

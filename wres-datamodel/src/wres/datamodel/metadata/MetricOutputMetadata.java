@@ -86,52 +86,112 @@ public class MetricOutputMetadata extends Metadata implements Comparable<MetricO
     }
 
     /**
-     * Builds a {@link MetricOutputMetadata} with an input source and an override for the metric component identifier.
+     * Builds a {@link MetricOutputMetadata} with an input source and an override for the metric identifiers.
      * 
      * @param source the input source
+     * @param metricID the metric identifier
      * @param componentID the metric component identifier or decomposition template
      * @return a {@link MetricOutputMetadata} object
      */
 
     public static MetricOutputMetadata of( final MetricOutputMetadata source,
+                                           final MetricConstants metricID,
                                            final MetricConstants componentID )
     {
         return MetricOutputMetadata.of( source.getSampleSize(),
                                         source.getMeasurementUnit(),
                                         source.getInputDimension(),
-                                        source.getMetricID(),
+                                        metricID,
                                         componentID,
                                         source.getIdentifier(),
                                         source.getTimeWindow(),
                                         source.getThresholds(),
                                         source.getProjectConfig() );
     }
-
+    
     /**
-     * Builds a default {@link MetricOutputMetadata} with a prescribed sample size, a {@link MeasurementUnit} for the output
-     * and the input, and a {@link MetricConstants} identifier for the metric.
+     * Builds a default {@link MetricOutputMetadata} with a prescribed source of {@link Metadata} whose parameters are
+     * copied, together with a sample size, a {@link MeasurementUnit} for the output, and {@link MetricConstants} 
+     * identifiers for the metric and the metric component, respectively.
      * 
+     * @param source the source metadata
      * @param sampleSize the sample size
-     * @param outputDim the dimension
-     * @param inputDim the input dimension
+     * @param outputDim the output dimension
      * @param metricID the metric identifier
+     * @param componentID the metric component identifier or decomposition template
      * @return a {@link MetricOutputMetadata} object
+     * @throws NullPointerException if the input metadata is null
      */
 
-    public static MetricOutputMetadata of( final int sampleSize,
+    public static MetricOutputMetadata of( final Metadata source,
+                                           final int sampleSize,
                                            final MeasurementUnit outputDim,
-                                           final MeasurementUnit inputDim,
-                                           final MetricConstants metricID )
+                                           final MetricConstants metricID,
+                                           final MetricConstants componentID )
     {
+        Objects.requireNonNull( source,
+                                "Specify a non-null source of input metadata from which to build the output metadata." );
+
         return MetricOutputMetadata.of( sampleSize,
                                         outputDim,
-                                        inputDim,
+                                        source.getMeasurementUnit(),
                                         metricID,
-                                        MetricConstants.MAIN,
-                                        null,
-                                        null,
-                                        null,
-                                        null );
+                                        componentID,
+                                        source.getIdentifier(),
+                                        source.getTimeWindow(),
+                                        source.getThresholds(),
+                                        source.getProjectConfig() );
+    }    
+
+    /**
+     * Returns an instance from the inputs.
+     * 
+     * @param source the source metadata
+     * @param metricID the metric identifier
+     * @param componentID the component identifier or metric decomposition template
+     * @param hasRealUnits is true if the metric produces outputs with real units, false for dimensionless units
+     * @param sampleSize the sample size
+     * @param baselineID the baseline identifier or null
+     * @return the output metadata
+     */
+
+    public static MetricOutputMetadata of( final Metadata source,
+                                           final MetricConstants metricID,
+                                           final MetricConstants componentID,
+                                           final boolean hasRealUnits,
+                                           final int sampleSize,
+                                           final DatasetIdentifier baselineID )
+    {
+        MeasurementUnit outputDim = null;
+
+        //Dimensioned?
+        if ( hasRealUnits )
+        {
+            outputDim = source.getMeasurementUnit();
+        }
+        else
+        {
+            outputDim = MeasurementUnit.of();
+        }
+
+        DatasetIdentifier identifier = source.getIdentifier();
+
+        //Add the scenario ID associated with the baseline input
+        if ( Objects.nonNull( baselineID ) )
+        {
+            identifier =
+                    DatasetIdentifier.of( identifier, baselineID.getScenarioID() );
+        }
+
+        return MetricOutputMetadata.of( sampleSize,
+                   outputDim,
+                   source.getMeasurementUnit(),
+                   metricID,
+                   componentID,
+                   identifier,
+                   source.getTimeWindow(),
+                   source.getThresholds(),
+                   source.getProjectConfig() );
     }
 
     /**
@@ -164,40 +224,6 @@ public class MetricOutputMetadata extends Metadata implements Comparable<MetricO
     }
 
     /**
-     * Builds a default {@link MetricOutputMetadata} with a prescribed source of {@link Metadata} whose parameters are
-     * copied, together with a sample size, a {@link MeasurementUnit} for the output, and {@link MetricConstants} identifiers
-     * for the metric and the metric component, respectively.
-     * 
-     * @param source the source metadata
-     * @param sampleSize the sample size
-     * @param outputDim the output dimension
-     * @param metricID the metric identifier
-     * @param componentID the metric component identifier or decomposition template
-     * @return a {@link MetricOutputMetadata} object
-     * @throws NullPointerException if the input metadata is null
-     */
-
-    public static MetricOutputMetadata of( final Metadata source,
-                                           final int sampleSize,
-                                           final MeasurementUnit outputDim,
-                                           final MetricConstants metricID,
-                                           final MetricConstants componentID )
-    {
-        Objects.requireNonNull( source,
-                                "Specify a non-null source of input metadata from which to build the output metadata." );
-
-        return MetricOutputMetadata.of( sampleSize,
-                                        outputDim,
-                                        source.getMeasurementUnit(),
-                                        metricID,
-                                        componentID,
-                                        source.getIdentifier(),
-                                        source.getTimeWindow(),
-                                        source.getThresholds(),
-                                        source.getProjectConfig() );
-    }
-
-    /**
      * Builds a default {@link MetricOutputMetadata} with a prescribed sample size, a {@link MeasurementUnit} for the output
      * and the input, {@link MetricConstants} identifiers for the metric and the metric component, respectively, and an
      * optional {@link DatasetIdentifier} identifier.
@@ -227,58 +253,6 @@ public class MetricOutputMetadata extends Metadata implements Comparable<MetricO
                                         null,
                                         null,
                                         null );
-    }
-
-
-    /**
-     * Returns an instance from the inputs.
-     * 
-     * @param metIn the metric input metadata
-     * @param metricId the metric identifier
-     * @param componentId the component identifier or metric decomposition template
-     * @param hasRealUnits is true if the metric produces outputs with real units, false for dimensionless units
-     * @param sampleSize the sample size
-     * @param baselineID the baseline identifier or null
-     * @return the output metadata
-     */
-
-    public static MetricOutputMetadata of( final Metadata metIn,
-                                           final MetricConstants metricId,
-                                           final MetricConstants componentId,
-                                           final boolean hasRealUnits,
-                                           final int sampleSize,
-                                           final DatasetIdentifier baselineID )
-    {
-        MeasurementUnit outputDim = null;
-
-        //Dimensioned?
-        if ( hasRealUnits )
-        {
-            outputDim = metIn.getMeasurementUnit();
-        }
-        else
-        {
-            outputDim = MeasurementUnit.of();
-        }
-
-        DatasetIdentifier identifier = metIn.getIdentifier();
-
-        //Add the scenario ID associated with the baseline input
-        if ( Objects.nonNull( baselineID ) )
-        {
-            identifier =
-                    DatasetIdentifier.of( identifier, baselineID.getScenarioID() );
-        }
-
-        return MetricOutputMetadata.of( sampleSize,
-                   outputDim,
-                   metIn.getMeasurementUnit(),
-                   metricId,
-                   componentId,
-                   identifier,
-                   metIn.getTimeWindow(),
-                   metIn.getThresholds(),
-                   metIn.getProjectConfig() );
     }
 
     /**
