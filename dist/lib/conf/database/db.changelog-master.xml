@@ -32,4 +32,6 @@
     <include file="public.projectexecutions_v1.xml" relativeToChangelogFile="true" />
     <include file="Obsolete_tables_v1.xml" relativeToChangelogFile="true" />
     <include file="keys_v1.0.xml" relativeToChangelogFile="true" />
+    <include file="add_measurementunit_kcfs.xml" relativeToChangelogFile="true" />
+    <include file="wres.source_v2.xml" relativeToChangelogFile="true" />
 </databaseChangeLog>

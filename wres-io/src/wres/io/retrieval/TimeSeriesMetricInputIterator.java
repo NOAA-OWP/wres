@@ -78,7 +78,7 @@ public class TimeSeriesMetricInputIterator extends MetricInputIterator
         ScriptBuilder script = new ScriptBuilder(  );
         script.addLine("SELECT CEILING(");
         script.addTab().addLine("EXTRACT( epoch FROM AGE(MAX(TS.initialization_date), ", minimumDate, "::timestamp without time zone)) /");
-        script.addTab().addLine("EXTRACT( epoch FROM (INTERVAL '", lag * seriesToRetrieve, " HOUR'))");
+        script.addTab().addLine("EXTRACT( epoch FROM (INTERVAL '", lag * seriesToRetrieve, " MINUTE'))");
         script.addLine(") AS total_steps");
         script.addLine("FROM (");
         script.addTab().addLine("SELECT TS.initialization_date");

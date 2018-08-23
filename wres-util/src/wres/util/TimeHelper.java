@@ -26,7 +26,7 @@ public final class TimeHelper
     /**
      * The temporal unit that lead numbers in the database represent
      */
-    public static final TemporalUnit LEAD_RESOLUTION = ChronoUnit.HOURS;
+    public static final TemporalUnit LEAD_RESOLUTION = ChronoUnit.MINUTES;
 
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern( DATE_FORMAT );
     private static final Pattern TIMESTAMP_PATTERN =
@@ -177,22 +177,6 @@ public final class TimeHelper
         LocalDate actualDate = LocalDate.from( actualDateTime );
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DATE_FORMAT);
         return actualDate.format(formatter);
-    }
-
-    /**
-     * Takes the string representation of most time formats and forces them
-     * into a complete UTC timestamp.
-     *
-     * We have no control over the format of string dates that the system
-     * receives. As a result, they must be standardized.
-     *
-     * @param datetime A string date of an uncertain format
-     * @return A string date in UTC
-     */
-    public static String standardize(String datetime)
-    {
-        TemporalAccessor dateObject = TimeHelper.convertStringToDate( datetime );
-        return TimeHelper.convertDateToString( dateObject );
     }
 
     /**

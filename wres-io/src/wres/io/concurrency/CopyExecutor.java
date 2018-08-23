@@ -19,6 +19,10 @@ public class CopyExecutor extends WRESRunnable
     private final String values;
     private final String delimiter;
 
+    // TODO: Change structure to accept a data provider
+    // Once a data provider is taken instead of a string of values, the CopyExecutor
+    // should then figure out if "copy" can take advantage of the postgres copy or form
+    // the statement into a series of inserts
 
     /**
      * The Constructor

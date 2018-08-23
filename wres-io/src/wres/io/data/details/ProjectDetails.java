@@ -64,7 +64,7 @@ import wres.util.TimeHelper;
  * database statements. TODO: refactor this class and make it immutable, ideally, but otherwise thread-safe. It's also
  * far too large (JBr). See #49511.
  */
-public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
+public class ProjectDetails
 {
     public enum PairingMode
     {
@@ -73,14 +73,6 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
         BACK_TO_BACK,
         TIME_SERIES
     }
-
-    @Deprecated
-    private static final String NEWLINE = System.lineSeparator();
-
-    /**
-     * Ensures that multiple copies of a project aren't saved at the same time
-     */
-    private static final Object PROJECT_SAVE_LOCK = new Object();
 
     private static final Logger LOGGER = LoggerFactory.getLogger( ProjectDetails.class );
 
@@ -927,7 +919,7 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
      * from the scale
      * @throws SQLException when communication with the database failed
      */
-    public Integer getLeadPeriod() throws NoDataException, SQLException
+    private Integer getLeadPeriod() throws NoDataException, SQLException
     {
         Integer period;
 
@@ -1129,11 +1121,19 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
             {
                 String message = "The temporal scales of the left and right hand data "
                                  + "don't match. The left hand data is in a "
-                                 + "scale of %d hours and the scale on the "
-                                 + "right is in %d hours. If the data is "
-                                 + "compatible, a scale of %d hours should "
+                                 + "scale of %d %s and the scale on the "
+                                 + "right is in %d minutes. If the data is "
+                                 + "compatible, a scale of %d minutes should "
                                  + "suffice.";
-                throw new NoDataException( String.format( message, left, right, maxScale ) );
+                throw new NoDataException(
+                        String.format(
+                                message,
+                                left,
+                                TimeHelper.LEAD_RESOLUTION.toString().toLowerCase(),
+                                right,
+                                maxScale
+                        )
+                );
             }
             else if (!(minScale == 0 || maxScale == 0))
             {
@@ -1147,12 +1147,12 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
                 commonScale =
                         left * right / greatestCommonFactor;
 
-                String message = "The temporal scales of the left (%d Hours) "
-                                 + "and right (%d Hours) hand data are in "
+                String message = "The temporal scales of the left (%d minutes) "
+                                 + "and right (%d minutes) hand data are in "
                                  + "different temporal scales and more "
                                  + "information is needed in order to pair "
                                  + "data properly. Please supply a desired time "
-                                 + "scale. A scale of %d hours should work if "
+                                 + "scale. A scale of %d minutes should work if "
                                  + "there is enough data and an appropriate "
                                  + "scaling function is supplied.";
                 throw new NoDataException( String.format( message, left, right, commonScale ) );
@@ -1175,12 +1175,12 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
                 scaleFunction,
                 commonScale.intValue(),
                 commonScale.intValue(),
-                DurationUnit.HOURS,
+                DurationUnit.MINUTES,
                 "Dynamic Scale" );
     }
 
     /**
-     * Determines the scale of the data
+     * Determines the time step of the data
      * <p>
      *     If no desired scale has been configured, one is dynamically generated
      * </p>
@@ -1191,6 +1191,7 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
      */
     public TimeScaleConfig getScale() throws NoDataException, SQLException
     {
+        // TODO: Convert this to a function to determine time step; this doesn't actually have anything to do with scale
         if (this.desiredTimeScale == null)
         {
             this.desiredTimeScale = this.projectConfig.getPair().getDesiredTimeScale();
@@ -1217,8 +1218,8 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
         {
             this.desiredTimeScale = new TimeScaleConfig(
                     TimeScaleFunction.NONE,
-                    1,
-                    1,
+                    60,
+                    60,
                     DurationUnit.fromValue(TimeHelper.LEAD_RESOLUTION.toString().toLowerCase() ),
                     null
             );
@@ -1333,9 +1334,9 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
                 script.addTab().addLine( "FROM wres.TimeSeriesValue TSV" );
                 script.addTab().addLine( "WHERE TSV.lead > 0" );
 
-                if ( this.getMaximumLeadHour() != Integer.MAX_VALUE )
+                if ( this.getMaximumLead() != Integer.MAX_VALUE )
                 {
-                    script.addTab(  2  ).addLine( "AND TSV.lead <= ", this.getMaximumLeadHour() );
+                    script.addTab(  2  ).addLine( "AND TSV.lead <= ", this.getMaximumLead() );
                 }
 
                 script.addTab(  2  ).addLine( "AND EXISTS (" );
@@ -1701,7 +1702,7 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
         Connection connection = null;
         Map<FeatureDetails, Future<DataProvider>> futureLeads = new LinkedHashMap<>(  );
 
-        long width = Math.max(1, this.getMinimumLeadHour());
+        long width = Math.max(1, this.getMinimumLead());
 
         ScriptBuilder script = new ScriptBuilder(  );
 
@@ -1709,9 +1710,9 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
         script.addLine("FROM wres.TimeSeriesValue TSV");
         script.addLine("WHERE TSV.lead >= ", width);
 
-        if (this.getMaximumLeadHour() != Integer.MAX_VALUE)
+        if (this.getMaximumLead() != Integer.MAX_VALUE)
         {
-            script.addTab().addLine("AND TSV.lead <= ", this.getMaximumLeadHour());
+            script.addTab().addLine("AND TSV.lead <= ", this.getMaximumLead());
         }
 
         if (this.getMaximumValue() != Double.MAX_VALUE)
@@ -1920,7 +1921,7 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
 
         part.addLine("SELECT TS.offset");
         part.addLine("FROM (");
-        part.addTab().add("SELECT TS.initialization_date + INTERVAL '1 HOUR' * (TSV.lead + ", width, ")");
+        part.addTab().add("SELECT TS.initialization_date + INTERVAL '1 MINUTE' * (TSV.lead + ", width, ")");
 
         if (this.getRight().getTimeShift() != null)
         {
@@ -1938,18 +1939,18 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
 
         part = new ScriptBuilder(  );
 
-        if (this.getMinimumLeadHour() != Integer.MIN_VALUE)
+        if (this.getMinimumLead() != Integer.MIN_VALUE)
         {
-            part.addTab(  2  ).addLine( "AND TSV.lead >= ", (this.getMinimumLeadHour() - 1) + width);
+            part.addTab(  2  ).addLine( "AND TSV.lead >= ", (this.getMinimumLead() - 60.0) + width);
         }
         else
         {
             part.addTab(  2  ).addLine( "AND TSV.lead >= ", width);
         }
 
-        if (this.getMaximumLeadHour() != Integer.MAX_VALUE)
+        if (this.getMaximumLead() != Integer.MAX_VALUE)
         {
-            part.addTab(  2  ).addLine( "AND TSV.lead <= ", this.getMaximumLeadHour());
+            part.addTab(  2  ).addLine( "AND TSV.lead <= ", this.getMaximumLead());
         }
 
         if (Strings.hasValue( this.getEarliestIssueDate() ))
@@ -2346,30 +2347,30 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
         script.addLine("    INNER JOIN wres.TimeSeries TS");
         script.addLine("        ON TS.timeseries_id = TSV.timeseries_id");
 
-        if (this.getMinimumLeadHour() != Integer.MIN_VALUE)
+        if (this.getMinimumLead() != Integer.MIN_VALUE)
         {
-            script.addTab().addLine("WHERE lead > ", this.getMinimumLeadHour());
+            script.addTab().addLine("WHERE lead > ", this.getMinimumLead());
         }
         else
         {
             script.addLine("    WHERE lead > 0");
         }
 
-        if (this.getMaximumLeadHour() != Integer.MAX_VALUE)
+        if (this.getMaximumLead() != Integer.MAX_VALUE)
         {
-            script.addTab().addLine("AND lead <= ", this.getMaximumLeadHour());
+            script.addTab().addLine("AND lead <= ", this.getMaximumLead());
         }
         else
         {
-            // Set the maximum to 100. If the maximum is lead is 72, then this
+            // Set the maximum to 6,000 (100 hours). If the maximum is lead is 72, then this
             // should not behave much differently than having no clause at all.
-            // If real maximum was 2880, 100 will provide a large enough sample
+            // If real maximum was 172800, 6000 will provide a large enough sample
             // size and produce the correct values in a slightly faster fashion.
             // In one data set, leaving this out causes this to take 11.5s .
             // That was even with a subset of the real data (1 month vs 30 years).
-            // If we cut it to 100, it now takes 1.6s. Still not great, but
+            // If we cut it to 6000, it now takes 1.6s. Still not great, but
             // much faster
-            script.addTab().addLine( "AND lead <= ", 100 );
+            script.addTab().addLine( "AND lead <= ", 6000 );
         }
 
         Optional<FeatureDetails> featureDetails = this.getFeatures().stream().findFirst();
@@ -2457,12 +2458,7 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
         script.addTab().addLine(")");
         script.addTab().addLine("GROUP BY observation_time");
         script.addLine(")");
-
-        // TODO: When we change the scale of the lead column, we need to change this as well
-        // We want the number of hours in the scale. It was previously "Extract ( hours ... ",
-        // but, for 1 day, was returning 0 hours (considering there were 0 hours into the day
-        // of the interval
-        script.addLine("SELECT ( EXTRACT( epoch FROM MIN(age))/3600 )::integer AS scale");
+        script.addLine("SELECT ( EXTRACT( epoch FROM MIN(age))/60 )::integer AS scale");
         script.addLine("FROM differences");
         script.addLine("WHERE age IS NOT NULL");
         script.addLine("GROUP BY age;");
@@ -2648,13 +2644,13 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
 
             boolean whereAdded = false;
 
-            if (this.getMinimumLeadHour() != Integer.MAX_VALUE)
+            if (this.getMinimumLead() != Integer.MAX_VALUE)
             {
                 whereAdded = true;
-                script.addLine("WHERE S.lead >= ", this.getMinimumLeadHour());
+                script.addLine("WHERE S.lead >= ", this.getMinimumLead());
             }
 
-            if (this.getMaximumLeadHour() != Integer.MIN_VALUE)
+            if (this.getMaximumLead() != Integer.MIN_VALUE)
             {
                 if (whereAdded)
                 {
@@ -2666,7 +2662,7 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
                     script.add("WHERE ");
                 }
 
-                script.addLine("S.lead <= ", this.getMaximumLeadHour());
+                script.addLine("S.lead <= ", this.getMaximumLead());
             }
 
             if (Strings.hasValue(this.getEarliestIssueDate()))
@@ -2711,7 +2707,7 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
                     script.add("WHERE ");
                 }
 
-                script.addLine("S.output_time + INTERVAL '1 HOUR' * S.lead >= '", this.getEarliestDate(), "'");
+                script.addLine("S.output_time + INTERVAL '1 MINUTE' * S.lead >= '", this.getEarliestDate(), "'");
             }
 
             if (Strings.hasValue( this.getLatestDate() ))
@@ -2725,7 +2721,7 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
                     script.add("WHERE ");
                 }
 
-                script.addLine("S.output_time + INTERVAL '1 HOUR' * S.lead <= '", this.getLatestDate(), "'");
+                script.addLine("S.output_time + INTERVAL '1 MINUTE' * S.lead <= '", this.getLatestDate(), "'");
             }
             this.lastLeads.put( feature, script.retrieve ("last_lead" ));
         }
@@ -2744,18 +2740,14 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
                                                                  this.getRightVariableID(),
                                                                  "TS" ));
 
-                if ( this.getMaximumLeadHour() != Integer.MAX_VALUE )
+                if ( this.getMaximumLead() != Integer.MAX_VALUE )
                 {
-                    script.addTab().addLine("AND TSV.lead <= "
-                              + this.getMaximumLeadHour( )
-                             );
+                    script.addTab().addLine("AND TSV.lead <= " + this.getMaximumLead( ));
                 }
 
-                if ( this.getMinimumLeadHour() != Integer.MIN_VALUE )
+                if ( this.getMinimumLead() != Integer.MIN_VALUE )
                 {
-                    script.addTab().addLine("AND TSV.lead >= "
-                              + this.getMinimumLeadHour( )
-                             );
+                    script.addTab().addLine("AND TSV.lead >= " + this.getMinimumLead( ));
                 }
 
                 if ( Strings.hasValue( this.getEarliestIssueDate()))
@@ -2770,12 +2762,12 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
 
                 if ( Strings.hasValue( this.getEarliestDate() ))
                 {
-                    script.addTab().addLine("AND TS.initialization_date + INTERVAL '1 HOUR' * TSV.lead >= '" + this.getEarliestDate() + "'");
+                    script.addTab().addLine("AND TS.initialization_date + INTERVAL '1 MINUTE' * TSV.lead >= '" + this.getEarliestDate() + "'");
                 }
 
                 if (Strings.hasValue( this.getLatestDate() ))
                 {
-                    script.addTab().addLine("AND TS.initialization_date + INTERVAL '1 HOUR' * TSV.lead <= '" + this.getLatestDate() + "'");
+                    script.addTab().addLine("AND TS.initialization_date + INTERVAL '1 MINUTE' * TSV.lead <= '" + this.getLatestDate() + "'");
                 }
 
                 script.addTab().addLine("AND EXISTS (");
@@ -2822,7 +2814,7 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
     /**
      * @return the minimum value specified or a default of Integer.MIN_VALUE
      */
-    public int getMinimumLeadHour()
+    public int getMinimumLead()
     {
         int result = Integer.MIN_VALUE;
 
@@ -2833,9 +2825,10 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
                     .getLeadHours()
                     .getMinimum() != null )
         {
+            // Lead hour configuration needs to be converted to lead minutes
             result = this.getProjectConfig().getPair()
                          .getLeadHours()
-                         .getMinimum();
+                         .getMinimum() * 60;
         }
 
         return result;
@@ -2844,7 +2837,7 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
     /**
      * @return the maximum value specified or a default of Integer.MAX_VALUE
      */
-    public int getMaximumLeadHour()
+    public int getMaximumLead()
     {
         int result = Integer.MAX_VALUE;
 
@@ -2855,9 +2848,10 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
                     .getLeadHours()
                     .getMaximum() != null )
         {
+            // Lead hour configuration needs to be converted to lead minutes
             result = this.getProjectConfig().getPair()
                          .getLeadHours()
-                         .getMaximum();
+                         .getMaximum() * 60;
         }
 
         return result;
@@ -2993,7 +2987,7 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
                 script.addTab(     5     ).addLine("LAG(TS.initialization_date) OVER (ORDER BY TS.initialization_date)");
                 script.addTab(    4    ).addLine( ")");
                 script.addTab(   3   ).addLine(")");
-                script.addTab(  2  ).addLine(") / 3600)::int AS lag");
+                script.addTab(  2  ).addLine(") / 60)::int AS lag");
                 script.addTab().addLine("FROM wres.TimeSeries TS");
                 script.addTab().add("WHERE ");
                 script.addLine(ConfigHelper.getVariableFeatureClause(

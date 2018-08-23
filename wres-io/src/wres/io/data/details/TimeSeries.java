@@ -16,13 +16,7 @@ public final class TimeSeries
      * The number of unique lead times contained within a partition within
      * the database for values linked to a forecasted time series
      */
-    private static final short TIMESERIESVALUE_PARTITION_SPAN = 20;
-
-    /**
-     * System agnostic newline character used to make created scripts easier to
-     * read
-     */
-	private static final String NEWLINE = System.lineSeparator();
+    private static final short TIMESERIESVALUE_PARTITION_SPAN = 1200;
 
     /**
      * Mapping between the number of a forecast value partition and its name

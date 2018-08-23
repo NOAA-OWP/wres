@@ -1,13 +1,21 @@
 package wres.io.reading;
 
+import java.io.IOException;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import wres.io.concurrency.CopyExecutor;
 import wres.io.data.details.TimeSeries;
+import wres.io.utilities.DataBuilder;
 import wres.io.utilities.Database;
 import wres.system.SystemSettings;
 import wres.util.Strings;
@@ -18,6 +26,8 @@ import wres.util.Strings;
  */
 public final class TimeSeriesValues
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger( TimeSeriesValues.class );
+
     private static final TimeSeriesValues ourInstance = new TimeSeriesValues();
 
     public static TimeSeriesValues getInstance()
@@ -29,39 +39,14 @@ public final class TimeSeriesValues
     {
     }
 
-    private static final String NEWLINE = System.lineSeparator();
-    private static final String DELIMITER = "|";
-
     // Key = partition name, i.e. "partitions.forecastvalue_lead_0"
     // Value = List of values to save to the partition
-    private static final ConcurrentMap<String, List<TimeSeriesValue>> VALUES_TO_SAVE = new ConcurrentHashMap<>(  );
-
-    // Maps the name of a partition to its table definition. Prevents
-    // the system from having to concatentate strings hundreds of thousands,
-    // if not millions of times
-    private static final ConcurrentMap<String, String> TABLE_DEFINITIONS = new ConcurrentHashMap<>(  );
+    private static final ConcurrentMap<String, DataBuilder> VALUES_TO_SAVE = new ConcurrentHashMap<>(  );
 
     /** Guards VALUES_TO_SAVE */
     private static final Object VALUES_TO_SAVE_LOCK = new Object();
 
-    // The definition of the columns that will have values copied to
-    private static final String COLUMN_DEFINITION =  " (timeseries_id, lead, forecasted_value)";
-
-    /**
-     * Creates and retrieces the definition for a table
-     * @param partitionName The name of the partition whose table definition is
-     *                      needed
-     * @return The entire definition of the table to copy values to
-     */
-    private static String getTableDefinition(String partitionName)
-    {
-        if (!TABLE_DEFINITIONS.containsKey( partitionName ))
-        {
-            TABLE_DEFINITIONS.putIfAbsent( partitionName,
-                                           partitionName + COLUMN_DEFINITION );
-        }
-        return TABLE_DEFINITIONS.get( partitionName );
-    }
+    private static final String[] COLUMN_NAMES = {"timeseries_id", "lead", "series_value"};
 
     /**
      * Stores a time series value so that it may be copied to the database later
@@ -71,7 +56,7 @@ public final class TimeSeriesValues
      * @throws SQLException Thrown if the name of the proper partition could not
      * be retrieved.
      */
-    static void add(int timeSeriesID, int lead, String value)
+    public static void add(final int timeSeriesID, final int lead, final Double value)
             throws SQLException
     {
         String partitionName = TimeSeries.getTimeSeriesValuePartition( lead );
@@ -79,14 +64,14 @@ public final class TimeSeriesValues
         synchronized ( VALUES_TO_SAVE_LOCK )
         {
             // Add a list for the values if it isn't present
-            VALUES_TO_SAVE.putIfAbsent( partitionName, new LinkedList<>(  ) );
+            VALUES_TO_SAVE.putIfAbsent( partitionName, DataBuilder.with( TimeSeriesValues.COLUMN_NAMES ));
 
             // Add the values to the list for the partition
-            VALUES_TO_SAVE.get( partitionName ).add( new TimeSeriesValue( timeSeriesID, lead, value ) );
+            VALUES_TO_SAVE.get( partitionName ).addRow( timeSeriesID, lead, value );
 
             // If the maximum number of values to copy has been reached, copy the
             // values
-            if ( VALUES_TO_SAVE.get( partitionName ).size() >= SystemSettings.getMaximumCopies())
+            if ( VALUES_TO_SAVE.get( partitionName ).getRowCount() >= SystemSettings.getMaximumCopies())
             {
                 TimeSeriesValues.copy( partitionName );
             }
@@ -99,68 +84,45 @@ public final class TimeSeriesValues
      * @param partitionName The name of the partition whose values need to be
      *                      saved
      */
-    private static void copy(String partitionName)
+    private static Future<?> copy(String partitionName)
     {
-        StringBuilder values = new StringBuilder(  );
-
-        for (TimeSeriesValue value : VALUES_TO_SAVE.get(partitionName))
+        synchronized ( VALUES_TO_SAVE_LOCK )
         {
-            values.append( value.toString() );
+            Future<?> task = VALUES_TO_SAVE.get( partitionName ).build().copy( partitionName );
+            VALUES_TO_SAVE.get( partitionName ).reset();
+            return task;
         }
-
-        CopyExecutor copier = new CopyExecutor( TimeSeriesValues.getTableDefinition( partitionName ),
-                                                values.toString(),
-                                                DELIMITER );
-        Database.ingest(copier);
-
-        // Replace the old list of values with a new one
-        VALUES_TO_SAVE.put( partitionName, new LinkedList<>(  ) );
     }
 
     /**
      * Send all values across all stored partitions to the database
      */
-    public static void complete()
+    public static void complete() throws IOException
     {
         synchronized ( VALUES_TO_SAVE_LOCK )
         {
+            List<Future<?>> tasks = new ArrayList<>();
             for (String partitionName : VALUES_TO_SAVE.keySet())
             {
-                TimeSeriesValues.copy( partitionName );
+                tasks.add(TimeSeriesValues.copy( partitionName ));
             }
-        }
-    }
 
-    /**
-     * Represents a single value to save to the database
-     */
-    private static class TimeSeriesValue
-    {
-        TimeSeriesValue(int timeSeriesID, int lead, String value)
-        {
-            this.timeSeriesID = timeSeriesID;
-            this.lead = lead;
-
-            if (!Strings.hasValue(value))
+            for (Future<?> task : tasks)
             {
-                value = "\\N";
+                try
+                {
+                    task.get();
+                }
+                catch ( InterruptedException e )
+                {
+                    LOGGER.warn("Thread Interrupted.");
+                    Thread.currentThread().interrupt();
+                }
+                catch ( ExecutionException e )
+                {
+                    throw new IOException( "Error occurred while attempting to save ingested values.", e );
+                }
             }
-            this.value = value;
         }
-
-        /**
-         * @return The format of the value to add to the copy script
-         */
-        @Override
-        public String toString()
-        {
-            return String.valueOf( this.timeSeriesID ) + DELIMITER +
-                   String.valueOf( this.lead ) + DELIMITER +
-                   String.valueOf( this.value ) + NEWLINE;
-        }
-
-        private final int timeSeriesID;
-        private final int lead;
-        private final String value;
     }
 }

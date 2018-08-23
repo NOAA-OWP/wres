@@ -149,17 +149,17 @@ public class ConfigHelper
 
         griddedRequest.setIsForecast( isForecast );
 
-        if (isForecast && projectDetails.getMinimumLeadHour() > Integer.MIN_VALUE)
+        if (isForecast && projectDetails.getMinimumLead() > Integer.MIN_VALUE)
         {
             griddedRequest.setEarliestLead(
-                    Duration.of(projectDetails.getMinimumLeadHour(), TimeHelper.LEAD_RESOLUTION)
+                    Duration.of(projectDetails.getMinimumLead(), TimeHelper.LEAD_RESOLUTION)
             );
         }
 
-        if (isForecast && projectDetails.getMaximumLeadHour() < Integer.MAX_VALUE)
+        if (isForecast && projectDetails.getMaximumLead() < Integer.MAX_VALUE)
         {
             griddedRequest.setLatestLead(
-                    Duration.of(projectDetails.getMaximumLeadHour(), TimeHelper.LEAD_RESOLUTION)
+                    Duration.of(projectDetails.getMaximumLead(), TimeHelper.LEAD_RESOLUTION)
             );
         }
 
@@ -914,7 +914,7 @@ public class ConfigHelper
                                    * sequenceStep;
 
             earliestTime = Instant.parse( projectDetails.getEarliestIssueDate() );
-            earliestTime = earliestTime.plus( frequencyOffset, ChronoUnit.HOURS );
+            earliestTime = earliestTime.plus( frequencyOffset, ChronoUnit.MINUTES );
 
             if ( projectDetails.getIssuePoolingWindowPeriod() > 0 )
             {

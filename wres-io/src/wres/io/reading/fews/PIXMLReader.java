@@ -351,7 +351,7 @@ public final class PIXMLReader extends XMLReader
             }
             Duration leadTime = Duration.between( this.getForecastDate(),
                                                   dateTime );
-            int leadTimeInHours = (int) leadTime.toHours();
+            int leadTimeInHours = (int) leadTime.toMinutes();
 
             Integer timeseriesID = this.getTimeSeriesID();
             if ( this.inChargeOfIngest  )
@@ -572,39 +572,11 @@ public final class PIXMLReader extends XMLReader
 				else if (XMLHelper.tagIs(reader, "creationTime")) {
 					creationTime = XMLHelper.getXMLText(reader);
 				}
-				else if(localName.equalsIgnoreCase("timeStep"))
-				{
-					String unit = null;
-					int multiplier = 1;
-					for (int attributeIndex = 0; attributeIndex < reader.getAttributeCount(); ++attributeIndex)
-					{
-						localName = reader.getAttributeLocalName(attributeIndex);
-
-						if (localName.equalsIgnoreCase("unit"))
-						{
-							unit = reader.getAttributeValue(attributeIndex);
-						}
-						else if (localName.equalsIgnoreCase("multiplier"))
-						{
-							multiplier = Integer.parseInt(reader.getAttributeValue(attributeIndex));
-						}
-					}
-					
-					timeStep = TimeHelper.unitsToLeadUnits( unit, multiplier);
-				}
 				else if (localName.equalsIgnoreCase("parameterId"))
 				{
 					currentVariableName = XMLHelper.getXMLText(reader);
 					currentVariableID = Variables.getVariableID(currentVariableName);
 				}
-				else if (localName.equalsIgnoreCase( "lat" ) || localName.equalsIgnoreCase( "y" ))
-                {
-                    // TODO: Store the value as the Latitude on a FeatureDetails Object
-                }
-                else if (localName.equalsIgnoreCase( "lon" ) || localName.equalsIgnoreCase( "x" ))
-                {
-                    // TODO: Store the value as the Longitude on a FeatureDetails Object
-                }
 				else if ( localName.equalsIgnoreCase("forecastDate") )
 				{
 					if (!this.isForecast)
@@ -992,11 +964,6 @@ public final class PIXMLReader extends XMLReader
 	 * The value which indicates a null or invalid value from the source
 	 */
 	private Double missingValue = null;
-	
-	/**
-	 * Indicates the amount of time in hours between measurements
-	 */
-	private Long timeStep = null;
 	
 	/**
 	 * The current state of a script that will be sent to the database

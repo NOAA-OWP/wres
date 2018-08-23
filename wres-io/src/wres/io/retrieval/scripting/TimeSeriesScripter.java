@@ -94,7 +94,7 @@ class TimeSeriesScripter extends Scripter
                     this.getMinimumForecastDate(),
                     "::timestamp without time zone + (INTERVAL '",
                     this.getForecastLag(),
-                    " HOUR') * ",
+                    " MINUTE') * ",
                     this.getProjectDetails().getNumberOfSeriesToRetrieve()
                     * this.getSequenceStep()
             );
@@ -103,7 +103,7 @@ class TimeSeriesScripter extends Scripter
                     this.getMinimumForecastDate(),
                     "::timestamp without time zone + (INTERVAL '",
                     this.getForecastLag(),
-                    " HOUR') * ",
+                    " MINUTE') * ",
                     this.getProjectDetails().getNumberOfSeriesToRetrieve() * (
                             this.getSequenceStep() + 1 ) );
         }
@@ -132,18 +132,18 @@ class TimeSeriesScripter extends Scripter
 
     private void applyLeadQualifier() throws SQLException, IOException
     {
-        if (this.getProjectDetails().getMaximumLeadHour() < Integer.MAX_VALUE)
+        if (this.getProjectDetails().getMaximumLead() < Integer.MAX_VALUE)
         {
             this.addTab();
             this.addWhere();
-            this.addLine("TSV.lead <= ", this.getProjectDetails().getMaximumLeadHour());
+            this.addLine("TSV.lead <= ", this.getProjectDetails().getMaximumLead());
         }
 
-        if (this.getProjectDetails().getMinimumLeadHour() > Integer.MIN_VALUE)
+        if (this.getProjectDetails().getMinimumLead() > Integer.MIN_VALUE)
         {
             this.addTab();
             this.addWhere();
-            this.addLine("TSV.lead >= ", this.getProjectDetails().getMinimumLeadHour());
+            this.addLine("TSV.lead >= ", this.getProjectDetails().getMinimumLead());
         }
     }
 
@@ -212,7 +212,7 @@ class TimeSeriesScripter extends Scripter
         if (this.validTimeCalculation == null)
         {
             this.validTimeCalculation = this.getBaseDateName() +
-                                        " + INTERVAL '1 HOUR' * TSV.lead";
+                                        " + INTERVAL '1 MINUTE' * TSV.lead";
         }
         return this.validTimeCalculation;
     }

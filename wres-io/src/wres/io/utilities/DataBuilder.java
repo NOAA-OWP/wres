@@ -121,10 +121,26 @@ public class DataBuilder
     }
 
     /**
+     * @return The number of rows within data builder, waiting to be built
+     */
+    public int getRowCount()
+    {
+        // The rows are 0 indexed, so add 1 to show the true count
+        return this.currentRow + 1;
+    }
+
+    /**
      * @return A {@link DataProvider} populated with the built data
      */
     public DataProvider build()
     {
         return DataSetProvider.from(this.columnNames, this.rows);
+    }
+
+    public DataBuilder reset()
+    {
+        this.currentRow = -1;
+        this.rows.clear();
+        return this;
     }
 }

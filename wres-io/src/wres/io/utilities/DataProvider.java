@@ -11,7 +11,11 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.StringJoiner;
+import java.util.concurrent.Future;
 
+import wres.io.concurrency.CopyExecutor;
+import wres.io.concurrency.WRESRunnable;
 import wres.util.functional.ExceptionalConsumer;
 import wres.util.functional.ExceptionalFunction;
 
@@ -146,8 +150,7 @@ public interface DataProvider extends AutoCloseable
      * <ul>
      *     <li>
      *         DRRC2
-     *         <table>
-     *     <caption></caption>
+     *         <table summary="">
      *     <tr>
      *         <th>lead</th>
      *         <th>location</th>
@@ -173,8 +176,7 @@ public interface DataProvider extends AutoCloseable
      *     </li>
      *     <li>
      *         LGNN5
-     *         <table>
-     *     <caption></caption>
+     *         <table summary="">
      *     <tr>
      *         <th>lead</th>
      *         <th>location</th>
@@ -465,4 +467,72 @@ public interface DataProvider extends AutoCloseable
      * @throws IndexOutOfBoundsException Thrown if the data is empty
      */
     <V> V getValue(final String columnName);
+
+    /**
+     * Get the string representation of the value in the column that may be used to form scripts
+     * @param columnName The name of the column containing the value of interest
+     * @return The string representation of the value
+     */
+    default String toString(final String columnName)
+    {
+        String representation = null;
+        Object value = this.getObject( columnName );
+
+        if (value == null)
+        {
+            return null;
+        }
+        else if (value instanceof Number)
+        {
+            representation = value.toString();
+        }
+        else
+        {
+            representation = "'" + value.toString() + "'";
+        }
+
+        return representation;
+    }
+
+    /**
+     * Copies the data within the provider from the current row through the last row into the the schema and table
+     * <br>
+     * The position of the provider will be at the end of the dataset after function completion
+     * @param table Fully qualified table name to copy data into
+     * @return A future representing data being asynchronously copied into the database
+     */
+    default Future<?> copy( final String table)
+    {
+        final String delimiter = ",";
+        final String NULL = "\\N";
+        StringJoiner lineJoiner = new StringJoiner( System.lineSeparator() );
+        StringJoiner valueJoiner;
+        StringJoiner definitionJoiner = new StringJoiner( ",", table + "(", ")" );
+        this.getColumnNames().forEach( definitionJoiner::add );
+
+        while (this.next())
+        {
+            valueJoiner = new StringJoiner( delimiter);
+            for (String columnName : this.getColumnNames())
+            {
+                String representation = this.toString( columnName );
+
+                if (representation == null)
+                {
+                    representation = NULL;
+                }
+
+                valueJoiner.add( representation );
+            }
+
+            lineJoiner.add( valueJoiner.toString() );
+        }
+
+        WRESRunnable copier = new CopyExecutor(
+                definitionJoiner.toString(),
+                lineJoiner.toString(),
+                delimiter
+        );
+        return Database.execute( copier );
+    }
 }

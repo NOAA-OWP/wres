@@ -38,7 +38,6 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
 	private String gageID = null;
 	private String region = null;
 	private String state = null;
-	private String stateCode = null;
 	private String huc = null;
 
     private Float longitude = null;
