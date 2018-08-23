@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -18,9 +20,8 @@ import org.slf4j.LoggerFactory;
 import wres.config.FeaturePlus;
 import wres.config.ProjectConfigException;
 import wres.config.ProjectConfigPlus;
+import wres.config.generated.DestinationType;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.io.Operations;
 import wres.io.config.ConfigHelper;
@@ -28,6 +29,7 @@ import wres.io.data.details.ProjectDetails;
 import wres.io.utilities.NoDataException;
 import wres.io.writing.SharedWriters;
 import wres.io.writing.SharedWriters.SharedWritersBuilder;
+import wres.io.writing.netcdf.NetcdfOutputWriter;
 import wres.system.ProgressMonitor;
 
 /**
@@ -107,67 +109,81 @@ class ProcessorHelper
                                                               thresholds );
 
         // Build any writers of incremental formats that are shared across features
+        /* skip the general-purpose incomplete netcdf writer
         final Set<MetricConstants> metricsForSharedWriting = resolvedProject.getDoubleScoreMetrics();
         final int thresholdCountForSharedWriting = resolvedProject.getThresholdCount( MetricOutputGroup.DOUBLE_SCORE );
+        */
         SharedWritersBuilder sharedWritersBuilder = new SharedWritersBuilder();
-        /*if ( ConfigHelper.getIncrementalFormats( projectConfig )
+        if ( ConfigHelper.getIncrementalFormats( projectConfig )
                          .contains( DestinationType.NETCDF ) )
         {
+            /* skip the general-purpose incomplete netcdf writer
             sharedWritersBuilder.setNetcdfDoublescoreWriter( ConfigHelper.getNetcdfWriter( projectIdentifier,
                                                                                            projectConfig,
                                                                                            resolvedProject.getFeatureCount(),
                                                                                            thresholdCountForSharedWriting,
                                                                                            metricsForSharedWriting ) );
-        }*/
-         
-        // Iterate the features, closing any shared writers on completion
-        try ( SharedWriters sharedWriters = sharedWritersBuilder.build() )
-        {
-
-            // Tasks for features 
-            List<CompletableFuture<Void>> featureTasks = new ArrayList<>();
-
-            // Report on the completion state of all features
-            // Report detailed state by default (final arg = true)
-            // TODO: demote to summary report (final arg = false) for >> feature count
-            FeatureReport featureReport = new FeatureReport( projectConfigPlus, decomposedFeatures.size(), true );
-
-            // Deactivate progress monitoring within features, as features are processed asynchronously - the internal
-            // completion state of features has no value when reported in this way
-            ProgressMonitor.deactivate();
-
-            // Create one task per feature
-            for ( FeaturePlus feature : decomposedFeatures )
-            {
-                CompletableFuture<Void> nextFeatureTask = CompletableFuture.supplyAsync( new FeatureProcessor( feature,
-                                                                                                               resolvedProject,
-                                                                                                               projectDetails,
-                                                                                                               executors,
-                                                                                                               sharedWriters ),
-                                                                                         executors.getFeatureExecutor() )
-                                                                           .thenAccept( featureReport );
-
-                // Add to list of tasks
-                featureTasks.add( nextFeatureTask );
-            }
-
-            // Run the tasks, and join on all tasks. The main thread will wait until all are completed successfully
-            // or one completes exceptionally for reasons other than lack of data
-            try
-            {
-                ProcessorHelper.doAllOrException( featureTasks ).join();
-
-                // Report on features
-                featureReport.report();
-
-                // Return the paths written to by writers
-                return featureReport.getPathsWrittenTo();
-            }
-            catch ( CompletionException e )
-            {
-                throw new WresProcessingException( "Project failed to complete with the following error: ", e );
-            }
+            */
+            // Use the gridded netcdf writer
+            sharedWritersBuilder.setNetcdfOutputWriter( NetcdfOutputWriter.of( projectConfig ) );
         }
+
+        Set<Path> pathsWrittenTo = new HashSet<>();
+
+        // Iterate the features, closing any shared writers on completion
+        SharedWriters sharedWriters = sharedWritersBuilder.build();
+
+        // Tasks for features
+        List<CompletableFuture<Void>> featureTasks = new ArrayList<>();
+
+        // Report on the completion state of all features
+        // Report detailed state by default (final arg = true)
+        // TODO: demote to summary report (final arg = false) for >> feature count
+        FeatureReport featureReport = new FeatureReport( projectConfigPlus, decomposedFeatures.size(), true );
+
+        // Deactivate progress monitoring within features, as features are processed asynchronously - the internal
+        // completion state of features has no value when reported in this way
+        ProgressMonitor.deactivate();
+
+        // Create one task per feature
+        for ( FeaturePlus feature : decomposedFeatures )
+        {
+            CompletableFuture<Void> nextFeatureTask = CompletableFuture.supplyAsync( new FeatureProcessor( feature,
+                                                                                                           resolvedProject,
+                                                                                                           projectDetails,
+                                                                                                           executors,
+                                                                                                           sharedWriters ),
+                                                                                     executors.getFeatureExecutor() )
+                                                                       .thenAccept( featureReport );
+
+            // Add to list of tasks
+            featureTasks.add( nextFeatureTask );
+        }
+
+        // Run the tasks, and join on all tasks. The main thread will wait until all are completed successfully
+        // or one completes exceptionally for reasons other than lack of data
+        try
+        {
+            ProcessorHelper.doAllOrException( featureTasks ).join();
+
+            // Report on features
+            featureReport.report();
+
+            // Find the paths written to by writers
+            pathsWrittenTo.addAll( featureReport.getPathsWrittenTo() );
+        }
+        catch ( CompletionException e )
+        {
+            throw new WresProcessingException( "Project failed to complete with the following error: ", e );
+        }
+        finally
+        {
+            sharedWriters.close();
+        }
+
+        // Find the paths written to by shared writers.
+        pathsWrittenTo.addAll( sharedWriters.get() );
+        return Collections.unmodifiableSet( pathsWrittenTo );
     }
 
     /**

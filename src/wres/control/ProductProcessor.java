@@ -284,6 +284,7 @@ class ProductProcessor implements Consumer<MetricOutputForProject>,
     /**
      * @return paths actually written to by this processor so far.
      */
+    @Override
     public Set<Path> get()
     {
         Set<Path> paths = new HashSet<>();
@@ -293,6 +294,7 @@ class ProductProcessor implements Consumer<MetricOutputForProject>,
             paths.addAll( supplierOfPaths.get() );
         }
 
+        LOGGER.debug( "Returning paths from ProductProcessor {}: {}", this, paths );
         return Collections.unmodifiableSet( paths );
     }
 
@@ -314,8 +316,8 @@ class ProductProcessor implements Consumer<MetricOutputForProject>,
         if ( configNeedsThisTypeOfOutput( DestinationType.NETCDF ) )
         {
             // implicitly passing resolvedProject via shared state
-            //buildNetCDFConsumers( sharedWriters );
-            buildNetCDFConsumers();
+            buildNetCDFConsumers( sharedWriters );
+            //buildNetCDFConsumers();
         }
 
         // Register consumers for the CSV output type
@@ -438,15 +440,32 @@ class ProductProcessor implements Consumer<MetricOutputForProject>,
         }
     }
 
-    private void buildNetCDFConsumers()
+    private void buildNetCDFConsumers( SharedWriters sharedWriters )
     {
-        ProjectConfigPlus projectConfigPlus = this.getProjectConfigPlus();
+        ProjectConfig projectConfig = this.getProjectConfigPlus().getProjectConfig();
 
         // Build the consumers conditionally
-        if ( writeWhenTrue.test( MetricOutputGroup.DOUBLE_SCORE, DestinationType.NETCDF ) )
+        if ( Objects.nonNull( sharedWriters )
+             && sharedWriters.contains( MetricOutputGroup.DOUBLE_SCORE, DestinationType.NETCDF ) )
         {
+            LOGGER.debug( "There are shared netcdf consumers for {}", this );
+            this.doubleScoreConsumers.put( DestinationType.NETCDF,
+                                           sharedWriters );
+            this.writersToPaths.add( sharedWriters );
+            // Not in charge of closing the sharedwriters, that is out at top.
+        }
+        else if ( writeWhenTrue.test( MetricOutputGroup.DOUBLE_SCORE, DestinationType.NETCDF ) )
+        {
+            LOGGER.debug( "There are netcdf consumers for {}", this );
+            NetcdfOutputWriter netcdfOutputWriter = NetcdfOutputWriter.of( projectConfig );
             doubleScoreConsumers.put( DestinationType.NETCDF,
-                                      NetcdfOutputWriter.of( projectConfigPlus ) );
+                                      netcdfOutputWriter );
+            this.writersToPaths.add( netcdfOutputWriter );
+            this.resourcesToClose.add( netcdfOutputWriter );
+        }
+        else
+        {
+            LOGGER.debug( "There are NOT netcdf consumers for {}", this );
         }
     }
 
@@ -668,6 +687,8 @@ class ProductProcessor implements Consumer<MetricOutputForProject>,
     {
         for ( Closeable resource : this.resourcesToClose )
         {
+            LOGGER.debug( "About to close {}", resource );
+
             try
             {
                 resource.close();

@@ -3,19 +3,25 @@ package wres.io.writing.netcdf;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
-import java.util.SortedSet;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -23,6 +29,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Supplier;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,13 +43,10 @@ import ucar.nc2.NetcdfFileWriter;
 import ucar.nc2.Variable;
 import ucar.nc2.dt.GridDatatype;
 import ucar.nc2.dt.grid.GridDataset;
-import wres.config.ProjectConfigPlus;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
 import wres.config.generated.NetcdfType;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.MetricConstants;
-import wres.datamodel.Slicer;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.DoubleScoreOutput;
@@ -50,10 +54,11 @@ import wres.datamodel.outputs.ListOfMetricOutput;
 import wres.io.concurrency.Executor;
 import wres.io.config.ConfigHelper;
 import wres.io.writing.WriteException;
-import wres.util.Collections;
 import wres.util.Strings;
 
-public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
+public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>,
+                                           Supplier<Set<Path>>,
+                                           Closeable
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( NetcdfOutputWriter.class );
 
@@ -62,67 +67,67 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
 
     private static final Object WINDOW_LOCK = new Object();
     private static final Map<TimeWindow, TimeWindowWriter> WRITERS = new ConcurrentHashMap<>();
+
     private static final Map<Object, Integer> VECTOR_COORDINATES = new ConcurrentHashMap<>();
     private static final int VALUE_SAVE_LIMIT = 500;
 
-    private static final ZonedDateTime ANALYSIS_TIME = ZonedDateTime.now( ZoneId.of( "UTC" ) );
+    private DestinationConfig destinationConfig;
+    private NetcdfType netcdfConfiguration;
 
-    private static DestinationConfig destinationConfig;
-    private static NetcdfType netcdfConfiguration;
+    /**
+     * Set of paths that this writer actually wrote to
+     */
+    private final Set<Path> pathsWrittenTo = new ConcurrentSkipListSet<>();
 
-    private NetcdfOutputWriter()
+    /**
+     * Writing tasks submitted
+     */
+    private final List<Future<Set<Path>>> writingTasksSubmitted = new CopyOnWriteArrayList<>();
+
+    public static NetcdfOutputWriter of( final ProjectConfig projectConfig )
     {
+        return new NetcdfOutputWriter( projectConfig );
     }
 
-    public static NetcdfOutputWriter of( final ProjectConfigPlus projectConfig )
+    private NetcdfOutputWriter( final ProjectConfig projectConfig )
     {
-        NetcdfOutputWriter.initialize( projectConfig.getProjectConfig() );
-        return new NetcdfOutputWriter();
-    }
+        LOGGER.debug( "Created NetcdfOutputWriter {}", this );
+        this.destinationConfig = ConfigHelper.getDestinationsOfType( projectConfig, DestinationType.NETCDF ).get( 0 );
+        this.netcdfConfiguration = this.destinationConfig.getNetcdf();
 
-    private static synchronized void initialize( final ProjectConfig projectConfig )
-    {
-        if ( NetcdfOutputWriter.destinationConfig == null )
+        if ( this.netcdfConfiguration == null )
         {
-            NetcdfOutputWriter.destinationConfig = ConfigHelper.getDestinationsOfType( projectConfig, DestinationType.NETCDF ).get( 0 );
-
-            NetcdfOutputWriter.netcdfConfiguration = NetcdfOutputWriter.destinationConfig.getNetcdf();
-
-            if ( NetcdfOutputWriter.netcdfConfiguration == null )
-            {
-                NetcdfOutputWriter.netcdfConfiguration = new NetcdfType(
-                                                                         null,
-                                                                         null,
-                                                                         null,
-                                                                         null,
-                                                                         null );
-            }
+            this.netcdfConfiguration = new NetcdfType(null,
+                                                      null,
+                                                      null,
+                                                      null,
+                                                      null );
         }
+
+        Objects.requireNonNull( this.destinationConfig, "The NetcdfOutputWriter wasn't properly initialized." );
     }
 
-    private static boolean isGridded() throws IOException
+    private boolean isGridded()
     {
-        return NetcdfOutputWriter.getNetcdfConfiguration().isGridded();
+        return this.getNetcdfConfiguration().isGridded();
     }
 
-    private static NetcdfType getNetcdfConfiguration()
+    private NetcdfType getNetcdfConfiguration()
     {
-        Objects.requireNonNull( NetcdfOutputWriter.destinationConfig,
-                                "The NetcdfOutputWriter wasn't properly initialized." );
-        return NetcdfOutputWriter.netcdfConfiguration;
+        return this.netcdfConfiguration;
     }
 
-    private static DestinationConfig getDestinationConfig()
+    private DestinationConfig getDestinationConfig()
     {
-        Objects.requireNonNull( NetcdfOutputWriter.destinationConfig,
-                                "The NetcdfOutputWriter wasn't properly initialized." );
-        return NetcdfOutputWriter.destinationConfig;
+        return this.destinationConfig;
     }
 
     @Override
     public void accept( ListOfMetricOutput<DoubleScoreOutput> output )
     {
-        Map<TimeWindow, List<DoubleScoreOutput>> outputByTimeWindow = Collections.group(
+        LOGGER.debug( "NetcdfOutputWriter {} accepted output {}.", this, output );
+
+        Map<TimeWindow, List<DoubleScoreOutput>> outputByTimeWindow = wres.util.Collections.group(
                 output,
                 score -> score.getMetadata().getTimeWindow()
         );
@@ -137,17 +142,25 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
                 {
                     Collection<MetricVariable> variables = MetricVariable.getAll( scores );
                     NetcdfOutputWriter.WRITERS.put( window,
-                                                    new TimeWindowWriter( window, variables ) );
+                                      new TimeWindowWriter( this,
+                                                            window,
+                                                            variables ) );
                 }
 
-                Callable<Object> writerTask = new Callable<Object>()
+                Callable<Set<Path>> writerTask = new Callable<Set<Path>>()
                 {
                     @Override
-                    public Object call() throws Exception
+                    public Set<Path> call() throws Exception
                     {
+                        Set<Path> pathsWrittenTo = new HashSet<>( 1 );
+
                         try
                         {
-                            NetcdfOutputWriter.WRITERS.get( this.window ).write( this.output );
+                            NetcdfOutputWriter.TimeWindowWriter writer = WRITERS.get( this.window );
+                            writer.write( this.output );
+                            Path pathWritten = Paths.get( writer.outputPath );
+                            pathsWrittenTo.add( pathWritten );
+                            return Collections.unmodifiableSet( pathsWrittenTo );
                         }
                         catch ( Exception e )
                         {
@@ -155,11 +168,10 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
                             LOGGER.error( Strings.getStackTrace( e ) );
                             throw e;
                         }
-                        return null;
                     }
 
-                    Callable<Object> initialize( final TimeWindow window,
-                                                 final List<DoubleScoreOutput> scores )
+                    Callable<Set<Path>> initialize( final TimeWindow window,
+                                                    final List<DoubleScoreOutput> scores )
                     {
                         this.output = scores;
                         this.window = window;
@@ -171,14 +183,16 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
                 }.initialize( window, scores );
 
                 LOGGER.debug( "Submitting a task to write to a netcdf file." );
-                Executor.submit( writerTask );
+                Future<Set<Path>> taskFuture = Executor.submit( writerTask );
+                this.writingTasksSubmitted.add( taskFuture );
             }
         }
     }
 
-    public static void close()
+    @Override
+    public void close()
     {
-        LOGGER.trace( "Closing writers..." );
+        LOGGER.debug( "Closing writers..." );
         synchronized ( NetcdfOutputWriter.WINDOW_LOCK )
         {
             if ( NetcdfOutputWriter.WRITERS.isEmpty() )
@@ -199,16 +213,19 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
                     Callable<?> closeTask = new Callable<Object>()
                     {
                         @Override
-                        public Object call() throws Exception
+                        public Object call() throws IOException
                         {
                             try
                             {
+                                LOGGER.debug( "Calling writer.close on {}", writer );
                                 writer.close();
                             }
-                            catch ( Exception e )
+                            catch ( IOException ioe )
                             {
-                                throw new Exception( "The writer for " + writer.toString() + " could not be closed.",
-                                                     e );
+                                throw new IOException(
+                                        "The writer for " + writer.toString()
+                                        + " could not be closed.",
+                                        ioe );
                             }
                             return null;
                         }
@@ -243,13 +260,15 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
                     }
                     catch ( InterruptedException e )
                     {
-                        LOGGER.error( "Output writing has been interrupted.", e );
+                        LOGGER.warn( "Output writing has been interrupted.",
+                                     e );
                         Thread.currentThread().interrupt();
                     }
                     catch ( ExecutionException e )
                     {
-                        throw new WriteException( "A netCDF output could not be written",
-                                                  e );
+                        throw new WriteException(
+                                "A netCDF output could not be written",
+                                e );
                     }
                     catch ( TimeoutException e )
                     {
@@ -270,7 +289,54 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
                 }
             }
         }
+
+        LOGGER.debug( "Closing NetcdfOutputWriter {}", this );
+
+        try
+        {
+            // Figure out which paths were written to. These should all be
+            // complete by this point, right?
+            for ( Future<Set<Path>> writingTaskResult : this.writingTasksSubmitted )
+            {
+                Set<Path> oneSetOfPaths = writingTaskResult.get();
+                LOGGER.debug( "Some paths written to by {}: {}", this, oneSetOfPaths );
+                this.pathsWrittenTo.addAll( oneSetOfPaths );
+            }
+        }
+        catch ( InterruptedException ie )
+        {
+            LOGGER.warn( "Interrupted while getting paths from netcdf writers.", ie );
+            Thread.currentThread().interrupt();
+        }
+        catch ( ExecutionException ee )
+        {
+            String message = "Failed to get a path from netcdf writer for " + this.destinationConfig;
+            throw new RuntimeException( message, ee );
+        }
     }
+
+
+    /**
+     * Return a snapshot of the paths written to (so far)
+     */
+
+    @Override
+    public Set<Path> get()
+    {
+        return this.getPathsWrittenTo();
+    }
+
+    /**
+     * Return a snapshot of the paths written to (so far)
+     */
+
+    private Set<Path> getPathsWrittenTo()
+    {
+        LOGGER.debug( "getPathsWrittenTo from NetcdfOutputWriter {}: {}",
+                      this, this.pathsWrittenTo );
+        return Collections.unmodifiableSet( this.pathsWrittenTo );
+    }
+
 
     /**
      * Writes output for a specific pair of lead times, representing the {@link TimeWindow#getEarliestLeadTime()} and
@@ -279,8 +345,15 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
     
     private static class TimeWindowWriter implements Closeable
     {
-        TimeWindowWriter( final TimeWindow timeWindow, final Collection<MetricVariable> metricVariables )
+        private final ZonedDateTime ANALYSIS_TIME = ZonedDateTime.now( ZoneId.of( "UTC" ) );
+
+        NetcdfOutputWriter outputWriter;
+
+        TimeWindowWriter( NetcdfOutputWriter outputWriter,
+                          final TimeWindow timeWindow,
+                          final Collection<MetricVariable> metricVariables )
         {
+            this.outputWriter = outputWriter;
             this.timeWindow = timeWindow;
             this.metricVariables = metricVariables;
             this.creationLock = new ReentrantLock();
@@ -316,10 +389,10 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
             {
                 if ( !Strings.hasValue( this.outputPath ) )
                 {
-                    this.outputPath = NetcdfOutputFileCreator.create( getTemplatePath(),
-                                                                      getDestinationConfig(),
+                    this.outputPath = NetcdfOutputFileCreator.create( getTemplatePath( this.outputWriter ),
+                                                                      this.outputWriter.getDestinationConfig(),
                                                                       this.timeWindow,
-                                                                      NetcdfOutputWriter.ANALYSIS_TIME,
+                                                                      this.ANALYSIS_TIME,
                                                                       variables,
                                                                       output );
                 }
@@ -337,15 +410,16 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
             }
         }
 
-        private static String getTemplatePath() throws IOException
+        private static String getTemplatePath( NetcdfOutputWriter outputWriter )
         {
             String templatePath;
 
-            if ( NetcdfOutputWriter.getNetcdfConfiguration().getTemplatePath() == null )
+            if ( outputWriter.getNetcdfConfiguration()
+                             .getTemplatePath() == null )
             {
                 String defaultTemplate;
 
-                if ( NetcdfOutputWriter.isGridded() )
+                if ( outputWriter.isGridded() )
                 {
                     defaultTemplate = DEFAULT_GRID_TEMPLATE;
                 }
@@ -362,7 +436,9 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
             }
             else
             {
-                templatePath = NetcdfOutputWriter.getDestinationConfig().getNetcdf().getTemplatePath();
+                templatePath = outputWriter.getDestinationConfig()
+                                           .getNetcdf()
+                                           .getTemplatePath();
             }
 
             return templatePath;
@@ -455,7 +531,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
 
             // There must be a more coordinated way to do this without having to keep the file open
             // What if we got the info through the template?
-            if ( isGridded() )
+            if ( this.outputWriter.isGridded() )
             {
                 if ( !location.hasCoordinates() )
                 {
@@ -490,8 +566,8 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>
                 // Only contains the vector id
                 Integer vectorIndex = this.getVectorCoordinate(
                                                                 location.getVectorIdentifier().intValue(),
-                                                                NetcdfOutputWriter.getNetcdfConfiguration()
-                                                                                  .getVectorVariable() );
+                                                                this.outputWriter.getNetcdfConfiguration()
+                                                                                 .getVectorVariable() );
                 Objects.requireNonNull(
                                         vectorIndex,
                                         "An index for the vector coordinate could not "

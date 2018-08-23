@@ -2,16 +2,22 @@ package wres.io.writing;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.config.generated.DestinationType;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
+import wres.datamodel.outputs.DoubleScoreOutput;
+import wres.datamodel.outputs.ListOfMetricOutput;
 import wres.io.writing.netcdf.NetcdfDoubleScoreWriter;
+import wres.io.writing.netcdf.NetcdfOutputWriter;
 
 /**
  * Contains a set of shared writers. This is useful for managing the shared state of outputs that are written 
@@ -19,7 +25,9 @@ import wres.io.writing.netcdf.NetcdfDoubleScoreWriter;
  * 
  * @author james.brown@hydrosolved.com
  */
-public class SharedWriters implements Closeable
+public class SharedWriters implements Closeable,
+                                      Consumer<ListOfMetricOutput<DoubleScoreOutput>>,
+                                      Supplier<Set<Path>>
 {
 
     /**
@@ -27,7 +35,9 @@ public class SharedWriters implements Closeable
      */
     
     private final NetcdfDoubleScoreWriter netcdfDoublescoreWriter;
-    
+
+    private final NetcdfOutputWriter netcdfOutputWriter;
+
     /**
      * Set of types for which writers are available.
      */
@@ -62,7 +72,12 @@ public class SharedWriters implements Closeable
     {
         return netcdfDoublescoreWriter;
     }
-    
+
+    NetcdfOutputWriter getNetcdfOutputWriter()
+    {
+        return this.netcdfOutputWriter;
+    }
+
     /**
      * Use a builder to add writers.
      */
@@ -73,9 +88,15 @@ public class SharedWriters implements Closeable
         /**
          * Instance of a {@link NetcdfDoubleScoreWriter}
          */
-        
-        private NetcdfDoubleScoreWriter netcdfDoublescoreWriter;        
-        
+
+        private NetcdfDoubleScoreWriter netcdfDoublescoreWriter;
+
+        /**
+         * Instance of a {@link NetcdfDoubleScoreWriter}
+         */
+
+        private NetcdfOutputWriter netcdfOutputWriter;
+
         /**
          * Sets a {@link NetcdfDoubleScoreWriter}.
          * 
@@ -88,7 +109,13 @@ public class SharedWriters implements Closeable
             this.netcdfDoublescoreWriter = netcdfDoublescoreWriter;
             return this;
         }
-        
+
+        public SharedWritersBuilder setNetcdfOutputWriter( NetcdfOutputWriter netcdfOutputWriter )
+        {
+            this.netcdfOutputWriter = netcdfOutputWriter;
+            return this;
+        }
+
         /**
          * Return an instance of a {@link SharedWriters}.
          * 
@@ -112,11 +139,13 @@ public class SharedWriters implements Closeable
     {
         // Set
         this.netcdfDoublescoreWriter = builder.netcdfDoublescoreWriter;
+        this.netcdfOutputWriter = builder.netcdfOutputWriter;
         
         // Register the stored types
         Set<Pair<DestinationType,MetricOutputGroup>> localTypes = new HashSet<>();
         
-        if( Objects.nonNull( this.netcdfDoublescoreWriter ) )
+        if( Objects.nonNull( this.netcdfDoublescoreWriter )
+            || Objects.nonNull( this.getNetcdfOutputWriter() ) )
         {
             localTypes.add( Pair.of( DestinationType.NETCDF, MetricOutputGroup.DOUBLE_SCORE ) );
         }
@@ -126,14 +155,49 @@ public class SharedWriters implements Closeable
 
 
     /**
-     * Closes resources managed by SharedWriters
+     * Pass-through any metrics to underlying writers.
+     *
+     * At the moment, only DoubleScoreOutput but in future could be generic.
+     * @param metricOutput metrics to write
      */
 
+    @Override
+    public void accept( ListOfMetricOutput<DoubleScoreOutput> metricOutput )
+    {
+        if ( Objects.nonNull( this.netcdfOutputWriter ) )
+        {
+            this.netcdfOutputWriter.accept( metricOutput );
+        }
+    }
+
+    @Override
+    public Set<Path> get()
+    {
+        Set<Path> paths = new HashSet<>( 1 );
+
+        if ( Objects.nonNull( this.getNetcdfOutputWriter() ) )
+        {
+            Set<Path> outputWriterPaths = this.getNetcdfOutputWriter().get();
+            paths.addAll( outputWriterPaths );
+        }
+
+        return Collections.unmodifiableSet( paths );
+    }
+
+    /**
+     * Closes resources managed by SharedWriters
+     */
+    @Override
     public void close() throws IOException
     {
         if ( this.getNetcdfDoubleScoreWriter() != null )
         {
             this.getNetcdfDoubleScoreWriter().close();
+        }
+
+        if ( this.getNetcdfOutputWriter() != null )
+        {
+            this.getNetcdfOutputWriter().close();
         }
     }
 }
