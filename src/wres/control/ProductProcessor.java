@@ -2,9 +2,11 @@ package wres.control;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.List;
@@ -14,6 +16,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,7 +65,8 @@ import wres.io.writing.png.PNGPairedWriter;
  */
 
 class ProductProcessor implements Consumer<MetricOutputForProject>,
-                                  Closeable
+                                  Closeable,
+                                  Supplier<Set<Path>>
 {
 
     /**
@@ -138,6 +142,12 @@ class ProductProcessor implements Consumer<MetricOutputForProject>,
     private final List<Closeable> resourcesToClose;
 
     /**
+     * List of potential writers that the ProductProcessor opened that supply
+     * a list of paths that those writers actually ended up writing to.
+     */
+    private final List<Supplier<Set<Path>>> writersToPaths;
+
+    /**
      * Build a product processor that writes unconditionally
      *
      * @param resolvedProject the resolved project
@@ -186,9 +196,8 @@ class ProductProcessor implements Consumer<MetricOutputForProject>,
         Objects.requireNonNull( writeWhenTrue, "Specify a non-null condition to ignore." );
 
         this.resourcesToClose = new ArrayList<>( 1 );
-
+        this.writersToPaths = new ArrayList<>();
         this.resolvedProject = resolvedProject;
-
         this.writeWhenTrue = writeWhenTrue;
 
         // Register output consumers
@@ -197,7 +206,7 @@ class ProductProcessor implements Consumer<MetricOutputForProject>,
             // implicitly passing resolvedProject via shared state
             buildConsumers( sharedWriters );
         }
-        catch ( ProjectConfigException | IOException e )
+        catch ( ProjectConfigException e )
         {
             throw new WresProcessingException( "While processing the project configuration to write output:", e );
         }
@@ -267,6 +276,26 @@ class ProductProcessor implements Consumer<MetricOutputForProject>,
         }
     }
 
+    private List<Supplier<Set<Path>>> getWritersToPaths()
+    {
+        return Collections.unmodifiableList( this.writersToPaths );
+    }
+
+    /**
+     * @return paths actually written to by this processor so far.
+     */
+    public Set<Path> get()
+    {
+        Set<Path> paths = new HashSet<>();
+
+        for ( Supplier<Set<Path>> supplierOfPaths : this.getWritersToPaths() )
+        {
+            paths.addAll( supplierOfPaths.get() );
+        }
+
+        return Collections.unmodifiableSet( paths );
+    }
+
     /**
      * <p>Builds a set of consumers for writing based on the project configuration.</p>
      * 
@@ -277,7 +306,6 @@ class ProductProcessor implements Consumer<MetricOutputForProject>,
      */
 
     private void buildConsumers( SharedWriters sharedWriters )
-            throws IOException
     {
         // There is one consumer per project for each type, because consumers are built
         // with projects, not destinations. The consumers must iterate destinations.
@@ -306,6 +334,7 @@ class ProductProcessor implements Consumer<MetricOutputForProject>,
 
     /**
      * Builds a set of consumers for writing files of Comma Separated Values (CSV).
+     * Also builds a set of writers to ask for paths written to later.
      * 
      * @throws ProjectConfigException if the project configuration is invalid for writing
      */
@@ -317,20 +346,29 @@ class ProductProcessor implements Consumer<MetricOutputForProject>,
         // Build the consumers conditionally
         if ( writeWhenTrue.test( MetricOutputGroup.MULTIVECTOR, DestinationType.CSV ) )
         {
+            CommaSeparatedDiagramWriter diagramWriter =
+                    CommaSeparatedDiagramWriter.of( projectConfig );
             diagramConsumers.put( DestinationType.CSV,
-                                  CommaSeparatedDiagramWriter.of( projectConfig ) );
+                                  diagramWriter );
+            this.writersToPaths.add( diagramWriter );
         }
 
         if ( writeWhenTrue.test( MetricOutputGroup.BOXPLOT, DestinationType.CSV ) )
         {
+            CommaSeparatedBoxPlotWriter boxPlotWriter =
+                    CommaSeparatedBoxPlotWriter.of( projectConfig );
             boxPlotConsumers.put( DestinationType.CSV,
-                                  CommaSeparatedBoxPlotWriter.of( projectConfig ) );
+                                  boxPlotWriter );
+            this.writersToPaths.add( boxPlotWriter );
         }
 
         if ( writeWhenTrue.test( MetricOutputGroup.MATRIX, DestinationType.CSV ) )
         {
+            CommaSeparatedMatrixWriter matrixWriter =
+                    CommaSeparatedMatrixWriter.of( projectConfig );
             matrixConsumers.put( DestinationType.CSV,
-                                 CommaSeparatedMatrixWriter.of( projectConfig ) );
+                                 matrixWriter );
+            this.writersToPaths.add( matrixWriter );
         }
 
         if ( writeWhenTrue.test( MetricOutputGroup.PAIRED, DestinationType.CSV ) )
@@ -341,14 +379,20 @@ class ProductProcessor implements Consumer<MetricOutputForProject>,
 
         if ( writeWhenTrue.test( MetricOutputGroup.DOUBLE_SCORE, DestinationType.CSV ) )
         {
+            CommaSeparatedScoreWriter<DoubleScoreOutput> doubleScoreWriter =
+                    CommaSeparatedScoreWriter.of( projectConfig );
             doubleScoreConsumers.put( DestinationType.CSV,
-                                      CommaSeparatedScoreWriter.of( projectConfig ) );
+                                      doubleScoreWriter );
+            this.writersToPaths.add( doubleScoreWriter );
         }
 
         if ( writeWhenTrue.test( MetricOutputGroup.DURATION_SCORE, DestinationType.CSV ) )
         {
+            CommaSeparatedScoreWriter<DurationScoreOutput> durationScoreWriter =
+                    CommaSeparatedScoreWriter.of( projectConfig );
             durationScoreConsumers.put( DestinationType.CSV,
-                                        CommaSeparatedScoreWriter.of( projectConfig ) );
+                                        durationScoreWriter );
+            this.writersToPaths.add( durationScoreWriter );
         }
     }
 
@@ -394,7 +438,7 @@ class ProductProcessor implements Consumer<MetricOutputForProject>,
         }
     }
 
-    private void buildNetCDFConsumers() throws IOException
+    private void buildNetCDFConsumers()
     {
         ProjectConfigPlus projectConfigPlus = this.getProjectConfigPlus();
 
@@ -411,12 +455,10 @@ class ProductProcessor implements Consumer<MetricOutputForProject>,
      * Processes {@link MultiVectorOutput}.
      * 
      * @param outputs the outputs to consume
-     * @throws IOException if the output could not be consumed
      * @throws NullPointerException if the input is null
      */
 
     private void processDiagramOutputs( ListOfMetricOutput<MultiVectorOutput> outputs )
-            throws IOException
     {
         Objects.requireNonNull( outputs, NULL_OUTPUT_STRING );
 
@@ -621,6 +663,7 @@ class ProductProcessor implements Consumer<MetricOutputForProject>,
      * Close resources that ProductProcessor opened
      */
 
+    @Override
     public void close()
     {
         for ( Closeable resource : this.resourcesToClose )

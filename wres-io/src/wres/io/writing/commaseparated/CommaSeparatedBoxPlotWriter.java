@@ -13,6 +13,7 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.StringJoiner;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import wres.config.ProjectConfigException;
@@ -36,8 +37,13 @@ import wres.io.config.ConfigHelper;
  */
 
 public class CommaSeparatedBoxPlotWriter extends CommaSeparatedWriter
-        implements Consumer<ListOfMetricOutput<BoxPlotOutput>>
+        implements Consumer<ListOfMetricOutput<BoxPlotOutput>>, Supplier<Set<Path>>
 {
+
+    /**
+     * Set of paths that this writer actually wrote to
+     */
+    private final Set<Path> pathsWrittenTo = new HashSet<>();
 
     /**
      * Returns an instance of a writer.
@@ -64,6 +70,8 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedWriter
     @Override
     public void accept( final ListOfMetricOutput<BoxPlotOutput> output )
     {
+        Set<Path> pathsWrittenTo = new HashSet<>( 1 );
+
         Objects.requireNonNull( output, "Specify non-null input data when writing box plot outputs." );
 
         // Write output
@@ -78,7 +86,9 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedWriter
             // Write the output
             try
             {
-                CommaSeparatedBoxPlotWriter.writeOneBoxPlotOutputType( destinationConfig, output, formatter );
+                Set<Path> innerPathsWrittenTo =
+                        CommaSeparatedBoxPlotWriter.writeOneBoxPlotOutputType( destinationConfig, output, formatter );
+                pathsWrittenTo.addAll( innerPathsWrittenTo );
             }
             catch ( IOException e )
             {
@@ -86,6 +96,7 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedWriter
             }
         }
 
+        this.pathsWrittenTo.addAll( pathsWrittenTo );
     }
 
     /**
@@ -97,19 +108,25 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedWriter
      * @throws IOException if the output cannot be written 
      */
 
-    private static void writeOneBoxPlotOutputType( DestinationConfig destinationConfig,
-                                                   ListOfMetricOutput<BoxPlotOutput> output,
-                                                   Format formatter )
+    private static Set<Path> writeOneBoxPlotOutputType( DestinationConfig destinationConfig,
+                                                        ListOfMetricOutput<BoxPlotOutput> output,
+                                                        Format formatter )
             throws IOException
     {
+        Set<Path> pathsWrittenTo = new HashSet<>( 1 );
+
         // Iterate through types
         SortedSet<MetricConstants> metrics = Slicer.discover( output, meta -> meta.getMetadata().getMetricID() );
         for ( MetricConstants next : metrics )
         {
-            CommaSeparatedBoxPlotWriter.writeOneBoxPlotOutputTypePerTimeWindow( destinationConfig,
-                                                                                Slicer.filter( output, next ),
-                                                                                formatter );
+            Set<Path> innerPathsWrittenTo =
+                    CommaSeparatedBoxPlotWriter.writeOneBoxPlotOutputTypePerTimeWindow( destinationConfig,
+                                                                                        Slicer.filter( output, next ),
+                                                                                        formatter );
+            pathsWrittenTo.addAll( innerPathsWrittenTo );
         }
+
+        return Collections.unmodifiableSet( pathsWrittenTo );
     }
 
     /**
@@ -148,8 +165,10 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedWriter
             // Write the output
             Path outputPath = ConfigHelper.getOutputPathToWrite( destinationConfig, meta, nextWindow );
 
-            Set<Path> innerPathsWrittenTo = CommaSeparatedWriter.writeTabularOutputToFile( rows, outputPath );
-            pathsWrittenTo.addAll( innerPathsWrittenTo );
+            CommaSeparatedWriter.writeTabularOutputToFile( rows, outputPath );
+            // If writeTabularOutputToFile did not throw an exception, assume
+            // it succeeded in writing to the file, track outputs now.
+            pathsWrittenTo.add( outputPath );
         }
 
         return Collections.unmodifiableSet( pathsWrittenTo );
@@ -235,6 +254,25 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedWriter
             }
         }
         return returnMe;
+    }
+
+    /**
+     * Return a snapshot of the paths written to (so far)
+     */
+
+    @Override
+    public Set<Path> get()
+    {
+        return this.getPathsWrittenTo();
+    }
+
+    /**
+     * Return a snapshot of the paths written to (so far)
+     */
+
+    private Set<Path> getPathsWrittenTo()
+    {
+        return Collections.unmodifiableSet( this.pathsWrittenTo );
     }
 
     /**

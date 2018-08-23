@@ -1,6 +1,7 @@
 package wres.control;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -58,8 +59,8 @@ class ProcessorHelper
      * @throws WresProcessingException when an issue occurs during processing
      */
 
-    static void processProjectConfig( final ProjectConfigPlus projectConfigPlus,
-                                      final ExecutorServices executors )
+    static Set<Path> processProjectConfig( final ProjectConfigPlus projectConfigPlus,
+                                           final ExecutorServices executors )
             throws IOException
     {
 
@@ -158,12 +159,14 @@ class ProcessorHelper
 
                 // Report on features
                 featureReport.report();
+
+                // Return the paths written to by writers
+                return featureReport.getPathsWrittenTo();
             }
             catch ( CompletionException e )
             {
                 throw new WresProcessingException( "Project failed to complete with the following error: ", e );
             }
-
         }
     }
 

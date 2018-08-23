@@ -16,6 +16,7 @@ import java.util.SortedSet;
 import java.util.StringJoiner;
 import java.util.TreeMap;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import wres.config.ProjectConfigException;
 import wres.config.generated.DestinationConfig;
@@ -39,8 +40,12 @@ import wres.io.config.ConfigHelper;
  */
 
 public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
-        implements Consumer<ListOfMetricOutput<MultiVectorOutput>>
+        implements Consumer<ListOfMetricOutput<MultiVectorOutput>>, Supplier<Set<Path>>
 {
+    /**
+     * Set of paths that this writer actually wrote to
+     */
+    private final Set<Path> pathsWrittenTo = new HashSet<>();
 
     /**
      * Returns an instance of a writer.
@@ -82,10 +87,12 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
             // Default, per time-window
             try
             {
-                CommaSeparatedDiagramWriter.writeOneDiagramOutputType( projectConfig,
-                                                                       destinationConfig,
-                                                                       output,
-                                                                       formatter );
+                Set<Path> innerPathsWrittenTo =
+                        CommaSeparatedDiagramWriter.writeOneDiagramOutputType( projectConfig,
+                                                                               destinationConfig,
+                                                                               output,
+                                                                               formatter );
+                this.pathsWrittenTo.addAll( innerPathsWrittenTo );
             }
             catch ( IOException e )
             {
@@ -105,12 +112,14 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
      * @throws IOException if the output cannot be written
      */
 
-    private static void writeOneDiagramOutputType( ProjectConfig projectConfig,
-                                                   DestinationConfig destinationConfig,
-                                                   ListOfMetricOutput<MultiVectorOutput> output,
-                                                   Format formatter )
+    private static Set<Path> writeOneDiagramOutputType( ProjectConfig projectConfig,
+                                                        DestinationConfig destinationConfig,
+                                                        ListOfMetricOutput<MultiVectorOutput> output,
+                                                        Format formatter )
             throws IOException
     {
+        Set<Path> pathsWrittenTo = new HashSet<>( 1 );
+
         // Obtain the output type configuration
         OutputTypeSelection diagramType = ConfigHelper.getOutputTypeSelection( projectConfig, destinationConfig );
 
@@ -118,27 +127,35 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
         SortedSet<MetricConstants> metrics = Slicer.discover( output, next -> next.getMetadata().getMetricID() );
         for ( MetricConstants m : metrics )
         {
-
             StringJoiner headerRow = new StringJoiner( "," );
             headerRow.merge( HEADER_DEFAULT );
+
+            Set<Path> innerPathsWrittenTo = Collections.emptySet();
 
             // Default, per time-window
             if ( diagramType == OutputTypeSelection.DEFAULT || diagramType == OutputTypeSelection.LEAD_THRESHOLD )
             {
-                CommaSeparatedDiagramWriter.writeOneDiagramOutputTypePerTimeWindow( destinationConfig,
-                                                                                    Slicer.filter( output, m ),
-                                                                                    headerRow,
-                                                                                    formatter );
+                innerPathsWrittenTo =
+                        CommaSeparatedDiagramWriter.writeOneDiagramOutputTypePerTimeWindow( destinationConfig,
+                                                                                            Slicer.filter( output, m ),
+                                                                                            headerRow,
+                                                                                            formatter );
             }
             // Per threshold
             else if ( diagramType == OutputTypeSelection.THRESHOLD_LEAD )
             {
-                CommaSeparatedDiagramWriter.writeOneDiagramOutputTypePerThreshold( destinationConfig,
-                                                                                   Slicer.filter( output, m ),
-                                                                                   headerRow,
-                                                                                   formatter );
+                innerPathsWrittenTo =
+                        CommaSeparatedDiagramWriter.writeOneDiagramOutputTypePerThreshold( destinationConfig,
+                                                                                           Slicer.filter( output, m ),
+                                                                                           headerRow,
+                                                                                           formatter );
             }
+
+            pathsWrittenTo.addAll( innerPathsWrittenTo );
+
         }
+
+        return Collections.unmodifiableSet( pathsWrittenTo );
     }
 
 
@@ -178,8 +195,12 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
             // Write the output
             Path outputPath = ConfigHelper.getOutputPathToWrite( destinationConfig, meta, timeWindow );
 
-            Set<Path> innerPathsWrittenTo = CommaSeparatedWriter.writeTabularOutputToFile( rows, outputPath );
-            pathsWrittenTo.addAll( innerPathsWrittenTo );
+            CommaSeparatedWriter.writeTabularOutputToFile( rows, outputPath );
+
+            // If writeTabularOutputToFile did not throw an exception, assume
+            // it succeeded in writing to the file, track outputs now (add must
+            // be called after the above call).
+            pathsWrittenTo.add( outputPath );
         }
 
         return Collections.unmodifiableSet( pathsWrittenTo );
@@ -225,8 +246,12 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
             // Write the output
             Path outputPath = ConfigHelper.getOutputPathToWrite( destinationConfig, meta, threshold );
 
-            Set<Path> innerPathsWrittenTo = CommaSeparatedWriter.writeTabularOutputToFile( rows, outputPath );
-            pathsWrittenTo.addAll( innerPathsWrittenTo );
+            CommaSeparatedWriter.writeTabularOutputToFile( rows, outputPath );
+
+            // If writeTabularOutputToFile did not throw an exception, assume
+            // it succeeded in writing to the file, track outputs now (add must
+            // be called after the above call).
+            pathsWrittenTo.add( outputPath );
         }
 
         return Collections.unmodifiableSet( pathsWrittenTo );
@@ -381,6 +406,25 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
         }
 
         return returnMe;
+    }
+
+    /**
+     * Return a snapshot of the paths written to (so far)
+     */
+
+    @Override
+    public Set<Path> get()
+    {
+        return this.getPathsWrittenTo();
+    }
+
+    /**
+     * Return a snapshot of the paths written to (so far)
+     */
+
+    private Set<Path> getPathsWrittenTo()
+    {
+        return Collections.unmodifiableSet( this.pathsWrittenTo );
     }
 
     /**

@@ -1015,7 +1015,8 @@ public final class SlicerTest
         MetricOutputMetadata metadata = MetricOutputMetadata.of( 0,
                                                                  MeasurementUnit.of(),
                                                                  MeasurementUnit.of(),
-                                                                 MetricConstants.BIAS_FRACTION );
+                                                                 MetricConstants.BIAS_FRACTION,
+                                                                 MetricConstants.MAIN );
 
         TimeWindow windowOne =
                 TimeWindow.of( Instant.MIN, Instant.MAX, ReferenceTime.VALID_TIME, Duration.ofHours( 1 ) );
@@ -1084,7 +1085,8 @@ public final class SlicerTest
         MetricOutputMetadata metadata = MetricOutputMetadata.of( 0,
                                                                  MeasurementUnit.of(),
                                                                  MeasurementUnit.of(),
-                                                                 MetricConstants.BIAS_FRACTION );
+                                                                 MetricConstants.BIAS_FRACTION,
+                                                                 MetricConstants.MAIN );
 
         TimeWindow windowOne =
                 TimeWindow.of( Instant.MIN, Instant.MAX, ReferenceTime.VALID_TIME, Duration.ofHours( 1 ) );

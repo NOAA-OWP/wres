@@ -134,8 +134,12 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedWriter
             
             Path outputPath = ConfigHelper.getOutputPathToWrite( destinationConfig, meta );
 
-            Set<Path> innerPathsWrittenTo = CommaSeparatedWriter.writeTabularOutputToFile( rows, outputPath );
-            pathsWrittenTo.addAll( innerPathsWrittenTo );
+            CommaSeparatedWriter.writeTabularOutputToFile( rows, outputPath );
+
+            // If writeTabularOutputToFile did not throw an exception, assume
+            // it succeeded in writing to the file, track outputs now (add must
+            // be called after the above call).
+            pathsWrittenTo.add( outputPath );
         }
 
         return Collections.unmodifiableSet( pathsWrittenTo );

@@ -877,7 +877,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
 
         // Second, analyze the results for the majority count-per-agg-window
 
-        Duration aggDuration = ConfigHelper.getDurationFromTimeScale( projectDetails.getScale() );
+        Duration aggDuration = ProjectConfigs.getDurationFromTimeScale( projectDetails.getScale() );
         long aggDurationMillis = aggDuration.toMillis();
 
         LOGGER.trace( "Duration of aggregation: {}, in millis: {}",
