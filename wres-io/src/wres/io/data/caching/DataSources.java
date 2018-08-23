@@ -258,14 +258,14 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
             script.addTab().addLine("AND S.lead <= ", lastLead);
         }
 
-        if (isForecast && projectDetails.getMinimumLeadHour() > Integer.MIN_VALUE)
+        if (isForecast && projectDetails.getMinimumLead() > Integer.MIN_VALUE)
         {
-            script.addTab().addLine("AND S.lead >= ", projectDetails.getMinimumLeadHour());
+            script.addTab().addLine("AND S.lead >= ", projectDetails.getMinimumLead());
         }
 
-        if (isForecast && projectDetails.getMaximumLeadHour() < Integer.MAX_VALUE)
+        if (isForecast && projectDetails.getMaximumLead() < Integer.MAX_VALUE)
         {
-            script.addTab().addLine("AND S.lead <= ", projectDetails.getMaximumLeadHour());
+            script.addTab().addLine("AND S.lead <= ", projectDetails.getMaximumLead());
         }
 
         if (projectDetails.getEarliestDate() != null)

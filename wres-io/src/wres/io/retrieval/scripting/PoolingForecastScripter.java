@@ -37,7 +37,7 @@ class PoolingForecastScripter extends Scripter
         }
 
         this.addLine("))::bigint AS basis_epoch_time,");
-        this.addTab().add("(EXTRACT(epoch FROM TS.initialization_date + INTERVAL '1 HOUR' * TSV.lead");
+        this.addTab().add("(EXTRACT(epoch FROM TS.initialization_date + INTERVAL '1 MINUTE' * TSV.lead");
 
         if (this.getTimeShift() != null)
         {
@@ -101,7 +101,7 @@ class PoolingForecastScripter extends Scripter
         if (this.getProjectDetails().getEarliestDate() != null)
         {
             this.addTab().addLine("AND TS.initialization_date + ",
-                                   "INTERVAL '1 HOUR' * TSV.lead >= '",
+                                   "INTERVAL '1 MINUTE' * TSV.lead >= '",
                                    this.getProjectDetails().getEarliestDate(),
                                    "'");
         }
@@ -109,7 +109,7 @@ class PoolingForecastScripter extends Scripter
         if (this.getProjectDetails().getLatestDate() != null)
         {
             this.addTab().addLine("AND TS.initialization_date + ",
-                                  "INTERVAL '1 HOUR' * TSV.lead <= '",
+                                  "INTERVAL '1 MINUTE' * TSV.lead <= '",
                                   this.getProjectDetails().getLatestDate(),
                                   "'");
         }

@@ -10,6 +10,7 @@ import wres.io.reading.fews.FEWSSource;
 import wres.io.reading.nwm.NWMSource;
 import wres.io.reading.s3.S3Reader;
 import wres.io.reading.usgs.USGSReader;
+import wres.io.reading.wrds.WRDSSource;
 import wres.util.NetCDF;
 import wres.util.Strings;
 
@@ -52,6 +53,9 @@ public class ReaderFactory {
             case S_3:
                 source = S3Reader.getReader( projectConfig );
                 break;
+            case WRDS:
+                source = new WRDSSource(projectConfig, filename );
+                break;
 			default:
 				String message = "The file '%s' is not a valid data file.";
 				throw new IOException(String.format(message, filename));
@@ -60,7 +64,7 @@ public class ReaderFactory {
 		return source;
 	}
 	
-    public static Format getFiletype( String filename )
+    static Format getFiletype( String filename )
 	{
         Format type;
 
@@ -72,8 +76,6 @@ public class ReaderFactory {
 		{
             type = Format.ARCHIVE;
 		}
-		// Should we change ".+\\.\\d+$" to ".+\\.xml\\.\\d+$"? There's nothing
-		// currently in that regex saying that is an xml file
 		else if ( filename.endsWith(".xml") ||
 				  (filename.endsWith(".xml.gz")) ||
 				  Strings.contains(filename, ".+\\.\\d+$"))
@@ -91,6 +93,10 @@ public class ReaderFactory {
         else if ( NetCDF.isNetCDFFile(filename ) )
         {
             type = Format.NET_CDF;
+        }
+        else if(filename.toLowerCase().endsWith( ".json" ) || filename.contains( "***REMOVED***eds-app1" ))
+        {
+            type = Format.WRDS;
         }
 		else
 		{

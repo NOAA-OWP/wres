@@ -65,7 +65,7 @@ class BackToBackForecastScripter extends Scripter
 
         if (this.getTimeShift() != null)
         {
-            this.add(" + ", this.getTimeShift() * 3600);
+            this.add(" + ", this.getTimeShift() * 60);
         }
 
         this.addLine(")::bigint AS basis_epoch_time,");
@@ -89,7 +89,7 @@ class BackToBackForecastScripter extends Scripter
         if (this.validTimeCalculation == null)
         {
             this.validTimeCalculation = this.getBaseDateName() +
-                                        " + INTERVAL '1 HOUR' * TSV.lead";
+                                        " + INTERVAL '1 MINUTE' * TSV.lead";
         }
         return this.validTimeCalculation;
     }

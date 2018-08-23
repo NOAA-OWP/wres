@@ -203,19 +203,7 @@ public class USGSParameters
     public static USGSParameter getParameter(String parameterName, String measurementUnit)
             throws SQLException
     {
-        USGSParameter parameter = null;
-
-        for (USGSParameters.ParameterKey key : USGSParameters.getParameterStore().keySet())
-        {
-            if (key.name.equalsIgnoreCase( parameterName ) &&
-                key.measurementUnit.equalsIgnoreCase( measurementUnit ))
-            {
-                parameter = USGSParameters.getParameterStore().get(key);
-                break;
-            }
-        }
-
-        return parameter;
+        return USGSParameters.getParameter( parameterName, measurementUnit, "None" );
     }
 
     public static USGSParameter getParameter(String parameterName, String measurementUnit, String aggregationMethod)

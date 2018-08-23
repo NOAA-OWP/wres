@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="wres.MeasurementUnit - Add KCFS" author="Christopher Tubbs">
+        <sql>
+            INSERT INTO wres.MeasurementUnit(unit_name)
+            SELECT 'KCFS'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.MeasurementUnit
+                WHERE unit_name = 'KCFS'
+            );
+        </sql>
+        <comment>Adding identity conversions</comment>
+        <sql>
+            INSERT INTO wres.UnitConversion(from_unit, to_unit)
+            SELECT measurementunit_id, measurementunit_id
+            FROM wres.MeasurementUnit M
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wres.UnitConversion UC
+                WHERE UC.from_unit = M.measurementunit_id
+                    AND UC.to_unit = M.measurementunit_id
+            );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.UnitConversion - Add KCFS" author="Christopher Tubbs">
+        <comment>Mimicking conversions from CFS to other measurement units</comment>
+        <sql>
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT measurementunit_id, CFS.to_unit, factor * 1000.0
+            FROM wres.MeasurementUnit M
+            CROSS JOIN (
+                SELECT to_unit, factor
+                FROM wres.UnitConversion UC
+                INNER JOIN wres.MeasurementUnit MU
+                    ON MU.measurementunit_id = UC.from_unit
+                WHERE MU.unit_name = 'CFS' or MU.unit_name = 'ft3/s'
+                GROUP BY to_unit, factor
+            ) AS CFS
+            WHERE M.unit_name = 'KCFS'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.UnitConversion UC
+                    WHERE UC.from_unit = M.measurementunit_id
+                        AND UC.to_unit = CFS.to_unit
+                );
+        </sql>
+        <comment>Mimicking conversions to CFS from other measurement units</comment>
+        <sql>
+            INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)
+            SELECT CFS.from_unit, M.measurementunit_id, factor / 1000.0
+            FROM wres.MeasurementUnit M
+            CROSS JOIN (
+                SELECT from_unit, factor
+                FROM wres.UnitConversion UC
+                INNER JOIN wres.MeasurementUnit MU
+                    ON MU.measurementunit_id = UC.to_unit
+                WHERE MU.unit_name = 'CFS'
+            ) AS CFS
+            WHERE M.unit_name = 'KCFS'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM wres.UnitConversion UC
+                    WHERE UC.to_unit = M.measurementunit_id
+                        AND UC.from_unit = CFS.from_unit
+            );
+        </sql>
+    </changeSet>
+</databaseChangeLog>

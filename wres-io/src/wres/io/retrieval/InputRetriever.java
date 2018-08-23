@@ -1421,11 +1421,12 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             this.values = values;
         }
 
-        ForecastedPair( int leadHours,
+        ForecastedPair( int leadMinutes,
                         Instant validTime,
                         EnsemblePair values )
         {
-            Duration leadTime = Duration.ofHours( leadHours );
+            Duration leadTime = Duration.ofMinutes( leadMinutes );
+            //Duration leadTime = Duration.ofHours( leadHours );
             this.basisTime = validTime.minus( leadTime );
             this.validTime = validTime;
             this.values = values;

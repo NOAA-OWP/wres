@@ -527,11 +527,11 @@ public final class ScriptGenerator
             script.addTab(     5     ).addLine("LEAST (");
             script.addTab(      6      ).addLine("MAX(S.output_time),");
             script.addTab(      6      ).addLine("'", projectDetails.getLatestIssueDate(), "'");
-            script.addTab(     5     ).addLine(") - INTERVAL '", period - frequency, " HOURS',");
+            script.addTab(     5     ).addLine(") - INTERVAL '", period - frequency, " MINUTES',");
             script.addTab(     5     ).addLine("'", projectDetails.getEarliestIssueDate(), "'");
             script.addTab(    4    ).addLine(")");
             script.addTab(   3   ).addLine(")");
-            script.addTab(  2  ).addLine(") / 3600");
+            script.addTab(  2  ).addLine(") / 60");
             script.addTab().addLine(") / (", distanceBetween, ")");
             script.addLine(")::int AS window_count");
             script.addLine("FROM wres.Source S");
@@ -556,9 +556,9 @@ public final class ScriptGenerator
             script.addLine("SELECT FLOOR(((EXTRACT( epoch FROM AGE(LEAST(MAX(initialization_date), '",
                            projectDetails.getLatestIssueDate(), "') - INTERVAL '",
                            period - frequency,
-                           " HOURS', '",
+                           " MINUTES', '",
                            projectDetails.getEarliestIssueDate(),
-                           "')) / 3600) / (",
+                           "')) / 60) / (",
                            distanceBetween,
                            ")))::int AS window_count");
             script.addLine("FROM wres.TimeSeries TS");

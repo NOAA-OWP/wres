@@ -182,8 +182,7 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
                     int lastLead = this.getProjectDetails().getLastLead( this.getFeature() );
 
                     next = range.getLeft() < lastLead &&
-                           range.getRight() >= this.getProjectDetails().getMinimumLeadHour()
-                           &&
+                           range.getRight() >= this.getProjectDetails().getMinimumLead() &&
                            range.getRight() <= lastLead;
 
                     if (!next)
@@ -192,10 +191,7 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
                     }
                 }
             }
-            // TODO: We can probably just make this an else statement
-            // If this is either a time series forecast evaluation or isn't a
-            // forecast (i.e. simulation), we only want to run for one window number
-            else if ((isForecast && generatesTimeSeriesInputs) || ConfigHelper.isSimulation( this.getRight() ))
+            else
             {
                 next = this.getWindowNumber() == -1;
             }

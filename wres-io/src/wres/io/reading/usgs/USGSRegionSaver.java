@@ -30,12 +30,10 @@ import wres.io.concurrency.WRESCallable;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Features;
-import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.USGSParameters;
 import wres.io.data.caching.Variables;
 import wres.io.data.details.FeatureDetails;
 import wres.io.data.details.SourceDetails;
-import wres.io.data.details.VariableDetails;
 import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
 import wres.io.reading.waterml.Response;
@@ -177,11 +175,6 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
                             final DataSourceConfig dataSourceConfig)
             throws IOException
     {
-        if (dataSourceConfig.getExistingTimeScale() == null)
-        {
-            throw new IOException( "An existing time scale must be defined to ingest USGS data" );
-        }
-        
         this.region = region;
         this.dataSourceConfig = dataSourceConfig;
         this.projectConfig = projectConfig;
@@ -397,6 +390,7 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
                 stopwatch.start();
             }
 
+            // TODO: Evaluate if this should actually be in the retry block
             usgsResponse = invocationBuilder.get( Response.class );
 
             if (LOGGER.isDebugEnabled() && stopwatch != null)
@@ -469,12 +463,17 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
         return parameter;
     }
 
+    private boolean hasDiscreteParameterCode()
+    {
+        return this.dataSourceConfig.getVariable().getValue().matches( "\\d{5}" );
+    }
+
     private String getParameterCode() throws SQLException, IngestException
     {
         if (this.parameterCode == null)
         {
             // If the user uses the explicit USGS code, use that and bypass everything else
-            if (this.dataSourceConfig.getVariable().getValue().matches( "\\d{5}" ))
+            if (this.hasDiscreteParameterCode())
             {
                 // If this is new, parameter will be set to null, but we still
                 // get the parameter code
@@ -553,12 +552,6 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
     {
         if (this.startDate == null)
         {
-
-            if (this.dataSourceConfig.getExistingTimeScale() == null)
-            {
-                throw new IOException( "An existing time scale must be defined to ingest USGS data." );
-            }
-
             Instant earliest = ConfigHelper.getEarliestDateTimeFromDataSources( this.projectConfig );
             if ( earliest == null)
             {
@@ -569,16 +562,15 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
                 this.startDate = earliest.toString();
             }
 
-            switch (this.dataSourceConfig.getExistingTimeScale().getUnit())
+            if (this.dataSourceConfig.getExistingTimeScale() != null &&
+                this.dataSourceConfig.getExistingTimeScale().getUnit() == DurationUnit.DAYS)
             {
-                case DAYS:
-                    // No time or time zone information is allowed
-                    this.startDate = TimeHelper.convertStringDateTimeToDate( this.startDate );
-                    break;
-                default:
-                    // The space inbetween the date and time needs to be split with a T
-                    this.startDate = this.startDate.replaceAll( " ", "T" );
-                    break;
+                this.startDate = TimeHelper.convertStringDateTimeToDate( this.startDate );
+            }
+            else
+            {
+                // The space inbetween the date and time needs to be split with a T
+                this.startDate = this.startDate.replaceAll( " ", "T" );
             }
         }
         return this.startDate;
@@ -588,11 +580,6 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
     {
         if (this.endDate == null)
         {
-            if (this.dataSourceConfig.getExistingTimeScale() == null)
-            {
-                throw new IOException( "An existing time aggregation must be defined to ingest USGS data." );
-            }
-
             Instant latest = ConfigHelper.getLatestDateTimeFromDataSources( this.projectConfig );
             if ( latest == null )
             {
@@ -603,19 +590,24 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
                 this.endDate = latest.toString();
             }
 
-            switch (this.dataSourceConfig.getExistingTimeScale().getUnit())
-            {
-                case DAYS:
-                    // No time or time zone information is allowed
-                    this.endDate = TimeHelper.convertStringDateTimeToDate( this.endDate );
-                    break;
-                default:
 
-                    // USGS is [inclusive, exclusive) where we need
-                    // [inclusive, inclusive]. We add time to ensure that we
-                    // have all the data we need
-                    OffsetDateTime dateTime = OffsetDateTime.parse( this.endDate );
-                    dateTime = dateTime.withOffsetSameInstant( ZoneOffset.UTC );
+            if (this.dataSourceConfig.getExistingTimeScale() != null &&
+                this.dataSourceConfig.getExistingTimeScale().getUnit() == DurationUnit.DAYS)
+            {
+                // No time or time zone information is allowed
+                this.endDate = TimeHelper.convertStringDateTimeToDate( this.endDate );
+            }
+            else
+            {
+
+                // USGS is [inclusive, exclusive) where we need
+                // [inclusive, inclusive]. We add time to ensure that we
+                // have all the data we need
+                OffsetDateTime dateTime = OffsetDateTime.parse( this.endDate );
+                dateTime = dateTime.withOffsetSameInstant( ZoneOffset.UTC );
+
+                if (this.dataSourceConfig.getExistingTimeScale() != null)
+                {
                     dateTime = dateTime.plus(
                             this.dataSourceConfig.getExistingTimeScale().getPeriod(),
                             ChronoUnit.valueOf(
@@ -625,12 +617,16 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
                                                          .toUpperCase()
                             )
                     );
-                    this.endDate = TimeHelper.convertDateToString( dateTime );
+                }
+                else
+                {
+                    dateTime = dateTime.plus(1L, ChronoUnit.HOURS);
+                }
+                this.endDate = TimeHelper.convertDateToString( dateTime );
 
-                    // The space inbetween the date and time needs to be split with a T
-                    this.endDate = this.endDate.replaceAll( " ", "T" );
-                    this.endDate += "Z";
-                    break;
+                // The space inbetween the date and time needs to be split with a T
+                this.endDate = this.endDate.replaceAll( " ", "T" );
+                this.endDate += "Z";
             }
         }
         return this.endDate;
@@ -840,7 +836,6 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
 
             // Reset the count of values to copy
             this.copyCount = 0;
-
         }
     }
 
