@@ -183,8 +183,12 @@ public class CommaSeparatedScoreWriter<T extends ScoreOutput<?, T>> extends Comm
                 MetricOutputMetadata meta = nextOutput.getData().get( 0 ).getMetadata();
                 Path outputPath = ConfigHelper.getOutputPathToWrite( destinationConfig, meta, append );
 
-                Set<Path> innerPathsWrittenTo = CommaSeparatedScoreWriter.writeTabularOutputToFile( rows, outputPath );
-                pathsWrittenTo.addAll( innerPathsWrittenTo );
+                CommaSeparatedWriter.writeTabularOutputToFile( rows, outputPath );
+
+                // If writeTabularOutputToFile did not throw an exception, assume
+                // it succeeded in writing to the file, track outputs now (add must
+                // be called after the above call).
+                pathsWrittenTo.add( outputPath );
             }
         }
 

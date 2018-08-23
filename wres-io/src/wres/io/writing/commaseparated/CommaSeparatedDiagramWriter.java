@@ -195,8 +195,12 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
             // Write the output
             Path outputPath = ConfigHelper.getOutputPathToWrite( destinationConfig, meta, timeWindow );
 
-            Set<Path> innerPathsWrittenTo = CommaSeparatedWriter.writeTabularOutputToFile( rows, outputPath );
-            pathsWrittenTo.addAll( innerPathsWrittenTo );
+            CommaSeparatedWriter.writeTabularOutputToFile( rows, outputPath );
+
+            // If writeTabularOutputToFile did not throw an exception, assume
+            // it succeeded in writing to the file, track outputs now (add must
+            // be called after the above call).
+            pathsWrittenTo.add( outputPath );
         }
 
         return Collections.unmodifiableSet( pathsWrittenTo );
@@ -242,8 +246,12 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
             // Write the output
             Path outputPath = ConfigHelper.getOutputPathToWrite( destinationConfig, meta, threshold );
 
-            Set<Path> innerPathsWrittenTo = CommaSeparatedWriter.writeTabularOutputToFile( rows, outputPath );
-            pathsWrittenTo.addAll( innerPathsWrittenTo );
+            CommaSeparatedWriter.writeTabularOutputToFile( rows, outputPath );
+
+            // If writeTabularOutputToFile did not throw an exception, assume
+            // it succeeded in writing to the file, track outputs now (add must
+            // be called after the above call).
+            pathsWrittenTo.add( outputPath );
         }
 
         return Collections.unmodifiableSet( pathsWrittenTo );
