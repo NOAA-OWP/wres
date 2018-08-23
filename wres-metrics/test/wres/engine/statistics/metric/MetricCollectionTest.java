@@ -706,7 +706,8 @@ public class MetricCollectionTest
                 MetricOutputMetadata.of( 10,
                                          MeasurementUnit.of(),
                                          MeasurementUnit.of(),
-                                         MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
+                                         MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
+                                         MetricConstants.MAIN );
         ListOfMetricOutput<DoubleScoreOutput> expected =
                 ListOfMetricOutput.of( Arrays.asList( DoubleScoreOutput.of( 0.9999999910148981, outM ) ) );
         //Check them   

@@ -14,7 +14,6 @@ import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPair;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.PairedOutput;
 import wres.datamodel.time.TimeSeries;
@@ -75,19 +74,12 @@ public class TimeToPeakError extends TimingError
             returnMe.add( Pair.of( next.getEarliestBasisTime(), error ) );
         }
 
-        // Create output metadata with the identifier of the statistic as the component identifier
-        Metadata in = s.getMetadata();
-        MeasurementUnit outputDimension = MeasurementUnit.of( "DURATION" );
-        final MeasurementUnit outputDim = outputDimension;
-        MetricOutputMetadata meta = MetricOutputMetadata.of( s.getBasisTimes().size(),
-                                                             outputDim,
-                                                             in.getMeasurementUnit(),
+        // Create output metadata
+        MetricOutputMetadata meta = MetricOutputMetadata.of( s.getMetadata(),
+                                                             s.getBasisTimes().size(),
+                                                             MeasurementUnit.of( "DURATION" ),
                                                              this.getID(),
-                                                             MetricConstants.MAIN,
-                                                             in.getIdentifier(),
-                                                             in.getTimeWindow(),
-                                                             in.getThresholds(),
-                                                             in.getProjectConfig() );
+                                                             MetricConstants.MAIN );
 
         return PairedOutput.of( returnMe, meta );
     }

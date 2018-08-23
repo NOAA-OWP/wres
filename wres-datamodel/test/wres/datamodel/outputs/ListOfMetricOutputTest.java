@@ -57,7 +57,8 @@ public final class ListOfMetricOutputTest
         metadata = MetricOutputMetadata.of( 0,
                                             MeasurementUnit.of(),
                                             MeasurementUnit.of(),
-                                            MetricConstants.BIAS_FRACTION );
+                                            MetricConstants.BIAS_FRACTION,
+                                            MetricConstants.MAIN );
     }
 
     /**
