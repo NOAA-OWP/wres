@@ -379,7 +379,7 @@ class ProductProcessor implements Consumer<MetricOutputForProject>,
 
         if ( writeWhenTrue.test( MetricOutputGroup.DOUBLE_SCORE, DestinationType.CSV ) )
         {
-            CommaSeparatedScoreWriter doubleScoreWriter =
+            CommaSeparatedScoreWriter<DoubleScoreOutput> doubleScoreWriter =
                     CommaSeparatedScoreWriter.of( projectConfig );
             doubleScoreConsumers.put( DestinationType.CSV,
                                       doubleScoreWriter );
@@ -388,7 +388,7 @@ class ProductProcessor implements Consumer<MetricOutputForProject>,
 
         if ( writeWhenTrue.test( MetricOutputGroup.DURATION_SCORE, DestinationType.CSV ) )
         {
-            CommaSeparatedScoreWriter durationScoreWriter =
+            CommaSeparatedScoreWriter<DurationScoreOutput> durationScoreWriter =
                     CommaSeparatedScoreWriter.of( projectConfig );
             durationScoreConsumers.put( DestinationType.CSV,
                                         durationScoreWriter );
