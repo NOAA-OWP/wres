@@ -165,8 +165,10 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedWriter
             // Write the output
             Path outputPath = ConfigHelper.getOutputPathToWrite( destinationConfig, meta, nextWindow );
 
-            Set<Path> innerPathsWrittenTo = CommaSeparatedWriter.writeTabularOutputToFile( rows, outputPath );
-            pathsWrittenTo.addAll( innerPathsWrittenTo );
+            CommaSeparatedWriter.writeTabularOutputToFile( rows, outputPath );
+            // If writeTabularOutputToFile did not throw an exception, assume
+            // it succeeded in writing to the file, track outputs now.
+            pathsWrittenTo.add( outputPath );
         }
 
         return Collections.unmodifiableSet( pathsWrittenTo );
