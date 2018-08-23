@@ -99,9 +99,7 @@ public abstract class TestDatabaseGenerator
         try ( Connection con = dataSource.getConnection())
         {
             DatabaseSchema schema = PowerMockito.spy( new DatabaseSchema(name) );
-            //DatabaseSchema schema = new DatabaseSchema( name );
             PowerMockito.doReturn( "../dist/lib/conf/database/db.changelog-master.xml" ).when( schema, "getChangelogURL" );
-            //PowerMockito.when( schema.getChangelogURL() ).thenReturn( "../dist/lib/conf/database/db.changelog-master.xml" );
             schema.applySchema( con );
         }
         catch ( Exception e )

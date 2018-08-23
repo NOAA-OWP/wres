@@ -87,7 +87,7 @@ public class DatabaseSchema
         }
     }
 
-    private String getChangelogURL()
+    public String getChangelogURL()
     {
         URL changelogURL = this.getClass().getClassLoader().getResource( "database/db.changelog-master.xml" );
         Objects.requireNonNull( changelogURL, "The definition for the WRES data model could not be found.");
