@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.SortedSet;
 
-import wres.datamodel.metadata.Metadata;
+import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.time.Event;
@@ -182,7 +182,7 @@ public class TimeSeriesOfSingleValuedPairs extends SingleValuedPairs implements 
             }
 
             // Set the union of the current metadata and any previously added time-series
-            List<Metadata> mainMeta = new ArrayList<>();
+            List<SampleMetadata> mainMeta = new ArrayList<>();
             mainMeta.add( timeSeries.getMetadata() );
             if ( Objects.nonNull( this.mainMeta ) )
             {
@@ -224,7 +224,7 @@ public class TimeSeriesOfSingleValuedPairs extends SingleValuedPairs implements 
             }
 
             // Set the union of the current metadata and any previously added time-series
-            List<Metadata> baselineMeta = new ArrayList<>();
+            List<SampleMetadata> baselineMeta = new ArrayList<>();
 
             // Metadata, as with data, is taken from the main input
             baselineMeta.add( timeSeries.getMetadata() );

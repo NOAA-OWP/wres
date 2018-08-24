@@ -15,7 +15,7 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.SampleDataGroup;
 import wres.datamodel.MetricConstants.StatisticGroup;
 import wres.datamodel.Slicer;
-import wres.datamodel.metadata.Metadata;
+import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.pairs.DichotomousPairs;
@@ -276,14 +276,14 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
             OneOrTwoThresholds oneOrTwo = OneOrTwoThresholds.of( useMe );
 
             // Add the threshold to the metadata, in order to fully qualify the pairs
-            Metadata baselineMeta = null;
+            SampleMetadata baselineMeta = null;
             if ( input.hasBaseline() )
             {
-                baselineMeta = Metadata.of( input.getMetadataForBaseline(), oneOrTwo );
+                baselineMeta = SampleMetadata.of( input.getMetadataForBaseline(), oneOrTwo );
             }
 
             SingleValuedPairs pairs = SingleValuedPairs.of( input,
-                                                            Metadata.of( input.getMetadata(), oneOrTwo ),
+                                                            SampleMetadata.of( input.getMetadata(), oneOrTwo ),
                                                             baselineMeta );
 
             // Filter the data if required

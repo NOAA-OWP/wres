@@ -42,7 +42,7 @@ import wres.datamodel.Slicer;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.Metadata;
+import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
@@ -167,7 +167,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                      Instant.MAX,
                                                      ReferenceTime.VALID_TIME,
                                                      Duration.ofHours( i ) );
-            final Metadata meta = Metadata.of( MeasurementUnit.of( "CMS" ),
+            final SampleMetadata meta = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
                                                DatasetIdentifier.of( Location.of( "DRRC2" ),
                                                                      "SQIN",
                                                                      "HEFS" ),
@@ -580,7 +580,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                      Instant.MAX,
                                                      ReferenceTime.VALID_TIME,
                                                      Duration.ofHours( i ) );
-            final Metadata meta = Metadata.of( MeasurementUnit.of( "CMS" ),
+            final SampleMetadata meta = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
                                                DatasetIdentifier.of( Location.of( "DRRC2" ),
                                                                      "SQIN",
                                                                      "HEFS" ),
@@ -668,7 +668,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                      Instant.MAX,
                                                      ReferenceTime.VALID_TIME,
                                                      Duration.ofHours( i ) );
-            final Metadata meta = Metadata.of( MeasurementUnit.of( "CMS" ),
+            final SampleMetadata meta = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
                                                DatasetIdentifier.of( Location.of( "DRRC2" ),
                                                                      "SQIN",
                                                                      "HEFS" ),

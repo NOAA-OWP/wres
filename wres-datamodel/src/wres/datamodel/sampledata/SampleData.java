@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Objects;
 
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.metadata.Metadata;
+import wres.datamodel.metadata.SampleMetadata;
 
 /**
  * <p>Sample data to be iterated over by a metric. A sample may comprise paired data or unpaired data.
@@ -56,7 +56,7 @@ public interface SampleData<S> extends Iterable<S>
      * @return the metadata associated with the sample
      */
 
-    Metadata getMetadata();
+    SampleMetadata getMetadata();
 
     /**
      * Returns the baseline data as a {@link SampleData} or null if no baseline is defined.
@@ -81,7 +81,7 @@ public interface SampleData<S> extends Iterable<S>
      * @return the metadata associated with the baseline sample
      */
 
-    Metadata getMetadataForBaseline();
+    SampleMetadata getMetadataForBaseline();
 
     /**
      * Returns a climatological dataset if {@link #hasClimatology()} returns true, otherwise null.

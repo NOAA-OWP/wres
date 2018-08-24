@@ -10,7 +10,7 @@ import java.util.List;
 import org.junit.Test;
 
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.metadata.Metadata;
+import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.SingleValuedPair;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
@@ -38,7 +38,7 @@ public final class SingleValuedPairsTest
         {
             values.add( SingleValuedPair.of( 1, 1 ) );
         }
-        final Metadata meta = Metadata.of();
+        final SampleMetadata meta = SampleMetadata.of();
         SingleValuedPairs p = (SingleValuedPairs) b.addData( values ).setMetadata( meta ).build();
 
         //Check dataset count

@@ -3,7 +3,7 @@ package wres.datamodel.sampledata.pairs;
 import java.util.List;
 
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.metadata.Metadata;
+import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 
@@ -26,7 +26,7 @@ public class SingleValuedPairs extends BasicPairs<SingleValuedPair>
      * @throws SampleDataException if the inputs are invalid
      */
 
-    public static SingleValuedPairs of( List<SingleValuedPair> pairs, Metadata meta )
+    public static SingleValuedPairs of( List<SingleValuedPair> pairs, SampleMetadata meta )
     {
         return SingleValuedPairs.of( pairs, null, meta, null, null );
     }
@@ -42,8 +42,8 @@ public class SingleValuedPairs extends BasicPairs<SingleValuedPair>
      */
 
     public static SingleValuedPairs of( SingleValuedPairs pairs,
-                                        Metadata overrideMainMeta,
-                                        Metadata overrideBaselineMeta )
+                                        SampleMetadata overrideMainMeta,
+                                        SampleMetadata overrideBaselineMeta )
     {
         return SingleValuedPairs.of( pairs.getRawData(),
                                      pairs.getRawDataForBaseline(),
@@ -63,7 +63,7 @@ public class SingleValuedPairs extends BasicPairs<SingleValuedPair>
      */
 
     public static SingleValuedPairs of( List<SingleValuedPair> pairs,
-                                        Metadata meta,
+                                        SampleMetadata meta,
                                         VectorOfDoubles climatology )
     {
         return SingleValuedPairs.of( pairs, null, meta, null, climatology );
@@ -82,8 +82,8 @@ public class SingleValuedPairs extends BasicPairs<SingleValuedPair>
 
     public static SingleValuedPairs of( List<SingleValuedPair> pairs,
                                         List<SingleValuedPair> basePairs,
-                                        Metadata mainMeta,
-                                        Metadata baselineMeta )
+                                        SampleMetadata mainMeta,
+                                        SampleMetadata baselineMeta )
     {
         return SingleValuedPairs.of( pairs, basePairs, mainMeta, baselineMeta, null );
     }
@@ -102,8 +102,8 @@ public class SingleValuedPairs extends BasicPairs<SingleValuedPair>
 
     public static SingleValuedPairs of( List<SingleValuedPair> pairs,
                                         List<SingleValuedPair> basePairs,
-                                        Metadata mainMeta,
-                                        Metadata baselineMeta,
+                                        SampleMetadata mainMeta,
+                                        SampleMetadata baselineMeta,
                                         VectorOfDoubles climatology )
     {
         SingleValuedPairsBuilder b = new SingleValuedPairsBuilder();

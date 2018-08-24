@@ -17,7 +17,7 @@ import ohd.hseb.util.misc.HString;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
 import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.Metadata;
+import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
@@ -56,7 +56,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
      * only a single time window associated with the data, specified in the meta data for the displayed plot input.
      * @param meta The metadata corresponding to a SingleValuedPairs instance.
      */
-    public WRESArgumentProcessor( final Metadata meta )
+    public WRESArgumentProcessor( final SampleMetadata meta )
     {
         super();
 
@@ -164,7 +164,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
      * Record the identifier arguments based on the metadata.  This will do nothing if the metadata provides no identifier.
      * @param meta
      */
-    private void recordIdentifierArguments( final Metadata meta )
+    private void recordIdentifierArguments( final SampleMetadata meta )
     {
         if ( meta.hasIdentifier() )
         {
@@ -182,7 +182,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         }
     }
 
-    private void recordWindowingArguments( final Metadata meta )
+    private void recordWindowingArguments( final SampleMetadata meta )
     {
         if ( meta.hasTimeWindow() )
         {

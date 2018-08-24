@@ -11,7 +11,7 @@ import org.junit.Test;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
-import wres.datamodel.metadata.Metadata;
+import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.MulticategoryPair;
 import wres.datamodel.sampledata.pairs.MulticategoryPairs;
 import wres.datamodel.sampledata.pairs.MulticategoryPairs.MulticategoryPairsBuilder;
@@ -40,7 +40,7 @@ public final class MulticategoryPairsTest
             values.add( MulticategoryPair.of( new boolean[] { true }, new boolean[] { true } ) );
         }
         final Location l1 = Location.of( "DRRC2" );
-        final Metadata meta = Metadata.of( MeasurementUnit.of(),
+        final SampleMetadata meta = SampleMetadata.of( MeasurementUnit.of(),
                                                            DatasetIdentifier.of( l1, "SQIN", "HEFS" ) );
         MulticategoryPairs p = (MulticategoryPairs) b.addData( values ).setMetadata( meta ).build();
 
@@ -65,7 +65,7 @@ public final class MulticategoryPairsTest
         p = (MulticategoryPairs) bm.addDataForBaseline( values ).setMetadataForBaseline( meta ).build(); //Add another
         assertTrue( "Expected a dataset with a baseline [true," + p.hasBaseline() + "].", p.hasBaseline() );
         //Check the metadata
-        final Metadata t = Metadata.of();
+        final SampleMetadata t = SampleMetadata.of();
         b.setMetadata( t );
         p = b.build();
         assertTrue( "Expected non-null metadata.", p.getMetadata().equals( t ) );

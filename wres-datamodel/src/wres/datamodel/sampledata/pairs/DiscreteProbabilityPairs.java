@@ -3,7 +3,7 @@ package wres.datamodel.sampledata.pairs;
 import java.util.List;
 
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.metadata.Metadata;
+import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 
@@ -27,7 +27,7 @@ public class DiscreteProbabilityPairs extends BasicPairs<DiscreteProbabilityPair
      */
 
     public static DiscreteProbabilityPairs of( List<DiscreteProbabilityPair> pairs,
-                                               Metadata meta )
+                                               SampleMetadata meta )
     {
         return DiscreteProbabilityPairs.of( pairs, null, meta, null, null );
     }
@@ -43,8 +43,8 @@ public class DiscreteProbabilityPairs extends BasicPairs<DiscreteProbabilityPair
      */
 
     public static DiscreteProbabilityPairs of( DiscreteProbabilityPairs pairs,
-                                               Metadata overrideMainMeta,
-                                               Metadata overrideBaselineMeta )
+                                               SampleMetadata overrideMainMeta,
+                                               SampleMetadata overrideBaselineMeta )
     {
         return DiscreteProbabilityPairs.of( pairs.getRawData(),
                                             pairs.getRawDataForBaseline(),
@@ -64,7 +64,7 @@ public class DiscreteProbabilityPairs extends BasicPairs<DiscreteProbabilityPair
      */
 
     public static DiscreteProbabilityPairs of( List<DiscreteProbabilityPair> pairs,
-                                               Metadata meta,
+                                               SampleMetadata meta,
                                                VectorOfDoubles climatology )
     {
         return DiscreteProbabilityPairs.of( pairs, null, meta, null, climatology );
@@ -83,8 +83,8 @@ public class DiscreteProbabilityPairs extends BasicPairs<DiscreteProbabilityPair
 
     public static DiscreteProbabilityPairs of( List<DiscreteProbabilityPair> pairs,
                                                List<DiscreteProbabilityPair> basePairs,
-                                               Metadata mainMeta,
-                                               Metadata baselineMeta )
+                                               SampleMetadata mainMeta,
+                                               SampleMetadata baselineMeta )
     {
         return DiscreteProbabilityPairs.of( pairs, basePairs, mainMeta, baselineMeta, null );
     }
@@ -103,8 +103,8 @@ public class DiscreteProbabilityPairs extends BasicPairs<DiscreteProbabilityPair
 
     public static DiscreteProbabilityPairs of( List<DiscreteProbabilityPair> pairs,
                                                List<DiscreteProbabilityPair> basePairs,
-                                               Metadata mainMeta,
-                                               Metadata baselineMeta,
+                                               SampleMetadata mainMeta,
+                                               SampleMetadata baselineMeta,
                                                VectorOfDoubles climatology )
     {
         DiscreteProbabilityPairsBuilder b =

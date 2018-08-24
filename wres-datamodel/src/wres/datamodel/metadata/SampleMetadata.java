@@ -3,14 +3,15 @@ package wres.datamodel.metadata;
 import java.util.Objects;
 
 import wres.config.generated.ProjectConfig;
+import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 
 /**
- * An immutable store of metadata associated with metric inputs and outputs.
+ * An immutable store of metadata associated with {@link SampleData}.
  * 
  * @author james.brown@hydrosolved.com
  */
-public class Metadata
+public class SampleMetadata
 {
 
     /**
@@ -50,39 +51,39 @@ public class Metadata
     private final ProjectConfig projectConfig;
 
     /**
-     * Build a {@link Metadata} object with a default {@link MeasurementUnit}.
+     * Build a {@link SampleMetadata} object with a default {@link MeasurementUnit}.
      * 
-     * @return a {@link Metadata} object
+     * @return a {@link SampleMetadata} object
      */
 
-    public static Metadata of()
+    public static SampleMetadata of()
     {
-        return Metadata.of( MeasurementUnit.of() );
+        return SampleMetadata.of( MeasurementUnit.of() );
     }
 
     /**
-     * Build a {@link Metadata} object with a sample size and a prescribed {@link MeasurementUnit}.
+     * Build a {@link SampleMetadata} object with a sample size and a prescribed {@link MeasurementUnit}.
      * 
      * @param unit the required measurement unit
-     * @return a {@link Metadata} object
+     * @return a {@link SampleMetadata} object
      */
 
-    public static Metadata of( final MeasurementUnit unit )
+    public static SampleMetadata of( final MeasurementUnit unit )
     {
-        return Metadata.of( unit, null );
+        return SampleMetadata.of( unit, null );
     }
 
     /**
-     * Build a {@link Metadata} object with a prescribed {@link MeasurementUnit} and an optional {@link DatasetIdentifier}.
+     * Build a {@link SampleMetadata} object with a prescribed {@link MeasurementUnit} and an optional {@link DatasetIdentifier}.
      * 
      * @param unit the required measurement unit
      * @param identifier an optional dataset identifier (may be null)
-     * @return a {@link Metadata} object
+     * @return a {@link SampleMetadata} object
      */
 
-    public static Metadata of( final MeasurementUnit unit, final DatasetIdentifier identifier )
+    public static SampleMetadata of( final MeasurementUnit unit, final DatasetIdentifier identifier )
     {
-        return Metadata.of( unit, identifier, null );
+        return SampleMetadata.of( unit, identifier, null );
     }
 
     /**
@@ -95,9 +96,10 @@ public class Metadata
      * @return a metadata instance
      */
 
-    public static Metadata of( final MeasurementUnit unit, DatasetIdentifier identifier, final TimeWindow timeWindow )
+    public static SampleMetadata
+            of( final MeasurementUnit unit, DatasetIdentifier identifier, final TimeWindow timeWindow )
     {
-        return Metadata.of( unit, identifier, timeWindow, null, null );
+        return SampleMetadata.of( unit, identifier, timeWindow, null, null );
     }
 
     /**
@@ -111,12 +113,12 @@ public class Metadata
      * @return a metadata instance
      */
 
-    public static Metadata of( final MeasurementUnit unit,
-                               DatasetIdentifier identifier,
-                               final TimeWindow timeWindow,
-                               final ProjectConfig projectConfig )
+    public static SampleMetadata of( final MeasurementUnit unit,
+                                     final DatasetIdentifier identifier,
+                                     final TimeWindow timeWindow,
+                                     final ProjectConfig projectConfig )
     {
-        return Metadata.of( unit, identifier, timeWindow, null, projectConfig );
+        return SampleMetadata.of( unit, identifier, timeWindow, null, projectConfig );
     }
 
     /**
@@ -130,12 +132,12 @@ public class Metadata
      * @return a metadata instance
      */
 
-    public static Metadata of( final MeasurementUnit unit,
-                               final DatasetIdentifier identifier,
-                               final TimeWindow timeWindow,
-                               final OneOrTwoThresholds thresholds )
+    public static SampleMetadata of( final MeasurementUnit unit,
+                                     final DatasetIdentifier identifier,
+                                     final TimeWindow timeWindow,
+                                     final OneOrTwoThresholds thresholds )
     {
-        return new Metadata( unit, identifier, timeWindow, thresholds, null );
+        return new SampleMetadata( unit, identifier, timeWindow, thresholds, null );
     }
 
     /**
@@ -150,83 +152,83 @@ public class Metadata
      * @return a metadata instance
      */
 
-    public static Metadata of( final MeasurementUnit unit,
-                               final DatasetIdentifier identifier,
-                               final TimeWindow timeWindow,
-                               final OneOrTwoThresholds thresholds,
-                               final ProjectConfig projectConfig )
+    public static SampleMetadata of( final MeasurementUnit unit,
+                                     final DatasetIdentifier identifier,
+                                     final TimeWindow timeWindow,
+                                     final OneOrTwoThresholds thresholds,
+                                     final ProjectConfig projectConfig )
     {
-        return new Metadata( unit, identifier, timeWindow, thresholds, projectConfig );
+        return new SampleMetadata( unit, identifier, timeWindow, thresholds, projectConfig );
     }
 
     /**
-     * Builds a {@link Metadata} from a prescribed input source and a new {@link MeasurementUnit}.
+     * Builds a {@link SampleMetadata} from a prescribed input source and a new {@link MeasurementUnit}.
      * 
      * @param input the source metadata
      * @param unit the required measurement unit
-     * @return a {@link Metadata} object
+     * @return a {@link SampleMetadata} object
      * @throws NullPointerException if the input is null
      */
 
-    public static Metadata of( final Metadata input, final MeasurementUnit unit )
+    public static SampleMetadata of( final SampleMetadata input, final MeasurementUnit unit )
     {
         Objects.requireNonNull( input, NULL_INPUT_ERROR );
 
-        return Metadata.of( unit,
-                            input.getIdentifier(),
-                            input.getTimeWindow(),
-                            input.getThresholds(),
-                            input.getProjectConfig() );
+        return SampleMetadata.of( unit,
+                                  input.getIdentifier(),
+                                  input.getTimeWindow(),
+                                  input.getThresholds(),
+                                  input.getProjectConfig() );
     }
 
     /**
-     * Builds a {@link Metadata} from a prescribed input source and a {@link OneOrTwoThresholds}.
+     * Builds a {@link SampleMetadata} from a prescribed input source and a {@link OneOrTwoThresholds}.
      * 
      * @param input the source metadata
      * @param thresholds the thresholds
-     * @return a {@link Metadata} object
+     * @return a {@link SampleMetadata} object
      * @throws NullPointerException if the input is null
      */
 
-    public static Metadata of( final Metadata input, final OneOrTwoThresholds thresholds )
+    public static SampleMetadata of( final SampleMetadata input, final OneOrTwoThresholds thresholds )
     {
         Objects.requireNonNull( input, NULL_INPUT_ERROR );
 
-        return Metadata.of( input.getMeasurementUnit(),
-                            input.getIdentifier(),
-                            input.getTimeWindow(),
-                            thresholds,
-                            input.getProjectConfig() );
+        return SampleMetadata.of( input.getMeasurementUnit(),
+                                  input.getIdentifier(),
+                                  input.getTimeWindow(),
+                                  thresholds,
+                                  input.getProjectConfig() );
     }
 
     /**
-     * Builds a {@link Metadata} from a prescribed input source and a new {@link TimeWindow}.
+     * Builds a {@link SampleMetadata} from a prescribed input source and a new {@link TimeWindow}.
      * 
      * @param input the source metadata
      * @param timeWindow the new time window
-     * @return a {@link Metadata} object
+     * @return a {@link SampleMetadata} object
      * @throws NullPointerException if the input is null
      */
 
-    public static Metadata of( final Metadata input, final TimeWindow timeWindow )
+    public static SampleMetadata of( final SampleMetadata input, final TimeWindow timeWindow )
     {
         Objects.requireNonNull( input, NULL_INPUT_ERROR );
 
-        return Metadata.of( input.getMeasurementUnit(),
-                            input.getIdentifier(),
-                            timeWindow,
-                            input.getThresholds(),
-                            input.getProjectConfig() );
+        return SampleMetadata.of( input.getMeasurementUnit(),
+                                  input.getIdentifier(),
+                                  timeWindow,
+                                  input.getThresholds(),
+                                  input.getProjectConfig() );
     }
 
     @Override
     public boolean equals( final Object o )
     {
-        if ( ! ( o instanceof Metadata ) )
+        if ( ! ( o instanceof SampleMetadata ) )
         {
             return false;
         }
-        final Metadata p = (Metadata) o;
+        final SampleMetadata p = (SampleMetadata) o;
         boolean returnMe = this.equalsWithoutTimeWindowOrThresholds( p ) && this.hasTimeWindow() == p.hasTimeWindow()
                            && this.hasThresholds() == p.hasThresholds();
 
@@ -328,13 +330,13 @@ public class Metadata
     }
 
     /**
-     * Returns <code>true</code> if the input is equal to the current {@link Metadata} without considering the 
+     * Returns <code>true</code> if the input is equal to the current {@link SampleMetadata} without considering the 
      * {@link #getTimeWindow()} or {@link #getThresholds()}.
      * 
      * @param input the input metadata
      * @return true if the input is equal to the current metadata, without considering the time window or thresholds
      */
-    public boolean equalsWithoutTimeWindowOrThresholds( final Metadata input )
+    public boolean equalsWithoutTimeWindowOrThresholds( final SampleMetadata input )
     {
         if ( Objects.isNull( input ) )
         {
@@ -425,11 +427,11 @@ public class Metadata
      * @throws NullPointerException if the dimension is null
      */
 
-    Metadata( final MeasurementUnit unit,
-              final DatasetIdentifier identifier,
-              final TimeWindow timeWindow,
-              final OneOrTwoThresholds thresholds,
-              final ProjectConfig projectConfig )
+    SampleMetadata( final MeasurementUnit unit,
+                    final DatasetIdentifier identifier,
+                    final TimeWindow timeWindow,
+                    final OneOrTwoThresholds thresholds,
+                    final ProjectConfig projectConfig )
     {
         Objects.requireNonNull( "Specify a non-null measurement unit from which to construct the metadata." );
 

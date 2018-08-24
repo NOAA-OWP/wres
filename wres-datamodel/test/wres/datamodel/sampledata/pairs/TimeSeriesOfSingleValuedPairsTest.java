@@ -17,7 +17,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.metadata.Metadata;
+import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.SingleValuedPair;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs.TimeSeriesOfSingleValuedPairsBuilder;
@@ -60,7 +60,7 @@ public final class TimeSeriesOfSingleValuedPairsTest
         third.add( Event.of( Instant.parse( "1985-01-03T01:00:00Z" ), SingleValuedPair.of( 7, 7 ) ) );
         third.add( Event.of( Instant.parse( "1985-01-03T02:00:00Z" ), SingleValuedPair.of( 8, 8 ) ) );
         third.add( Event.of( Instant.parse( "1985-01-03T03:00:00Z" ), SingleValuedPair.of( 9, 9 ) ) );
-        final Metadata meta = Metadata.of();
+        final SampleMetadata meta = SampleMetadata.of();
         TimeSeriesOfSingleValuedPairs ts =
                 (TimeSeriesOfSingleValuedPairs) b.addTimeSeriesData( firstBasisTime, first )
                                                  .addTimeSeriesData( secondBasisTime, second )
@@ -106,7 +106,7 @@ public final class TimeSeriesOfSingleValuedPairsTest
         third.add( Event.of( Instant.parse( "1985-01-03T01:00:00Z" ), SingleValuedPair.of( 1, 1 ) ) );
         third.add( Event.of( Instant.parse( "1985-01-03T02:00:00Z" ), SingleValuedPair.of( 2, 2 ) ) );
         third.add( Event.of( Instant.parse( "1985-01-03T03:00:00Z" ), SingleValuedPair.of( 3, 3 ) ) );
-        Metadata meta = Metadata.of();
+        SampleMetadata meta = SampleMetadata.of();
         //Add the time-series, with only one for baseline
         TimeSeriesOfSingleValuedPairs ts =
                 (TimeSeriesOfSingleValuedPairs) b.addTimeSeriesData( firstBasisTime, first )
@@ -161,7 +161,7 @@ public final class TimeSeriesOfSingleValuedPairsTest
         values.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), SingleValuedPair.of( 1, 1 ) ) );
         values.add( Event.of( Instant.parse( "1985-01-01T02:00:00Z" ), SingleValuedPair.of( 2, 2 ) ) );
         values.add( Event.of( Instant.parse( "1985-01-01T03:00:00Z" ), SingleValuedPair.of( 3, 3 ) ) );
-        Metadata meta = Metadata.of();
+        SampleMetadata meta = SampleMetadata.of();
         b.addTimeSeriesData( basisTime, values ).setMetadata( meta );
         //Check dataset dimensions
         assertTrue( "Unexpected baseline associated with time-series.",
@@ -208,7 +208,7 @@ public final class TimeSeriesOfSingleValuedPairsTest
         first.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), SingleValuedPair.of( 1, 1 ) ) );
         first.add( Event.of( Instant.parse( "1985-01-01T02:00:00Z" ), SingleValuedPair.of( 2, 2 ) ) );
         first.add( Event.of( Instant.parse( "1985-01-01T03:00:00Z" ), SingleValuedPair.of( 3, 3 ) ) );
-        Metadata meta = Metadata.of();
+        SampleMetadata meta = SampleMetadata.of();
         VectorOfDoubles climatology = VectorOfDoubles.of( new double[] { 1, 2, 3 } );
         b.addTimeSeriesData( basisTime, first )
          .addTimeSeriesDataForBaseline( basisTime, first )
@@ -263,7 +263,7 @@ public final class TimeSeriesOfSingleValuedPairsTest
         first.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), SingleValuedPair.of( 1, 1 ) ) );
         first.add( Event.of( Instant.parse( "1985-01-01T02:00:00Z" ), SingleValuedPair.of( 2, 2 ) ) );
         first.add( Event.of( Instant.parse( "1985-01-01T03:00:00Z" ), SingleValuedPair.of( 3, 3 ) ) );
-        final Metadata meta = Metadata.of();
+        final SampleMetadata meta = SampleMetadata.of();
 
         //Check for exceptions on the iterators
         TimeSeriesOfSingleValuedPairsBuilder d = new TimeSeriesOfSingleValuedPairsBuilder();
@@ -305,7 +305,7 @@ public final class TimeSeriesOfSingleValuedPairsTest
         TimeSeriesOfSingleValuedPairsBuilder b = new TimeSeriesOfSingleValuedPairsBuilder();
 
         Instant basisTime = Instant.parse( "1985-01-01T00:00:00Z" );
-        Metadata meta = Metadata.of();
+        SampleMetadata meta = SampleMetadata.of();
         StringJoiner joiner = new StringJoiner( System.lineSeparator() );
         for ( int i = 0; i < 5; i++ )
         {
@@ -372,7 +372,7 @@ public final class TimeSeriesOfSingleValuedPairsTest
         fourth.add( Event.of( Instant.parse( "1985-01-04T02:00:00Z" ), SingleValuedPair.of( 10, 10 ) ) );
         fourth.add( Event.of( Instant.parse( "1985-01-04T04:00:00Z" ), SingleValuedPair.of( 11, 11 ) ) );
         fourth.add( Event.of( Instant.parse( "1985-01-04T06:00:00Z" ), SingleValuedPair.of( 12, 12 ) ) );
-        Metadata meta = Metadata.of();
+        SampleMetadata meta = SampleMetadata.of();
         //Add the time-series, with only one for baseline
         TimeSeriesOfSingleValuedPairs ts =
                 (TimeSeriesOfSingleValuedPairs) b.addTimeSeriesData( firstBasisTime, first )
@@ -416,7 +416,7 @@ public final class TimeSeriesOfSingleValuedPairsTest
         first.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), SingleValuedPair.of( 1, 1 ) ) );
         first.add( Event.of( Instant.parse( "1985-01-01T02:00:00Z" ), SingleValuedPair.of( 2, 2 ) ) );
         first.add( Event.of( Instant.parse( "1985-01-01T03:00:00Z" ), SingleValuedPair.of( 3, 3 ) ) );
-        Metadata meta = Metadata.of();
+        SampleMetadata meta = SampleMetadata.of();
         VectorOfDoubles climatology = VectorOfDoubles.of( new double[] { 1, 2, 3 } );
         b.addTimeSeriesData( basisTime, first )
          .setMetadata( meta )

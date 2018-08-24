@@ -3,7 +3,7 @@ package wres.datamodel.sampledata;
 import java.util.List;
 
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.metadata.Metadata;
+import wres.datamodel.metadata.SampleMetadata;
 
 /**
  * A builder for {@link SampleData}.
@@ -30,7 +30,7 @@ public interface SampleDataBuilder<S>
      * @return the builder
      */
 
-    SampleDataBuilder<S> setMetadata( Metadata sampleMetadata );
+    SampleDataBuilder<S> setMetadata( SampleMetadata sampleMetadata );
 
     /**
      * Adds sample data for a baseline, which is used to calculate skill, appending to any existing baseline sample, as
@@ -49,7 +49,7 @@ public interface SampleDataBuilder<S>
      * @return the builder
      */
 
-    SampleDataBuilder<S> setMetadataForBaseline( Metadata baselineSampleMetadata );
+    SampleDataBuilder<S> setMetadataForBaseline( SampleMetadata baselineSampleMetadata );
 
     /**
      * Sets a climatological dataset for the input.

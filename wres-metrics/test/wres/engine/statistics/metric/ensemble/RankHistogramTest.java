@@ -15,7 +15,7 @@ import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.metadata.Metadata;
+import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.EnsemblePair;
 import wres.datamodel.sampledata.pairs.EnsemblePairs;
@@ -72,7 +72,7 @@ public final class RankHistogramTest
             values.add( EnsemblePair.of( left, right ) );
         }
 
-        final EnsemblePairs input = EnsemblePairs.of( values, Metadata.of() );
+        final EnsemblePairs input = EnsemblePairs.of( values, SampleMetadata.of() );
 
         //Check the results       
         final MultiVectorStatistic actual = rh.apply( input );
@@ -100,7 +100,7 @@ public final class RankHistogramTest
         //Generate some data using an RNG for a uniform U[0,1] distribution with a fixed seed
         final List<EnsemblePair> values = new ArrayList<>();
         values.add( EnsemblePair.of( 2, new double[] { 1, 2, 2, 2, 4, 5, 6, 7, 8 } ) );
-        final EnsemblePairs input = EnsemblePairs.of( values, Metadata.of() );
+        final EnsemblePairs input = EnsemblePairs.of( values, SampleMetadata.of() );
 
         //Check the results       
         final MultiVectorStatistic actual = rh.apply( input );
@@ -129,7 +129,7 @@ public final class RankHistogramTest
     {
         // Generate empty data
         EnsemblePairs input =
-                EnsemblePairs.of( Arrays.asList(), Metadata.of() );
+                EnsemblePairs.of( Arrays.asList(), SampleMetadata.of() );
 
         MultiVectorStatistic actual = rh.apply( input );
 

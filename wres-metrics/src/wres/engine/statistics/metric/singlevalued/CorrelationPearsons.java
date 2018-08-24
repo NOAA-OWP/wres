@@ -7,7 +7,7 @@ import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreGroup;
 import wres.datamodel.Slicer;
-import wres.datamodel.metadata.Metadata;
+import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
@@ -54,7 +54,7 @@ public class CorrelationPearsons extends OrdinaryScore<SingleValuedPairs, Double
         }
         
         // Get the metadata
-        Metadata metIn = s.getMetadata();
+        SampleMetadata metIn = s.getMetadata();
         StatisticMetadata meta = StatisticMetadata.of( metIn,
                                                              MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
                                                              MetricConstants.MAIN,

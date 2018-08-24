@@ -32,7 +32,7 @@ import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.Metadata;
+import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
@@ -279,9 +279,9 @@ class InputRetriever extends WRESCallable<SampleData<?>>
     {
         SampleData<?> input;
 
-        Metadata metadata =
+        SampleMetadata metadata =
                 this.buildMetadata( this.projectDetails.getProjectConfig(), false );
-        Metadata baselineMetadata = null;
+        SampleMetadata baselineMetadata = null;
 
         if (this.primaryPairs.isEmpty())
         {
@@ -353,7 +353,7 @@ class InputRetriever extends WRESCallable<SampleData<?>>
         return input;
     }
 
-    private SampleData createSingleValuedInput(Metadata rightMetadata, Metadata baselineMetadata)
+    private SampleData createSingleValuedInput(SampleMetadata rightMetadata, SampleMetadata baselineMetadata)
     {
         List<SingleValuedPair> primary = convertToPairOfDoubles( this.primaryPairs );
         List<SingleValuedPair> baseline = null;
@@ -370,7 +370,7 @@ class InputRetriever extends WRESCallable<SampleData<?>>
                                                 this.climatology );
     }
 
-    private SampleData createSingleValuedTimeSeriesInput(Metadata rightMetadata, Metadata baselineMetadata)
+    private SampleData createSingleValuedTimeSeriesInput(SampleMetadata rightMetadata, SampleMetadata baselineMetadata)
             throws IOException, SQLException
     {
         TimeSeriesOfSingleValuedPairsBuilder builder = new TimeSeriesOfSingleValuedPairsBuilder();
@@ -391,7 +391,7 @@ class InputRetriever extends WRESCallable<SampleData<?>>
         return builder.build();
     }
 
-    private SampleData createEnsembleTimeSeriesInput(Metadata rightMetadata, Metadata baselineMetadata)
+    private SampleData createEnsembleTimeSeriesInput(SampleMetadata rightMetadata, SampleMetadata baselineMetadata)
             throws IOException, SQLException
     {
         throw new NotImplementedException( "Ensemble Time Series Inputs cannot be created yet." );
@@ -415,7 +415,7 @@ class InputRetriever extends WRESCallable<SampleData<?>>
         return builder.build();*/
     }
 
-    private SampleData createEnsembleInput(Metadata rightMetadata, Metadata baselineMetadata)
+    private SampleData createEnsembleInput(SampleMetadata rightMetadata, SampleMetadata baselineMetadata)
     {
         List<EnsemblePair> primary =
                 InputRetriever.extractRawPairs( this.primaryPairs );
@@ -1160,7 +1160,7 @@ class InputRetriever extends WRESCallable<SampleData<?>>
      * @throws SQLException
      * @throws IOException
      */
-    private Metadata buildMetadata( ProjectConfig projectConfig,
+    private SampleMetadata buildMetadata( ProjectConfig projectConfig,
                                     boolean isBaseline )
             throws SQLException, IOException
     {
@@ -1260,7 +1260,7 @@ class InputRetriever extends WRESCallable<SampleData<?>>
                                                             lastLead,
                                                             this.issueDatesPool );
 
-        return Metadata.of( dim,
+        return SampleMetadata.of( dim,
                             datasetIdentifier,
                             timeWindow,
                             projectConfig );

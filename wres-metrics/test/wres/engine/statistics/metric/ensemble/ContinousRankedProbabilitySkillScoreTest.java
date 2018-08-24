@@ -16,7 +16,7 @@ import org.junit.rules.ExpectedException;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreGroup;
 import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.Metadata;
+import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.EnsemblePair;
@@ -73,8 +73,8 @@ public final class ContinousRankedProbabilitySkillScoreTest
         basePairs.add( EnsemblePair.of( 43, new double[] { 23, 12, 12, 39, 10 } ) );
         EnsemblePairs input = EnsemblePairs.of( pairs,
                                                            basePairs,
-                                                           Metadata.of(),
-                                                           Metadata.of() );
+                                                           SampleMetadata.of(),
+                                                           SampleMetadata.of() );
 
         //Metadata for the output
         StatisticMetadata m1 =
@@ -106,8 +106,8 @@ public final class ContinousRankedProbabilitySkillScoreTest
         EnsemblePairs input =
                 EnsemblePairs.of( Arrays.asList(),
                                              Arrays.asList(),
-                                             Metadata.of(),
-                                             Metadata.of() );
+                                             SampleMetadata.of(),
+                                             SampleMetadata.of() );
 
         DoubleScoreStatistic actual = crpss.apply( input );
 
@@ -229,7 +229,7 @@ public final class ContinousRankedProbabilitySkillScoreTest
         exception.expectMessage( "Specify a non-null baseline for the 'CONTINUOUS RANKED PROBABILITY SKILL SCORE'." );
         List<EnsemblePair> pairs = new ArrayList<>();
         pairs.add( EnsemblePair.of( 25.7, new double[] { 23, 43, 45, 23, 54 } ) );
-        EnsemblePairs input = EnsemblePairs.of( pairs, Metadata.of() );
+        EnsemblePairs input = EnsemblePairs.of( pairs, SampleMetadata.of() );
         crpss.apply( input );
     }
 

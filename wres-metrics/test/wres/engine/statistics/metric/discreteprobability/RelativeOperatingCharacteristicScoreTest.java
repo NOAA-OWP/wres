@@ -19,7 +19,7 @@ import wres.datamodel.MetricConstants.ScoreGroup;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.Slicer;
 import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.Metadata;
+import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.DiscreteProbabilityPair;
@@ -83,7 +83,7 @@ public final class RelativeOperatingCharacteristicScoreTest
         values.add( DiscreteProbabilityPair.of( 1, 1.0 ) );
 
         final DiscreteProbabilityPairs input =
-                DiscreteProbabilityPairs.of( values, Metadata.of() );
+                DiscreteProbabilityPairs.of( values, SampleMetadata.of() );
 
         //Metadata for the output
         final StatisticMetadata m1 = StatisticMetadata.of( input.getRawData().size(),
@@ -127,7 +127,7 @@ public final class RelativeOperatingCharacteristicScoreTest
         values.add( DiscreteProbabilityPair.of( 0, 0.0 ) );
         values.add( DiscreteProbabilityPair.of( 1, 0.984 ) );
         values.add( DiscreteProbabilityPair.of( 1, 0.952 ) );
-        Metadata meta = Metadata.of();
+        SampleMetadata meta = SampleMetadata.of();
         DiscreteProbabilityPairs input = DiscreteProbabilityPairs.of( values, meta );
 
         //Metadata for the output
@@ -182,7 +182,7 @@ public final class RelativeOperatingCharacteristicScoreTest
         values.add( DiscreteProbabilityPair.of( 0, 0.0 ) );
         values.add( DiscreteProbabilityPair.of( 0, 0.984 ) );
         values.add( DiscreteProbabilityPair.of( 0, 0.952 ) );
-        Metadata meta = Metadata.of();
+        SampleMetadata meta = SampleMetadata.of();
 
         DiscreteProbabilityPairs input = DiscreteProbabilityPairs.of( values, meta );
 
@@ -213,7 +213,7 @@ public final class RelativeOperatingCharacteristicScoreTest
     {
         // Generate empty data
         DiscreteProbabilityPairs input =
-                DiscreteProbabilityPairs.of( Arrays.asList(), Metadata.of() );
+                DiscreteProbabilityPairs.of( Arrays.asList(), SampleMetadata.of() );
 
         DoubleScoreStatistic actual = rocScore.apply( input );
 

@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Objects;
 
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.metadata.Metadata;
+import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 
@@ -30,7 +30,7 @@ public class DichotomousPairs extends MulticategoryPairs
      */
 
     public static DichotomousPairs ofDichotomousPairs( List<DichotomousPair> pairs,
-                                                       Metadata meta )
+                                                       SampleMetadata meta )
     {
         return DichotomousPairs.ofDichotomousPairs( pairs, meta, null );
     }
@@ -47,7 +47,7 @@ public class DichotomousPairs extends MulticategoryPairs
      */
 
     public static DichotomousPairs ofDichotomousPairs( List<DichotomousPair> pairs,
-                                                       Metadata meta,
+                                                       SampleMetadata meta,
                                                        VectorOfDoubles climatology )
     {
         return DichotomousPairs.ofDichotomousPairs( pairs, null, meta, null, climatology );
@@ -64,8 +64,8 @@ public class DichotomousPairs extends MulticategoryPairs
      */
 
     public static DichotomousPairs ofDichotomousPairs( DichotomousPairs pairs,
-                                                       Metadata overrideMainMeta,
-                                                       Metadata overrideBaselineMeta )
+                                                       SampleMetadata overrideMainMeta,
+                                                       SampleMetadata overrideBaselineMeta )
     {
         DichotomousPairs.DichotomousPairsBuilder b = new DichotomousPairs.DichotomousPairsBuilder();
         return (DichotomousPairs) b.addData( pairs.getRawData() )
@@ -90,8 +90,8 @@ public class DichotomousPairs extends MulticategoryPairs
 
     public static DichotomousPairs ofDichotomousPairs( List<DichotomousPair> pairs,
                                                        List<DichotomousPair> basePairs,
-                                                       Metadata mainMeta,
-                                                       Metadata baselineMeta,
+                                                       SampleMetadata mainMeta,
+                                                       SampleMetadata baselineMeta,
                                                        VectorOfDoubles climatology )
     {
         DichotomousPairsBuilder b = new DichotomousPairsBuilder();
