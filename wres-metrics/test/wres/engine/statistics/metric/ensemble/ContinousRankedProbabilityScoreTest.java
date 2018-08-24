@@ -13,14 +13,14 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.ScoreOutputGroup;
+import wres.datamodel.MetricConstants.ScoreGroup;
 import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Metadata;
-import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.sampledata.MetricInputException;
+import wres.datamodel.metadata.StatisticMetadata;
+import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.EnsemblePair;
 import wres.datamodel.sampledata.pairs.EnsemblePairs;
-import wres.datamodel.statistics.DoubleScoreOutput;
+import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.engine.statistics.metric.MetricParameterException;
 
 /**
@@ -65,15 +65,15 @@ public final class ContinousRankedProbabilityScoreTest
         EnsemblePairs input = EnsemblePairs.of( pairs, Metadata.of() );
 
         //Metadata for the output
-        MetricOutputMetadata m1 =
-                MetricOutputMetadata.of( input.getRawData().size(),
+        StatisticMetadata m1 =
+                StatisticMetadata.of( input.getRawData().size(),
                                                    MeasurementUnit.of(),
                                                    MeasurementUnit.of(),
                                                    MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE,
                                                    MetricConstants.MAIN );
         //Check the results       
-        final DoubleScoreOutput actual = crps.apply( input );
-        final DoubleScoreOutput expected = DoubleScoreOutput.of( 7.63, m1 );
+        final DoubleScoreStatistic actual = crps.apply( input );
+        final DoubleScoreStatistic expected = DoubleScoreStatistic.of( 7.63, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -101,15 +101,15 @@ public final class ContinousRankedProbabilityScoreTest
         EnsemblePairs input = EnsemblePairs.of( pairs, Metadata.of() );
 
         //Metadata for the output
-        MetricOutputMetadata m1 =
-                MetricOutputMetadata.of( input.getRawData().size(),
+        StatisticMetadata m1 =
+                StatisticMetadata.of( input.getRawData().size(),
                                                    MeasurementUnit.of(),
                                                    MeasurementUnit.of(),
                                                    MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE,
                                                    MetricConstants.MAIN );
         //Check the results       
-        DoubleScoreOutput actual = crps.apply( input );
-        DoubleScoreOutput expected = DoubleScoreOutput.of( 8.734401927437641, m1 );
+        DoubleScoreStatistic actual = crps.apply( input );
+        DoubleScoreStatistic expected = DoubleScoreStatistic.of( 8.734401927437641, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -132,15 +132,15 @@ public final class ContinousRankedProbabilityScoreTest
         EnsemblePairs input = EnsemblePairs.of( pairs, Metadata.of() );
 
         //Metadata for the output
-        MetricOutputMetadata m1 =
-                MetricOutputMetadata.of( input.getRawData().size(),
+        StatisticMetadata m1 =
+                StatisticMetadata.of( input.getRawData().size(),
                                                    MeasurementUnit.of(),
                                                    MeasurementUnit.of(),
                                                    MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE,
                                                    MetricConstants.MAIN );
         //Check the results       
-        DoubleScoreOutput actual = crps.apply( input );
-        DoubleScoreOutput expected = DoubleScoreOutput.of( 13.36, m1 );
+        DoubleScoreStatistic actual = crps.apply( input );
+        DoubleScoreStatistic expected = DoubleScoreStatistic.of( 13.36, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -164,15 +164,15 @@ public final class ContinousRankedProbabilityScoreTest
         EnsemblePairs input = EnsemblePairs.of( pairs, Metadata.of() );
 
         //Metadata for the output
-        MetricOutputMetadata m1 =
-                MetricOutputMetadata.of( input.getRawData().size(),
+        StatisticMetadata m1 =
+                StatisticMetadata.of( input.getRawData().size(),
                                                    MeasurementUnit.of(),
                                                    MeasurementUnit.of(),
                                                    MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE,
                                                    MetricConstants.MAIN );
         //Check the results       
-        DoubleScoreOutput actual = crps.apply( input );
-        DoubleScoreOutput expected = DoubleScoreOutput.of( 4.56, m1 );
+        DoubleScoreStatistic actual = crps.apply( input );
+        DoubleScoreStatistic expected = DoubleScoreStatistic.of( 4.56, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -193,7 +193,7 @@ public final class ContinousRankedProbabilityScoreTest
         EnsemblePairs input =
                 EnsemblePairs.of( Arrays.asList(), Metadata.of() );
 
-        DoubleScoreOutput actual = crps.apply( input );
+        DoubleScoreStatistic actual = crps.apply( input );
 
         assertTrue( actual.getData().isNaN() );
     }
@@ -237,7 +237,7 @@ public final class ContinousRankedProbabilityScoreTest
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( crps.getScoreOutputGroup() == ScoreOutputGroup.NONE );
+        assertTrue( crps.getScoreOutputGroup() == ScoreGroup.NONE );
     }
 
     /**
@@ -268,7 +268,7 @@ public final class ContinousRankedProbabilityScoreTest
     @Test
     public void testApplyExceptionOnNullInput()
     {
-        exception.expect( MetricInputException.class );
+        exception.expect( SampleDataException.class );
         exception.expectMessage( "Specify non-null input to the 'CONTINUOUS RANKED PROBABILITY SCORE'." );
 
         crps.apply( null );
@@ -286,7 +286,7 @@ public final class ContinousRankedProbabilityScoreTest
         exception.expect( MetricParameterException.class );
         exception.expectMessage( "Unsupported decomposition identifier 'LBR'." );
 
-        ContinuousRankedProbabilityScore.of( ScoreOutputGroup.LBR );
+        ContinuousRankedProbabilityScore.of( ScoreGroup.LBR );
     }
 
 }

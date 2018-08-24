@@ -11,15 +11,15 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.ScoreOutputGroup;
+import wres.datamodel.MetricConstants.ScoreGroup;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Metadata;
-import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.sampledata.MetricInputException;
+import wres.datamodel.metadata.StatisticMetadata;
+import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
-import wres.datamodel.statistics.DoubleScoreOutput;
+import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 
@@ -57,7 +57,7 @@ public final class SumOfSquareErrorTest
         SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsTwo();
 
         //Metadata for the output
-        final MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getRawData().size(),
+        final StatisticMetadata m1 = StatisticMetadata.of( input.getRawData().size(),
                                                                  MeasurementUnit.of( "CMS" ),
                                                                  MeasurementUnit.of( "CMS" ),
                                                                  MetricConstants.SUM_OF_SQUARE_ERROR,
@@ -66,9 +66,9 @@ public final class SumOfSquareErrorTest
                                                                                        "SQIN",
                                                                                        "HEFS" ) );
         //Check the results
-        DoubleScoreOutput actual = sse.apply( input );
+        DoubleScoreStatistic actual = sse.apply( input );
 
-        DoubleScoreOutput expected = DoubleScoreOutput.of( 4000039.29, m1 );
+        DoubleScoreStatistic expected = DoubleScoreStatistic.of( 4000039.29, m1 );
 
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
@@ -88,7 +88,7 @@ public final class SumOfSquareErrorTest
         SingleValuedPairs input =
                 SingleValuedPairs.of( Arrays.asList(), Metadata.of() );
 
-        DoubleScoreOutput actual = sse.apply( input );
+        DoubleScoreStatistic actual = sse.apply( input );
 
         assertTrue( actual.getData().isNaN() );
     }
@@ -131,7 +131,7 @@ public final class SumOfSquareErrorTest
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( sse.getScoreOutputGroup() == ScoreOutputGroup.NONE );
+        assertTrue( sse.getScoreOutputGroup() == ScoreGroup.NONE );
     }
 
     /**
@@ -153,21 +153,21 @@ public final class SumOfSquareErrorTest
     @Test
     public void testApplyExceptionOnNullInput()
     {
-        exception.expect( MetricInputException.class );
+        exception.expect( SampleDataException.class );
         exception.expectMessage( "Specify non-null input to the 'SUM OF SQUARE ERROR'." );
 
         sse.apply( null );
     }
 
     /**
-     * Tests for an expected exception on calling {@link SumOfSquareError#aggregate(DoubleScoreOutput)} with 
+     * Tests for an expected exception on calling {@link SumOfSquareError#aggregate(DoubleScoreStatistic)} with 
      * null input.
      */
 
     @Test
     public void testAggregateExceptionOnNullInput()
     {
-        exception.expect( MetricInputException.class );
+        exception.expect( SampleDataException.class );
         exception.expectMessage( "Specify non-null input to the 'SUM OF SQUARE ERROR'." );
 
         sse.aggregate( null );

@@ -16,10 +16,10 @@ import org.junit.rules.ExpectedException;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.metadata.Metadata;
-import wres.datamodel.sampledata.MetricInputException;
+import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.EnsemblePair;
 import wres.datamodel.sampledata.pairs.EnsemblePairs;
-import wres.datamodel.statistics.MultiVectorOutput;
+import wres.datamodel.statistics.MultiVectorStatistic;
 import wres.engine.statistics.metric.MetricParameterException;
 
 /**
@@ -75,7 +75,7 @@ public final class RankHistogramTest
         final EnsemblePairs input = EnsemblePairs.of( values, Metadata.of() );
 
         //Check the results       
-        final MultiVectorOutput actual = rh.apply( input );
+        final MultiVectorStatistic actual = rh.apply( input );
         double[] actualRanks = actual.get( MetricDimension.RANK_ORDER ).getDoubles();
         double[] actualRFreqs = actual.get( MetricDimension.OBSERVED_RELATIVE_FREQUENCY ).getDoubles();
         double[] expectedRanks = new double[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
@@ -103,7 +103,7 @@ public final class RankHistogramTest
         final EnsemblePairs input = EnsemblePairs.of( values, Metadata.of() );
 
         //Check the results       
-        final MultiVectorOutput actual = rh.apply( input );
+        final MultiVectorStatistic actual = rh.apply( input );
 
         double[] actualRanks = actual.get( MetricDimension.RANK_ORDER ).getDoubles();
         double[] actualRFreqs = actual.get( MetricDimension.OBSERVED_RELATIVE_FREQUENCY ).getDoubles();
@@ -131,7 +131,7 @@ public final class RankHistogramTest
         EnsemblePairs input =
                 EnsemblePairs.of( Arrays.asList(), Metadata.of() );
 
-        MultiVectorOutput actual = rh.apply( input );
+        MultiVectorStatistic actual = rh.apply( input );
 
         double[] source = new double[1];
 
@@ -167,7 +167,7 @@ public final class RankHistogramTest
     @Test
     public void testApplyExceptionOnNullInput()
     {
-        exception.expect( MetricInputException.class );
+        exception.expect( SampleDataException.class );
         exception.expectMessage( "Specify non-null input to the 'RANK HISTOGRAM'." );
 
         rh.apply( null );

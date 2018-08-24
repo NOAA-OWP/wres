@@ -15,22 +15,22 @@ import org.slf4j.LoggerFactory;
 import wres.config.MetricConfigException;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.MetricInputGroup;
-import wres.datamodel.MetricConstants.MetricOutputGroup;
+import wres.datamodel.MetricConstants.SampleDataGroup;
+import wres.datamodel.MetricConstants.StatisticGroup;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.Slicer;
-import wres.datamodel.sampledata.MetricInput;
+import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.pairs.DichotomousPairs;
 import wres.datamodel.sampledata.pairs.EnsemblePairs;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
-import wres.datamodel.statistics.DoubleScoreOutput;
-import wres.datamodel.statistics.MatrixOutput;
-import wres.datamodel.statistics.MetricOutput;
-import wres.datamodel.statistics.MetricOutputAccessException;
-import wres.datamodel.statistics.MetricOutputException;
-import wres.datamodel.statistics.MetricOutputForProject;
-import wres.datamodel.statistics.MultiVectorOutput;
-import wres.datamodel.statistics.ScoreOutput;
+import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.MatrixStatistic;
+import wres.datamodel.statistics.Statistic;
+import wres.datamodel.statistics.StatisticAccessException;
+import wres.datamodel.statistics.StatisticException;
+import wres.datamodel.statistics.StatisticsForProject;
+import wres.datamodel.statistics.MultiVectorStatistic;
+import wres.datamodel.statistics.ScoreStatistic;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
@@ -57,36 +57,36 @@ import wres.engine.statistics.metric.config.MetricConfigHelper;
  * {@link MetricCollection}. Using metric-specific thresholds will require additional logic to disaggregate a
  * {@link MetricCollection} into {@link Metric} for which common thresholds are defined.</li>
  * <li>If the {@link Threshold#hasProbabilities()}, the corresponding quantiles are derived from the 
- * observations associated with the {@link MetricInput} at runtime, i.e. upon calling
+ * observations associated with the {@link SampleData} at runtime, i.e. upon calling
  * {@link #apply(Object)}</li>
  * </ol>
  * <p>
  * Upon construction, the {@link ProjectConfig} is validated to ensure that appropriate {@link Metric} are configured
- * for the type of {@link MetricInput} consumed. These metrics are stored in a series of {@link MetricCollection} that
- * consume a given {@link MetricInput} and produce a given {@link MetricOutput}. If the type of {@link MetricInput}
- * consumed by any given {@link MetricCollection} differs from the {@link MetricInput} for which the
+ * for the type of {@link SampleData} consumed. These metrics are stored in a series of {@link MetricCollection} that
+ * consume a given {@link SampleData} and produce a given {@link Statistic}. If the type of {@link SampleData}
+ * consumed by any given {@link MetricCollection} differs from the {@link SampleData} for which the
  * {@link MetricProcessor} is primed, a transformation must be applied. For example, {@link Metric} that consume
  * {@link SingleValuedPairs} may be computed for {@link EnsemblePairs} if an appropriate transformation is configured.
- * Subclasses must define and apply any transformation required. If inappropriate {@link MetricInput} are provided to
+ * Subclasses must define and apply any transformation required. If inappropriate {@link SampleData} are provided to
  * {@link #apply(Object)} for the {@link MetricCollection} configured, an unchecked {@link MetricCalculationException}
  * will be thrown. If metrics are configured incorrectly, a checked {@link MetricConfigException} will be thrown.
  * </p>
  * <p>
- * Upon calling {@link #apply(Object)} with a concrete {@link MetricInput}, the configured {@link Metric} are computed
+ * Upon calling {@link #apply(Object)} with a concrete {@link SampleData}, the configured {@link Metric} are computed
  * asynchronously for each {@link Threshold}.
  * </p>
  * <p>
- * The {@link MetricOutput} are computed and stored by {@link MetricOutputGroup}. For {@link MetricOutput} that are not
+ * The {@link Statistic} are computed and stored by {@link StatisticGroup}. For {@link Statistic} that are not
  * consumed until the end of a processing pipeline, the results from sequential calls to {@link #apply(Object)} may be
  * cached and merged. This is achieved by constructing a {@link MetricProcessor} with a <code>vararg</code> of
- * {@link MetricOutputGroup} whose results will be cached across successive calls. The merged results are accessible
+ * {@link StatisticGroup} whose results will be cached across successive calls. The merged results are accessible
  * from {@link #getCachedMetricOutput()}.
  * </p>
  * 
  * @author james.brown@hydrosolved.com
  */
 
-public abstract class MetricProcessor<S extends MetricInput<?>, T extends MetricOutputForProject>
+public abstract class MetricProcessor<S extends SampleData<?>, T extends StatisticsForProject>
         implements Function<S, T>
 {
 
@@ -116,31 +116,31 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume {@link SingleValuedPairs} and produce
-     * {@link ScoreOutput}.
+     * {@link ScoreStatistic}.
      */
 
-    final MetricCollection<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput> singleValuedScore;
+    final MetricCollection<SingleValuedPairs, DoubleScoreStatistic, DoubleScoreStatistic> singleValuedScore;
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume {@link SingleValuedPairs} and produce
-     * {@link MultiVectorOutput}.
+     * {@link MultiVectorStatistic}.
      */
 
-    final MetricCollection<SingleValuedPairs, MultiVectorOutput, MultiVectorOutput> singleValuedMultiVector;
+    final MetricCollection<SingleValuedPairs, MultiVectorStatistic, MultiVectorStatistic> singleValuedMultiVector;
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume {@link DichotomousPairs} and produce
-     * {@link ScoreOutput}.
+     * {@link ScoreStatistic}.
      */
 
-    final MetricCollection<DichotomousPairs, MatrixOutput, DoubleScoreOutput> dichotomousScalar;
+    final MetricCollection<DichotomousPairs, MatrixStatistic, DoubleScoreStatistic> dichotomousScalar;
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume {@link DichotomousPairs} and produce
-     * {@link MatrixOutput}.
+     * {@link MatrixStatistic}.
      */
 
-    final MetricCollection<DichotomousPairs, MatrixOutput, MatrixOutput> dichotomousMatrix;
+    final MetricCollection<DichotomousPairs, MatrixStatistic, MatrixStatistic> dichotomousMatrix;
 
     /**
      * The set of metrics associated with the verification project.
@@ -149,10 +149,10 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
     final Set<MetricConstants> metrics;
 
     /**
-     * An array of {@link MetricOutputGroup} that should be retained and merged across calls. May be null.
+     * An array of {@link StatisticGroup} that should be retained and merged across calls. May be null.
      */
 
-    final Set<MetricOutputGroup> mergeSet;
+    final Set<StatisticGroup> mergeSet;
 
     /**
      * An {@link ExecutorService} used to process the thresholds.
@@ -175,29 +175,29 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
     public abstract boolean hasCachedMetricOutput();
 
     /**
-     * Returns the (possibly empty) set of {@link MetricOutputGroup} that were cached across successive calls to 
+     * Returns the (possibly empty) set of {@link StatisticGroup} that were cached across successive calls to 
      * {@link #apply(Object)}. This may differ from the set of cached outputs that were declared on construction, 
      * because some outputs are cached automatically. For the set of cached outputs declared on construction, 
      * see: {@link #getMetricOutputTypesToCache()}.
      * 
      * @return the output types that were cached
      * @throws InterruptedException if the retrieval was interrupted
-     * @throws MetricOutputException if the output could not be retrieved
+     * @throws StatisticException if the output could not be retrieved
      * @throws MetricOutputMergeException if the cached output cannot be merged across calls
      */
 
-    public Set<MetricOutputGroup> getCachedMetricOutputTypes() throws InterruptedException
+    public Set<StatisticGroup> getCachedMetricOutputTypes() throws InterruptedException
     {
-        return this.getCachedMetricOutput().getOutputTypes();
+        return this.getCachedMetricOutput().getStatisticTypes();
     }
 
     /**
-     * Returns a {@link MetricOutputForProject} for the last available results or null if
+     * Returns a {@link StatisticsForProject} for the last available results or null if
      * {@link #hasCachedMetricOutput()} returns false.
      * 
-     * @return a {@link MetricOutputForProject} or null
+     * @return a {@link StatisticsForProject} or null
      * @throws InterruptedException if the retrieval was interrupted
-     * @throws MetricOutputException if the output could not be retrieved
+     * @throws StatisticException if the output could not be retrieved
      * @throws MetricOutputMergeException if the cached output cannot be merged across calls
      */
 
@@ -211,7 +211,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
     }
 
     /**
-     * Returns the (possibly empty) set of {@link MetricOutputGroup} that will be cached across successive calls to 
+     * Returns the (possibly empty) set of {@link StatisticGroup} that will be cached across successive calls to 
      * {@link #apply(Object)}. This contains the set of types to cache that were declared on construction of the 
      * {@link MetricProcessor}. It may differ from the actual set of cached outputs, because some outputs are
      * cached automatically. For the full set of cached outputs, post-computation, 
@@ -220,47 +220,47 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
      * @return the output types that will be cached
      */
 
-    public Set<MetricOutputGroup> getMetricOutputTypesToCache()
+    public Set<StatisticGroup> getMetricOutputTypesToCache()
     {
         return Collections.unmodifiableSet( new HashSet<>( this.mergeSet ) );
     }
 
     /**
-     * Returns true if metrics are available for the input {@link MetricInputGroup} and {@link MetricOutputGroup}, false
+     * Returns true if metrics are available for the input {@link SampleDataGroup} and {@link StatisticGroup}, false
      * otherwise.
      * 
-     * @param inGroup the {@link MetricInputGroup}
-     * @param outGroup the {@link MetricOutputGroup}
-     * @return true if metrics are available for the input {@link MetricInputGroup} and {@link MetricOutputGroup}, false
+     * @param inGroup the {@link SampleDataGroup}
+     * @param outGroup the {@link StatisticGroup}
+     * @return true if metrics are available for the input {@link SampleDataGroup} and {@link StatisticGroup}, false
      *         otherwise
      */
 
-    public boolean hasMetrics( MetricInputGroup inGroup, MetricOutputGroup outGroup )
+    public boolean hasMetrics( SampleDataGroup inGroup, StatisticGroup outGroup )
     {
         return this.getMetrics( inGroup, outGroup ).length > 0;
     }
 
     /**
-     * Returns true if metrics are available for the input {@link MetricInputGroup}, false otherwise.
+     * Returns true if metrics are available for the input {@link SampleDataGroup}, false otherwise.
      * 
-     * @param inGroup the {@link MetricInputGroup}
-     * @return true if metrics are available for the input {@link MetricInputGroup} false otherwise
+     * @param inGroup the {@link SampleDataGroup}
+     * @return true if metrics are available for the input {@link SampleDataGroup} false otherwise
      */
 
-    public boolean hasMetrics( MetricInputGroup inGroup )
+    public boolean hasMetrics( SampleDataGroup inGroup )
     {
         return metrics.stream().anyMatch( a -> a.isInGroup( inGroup ) );
 
     }
 
     /**
-     * Returns true if metrics are available for the input {@link MetricOutputGroup}, false otherwise.
+     * Returns true if metrics are available for the input {@link StatisticGroup}, false otherwise.
      * 
-     * @param outGroup the {@link MetricOutputGroup}
-     * @return true if metrics are available for the input {@link MetricOutputGroup} false otherwise
+     * @param outGroup the {@link StatisticGroup}
+     * @return true if metrics are available for the input {@link StatisticGroup} false otherwise
      */
 
-    public boolean hasMetrics( MetricOutputGroup outGroup )
+    public boolean hasMetrics( StatisticGroup outGroup )
     {
         return this.metrics.stream().anyMatch( a -> a.isInGroup( outGroup ) );
     }
@@ -271,9 +271,9 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
      * continuous variable, false otherwise. The metrics that require {@link Threshold} belong to one of:
      * </p>
      * <ol>
-     * <li>{@link MetricInputGroup#DISCRETE_PROBABILITY}</li>
-     * <li>{@link MetricInputGroup#DICHOTOMOUS}</li>
-     * <li>{@link MetricInputGroup#MULTICATEGORY}</li>
+     * <li>{@link SampleDataGroup#DISCRETE_PROBABILITY}</li>
+     * <li>{@link SampleDataGroup#DICHOTOMOUS}</li>
+     * <li>{@link SampleDataGroup#MULTICATEGORY}</li>
      * </ol>
      * 
      * @return true if metrics are available that require {@link Threshold}, false otherwise
@@ -281,9 +281,9 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
 
     public boolean hasThresholdMetrics()
     {
-        return this.hasMetrics( MetricInputGroup.DISCRETE_PROBABILITY )
-               || this.hasMetrics( MetricInputGroup.MULTICATEGORY )
-               || this.hasMetrics( MetricInputGroup.DICHOTOMOUS );
+        return this.hasMetrics( SampleDataGroup.DISCRETE_PROBABILITY )
+               || this.hasMetrics( SampleDataGroup.MULTICATEGORY )
+               || this.hasMetrics( SampleDataGroup.DICHOTOMOUS );
     }
 
     /**
@@ -303,16 +303,16 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
      * computing results that rely on other cached results (e.g. summary statistics). Note that this method may be
      * called more than once.
      * 
-     * @throws MetricOutputAccessException if the cached output cannot be completed because the cached outputs on 
+     * @throws StatisticAccessException if the cached output cannot be completed because the cached outputs on 
      *            which completion depends cannot be accessed
      */
 
     abstract void completeCachedOutput() throws InterruptedException;
 
     /**
-     * Returns a {@link MetricOutputForProject} for the last available results.
+     * Returns a {@link StatisticsForProject} for the last available results.
      * 
-     * @return a {@link MetricOutputForProject} or null
+     * @return a {@link StatisticsForProject} or null
      * @throws MetricOutputMergeException if the outputs cannot be merged across calls
      */
 
@@ -325,7 +325,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
      * @param externalThresholds an optional set of external thresholds, may be null
      * @param thresholdExecutor an {@link ExecutorService} for executing thresholds, cannot be null 
      * @param metricExecutor an {@link ExecutorService} for executing metrics, cannot be null
-     * @param mergeSet a list of {@link MetricOutputGroup} whose outputs should be retained and merged across calls to
+     * @param mergeSet a list of {@link StatisticGroup} whose outputs should be retained and merged across calls to
      *            {@link #apply(Object)}
      * @throws MetricConfigException if the metrics are configured incorrectly
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
@@ -336,7 +336,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
                      final ThresholdsByMetric externalThresholds,
                      final ExecutorService thresholdExecutor,
                      final ExecutorService metricExecutor,
-                     final Set<MetricOutputGroup> mergeSet )
+                     final Set<StatisticGroup> mergeSet )
             throws MetricParameterException
     {
 
@@ -349,23 +349,23 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
         this.metrics = MetricConfigHelper.getMetricsFromConfig( config );
 
         //Construct the metrics that are common to more than one type of input pairs
-        if ( this.hasMetrics( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.DOUBLE_SCORE ) )
+        if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED, StatisticGroup.DOUBLE_SCORE ) )
         {
             this.singleValuedScore =
                     MetricFactory.ofSingleValuedScoreCollection( metricExecutor,
-                                                                 this.getMetrics( MetricInputGroup.SINGLE_VALUED,
-                                                                                  MetricOutputGroup.DOUBLE_SCORE ) );
+                                                                 this.getMetrics( SampleDataGroup.SINGLE_VALUED,
+                                                                                  StatisticGroup.DOUBLE_SCORE ) );
         }
         else
         {
             this.singleValuedScore = null;
         }
-        if ( this.hasMetrics( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.MULTIVECTOR ) )
+        if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED, StatisticGroup.MULTIVECTOR ) )
         {
             this.singleValuedMultiVector =
                     MetricFactory.ofSingleValuedMultiVectorCollection( metricExecutor,
-                                                                       this.getMetrics( MetricInputGroup.SINGLE_VALUED,
-                                                                                        MetricOutputGroup.MULTIVECTOR ) );
+                                                                       this.getMetrics( SampleDataGroup.SINGLE_VALUED,
+                                                                                        StatisticGroup.MULTIVECTOR ) );
         }
         else
         {
@@ -373,24 +373,24 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
         }
 
         //Dichotomous scores
-        if ( this.hasMetrics( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.DOUBLE_SCORE ) )
+        if ( this.hasMetrics( SampleDataGroup.DICHOTOMOUS, StatisticGroup.DOUBLE_SCORE ) )
         {
             this.dichotomousScalar =
                     MetricFactory.ofDichotomousScoreCollection( metricExecutor,
-                                                                this.getMetrics( MetricInputGroup.DICHOTOMOUS,
-                                                                                 MetricOutputGroup.DOUBLE_SCORE ) );
+                                                                this.getMetrics( SampleDataGroup.DICHOTOMOUS,
+                                                                                 StatisticGroup.DOUBLE_SCORE ) );
         }
         else
         {
             this.dichotomousScalar = null;
         }
         // Contingency table
-        if ( this.hasMetrics( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.MATRIX ) )
+        if ( this.hasMetrics( SampleDataGroup.DICHOTOMOUS, StatisticGroup.MATRIX ) )
         {
             this.dichotomousMatrix =
                     MetricFactory.ofDichotomousMatrixCollection( metricExecutor,
-                                                                 this.getMetrics( MetricInputGroup.DICHOTOMOUS,
-                                                                                  MetricOutputGroup.MATRIX ) );
+                                                                 this.getMetrics( SampleDataGroup.DICHOTOMOUS,
+                                                                                  StatisticGroup.MATRIX ) );
         }
         else
         {
@@ -455,19 +455,19 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
     }
 
     /**
-     * Returns a set of {@link MetricConstants} for a specified {@link MetricInputGroup} and {@link MetricOutputGroup}.
-     * If the specified {@link MetricInputGroup} is a {@link MetricInputGroup#ENSEMBLE} and this processor is already
+     * Returns a set of {@link MetricConstants} for a specified {@link SampleDataGroup} and {@link StatisticGroup}.
+     * If the specified {@link SampleDataGroup} is a {@link SampleDataGroup#ENSEMBLE} and this processor is already
      * computing single-valued metrics, then the {@link MetricConstants#SAMPLE_SIZE} is removed from the returned set,
      * in order to avoid duplication, since the {@link MetricConstants#SAMPLE_SIZE} belongs to both groups.
      * 
-     * @param inGroup the {@link MetricInputGroup}, may be null
-     * @param outGroup the {@link MetricOutputGroup}, may be null
-     * @return a set of {@link MetricConstants} for a specified {@link MetricInputGroup} and {@link MetricOutputGroup}
+     * @param inGroup the {@link SampleDataGroup}, may be null
+     * @param outGroup the {@link StatisticGroup}, may be null
+     * @return a set of {@link MetricConstants} for a specified {@link SampleDataGroup} and {@link StatisticGroup}
      *         or an empty array if both inputs are defined and no corresponding metrics are present
      */
 
-    MetricConstants[] getMetrics( MetricInputGroup inGroup,
-                                  MetricOutputGroup outGroup )
+    MetricConstants[] getMetrics( SampleDataGroup inGroup,
+                                  StatisticGroup outGroup )
     {
 
         // Unconditional set
@@ -486,7 +486,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
         }
 
         //Remove duplicate sample size
-        if ( inGroup == MetricInputGroup.ENSEMBLE && hasMetrics( MetricInputGroup.SINGLE_VALUED ) )
+        if ( inGroup == SampleDataGroup.ENSEMBLE && hasMetrics( SampleDataGroup.SINGLE_VALUED ) )
         {
             unconditional.remove( MetricConstants.SAMPLE_SIZE );
         }
@@ -503,7 +503,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
      * @return a sorted array of values or null
      */
 
-    double[] getSortedClimatology( MetricInput<?> input, Set<Threshold> thresholds )
+    double[] getSortedClimatology( SampleData<?> input, Set<Threshold> thresholds )
     {
         double[] sorted = null;
         if ( hasProbabilityThreshold( thresholds ) && input.hasClimatology() )

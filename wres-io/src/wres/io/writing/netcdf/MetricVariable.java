@@ -7,18 +7,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-import wres.datamodel.metadata.MetricOutputMetadata;
+import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.statistics.DoubleScoreOutput;
+import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 
 class MetricVariable
 {
-    static Collection<MetricVariable> getAll( Iterable<DoubleScoreOutput> metricResults)
+    static Collection<MetricVariable> getAll( Iterable<DoubleScoreStatistic> metricResults)
     {
         List<MetricVariable> variables = new ArrayList<>();
 
-        for (DoubleScoreOutput output : metricResults)
+        for (DoubleScoreStatistic output : metricResults)
         {
             variables.add( new MetricVariable( output ) );
         }
@@ -26,9 +26,9 @@ class MetricVariable
         return variables;
     }
 
-    private MetricVariable (final DoubleScoreOutput output)
+    private MetricVariable (final DoubleScoreStatistic output)
     {
-        MetricOutputMetadata metadata = output.getMetadata();
+        StatisticMetadata metadata = output.getMetadata();
         String metric = metadata.getMetricID().toString();
         OneOrTwoThresholds thresholds = metadata.getThresholds();
         TimeWindow timeWindow = metadata.getTimeWindow();
@@ -80,9 +80,9 @@ class MetricVariable
         }
     }
 
-    static String getName(final DoubleScoreOutput output)
+    static String getName(final DoubleScoreStatistic output)
     {
-        MetricOutputMetadata metadata = output.getMetadata();
+        StatisticMetadata metadata = output.getMetadata();
         // We start with the raw name of the metric
         String name = metadata.getMetricID().toString().replace(" ", "_");
 

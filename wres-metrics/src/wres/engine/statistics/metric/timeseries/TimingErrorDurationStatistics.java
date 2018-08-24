@@ -14,22 +14,22 @@ import java.util.function.ToDoubleFunction;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MissingValues;
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.sampledata.MetricInputException;
-import wres.datamodel.statistics.DurationScoreOutput;
-import wres.datamodel.statistics.PairedOutput;
+import wres.datamodel.metadata.StatisticMetadata;
+import wres.datamodel.sampledata.SampleDataException;
+import wres.datamodel.statistics.DurationScoreStatistic;
+import wres.datamodel.statistics.PairedStatistic;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 
 /**
  * A collection of summary statistics that operate on the outputs from {@link TimingError} and are expressed as 
- * {@link DurationScoreOutput}.
+ * {@link DurationScoreStatistic}.
  * 
  * TODO: consider implementing an API for summary statistics that works directly with {@link Duration}.
  * 
  * @author james.brown@hydrosolved.com
  */
-public class TimingErrorDurationStatistics implements Function<PairedOutput<Instant, Duration>, DurationScoreOutput>
+public class TimingErrorDurationStatistics implements Function<PairedStatistic<Instant, Duration>, DurationScoreStatistic>
 {
 
     /**
@@ -61,11 +61,11 @@ public class TimingErrorDurationStatistics implements Function<PairedOutput<Inst
 
 
     @Override
-    public DurationScoreOutput apply( PairedOutput<Instant, Duration> pairs )
+    public DurationScoreStatistic apply( PairedStatistic<Instant, Duration> pairs )
     {
         if ( Objects.isNull( pairs ) )
         {
-            throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
+            throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
         }
 
         // Map of outputs
@@ -96,7 +96,7 @@ public class TimingErrorDurationStatistics implements Function<PairedOutput<Inst
         }
 
         // Create output metadata with the identifier of the statistic as the component identifier
-        MetricOutputMetadata in = pairs.getMetadata();
+        StatisticMetadata in = pairs.getMetadata();
         MetricConstants singleIdentifier = null;
 
         // If the metric is defined with only one summary statistic, list this component in the metadata
@@ -106,8 +106,8 @@ public class TimingErrorDurationStatistics implements Function<PairedOutput<Inst
         }
         final MetricConstants componentID = singleIdentifier;
         
-        MetricOutputMetadata meta = MetricOutputMetadata.of( in, this.getID(), componentID );
-        return DurationScoreOutput.of( returnMe, meta );
+        StatisticMetadata meta = StatisticMetadata.of( in, this.getID(), componentID );
+        return DurationScoreStatistic.of( returnMe, meta );
     }
 
     /**

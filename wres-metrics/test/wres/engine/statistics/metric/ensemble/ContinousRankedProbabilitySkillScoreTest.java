@@ -14,14 +14,14 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.ScoreOutputGroup;
+import wres.datamodel.MetricConstants.ScoreGroup;
 import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Metadata;
-import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.sampledata.MetricInputException;
+import wres.datamodel.metadata.StatisticMetadata;
+import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.EnsemblePair;
 import wres.datamodel.sampledata.pairs.EnsemblePairs;
-import wres.datamodel.statistics.DoubleScoreOutput;
+import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 
@@ -77,15 +77,15 @@ public final class ContinousRankedProbabilitySkillScoreTest
                                                            Metadata.of() );
 
         //Metadata for the output
-        MetricOutputMetadata m1 =
-                MetricOutputMetadata.of( input.getRawData().size(),
+        StatisticMetadata m1 =
+                StatisticMetadata.of( input.getRawData().size(),
                                                    MeasurementUnit.of(),
                                                    MeasurementUnit.of(),
                                                    MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
                                                    MetricConstants.MAIN );
         //Check the results       
-        DoubleScoreOutput actual = crpss.apply( input );
-        DoubleScoreOutput expected = DoubleScoreOutput.of( 0.0779168348809044, m1 );
+        DoubleScoreStatistic actual = crpss.apply( input );
+        DoubleScoreStatistic expected = DoubleScoreStatistic.of( 0.0779168348809044, m1 );
 
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
@@ -109,7 +109,7 @@ public final class ContinousRankedProbabilitySkillScoreTest
                                              Metadata.of(),
                                              Metadata.of() );
 
-        DoubleScoreOutput actual = crpss.apply( input );
+        DoubleScoreStatistic actual = crpss.apply( input );
 
         assertTrue( actual.getData().isNaN() );
     }
@@ -153,7 +153,7 @@ public final class ContinousRankedProbabilitySkillScoreTest
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( crpss.getScoreOutputGroup() == ScoreOutputGroup.NONE );
+        assertTrue( crpss.getScoreOutputGroup() == ScoreGroup.NONE );
     }
 
     /**
@@ -197,7 +197,7 @@ public final class ContinousRankedProbabilitySkillScoreTest
     @Test
     public void testApplyExceptionOnNullInput()
     {
-        exception.expect( MetricInputException.class );
+        exception.expect( SampleDataException.class );
         exception.expectMessage( "Specify non-null input to the 'CONTINUOUS RANKED PROBABILITY SKILL SCORE'." );
 
         crpss.apply( null );
@@ -215,7 +215,7 @@ public final class ContinousRankedProbabilitySkillScoreTest
         exception.expect( MetricParameterException.class );
         exception.expectMessage( "Unsupported decomposition identifier 'LBR'." );
         
-        ContinuousRankedProbabilitySkillScore.of( ScoreOutputGroup.LBR );
+        ContinuousRankedProbabilitySkillScore.of( ScoreGroup.LBR );
     }
 
     /**
@@ -225,7 +225,7 @@ public final class ContinousRankedProbabilitySkillScoreTest
     @Test
     public void testExceptionOnInputWithMissingBaseline()
     {
-        exception.expect( MetricInputException.class );
+        exception.expect( SampleDataException.class );
         exception.expectMessage( "Specify a non-null baseline for the 'CONTINUOUS RANKED PROBABILITY SKILL SCORE'." );
         List<EnsemblePair> pairs = new ArrayList<>();
         pairs.add( EnsemblePair.of( 25.7, new double[] { 23, 43, 45, 23, 54 } ) );

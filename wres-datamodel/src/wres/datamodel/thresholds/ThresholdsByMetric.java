@@ -12,8 +12,8 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.MetricInputGroup;
-import wres.datamodel.MetricConstants.MetricOutputGroup;
+import wres.datamodel.MetricConstants.SampleDataGroup;
+import wres.datamodel.MetricConstants.StatisticGroup;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdGroup;
 
 /**
@@ -71,14 +71,14 @@ public class ThresholdsByMetric
      * <p>Returns a filtered view that contains the union of thresholds associated with metrics that belong to the 
      * specified group.</p> 
      * 
-     * <p>See {@link #filterByGroup(MetricConstants.MetricInputGroup, MetricConstants.MetricOutputGroup)} also.</p> 
+     * <p>See {@link #filterByGroup(MetricConstants.SampleDataGroup, MetricConstants.StatisticGroup)} also.</p> 
      * 
      * @param inGroup the input group
      * @return a filtered view by group
      * @throws NullPointerException if the input is null
      */
 
-    public ThresholdsByMetric filterByGroup( MetricInputGroup inGroup )
+    public ThresholdsByMetric filterByGroup( SampleDataGroup inGroup )
     {
         Objects.requireNonNull( inGroup, "Specify a non-null input group on which to filter." );
 
@@ -89,14 +89,14 @@ public class ThresholdsByMetric
      * <p>Returns a filtered view that contains the union of thresholds associated with metrics that belong to the 
      * specified group.</p>
      * 
-     * <p>See {@link #filterByGroup(MetricConstants.MetricInputGroup, MetricConstants.MetricOutputGroup)} also.</p>
+     * <p>See {@link #filterByGroup(MetricConstants.SampleDataGroup, MetricConstants.StatisticGroup)} also.</p>
      * 
      * @param outGroup the optional output group
      * @return a filtered view by group
      * @throws NullPointerException if the input is null
      */
 
-    public ThresholdsByMetric filterByGroup( MetricOutputGroup outGroup )
+    public ThresholdsByMetric filterByGroup( StatisticGroup outGroup )
     {
         Objects.requireNonNull( outGroup, "Specify a non-null output group on which to filter." );
 
@@ -159,7 +159,7 @@ public class ThresholdsByMetric
     /**
      * <p>Returns the composed thresholds associated with each metric in the container. A composed threshold is a 
      * {@link OneOrTwoThresholds} that contains two thresholds if the metric consumes 
-     * {@link MetricInputGroup#DICHOTOMOUS} and has {@link ThresholdGroup#PROBABILITY_CLASSIFIER},
+     * {@link SampleDataGroup#DICHOTOMOUS} and has {@link ThresholdGroup#PROBABILITY_CLASSIFIER},
      * otherwise one threshold.</p>
      * 
      * <p>Also see: {@link #unionOfOneOrTwoThresholds()}.</p>
@@ -187,7 +187,7 @@ public class ThresholdsByMetric
             Set<OneOrTwoThresholds> oneOrTwo = new HashSet<>();
 
             // Dichotomous metrics with classifiers
-            if ( next.isInGroup( MetricInputGroup.DICHOTOMOUS )
+            if ( next.isInGroup( SampleDataGroup.DICHOTOMOUS )
                  && this.hasType( ThresholdGroup.PROBABILITY_CLASSIFIER ) )
             {
                 // Classifiers
@@ -549,7 +549,7 @@ public class ThresholdsByMetric
      * @return a filtered view by group
      */
 
-    public ThresholdsByMetric filterByGroup( MetricInputGroup inGroup, MetricOutputGroup outGroup )
+    public ThresholdsByMetric filterByGroup( SampleDataGroup inGroup, StatisticGroup outGroup )
     {
         if ( Objects.isNull( inGroup ) && Objects.isNull( outGroup ) )
         {

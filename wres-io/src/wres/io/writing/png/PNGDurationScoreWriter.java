@@ -14,20 +14,20 @@ import wres.config.ProjectConfigPlus;
 import wres.config.generated.DestinationConfig;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
-import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.statistics.DurationScoreOutput;
-import wres.datamodel.statistics.ListOfMetricOutput;
+import wres.datamodel.metadata.StatisticMetadata;
+import wres.datamodel.statistics.DurationScoreStatistic;
+import wres.datamodel.statistics.ListOfStatistics;
 import wres.io.config.ConfigHelper;
 import wres.vis.ChartEngineFactory;
 
 /**
- * Helps write charts comprising {@link DurationScoreOutput} to a file in Portable Network Graphics (PNG) format.
+ * Helps write charts comprising {@link DurationScoreStatistic} to a file in Portable Network Graphics (PNG) format.
  * 
  * @author james.brown@hydrosolved.com
  */
 
 public class PNGDurationScoreWriter extends PNGWriter
-        implements Consumer<ListOfMetricOutput<DurationScoreOutput>>
+        implements Consumer<ListOfStatistics<DurationScoreStatistic>>
 {
 
     /**
@@ -53,7 +53,7 @@ public class PNGDurationScoreWriter extends PNGWriter
      */
 
     @Override
-    public void accept( final ListOfMetricOutput<DurationScoreOutput> output )
+    public void accept( final ListOfStatistics<DurationScoreStatistic> output )
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing diagram outputs." );
 
@@ -78,8 +78,8 @@ public class PNGDurationScoreWriter extends PNGWriter
     }
 
     /**
-     * Writes a set of charts associated with {@link DurationScoreOutput} for a single metric and time window,
-     * stored in a {@link ListOfMetricOutput}.
+     * Writes a set of charts associated with {@link DurationScoreStatistic} for a single metric and time window,
+     * stored in a {@link ListOfStatistics}.
      *
      * @param projectConfigPlus the project configuration
      * @param destinationConfig the destination configuration for the written output
@@ -89,12 +89,12 @@ public class PNGDurationScoreWriter extends PNGWriter
 
     private static void writeScoreCharts( ProjectConfigPlus projectConfigPlus,
                                           DestinationConfig destinationConfig,
-                                          ListOfMetricOutput<DurationScoreOutput> output )
+                                          ListOfStatistics<DurationScoreStatistic> output )
     {
         // Build charts
         try
         {
-            MetricOutputMetadata meta = output.getData().get( 0 ).getMetadata();
+            StatisticMetadata meta = output.getData().get( 0 ).getMetadata();
 
             GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, destinationConfig, meta.getMetricID() );
 

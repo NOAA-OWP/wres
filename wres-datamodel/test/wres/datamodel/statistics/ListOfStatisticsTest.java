@@ -25,23 +25,23 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.Slicer;
 import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.MetricOutputMetadata;
+import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.statistics.DoubleScoreOutput;
-import wres.datamodel.statistics.ListOfMetricOutput;
-import wres.datamodel.statistics.MetricOutputException;
-import wres.datamodel.statistics.ListOfMetricOutput.ListOfMetricOutputBuilder;
+import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.ListOfStatistics;
+import wres.datamodel.statistics.StatisticException;
+import wres.datamodel.statistics.ListOfStatistics.ListOfStatisticsBuilder;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 
 /**
- * Tests the {@link ListOfMetricOutput}.
+ * Tests the {@link ListOfStatistics}.
  * 
  * @author james.brown@hydrosolveDataFactory.com
  */
-public final class ListOfMetricOutputTest
+public final class ListOfStatisticsTest
 {
 
     @Rule
@@ -51,13 +51,13 @@ public final class ListOfMetricOutputTest
      * Instance of some output metadata to use in testing.
      */
 
-    private MetricOutputMetadata metadata;
+    private StatisticMetadata metadata;
 
 
     @Before
     public void runBeforeEachTest()
     {
-        metadata = MetricOutputMetadata.of( 0,
+        metadata = StatisticMetadata.of( 0,
                                             MeasurementUnit.of(),
                                             MeasurementUnit.of(),
                                             MetricConstants.BIAS_FRACTION,
@@ -65,45 +65,45 @@ public final class ListOfMetricOutputTest
     }
 
     /**
-     * Tests the construction of a {@link ListOfMetricOutput} using the 
-     * {@link ListOfMetricOutput#of(List, MetricOutputMetadata)}
+     * Tests the construction of a {@link ListOfStatistics} using the 
+     * {@link ListOfStatistics#of(List, StatisticMetadata)}
      */
 
     @Test
     public void testBuild()
     {
-        assertNotNull( ListOfMetricOutput.of( Collections.emptyList() ) );
+        assertNotNull( ListOfStatistics.of( Collections.emptyList() ) );
     }
 
     /**
-     * Tests the construction of a {@link ListOfMetricOutput} using the 
-     * {@link ListOfMetricOutputBuilder}.
+     * Tests the construction of a {@link ListOfStatistics} using the 
+     * {@link ListOfStatisticsBuilder}.
      */
 
     @Test
     public void testBuildUsingBuilder()
     {
-        ListOfMetricOutputBuilder<DoubleScoreOutput> builder = new ListOfMetricOutputBuilder<>();
+        ListOfStatisticsBuilder<DoubleScoreStatistic> builder = new ListOfStatisticsBuilder<>();
 
-        ListOfMetricOutput<DoubleScoreOutput> actualOutput =
-                builder.addOutput( DoubleScoreOutput.of( 0.1, metadata ) ).build();
+        ListOfStatistics<DoubleScoreStatistic> actualOutput =
+                builder.addStatistic( DoubleScoreStatistic.of( 0.1, metadata ) ).build();
 
-        ListOfMetricOutput<DoubleScoreOutput> expectedOutput =
-                ListOfMetricOutput.of( Arrays.asList( DoubleScoreOutput.of( 0.1, metadata ) ) );
+        ListOfStatistics<DoubleScoreStatistic> expectedOutput =
+                ListOfStatistics.of( Arrays.asList( DoubleScoreStatistic.of( 0.1, metadata ) ) );
 
         assertEquals( actualOutput, expectedOutput );
     }
 
     /**
-     * Tests the incremental construction of a {@link ListOfMetricOutput} using the 
-     * {@link ListOfMetricOutputBuilder} with multiple threads operating concurrently.
+     * Tests the incremental construction of a {@link ListOfStatistics} using the 
+     * {@link ListOfStatisticsBuilder} with multiple threads operating concurrently.
      */
 
     @Test
     public void testBuildUsingBuilderWithMultipleThreads()
     {
-        ListOfMetricOutputBuilder<DoubleScoreOutput> builder =
-                new ListOfMetricOutputBuilder<DoubleScoreOutput>();
+        ListOfStatisticsBuilder<DoubleScoreStatistic> builder =
+                new ListOfStatisticsBuilder<DoubleScoreStatistic>();
 
         // Initialize 100 futures that add results to the builder
         SortedSet<Double> expectedOutput = new TreeSet<>();
@@ -118,7 +118,7 @@ public final class ListOfMetricOutputTest
                 double next = i;
                 expectedOutput.add( next );
                 futures[i] =
-                        CompletableFuture.supplyAsync( () -> builder.addOutput( DoubleScoreOutput.of( next,
+                        CompletableFuture.supplyAsync( () -> builder.addStatistic( DoubleScoreStatistic.of( next,
                                                                                                       metadata ) ),
                                                        service );
             }
@@ -141,8 +141,8 @@ public final class ListOfMetricOutputTest
     }
 
     /**
-     * Tests that construction of a {@link ListOfMetricOutput} using the 
-     * {@link ListOfMetricOutput#of(List, MetricOutputMetadata)} throws an exception when the outputs are null.
+     * Tests that construction of a {@link ListOfStatistics} using the 
+     * {@link ListOfStatistics#of(List, StatisticMetadata)} throws an exception when the outputs are null.
      */
 
     @Test
@@ -152,23 +152,23 @@ public final class ListOfMetricOutputTest
 
         exception.expectMessage( "Specify a non-null list of outputs." );
 
-        ListOfMetricOutput.of( null );
+        ListOfStatistics.of( null );
     }
 
     /**
-     * Tests that construction of a {@link ListOfMetricOutput} using the 
-     * {@link ListOfMetricOutput#of(List, MetricOutputMetadata)} throws an exception when one or more of the listed 
+     * Tests that construction of a {@link ListOfStatistics} using the 
+     * {@link ListOfStatistics#of(List, StatisticMetadata)} throws an exception when one or more of the listed 
      * outputs is null.
      */
 
     @Test
     public void testCannotBuildWithOneOrMoreNullOutputs()
     {
-        exception.expect( MetricOutputException.class );
+        exception.expect( StatisticException.class );
 
         exception.expectMessage( "Cannot build a list of outputs with one or more null entries." );
 
-        ListOfMetricOutput.of( Collections.singletonList( null ) );
+        ListOfStatistics.of( Collections.singletonList( null ) );
     }
 
     /**
@@ -180,28 +180,28 @@ public final class ListOfMetricOutputTest
     {
         exception.expect( UnsupportedOperationException.class );
 
-        ListOfMetricOutput<DoubleScoreOutput> list =
-                ListOfMetricOutput.of( Arrays.asList( DoubleScoreOutput.of( 0.1, metadata ) ) );
+        ListOfStatistics<DoubleScoreStatistic> list =
+                ListOfStatistics.of( Arrays.asList( DoubleScoreStatistic.of( 0.1, metadata ) ) );
 
         // Removing an element throws an exception
         list.iterator().remove();
     }
 
     /**
-     * Tests that the expected data is returned by {@link ListOfMetricOutput#getData()}.
+     * Tests that the expected data is returned by {@link ListOfStatistics#getData()}.
      */
 
     @Test
     public void testGetData()
     {
-        ListOfMetricOutput<DoubleScoreOutput> list =
-                ListOfMetricOutput.of( Arrays.asList( DoubleScoreOutput.of( 0.1, metadata ) ) );
+        ListOfStatistics<DoubleScoreStatistic> list =
+                ListOfStatistics.of( Arrays.asList( DoubleScoreStatistic.of( 0.1, metadata ) ) );
 
-        assertEquals( list.getData(), Arrays.asList( DoubleScoreOutput.of( 0.1, metadata ) ) );
+        assertEquals( list.getData(), Arrays.asList( DoubleScoreStatistic.of( 0.1, metadata ) ) );
     }
 
     /**
-     * Tests that mutations to the data returned by {@link ListOfMetricOutput#getData()} are not allowed.
+     * Tests that mutations to the data returned by {@link ListOfStatistics#getData()} are not allowed.
      */
 
     @Test
@@ -209,14 +209,14 @@ public final class ListOfMetricOutputTest
     {
         exception.expect( UnsupportedOperationException.class );
 
-        ListOfMetricOutput<DoubleScoreOutput> list =
-                ListOfMetricOutput.of( Arrays.asList( DoubleScoreOutput.of( 0.1, metadata ) ) );
+        ListOfStatistics<DoubleScoreStatistic> list =
+                ListOfStatistics.of( Arrays.asList( DoubleScoreStatistic.of( 0.1, metadata ) ) );
 
-        list.getData().add( DoubleScoreOutput.of( 0.1, metadata ) );
+        list.getData().add( DoubleScoreStatistic.of( 0.1, metadata ) );
     }
 
     /**
-     * Tests the {@link ListOfMetricOutput#equals(Object)}.
+     * Tests the {@link ListOfStatistics#equals(Object)}.
      */
 
     @SuppressWarnings( "unlikely-arg-type" )
@@ -224,22 +224,22 @@ public final class ListOfMetricOutputTest
     public void testEquals()
     {
         // Reflexive 
-        ListOfMetricOutput<DoubleScoreOutput> first =
-                ListOfMetricOutput.of( Arrays.asList( DoubleScoreOutput.of( 0.1, metadata ) ) );
+        ListOfStatistics<DoubleScoreStatistic> first =
+                ListOfStatistics.of( Arrays.asList( DoubleScoreStatistic.of( 0.1, metadata ) ) );
 
         assertTrue( "The output list does not meet the equals contract for reflexivity.",
                     first.equals( first ) );
 
         // Symmetric
-        ListOfMetricOutput<DoubleScoreOutput> second =
-                ListOfMetricOutput.of( Arrays.asList( DoubleScoreOutput.of( 0.1, metadata ) ) );
+        ListOfStatistics<DoubleScoreStatistic> second =
+                ListOfStatistics.of( Arrays.asList( DoubleScoreStatistic.of( 0.1, metadata ) ) );
 
         assertTrue( "The output list does not meet the equals contract for symmetry.",
                     second.equals( first ) && first.equals( second ) );
 
         // Transitive
-        ListOfMetricOutput<DoubleScoreOutput> third =
-                ListOfMetricOutput.of( Arrays.asList( DoubleScoreOutput.of( 0.1, metadata ) ) );
+        ListOfStatistics<DoubleScoreStatistic> third =
+                ListOfStatistics.of( Arrays.asList( DoubleScoreStatistic.of( 0.1, metadata ) ) );
 
         assertTrue( "The output list does not meet the equals contract for transitivity.",
                     first.equals( third ) && third.equals( second ) && first.equals( second ) );
@@ -257,8 +257,8 @@ public final class ListOfMetricOutputTest
         // Check unequal cases
 
         // Unequal on data
-        ListOfMetricOutput<DoubleScoreOutput> fourth =
-                ListOfMetricOutput.of( Arrays.asList( DoubleScoreOutput.of( 0.2, metadata ) ) );
+        ListOfStatistics<DoubleScoreStatistic> fourth =
+                ListOfStatistics.of( Arrays.asList( DoubleScoreStatistic.of( 0.2, metadata ) ) );
 
         assertFalse( "Expected unequal data.", first.equals( fourth ) );
 
@@ -268,18 +268,18 @@ public final class ListOfMetricOutputTest
     }
 
     /**
-     * Tests the {@link ListOfMetricOutput#hashCode()}.
+     * Tests the {@link ListOfStatistics#hashCode()}.
      */
 
     @Test
     public void testHashCode()
     {
         // Consistent with equals
-        ListOfMetricOutput<DoubleScoreOutput> first =
-                ListOfMetricOutput.of( Arrays.asList( DoubleScoreOutput.of( 0.1, metadata ) ) );
+        ListOfStatistics<DoubleScoreStatistic> first =
+                ListOfStatistics.of( Arrays.asList( DoubleScoreStatistic.of( 0.1, metadata ) ) );
 
-        ListOfMetricOutput<DoubleScoreOutput> second =
-                ListOfMetricOutput.of( Arrays.asList( DoubleScoreOutput.of( 0.1, metadata ) ) );
+        ListOfStatistics<DoubleScoreStatistic> second =
+                ListOfStatistics.of( Arrays.asList( DoubleScoreStatistic.of( 0.1, metadata ) ) );
 
         assertTrue( "The hashcode of the output list is inconsistent with equals.",
                     first.equals( second ) && first.hashCode() == second.hashCode() );
@@ -293,7 +293,7 @@ public final class ListOfMetricOutputTest
     }
 
     /**
-     * Tests the {@link ListOfMetricOutput#toString()}.
+     * Tests the {@link ListOfStatistics#toString()}.
      */
 
     @Test
@@ -314,17 +314,17 @@ public final class ListOfMetricOutputTest
                                                      Operator.GREATER,
                                                      ThresholdDataType.LEFT ) );
 
-        ListOfMetricOutput<DoubleScoreOutput> listOfOutputs =
-                ListOfMetricOutput.of( Arrays.asList( DoubleScoreOutput.of( 0.1,
-                                                                            MetricOutputMetadata.of( metadata,
+        ListOfStatistics<DoubleScoreStatistic> listOfOutputs =
+                ListOfStatistics.of( Arrays.asList( DoubleScoreStatistic.of( 0.1,
+                                                                            StatisticMetadata.of( metadata,
                                                                                                      window,
                                                                                                      thresholdOne ) ),
-                                                      DoubleScoreOutput.of( 0.2,
-                                                                            MetricOutputMetadata.of( metadata,
+                                                      DoubleScoreStatistic.of( 0.2,
+                                                                            StatisticMetadata.of( metadata,
                                                                                                      window,
                                                                                                      thresholdTwo ) ),
-                                                      DoubleScoreOutput.of( 0.3,
-                                                                            MetricOutputMetadata.of( metadata,
+                                                      DoubleScoreStatistic.of( 0.3,
+                                                                            StatisticMetadata.of( metadata,
                                                                                                      window,
                                                                                                      thresholdThree ) ) ) );
 

@@ -3,18 +3,18 @@ package wres.engine.statistics.metric;
 import java.util.Objects;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.ScoreOutputGroup;
-import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.sampledata.MetricInput;
-import wres.datamodel.sampledata.MetricInputException;
-import wres.datamodel.statistics.DoubleScoreOutput;
+import wres.datamodel.MetricConstants.ScoreGroup;
+import wres.datamodel.metadata.StatisticMetadata;
+import wres.datamodel.sampledata.SampleData;
+import wres.datamodel.sampledata.SampleDataException;
+import wres.datamodel.statistics.DoubleScoreStatistic;
 
 /**
  * Constructs a {@link Metric} that returns the sample size.
  * 
  * @author james.brown@hydrosolved.com
  */
-class SampleSize<S extends MetricInput<?>> extends OrdinaryScore<S, DoubleScoreOutput>
+class SampleSize<S extends SampleData<?>> extends OrdinaryScore<S, DoubleScoreStatistic>
 {
 
     /**
@@ -24,20 +24,20 @@ class SampleSize<S extends MetricInput<?>> extends OrdinaryScore<S, DoubleScoreO
      * @return an instance
      */
 
-    public static <S extends MetricInput<?>> SampleSize<S> of()
+    public static <S extends SampleData<?>> SampleSize<S> of()
     {
         return new SampleSize<>();
     }
 
     @Override
-    public DoubleScoreOutput apply( S s )
+    public DoubleScoreStatistic apply( S s )
     {
         if ( Objects.isNull( s ) )
         {
-            throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
+            throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
         }
-        return DoubleScoreOutput.of( (double) s.getRawData().size(),
-                                     MetricOutputMetadata.of( s.getMetadata(),
+        return DoubleScoreStatistic.of( (double) s.getRawData().size(),
+                                     StatisticMetadata.of( s.getMetadata(),
                                                          this.getID(),
                                                          MetricConstants.MAIN,
                                                          this.hasRealUnits(),
@@ -64,9 +64,9 @@ class SampleSize<S extends MetricInput<?>> extends OrdinaryScore<S, DoubleScoreO
     }
 
     @Override
-    public ScoreOutputGroup getScoreOutputGroup()
+    public ScoreGroup getScoreOutputGroup()
     {
-        return ScoreOutputGroup.NONE;
+        return ScoreGroup.NONE;
     }
 
     @Override

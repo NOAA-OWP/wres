@@ -11,16 +11,16 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.ScoreOutputGroup;
+import wres.datamodel.MetricConstants.ScoreGroup;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.Metadata;
-import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.sampledata.MetricInputException;
+import wres.datamodel.metadata.StatisticMetadata;
+import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.DichotomousPairs;
-import wres.datamodel.statistics.DoubleScoreOutput;
-import wres.datamodel.statistics.MatrixOutput;
+import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.MatrixStatistic;
 import wres.engine.statistics.metric.Collectable;
 import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricParameterException;
@@ -48,13 +48,13 @@ public final class ProbabilityOfDetectionTest
      * Metadata used for testing.
      */
 
-    private MetricOutputMetadata meta;
+    private StatisticMetadata meta;
 
     @Before
     public void setUpBeforeEachTest() throws MetricParameterException
     {
         pod = ProbabilityOfDetection.of();
-        meta = MetricOutputMetadata.of( 365,
+        meta = StatisticMetadata.of( 365,
                                                   MeasurementUnit.of(),
                                                   MeasurementUnit.of(),
                                                   MetricConstants.PROBABILITY_OF_DETECTION,
@@ -75,8 +75,8 @@ public final class ProbabilityOfDetectionTest
         final DichotomousPairs input = MetricTestDataFactory.getDichotomousPairsOne();
 
         //Check the results
-        final DoubleScoreOutput actual = pod.apply( input );
-        final DoubleScoreOutput expected = DoubleScoreOutput.of( 0.780952380952381, meta );
+        final DoubleScoreStatistic actual = pod.apply( input );
+        final DoubleScoreStatistic expected = DoubleScoreStatistic.of( 0.780952380952381, meta );
         assertTrue( "Actual: " + actual.getData().doubleValue()
                     + ". Expected: "
                     + expected.getData().doubleValue()
@@ -95,7 +95,7 @@ public final class ProbabilityOfDetectionTest
         DichotomousPairs input =
                 DichotomousPairs.ofDichotomousPairs( Arrays.asList(), Metadata.of() );
 
-        DoubleScoreOutput actual = pod.apply( input );
+        DoubleScoreStatistic actual = pod.apply( input );
 
         assertTrue( actual.getData().isNaN() );
     }
@@ -137,7 +137,7 @@ public final class ProbabilityOfDetectionTest
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( pod.getScoreOutputGroup() == ScoreOutputGroup.NONE );
+        assertTrue( pod.getScoreOutputGroup() == ScoreGroup.NONE );
     }
 
     /**
@@ -158,9 +158,9 @@ public final class ProbabilityOfDetectionTest
     @Test
     public void testExceptionOnNullInput()
     {
-        exception.expect( MetricInputException.class );
+        exception.expect( SampleDataException.class );
         exception.expectMessage( "Specify non-null input to the '" + pod.getName() + "'." );
-        pod.aggregate( (MatrixOutput) null );
+        pod.aggregate( (MatrixStatistic) null );
     }
 
 }

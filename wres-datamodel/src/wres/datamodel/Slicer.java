@@ -20,7 +20,7 @@ import java.util.function.Predicate;
 import java.util.function.ToDoubleFunction;
 import java.util.stream.Collectors;
 
-import wres.datamodel.metadata.MetricOutputMetadata;
+import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.sampledata.pairs.DichotomousPair;
 import wres.datamodel.sampledata.pairs.DichotomousPairs;
@@ -34,9 +34,9 @@ import wres.datamodel.sampledata.pairs.TimeSeriesOfEnsemblePairs;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfEnsemblePairs.TimeSeriesOfEnsemblePairsBuilder;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs.TimeSeriesOfSingleValuedPairsBuilder;
-import wres.datamodel.statistics.ListOfMetricOutput;
-import wres.datamodel.statistics.MetricOutput;
-import wres.datamodel.statistics.ScoreOutput;
+import wres.datamodel.statistics.ListOfStatistics;
+import wres.datamodel.statistics.Statistic;
+import wres.datamodel.statistics.ScoreStatistic;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdType;
@@ -947,7 +947,7 @@ public final class Slicer
     }
 
     /**
-     * <p>Returns a subset of metric outputs whose {@link MetricOutputMetadata} matches the supplied predicate. For 
+     * <p>Returns a subset of metric outputs whose {@link StatisticMetadata} matches the supplied predicate. For 
      * example, to filter by a particular {@link TimeWindow} and {@link OneOrTwoThresholds} associated with the 
      * output metadata:</p>
      * 
@@ -961,8 +961,8 @@ public final class Slicer
      * @throws NullPointerException if the input list is null or the predicate is null
      */
 
-    public static <T extends MetricOutput<?>> ListOfMetricOutput<T> filter( ListOfMetricOutput<T> outputs,
-                                                                            Predicate<MetricOutputMetadata> predicate )
+    public static <T extends Statistic<?>> ListOfStatistics<T> filter( ListOfStatistics<T> outputs,
+                                                                            Predicate<StatisticMetadata> predicate )
     {
         Objects.requireNonNull( outputs, NULL_INPUT_EXCEPTION );
 
@@ -979,11 +979,11 @@ public final class Slicer
             }
         }
 
-        return ListOfMetricOutput.of( Collections.unmodifiableList( results ) );
+        return ListOfStatistics.of( Collections.unmodifiableList( results ) );
     }
 
     /**
-     * <p>Discovers the unique instances of a given type associated with a {@link ListOfMetricOutput}. The mapper 
+     * <p>Discovers the unique instances of a given type associated with a {@link ListOfStatistics}. The mapper 
      * function identifies the type to discover. For example, to discover the unique thresholds contained in the list of
      * outputs:</p>
      * 
@@ -1009,7 +1009,7 @@ public final class Slicer
      * @throws NullPointerException if the input list is null or the mapper is null
      */
 
-    public static <S extends MetricOutput<?>, T extends Object> SortedSet<T> discover( ListOfMetricOutput<S> outputs,
+    public static <S extends Statistic<?>, T extends Object> SortedSet<T> discover( ListOfStatistics<S> outputs,
                                                                                        Function<S, T> mapper )
     {
         Objects.requireNonNull( outputs, NULL_INPUT_EXCEPTION );
@@ -1036,7 +1036,7 @@ public final class Slicer
      * @return the first available output that matches the input identifier or null if no such output is available
      */
 
-    public static <T extends MetricOutput<?>> ListOfMetricOutput<T> filter( ListOfMetricOutput<T> outputs,
+    public static <T extends Statistic<?>> ListOfStatistics<T> filter( ListOfStatistics<T> outputs,
                                                                             MetricConstants metricIdentifier )
     {
         Objects.requireNonNull( outputs, NULL_INPUT_EXCEPTION );
@@ -1066,7 +1066,7 @@ public final class Slicer
     }
 
     /**
-     * Returns a map of {@link ScoreOutput} for each component in the input map of {@link ScoreOutput}. The slices are 
+     * Returns a map of {@link ScoreStatistic} for each component in the input map of {@link ScoreStatistic}. The slices are 
      * mapped to their {@link MetricConstants} component identifier.
      * 
      * @param <T> the score component type
@@ -1075,12 +1075,12 @@ public final class Slicer
      * @throws NullPointerException if the input is null
      */
 
-    public static <T extends ScoreOutput<?, T>> Map<MetricConstants, ListOfMetricOutput<T>>
-            filterByMetricComponent( ListOfMetricOutput<T> input )
+    public static <T extends ScoreStatistic<?, T>> Map<MetricConstants, ListOfStatistics<T>>
+            filterByMetricComponent( ListOfStatistics<T> input )
     {
         Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
 
-        Map<MetricConstants, ListOfMetricOutput<T>> returnMe = new EnumMap<>( MetricConstants.class );
+        Map<MetricConstants, ListOfStatistics<T>> returnMe = new EnumMap<>( MetricConstants.class );
         
         // Find the components
         SortedSet<MetricConstants> components = new TreeSet<>();
@@ -1098,7 +1098,7 @@ public final class Slicer
                     listOfComponent.add( nextItem.getComponent( nextComponent ) );
                 }
             }
-            returnMe.put( nextComponent, ListOfMetricOutput.of( listOfComponent ) );
+            returnMe.put( nextComponent, ListOfStatistics.of( listOfComponent ) );
         }
 
         return Collections.unmodifiableMap( returnMe );

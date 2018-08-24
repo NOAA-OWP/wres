@@ -28,14 +28,14 @@ import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.MetricOutputMetadata;
+import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.statistics.DoubleScoreOutput;
-import wres.datamodel.statistics.DurationScoreOutput;
-import wres.datamodel.statistics.ListOfMetricOutput;
-import wres.datamodel.statistics.MetricOutputAccessException;
-import wres.datamodel.statistics.MetricOutputForProject;
+import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.DurationScoreStatistic;
+import wres.datamodel.statistics.ListOfStatistics;
+import wres.datamodel.statistics.StatisticAccessException;
+import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
@@ -49,25 +49,25 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTestHelpe
 {
 
     /**
-     * Tests the writing of {@link DoubleScoreOutput} to file.
+     * Tests the writing of {@link DoubleScoreStatistic} to file.
      * 
      * @throws ProjectConfigException if the project configuration is incorrect
      * @throws IOException if the output could not be written
      * @throws InterruptedException if the process is interrupted
      * @throws ExecutionException if the execution fails
-     * @throws MetricOutputAccessException if the metric output could not be accessed
+     * @throws StatisticAccessException if the metric output could not be accessed
      */
 
     @Test
     public void writeDoubleScores()
             throws IOException, InterruptedException,
-            ExecutionException, MetricOutputAccessException
+            ExecutionException, StatisticAccessException
     {
 
         // location id
         final String LID = "DRRC2";
 
-        MetricOutputForProject.MetricOutputForProjectBuilder outputBuilder =
+        StatisticsForProject.StatisticsForProjectBuilder outputBuilder =
                 DataFactory.ofMetricOutputForProjectByTimeAndThreshold();
 
         TimeWindow timeOne = TimeWindow.of( Instant.MIN, Instant.MAX, ReferenceTime.VALID_TIME, Duration.ofHours( 1 ) );
@@ -82,8 +82,8 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTestHelpe
         DatasetIdentifier datasetIdentifier =
                 DatasetIdentifier.of( Location.of( LID ), "SQIN", "HEFS", "ESP" );
 
-        MetricOutputMetadata fakeMetadataA =
-                MetricOutputMetadata.of( 1000,
+        StatisticMetadata fakeMetadataA =
+                StatisticMetadata.of( 1000,
                                          MeasurementUnit.of(),
                                          MeasurementUnit.of( "CMS" ),
                                          MetricConstants.MEAN_SQUARE_ERROR,
@@ -92,8 +92,8 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTestHelpe
                                          timeOne,
                                          threshold,
                                          null  );
-        MetricOutputMetadata fakeMetadataB =
-                MetricOutputMetadata.of( 1000,
+        StatisticMetadata fakeMetadataB =
+                StatisticMetadata.of( 1000,
                                          MeasurementUnit.of(),
                                          MeasurementUnit.of( "CMS" ),
                                          MetricConstants.MEAN_ERROR,
@@ -102,8 +102,8 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTestHelpe
                                          timeOne,
                                          threshold,
                                          null  );
-        MetricOutputMetadata fakeMetadataC =
-                MetricOutputMetadata.of( 1000,
+        StatisticMetadata fakeMetadataC =
+                StatisticMetadata.of( 1000,
                                          MeasurementUnit.of(),
                                          MeasurementUnit.of( "CMS" ),
                                          MetricConstants.MEAN_ABSOLUTE_ERROR,
@@ -113,30 +113,30 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTestHelpe
                                          threshold,
                                          null  );
 
-        List<DoubleScoreOutput> fakeOutputs = new ArrayList<>();
-        fakeOutputs.add( DoubleScoreOutput.of( 1.0, fakeMetadataA ) );
-        fakeOutputs.add( DoubleScoreOutput.of( 2.0, fakeMetadataB ) );
-        fakeOutputs.add( DoubleScoreOutput.of( 3.0, fakeMetadataC ) );
+        List<DoubleScoreStatistic> fakeOutputs = new ArrayList<>();
+        fakeOutputs.add( DoubleScoreStatistic.of( 1.0, fakeMetadataA ) );
+        fakeOutputs.add( DoubleScoreStatistic.of( 2.0, fakeMetadataB ) );
+        fakeOutputs.add( DoubleScoreStatistic.of( 3.0, fakeMetadataC ) );
 
         // Fake output wrapper.
-        ListOfMetricOutput<DoubleScoreOutput> fakeOutputData =
-                ListOfMetricOutput.of( fakeOutputs );
+        ListOfStatistics<DoubleScoreStatistic> fakeOutputData =
+                ListOfStatistics.of( fakeOutputs );
 
         // Wrap outputs in future
-        Future<ListOfMetricOutput<DoubleScoreOutput>> outputMapByMetricFuture =
+        Future<ListOfStatistics<DoubleScoreStatistic>> outputMapByMetricFuture =
                 CompletableFuture.completedFuture( fakeOutputData );
 
         outputBuilder.addDoubleScoreOutput( outputMapByMetricFuture );
 
-        MetricOutputForProject output = outputBuilder.build();
+        StatisticsForProject output = outputBuilder.build();
 
         // Construct a fake configuration file.
         Feature feature = getMockedFeature( LID );
         ProjectConfig projectConfig = this.getMockedProjectConfig( feature );
 
         // Begin the actual test now that we have constructed dependencies.
-        CommaSeparatedScoreWriter<DoubleScoreOutput> writer = CommaSeparatedScoreWriter.of( projectConfig );
-        writer.accept( output.getDoubleScoreOutput() );
+        CommaSeparatedScoreWriter<DoubleScoreStatistic> writer = CommaSeparatedScoreWriter.of( projectConfig );
+        writer.accept( output.getDoubleScoreStatistics() );
 
         // Read the file, verify it has what we wanted:
         Path pathToFirstFile = Paths.get( System.getProperty( "java.io.tmpdir" ),
@@ -174,26 +174,26 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTestHelpe
     }
 
     /**
-     * Tests the writing of {@link DurationScoreOutput} to file.
+     * Tests the writing of {@link DurationScoreStatistic} to file.
      * 
      * @throws ProjectConfigException if the project configuration is incorrect
      * @throws IOException if the output could not be written
      * @throws InterruptedException if the process is interrupted
      * @throws ExecutionException if the execution fails
-     * @throws MetricOutputAccessException if the metric output could not be accessed
+     * @throws StatisticAccessException if the metric output could not be accessed
      */
 
     @Test
     public void writeDurationScores()
             throws IOException, InterruptedException,
-            ExecutionException, MetricOutputAccessException
+            ExecutionException, StatisticAccessException
     {
 
         // location id
         final String LID = "DOLC2";
 
         // Create fake outputs
-        MetricOutputForProject.MetricOutputForProjectBuilder outputBuilder =
+        StatisticsForProject.StatisticsForProjectBuilder outputBuilder =
                 DataFactory.ofMetricOutputForProjectByTimeAndThreshold();
 
         TimeWindow timeOne =
@@ -214,8 +214,8 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTestHelpe
         DatasetIdentifier datasetIdentifier =
                 DatasetIdentifier.of( Location.of( LID ), "SQIN", "HEFS", "ESP" );
 
-        MetricOutputMetadata fakeMetadata =
-                MetricOutputMetadata.of( 1000,
+        StatisticMetadata fakeMetadata =
+                StatisticMetadata.of( 1000,
                                          MeasurementUnit.of(),
                                          MeasurementUnit.of( "CMS" ),
                                          MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
@@ -231,25 +231,25 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTestHelpe
         fakeOutputs.put( MetricConstants.MAXIMUM, Duration.ofHours( 3 ) );
 
         // Fake output wrapper.
-        ListOfMetricOutput<DurationScoreOutput> fakeOutputData =
-                ListOfMetricOutput.of( Collections.singletonList( DurationScoreOutput.of( fakeOutputs,
+        ListOfStatistics<DurationScoreStatistic> fakeOutputData =
+                ListOfStatistics.of( Collections.singletonList( DurationScoreStatistic.of( fakeOutputs,
                                                                                           fakeMetadata ) ) );
 
         // wrap outputs in future
-        Future<ListOfMetricOutput<DurationScoreOutput>> outputMapByMetricFuture =
+        Future<ListOfStatistics<DurationScoreStatistic>> outputMapByMetricFuture =
                 CompletableFuture.completedFuture( fakeOutputData );
 
-        outputBuilder.addDurationScoreOutput( outputMapByMetricFuture );
+        outputBuilder.addDurationScoreStatistics( outputMapByMetricFuture );
 
-        MetricOutputForProject output = outputBuilder.build();
+        StatisticsForProject output = outputBuilder.build();
 
         // Construct a fake configuration file.
         Feature feature = getMockedFeature( LID );
         ProjectConfig projectConfig = getMockedProjectConfig( feature );
 
         // Begin the actual test now that we have constructed dependencies.
-        CommaSeparatedScoreWriter<DurationScoreOutput> writer = CommaSeparatedScoreWriter.of( projectConfig );
-        writer.accept( output.getDurationScoreOutput() );
+        CommaSeparatedScoreWriter<DurationScoreStatistic> writer = CommaSeparatedScoreWriter.of( projectConfig );
+        writer.accept( output.getDurationScoreStatistics() );
 
         // read the file, verify it has what we wanted:
         Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ),
@@ -266,27 +266,27 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTestHelpe
     }
 
     /**
-     * Tests the writing of {@link DoubleScoreOutput} to file where the output is not square (i.e. contains missing
+     * Tests the writing of {@link DoubleScoreStatistic} to file where the output is not square (i.e. contains missing
      * data).
      * 
      * @throws ProjectConfigException if the project configuration is incorrect
      * @throws IOException if the output could not be written
      * @throws InterruptedException if the process is interrupted
      * @throws ExecutionException if the execution fails
-     * @throws MetricOutputAccessException if the metric output could not be accessed
+     * @throws StatisticAccessException if the metric output could not be accessed
      */
 
     @Test
     public void writeDoubleScoresWithMissingData()
             throws IOException, InterruptedException,
-            ExecutionException, MetricOutputAccessException
+            ExecutionException, StatisticAccessException
     {
 
         // location id
         final String LID = "FTSC1";
 
         // Create fake outputs
-        MetricOutputForProject.MetricOutputForProjectBuilder outputBuilder =
+        StatisticsForProject.StatisticsForProjectBuilder outputBuilder =
                 DataFactory.ofMetricOutputForProjectByTimeAndThreshold();
 
         TimeWindow timeOne = TimeWindow.of( Instant.MIN, Instant.MAX, ReferenceTime.VALID_TIME, Duration.ofHours( 1 ) );
@@ -302,8 +302,8 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTestHelpe
         DatasetIdentifier datasetIdentifier =
                 DatasetIdentifier.of( Location.of( LID ), "SQIN", "HEFS", "ESP" );
 
-        MetricOutputMetadata fakeMetadataA =
-                MetricOutputMetadata.of( 1000,
+        StatisticMetadata fakeMetadataA =
+                StatisticMetadata.of( 1000,
                                          MeasurementUnit.of(),
                                          MeasurementUnit.of( "CMS" ),
                                          MetricConstants.MEAN_SQUARE_ERROR,
@@ -313,15 +313,15 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTestHelpe
                                          thresholdOne,
                                          null  );
 
-        List<DoubleScoreOutput> fakeOutputs =
-                Collections.singletonList( DoubleScoreOutput.of( 1.0, fakeMetadataA ) );
+        List<DoubleScoreStatistic> fakeOutputs =
+                Collections.singletonList( DoubleScoreStatistic.of( 1.0, fakeMetadataA ) );
 
         // Fake output wrapper.
-        ListOfMetricOutput<DoubleScoreOutput> fakeOutputData =
-                ListOfMetricOutput.of( fakeOutputs );
+        ListOfStatistics<DoubleScoreStatistic> fakeOutputData =
+                ListOfStatistics.of( fakeOutputs );
 
         // wrap outputs in future
-        Future<ListOfMetricOutput<DoubleScoreOutput>> outputMapByMetricFuture =
+        Future<ListOfStatistics<DoubleScoreStatistic>> outputMapByMetricFuture =
                 CompletableFuture.completedFuture( fakeOutputData );
 
         outputBuilder.addDoubleScoreOutput( outputMapByMetricFuture );
@@ -332,8 +332,8 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTestHelpe
                                                      Operator.GREATER,
                                                      ThresholdDataType.LEFT ) );
 
-        MetricOutputMetadata fakeMetadataB =
-                MetricOutputMetadata.of( 1000,
+        StatisticMetadata fakeMetadataB =
+                StatisticMetadata.of( 1000,
                                          MeasurementUnit.of(),
                                          MeasurementUnit.of( "CMS" ),
                                          MetricConstants.MEAN_SQUARE_ERROR,
@@ -343,13 +343,13 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTestHelpe
                                          thresholdTwo,
                                          null  );
 
-        List<DoubleScoreOutput> fakeOutputsB =
-                Collections.singletonList( DoubleScoreOutput.of( 1.0, fakeMetadataB ) );
+        List<DoubleScoreStatistic> fakeOutputsB =
+                Collections.singletonList( DoubleScoreStatistic.of( 1.0, fakeMetadataB ) );
 
-        ListOfMetricOutput<DoubleScoreOutput> fakeOutputDataB =
-                ListOfMetricOutput.of( fakeOutputsB );
+        ListOfStatistics<DoubleScoreStatistic> fakeOutputDataB =
+                ListOfStatistics.of( fakeOutputsB );
 
-        Future<ListOfMetricOutput<DoubleScoreOutput>> outputMapByMetricFutureB =
+        Future<ListOfStatistics<DoubleScoreStatistic>> outputMapByMetricFutureB =
                 CompletableFuture.completedFuture( fakeOutputDataB );
 
         outputBuilder.addDoubleScoreOutput( outputMapByMetricFutureB );
@@ -357,8 +357,8 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTestHelpe
         // Add data for another time, and one threshold only
         TimeWindow timeTwo = TimeWindow.of( Instant.MIN, Instant.MAX, ReferenceTime.VALID_TIME, Duration.ofHours( 2 ) );
 
-        MetricOutputMetadata fakeMetadataC =
-                MetricOutputMetadata.of( 1000,
+        StatisticMetadata fakeMetadataC =
+                StatisticMetadata.of( 1000,
                                          MeasurementUnit.of(),
                                          MeasurementUnit.of( "CMS" ),
                                          MetricConstants.MEAN_SQUARE_ERROR,
@@ -368,26 +368,26 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTestHelpe
                                          thresholdOne,
                                          null  );
 
-        List<DoubleScoreOutput> fakeOutputsC =
-                Collections.singletonList( DoubleScoreOutput.of( 1.0, fakeMetadataC ) );
+        List<DoubleScoreStatistic> fakeOutputsC =
+                Collections.singletonList( DoubleScoreStatistic.of( 1.0, fakeMetadataC ) );
 
-        ListOfMetricOutput<DoubleScoreOutput> fakeOutputDataC =
-                ListOfMetricOutput.of( fakeOutputsC );
+        ListOfStatistics<DoubleScoreStatistic> fakeOutputDataC =
+                ListOfStatistics.of( fakeOutputsC );
 
-        Future<ListOfMetricOutput<DoubleScoreOutput>> outputMapByMetricFutureC =
+        Future<ListOfStatistics<DoubleScoreStatistic>> outputMapByMetricFutureC =
                 CompletableFuture.completedFuture( fakeOutputDataC );
 
         outputBuilder.addDoubleScoreOutput( outputMapByMetricFutureC );
 
-        MetricOutputForProject output = outputBuilder.build();
+        StatisticsForProject output = outputBuilder.build();
 
         // Construct a fake configuration file.
         Feature feature = getMockedFeature( LID );
         ProjectConfig projectConfig = getMockedProjectConfig( feature );
 
         // Begin the actual test now that we have constructed dependencies.
-        CommaSeparatedScoreWriter<DoubleScoreOutput> writer = CommaSeparatedScoreWriter.of( projectConfig );
-        writer.accept( output.getDoubleScoreOutput() );
+        CommaSeparatedScoreWriter<DoubleScoreStatistic> writer = CommaSeparatedScoreWriter.of( projectConfig );
+        writer.accept( output.getDoubleScoreStatistics() );
 
         // read the file, verify it has what we wanted:
         Path pathToFirstFile = Paths.get( System.getProperty( "java.io.tmpdir" ),

@@ -11,13 +11,13 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.ScoreOutputGroup;
+import wres.datamodel.MetricConstants.ScoreGroup;
 import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Metadata;
-import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.sampledata.MetricInputException;
+import wres.datamodel.metadata.StatisticMetadata;
+import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
-import wres.datamodel.statistics.DoubleScoreOutput;
+import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 
@@ -53,15 +53,15 @@ public final class CorrelationPearsonsTest
     {
         SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
-        final MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getRawData().size(),
+        final StatisticMetadata m1 = StatisticMetadata.of( input.getRawData().size(),
                                                                    MeasurementUnit.of(),
                                                                    MeasurementUnit.of(),
                                                                    MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
                                                                    MetricConstants.MAIN );
 
         //Compute normally
-        final DoubleScoreOutput actual = rho.apply( input );
-        final DoubleScoreOutput expected = DoubleScoreOutput.of( 0.9999999910148981, m1 );
+        final DoubleScoreStatistic actual = rho.apply( input );
+        final DoubleScoreStatistic expected = DoubleScoreStatistic.of( 0.9999999910148981, m1 );
         assertTrue( "Actual: " + actual.getData().doubleValue()
                     + ". Expected: "
                     + expected.getData().doubleValue()
@@ -70,7 +70,7 @@ public final class CorrelationPearsonsTest
     }
     
     /**
-     * Compares the output from {@link CorrelationPearsons#aggregate(DoubleScoreOutput)} against expected output.
+     * Compares the output from {@link CorrelationPearsons#aggregate(DoubleScoreStatistic)} against expected output.
      */
 
     @Test
@@ -92,7 +92,7 @@ public final class CorrelationPearsonsTest
         SingleValuedPairs input =
                 SingleValuedPairs.of( Arrays.asList(), Metadata.of() );
  
-        DoubleScoreOutput actual = rho.apply( input );
+        DoubleScoreStatistic actual = rho.apply( input );
 
         assertTrue( actual.getData().isNaN() );
     }
@@ -145,7 +145,7 @@ public final class CorrelationPearsonsTest
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( rho.getScoreOutputGroup() == ScoreOutputGroup.NONE );
+        assertTrue( rho.getScoreOutputGroup() == ScoreGroup.NONE );
     }
 
     /**
@@ -167,21 +167,21 @@ public final class CorrelationPearsonsTest
     @Test
     public void testApplyExceptionOnNullInput()
     {
-        exception.expect( MetricInputException.class );
+        exception.expect( SampleDataException.class );
         exception.expectMessage( "Specify non-null input to the 'PEARSON CORRELATION COEFFICIENT'." );
         
         rho.apply( null );
     }    
     
     /**
-     * Tests for an expected exception on calling {@link CorrelationPearsons#aggregate(DoubleScoreOutput)} with 
+     * Tests for an expected exception on calling {@link CorrelationPearsons#aggregate(DoubleScoreStatistic)} with 
      * null input.
      */
 
     @Test
     public void testAggregateExceptionOnNullInput()
     {
-        exception.expect( MetricInputException.class );
+        exception.expect( SampleDataException.class );
         exception.expectMessage( "Specify non-null input to the 'PEARSON CORRELATION COEFFICIENT'." );
         
         rho.aggregate( null );

@@ -19,11 +19,11 @@ import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.Metadata;
-import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.sampledata.MetricInputException;
+import wres.datamodel.metadata.StatisticMetadata;
+import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.DiscreteProbabilityPair;
 import wres.datamodel.sampledata.pairs.DiscreteProbabilityPairs;
-import wres.datamodel.statistics.MultiVectorOutput;
+import wres.datamodel.statistics.MultiVectorStatistic;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 
@@ -62,8 +62,8 @@ public final class ReliabilityDiagramTest
         DiscreteProbabilityPairs input = MetricTestDataFactory.getDiscreteProbabilityPairsThree();
 
         //Metadata for the output
-        final MetricOutputMetadata m1 =
-                MetricOutputMetadata.of( input.getRawData().size(),
+        final StatisticMetadata m1 =
+                StatisticMetadata.of( input.getRawData().size(),
                                                    MeasurementUnit.of(),
                                                    MeasurementUnit.of(),
                                                    MetricConstants.RELIABILITY_DIAGRAM,
@@ -73,7 +73,7 @@ public final class ReliabilityDiagramTest
                                                                                          "FMI" ) );
 
         //Check the results       
-        final MultiVectorOutput actual = rel.apply( input );
+        final MultiVectorStatistic actual = rel.apply( input );
         double[] expectedFProb = new double[] { 0.05490196078431369, 0.19999999999999984, 0.3000000000000002,
                                                 0.40000000000000013, 0.5, 0.5999999999999998, 0.6999999999999996,
                                                 0.8000000000000003, 0.9000000000000002,
@@ -89,7 +89,7 @@ public final class ReliabilityDiagramTest
         output.put( MetricDimension.OBSERVED_RELATIVE_FREQUENCY, expectedOProb );
         output.put( MetricDimension.SAMPLE_SIZE, expectedSample );
 
-        final MultiVectorOutput expected = MultiVectorOutput.ofMultiVectorOutput( output, m1 );
+        final MultiVectorStatistic expected = MultiVectorStatistic.ofMultiVectorOutput( output, m1 );
 
         assertTrue( "Difference between actual and expected Reliability Diagram.", actual.equals( expected ) );
     }
@@ -144,8 +144,8 @@ public final class ReliabilityDiagramTest
                                                                                      identifier ) );
 
         //Metadata for the output
-        final MetricOutputMetadata m1 =
-                MetricOutputMetadata.of( input.getRawData().size(),
+        final StatisticMetadata m1 =
+                StatisticMetadata.of( input.getRawData().size(),
                                                    MeasurementUnit.of(),
                                                    MeasurementUnit.of(),
                                                    MetricConstants.RELIABILITY_DIAGRAM,
@@ -153,7 +153,7 @@ public final class ReliabilityDiagramTest
                                                    identifier );
 
         //Check the results       
-        final MultiVectorOutput actual = rel.apply( input );
+        final MultiVectorStatistic actual = rel.apply( input );
         double[] expectedFProb = new double[] { 0.013605442176870748, 0.11224489795918367, 0.22448979591836735,
                                                 0.3469387755102041, Double.NaN, Double.NaN, 0.6326530612244898,
                                                 0.7755102040816326, 0.8520408163265306, 0.989010989010989 };
@@ -166,7 +166,7 @@ public final class ReliabilityDiagramTest
         output.put( MetricDimension.OBSERVED_RELATIVE_FREQUENCY, expectedOProb );
         output.put( MetricDimension.SAMPLE_SIZE, expectedSample );
 
-        final MultiVectorOutput expected = MultiVectorOutput.ofMultiVectorOutput( output, m1 );
+        final MultiVectorStatistic expected = MultiVectorStatistic.ofMultiVectorOutput( output, m1 );
 
         assertTrue( "Difference between actual and expected Reliability Diagram.", actual.equals( expected ) );
     }
@@ -182,7 +182,7 @@ public final class ReliabilityDiagramTest
         DiscreteProbabilityPairs input =
                 DiscreteProbabilityPairs.of( Arrays.asList(), Metadata.of() );
 
-        MultiVectorOutput actual = rel.apply( input );
+        MultiVectorStatistic actual = rel.apply( input );
 
         double[] source = new double[10];
         double[] sourceSample = new double[10];
@@ -224,7 +224,7 @@ public final class ReliabilityDiagramTest
     @Test
     public void testApplyExceptionOnNullInput()
     {
-        exception.expect( MetricInputException.class );
+        exception.expect( SampleDataException.class );
         exception.expectMessage( "Specify non-null input to the 'RELIABILITY DIAGRAM'." );
 
         rel.apply( null );

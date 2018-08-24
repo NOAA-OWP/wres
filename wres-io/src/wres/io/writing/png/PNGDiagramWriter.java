@@ -16,22 +16,22 @@ import wres.config.ProjectConfigPlus;
 import wres.config.generated.DestinationConfig;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
-import wres.datamodel.metadata.MetricOutputMetadata;
+import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.statistics.ListOfMetricOutput;
-import wres.datamodel.statistics.MultiVectorOutput;
+import wres.datamodel.statistics.ListOfStatistics;
+import wres.datamodel.statistics.MultiVectorStatistic;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.io.config.ConfigHelper;
 import wres.vis.ChartEngineFactory;
 
 /**
- * Helps write charts comprising {@link MultiVectorOutput} to a file in Portable Network Graphics (PNG) format.
+ * Helps write charts comprising {@link MultiVectorStatistic} to a file in Portable Network Graphics (PNG) format.
  * 
  * @author james.brown@hydrosolved.com
  */
 
 public class PNGDiagramWriter extends PNGWriter
-        implements Consumer<ListOfMetricOutput<MultiVectorOutput>>
+        implements Consumer<ListOfStatistics<MultiVectorStatistic>>
 {
 
     /**
@@ -57,7 +57,7 @@ public class PNGDiagramWriter extends PNGWriter
      */
 
     @Override
-    public void accept( final ListOfMetricOutput<MultiVectorOutput> output )
+    public void accept( final ListOfStatistics<MultiVectorStatistic> output )
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing diagram outputs." );
 
@@ -83,8 +83,8 @@ public class PNGDiagramWriter extends PNGWriter
     }
 
     /**
-     * Writes a set of charts associated with {@link MultiVectorOutput} for a single metric and time window, 
-     * stored in a {@link ListOfMetricOutput}.
+     * Writes a set of charts associated with {@link MultiVectorStatistic} for a single metric and time window, 
+     * stored in a {@link ListOfStatistics}.
      *
      * @param projectConfigPlus the project configuration
      * @param destinationConfig the destination configuration for the written output
@@ -94,12 +94,12 @@ public class PNGDiagramWriter extends PNGWriter
 
     private static void writeMultiVectorCharts( ProjectConfigPlus projectConfigPlus,
                                                 DestinationConfig destinationConfig,
-                                                ListOfMetricOutput<MultiVectorOutput> output )
+                                                ListOfStatistics<MultiVectorStatistic> output )
     {
         // Build charts
         try
         {
-            MetricOutputMetadata meta = output.getData().get( 0 ).getMetadata();
+            StatisticMetadata meta = output.getData().get( 0 ).getMetadata();
 
             GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, destinationConfig, meta.getMetricID() );
 

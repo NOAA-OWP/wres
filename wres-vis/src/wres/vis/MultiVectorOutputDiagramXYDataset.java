@@ -7,22 +7,22 @@ import org.jfree.data.xy.XYDataset;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.Slicer;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.statistics.ListOfMetricOutput;
-import wres.datamodel.statistics.MultiVectorOutput;
+import wres.datamodel.statistics.ListOfStatistics;
+import wres.datamodel.statistics.MultiVectorStatistic;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 
 /**
- * The {@link XYDataset} for use in building a chart that plots a {@link MultiVectorOutput}.
+ * The {@link XYDataset} for use in building a chart that plots a {@link MultiVectorStatistic}.
  * 
  * @author Hank.Herr
  */
-public class MultiVectorOutputDiagramXYDataset extends WRESAbstractXYDataset<ListOfMetricOutput<MultiVectorOutput>, ListOfMetricOutput<MultiVectorOutput>>
+public class MultiVectorOutputDiagramXYDataset extends WRESAbstractXYDataset<ListOfStatistics<MultiVectorStatistic>, ListOfStatistics<MultiVectorStatistic>>
 {
     private static final long serialVersionUID = 4254109136599641286L;
     private final MetricDimension xConstant;
     private final MetricDimension yConstant;
 
-    public MultiVectorOutputDiagramXYDataset(final ListOfMetricOutput<MultiVectorOutput> input, final MetricDimension xConstant, final MetricDimension yConstant)
+    public MultiVectorOutputDiagramXYDataset(final ListOfStatistics<MultiVectorStatistic> input, final MetricDimension xConstant, final MetricDimension yConstant)
     {
         super(input);
         this.xConstant = xConstant;
@@ -30,7 +30,7 @@ public class MultiVectorOutputDiagramXYDataset extends WRESAbstractXYDataset<Lis
     }
 
     @Override
-    protected void preparePlotData(final ListOfMetricOutput<MultiVectorOutput> rawData)
+    protected void preparePlotData(final ListOfStatistics<MultiVectorStatistic> rawData)
     {
         //This check should not be necessary, since the conditions should be impossible.  I'll do it anyway just to be sure.
         if ( rawData.getData().isEmpty() )

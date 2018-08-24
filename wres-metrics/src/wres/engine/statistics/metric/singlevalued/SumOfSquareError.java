@@ -4,11 +4,11 @@ import java.util.Objects;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MissingValues;
-import wres.datamodel.MetricConstants.ScoreOutputGroup;
-import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.sampledata.MetricInputException;
+import wres.datamodel.MetricConstants.ScoreGroup;
+import wres.datamodel.metadata.StatisticMetadata;
+import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
-import wres.datamodel.statistics.DoubleScoreOutput;
+import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.engine.statistics.metric.Collectable;
 import wres.engine.statistics.metric.DecomposableScore;
 import wres.engine.statistics.metric.FunctionFactory;
@@ -20,7 +20,7 @@ import wres.engine.statistics.metric.MetricParameterException;
  * @author james.brown@hydrosolved.com
  */
 public class SumOfSquareError extends DecomposableScore<SingleValuedPairs>
-        implements Collectable<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput>
+        implements Collectable<SingleValuedPairs, DoubleScoreStatistic, DoubleScoreStatistic>
 {
 
     /**
@@ -35,7 +35,7 @@ public class SumOfSquareError extends DecomposableScore<SingleValuedPairs>
     }
 
     @Override
-    public DoubleScoreOutput apply( SingleValuedPairs s )
+    public DoubleScoreStatistic apply( SingleValuedPairs s )
     {
         return this.aggregate( this.getInputForAggregation( s ) );
     }
@@ -59,11 +59,11 @@ public class SumOfSquareError extends DecomposableScore<SingleValuedPairs>
     }
 
     @Override
-    public DoubleScoreOutput getInputForAggregation( SingleValuedPairs input )
+    public DoubleScoreStatistic getInputForAggregation( SingleValuedPairs input )
     {
         if ( Objects.isNull( input ) )
         {
-            throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
+            throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
         }
 
         double returnMe = MissingValues.MISSING_DOUBLE;
@@ -75,35 +75,35 @@ public class SumOfSquareError extends DecomposableScore<SingleValuedPairs>
         }
 
         //Metadata
-        MetricOutputMetadata metOut = MetricOutputMetadata.of( input.getMetadata(),
+        StatisticMetadata metOut = StatisticMetadata.of( input.getMetadata(),
                                                                MetricConstants.SUM_OF_SQUARE_ERROR,
                                                                MetricConstants.MAIN,
                                                                this.hasRealUnits(),
                                                                input.getRawData().size(),
                                                                null );
 
-        return DoubleScoreOutput.of( returnMe, metOut );
+        return DoubleScoreStatistic.of( returnMe, metOut );
     }
 
     @Override
-    public DoubleScoreOutput aggregate( DoubleScoreOutput output )
+    public DoubleScoreStatistic aggregate( DoubleScoreStatistic output )
     {
         if ( Objects.isNull( output ) )
         {
-            throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
+            throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
         }
 
-        final MetricOutputMetadata metIn = output.getMetadata();
+        final StatisticMetadata metIn = output.getMetadata();
 
         // Set the output dimension
-        MetricOutputMetadata meta = MetricOutputMetadata.of( metIn,
+        StatisticMetadata meta = StatisticMetadata.of( metIn,
                                                              this.getID(),
                                                              MetricConstants.MAIN,
                                                              this.hasRealUnits(),
                                                              metIn.getSampleSize(),
                                                              null );
 
-        return DoubleScoreOutput.of( output.getData(), meta );
+        return DoubleScoreStatistic.of( output.getData(), meta );
     }
 
     @Override
@@ -128,7 +128,7 @@ public class SumOfSquareError extends DecomposableScore<SingleValuedPairs>
      * @throws MetricParameterException if one or more parameters is invalid 
      */
 
-    SumOfSquareError( ScoreOutputGroup decompositionId ) throws MetricParameterException
+    SumOfSquareError( ScoreGroup decompositionId ) throws MetricParameterException
     {
         super( decompositionId );
     }

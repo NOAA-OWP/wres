@@ -11,7 +11,7 @@ import org.junit.Test;
  * @author james.brown@hydrosolved.com
  */
 
-public class DimensionTest
+public class MeasurementUnitTest
 {
 
     /**

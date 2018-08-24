@@ -3,12 +3,12 @@ package wres.datamodel.sampledata;
 import wres.datamodel.DataException;
 
 /**
- * A runtime exception associated with an incorrect {@link MetricInput}.
+ * A runtime exception associated with incorrect {@link SampleData}.
  * 
  * @author james.brown@hydrosolved.com
  */
 
-public class MetricInputException extends DataException
+public class SampleDataException extends DataException
 {
 
     /**
@@ -17,33 +17,33 @@ public class MetricInputException extends DataException
     private static final long serialVersionUID = -382138122319205095L;
 
     /**
-     * Constructs an {@link MetricInputException} with no message.
+     * Constructs an {@link SampleDataException} with no message.
      */
 
-    public MetricInputException()
+    public SampleDataException()
     {
         super();
     }
 
     /**
-     * Constructs a {@link MetricInputException} with the specified message.
+     * Constructs a {@link SampleDataException} with the specified message.
      * 
      * @param message the message.
      */
 
-    public MetricInputException(final String message)
+    public SampleDataException(final String message)
     {
         super(message);
     }
 
     /**
-     * Constructs a {@link MetricInputException} with the specified message.
+     * Constructs a {@link SampleDataException} with the specified message.
      * 
      * @param message the message.
      * @param cause the cause of the exception
      */
 
-    public MetricInputException(final String message, final Throwable cause)
+    public SampleDataException(final String message, final Throwable cause)
     {
         super(message, cause);
     }

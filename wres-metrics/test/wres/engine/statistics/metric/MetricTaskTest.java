@@ -17,9 +17,9 @@ import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.MetricOutputMetadata;
+import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
-import wres.datamodel.statistics.DoubleScoreOutput;
+import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.engine.statistics.metric.singlevalued.MeanError;
 
 /**
@@ -61,7 +61,7 @@ public final class MetricTaskTest
         final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Add some appropriate metrics to the collection
-        final Metric<SingleValuedPairs, DoubleScoreOutput> m = MeanError.of();
+        final Metric<SingleValuedPairs, DoubleScoreStatistic> m = MeanError.of();
 
         // Wrap an input in a future
         final FutureTask<SingleValuedPairs> futureInput =
@@ -73,18 +73,18 @@ public final class MetricTaskTest
                     }
                 } );
 
-        final MetricTask<SingleValuedPairs, DoubleScoreOutput> task = new MetricTask<>( m, futureInput );
+        final MetricTask<SingleValuedPairs, DoubleScoreStatistic> task = new MetricTask<>( m, futureInput );
 
         // Compute the pairs
         pairPool.submit( futureInput );
 
         //Should not throw an exception
-        MetricOutputMetadata benchmarkMeta = MetricOutputMetadata.of( input.getMetadata(),
+        StatisticMetadata benchmarkMeta = StatisticMetadata.of( input.getMetadata(),
                                                                                 10,
                                                                                 MeasurementUnit.of(),
                                                                                 MetricConstants.MEAN_ERROR,
                                                                                 MetricConstants.MAIN );
-        DoubleScoreOutput benchmark = DoubleScoreOutput.of( 200.55, benchmarkMeta );
+        DoubleScoreStatistic benchmark = DoubleScoreStatistic.of( 200.55, benchmarkMeta );
 
         assertTrue( benchmark.equals( task.call() ) );
 
@@ -104,7 +104,7 @@ public final class MetricTaskTest
     {
 
         // Add some appropriate metrics to the collection
-        final Metric<SingleValuedPairs, DoubleScoreOutput> m = MeanError.of();
+        final Metric<SingleValuedPairs, DoubleScoreStatistic> m = MeanError.of();
 
         final FutureTask<SingleValuedPairs> futureInputNull =
                 new FutureTask<SingleValuedPairs>( new Callable<SingleValuedPairs>()
@@ -119,7 +119,7 @@ public final class MetricTaskTest
         pairPool.submit( futureInputNull );
 
         // Exceptional case
-        MetricTask<SingleValuedPairs, DoubleScoreOutput> task2 = new MetricTask<>( m, futureInputNull );
+        MetricTask<SingleValuedPairs, DoubleScoreStatistic> task2 = new MetricTask<>( m, futureInputNull );
         exception.expect( MetricCalculationException.class );
         exception.expectMessage( "Cannot compute a metric with null input." );
         task2.call();

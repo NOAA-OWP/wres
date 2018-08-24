@@ -4,10 +4,10 @@ import java.util.Objects;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
-import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.sampledata.MetricInputException;
+import wres.datamodel.metadata.StatisticMetadata;
+import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.DiscreteProbabilityPairs;
-import wres.datamodel.statistics.DoubleScoreOutput;
+import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.engine.statistics.metric.DecomposableScore;
 import wres.engine.statistics.metric.ProbabilityScore;
 import wres.engine.statistics.metric.singlevalued.MeanSquareError;
@@ -27,7 +27,7 @@ import wres.engine.statistics.metric.singlevalued.MeanSquareError;
  * @author james.brown@hydrosolved.com
  */
 public class BrierScore extends DecomposableScore<DiscreteProbabilityPairs>
-        implements ProbabilityScore<DiscreteProbabilityPairs, DoubleScoreOutput>
+        implements ProbabilityScore<DiscreteProbabilityPairs, DoubleScoreStatistic>
 {
 
     /**
@@ -48,21 +48,21 @@ public class BrierScore extends DecomposableScore<DiscreteProbabilityPairs>
     private final MeanSquareError mse;
 
     @Override
-    public DoubleScoreOutput apply( DiscreteProbabilityPairs s )
+    public DoubleScoreStatistic apply( DiscreteProbabilityPairs s )
     {
         if ( Objects.isNull( s ) )
         {
-            throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
+            throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
         }
 
-        MetricOutputMetadata metOut = MetricOutputMetadata.of( s.getMetadata(),
+        StatisticMetadata metOut = StatisticMetadata.of( s.getMetadata(),
                                                                this.getID(),
                                                                MetricConstants.MAIN,
                                                                this.hasRealUnits(),
                                                                s.getRawData().size(),
                                                                null );
 
-        return DoubleScoreOutput.of( mse.apply( Slicer.toSingleValuedPairs( s ) ).getData(), metOut );
+        return DoubleScoreStatistic.of( mse.apply( Slicer.toSingleValuedPairs( s ) ).getData(), metOut );
     }
 
     @Override

@@ -8,7 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.generated.Feature;
-import wres.datamodel.sampledata.MetricInput;
+import wres.datamodel.sampledata.SampleData;
 import wres.io.concurrency.Executor;
 import wres.io.config.ConfigHelper;
 import wres.io.data.details.ProjectDetails;
@@ -35,7 +35,7 @@ public class TimeSeriesMetricInputIterator extends MetricInputIterator
     }
 
     @Override
-    protected Future<MetricInput<?>> submitForRetrieval() throws IOException
+    protected Future<SampleData<?>> submitForRetrieval() throws IOException
     {
         // We override because we want to add these to the more limited
         // Executor to ensure that less memory is used.

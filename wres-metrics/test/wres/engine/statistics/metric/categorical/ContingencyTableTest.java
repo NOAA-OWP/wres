@@ -14,11 +14,11 @@ import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
-import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.sampledata.MetricInputException;
+import wres.datamodel.metadata.StatisticMetadata;
+import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.DichotomousPairs;
 import wres.datamodel.sampledata.pairs.MulticategoryPairs;
-import wres.datamodel.statistics.MatrixOutput;
+import wres.datamodel.statistics.MatrixStatistic;
 import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
@@ -57,8 +57,8 @@ public final class ContingencyTableTest
         final DichotomousPairs input = MetricTestDataFactory.getDichotomousPairsOne();
 
         //Metadata for the output
-        final MetricOutputMetadata meta =
-                MetricOutputMetadata.of( input.getRawData().size(),
+        final StatisticMetadata meta =
+                StatisticMetadata.of( input.getRawData().size(),
                                                    MeasurementUnit.of(),
                                                    MeasurementUnit.of(),
                                                    MetricConstants.CONTINGENCY_TABLE,
@@ -68,8 +68,8 @@ public final class ContingencyTableTest
                                                                                          "HEFS" ) );
 
         final double[][] benchmark = new double[][] { { 82.0, 38.0 }, { 23.0, 222.0 } };
-        final MatrixOutput actual = table.apply( input );
-        final MatrixOutput expected = MatrixOutput.of( benchmark,
+        final MatrixStatistic actual = table.apply( input );
+        final MatrixStatistic expected = MatrixStatistic.of( benchmark,
                                                                   Arrays.asList( MetricDimension.TRUE_POSITIVES,
                                                                                  MetricDimension.FALSE_POSITIVES,
                                                                                  MetricDimension.FALSE_NEGATIVES,
@@ -98,7 +98,7 @@ public final class ContingencyTableTest
     @Test
     public void testExceptionOnNullInput()
     {
-        exception.expect( MetricInputException.class );
+        exception.expect( SampleDataException.class );
         exception.expectMessage( "Specify non-null input to the 'CONTINGENCY TABLE'." );
         table.apply( (DichotomousPairs) null );
     }

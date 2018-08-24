@@ -6,8 +6,8 @@ import java.util.Objects;
 
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.metadata.Metadata;
-import wres.datamodel.sampledata.MetricInput;
-import wres.datamodel.sampledata.MetricInputException;
+import wres.datamodel.sampledata.SampleData;
+import wres.datamodel.sampledata.SampleDataException;
 
 /**
  * Immutable store of verification pairs associated with the outcome (true or false) of a multi-category event.
@@ -23,7 +23,7 @@ public class MulticategoryPairs extends BasicPairs<MulticategoryPair>
      * @param pairs the verification pairs
      * @param meta the metadata
      * @return the pairs
-     * @throws MetricInputException if the inputs are invalid
+     * @throws SampleDataException if the inputs are invalid
      */
 
     public static MulticategoryPairs ofMulticategoryPairs( List<MulticategoryPair> pairs, Metadata meta )
@@ -38,7 +38,7 @@ public class MulticategoryPairs extends BasicPairs<MulticategoryPair>
      * @param overrideMainMeta the metadata for the main pairs
      * @param overrideBaselineMeta the metadata for the baseline pairs (may be null, if the baseline pairs are null)
      * @return the pairs
-     * @throws MetricInputException if the inputs are invalid
+     * @throws SampleDataException if the inputs are invalid
      */
 
     public static MulticategoryPairs ofMulticategoryPairs( MulticategoryPairs pairs,
@@ -61,7 +61,7 @@ public class MulticategoryPairs extends BasicPairs<MulticategoryPair>
      * @param baselineMeta the metadata for the baseline pairs (may be null, if the basePairs are null)
      * @param climatology an optional climatological dataset (may be null)
      * @return the pairs
-     * @throws MetricInputException if the inputs are invalid
+     * @throws SampleDataException if the inputs are invalid
      */
 
     public static MulticategoryPairs ofMulticategoryPairs( List<MulticategoryPair> pairs,
@@ -80,7 +80,7 @@ public class MulticategoryPairs extends BasicPairs<MulticategoryPair>
     }
 
     /**
-     * Returns the baseline data as a {@link MetricInput} or null if no baseline is defined.
+     * Returns the baseline data as a {@link SampleData} or null if no baseline is defined.
      * 
      * @return the baseline
      */
@@ -129,7 +129,7 @@ public class MulticategoryPairs extends BasicPairs<MulticategoryPair>
      * Construct the pairs with a builder.
      * 
      * @param b the builder
-     * @throws MetricInputException if the pairs are invalid
+     * @throws SampleDataException if the pairs are invalid
      */
 
     MulticategoryPairs( final MulticategoryPairsBuilder b )
@@ -159,7 +159,7 @@ public class MulticategoryPairs extends BasicPairs<MulticategoryPair>
             }
             if ( !size.contains( count ) )
             {
-                throw new MetricInputException( "Two or more elements in the input have an unequal number of "
+                throw new SampleDataException( "Two or more elements in the input have an unequal number of "
                                                 + "categories." );
             }
         } );
@@ -173,7 +173,7 @@ public class MulticategoryPairs extends BasicPairs<MulticategoryPair>
                 }
                 if ( !size.contains( count ) )
                 {
-                    throw new MetricInputException( "Two or more elements in the baseline input have an unequal number of "
+                    throw new SampleDataException( "Two or more elements in the baseline input have an unequal number of "
                                                     + "categories or categories that are unequal with the main input." );
                 }
             } );

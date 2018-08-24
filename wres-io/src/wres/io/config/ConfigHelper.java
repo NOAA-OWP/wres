@@ -66,7 +66,7 @@ import wres.config.generated.TimeScaleConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.MetricOutputMetadata;
+import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
@@ -1388,7 +1388,7 @@ public class ConfigHelper
     }
 
     /**
-     * Returns a path to write from a combination of the {@link DestinationConfig} and the {@link MetricOutputMetadata}.
+     * Returns a path to write from a combination of the {@link DestinationConfig} and the {@link StatisticMetadata}.
      * 
      * @param destinationConfig the destination configuration
      * @param meta the metadata
@@ -1398,14 +1398,14 @@ public class ConfigHelper
      */
 
     public static Path getOutputPathToWrite( DestinationConfig destinationConfig,
-                                             MetricOutputMetadata meta )
+                                             StatisticMetadata meta )
             throws IOException
     {
         return ConfigHelper.getOutputPathToWrite( destinationConfig, meta, (String) null );
     }
 
     /**
-     * Returns a path to write from a combination of the {@link DestinationConfig}, the {@link MetricOutputMetadata} 
+     * Returns a path to write from a combination of the {@link DestinationConfig}, the {@link StatisticMetadata} 
      * associated with the results and a {@link TimeWindow}.
      * 
      * @param destinationConfig the destination configuration
@@ -1417,7 +1417,7 @@ public class ConfigHelper
      */
 
     public static Path getOutputPathToWrite( DestinationConfig destinationConfig,
-                                             MetricOutputMetadata meta,
+                                             StatisticMetadata meta,
                                              TimeWindow timeWindow )
             throws IOException
     {
@@ -1429,7 +1429,7 @@ public class ConfigHelper
     }
 
     /**
-     * Returns a path to write from a combination of the {@link DestinationConfig}, the {@link MetricOutputMetadata} 
+     * Returns a path to write from a combination of the {@link DestinationConfig}, the {@link StatisticMetadata} 
      * associated with the results and a {@link OneOrTwoThresholds}.
      * 
      * @param destinationConfig the destination configuration
@@ -1441,7 +1441,7 @@ public class ConfigHelper
      */
 
     public static Path getOutputPathToWrite( DestinationConfig destinationConfig,
-                                             MetricOutputMetadata meta,
+                                             StatisticMetadata meta,
                                              OneOrTwoThresholds threshold )
             throws IOException
     {
@@ -1467,7 +1467,7 @@ public class ConfigHelper
      */
 
     public static Path getOutputPathToWrite( DestinationConfig destinationConfig,
-                                             MetricOutputMetadata meta,
+                                             StatisticMetadata meta,
                                              String append )
             throws IOException
     {

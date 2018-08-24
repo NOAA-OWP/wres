@@ -19,8 +19,8 @@ import wres.config.FeaturePlus;
 import wres.config.generated.DestinationType;
 import wres.config.generated.ProjectConfig;
 import wres.control.ProcessorHelper.ExecutorServices;
-import wres.datamodel.MetricConstants.MetricOutputGroup;
-import wres.datamodel.sampledata.MetricInput;
+import wres.datamodel.MetricConstants.StatisticGroup;
+import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
@@ -150,14 +150,14 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
 
         // During the pipeline, only write types that are not end-of-pipeline types unless they refer to
         // a format that can be written incrementally
-        BiPredicate<MetricOutputGroup, DestinationType> onlyWriteTheseTypes =
+        BiPredicate<StatisticGroup, DestinationType> onlyWriteTheseTypes =
                 ( type, format ) -> !processor.getMetricOutputTypesToCache().contains( type )
                                     || ConfigHelper.getIncrementalFormats( projectConfig ).contains( format );
 
         try
         {
             // Iterate
-            for ( final Future<MetricInput<?>> nextInput : metricInputs )
+            for ( final Future<SampleData<?>> nextInput : metricInputs )
             {
                 // Complete all tasks asynchronously:
                 // 1. Get some pairs from the database
@@ -255,10 +255,10 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
             try
             {
                 // Determine the cached types
-                Set<MetricOutputGroup> cachedTypes = processor.getCachedMetricOutputTypes();
+                Set<StatisticGroup> cachedTypes = processor.getCachedMetricOutputTypes();
 
                 // Only process cached types that were not written incrementally
-                BiPredicate<MetricOutputGroup, DestinationType> nowWriteTheseTypes =
+                BiPredicate<StatisticGroup, DestinationType> nowWriteTheseTypes =
                         ( type, format ) -> cachedTypes.contains( type )
                                             && !ConfigHelper.getIncrementalFormats( this.resolvedProject.getProjectConfig() )
                                                             .contains( format );

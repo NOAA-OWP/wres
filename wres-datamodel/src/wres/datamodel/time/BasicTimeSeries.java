@@ -15,7 +15,7 @@ import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import wres.datamodel.Slicer;
-import wres.datamodel.sampledata.MetricInputException;
+import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 
@@ -217,7 +217,7 @@ public class BasicTimeSeries<T> implements TimeSeries<T>
      * @param baselineData the raw data for the baseline (may be empty, cannot be null)
      * @param basisTimeIterator a basis time iterator
      * @param durationIterator a duration iterator
-     * @throws MetricInputException if one or more inputs is invalid
+     * @throws SampleDataException if one or more inputs is invalid
      */
 
     BasicTimeSeries( final BasicTimeSeriesBuilder<T> builder )
@@ -232,7 +232,7 @@ public class BasicTimeSeries<T> implements TimeSeries<T>
      * @param baselineData the raw data for the baseline (may be empty, cannot be null)
      * @param basisTimeIterator a basis time iterator
      * @param durationIterator a duration iterator
-     * @throws MetricInputException if one or more inputs is invalid
+     * @throws SampleDataException if one or more inputs is invalid
      */
 
     BasicTimeSeries( final List<Event<List<Event<T>>>> data )

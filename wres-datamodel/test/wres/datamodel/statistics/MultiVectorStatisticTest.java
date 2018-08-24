@@ -14,27 +14,27 @@ import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
-import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.statistics.MetricOutputException;
-import wres.datamodel.statistics.MultiVectorOutput;
+import wres.datamodel.metadata.StatisticMetadata;
+import wres.datamodel.statistics.StatisticException;
+import wres.datamodel.statistics.MultiVectorStatistic;
 
 /**
- * Tests the {@link MultiVectorOutput}.
+ * Tests the {@link MultiVectorStatistic}.
  * 
  * @author james.brown@hydrosolveDataFactory.com
  */
-public final class MultiVectorOutputTest
+public final class MultiVectorStatisticTest
 {
 
     /**
-     * Constructs a {@link MultiVectorOutput} and tests for equality with another {@link MultiVectorOutput}.
+     * Constructs a {@link MultiVectorStatistic} and tests for equality with another {@link MultiVectorStatistic}.
      */
 
     @Test
     public void test1Equals()
     {
         final Location l1 = Location.of( "A" );
-        final MetricOutputMetadata m1 = MetricOutputMetadata.of( 10,
+        final StatisticMetadata m1 = StatisticMetadata.of( 10,
                                                                            MeasurementUnit.of(),
                                                                            MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
@@ -43,7 +43,7 @@ public final class MultiVectorOutputTest
                                                                                                                  "B",
                                                                                                                  "C" ) );
         final Location l2 = Location.of( "A" );
-        final MetricOutputMetadata m2 = MetricOutputMetadata.of( 11,
+        final StatisticMetadata m2 = StatisticMetadata.of( 11,
                                                                            MeasurementUnit.of(),
                                                                            MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
@@ -52,7 +52,7 @@ public final class MultiVectorOutputTest
                                                                                                                  "B",
                                                                                                                  "C" ) );
         final Location l3 = Location.of( "B" );
-        final MetricOutputMetadata m3 = MetricOutputMetadata.of( 10,
+        final StatisticMetadata m3 = StatisticMetadata.of( 10,
                                                                            MeasurementUnit.of(),
                                                                            MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
@@ -69,15 +69,15 @@ public final class MultiVectorOutputTest
         mvb.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4 } );
         mvc.put( MetricDimension.PROBABILITY_OF_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4, 0.5 } );
         mvc.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4, 0.5 } );
-        final MultiVectorOutput s = MultiVectorOutput.ofMultiVectorOutput( mva, m1 );
-        final MultiVectorOutput t = MultiVectorOutput.ofMultiVectorOutput( mvb, m1 );
+        final MultiVectorStatistic s = MultiVectorStatistic.ofMultiVectorOutput( mva, m1 );
+        final MultiVectorStatistic t = MultiVectorStatistic.ofMultiVectorOutput( mvb, m1 );
         assertTrue( "Expected equal outputs.", s.equals( t ) );
         assertTrue( "Expected non-equal outputs.", !s.equals( null ) );
         assertTrue( "Expected non-equal outputs.", !s.equals( new Double( 1.0 ) ) );
-        assertTrue( "Expected non-equal outputs.", !s.equals( MultiVectorOutput.ofMultiVectorOutput( mvc, m1 ) ) );
-        assertTrue( "Expected non-equal outputs.", !s.equals( MultiVectorOutput.ofMultiVectorOutput( mvc, m2 ) ) );
-        final MultiVectorOutput q = MultiVectorOutput.ofMultiVectorOutput( mva, m2 );
-        final MultiVectorOutput r = MultiVectorOutput.ofMultiVectorOutput( mvb, m3 );
+        assertTrue( "Expected non-equal outputs.", !s.equals( MultiVectorStatistic.ofMultiVectorOutput( mvc, m1 ) ) );
+        assertTrue( "Expected non-equal outputs.", !s.equals( MultiVectorStatistic.ofMultiVectorOutput( mvc, m2 ) ) );
+        final MultiVectorStatistic q = MultiVectorStatistic.ofMultiVectorOutput( mva, m2 );
+        final MultiVectorStatistic r = MultiVectorStatistic.ofMultiVectorOutput( mvb, m3 );
         assertTrue( "Expected equal outputs.", q.equals( q ) );
         assertTrue( "Expected non-equal outputs.", !s.equals( q ) );
         assertTrue( "Expected non-equal outputs.", !q.equals( s ) );
@@ -85,14 +85,14 @@ public final class MultiVectorOutputTest
     }
 
     /**
-     * Constructs a {@link MultiVectorOutput} and checks the {@link MultiVectorOutput#getMetadata()}.
+     * Constructs a {@link MultiVectorStatistic} and checks the {@link MultiVectorStatistic#getMetadata()}.
      */
 
     @Test
     public void test2GetMetadata()
     {
         final Location l1 = Location.of( "A" );
-        final MetricOutputMetadata m1 = MetricOutputMetadata.of( 10,
+        final StatisticMetadata m1 = StatisticMetadata.of( 10,
                                                                            MeasurementUnit.of(),
                                                                            MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
@@ -101,7 +101,7 @@ public final class MultiVectorOutputTest
                                                                                                                  "B",
                                                                                                                  "C" ) );
         final Location l2 = Location.of( "B" );
-        final MetricOutputMetadata m2 = MetricOutputMetadata.of( 10,
+        final StatisticMetadata m2 = StatisticMetadata.of( 10,
                                                                            MeasurementUnit.of(),
                                                                            MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
@@ -112,20 +112,20 @@ public final class MultiVectorOutputTest
         Map<MetricDimension, double[]> mva = new HashMap<>();
         mva.put( MetricDimension.PROBABILITY_OF_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4 } );
         mva.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4 } );
-        final MultiVectorOutput q = MultiVectorOutput.ofMultiVectorOutput( mva, m1 );
-        final MultiVectorOutput r = MultiVectorOutput.ofMultiVectorOutput( mva, m2 );
+        final MultiVectorStatistic q = MultiVectorStatistic.ofMultiVectorOutput( mva, m1 );
+        final MultiVectorStatistic r = MultiVectorStatistic.ofMultiVectorOutput( mva, m2 );
         assertTrue( "Expected unequal dimensions.", !q.getMetadata().equals( r.getMetadata() ) );
     }
 
     /**
-     * Constructs a {@link MultiVectorOutput} and checks the {@link MultiVectorOutput#hashCode()}.
+     * Constructs a {@link MultiVectorStatistic} and checks the {@link MultiVectorStatistic#hashCode()}.
      */
 
     @Test
     public void test3HashCode()
     {
         final Location l1 = Location.of( "A" );
-        final MetricOutputMetadata m1 = MetricOutputMetadata.of( 10,
+        final StatisticMetadata m1 = StatisticMetadata.of( 10,
                                                                            MeasurementUnit.of(),
                                                                            MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
@@ -134,7 +134,7 @@ public final class MultiVectorOutputTest
                                                                                                                  "B",
                                                                                                                  "C" ) );
         final Location l2 = Location.of( "A" );
-        final MetricOutputMetadata m2 = MetricOutputMetadata.of( 10,
+        final StatisticMetadata m2 = StatisticMetadata.of( 10,
                                                                            MeasurementUnit.of(),
                                                                            MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
@@ -143,7 +143,7 @@ public final class MultiVectorOutputTest
                                                                                                                  "B",
                                                                                                                  "C" ) );
         final Location l3 = Location.of( "B" );
-        final MetricOutputMetadata m3 = MetricOutputMetadata.of( 10,
+        final StatisticMetadata m3 = StatisticMetadata.of( 10,
                                                                            MeasurementUnit.of(),
                                                                            MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
@@ -160,22 +160,22 @@ public final class MultiVectorOutputTest
         mvb.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4 } );
         mvc.put( MetricDimension.PROBABILITY_OF_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4, 0.5 } );
         mvc.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4, 0.5 } );
-        final MultiVectorOutput q = MultiVectorOutput.ofMultiVectorOutput( mva, m1 );
-        final MultiVectorOutput r = MultiVectorOutput.ofMultiVectorOutput( mvb, m2 );
-        final MultiVectorOutput s = MultiVectorOutput.ofMultiVectorOutput( mvc, m3 );
+        final MultiVectorStatistic q = MultiVectorStatistic.ofMultiVectorOutput( mva, m1 );
+        final MultiVectorStatistic r = MultiVectorStatistic.ofMultiVectorOutput( mvb, m2 );
+        final MultiVectorStatistic s = MultiVectorStatistic.ofMultiVectorOutput( mvc, m3 );
         assertTrue( "Expected equal hash codes.", q.hashCode() == r.hashCode() );
         assertTrue( "Expected unequal hash codes.", q.hashCode() != s.hashCode() );
     }
 
     /**
-     * Constructs a {@link MultiVectorOutput} and checks the accessor methods for correct operation.
+     * Constructs a {@link MultiVectorStatistic} and checks the accessor methods for correct operation.
      */
 
     @Test
     public void test4Accessors()
     {
         final Location l1 = Location.of( "A" );
-        final MetricOutputMetadata m1 = MetricOutputMetadata.of( 10,
+        final StatisticMetadata m1 = StatisticMetadata.of( 10,
                                                                            MeasurementUnit.of(),
                                                                            MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
@@ -186,7 +186,7 @@ public final class MultiVectorOutputTest
         Map<MetricDimension, double[]> mva = new HashMap<>();
         mva.put( MetricDimension.PROBABILITY_OF_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4 } );
         mva.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4 } );
-        final MultiVectorOutput s = MultiVectorOutput.ofMultiVectorOutput( mva, m1 );
+        final MultiVectorStatistic s = MultiVectorStatistic.ofMultiVectorOutput( mva, m1 );
         assertTrue( "Expected a " + MetricDimension.PROBABILITY_OF_DETECTION
                     + ".",
                     s.containsKey( MetricDimension.PROBABILITY_OF_DETECTION ) );
@@ -197,14 +197,14 @@ public final class MultiVectorOutputTest
     }
 
     /**
-     * Attempts to construct a {@link MultiVectorOutput} and checks for exceptions on invalid inputs.
+     * Attempts to construct a {@link MultiVectorStatistic} and checks for exceptions on invalid inputs.
      */
 
     @Test
     public void test5Exceptions()
     {
         final Location l1 = Location.of( "A" );
-        final MetricOutputMetadata m1 = MetricOutputMetadata.of( 10,
+        final StatisticMetadata m1 = StatisticMetadata.of( 10,
                                                                            MeasurementUnit.of(),
                                                                            MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
@@ -219,27 +219,27 @@ public final class MultiVectorOutputTest
                  VectorOfDoubles.of( new double[] { 0.1, 0.2, 0.3, 0.4 } ) );
         try
         {
-            MultiVectorOutput.of( mva, null );
+            MultiVectorStatistic.of( mva, null );
             fail( "Expected an exception on null metadata." );
         }
-        catch ( MetricOutputException e )
+        catch ( StatisticException e )
         {
         }
         try
         {
-            MultiVectorOutput.of( null, m1 );
+            MultiVectorStatistic.of( null, m1 );
             fail( "Expected an exception on null input data." );
         }
-        catch ( MetricOutputException e )
+        catch ( StatisticException e )
         {
         }
         try
         {
             mva.clear();
-            MultiVectorOutput.of( mva, m1 );
+            MultiVectorStatistic.of( mva, m1 );
             fail( "Expected an exception on empty inputs." );
         }
-        catch ( MetricOutputException e )
+        catch ( StatisticException e )
         {
         }
     }

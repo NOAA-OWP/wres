@@ -7,7 +7,7 @@ import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.metadata.Metadata;
 
 /**
- * <p>An input to be iterated over by a metric. A metric input may comprise paired data or unpaired data.
+ * <p>Sample data to be iterated over by a metric. A sample may comprise paired data or unpaired data.
  * Optionally, it may contain a baseline dataset to be used in the same context (e.g. for skill scores) and a 
  * climatological dataset, which is used to derive quantiles from climatological probabilities.</p>
  * 
@@ -17,11 +17,11 @@ import wres.datamodel.metadata.Metadata;
  * 
  * @author james.brown@hydrosolved.com
  */
-public interface MetricInput<S> extends Iterable<S>
+public interface SampleData<S> extends Iterable<S>
 {
 
     /**
-     * Returns true if the metric input has a baseline for skill calculations, false otherwise.
+     * Returns true if the sample has a baseline for skill calculations, false otherwise.
      * 
      * @return true if a baseline is defined, false otherwise
      */
@@ -32,7 +32,7 @@ public interface MetricInput<S> extends Iterable<S>
     }
 
     /**
-     * Returns true if the metric input has a climatological dataset associated with it, false otherwise.
+     * Returns true if the sample has a climatological dataset associated with it, false otherwise.
      * 
      * @return true if a climatological dataset is defined, false otherwise
      */
@@ -43,42 +43,42 @@ public interface MetricInput<S> extends Iterable<S>
     }    
     
     /**
-     * Returns the raw input.
+     * Returns the raw sample.
      * 
-     * @return the raw input
+     * @return the raw sample
      */
 
     List<S> getRawData();
 
     /**
-     * Returns the metadata associated with the input.
+     * Returns the metadata associated with the sample.
      * 
-     * @return the metadata associated with the input
+     * @return the metadata associated with the sample
      */
 
     Metadata getMetadata();
 
     /**
-     * Returns the baseline data as a {@link MetricInput} or null if no baseline is defined.
+     * Returns the baseline data as a {@link SampleData} or null if no baseline is defined.
      * 
      * @return the baseline
      */
 
-    MetricInput<S> getBaselineData();
+    SampleData<S> getBaselineData();
 
     /**
-     * Returns the raw input associated with a baseline/reference for skill calculations or null if no baseline is
+     * Returns the raw sample associated with a baseline/reference for skill calculations or null if no baseline is
      * defined.
      * 
-     * @return the raw input associated with a baseline
+     * @return the raw sample associated with a baseline
      */
 
     List<S> getRawDataForBaseline();
 
     /**
-     * Returns the metadata associated with the baseline input or null if no baseline is defined.
+     * Returns the metadata associated with the baseline sample or null if no baseline is defined.
      * 
-     * @return the metadata associated with the baseline input
+     * @return the metadata associated with the baseline sample
      */
 
     Metadata getMetadataForBaseline();

@@ -49,14 +49,14 @@ import wres.config.generated.NetcdfType;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.statistics.DoubleScoreOutput;
-import wres.datamodel.statistics.ListOfMetricOutput;
+import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.ListOfStatistics;
 import wres.io.concurrency.Executor;
 import wres.io.config.ConfigHelper;
 import wres.io.writing.WriteException;
 import wres.util.Strings;
 
-public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>,
+public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
                                            Supplier<Set<Path>>,
                                            Closeable
 {
@@ -123,18 +123,18 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>,
     }
 
     @Override
-    public void accept( ListOfMetricOutput<DoubleScoreOutput> output )
+    public void accept( ListOfStatistics<DoubleScoreStatistic> output )
     {
         LOGGER.debug( "NetcdfOutputWriter {} accepted output {}.", this, output );
 
-        Map<TimeWindow, List<DoubleScoreOutput>> outputByTimeWindow = wres.util.Collections.group(
+        Map<TimeWindow, List<DoubleScoreStatistic>> outputByTimeWindow = wres.util.Collections.group(
                 output,
                 score -> score.getMetadata().getTimeWindow()
         );
 
         for (TimeWindow window : outputByTimeWindow.keySet())
         {
-            List<DoubleScoreOutput> scores = outputByTimeWindow.get( window );
+            List<DoubleScoreStatistic> scores = outputByTimeWindow.get( window );
 
             synchronized ( NetcdfOutputWriter.WINDOW_LOCK )
             {
@@ -171,14 +171,14 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>,
                     }
 
                     Callable<Set<Path>> initialize( final TimeWindow window,
-                                                    final List<DoubleScoreOutput> scores )
+                                                    final List<DoubleScoreStatistic> scores )
                     {
                         this.output = scores;
                         this.window = window;
                         return this;
                     }
 
-                    private List<DoubleScoreOutput> output;
+                    private List<DoubleScoreStatistic> output;
                     private TimeWindow window;
                 }.initialize( window, scores );
 
@@ -360,14 +360,14 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>,
             this.writeLock = new ReentrantLock();
         }
 
-        void write( Collection<DoubleScoreOutput> output )
+        void write( Collection<DoubleScoreStatistic> output )
                 throws IOException, InvalidRangeException
         {
             //this now needs to somehow get all metadata for all metrics
             // Ensure that the output file exists
             this.buildWriter( output, this.metricVariables );
 
-            for (DoubleScoreOutput score : output)
+            for (DoubleScoreStatistic score : output)
             {
                 String name = MetricVariable.getName( score );
                 // Figure out the location of all values and build the origin in each variable grid
@@ -380,7 +380,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreOutput>,
             }
         }
 
-        private void buildWriter(final Collection<DoubleScoreOutput> output, final Collection<MetricVariable> variables )
+        private void buildWriter(final Collection<DoubleScoreStatistic> output, final Collection<MetricVariable> variables )
                 throws IOException
         {
             this.creationLock.lock();

@@ -8,51 +8,51 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import wres.datamodel.metadata.MetricOutputMetadata;
+import wres.datamodel.metadata.StatisticMetadata;
 
 /**
- * An immutable list of {@link MetricOutput}. A thread-safe builder is included to build a {@link ListOfMetricOutput}
+ * An immutable list of {@link Statistic}. A thread-safe builder is included to build a {@link ListOfStatistics}
  * incrementally.
  * 
- * @param <T> the metric output type
+ * @param <T> the statistic type
  * @author james.brown@hydrosolved.com
  */
 
-public class ListOfMetricOutput<T extends MetricOutput<?>> implements Iterable<T>
+public class ListOfStatistics<T extends Statistic<?>> implements Iterable<T>
 {
 
     /**
-     * The immutable internal list of outputs.
+     * The immutable internal list of statistic.
      */
 
-    private final List<T> outputs;
+    private final List<T> statistics;
 
     /**
      * Returns an instance from the inputs.
      * 
-     * @param <T> the metric output type
-     * @param outputs the outputs used to populate the list
+     * @param <T> the statistic type
+     * @param statistic the statistic used to populate the list
      * @return an instance of the container
-     * @throws NullPointerException if the output is null
-     * @throws MetricOutputException if the outputs contain one or more null entries
+     * @throws NullPointerException if the statistic is null
+     * @throws StatisticException if the outputs contain one or more null entries
      */
 
-    public static <T extends MetricOutput<?>> ListOfMetricOutput<T> of( List<T> outputs )
+    public static <T extends Statistic<?>> ListOfStatistics<T> of( List<T> statistic )
     {
-        return new ListOfMetricOutput<>( outputs );
+        return new ListOfStatistics<>( statistic );
     }
 
     /**
-     * Returns an immutable iterator over the outputs. An exception will be thrown on attempting to remove elements
+     * Returns an immutable iterator over the statistic. An exception will be thrown on attempting to remove elements
      * from the iterator.
      * 
-     * @return an immutable iterator over the outputs
+     * @return an immutable iterator over the statistic
      */
 
     @Override
     public Iterator<T> iterator()
     {
-        return outputs.iterator();
+        return statistics.iterator();
     }
 
     /**
@@ -63,18 +63,18 @@ public class ListOfMetricOutput<T extends MetricOutput<?>> implements Iterable<T
 
     public List<T> getData()
     {
-        return Collections.unmodifiableList( outputs );
+        return Collections.unmodifiableList( statistics );
     }
 
     @Override
     public boolean equals( Object o )
     {
-        if ( ! ( o instanceof ListOfMetricOutput ) )
+        if ( ! ( o instanceof ListOfStatistics ) )
         {
             return false;
         }
 
-        ListOfMetricOutput<?> in = (ListOfMetricOutput<?>) o;
+        ListOfStatistics<?> in = (ListOfStatistics<?>) o;
 
         return this.getData().equals( in.getData() );
     }
@@ -106,9 +106,9 @@ public class ListOfMetricOutput<T extends MetricOutput<?>> implements Iterable<T
     }
 
     /**
-     * <p>A thread-safe builder that allows for the incremental construction of a {@link ListOfMetricOutput}. 
+     * <p>A thread-safe builder that allows for the incremental construction of a {@link ListOfStatistics}. 
      * For convenience, the outputs may be sorted immediately prior to construction using a prescribed sorter. 
-     * For example, to sort the final list by order of the {@link MetricOutputMetadata}:</p>
+     * For example, to sort the final list by order of the {@link StatisticMetadata}:</p>
      * 
      * <p><code>
      * builder.setSorter( ( first, second ) { {@literal ->} first.getMetadata().compareTo( second.getMetadata() ) )
@@ -117,14 +117,14 @@ public class ListOfMetricOutput<T extends MetricOutput<?>> implements Iterable<T
      * @author james.brown@hydrosolved.com
      */
 
-    public static class ListOfMetricOutputBuilder<T extends MetricOutput<?>>
+    public static class ListOfStatisticsBuilder<T extends Statistic<?>>
     {
 
         /**
          * The thread-safe queue of metric outputs.
          */
 
-        private ConcurrentLinkedQueue<T> outputs = new ConcurrentLinkedQueue<>();
+        private ConcurrentLinkedQueue<T> statistics = new ConcurrentLinkedQueue<>();
 
         /**
          * An optional sorter to sort the list on construction.
@@ -133,15 +133,15 @@ public class ListOfMetricOutput<T extends MetricOutput<?>> implements Iterable<T
         private Comparator<? super T> sorter;
 
         /**
-         * Adds an output to the list.
+         * Adds an statistic to the list.
          * 
-         * @param output the output to add
+         * @param statistic the statistic to add
          * @return the builder
          */
 
-        public ListOfMetricOutputBuilder<T> addOutput( T output )
+        public ListOfStatisticsBuilder<T> addStatistic( T statistic )
         {
-            outputs.add( output );
+            statistics.add( statistic );
 
             return this;
         }
@@ -153,7 +153,7 @@ public class ListOfMetricOutput<T extends MetricOutput<?>> implements Iterable<T
          * @return the builder
          */
 
-        public ListOfMetricOutputBuilder<T> setSorter( Comparator<? super T> sorter )
+        public ListOfStatisticsBuilder<T> setSorter( Comparator<? super T> sorter )
         {
             this.sorter = sorter;
 
@@ -166,16 +166,16 @@ public class ListOfMetricOutput<T extends MetricOutput<?>> implements Iterable<T
          * @return the list of outputs
          */
 
-        public ListOfMetricOutput<T> build()
+        public ListOfStatistics<T> build()
         {
-            List<T> sorted = new ArrayList<>( this.outputs );
+            List<T> sorted = new ArrayList<>( this.statistics );
 
             if ( Objects.nonNull( this.sorter ) )
             {
                 Collections.sort( sorted, this.sorter );
             }
 
-            return new ListOfMetricOutput<>( sorted );
+            return new ListOfStatistics<>( sorted );
         }
 
     }
@@ -183,21 +183,21 @@ public class ListOfMetricOutput<T extends MetricOutput<?>> implements Iterable<T
     /**
      * Hidden constructor.
      * 
-     * @param outputs the outputs used to populate the list
+     * @param statistics the statistics used to populate the list
      * @throws NullPointerException if the output is null
-     * @throws MetricOutputException if the outputs contain one or more null entries
+     * @throws StatisticException if the outputs contain one or more null entries
      */
 
-    private ListOfMetricOutput( List<T> outputs )
+    private ListOfStatistics( List<T> statistics )
     {
-        Objects.requireNonNull( outputs, "Specify a non-null list of outputs." );
+        Objects.requireNonNull( statistics, "Specify a non-null list of outputs." );
 
         // Set first, then validate contents
-        this.outputs = Collections.unmodifiableList( outputs );
+        this.statistics = Collections.unmodifiableList( statistics );
         
-        if ( this.outputs.contains( null ) )
+        if ( this.statistics.contains( null ) )
         {
-            throw new MetricOutputException( "Cannot build a list of outputs with one or more null entries." );
+            throw new StatisticException( "Cannot build a list of outputs with one or more null entries." );
         }
 
     }

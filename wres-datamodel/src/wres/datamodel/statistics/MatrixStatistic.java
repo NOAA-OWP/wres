@@ -10,23 +10,23 @@ import java.util.Objects;
 
 import wres.datamodel.MatrixOfDoubles;
 import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.metadata.MetricOutputMetadata;
+import wres.datamodel.metadata.StatisticMetadata;
 
 /**
- * Immutable matrix of outputs associated with a metric. The number of elements and the order in which they are stored, 
+ * Immutable matrix of statistics associated with a metric. The number of elements and the order in which they are stored, 
  * is prescribed by the metric from which the outputs originate. The elements may be iterated over in row-major.
  * 
  * @author james.brown@hydrosolved.com
  */
 
-public class MatrixOutput implements MetricOutput<MatrixOfDoubles>, Iterable<Double>
+public class MatrixStatistic implements Statistic<MatrixOfDoubles>, Iterable<Double>
 {
 
     /**
-     * The output data.
+     * The statistics.
      */
 
-    private final MatrixOfDoubles output;
+    private final MatrixOfDoubles statistics;
 
     /**
      * A list of named elements in the matrix, stored in row-major order.
@@ -35,57 +35,57 @@ public class MatrixOutput implements MetricOutput<MatrixOfDoubles>, Iterable<Dou
     private final List<MetricDimension> names;
 
     /**
-     * The metadata associated with the output.
+     * The metadata associated with the statistics.
      */
 
-    private final MetricOutputMetadata meta;
+    private final StatisticMetadata meta;
 
     /**
      * Construct the output.
      * 
-     * @param output the verification output.
+     * @param statistics the verification statistics.
      * @param meta the metadata.
-     * @throws MetricOutputException if any of the inputs are invalid
+     * @throws StatisticException if any of the inputs are invalid
      * @return an instance of the output
      */
 
-    public static MatrixOutput
-            of( final double[][] output, final MetricOutputMetadata meta )
+    public static MatrixStatistic
+            of( final double[][] statistics, final StatisticMetadata meta )
     {
-        return MatrixOutput.of( MatrixOfDoubles.of( output ), null, meta );
+        return MatrixStatistic.of( MatrixOfDoubles.of( statistics ), null, meta );
     }
 
     /**
      * Construct the output.
      * 
-     * @param output the verification output.
+     * @param statistics the verification statistics.
      * @param names an optional list of named components in row-major order. May be null.
      * @param meta the metadata.
-     * @throws MetricOutputException if any of the inputs are invalid
-     * @throws NullPointerException if the output matrix is null
+     * @throws StatisticException if any of the inputs are invalid
+     * @throws NullPointerException if the statistics matrix is null
      * @return an instance of the output
      */
 
-    public static MatrixOutput
-            of( final double[][] output, List<MetricDimension> names, final MetricOutputMetadata meta )
+    public static MatrixStatistic
+            of( final double[][] statistics, List<MetricDimension> names, final StatisticMetadata meta )
     {
-        return MatrixOutput.of( MatrixOfDoubles.of( output ), names, meta );
+        return MatrixStatistic.of( MatrixOfDoubles.of( statistics ), names, meta );
     }
 
     /**
-     * Construct the output.
+     * Construct the statistics.
      * 
-     * @param output the verification output.
+     * @param statistics the verification statistics.
      * @param names an optional list of named components in row-major order. May be null.
      * @param meta the metadata.
-     * @throws MetricOutputException if any of the inputs are invalid
+     * @throws StatisticException if any of the inputs are invalid
      * @return an instance of the output
      */
 
-    public static MatrixOutput
-            of( final MatrixOfDoubles output, List<MetricDimension> names, final MetricOutputMetadata meta )
+    public static MatrixStatistic
+            of( final MatrixOfDoubles statistics, List<MetricDimension> names, final StatisticMetadata meta )
     {
-        return new MatrixOutput( output, names, meta );
+        return new MatrixStatistic( statistics, names, meta );
     }
 
     /**
@@ -99,17 +99,17 @@ public class MatrixOutput implements MetricOutput<MatrixOfDoubles>, Iterable<Dou
 
     public double getComponentAtIndex( int rowMajorIndex )
     {
-        int row = rowMajorIndex / output.rows();
-        int column = rowMajorIndex % output.rows();
-        if ( row >= output.rows() || column >= output.columns() )
+        int row = rowMajorIndex / statistics.rows();
+        int column = rowMajorIndex % statistics.rows();
+        if ( row >= statistics.rows() || column >= statistics.columns() )
         {
             throw new IndexOutOfBoundsException( "The row-major index '" + rowMajorIndex + "' is out of bounds." );
         }
-        return output.getDoubles()[row][column];
+        return statistics.getDoubles()[row][column];
     }
 
     /**
-     * Returns <code>true</code> if the {@link MatrixOutput} has named components, otherwise <code>false</code>.
+     * Returns <code>true</code> if the {@link MatrixStatistic} has named components, otherwise <code>false</code>.
      * 
      * @return true if the output has named components, false otherwise
      */
@@ -120,7 +120,7 @@ public class MatrixOutput implements MetricOutput<MatrixOfDoubles>, Iterable<Dou
     }
 
     /**
-     * Returns the component names associated with the {@link MatrixOutput} in row-major order or null.
+     * Returns the component names associated with the {@link MatrixStatistic} in row-major order or null.
      * 
      * @return the component names in row-major order or null
      */
@@ -148,16 +148,16 @@ public class MatrixOutput implements MetricOutput<MatrixOfDoubles>, Iterable<Dou
     /**
      * Returns the cardinality of the matrix, which is the product of the number of rows and columns.
      * 
-     * @return the size of the output
+     * @return the number of statistics
      */
 
     public int size()
     {
-        return output.rows() * output.columns();
+        return statistics.rows() * statistics.columns();
     }
 
     @Override
-    public MetricOutputMetadata getMetadata()
+    public StatisticMetadata getMetadata()
     {
         return meta;
     }
@@ -165,7 +165,7 @@ public class MatrixOutput implements MetricOutput<MatrixOfDoubles>, Iterable<Dou
     @Override
     public MatrixOfDoubles getData()
     {
-        return output;
+        return statistics;
     }
 
     @Override
@@ -208,15 +208,15 @@ public class MatrixOutput implements MetricOutput<MatrixOfDoubles>, Iterable<Dou
     @Override
     public boolean equals( final Object o )
     {
-        if ( ! ( o instanceof MatrixOutput ) )
+        if ( ! ( o instanceof MatrixStatistic ) )
         {
             return false;
         }
 
-        final MatrixOutput m = (MatrixOutput) o;
+        final MatrixStatistic m = (MatrixStatistic) o;
         boolean start = meta.equals( m.getMetadata() );
-        start = start && m.getData().rows() == output.rows() && m.getData().columns() == output.columns();
-        start = start && Arrays.deepEquals( output.getDoubles(), m.getData().getDoubles() );
+        start = start && m.getData().rows() == statistics.rows() && m.getData().columns() == statistics.columns();
+        start = start && Arrays.deepEquals( statistics.getDoubles(), m.getData().getDoubles() );
         start = start && Objects.equals( names, m.names );
         
         return start;
@@ -225,39 +225,39 @@ public class MatrixOutput implements MetricOutput<MatrixOfDoubles>, Iterable<Dou
     @Override
     public int hashCode()
     {
-        return Objects.hash( meta, Arrays.deepHashCode( output.getDoubles() ), names );
+        return Objects.hash( meta, Arrays.deepHashCode( statistics.getDoubles() ), names );
     }
 
     @Override
     public String toString()
     {
-        return output.toString();
+        return statistics.toString();
     }
 
     /**
-     * Construct the output.
+     * Construct the statistics.
      * 
-     * @param output the verification output.
+     * @param statistics the verification statistics
      * @param names an optional list of named components in row-major order. May be null.
      * @param meta the metadata.
-     * @throws MetricOutputException if any of the inputs are invalid
+     * @throws StatisticException if any of the inputs are invalid
      */
 
-    private MatrixOutput( final MatrixOfDoubles output, List<MetricDimension> names, final MetricOutputMetadata meta )
+    private MatrixStatistic( final MatrixOfDoubles statistics, List<MetricDimension> names, final StatisticMetadata meta )
     {
-        if ( Objects.isNull( output ) )
+        if ( Objects.isNull( statistics ) )
         {
-            throw new MetricOutputException( "Specify a non-null output." );
+            throw new StatisticException( "Specify non-null statistics." );
         }
         // Further validate
         if ( Objects.isNull( meta ) )
         {
-            throw new MetricOutputException( "Specify non-null metadata." );
+            throw new StatisticException( "Specify non-null metadata." );
         }
-        int size = output.rows() * output.columns();
+        int size = statistics.rows() * statistics.columns();
         if ( Objects.nonNull( names ) && names.size() != size )
         {
-            throw new MetricOutputException( "The number of named components differs from the number of elements in "
+            throw new StatisticException( "The number of named components differs from the number of elements in "
                                              + "the matrix ["
                                              + names.size()
                                              + ","
@@ -266,7 +266,7 @@ public class MatrixOutput implements MetricOutput<MatrixOfDoubles>, Iterable<Dou
         }
 
         // Set
-        this.output = output;
+        this.statistics = statistics;
         this.meta = meta;
         if ( Objects.nonNull( names ) )
         {

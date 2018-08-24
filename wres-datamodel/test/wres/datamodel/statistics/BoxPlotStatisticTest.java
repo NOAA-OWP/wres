@@ -15,21 +15,21 @@ import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
-import wres.datamodel.metadata.MetricOutputMetadata;
+import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.sampledata.pairs.EnsemblePair;
-import wres.datamodel.statistics.BoxPlotOutput;
-import wres.datamodel.statistics.MetricOutputException;
+import wres.datamodel.statistics.BoxPlotStatistic;
+import wres.datamodel.statistics.StatisticException;
 
 /**
- * Tests the {@link BoxPlotOutput}.
+ * Tests the {@link BoxPlotStatistic}.
  * 
  * @author james.brown@hydrosolveDataFactory.com
  */
-public final class BoxPlotOutputTest
+public final class BoxPlotStatisticTest
 {
 
     /**
-     * Constructs a {@link BoxPlotOutput} and tests for equality with another {@link BoxPlotOutput}.
+     * Constructs a {@link BoxPlotStatistic} and tests for equality with another {@link BoxPlotStatistic}.
      */
 
     @Test
@@ -38,7 +38,7 @@ public final class BoxPlotOutputTest
 
         //Build datasets
         final Location l1 = Location.of( "A" );
-        final MetricOutputMetadata m1 = MetricOutputMetadata.of( 10,
+        final StatisticMetadata m1 = StatisticMetadata.of( 10,
                                                                            MeasurementUnit.of(),
                                                                            MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
@@ -47,7 +47,7 @@ public final class BoxPlotOutputTest
                                                                                                                  "B",
                                                                                                                  "C" ) );
         final Location l2 = Location.of( "A" );
-        final MetricOutputMetadata m2 = MetricOutputMetadata.of( 11,
+        final StatisticMetadata m2 = StatisticMetadata.of( 11,
                                                                            MeasurementUnit.of(),
                                                                            MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
@@ -56,7 +56,7 @@ public final class BoxPlotOutputTest
                                                                                                                  "B",
                                                                                                                  "C" ) );
         final Location l3 = Location.of( "B" );
-        final MetricOutputMetadata m3 = MetricOutputMetadata.of( 10,
+        final StatisticMetadata m3 = StatisticMetadata.of( 10,
                                                                            MeasurementUnit.of(),
                                                                            MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
@@ -89,26 +89,26 @@ public final class BoxPlotOutputTest
             mve.add( EnsemblePair.of( 1, new double[] { 2, 3, 4, 5 } ) );
         }
 
-        final BoxPlotOutput q =
-                BoxPlotOutput.of( mva, pa, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
-        final BoxPlotOutput r =
-                BoxPlotOutput.of( mvb, pa, m3, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
-        final BoxPlotOutput s =
-                BoxPlotOutput.of( mva, pa, m1, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
-        final BoxPlotOutput t =
-                BoxPlotOutput.of( mvb, pa, m1, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
-        final BoxPlotOutput u =
-                BoxPlotOutput.of( mvc, pb, m1, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
-        final BoxPlotOutput v =
-                BoxPlotOutput.of( mvc, pb, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
-        final BoxPlotOutput w =
-                BoxPlotOutput.of( mvd, pb, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
-        final BoxPlotOutput x =
-                BoxPlotOutput.of( mvd, pb, m2, MetricDimension.ENSEMBLE_MEAN, MetricDimension.FORECAST_ERROR );
-        final BoxPlotOutput y =
-                BoxPlotOutput.of( mvd, pb, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_VALUE );
-        final BoxPlotOutput z =
-                BoxPlotOutput.of( mve, pb, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
+        final BoxPlotStatistic q =
+                BoxPlotStatistic.of( mva, pa, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
+        final BoxPlotStatistic r =
+                BoxPlotStatistic.of( mvb, pa, m3, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
+        final BoxPlotStatistic s =
+                BoxPlotStatistic.of( mva, pa, m1, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
+        final BoxPlotStatistic t =
+                BoxPlotStatistic.of( mvb, pa, m1, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
+        final BoxPlotStatistic u =
+                BoxPlotStatistic.of( mvc, pb, m1, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
+        final BoxPlotStatistic v =
+                BoxPlotStatistic.of( mvc, pb, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
+        final BoxPlotStatistic w =
+                BoxPlotStatistic.of( mvd, pb, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
+        final BoxPlotStatistic x =
+                BoxPlotStatistic.of( mvd, pb, m2, MetricDimension.ENSEMBLE_MEAN, MetricDimension.FORECAST_ERROR );
+        final BoxPlotStatistic y =
+                BoxPlotStatistic.of( mvd, pb, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_VALUE );
+        final BoxPlotStatistic z =
+                BoxPlotStatistic.of( mve, pb, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
         //Conduct comparisons
         assertTrue( "Expected equal outputs.", s.equals( t ) );
         assertTrue( "Expected non-equal outputs.", !s.equals( null ) );
@@ -126,7 +126,7 @@ public final class BoxPlotOutputTest
     }
 
     /**
-     * Constructs a {@link BoxPlotOutput} and tests for equal hashcodes with another {@link BoxPlotOutput}.
+     * Constructs a {@link BoxPlotStatistic} and tests for equal hashcodes with another {@link BoxPlotStatistic}.
      */
 
     @Test
@@ -135,7 +135,7 @@ public final class BoxPlotOutputTest
 
         //Build datasets
         final Location l1 = Location.of( "A" );
-        final MetricOutputMetadata m1 = MetricOutputMetadata.of( 10,
+        final StatisticMetadata m1 = StatisticMetadata.of( 10,
                                                                            MeasurementUnit.of(),
                                                                            MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
@@ -144,7 +144,7 @@ public final class BoxPlotOutputTest
                                                                                                                  "B",
                                                                                                                  "C" ) );
         final Location l2 = Location.of( "A" );
-        final MetricOutputMetadata m2 = MetricOutputMetadata.of( 11,
+        final StatisticMetadata m2 = StatisticMetadata.of( 11,
                                                                            MeasurementUnit.of(),
                                                                            MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
@@ -153,7 +153,7 @@ public final class BoxPlotOutputTest
                                                                                                                  "B",
                                                                                                                  "C" ) );
         final Location l3 = Location.of( "B" );
-        final MetricOutputMetadata m3 = MetricOutputMetadata.of( 10,
+        final StatisticMetadata m3 = StatisticMetadata.of( 10,
                                                                            MeasurementUnit.of(),
                                                                            MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
@@ -186,26 +186,26 @@ public final class BoxPlotOutputTest
             mve.add( EnsemblePair.of( 1, new double[] { 2, 3, 4, 5 } ) );
         }
 
-        final BoxPlotOutput q =
-                BoxPlotOutput.of( mva, pa, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
-        final BoxPlotOutput r =
-                BoxPlotOutput.of( mvb, pa, m3, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
-        final BoxPlotOutput s =
-                BoxPlotOutput.of( mva, pa, m1, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
-        final BoxPlotOutput t =
-                BoxPlotOutput.of( mvb, pa, m1, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
-        final BoxPlotOutput u =
-                BoxPlotOutput.of( mvc, pb, m1, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
-        final BoxPlotOutput v =
-                BoxPlotOutput.of( mvc, pb, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
-        final BoxPlotOutput w =
-                BoxPlotOutput.of( mvd, pb, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
-        final BoxPlotOutput x =
-                BoxPlotOutput.of( mvd, pb, m2, MetricDimension.ENSEMBLE_MEAN, MetricDimension.FORECAST_ERROR );
-        final BoxPlotOutput y =
-                BoxPlotOutput.of( mvd, pb, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_VALUE );
-        final BoxPlotOutput z =
-                BoxPlotOutput.of( mve, pb, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
+        final BoxPlotStatistic q =
+                BoxPlotStatistic.of( mva, pa, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
+        final BoxPlotStatistic r =
+                BoxPlotStatistic.of( mvb, pa, m3, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
+        final BoxPlotStatistic s =
+                BoxPlotStatistic.of( mva, pa, m1, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
+        final BoxPlotStatistic t =
+                BoxPlotStatistic.of( mvb, pa, m1, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
+        final BoxPlotStatistic u =
+                BoxPlotStatistic.of( mvc, pb, m1, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
+        final BoxPlotStatistic v =
+                BoxPlotStatistic.of( mvc, pb, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
+        final BoxPlotStatistic w =
+                BoxPlotStatistic.of( mvd, pb, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
+        final BoxPlotStatistic x =
+                BoxPlotStatistic.of( mvd, pb, m2, MetricDimension.ENSEMBLE_MEAN, MetricDimension.FORECAST_ERROR );
+        final BoxPlotStatistic y =
+                BoxPlotStatistic.of( mvd, pb, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_VALUE );
+        final BoxPlotStatistic z =
+                BoxPlotStatistic.of( mve, pb, m2, MetricDimension.OBSERVED_VALUE, MetricDimension.FORECAST_ERROR );
         //Conduct comparisons
         assertTrue( "Expected equal hashes.", s.hashCode() == t.hashCode() );
         assertTrue( "Expected non-equal hashes.", s.hashCode() != Objects.hash( (Object) null ) );
@@ -223,7 +223,7 @@ public final class BoxPlotOutputTest
     }
 
     /**
-     * Constructs a {@link BoxPlotOutput} and checks the {@link BoxPlotOutput#getMetadata()}.
+     * Constructs a {@link BoxPlotStatistic} and checks the {@link BoxPlotStatistic#getMetadata()}.
      */
 
     @Test
@@ -231,7 +231,7 @@ public final class BoxPlotOutputTest
     {
 
         final Location l1 = Location.of( "A" );
-        final MetricOutputMetadata m1 = MetricOutputMetadata.of( 10,
+        final StatisticMetadata m1 = StatisticMetadata.of( 10,
                                                                            MeasurementUnit.of(),
                                                                            MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
@@ -240,7 +240,7 @@ public final class BoxPlotOutputTest
                                                                                                                  "B",
                                                                                                                  "C" ) );
         final Location l2 = Location.of( "B" );
-        final MetricOutputMetadata m2 = MetricOutputMetadata.of( 10,
+        final StatisticMetadata m2 = StatisticMetadata.of( 10,
                                                                            MeasurementUnit.of(),
                                                                            MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
@@ -253,14 +253,14 @@ public final class BoxPlotOutputTest
         {
             values.add( EnsemblePair.of( 1, new double[] { 1, 2, 3 } ) );
         }
-        final BoxPlotOutput q =
-                BoxPlotOutput.of( values,
+        final BoxPlotStatistic q =
+                BoxPlotStatistic.of( values,
                                   VectorOfDoubles.of( new double[] { 0.1, 0.5, 1.0 } ),
                                   m1,
                                   MetricDimension.OBSERVED_VALUE,
                                   MetricDimension.FORECAST_ERROR );
-        final BoxPlotOutput r =
-                BoxPlotOutput.of( values,
+        final BoxPlotStatistic r =
+                BoxPlotStatistic.of( values,
                                   VectorOfDoubles.of( new double[] { 0.1, 0.5, 1.0 } ),
                                   m2,
                                   MetricDimension.OBSERVED_VALUE,
@@ -269,7 +269,7 @@ public final class BoxPlotOutputTest
     }
 
     /**
-     * Constructs a {@link BoxPlotOutput} and checks the accessor methods for correct operation.
+     * Constructs a {@link BoxPlotStatistic} and checks the accessor methods for correct operation.
      */
 
     @Test
@@ -277,7 +277,7 @@ public final class BoxPlotOutputTest
     {
 
         final Location l1 = Location.of( "A" );
-        final MetricOutputMetadata m1 = MetricOutputMetadata.of( 10,
+        final StatisticMetadata m1 = StatisticMetadata.of( 10,
                                                                            MeasurementUnit.of(),
                                                                            MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
@@ -290,8 +290,8 @@ public final class BoxPlotOutputTest
         {
             values.add( EnsemblePair.of( 1, new double[] { 1, 2, 3 } ) );
         }
-        final BoxPlotOutput q =
-                BoxPlotOutput.of( values,
+        final BoxPlotStatistic q =
+                BoxPlotStatistic.of( values,
                                   VectorOfDoubles.of( new double[] { 0.1, 0.5, 1.0 } ),
                                   m1,
                                   MetricDimension.OBSERVED_VALUE,
@@ -309,7 +309,7 @@ public final class BoxPlotOutputTest
     }
 
     /**
-     * Attempts to construct a {@link BoxPlotOutput} and checks for exceptions on invalid inputs.
+     * Attempts to construct a {@link BoxPlotStatistic} and checks for exceptions on invalid inputs.
      */
 
     @Test
@@ -317,7 +317,7 @@ public final class BoxPlotOutputTest
     {
 
         final Location l1 = Location.of( "A" );
-        final MetricOutputMetadata m1 = MetricOutputMetadata.of( 10,
+        final StatisticMetadata m1 = StatisticMetadata.of( 10,
                                                                            MeasurementUnit.of(),
                                                                            MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
@@ -332,74 +332,74 @@ public final class BoxPlotOutputTest
         }
         try
         {
-            BoxPlotOutput.of( null,
+            BoxPlotStatistic.of( null,
                               VectorOfDoubles.of( new double[] { 0.1, 0.5, 1.0 } ),
                               m1,
                               MetricDimension.OBSERVED_VALUE,
                               MetricDimension.FORECAST_ERROR );
             fail( "Expected an exception on null input data." );
         }
-        catch ( MetricOutputException e )
+        catch ( StatisticException e )
         {
         }
         try
         {
-            BoxPlotOutput.of( values,
+            BoxPlotStatistic.of( values,
                               VectorOfDoubles.of( new double[] { 0.1, 0.5, 1.0 } ),
                               null,
                               MetricDimension.OBSERVED_VALUE,
                               MetricDimension.FORECAST_ERROR );
             fail( "Expected an exception on null metadata." );
         }
-        catch ( MetricOutputException e )
+        catch ( StatisticException e )
         {
         }
         try
         {
-            BoxPlotOutput.of( values,
+            BoxPlotStatistic.of( values,
                               null,
                               m1,
                               MetricDimension.OBSERVED_VALUE,
                               MetricDimension.FORECAST_ERROR );
             fail( "Expected an exception on a null vector of probabilities." );
         }
-        catch ( MetricOutputException e )
+        catch ( StatisticException e )
         {
         }
         try
         {
-            BoxPlotOutput.of( values,
+            BoxPlotStatistic.of( values,
                               VectorOfDoubles.of( new double[] {} ),
                               m1,
                               MetricDimension.OBSERVED_VALUE,
                               MetricDimension.FORECAST_ERROR );
             fail( "Expected an exception on an empty vector of probabilities." );
         }
-        catch ( MetricOutputException e )
+        catch ( StatisticException e )
         {
         }
         try
         {
-            BoxPlotOutput.of( values,
+            BoxPlotStatistic.of( values,
                               VectorOfDoubles.of( new double[] { 5.0, 10.0, 15.0 } ),
                               m1,
                               MetricDimension.OBSERVED_VALUE,
                               MetricDimension.FORECAST_ERROR );
             fail( "Expected an exception on invalid probabilities." );
         }
-        catch ( MetricOutputException e )
+        catch ( StatisticException e )
         {
         }
         try
         {
-            BoxPlotOutput.of( values,
+            BoxPlotStatistic.of( values,
                               VectorOfDoubles.of( new double[] { 5.0, 10.0 } ),
                               m1,
                               MetricDimension.OBSERVED_VALUE,
                               MetricDimension.FORECAST_ERROR );
             fail( "Expected an exception on fewer probabilities than whiskers." );
         }
-        catch ( MetricOutputException e )
+        catch ( StatisticException e )
         {
         }
         try
@@ -407,14 +407,14 @@ public final class BoxPlotOutputTest
             final List<EnsemblePair> uneven = new ArrayList<>();
             uneven.add( EnsemblePair.of( 1.0, new double[] { 1, 2, 3 } ) );
             uneven.add( EnsemblePair.of( 1.0, new double[] { 1, 2, 3, 4 } ) );
-            BoxPlotOutput.of( uneven,
+            BoxPlotStatistic.of( uneven,
                               VectorOfDoubles.of( new double[] { 0.0, 0.5, 1.0 } ),
                               m1,
                               MetricDimension.OBSERVED_VALUE,
                               MetricDimension.FORECAST_ERROR );
             fail( "Expected an exception on boxes with varying numbers of whiskers." );
         }
-        catch ( MetricOutputException e )
+        catch ( StatisticException e )
         {
         }
         try
@@ -422,50 +422,50 @@ public final class BoxPlotOutputTest
             final List<EnsemblePair> uneven = new ArrayList<>();
             uneven.add( EnsemblePair.of( 1.0, new double[] { 1, 2, 3 } ) );
             uneven.add( EnsemblePair.of( 1.0, new double[] {} ) );
-            BoxPlotOutput.of( uneven,
+            BoxPlotStatistic.of( uneven,
                               VectorOfDoubles.of( new double[] { 0.0, 0.5, 1.0 } ),
                               m1,
                               MetricDimension.OBSERVED_VALUE,
                               MetricDimension.FORECAST_ERROR );
             fail( "Expected an exception on boxes with missing whiskers." );
         }
-        catch ( MetricOutputException e )
+        catch ( StatisticException e )
         {
         }
         try
         {
-            BoxPlotOutput.of( values,
+            BoxPlotStatistic.of( values,
                               VectorOfDoubles.of( new double[] { 0.0, -0.5, 1.0 } ),
                               m1,
                               MetricDimension.OBSERVED_VALUE,
                               MetricDimension.FORECAST_ERROR );
             fail( "Expected an exception on boxes with invalid probabilities." );
         }
-        catch ( MetricOutputException e )
+        catch ( StatisticException e )
         {
         }
         try
         {
-            BoxPlotOutput.of( values,
+            BoxPlotStatistic.of( values,
                               VectorOfDoubles.of( new double[] { 0.0, 0.5, 1.0 } ),
                               m1,
                               null,
                               MetricDimension.FORECAST_ERROR );
             fail( "Expected an exception on a null domain axis dimension." );
         }
-        catch ( MetricOutputException e )
+        catch ( StatisticException e )
         {
         }
         try
         {
-            BoxPlotOutput.of( values,
+            BoxPlotStatistic.of( values,
                               VectorOfDoubles.of( new double[] { 0.0, 0.5, 1.0 } ),
                               m1,
                               MetricDimension.OBSERVED_VALUE,
                               null );
             fail( "Expected an exception on a null range axis dimension." );
         }
-        catch ( MetricOutputException e )
+        catch ( StatisticException e )
         {
         }
     }

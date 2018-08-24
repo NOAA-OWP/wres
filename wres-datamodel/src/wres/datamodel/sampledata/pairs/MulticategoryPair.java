@@ -4,7 +4,7 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.StringJoiner;
 
-import wres.datamodel.sampledata.MetricInputException;
+import wres.datamodel.sampledata.SampleDataException;
 
 /**
  * Immutable pair of multicategory outcomes. The left and right sides contain an equivalent number of elements. When
@@ -34,7 +34,7 @@ public class MulticategoryPair
      * @param left the left side of the pair
      * @param right the right side of the pair
      * @throws NullPointerException if either input is null
-     * @throws MetricInputException if the left and right sides are not equal in size or one input contains more than 
+     * @throws SampleDataException if the left and right sides are not equal in size or one input contains more than 
      *            one category, but does not contain exactly one occurrence among them (<code>true</code> value)
      * @return a multicategory pair
      */
@@ -105,7 +105,7 @@ public class MulticategoryPair
      * @param left the left side of the pair
      * @param right the right side of the pair
      * @throws NullPointerException if either input is null
-     * @throws MetricInputException if the left and right sides are not equal in size or one input contains more than 
+     * @throws SampleDataException if the left and right sides are not equal in size or one input contains more than 
      *            one category, but does not contain exactly one occurrence among them (<code>true</code> value)
      */
 
@@ -117,7 +117,7 @@ public class MulticategoryPair
 
         if ( left.length != right.length )
         {
-            throw new MetricInputException( "The input should have an equivalent number of outcomes on each "
+            throw new SampleDataException( "The input should have an equivalent number of outcomes on each "
                                             + "side: ["
                                             + left.length
                                             + ", "
@@ -138,7 +138,7 @@ public class MulticategoryPair
             }
             if ( leftCount != 1 )
             {
-                throw new MetricInputException( "The left input must contain exactly one occurrence: " + leftCount
+                throw new SampleDataException( "The left input must contain exactly one occurrence: " + leftCount
                                                 + "." );
             }
             int rightCount = 0;
@@ -151,7 +151,7 @@ public class MulticategoryPair
             }
             if ( rightCount != 1 )
             {
-                throw new MetricInputException( "The right input must contain exactly one occurrence: " + rightCount
+                throw new SampleDataException( "The right input must contain exactly one occurrence: " + rightCount
                                                 + "." );
             }
         }

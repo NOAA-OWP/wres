@@ -9,10 +9,10 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.ScoreOutputGroup;
-import wres.datamodel.sampledata.MetricInputException;
+import wres.datamodel.MetricConstants.ScoreGroup;
+import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
-import wres.datamodel.statistics.DoubleScoreOutput;
+import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
@@ -53,7 +53,7 @@ public final class DoubleErrorScoreTest
         final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsTwo();
 
         //Check the results
-        final DoubleScoreOutput actual = score.apply( input );
+        final DoubleScoreStatistic actual = score.apply( input );
 
         //Check the parameters
         assertTrue( "Unexpected baseline identifier for the DoubleErrorScore.",
@@ -71,13 +71,13 @@ public final class DoubleErrorScoreTest
     }
     
     /**
-     * Checks that the {@link DoubleErrorScore#getScoreOutputGroup()} returns {@link ScoreOutputGroup#NONE}.
+     * Checks that the {@link DoubleErrorScore#getScoreOutputGroup()} returns {@link ScoreGroup#NONE}.
      */
 
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( score.getScoreOutputGroup() == ScoreOutputGroup.NONE );
+        assertTrue( score.getScoreOutputGroup() == ScoreGroup.NONE );
     }
 
     /**
@@ -124,7 +124,7 @@ public final class DoubleErrorScoreTest
     @Test
     public void testApplyExceptionOnNullInput() throws MetricParameterException
     {
-        exception.expect( MetricInputException.class );
+        exception.expect( SampleDataException.class );
         exception.expectMessage( "Specify non-null input to the 'MEAN ERROR'." );
 
         score.apply( null );

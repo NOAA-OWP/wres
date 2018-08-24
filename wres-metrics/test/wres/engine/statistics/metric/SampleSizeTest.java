@@ -7,12 +7,12 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.ScoreOutputGroup;
+import wres.datamodel.MetricConstants.ScoreGroup;
 import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.sampledata.MetricInputException;
+import wres.datamodel.metadata.StatisticMetadata;
+import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
-import wres.datamodel.statistics.DoubleScoreOutput;
+import wres.datamodel.statistics.DoubleScoreStatistic;
 
 /**
  * Tests the {@link SampleSize}.
@@ -40,7 +40,7 @@ public final class SampleSizeTest
         final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Metadata for the output
-        final MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getRawData().size(),
+        final StatisticMetadata m1 = StatisticMetadata.of( input.getRawData().size(),
                                                                            MeasurementUnit.of(),
                                                                            MeasurementUnit.of(),
                                                                            MetricConstants.SAMPLE_SIZE,
@@ -49,8 +49,8 @@ public final class SampleSizeTest
         SampleSize<SingleValuedPairs> ss = SampleSize.of();
 
         //Check the results
-        DoubleScoreOutput actual = ss.apply( input );
-        DoubleScoreOutput expected = DoubleScoreOutput.of( (double) input.getRawData().size(), m1 );
+        DoubleScoreStatistic actual = ss.apply( input );
+        DoubleScoreStatistic expected = DoubleScoreStatistic.of( (double) input.getRawData().size(), m1 );
         assertTrue( "Actual: " + actual.getData().doubleValue()
                     + ". Expected: "
                     + expected.getData().doubleValue()
@@ -62,7 +62,7 @@ public final class SampleSizeTest
                     ss.getName().equals( MetricConstants.SAMPLE_SIZE.toString() ) );
         assertTrue( "The Sample Size is not decomposable.", !ss.isDecomposable() );
         assertTrue( "The Sample Size is not a skill score.", !ss.isSkillScore() );
-        assertTrue( "The Sample Size cannot be decomposed.", ss.getScoreOutputGroup() == ScoreOutputGroup.NONE );
+        assertTrue( "The Sample Size cannot be decomposed.", ss.getScoreOutputGroup() == ScoreGroup.NONE );
     }
 
     /**
@@ -76,7 +76,7 @@ public final class SampleSizeTest
         //Build the metric
         SampleSize<SingleValuedPairs> ss = SampleSize.of();
 
-        exception.expect( MetricInputException.class );
+        exception.expect( SampleDataException.class );
         exception.expectMessage( "Specify non-null input to the 'SAMPLE SIZE'." );
         ss.apply( null );
 

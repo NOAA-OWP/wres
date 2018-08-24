@@ -18,12 +18,12 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.Metadata;
-import wres.datamodel.metadata.MetricOutputMetadata;
+import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.statistics.BoxPlotOutput;
-import wres.datamodel.statistics.ListOfMetricOutput;
-import wres.datamodel.statistics.MetricOutput;
+import wres.datamodel.statistics.BoxPlotStatistic;
+import wres.datamodel.statistics.ListOfStatistics;
+import wres.datamodel.statistics.Statistic;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
 import wres.vis.ChartEngineFactory.ChartType;
@@ -79,10 +79,10 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
      * 
      * @param displayPlotInput the input data
      */
-    public WRESArgumentProcessor( BoxPlotOutput displayPlotInput )
+    public WRESArgumentProcessor( BoxPlotStatistic displayPlotInput )
     {
         super();
-        MetricOutputMetadata meta = displayPlotInput.getMetadata();
+        StatisticMetadata meta = displayPlotInput.getMetadata();
         extractStandardArgumentsFromMetadata( meta );
 
         recordWindowingArguments( meta );
@@ -107,11 +107,11 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
      * @param plotType the plot type; null is allowed, which will trigger recording arguments as if this were anything but
      *     a pooling window plot.
      */
-    public <T extends MetricOutput<?>> WRESArgumentProcessor( ListOfMetricOutput<T> displayedPlotInput, ChartType plotType )
+    public <T extends Statistic<?>> WRESArgumentProcessor( ListOfStatistics<T> displayedPlotInput, ChartType plotType )
     {
         super();
 
-        MetricOutputMetadata meta = displayedPlotInput.getData().get( 0 ).getMetadata();
+        StatisticMetadata meta = displayedPlotInput.getData().get( 0 ).getMetadata();
         extractStandardArgumentsFromMetadata( meta );
 
         if ( plotType != null && plotType == ChartType.POOLING_WINDOW )
@@ -136,15 +136,15 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
      * Extracts the standard arguments that can be pulled from and interpreted consistently for any output meta data. 
      * @param meta the output metadata 
      */
-    private void extractStandardArgumentsFromMetadata( MetricOutputMetadata meta )
+    private void extractStandardArgumentsFromMetadata( StatisticMetadata meta )
     {
         //Setup fixed arguments.
         addArgument( "metricName", meta.getMetricID().toString() );
         addArgument( "metricShortName", meta.getMetricID().toString() );
         addArgument( "outputUnits", meta.getMeasurementUnit().toString() );
-        addArgument( "inputUnits", meta.getInputDimension().toString() );
+        addArgument( "inputUnits", meta.getSampleDataMeasurementUnit().toString() );
         addArgument( "outputUnitsLabelSuffix", " [" + meta.getMeasurementUnit() + "]" );
-        addArgument( "inputUnitsLabelSuffix", " [" + meta.getInputDimension() + "]" );
+        addArgument( "inputUnitsLabelSuffix", " [" + meta.getSampleDataMeasurementUnit() + "]" );
 
         recordIdentifierArguments( meta );
 
@@ -233,10 +233,10 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
      * @param displayedPlotInput the plot input
      * @param plotTimeWindow the time window
      */
-    public <T extends MetricOutput<?>> void addLeadThresholdArguments( ListOfMetricOutput<T> displayedPlotInput,
+    public <T extends Statistic<?>> void addLeadThresholdArguments( ListOfStatistics<T> displayedPlotInput,
                                            TimeWindow plotTimeWindow )
     {
-        final MetricOutputMetadata meta = displayedPlotInput.getData().get( 0 ).getMetadata();
+        final StatisticMetadata meta = displayedPlotInput.getData().get( 0 ).getMetadata();
 
         final String legendTitle = "Threshold";
         String legendUnitsText = "";
@@ -245,7 +245,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         
         if ( thresholds.contains( true ) || ( thresholds.size() > 1 ) )
         {
-            legendUnitsText += " [" + meta.getInputDimension() + "]";
+            legendUnitsText += " [" + meta.getSampleDataMeasurementUnit() + "]";
         }
 
         addArgument( "legendTitle", legendTitle );
@@ -265,7 +265,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
      * @param displayedPlotInput the plot input
      * @param threshold the threshold
      */
-    public <T extends MetricOutput<?>> void addThresholdLeadArguments( ListOfMetricOutput<T> displayedPlotInput,
+    public <T extends Statistic<?>> void addThresholdLeadArguments( ListOfStatistics<T> displayedPlotInput,
                                            OneOrTwoThresholds threshold )
     {
 
@@ -297,9 +297,9 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
      * @param <T> the output type
      * @param displayedPlotInput the plot input
      */
-    public <T extends MetricOutput<?>> void addPoolingWindowArguments(ListOfMetricOutput<T> displayedPlotInput )
+    public <T extends Statistic<?>> void addPoolingWindowArguments(ListOfStatistics<T> displayedPlotInput )
     {
-        final MetricOutputMetadata meta = displayedPlotInput.getData().get( 0 ).getMetadata();
+        final StatisticMetadata meta = displayedPlotInput.getData().get( 0 ).getMetadata();
         if ( !meta.getTimeWindow().getEarliestLeadTime().equals( meta.getTimeWindow().getLatestLeadTime() ) )
         {
             addArgument( "legendTitle", "Lead time window [HOUR], Threshold " );
@@ -309,7 +309,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
 
             addArgument( "legendTitle", "Lead time [HOUR], Threshold " );
         }
-        addArgument( "legendUnitsText", "[" + meta.getInputDimension() + "]" );
+        addArgument( "legendUnitsText", "[" + meta.getSampleDataMeasurementUnit() + "]" );
     }
 
     public void addDurationMetricArguments()
@@ -322,18 +322,18 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
      * @param <T> the output type
      * @param displayedPlotInput the plot input
      */
-    public <T extends MetricOutput<?>> void addTimeToPeakArguments(ListOfMetricOutput<T> displayedPlotInput )
+    public <T extends Statistic<?>> void addTimeToPeakArguments(ListOfStatistics<T> displayedPlotInput )
     {
-        final MetricOutputMetadata meta = displayedPlotInput.getData().get( 0 ).getMetadata();
+        final StatisticMetadata meta = displayedPlotInput.getData().get( 0 ).getMetadata();
         addArgument( "legendTitle", "Threshold " );
-        addArgument( "legendUnitsText", "[" + meta.getInputDimension() + "]" );
+        addArgument( "legendUnitsText", "[" + meta.getSampleDataMeasurementUnit() + "]" );
     }
 
     /**
      * Adds arguments related to the baseline forecasts for skill scores.
      * @param meta the output metadata
      */
-    public void addBaselineArguments( MetricOutputMetadata meta )
+    public void addBaselineArguments( StatisticMetadata meta )
     {
         final DatasetIdentifier identifier = meta.getIdentifier();
         String baselineSuffix = "";

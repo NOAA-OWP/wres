@@ -5,17 +5,17 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-import wres.datamodel.sampledata.MetricInput;
-import wres.datamodel.statistics.MetricOutput;
+import wres.datamodel.sampledata.SampleData;
+import wres.datamodel.statistics.Statistic;
 
 /**
- * Wraps a {@link Metric} and a {@link MetricInput} into a {@link Callable} task. The {@link MetricInput} is itself
+ * Wraps a {@link Metric} and a {@link SampleData} into a {@link Callable} task. The {@link SampleData} is itself
  * wrapped in a {@link Future}.
  * 
  * @author james.brown@hydrosolved.com
  */
 
-class MetricTask<S extends MetricInput<?>, T extends MetricOutput<?>> implements Callable<T>
+class MetricTask<S extends SampleData<?>, T extends Statistic<?>> implements Callable<T>
 {
 
     /**
@@ -29,7 +29,7 @@ class MetricTask<S extends MetricInput<?>, T extends MetricOutput<?>> implements
     private final Future<S> input;
 
     /**
-     * Construct a task with a {@link Metric} and a {@link MetricInput} wrapped in a {@link Future}.
+     * Construct a task with a {@link Metric} and a {@link SampleData} wrapped in a {@link Future}.
      * 
      * @param metric the metric
      * @param input the metric input

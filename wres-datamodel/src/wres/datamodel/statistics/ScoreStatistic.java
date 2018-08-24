@@ -7,7 +7,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import wres.datamodel.MetricConstants;
 
 /**
- * An output associated with a score. A score may contain one or more components, such as the components of a score
+ * A score statistic. A score may contain one or more components, such as the components of a score
  * decomposition or the values associated with alternative methods of calculation. 
  * 
  * @param <T> the raw type of the score
@@ -15,7 +15,7 @@ import wres.datamodel.MetricConstants;
  * @author james.brown@hydrosolved.com
  */
 
-public interface ScoreOutput<T, U extends ScoreOutput<T, ?>> extends MetricOutput<T>, Iterable<Pair<MetricConstants, T>>
+public interface ScoreStatistic<T, U extends ScoreStatistic<T, ?>> extends Statistic<T>, Iterable<Pair<MetricConstants, T>>
 {
 
     /**

@@ -18,7 +18,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import wres.datamodel.sampledata.MetricInputException;
+import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.SingleValuedPair;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.BasicTimeSeries;
@@ -439,7 +439,7 @@ public final class BasicTimeSeriesTest
     @Test
     public void testForExceptionOnNullInput()
     {
-        exception.expect( MetricInputException.class );
+        exception.expect( SampleDataException.class );
         exception.expectMessage( "Cannot build a time-series with one or more null events." );
 
         List<Event<Double>> withNulls = new ArrayList<>();
@@ -448,7 +448,7 @@ public final class BasicTimeSeriesTest
         new BasicTimeSeriesBuilder<Double>().addTimeSeriesData( Instant.parse( "1985-01-01T00:00:00Z" ), withNulls )
                                             .build();
 
-        exception.expect( MetricInputException.class );
+        exception.expect( SampleDataException.class );
         exception.expectMessage( "Cannot build a time-series with one or more null time-series." );
         new BasicTimeSeriesBuilder<Double>().addTimeSeriesData( Instant.parse( "1985-01-01T00:00:00Z" ), null )
                                             .build();

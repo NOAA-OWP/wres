@@ -3,13 +3,13 @@ package wres.engine.statistics.metric;
 import java.util.function.Function;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.sampledata.MetricInput;
-import wres.datamodel.sampledata.MetricInputException;
-import wres.datamodel.statistics.MetricOutput;
+import wres.datamodel.sampledata.SampleData;
+import wres.datamodel.sampledata.SampleDataException;
+import wres.datamodel.statistics.Statistic;
 
 /**
  * <p>
- * Abstract base class for an immutable metric. The metric calculation is implemented in {@link #apply(MetricInput)}.
+ * Abstract base class for an immutable metric. The metric calculation is implemented in {@link #apply(SampleData)}.
  * The metric may operate on paired or unpaired inputs, and inputs that comprise one or more individual datasets. The
  * structure of the input and output is prescribed by a particular subclass.
  * </p>
@@ -22,7 +22,7 @@ import wres.datamodel.statistics.MetricOutput;
  * 
  * @author james.brown@hydrosolved.com
  */
-public interface Metric<S extends MetricInput<?>, T extends MetricOutput<?>> extends Function<S, T>
+public interface Metric<S extends SampleData<?>, T extends Statistic<?>> extends Function<S, T>
 {
 
     /**
@@ -30,7 +30,7 @@ public interface Metric<S extends MetricInput<?>, T extends MetricOutput<?>> ext
      * 
      * @param s the input
      * @return the output
-     * @throws MetricInputException if the metric input is unexpected
+     * @throws SampleDataException if the metric input is unexpected
      * @throws MetricCalculationException if the metric calculation fails
      */
 

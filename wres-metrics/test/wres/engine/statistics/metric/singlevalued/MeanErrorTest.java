@@ -11,13 +11,13 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.ScoreOutputGroup;
+import wres.datamodel.MetricConstants.ScoreGroup;
 import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Metadata;
-import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.sampledata.MetricInputException;
+import wres.datamodel.metadata.StatisticMetadata;
+import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
-import wres.datamodel.statistics.DoubleScoreOutput;
+import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 
@@ -55,14 +55,14 @@ public final class MeanErrorTest
         SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Metadata for the output
-        MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getRawData().size(),
+        StatisticMetadata m1 = StatisticMetadata.of( input.getRawData().size(),
                                                                    MeasurementUnit.of(),
                                                                    MeasurementUnit.of(),
                                                                    MetricConstants.MEAN_ERROR,
                                                                    MetricConstants.MAIN );
         //Check the results
-        final DoubleScoreOutput actual = this.meanError.apply( input );
-        final DoubleScoreOutput expected = DoubleScoreOutput.of( 200.55, m1 );
+        final DoubleScoreStatistic actual = this.meanError.apply( input );
+        final DoubleScoreStatistic expected = DoubleScoreStatistic.of( 200.55, m1 );
         assertTrue( "Actual: " + actual.getData().doubleValue()
                     + ". Expected: "
                     + expected.getData().doubleValue()
@@ -81,7 +81,7 @@ public final class MeanErrorTest
         SingleValuedPairs input =
                 SingleValuedPairs.of( Arrays.asList(), Metadata.of() );
  
-        DoubleScoreOutput actual = meanError.apply( input );
+        DoubleScoreStatistic actual = meanError.apply( input );
 
         assertTrue( actual.getData().isNaN() );
     }
@@ -124,7 +124,7 @@ public final class MeanErrorTest
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( meanError.getScoreOutputGroup() == ScoreOutputGroup.NONE );
+        assertTrue( meanError.getScoreOutputGroup() == ScoreGroup.NONE );
     }
 
     /**
@@ -135,7 +135,7 @@ public final class MeanErrorTest
     @Test
     public void testApplyExceptionOnNullInput()
     {
-        exception.expect( MetricInputException.class );
+        exception.expect( SampleDataException.class );
         exception.expectMessage( "Specify non-null input to the 'MEAN ERROR'." );
         
         meanError.apply( null );

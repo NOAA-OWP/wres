@@ -3,10 +3,10 @@ package wres.engine.statistics.metric.singlevalued;
 import java.util.Objects;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.sampledata.MetricInputException;
+import wres.datamodel.metadata.StatisticMetadata;
+import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
-import wres.datamodel.statistics.DoubleScoreOutput;
+import wres.datamodel.statistics.DoubleScoreStatistic;
 
 /**
  * Computes the square of Pearson's product-moment correlation coefficient between the left and right sides of the
@@ -29,7 +29,7 @@ public class CoefficientOfDetermination extends CorrelationPearsons
     }
     
     @Override
-    public DoubleScoreOutput apply(SingleValuedPairs s)
+    public DoubleScoreStatistic apply(SingleValuedPairs s)
     {
         return aggregate(getInputForAggregation(s));
     }
@@ -41,30 +41,30 @@ public class CoefficientOfDetermination extends CorrelationPearsons
     }
 
     @Override
-    public DoubleScoreOutput aggregate(DoubleScoreOutput output)
+    public DoubleScoreStatistic aggregate(DoubleScoreStatistic output)
     {
         if ( Objects.isNull( output ) )
         {
-            throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
+            throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
         }
 
-        MetricOutputMetadata metIn = output.getMetadata();
-        MetricOutputMetadata meta = MetricOutputMetadata.of( metIn,
+        StatisticMetadata metIn = output.getMetadata();
+        StatisticMetadata meta = StatisticMetadata.of( metIn,
                                                              MetricConstants.COEFFICIENT_OF_DETERMINATION,
                                                              MetricConstants.MAIN,
                                                              this.hasRealUnits(),
                                                              metIn.getSampleSize(),
                                                              null );
 
-        return DoubleScoreOutput.of( Math.pow(output.getData(), 2), meta );
+        return DoubleScoreStatistic.of( Math.pow(output.getData(), 2), meta );
     }
 
     @Override
-    public DoubleScoreOutput getInputForAggregation(SingleValuedPairs input)
+    public DoubleScoreStatistic getInputForAggregation(SingleValuedPairs input)
     {
         if(Objects.isNull(input))
         {
-            throw new MetricInputException("Specify non-null input to the '"+this+"'.");
+            throw new SampleDataException("Specify non-null input to the '"+this+"'.");
         }
         return super.apply(input);
     }

@@ -20,13 +20,13 @@ import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Metadata;
-import wres.datamodel.metadata.MetricOutputMetadata;
+import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.sampledata.MetricInputException;
+import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.EnsemblePair;
 import wres.datamodel.sampledata.pairs.EnsemblePairs;
-import wres.datamodel.statistics.BoxPlotOutput;
+import wres.datamodel.statistics.BoxPlotStatistic;
 import wres.engine.statistics.metric.MetricParameterException;
 
 /**
@@ -74,7 +74,7 @@ public final class BoxPlotErrorByForecastTest
         EnsemblePairs input = EnsemblePairs.of( values, meta );
         final TimeWindow timeWindow = window;
 
-        final MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getRawData().size(),
+        final StatisticMetadata m1 = StatisticMetadata.of( input.getRawData().size(),
                                                                  MeasurementUnit.of( "MM/DAY" ),
                                                                  MeasurementUnit.of( "MM/DAY" ),
                                                                  MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE,
@@ -86,12 +86,12 @@ public final class BoxPlotErrorByForecastTest
                                                                  null );
 
         //Compute normally
-        final BoxPlotOutput actual = bpe.apply( input );
+        final BoxPlotStatistic actual = bpe.apply( input );
         final EnsemblePair expectedBox =
                 EnsemblePair.of( 40.0, new double[] { 0.0, 10, 30.0, 75.0, 100.0 } );
         List<EnsemblePair> expectedBoxes = new ArrayList<>();
         expectedBoxes.add( expectedBox );
-        BoxPlotOutput expected = BoxPlotOutput.of( expectedBoxes,
+        BoxPlotStatistic expected = BoxPlotStatistic.of( expectedBoxes,
                                                    VectorOfDoubles.of( new double[] { 0.0, 0.25, 0.5, 0.75,
                                                                                       1.0 } ),
                                                    m1,
@@ -126,7 +126,7 @@ public final class BoxPlotErrorByForecastTest
         EnsemblePairs input = EnsemblePairs.of( values, meta );
         final TimeWindow timeWindow = window;
 
-        final MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getRawData().size(),
+        final StatisticMetadata m1 = StatisticMetadata.of( input.getRawData().size(),
                                                                  MeasurementUnit.of( "MM/DAY" ),
                                                                  MeasurementUnit.of( "MM/DAY" ),
                                                                  MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE,
@@ -142,12 +142,12 @@ public final class BoxPlotErrorByForecastTest
                                                                 VectorOfDoubles.of( 0.0, 0.25, 0.5, 0.75, 1.0 ) );
 
         //Compute normally
-        final BoxPlotOutput actual = bpe.apply( input );
+        final BoxPlotStatistic actual = bpe.apply( input );
         final EnsemblePair expectedBox =
                 EnsemblePair.of( 30.0, new double[] { 0.0, 10, 30.0, 75.0, 100.0 } );
         List<EnsemblePair> expectedBoxes = new ArrayList<>();
         expectedBoxes.add( expectedBox );
-        BoxPlotOutput expected = BoxPlotOutput.of( expectedBoxes,
+        BoxPlotStatistic expected = BoxPlotStatistic.of( expectedBoxes,
                                                    VectorOfDoubles.of( 0.0, 0.25, 0.5, 0.75, 1.0 ),
                                                    m1,
                                                    MetricDimension.ENSEMBLE_MEDIAN,
@@ -169,7 +169,7 @@ public final class BoxPlotErrorByForecastTest
         EnsemblePairs input =
                 EnsemblePairs.of( Arrays.asList(), Metadata.of() );
 
-        BoxPlotOutput actual = bpe.apply( input );
+        BoxPlotStatistic actual = bpe.apply( input );
 
         assertTrue( Arrays.equals( actual.getProbabilities().getDoubles(),
                                    new double[] { 0.0, 0.25, 0.5, 0.75, 1.0 } ) );
@@ -206,7 +206,7 @@ public final class BoxPlotErrorByForecastTest
     @Test
     public void testApplyExceptionOnNullInput()
     {
-        exception.expect( MetricInputException.class );
+        exception.expect( SampleDataException.class );
         exception.expectMessage( "Specify non-null input to the 'BOX PLOT OF ERRORS BY FORECAST VALUE'." );
 
         bpe.apply( null );

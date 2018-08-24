@@ -7,11 +7,11 @@ import java.util.concurrent.ExecutorService;
 import wres.config.MetricConfigException;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.MetricConstants.MetricOutputGroup;
+import wres.datamodel.MetricConstants.StatisticGroup;
 import wres.datamodel.sampledata.pairs.EnsemblePairs;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
-import wres.datamodel.statistics.MetricOutputException;
-import wres.datamodel.statistics.MetricOutputForProject;
+import wres.datamodel.statistics.StatisticException;
+import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
@@ -56,7 +56,7 @@ public class MetricProcessorForProject
     {
         DatasourceType type = projectConfig.getInputs().getRight().getType();
 
-        Set<MetricOutputGroup> mergeTheseResults = MetricConfigHelper.getCacheListFromProjectConfig( projectConfig );
+        Set<StatisticGroup> mergeTheseResults = MetricConfigHelper.getCacheListFromProjectConfig( projectConfig );
 
         if ( type.equals( DatasourceType.SINGLE_VALUED_FORECASTS ) || type.equals( DatasourceType.SIMULATIONS ) )
         {
@@ -133,13 +133,13 @@ public class MetricProcessorForProject
     }
 
     /**
-     * Returns the set of {@link MetricOutputGroup} that will be cached across successive executions of a 
+     * Returns the set of {@link StatisticGroup} that will be cached across successive executions of a 
      * {@link MetricProcessor}.
      * 
      * @return the output types to cache
      */
 
-    public Set<MetricOutputGroup> getMetricOutputTypesToCache()
+    public Set<StatisticGroup> getMetricOutputTypesToCache()
     {
         if ( Objects.nonNull( singleValuedProcessor ) )
         {
@@ -152,16 +152,16 @@ public class MetricProcessorForProject
     }
 
     /**
-     * Returns the set of {@link MetricOutputGroup} that were actually cached across successive executions of a 
+     * Returns the set of {@link StatisticGroup} that were actually cached across successive executions of a 
      * {@link MetricProcessor}. This may differ from {@link #getMetricOutputTypesToCache()}, as some end-of-pipeline 
      * outputs are computed and cached automatically.
      * 
      * @return the output types to cache
      * @throws InterruptedException if the retrieval was interrupted
-     * @throws MetricOutputException if the output could not be retrieved
+     * @throws StatisticException if the output could not be retrieved
      */
 
-    public Set<MetricOutputGroup> getCachedMetricOutputTypes() throws InterruptedException
+    public Set<StatisticGroup> getCachedMetricOutputTypes() throws InterruptedException
     {
         if ( Objects.nonNull( singleValuedProcessor ) )
         {
@@ -178,10 +178,10 @@ public class MetricProcessorForProject
      * 
      * @return the cached output or null
      * @throws InterruptedException if the retrieval was interrupted
-     * @throws MetricOutputException if the output could not be retrieved
+     * @throws StatisticException if the output could not be retrieved
      */
 
-    public MetricOutputForProject getCachedMetricOutput() throws InterruptedException
+    public StatisticsForProject getCachedMetricOutput() throws InterruptedException
     {
         if ( Objects.nonNull( singleValuedProcessor ) )
         {

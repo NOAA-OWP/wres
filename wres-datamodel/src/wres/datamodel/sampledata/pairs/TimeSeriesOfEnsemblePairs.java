@@ -11,7 +11,7 @@ import java.util.SortedSet;
 
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
-import wres.datamodel.sampledata.MetricInputException;
+import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.time.BasicTimeSeries;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
@@ -172,7 +172,7 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements TimeSeri
          * 
          * @param timeSeries the time-series
          * @return the builder
-         * @throws MetricInputException if the specified input is inconsistent with any existing input
+         * @throws SampleDataException if the specified input is inconsistent with any existing input
          * @throws NullPointerException if the input is null
          */
 
@@ -187,7 +187,7 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements TimeSeri
          * 
          * @param timeSeries the time-series
          * @return the builder
-         * @throws MetricInputException if the specified input is inconsistent with any existing input
+         * @throws SampleDataException if the specified input is inconsistent with any existing input
          * @throws NullPointerException if the input is null
          */
 
@@ -251,7 +251,7 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements TimeSeri
          * 
          * @param timeSeries the time-series
          * @return the builder
-         * @throws MetricInputException if the specified input is inconsistent with any existing input
+         * @throws SampleDataException if the specified input is inconsistent with any existing input
          */
 
         public TimeSeriesOfEnsemblePairsBuilder
@@ -294,7 +294,7 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements TimeSeri
          * 
          * @param timeSeries the time-series
          * @return the builder
-         * @throws MetricInputException if the specified input is inconsistent with any existing input
+         * @throws SampleDataException if the specified input is inconsistent with any existing input
          */
 
         public TimeSeriesOfEnsemblePairsBuilder addTimeSeriesForBaseline( TimeSeriesOfEnsemblePairs timeSeries )
@@ -343,7 +343,7 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements TimeSeri
      * Construct the pairs with a builder.
      * 
      * @param b the builder
-     * @throws MetricInputException if the pairs are invalid
+     * @throws SampleDataException if the pairs are invalid
      */
 
     TimeSeriesOfEnsemblePairs( final TimeSeriesOfEnsemblePairsBuilder b )

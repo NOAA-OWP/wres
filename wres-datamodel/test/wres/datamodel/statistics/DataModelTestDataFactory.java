@@ -15,18 +15,18 @@ import evs.metric.results.MetricResultByLeadTime;
 import evs.metric.results.MetricResultByThreshold;
 import evs.metric.results.MetricResultKey;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.ScoreOutputGroup;
+import wres.datamodel.MetricConstants.ScoreGroup;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.MetricOutputMetadata;
+import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.statistics.DoubleScoreOutput;
-import wres.datamodel.statistics.ListOfMetricOutput;
-import wres.datamodel.statistics.ScoreOutput;
-import wres.datamodel.statistics.ListOfMetricOutput.ListOfMetricOutputBuilder;
+import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.ListOfStatistics;
+import wres.datamodel.statistics.ScoreStatistic;
+import wres.datamodel.statistics.ListOfStatistics.ListOfStatisticsBuilder;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
@@ -41,17 +41,17 @@ public final class DataModelTestDataFactory
 {
 
     /**
-     * Returns a {@link ListOfMetricOutput} of {@link ScoreOutput} comprising the CRPSS for selected
+     * Returns a {@link ListOfStatistics} of {@link ScoreStatistic} comprising the CRPSS for selected
      * thresholds and forecast lead times. Reads the input data from
      * testinput/wres/datamodel/metric/getScalarMetricOutputOne.xml.
      * 
      * @return an output map of verification scores
      */
 
-    public static ListOfMetricOutput<DoubleScoreOutput> getScalarMetricOutputOne()
+    public static ListOfStatistics<DoubleScoreStatistic> getScalarMetricOutputOne()
     {
 
-        ListOfMetricOutputBuilder<DoubleScoreOutput> builder = new ListOfMetricOutputBuilder<>();
+        ListOfStatisticsBuilder<DoubleScoreStatistic> builder = new ListOfStatisticsBuilder<>();
 
         try
         {
@@ -63,7 +63,7 @@ public final class DataModelTestDataFactory
             final Iterator<MetricResultKey> d = data.getIterator();
 
             //Metric output metadata: add fake sample sizes as these are not readily available
-            final MetricOutputMetadata meta = MetricOutputMetadata.of( 1000,
+            final StatisticMetadata meta = StatisticMetadata.of( 1000,
                                                                        MeasurementUnit.of(),
                                                                        MeasurementUnit.of( "CMS" ),
                                                                        MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
@@ -101,11 +101,11 @@ public final class DataModelTestDataFactory
                     //Build the scalar result
                     final MetricResult result = t.getResult( f );
                     final double[] res = ( (DoubleMatrix1DResult) result ).getResult().toArray();
-                    final DoubleScoreOutput value =
-                            DoubleScoreOutput.of( res[0], MetricOutputMetadata.of( meta, timeWindow, q ) );
+                    final DoubleScoreStatistic value =
+                            DoubleScoreStatistic.of( res[0], StatisticMetadata.of( meta, timeWindow, q ) );
 
                     //Append result
-                    builder.addOutput( value );
+                    builder.addStatistic( value );
                 }
 
             }
@@ -119,19 +119,19 @@ public final class DataModelTestDataFactory
     }
 
     /**
-     * Returns a {@link ListOfMetricOutput} of {@link ScoreOutput} comprising the MAE for selected
+     * Returns a {@link ListOfStatistics} of {@link ScoreStatistic} comprising the MAE for selected
      * thresholds and forecast lead times using fake data.
      * 
      * @return an output map of verification scores
      */
 
-    public static ListOfMetricOutput<DoubleScoreOutput> getScalarMetricOutputTwo()
+    public static ListOfStatistics<DoubleScoreStatistic> getScalarMetricOutputTwo()
     {
 
-        ListOfMetricOutputBuilder<DoubleScoreOutput> builder = new ListOfMetricOutputBuilder<>();
+        ListOfStatisticsBuilder<DoubleScoreStatistic> builder = new ListOfStatisticsBuilder<>();
 
         //Fake metadata
-        MetricOutputMetadata meta = MetricOutputMetadata.of( 1000,
+        StatisticMetadata meta = StatisticMetadata.of( 1000,
                                                              MeasurementUnit.of(),
                                                              MeasurementUnit.of( "CMS" ),
                                                              MetricConstants.MEAN_ABSOLUTE_ERROR,
@@ -161,10 +161,10 @@ public final class DataModelTestDataFactory
                                                          Operator.GREATER,
                                                          ThresholdDataType.LEFT ) );
 
-            DoubleScoreOutput firstValue =
-                    DoubleScoreOutput.of( 66.0, MetricOutputMetadata.of( meta, timeWindow, first ) );
+            DoubleScoreStatistic firstValue =
+                    DoubleScoreStatistic.of( 66.0, StatisticMetadata.of( meta, timeWindow, first ) );
 
-            builder.addOutput( firstValue );
+            builder.addStatistic( firstValue );
 
 
             // Add second result
@@ -177,10 +177,10 @@ public final class DataModelTestDataFactory
                                                          Operator.GREATER,
                                                          ThresholdDataType.LEFT ) );
 
-            DoubleScoreOutput secondValue =
-                    DoubleScoreOutput.of( 67.0, MetricOutputMetadata.of( meta, timeWindow, second ) );
+            DoubleScoreStatistic secondValue =
+                    DoubleScoreStatistic.of( 67.0, StatisticMetadata.of( meta, timeWindow, second ) );
 
-            builder.addOutput( secondValue );
+            builder.addStatistic( secondValue );
 
 
             // Add third result
@@ -194,10 +194,10 @@ public final class DataModelTestDataFactory
                                                          ThresholdDataType.LEFT ) );
 
 
-            DoubleScoreOutput thirdValue =
-                    DoubleScoreOutput.of( 68.0, MetricOutputMetadata.of( meta, timeWindow, third ) );
+            DoubleScoreStatistic thirdValue =
+                    DoubleScoreStatistic.of( 68.0, StatisticMetadata.of( meta, timeWindow, third ) );
 
-            builder.addOutput( thirdValue );
+            builder.addStatistic( thirdValue );
 
         }
 
@@ -205,17 +205,17 @@ public final class DataModelTestDataFactory
     }
 
     /**
-     * Returns a {@link ListOfMetricOutput} of {@link DoubleScoreOutput} comprising the CRPSS for selected
+     * Returns a {@link ListOfStatistics} of {@link DoubleScoreStatistic} comprising the CRPSS for selected
      * thresholds and forecast lead times. Reads the input data from
      * testinput/wres/datamodel/metric/getVectorMetricOutputOne.xml.
      * 
      * @return an output map of verification scores
      */
 
-    public static ListOfMetricOutput<DoubleScoreOutput> getVectorMetricOutputOne()
+    public static ListOfStatistics<DoubleScoreStatistic> getVectorMetricOutputOne()
     {
 
-        final ListOfMetricOutputBuilder<DoubleScoreOutput> builder = new ListOfMetricOutputBuilder<>();
+        final ListOfStatisticsBuilder<DoubleScoreStatistic> builder = new ListOfStatisticsBuilder<>();
         try
         {
             //Create the input file
@@ -226,7 +226,7 @@ public final class DataModelTestDataFactory
             final Iterator<MetricResultKey> d = data.getIterator();
 
             //Metric output metadata: add fake sample sizes as these are not readily available
-            final MetricOutputMetadata meta = MetricOutputMetadata.of( 1000,
+            final StatisticMetadata meta = StatisticMetadata.of( 1000,
                                                                        MeasurementUnit.of(),
                                                                        MeasurementUnit.of( "CFS" ),
                                                                        MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
@@ -264,13 +264,13 @@ public final class DataModelTestDataFactory
                     //Build the scalar result
                     final MetricResult result = t.getResult( f );
                     final double[] res = ( (DoubleMatrix1DResult) result ).getResult().toArray();
-                    final DoubleScoreOutput value =
-                            DoubleScoreOutput.of( res,
-                                                  ScoreOutputGroup.CR_POT,
-                                                  MetricOutputMetadata.of( meta, timeWindow, q ) );
+                    final DoubleScoreStatistic value =
+                            DoubleScoreStatistic.of( res,
+                                                  ScoreGroup.CR_POT,
+                                                  StatisticMetadata.of( meta, timeWindow, q ) );
 
                     //Append result
-                    builder.addOutput( value );
+                    builder.addStatistic( value );
                 }
 
             }

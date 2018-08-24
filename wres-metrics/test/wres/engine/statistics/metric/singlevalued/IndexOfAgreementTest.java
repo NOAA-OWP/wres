@@ -14,17 +14,17 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.ScoreOutputGroup;
+import wres.datamodel.MetricConstants.ScoreGroup;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Metadata;
-import wres.datamodel.metadata.MetricOutputMetadata;
+import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.sampledata.MetricInputException;
+import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
-import wres.datamodel.statistics.DoubleScoreOutput;
+import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 
@@ -66,7 +66,7 @@ public final class IndexOfAgreementTest
                                                  Instant.parse( "2010-12-31T11:59:59Z" ),
                                                  ReferenceTime.VALID_TIME,
                                                  Duration.ofHours( 24 ) );
-        final MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getRawData().size(),
+        final StatisticMetadata m1 = StatisticMetadata.of( input.getRawData().size(),
                                                                  MeasurementUnit.of(),
                                                                  MeasurementUnit.of( "MM/DAY" ),
                                                                  MetricConstants.INDEX_OF_AGREEMENT,
@@ -79,9 +79,9 @@ public final class IndexOfAgreementTest
                                                                  null  );
 
         //Check the results
-        DoubleScoreOutput actual = ioa.apply( input );
+        DoubleScoreStatistic actual = ioa.apply( input );
 
-        DoubleScoreOutput expected = DoubleScoreOutput.of( 0.8221179993380173, m1 );
+        DoubleScoreStatistic expected = DoubleScoreStatistic.of( 0.8221179993380173, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -100,7 +100,7 @@ public final class IndexOfAgreementTest
         SingleValuedPairs input =
                 SingleValuedPairs.of( Arrays.asList(), Metadata.of() );
 
-        DoubleScoreOutput actual = ioa.apply( input );
+        DoubleScoreStatistic actual = ioa.apply( input );
 
         assertTrue( actual.getData().isNaN() );
     }
@@ -153,7 +153,7 @@ public final class IndexOfAgreementTest
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( ioa.getScoreOutputGroup() == ScoreOutputGroup.NONE );
+        assertTrue( ioa.getScoreOutputGroup() == ScoreGroup.NONE );
     }
 
     /**
@@ -164,7 +164,7 @@ public final class IndexOfAgreementTest
     @Test
     public void testApplyExceptionOnNullInput()
     {
-        exception.expect( MetricInputException.class );
+        exception.expect( SampleDataException.class );
         exception.expectMessage( "Specify non-null input to the 'INDEX OF AGREEMENT'." );
 
         ioa.apply( null );
