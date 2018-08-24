@@ -1,10 +1,10 @@
 package wres.engine.statistics.metric;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.inputs.MetricInput;
-import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.MetricOutput;
+import wres.datamodel.sampledata.MetricInput;
+import wres.datamodel.sampledata.MetricInputException;
+import wres.datamodel.statistics.MetricOutput;
 
 /**
  * An interface that allows for a final metric output to be derived from an intermediate output, thereby

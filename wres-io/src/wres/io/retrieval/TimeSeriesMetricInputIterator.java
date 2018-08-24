@@ -8,7 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.generated.Feature;
-import wres.datamodel.inputs.MetricInput;
+import wres.datamodel.sampledata.MetricInput;
 import wres.io.concurrency.Executor;
 import wres.io.config.ConfigHelper;
 import wres.io.data.details.ProjectDetails;

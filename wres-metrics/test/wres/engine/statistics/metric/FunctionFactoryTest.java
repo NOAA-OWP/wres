@@ -12,8 +12,8 @@ import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MissingValues;
+import wres.datamodel.sampledata.pairs.SingleValuedPair;
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.inputs.pairs.SingleValuedPair;
 
 /**
  * Tests the {@link FunctionFactory}.

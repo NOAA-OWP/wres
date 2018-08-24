@@ -22,11 +22,11 @@ import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.inputs.pairs.EnsemblePair;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.outputs.BoxPlotOutput;
-import wres.datamodel.outputs.ListOfMetricOutput;
+import wres.datamodel.sampledata.pairs.EnsemblePair;
+import wres.datamodel.statistics.BoxPlotOutput;
+import wres.datamodel.statistics.ListOfMetricOutput;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.io.config.ConfigHelper;
 

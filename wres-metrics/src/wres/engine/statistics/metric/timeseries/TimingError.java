@@ -5,8 +5,8 @@ import java.time.Instant;
 import java.util.Objects;
 import java.util.Random;
 
-import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
-import wres.datamodel.outputs.PairedOutput;
+import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
+import wres.datamodel.statistics.PairedOutput;
 import wres.engine.statistics.metric.Metric;
 
 /**

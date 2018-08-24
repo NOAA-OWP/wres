@@ -6,7 +6,7 @@ import java.util.Iterator;
 import java.util.concurrent.Future;
 
 import wres.config.generated.Feature;
-import wres.datamodel.inputs.MetricInput;
+import wres.datamodel.sampledata.MetricInput;
 import wres.io.config.ConfigHelper;
 import wres.io.data.details.ProjectDetails;
 import wres.util.NotImplementedException;

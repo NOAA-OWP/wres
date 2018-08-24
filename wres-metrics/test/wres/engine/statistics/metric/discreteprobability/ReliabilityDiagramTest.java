@@ -15,15 +15,15 @@ import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.inputs.pairs.DiscreteProbabilityPair;
-import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.MultiVectorOutput;
+import wres.datamodel.sampledata.MetricInputException;
+import wres.datamodel.sampledata.pairs.DiscreteProbabilityPair;
+import wres.datamodel.sampledata.pairs.DiscreteProbabilityPairs;
+import wres.datamodel.statistics.MultiVectorOutput;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 

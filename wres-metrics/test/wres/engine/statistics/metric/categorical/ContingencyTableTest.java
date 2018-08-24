@@ -11,14 +11,14 @@ import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.inputs.pairs.DichotomousPairs;
-import wres.datamodel.inputs.pairs.MulticategoryPairs;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.MatrixOutput;
+import wres.datamodel.sampledata.MetricInputException;
+import wres.datamodel.sampledata.pairs.DichotomousPairs;
+import wres.datamodel.sampledata.pairs.MulticategoryPairs;
+import wres.datamodel.statistics.MatrixOutput;
 import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
@@ -47,7 +47,7 @@ public final class ContingencyTableTest
     }
 
     /**
-     * Compares the output from {@link Metric#apply(wres.datamodel.inputs.MetricInput)} against expected output.
+     * Compares the output from {@link Metric#apply(wres.datamodel.sampledata.MetricInput)} against expected output.
      */
 
     @Test
@@ -92,7 +92,7 @@ public final class ContingencyTableTest
     }
 
     /**
-     * Checks for an expected exception on null input to {@link ContingencyTable#apply(wres.datamodel.inputs.MetricInput)}.
+     * Checks for an expected exception on null input to {@link ContingencyTable#apply(wres.datamodel.sampledata.MetricInput)}.
      */
 
     @Test

@@ -1,8 +1,8 @@
 package wres.engine.statistics.metric;
 
 
-import wres.datamodel.inputs.MetricInput;
-import wres.datamodel.outputs.ScoreOutput;
+import wres.datamodel.sampledata.MetricInput;
+import wres.datamodel.statistics.ScoreOutput;
 
 /**
  * An abstract score.

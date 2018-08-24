@@ -28,14 +28,14 @@ import ohd.hseb.charter.parameters.SeriesDrawingParameters;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.Slicer;
-import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.outputs.BoxPlotOutput;
-import wres.datamodel.outputs.DoubleScoreOutput;
-import wres.datamodel.outputs.DurationScoreOutput;
-import wres.datamodel.outputs.ListOfMetricOutput;
-import wres.datamodel.outputs.MultiVectorOutput;
-import wres.datamodel.outputs.PairedOutput;
+import wres.datamodel.sampledata.pairs.SingleValuedPairs;
+import wres.datamodel.statistics.BoxPlotOutput;
+import wres.datamodel.statistics.DoubleScoreOutput;
+import wres.datamodel.statistics.DurationScoreOutput;
+import wres.datamodel.statistics.ListOfMetricOutput;
+import wres.datamodel.statistics.MultiVectorOutput;
+import wres.datamodel.statistics.PairedOutput;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 
 /**

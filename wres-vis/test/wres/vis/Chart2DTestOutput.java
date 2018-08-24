@@ -23,12 +23,12 @@ import wres.config.generated.PoolingWindowConfig;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.outputs.BoxPlotOutput;
-import wres.datamodel.outputs.DoubleScoreOutput;
-import wres.datamodel.outputs.DurationScoreOutput;
-import wres.datamodel.outputs.ListOfMetricOutput;
-import wres.datamodel.outputs.MultiVectorOutput;
-import wres.datamodel.outputs.PairedOutput;
+import wres.datamodel.statistics.BoxPlotOutput;
+import wres.datamodel.statistics.DoubleScoreOutput;
+import wres.datamodel.statistics.DurationScoreOutput;
+import wres.datamodel.statistics.ListOfMetricOutput;
+import wres.datamodel.statistics.MultiVectorOutput;
+import wres.datamodel.statistics.PairedOutput;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 
 /**

@@ -8,9 +8,9 @@ import org.jfree.data.xy.AbstractXYDataset;
 
 import wres.datamodel.Slicer;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.outputs.DoubleScoreOutput;
-import wres.datamodel.outputs.ListOfMetricOutput;
-import wres.datamodel.outputs.ScoreOutput;
+import wres.datamodel.statistics.DoubleScoreOutput;
+import wres.datamodel.statistics.ListOfMetricOutput;
+import wres.datamodel.statistics.ScoreOutput;
 
 /**
  * An {@link AbstractXYDataset} that wraps a {@link ListOfMetricOutput} which contains a set of

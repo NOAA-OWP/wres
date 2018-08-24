@@ -1,8 +1,8 @@
 package wres.engine.statistics.metric;
 
-import wres.datamodel.inputs.MetricInput;
-import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.outputs.MetricOutput;
+import wres.datamodel.sampledata.MetricInput;
+import wres.datamodel.sampledata.MetricInputException;
+import wres.datamodel.statistics.MetricOutput;
 
 /**
  * An interface that allows for a metric output to be updated with additional outputs. Metric outputs may be separated

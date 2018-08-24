@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import wres.datamodel.inputs.MetricInputException;
+import wres.datamodel.sampledata.MetricInputException;
 
 /**
  * <p>A builder for a possibly irregular {@link TimeSeries}.

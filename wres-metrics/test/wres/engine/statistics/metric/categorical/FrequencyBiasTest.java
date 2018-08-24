@@ -12,15 +12,15 @@ import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
-import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.DoubleScoreOutput;
-import wres.datamodel.outputs.MatrixOutput;
+import wres.datamodel.sampledata.MetricInputException;
+import wres.datamodel.sampledata.pairs.DichotomousPairs;
+import wres.datamodel.statistics.DoubleScoreOutput;
+import wres.datamodel.statistics.MatrixOutput;
 import wres.engine.statistics.metric.Collectable;
 import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricParameterException;
@@ -63,7 +63,7 @@ public final class FrequencyBiasTest
     }    
     
     /**
-     * Compares the output from {@link Metric#apply(wres.datamodel.inputs.MetricInput)} against expected output.
+     * Compares the output from {@link Metric#apply(wres.datamodel.sampledata.MetricInput)} against expected output.
      */
 
     @Test
@@ -149,7 +149,7 @@ public final class FrequencyBiasTest
     }      
 
     /**
-     * Checks for an exception when calling {@link Collectable#aggregate(wres.datamodel.outputs.MetricOutput)} with 
+     * Checks for an exception when calling {@link Collectable#aggregate(wres.datamodel.statistics.MetricOutput)} with 
      * null input.
      */
 

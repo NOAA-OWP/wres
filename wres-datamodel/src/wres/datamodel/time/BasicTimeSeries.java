@@ -15,7 +15,7 @@ import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import wres.datamodel.Slicer;
-import wres.datamodel.inputs.MetricInputException;
+import wres.datamodel.sampledata.MetricInputException;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 

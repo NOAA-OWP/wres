@@ -3,8 +3,8 @@ package wres.engine.statistics.metric;
 import java.util.Objects;
 
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
-import wres.datamodel.inputs.MetricInput;
-import wres.datamodel.outputs.DoubleScoreOutput;
+import wres.datamodel.sampledata.MetricInput;
+import wres.datamodel.statistics.DoubleScoreOutput;
 
 /**
  * A generic implementation of an error score that is decomposable.

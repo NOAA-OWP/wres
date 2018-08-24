@@ -18,8 +18,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.inputs.pairs.SingleValuedPair;
+import wres.datamodel.sampledata.MetricInputException;
+import wres.datamodel.sampledata.pairs.SingleValuedPair;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.BasicTimeSeries;
 import wres.datamodel.time.TimeSeries;

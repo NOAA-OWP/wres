@@ -29,9 +29,9 @@ import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.outputs.MetricOutputForProject;
-import wres.datamodel.outputs.MetricOutputForProject.MetricOutputForProjectBuilder;
-import wres.datamodel.outputs.PairedOutput;
+import wres.datamodel.statistics.MetricOutputForProject;
+import wres.datamodel.statistics.PairedOutput;
+import wres.datamodel.statistics.MetricOutputForProject.MetricOutputForProjectBuilder;
 import wres.datamodel.thresholds.ThresholdConstants;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 
@@ -212,7 +212,8 @@ public final class DataFactory
 
     /**
      * Returns the {@link MetricConstants} that corresponds to the {@link MetricConfigName} in the input 
-     * configuration or null if the input is {@link MetricConfigName#ALL_VALID}.
+     * configuration or null if the input is {@link MetricConfigName#ALL_VALID}. Matches the enumerations by 
+     * {@link Enum#name()}.
      * 
      * @param metricConfigName the metric name
      * @return the mapped name
@@ -281,7 +282,7 @@ public final class DataFactory
      * @param thresholdType the threshold type
      * @return the mapped threshold group
      * @throws IllegalArgumentException if the threshold group is not mapped
-     * @throws NullPointerException if the input is null or the {@link ThresholdsConfig#getType()} returns null
+     * @throws NullPointerException if the input is null
      */
 
     public static ThresholdConstants.ThresholdGroup getThresholdGroup( ThresholdType thresholdType )

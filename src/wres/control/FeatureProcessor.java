@@ -20,7 +20,7 @@ import wres.config.generated.DestinationType;
 import wres.config.generated.ProjectConfig;
 import wres.control.ProcessorHelper.ExecutorServices;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
-import wres.datamodel.inputs.MetricInput;
+import wres.datamodel.sampledata.MetricInput;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;

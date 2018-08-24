@@ -1,8 +1,8 @@
 package wres.engine.statistics.metric;
 
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
-import wres.datamodel.inputs.MetricInput;
-import wres.datamodel.outputs.ScoreOutput;
+import wres.datamodel.sampledata.MetricInput;
+import wres.datamodel.statistics.ScoreOutput;
 
 /**
  * Identifies a scoring rule. A score may be an absolute or relative measure. An absolute score is dimensioned, whereas

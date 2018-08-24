@@ -5,7 +5,7 @@ import java.util.Objects;
 
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.outputs.MetricOutput;
+import wres.datamodel.statistics.MetricOutput;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 
 /**

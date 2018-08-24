@@ -13,7 +13,7 @@ import wres.config.ProjectConfigs;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.inputs.MetricInput;
+import wres.datamodel.sampledata.MetricInput;
 import wres.io.config.ConfigHelper;
 import wres.io.data.details.ProjectDetails;
 import wres.io.retrieval.left.LeftHandCache;

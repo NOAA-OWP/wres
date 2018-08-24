@@ -3,9 +3,9 @@ package wres.engine.statistics.metric;
 import java.util.function.Function;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.inputs.MetricInput;
-import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.outputs.MetricOutput;
+import wres.datamodel.sampledata.MetricInput;
+import wres.datamodel.sampledata.MetricInputException;
+import wres.datamodel.statistics.MetricOutput;
 
 /**
  * <p>

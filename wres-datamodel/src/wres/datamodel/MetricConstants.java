@@ -8,12 +8,12 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
-import wres.datamodel.outputs.BoxPlotOutput;
-import wres.datamodel.outputs.DoubleScoreOutput;
-import wres.datamodel.outputs.DurationScoreOutput;
-import wres.datamodel.outputs.MatrixOutput;
-import wres.datamodel.outputs.MultiVectorOutput;
-import wres.datamodel.outputs.PairedOutput;
+import wres.datamodel.statistics.BoxPlotOutput;
+import wres.datamodel.statistics.DoubleScoreOutput;
+import wres.datamodel.statistics.DurationScoreOutput;
+import wres.datamodel.statistics.MatrixOutput;
+import wres.datamodel.statistics.MultiVectorOutput;
+import wres.datamodel.statistics.PairedOutput;
 
 /**
  * Metric constants. The metric identifiers are grouped by metric input/output type, as defined by the

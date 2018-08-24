@@ -22,8 +22,8 @@ import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
 import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.ListOfMetricOutput;
-import wres.datamodel.outputs.PairedOutput;
+import wres.datamodel.statistics.ListOfMetricOutput;
+import wres.datamodel.statistics.PairedOutput;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.io.config.ConfigHelper;
 

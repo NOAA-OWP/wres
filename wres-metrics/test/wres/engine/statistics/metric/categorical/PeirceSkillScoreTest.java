@@ -12,16 +12,16 @@ import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
-import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.inputs.pairs.DichotomousPairs;
-import wres.datamodel.inputs.pairs.MulticategoryPairs;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.DoubleScoreOutput;
-import wres.datamodel.outputs.MatrixOutput;
+import wres.datamodel.sampledata.MetricInputException;
+import wres.datamodel.sampledata.pairs.DichotomousPairs;
+import wres.datamodel.sampledata.pairs.MulticategoryPairs;
+import wres.datamodel.statistics.DoubleScoreOutput;
+import wres.datamodel.statistics.MatrixOutput;
 import wres.engine.statistics.metric.Collectable;
 import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricCalculationException;
@@ -180,7 +180,7 @@ public final class PeirceSkillScoreTest
     }
 
     /**
-     * Checks for an exception when calling {@link Collectable#aggregate(wres.datamodel.outputs.MetricOutput)} with 
+     * Checks for an exception when calling {@link Collectable#aggregate(wres.datamodel.statistics.MetricOutput)} with 
      * null input.
      */
 
@@ -193,7 +193,7 @@ public final class PeirceSkillScoreTest
     }
 
     /**
-     * Checks for an exception when calling {@link Collectable#aggregate(wres.datamodel.outputs.MetricOutput)} with 
+     * Checks for an exception when calling {@link Collectable#aggregate(wres.datamodel.statistics.MetricOutput)} with 
      * input that is not square.
      */
 
@@ -209,7 +209,7 @@ public final class PeirceSkillScoreTest
     }
 
     /**
-     * Checks for an exception when calling {@link Collectable#aggregate(wres.datamodel.outputs.MetricOutput)} with 
+     * Checks for an exception when calling {@link Collectable#aggregate(wres.datamodel.statistics.MetricOutput)} with 
      * input that does not have a positive sum product.
      */
 

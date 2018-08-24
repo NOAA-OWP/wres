@@ -7,8 +7,8 @@ import org.jfree.data.xy.XYDataset;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.Slicer;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.outputs.ListOfMetricOutput;
-import wres.datamodel.outputs.MultiVectorOutput;
+import wres.datamodel.statistics.ListOfMetricOutput;
+import wres.datamodel.statistics.MultiVectorOutput;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 
 /**

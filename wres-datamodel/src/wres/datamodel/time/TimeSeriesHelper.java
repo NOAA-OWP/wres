@@ -9,9 +9,9 @@ import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.TreeSet;
 
-import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.TimeWindow;
+import wres.datamodel.sampledata.MetricInputException;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 

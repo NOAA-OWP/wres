@@ -7,9 +7,9 @@ import java.util.SortedSet;
 import org.jfree.data.xy.AbstractXYDataset;
 
 import wres.datamodel.Slicer;
-import wres.datamodel.outputs.DoubleScoreOutput;
-import wres.datamodel.outputs.ListOfMetricOutput;
-import wres.datamodel.outputs.ScoreOutput;
+import wres.datamodel.statistics.DoubleScoreOutput;
+import wres.datamodel.statistics.ListOfMetricOutput;
+import wres.datamodel.statistics.ScoreOutput;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 
 /**
