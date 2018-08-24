@@ -2,7 +2,7 @@ package wres.vis;
 
 import org.jfree.data.xy.AbstractXYDataset;
 
-import wres.datamodel.inputs.pairs.SingleValuedPairs;
+import wres.datamodel.sampledata.pairs.SingleValuedPairs;
 
 /**
  * An {@link AbstractXYDataset} that wraps a {@link SingleValuedPairs}

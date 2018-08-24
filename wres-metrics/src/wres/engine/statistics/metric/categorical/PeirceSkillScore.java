@@ -2,9 +2,9 @@ package wres.engine.statistics.metric.categorical;
 
 import wres.datamodel.MatrixOfDoubles;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.inputs.pairs.MulticategoryPairs;
-import wres.datamodel.outputs.DoubleScoreOutput;
-import wres.datamodel.outputs.MatrixOutput;
+import wres.datamodel.sampledata.pairs.MulticategoryPairs;
+import wres.datamodel.statistics.DoubleScoreOutput;
+import wres.datamodel.statistics.MatrixOutput;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricCalculationException;
 

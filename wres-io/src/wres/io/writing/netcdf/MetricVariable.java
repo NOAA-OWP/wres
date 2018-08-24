@@ -9,7 +9,7 @@ import java.util.TreeMap;
 
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.outputs.DoubleScoreOutput;
+import wres.datamodel.statistics.DoubleScoreOutput;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 
 class MetricVariable

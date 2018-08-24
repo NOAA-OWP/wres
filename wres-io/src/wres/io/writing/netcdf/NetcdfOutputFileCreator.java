@@ -19,7 +19,7 @@ import ucar.ma2.InvalidRangeException;
 import ucar.nc2.NetcdfFileWriter;
 import wres.config.generated.DestinationConfig;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.outputs.DoubleScoreOutput;
+import wres.datamodel.statistics.DoubleScoreOutput;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.io.utilities.NoDataException;
 

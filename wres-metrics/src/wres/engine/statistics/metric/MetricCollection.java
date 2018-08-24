@@ -20,9 +20,9 @@ import org.slf4j.LoggerFactory;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
-import wres.datamodel.inputs.MetricInput;
-import wres.datamodel.outputs.ListOfMetricOutput;
-import wres.datamodel.outputs.MetricOutput;
+import wres.datamodel.sampledata.MetricInput;
+import wres.datamodel.statistics.ListOfMetricOutput;
+import wres.datamodel.statistics.MetricOutput;
 import wres.engine.statistics.metric.categorical.ContingencyTable;
 
 /**

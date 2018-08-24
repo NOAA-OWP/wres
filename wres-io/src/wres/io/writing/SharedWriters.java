@@ -14,8 +14,8 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import wres.config.generated.DestinationType;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
-import wres.datamodel.outputs.DoubleScoreOutput;
-import wres.datamodel.outputs.ListOfMetricOutput;
+import wres.datamodel.statistics.DoubleScoreOutput;
+import wres.datamodel.statistics.ListOfMetricOutput;
 import wres.io.writing.netcdf.NetcdfDoubleScoreWriter;
 import wres.io.writing.netcdf.NetcdfOutputWriter;
 

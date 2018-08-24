@@ -2,8 +2,8 @@ package wres.datamodel.metadata;
 
 import java.util.Objects;
 
-import wres.datamodel.inputs.MetricInput;
-import wres.datamodel.outputs.MetricOutput;
+import wres.datamodel.sampledata.MetricInput;
+import wres.datamodel.statistics.MetricOutput;
 
 /**
  * A class that stores the measurement unit associated with a {@link MetricInput} or a {@link MetricOutput}. Examples 

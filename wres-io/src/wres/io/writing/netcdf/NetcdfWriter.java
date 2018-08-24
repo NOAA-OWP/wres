@@ -2,8 +2,8 @@ package wres.io.writing.netcdf;
 
 import java.util.function.Consumer;
 
-import wres.datamodel.outputs.ListOfMetricOutput;
-import wres.datamodel.outputs.MetricOutput;
+import wres.datamodel.statistics.ListOfMetricOutput;
+import wres.datamodel.statistics.MetricOutput;
 
 /**
  * Manages netcdf outputs for a project. Consumes a {@link ListOfMetricOutput}. Writers of concrete 

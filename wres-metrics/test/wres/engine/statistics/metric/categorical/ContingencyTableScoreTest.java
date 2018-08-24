@@ -13,13 +13,13 @@ import org.junit.rules.ExpectedException;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
-import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.MatrixOutput;
+import wres.datamodel.sampledata.MetricInputException;
+import wres.datamodel.sampledata.pairs.DichotomousPairs;
+import wres.datamodel.statistics.MatrixOutput;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 
@@ -108,7 +108,7 @@ public final class ContingencyTableScoreTest
     }
 
     /**
-     * Compares the output from {@link ContingencyTableScore#getInputForAggregation(wres.datamodel.inputs.pairs.MulticategoryPairs)} 
+     * Compares the output from {@link ContingencyTableScore#getInputForAggregation(wres.datamodel.sampledata.pairs.MulticategoryPairs)} 
      * against a benchmark.
      */
 

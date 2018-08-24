@@ -3,8 +3,8 @@ package wres.datamodel.metadata;
 import java.util.Objects;
 import java.util.StringJoiner;
 
-import wres.datamodel.inputs.MetricInput;
-import wres.datamodel.outputs.MetricOutput;
+import wres.datamodel.sampledata.MetricInput;
+import wres.datamodel.statistics.MetricOutput;
 
 /**
  * A class that uniquely identifies a {@link MetricInput} or a {@link MetricOutput} to a user.

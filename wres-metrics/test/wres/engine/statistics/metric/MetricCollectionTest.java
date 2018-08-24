@@ -24,16 +24,16 @@ import org.slf4j.Logger;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
-import wres.datamodel.inputs.MetricInput;
-import wres.datamodel.inputs.pairs.DichotomousPairs;
-import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
-import wres.datamodel.inputs.pairs.MulticategoryPairs;
-import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.DoubleScoreOutput;
-import wres.datamodel.outputs.ListOfMetricOutput;
-import wres.datamodel.outputs.MetricOutput;
+import wres.datamodel.sampledata.MetricInput;
+import wres.datamodel.sampledata.pairs.DichotomousPairs;
+import wres.datamodel.sampledata.pairs.DiscreteProbabilityPairs;
+import wres.datamodel.sampledata.pairs.MulticategoryPairs;
+import wres.datamodel.sampledata.pairs.SingleValuedPairs;
+import wres.datamodel.statistics.DoubleScoreOutput;
+import wres.datamodel.statistics.ListOfMetricOutput;
+import wres.datamodel.statistics.MetricOutput;
 import wres.engine.statistics.metric.MetricCollection.MetricCollectionBuilder;
 import wres.engine.statistics.metric.categorical.EquitableThreatScore;
 import wres.engine.statistics.metric.categorical.PeirceSkillScore;
@@ -350,7 +350,7 @@ public class MetricCollectionTest
 
     /**
      * Expects a {@link MetricCalculationException} when calling 
-     * {@link MetricCollection#apply(wres.datamodel.inputs.MetricInput)} with null input.
+     * {@link MetricCollection#apply(wres.datamodel.sampledata.MetricInput)} with null input.
      * 
      * @throws MetricCalculationException if the execution fails
      * @throws MetricParameterException if the metric construction fails
@@ -382,7 +382,7 @@ public class MetricCollectionTest
 
     /**
      * Expects a {@link MetricCalculationException} when calling 
-     * {@link MetricCollection#apply(wres.datamodel.inputs.MetricInput, Set)} with a null set of metrics to ignore.
+     * {@link MetricCollection#apply(wres.datamodel.sampledata.MetricInput, Set)} with a null set of metrics to ignore.
      * 
      * @throws MetricCalculationException if the execution fails
      * @throws MetricParameterException if the metric construction fails
@@ -410,7 +410,7 @@ public class MetricCollectionTest
 
     /**
      * Expects a {@link MetricCalculationException} when calling 
-     * {@link MetricCollection#apply(wres.datamodel.inputs.MetricInput, Set)} with a set of metrics to ignore that 
+     * {@link MetricCollection#apply(wres.datamodel.sampledata.MetricInput, Set)} with a set of metrics to ignore that 
      * includes all metrics in the collection.
      * 
      * @throws MetricCalculationException if the execution fails
@@ -682,7 +682,7 @@ public class MetricCollectionTest
     /**
      * Construct a collection of metrics that consume single-valued pairs and produce scalar outputs. Computes and 
      * benchmarks the output when specifying a non-empty set of metrics to ignore for
-     * {@link MetricCollection#apply(wres.datamodel.inputs.MetricInput, Set)}.
+     * {@link MetricCollection#apply(wres.datamodel.sampledata.MetricInput, Set)}.
      * @throws MetricParameterException if the metric construction fails 
      */
 

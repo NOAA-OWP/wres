@@ -15,12 +15,12 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.DoubleScoreOutput;
-import wres.datamodel.outputs.MatrixOutput;
+import wres.datamodel.sampledata.MetricInputException;
+import wres.datamodel.sampledata.pairs.DichotomousPairs;
+import wres.datamodel.statistics.DoubleScoreOutput;
+import wres.datamodel.statistics.MatrixOutput;
 import wres.engine.statistics.metric.categorical.ThreatScore;
 
 /**

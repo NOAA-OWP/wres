@@ -1,7 +1,7 @@
 package wres.engine.statistics.metric;
 
-import wres.datamodel.inputs.MetricInput;
-import wres.datamodel.outputs.MetricOutput;
+import wres.datamodel.sampledata.MetricInput;
+import wres.datamodel.statistics.MetricOutput;
 
 /**
  * An abstract diagram.
