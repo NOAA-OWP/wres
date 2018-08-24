@@ -2,12 +2,16 @@ package wres.io.writing.png;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -33,8 +37,10 @@ import wres.vis.ChartEngineFactory;
  */
 
 public class PNGBoxPlotWriter extends PNGWriter
-        implements Consumer<ListOfStatistics<BoxPlotStatistic>>
+        implements Consumer<ListOfStatistics<BoxPlotStatistic>>,
+                   Supplier<Set<Path>>
 {
+    private Set<Path> pathsWrittenTo = new HashSet<>();
 
     /**
      * Returns an instance of a writer.
@@ -74,27 +80,44 @@ public class PNGBoxPlotWriter extends PNGWriter
             SortedSet<MetricConstants> metrics = Slicer.discover( output, meta -> meta.getMetadata().getMetricID() );
             for ( MetricConstants next : metrics )
             {
-                PNGBoxPlotWriter.writeBoxPlotCharts( projectConfigPlus,
-                                                     destinationConfig,
-                                                     Slicer.filter( output, next ) );
+                Set<Path> innerPathsWrittenTo =
+                        PNGBoxPlotWriter.writeBoxPlotCharts( projectConfigPlus,
+                                                             destinationConfig,
+                                                             Slicer.filter( output, next ) );
+                this.pathsWrittenTo.addAll( innerPathsWrittenTo );
             }
         }
     }
 
+
     /**
-     * Writes a set of charts associated with {@link BoxPlotStatistic} for a single metric and time window, 
+     *
+     * @return paths written to *so far*
+     */
+
+    @Override
+    public Set<Path> get()
+    {
+        return Collections.unmodifiableSet( this.pathsWrittenTo );
+    }
+
+    /**
+     * Writes a set of charts associated with {@link BoxPlotStatistic} for a single metric and time window,
      * stored in a {@link ListOfStatistics}.
      *
      * @param projectConfigPlus the project configuration
      * @param destinationConfig the destination configuration for the written output
      * @param output the metric results
      * @throws PNGWriteException when an error occurs during writing
+     * @return the paths actually written to
      */
 
-    private static void writeBoxPlotCharts( ProjectConfigPlus projectConfigPlus,
-                                            DestinationConfig destinationConfig,
-                                            ListOfStatistics<BoxPlotStatistic> output )
+    private static Set<Path> writeBoxPlotCharts( ProjectConfigPlus projectConfigPlus,
+                                                 DestinationConfig destinationConfig,
+                                                 ListOfStatistics<BoxPlotStatistic> output )
     {
+        Set<Path> pathsWrittenTo = new HashSet<>();
+
         // Build charts
         try
         {
@@ -117,13 +140,16 @@ public class PNGBoxPlotWriter extends PNGWriter
                                                                       nextEntry.getKey().getLeft() );
 
                 PNGWriter.writeChart( outputImage, nextEntry.getValue(), destinationConfig );
+                // Only if writeChart succeeded do we assume that it was written
+                pathsWrittenTo.add( outputImage );
             }
-
         }
         catch ( ChartEngineException | IOException e )
         {
             throw new PNGWriteException( "Error while generating box plot charts: ", e );
         }
+
+        return Collections.unmodifiableSet( pathsWrittenTo );
     }
 
     /**
