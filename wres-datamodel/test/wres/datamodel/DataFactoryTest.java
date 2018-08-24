@@ -2,6 +2,7 @@ package wres.datamodel;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -16,8 +17,11 @@ import org.junit.rules.ExpectedException;
 
 import wres.config.MetricConfigException;
 import wres.config.ProjectConfigs;
+import wres.config.generated.MetricConfigName;
 import wres.config.generated.ThresholdOperator;
+import wres.config.generated.ThresholdType;
 import wres.config.generated.ThresholdsConfig;
+import wres.config.generated.TimeSeriesMetricConfigName;
 import wres.datamodel.inputs.pairs.DichotomousPair;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPair;
@@ -415,5 +419,130 @@ public final class DataFactoryTest
                                                                    null,
                                                                    null ) );
     }
+
+    /**
+     * Tests the {@link DataFactory#getMetricName(wres.config.generated.MetricConfigName)}.
+     */
+
+    @Test
+    public void testGetMetricName()
+    {
+        // The MetricConfigName.ALL_VALID returns null        
+        assertNull( DataFactory.getMetricName( MetricConfigName.ALL_VALID ) );
+
+        // Check that a mapping exists in MetricConstants for all entries in the MetricConfigName
+        for ( MetricConfigName next : MetricConfigName.values() )
+        {
+            if ( next != MetricConfigName.ALL_VALID )
+            {
+                assertNotNull( DataFactory.getMetricName( next ) );
+            }
+        }
+    }
+
+    /**
+     * Tests the {@link DataFactory#getMetricName(wres.config.generated.MetricConfigName)} throws an 
+     * expected exception when the input is null.
+     */
+
+    @Test
+    public void testGetMetricNameThrowsNPEWhenInputIsNull()
+    {
+        exception.expect( NullPointerException.class );
+        exception.expectMessage( "Specify input configuration with a non-null identifier to map." );
+
+        DataFactory.getMetricName( (MetricConfigName) null );
+    }
+    
+    /**
+     * Tests the {@link DataFactory#getMetricName(wres.config.generated.TimeSeriesMetricConfigName)}.
+     */
+
+    @Test
+    public void testGetTimeSeriesMetricName()
+    {
+        // The TimeSeriesMetricConfigName.ALL_VALID returns null        
+        assertNull( DataFactory.getMetricName( TimeSeriesMetricConfigName.ALL_VALID ) );
+
+        // Check that a mapping exists in MetricConstants for all entries in the TimeSeriesMetricConfigName
+        for ( TimeSeriesMetricConfigName next : TimeSeriesMetricConfigName.values() )
+        {
+            if ( next != TimeSeriesMetricConfigName.ALL_VALID )
+            {
+                assertNotNull( DataFactory.getMetricName( next ) );
+            }
+        }
+    }
+
+    /**
+     * Tests the {@link DataFactory#getMetricName(wres.config.generated.TimeSeriesMetricConfigName)} throws an 
+     * expected exception when the input is null.
+     */
+
+    @Test
+    public void testGetTimeSeriesMetricNameThrowsNPEWhenInputIsNull()
+    {
+        exception.expect( NullPointerException.class );
+        exception.expectMessage( "Specify input configuration with a non-null identifier to map." );
+
+        DataFactory.getMetricName( (TimeSeriesMetricConfigName) null );
+    }    
+    
+    /**
+     * Tests the {@link DataFactory#getThresholdDataType(wres.config.generated.ThresholdDataType)}.
+     */
+
+    @Test
+    public void testGetThresholdDataType()
+    {
+        // Check that a mapping exists in the data model ThresholdDataType for all entries in the 
+        // config ThresholdDataType
+        for ( wres.config.generated.ThresholdDataType next : wres.config.generated.ThresholdDataType.values() )
+        {
+            assertNotNull( DataFactory.getThresholdDataType( next ) );
+        }
+    }
+
+    /**
+     * Tests the {@link DataFactory#getThresholdDataType(wres.config.generated.ThresholdDataType)} throws an 
+     * expected exception when the input is null.
+     */
+
+    @Test
+    public void testGetThresholdDataTypeThrowsNPEWhenInputIsNull()
+    {
+        exception.expect( NullPointerException.class );
+        exception.expectMessage( "Specify input configuration with a non-null identifier to map." );
+
+        DataFactory.getThresholdDataType( null );
+    }  
+    
+    /**
+     * Tests the {@link DataFactory#getThresholdGroup(wres.config.generated.ThresholdType)}.
+     */
+
+    @Test
+    public void testGetThresholdGroup()
+    {
+        // Check that a mapping exists in ThresholdGroup for all entries in the ThresholdType
+        for ( ThresholdType next : ThresholdType.values() )
+        {
+            assertNotNull( DataFactory.getThresholdGroup( next ) );
+        }
+    }
+
+    /**
+     * Tests the {@link DataFactory#getThresholdDataType(wres.config.generated.ThresholdDataType)} throws an 
+     * expected exception when the input is null.
+     */
+
+    @Test
+    public void testGetThresholdGroupThrowsNPEWhenInputIsNull()
+    {
+        exception.expect( NullPointerException.class );
+        exception.expectMessage( "Specify input configuration with a non-null identifier to map." );
+
+        DataFactory.getThresholdGroup( null );
+    }      
     
 }
