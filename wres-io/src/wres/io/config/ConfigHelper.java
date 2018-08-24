@@ -1688,14 +1688,14 @@ public class ConfigHelper
         ThresholdConstants.ThresholdDataType dataType = ThresholdConstants.ThresholdDataType.LEFT;
         if ( Objects.nonNull( threshold.getApplyTo() ) )
         {
-            dataType = DataFactory.getThresholdDataType( threshold );
+            dataType = DataFactory.getThresholdDataType( threshold.getApplyTo() );
         }
         
         // Threshold type: default to probability
         ThresholdConstants.ThresholdGroup thresholdType = ThresholdConstants.ThresholdGroup.PROBABILITY;
         if ( Objects.nonNull( threshold.getType() ) )
         {
-            thresholdType = DataFactory.getThresholdGroup( threshold );
+            thresholdType = DataFactory.getThresholdGroup( threshold.getType() );
         }
 
         // Default to probability

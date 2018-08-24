@@ -3,7 +3,6 @@ package wres.io.reading;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -13,12 +12,9 @@ import java.util.concurrent.Future;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.io.concurrency.CopyExecutor;
 import wres.io.data.details.TimeSeries;
 import wres.io.utilities.DataBuilder;
-import wres.io.utilities.Database;
 import wres.system.SystemSettings;
-import wres.util.Strings;
 
 /**
  * Facilitates a shared location for copying forecast timeseries values to
@@ -96,6 +92,8 @@ public final class TimeSeriesValues
 
     /**
      * Send all values across all stored partitions to the database
+     * 
+     * @throws IOException if the values cannot be saved to the database
      */
     public static void complete() throws IOException
     {

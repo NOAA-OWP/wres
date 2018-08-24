@@ -629,7 +629,7 @@ public final class MetricConfigHelper
             ThresholdConstants.ThresholdGroup thresholdType = ThresholdConstants.ThresholdGroup.PROBABILITY;
             if ( Objects.nonNull( nextThresholds.getType() ) )
             {
-                thresholdType = DataFactory.getThresholdGroup( nextThresholds );
+                thresholdType = DataFactory.getThresholdGroup( nextThresholds.getType() );
             }
 
             // Adjust the thresholds, adding "all data" where required, then append
@@ -678,7 +678,7 @@ public final class MetricConfigHelper
         // Operator specified
         if ( Objects.nonNull( thresholds.getApplyTo() ) )
         {
-            dataType = DataFactory.getThresholdDataType( thresholds );
+            dataType = DataFactory.getThresholdDataType( thresholds.getApplyTo() );
         }
 
         // Must be internally sourced: thresholds with global scope should be provided directly 
