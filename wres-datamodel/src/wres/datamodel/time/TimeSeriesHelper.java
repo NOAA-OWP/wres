@@ -9,7 +9,7 @@ import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.TreeSet;
 
-import wres.datamodel.metadata.Metadata;
+import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.time.Event;
@@ -31,7 +31,7 @@ public class TimeSeriesHelper
 
     /**
      * Helper method that adjusts the earliest and latest basis times of the {@link TimeWindow} associated with the 
-     * input {@link Metadata} when iterating over the atomic time-series by basis time.
+     * input {@link SampleMetadata} when iterating over the atomic time-series by basis time.
      * 
      * @param input the input metadata
      * @param earliestTime the earliest basis time for the new metadata
@@ -40,15 +40,15 @@ public class TimeSeriesHelper
      * @throws NullPointerException if any of the inputs are null
      */
 
-    static Metadata getBasisTimeAdjustedMetadata( Metadata input, Instant earliestTime, Instant latestTime )
+    static SampleMetadata getBasisTimeAdjustedMetadata( SampleMetadata input, Instant earliestTime, Instant latestTime )
     {
         //Test the input only, as the others are tested on construction
         Objects.requireNonNull( "Specify non-null input for the current metadata." );
-        Metadata returnMe = input;
+        SampleMetadata returnMe = input;
         if ( input.hasTimeWindow() )
         {
             TimeWindow current = input.getTimeWindow();
-            returnMe = Metadata.of( returnMe,
+            returnMe = SampleMetadata.of( returnMe,
                                                     TimeWindow.of( earliestTime,
                                                                    latestTime,
                                                                    current.getReferenceTime(),
@@ -60,7 +60,7 @@ public class TimeSeriesHelper
 
     /**
      * Helper method that adjusts the earliest and latest durations of the {@link TimeWindow} associated with the input
-     * {@link Metadata} when iterating over the atomic time-series by duration.
+     * {@link SampleMetadata} when iterating over the atomic time-series by duration.
      * 
      * @param input the input metadata
      * @param earliestDuration the earliest duration for the new metadata
@@ -69,15 +69,15 @@ public class TimeSeriesHelper
      * @throws NullPointerException if any of the inputs are null
      */
 
-    static Metadata getDurationAdjustedMetadata( Metadata input, Duration earliestDuration, Duration latestDuration )
+    static SampleMetadata getDurationAdjustedMetadata( SampleMetadata input, Duration earliestDuration, Duration latestDuration )
     {
         //Test the input only, as the others are tested on construction
         Objects.requireNonNull( "Specify non-null input for the current metadata." );
-        Metadata returnMe = input;
+        SampleMetadata returnMe = input;
         if ( input.hasTimeWindow() )
         {
             TimeWindow current = input.getTimeWindow();
-            returnMe = Metadata.of( returnMe,
+            returnMe = SampleMetadata.of( returnMe,
                                                     TimeWindow.of( current.getEarliestTime(),
                                                                    current.getLatestTime(),
                                                                    current.getReferenceTime(),

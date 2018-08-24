@@ -14,7 +14,7 @@ import wres.datamodel.thresholds.OneOrTwoThresholds;
  * 
  * @author james.brown@hydrosolved.com
  */
-public class StatisticMetadata extends Metadata implements Comparable<StatisticMetadata>
+public class StatisticMetadata extends SampleMetadata implements Comparable<StatisticMetadata>
 {
     /**
      * The sample size.
@@ -111,7 +111,7 @@ public class StatisticMetadata extends Metadata implements Comparable<StatisticM
     }
 
     /**
-     * Builds a default {@link StatisticMetadata} with a prescribed source of {@link Metadata} whose parameters are
+     * Builds a default {@link StatisticMetadata} with a prescribed source of {@link SampleMetadata} whose parameters are
      * copied, together with a sample size, a {@link MeasurementUnit} for the output, and {@link MetricConstants} 
      * identifiers for the metric and the metric component, respectively.
      * 
@@ -124,7 +124,7 @@ public class StatisticMetadata extends Metadata implements Comparable<StatisticM
      * @throws NullPointerException if the input metadata is null
      */
 
-    public static StatisticMetadata of( final Metadata source,
+    public static StatisticMetadata of( final SampleMetadata source,
                                         final int sampleSize,
                                         final MeasurementUnit outputDim,
                                         final MetricConstants metricID,
@@ -156,7 +156,7 @@ public class StatisticMetadata extends Metadata implements Comparable<StatisticM
      * @return the output metadata
      */
 
-    public static StatisticMetadata of( final Metadata source,
+    public static StatisticMetadata of( final SampleMetadata source,
                                         final MetricConstants metricID,
                                         final MetricConstants componentID,
                                         final boolean hasRealUnits,

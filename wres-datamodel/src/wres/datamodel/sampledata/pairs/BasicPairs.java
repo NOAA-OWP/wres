@@ -9,7 +9,7 @@ import java.util.Objects;
 import java.util.StringJoiner;
 
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.metadata.Metadata;
+import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataBuilder;
 import wres.datamodel.sampledata.SampleDataException;
@@ -40,7 +40,7 @@ public abstract class BasicPairs<T> implements SampleData<T>
      * Metadata associated with the verification pairs.
      */
 
-    private final Metadata mainMeta;
+    private final SampleMetadata mainMeta;
 
     /**
      * The verification pairs for a baseline in an immutable list (may be null).
@@ -52,7 +52,7 @@ public abstract class BasicPairs<T> implements SampleData<T>
      * Metadata associated with the baseline verification pairs (may be null).
      */
 
-    private final Metadata baselineMeta;
+    private final SampleMetadata baselineMeta;
 
     /**
      * Climatological dataset. May be null.
@@ -67,7 +67,7 @@ public abstract class BasicPairs<T> implements SampleData<T>
     }
 
     @Override
-    public Metadata getMetadata()
+    public SampleMetadata getMetadata()
     {
         return mainMeta;
     }
@@ -79,7 +79,7 @@ public abstract class BasicPairs<T> implements SampleData<T>
     }
 
     @Override
-    public Metadata getMetadataForBaseline()
+    public SampleMetadata getMetadataForBaseline()
     {
         return baselineMeta;
     }
@@ -145,13 +145,13 @@ public abstract class BasicPairs<T> implements SampleData<T>
          * Metadata for input.
          */
 
-        Metadata mainMeta;
+        SampleMetadata mainMeta;
 
         /**
          * Metadata for baseline.
          */
 
-        Metadata baselineMeta;
+        SampleMetadata baselineMeta;
 
         /**
          * Sets the metadata associated with the input.
@@ -160,7 +160,7 @@ public abstract class BasicPairs<T> implements SampleData<T>
          * @return the builder
          */
 
-        public BasicPairsBuilder<T> setMetadata( Metadata mainMeta )
+        public BasicPairsBuilder<T> setMetadata( SampleMetadata mainMeta )
         {
             this.mainMeta = mainMeta;
             return this;
@@ -173,7 +173,7 @@ public abstract class BasicPairs<T> implements SampleData<T>
          * @return the builder
          */
 
-        public BasicPairsBuilder<T> setMetadataForBaseline( Metadata baselineMeta )
+        public BasicPairsBuilder<T> setMetadataForBaseline( SampleMetadata baselineMeta )
         {
             this.baselineMeta = baselineMeta;
             return this;

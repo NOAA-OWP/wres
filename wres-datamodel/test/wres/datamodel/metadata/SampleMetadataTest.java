@@ -22,16 +22,16 @@ import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 
 /**
- * Tests the {@link Metadata}.
+ * Tests the {@link SampleMetadata}.
  * 
  * @author james.brown@hydrosolved.com
  */
 
-public class MetadataTest
+public class SampleMetadataTest
 {
 
     /**
-     * Test {@link Metadata#equals(Object)}.
+     * Test {@link SampleMetadata#equals(Object)}.
      */
 
     @SuppressWarnings( "unlikely-arg-type" )
@@ -39,38 +39,38 @@ public class MetadataTest
     public void testEquals()
     {
         assertTrue( "Unexpected inequality between two metadata instances.",
-                    Metadata.of().equals( Metadata.of() ) );
+                    SampleMetadata.of().equals( SampleMetadata.of() ) );
         Location l1 = Location.of( "DRRC2" );
-        Metadata m1 = Metadata.of( MeasurementUnit.of(),
+        SampleMetadata m1 = SampleMetadata.of( MeasurementUnit.of(),
                                    DatasetIdentifier.of( l1, "SQIN", "HEFS" ) );
         // Reflexive
         assertTrue( "Unexpected inequality between two metadata instances.", m1.equals( m1 ) );
         Location l2 = Location.of( "DRRC2" );
-        Metadata m2 = Metadata.of( MeasurementUnit.of(),
+        SampleMetadata m2 = SampleMetadata.of( MeasurementUnit.of(),
                                    DatasetIdentifier.of( l2, "SQIN", "HEFS" ) );
         // Symmetric
         assertTrue( "Unexpected inequality between two metadata instances.", m1.equals( m2 ) );
         assertTrue( "Unexpected inequality between two metadata instances.", m2.equals( m1 ) );
         Location l3 = Location.of( "DRRC2" );
-        Metadata m3 = Metadata.of( MeasurementUnit.of( "SOME_DIM" ),
+        SampleMetadata m3 = SampleMetadata.of( MeasurementUnit.of( "SOME_DIM" ),
                                    DatasetIdentifier.of( l3, "SQIN", "HEFS" ) );
         Location l4 = Location.of( "DRRC2" );
-        Metadata m4 = Metadata.of( MeasurementUnit.of( "SOME_DIM" ),
+        SampleMetadata m4 = SampleMetadata.of( MeasurementUnit.of( "SOME_DIM" ),
                                    DatasetIdentifier.of( l4, "SQIN", "HEFS" ) );
         assertTrue( "Unexpected inequality between two metadata instances.", m3.equals( m4 ) );
         assertFalse( "Unexpected equality between two metadata instances.", m1.equals( m3 ) );
         // Transitive
         Location l4t = Location.of( "DRRC2" );
-        Metadata m4t = Metadata.of( MeasurementUnit.of( "SOME_DIM" ),
+        SampleMetadata m4t = SampleMetadata.of( MeasurementUnit.of( "SOME_DIM" ),
                                     DatasetIdentifier.of( l4t, "SQIN", "HEFS" ) );
         assertTrue( "Unexpected inequality between two metadata instances.", m4.equals( m4t ) );
         assertTrue( "Unexpected inequality between two metadata instances.", m3.equals( m4t ) );
         // Unequal
         Location l5 = Location.of( "DRRC3" );
-        Metadata m5 = Metadata.of( MeasurementUnit.of( "SOME_DIM" ),
+        SampleMetadata m5 = SampleMetadata.of( MeasurementUnit.of( "SOME_DIM" ),
                                    DatasetIdentifier.of( l5, "SQIN", "HEFS" ) );
         assertFalse( "Unexpected equality between two metadata instances.", m4.equals( m5 ) );
-        Metadata m5NoDim = Metadata.of( MeasurementUnit.of( "SOME_DIM" ), null );
+        SampleMetadata m5NoDim = SampleMetadata.of( MeasurementUnit.of( "SOME_DIM" ), null );
         assertFalse( "Unexpected equality between two metadata instances.", m5.equals( m5NoDim ) );
         // Consistent
         for ( int i = 0; i < 20; i++ )
@@ -85,11 +85,11 @@ public class MetadataTest
                                                  Instant.parse( "1986-01-01T00:00:00Z" ),
                                                  ReferenceTime.VALID_TIME );
         Location l6 = Location.of( "DRRC3" );
-        Metadata m6 = Metadata.of( MeasurementUnit.of( "SOME_DIM" ),
+        SampleMetadata m6 = SampleMetadata.of( MeasurementUnit.of( "SOME_DIM" ),
                                    DatasetIdentifier.of( l6, "SQIN", "HEFS" ),
                                    firstWindow );
         Location l7 = Location.of( "DRRC3" );
-        Metadata m7 = Metadata.of( MeasurementUnit.of( "SOME_DIM" ),
+        SampleMetadata m7 = SampleMetadata.of( MeasurementUnit.of( "SOME_DIM" ),
                                    DatasetIdentifier.of( l7, "SQIN", "HEFS" ),
                                    secondWindow );
         assertTrue( "Unexpected inequality between two metadata instances.", m6.equals( m7 ) );
@@ -100,7 +100,7 @@ public class MetadataTest
                                                 Instant.parse( "1986-01-01T00:00:00Z" ),
                                                 ReferenceTime.ISSUE_TIME );
         Location l8 = Location.of( "DRRC3" );
-        Metadata m8 = Metadata.of( MeasurementUnit.of( "SOME_DIM" ),
+        SampleMetadata m8 = SampleMetadata.of( MeasurementUnit.of( "SOME_DIM" ),
                                    DatasetIdentifier.of( l8, "SQIN", "HEFS" ),
                                    thirdWindow );
         assertFalse( "Unexpected equality between two metadata instances.", m6.equals( m8 ) );
@@ -111,14 +111,14 @@ public class MetadataTest
                                                      Operator.GREATER,
                                                      ThresholdDataType.LEFT ) );
 
-        Metadata m9 = Metadata.of( MeasurementUnit.of( "SOME_DIM" ),
+        SampleMetadata m9 = SampleMetadata.of( MeasurementUnit.of( "SOME_DIM" ),
                                    DatasetIdentifier.of( l8, "SQIN", "HEFS" ),
                                    thirdWindow,
                                    thresholds );
 
         assertFalse( "Unexpected equality between two metadata instances.", m8.equals( m9 ) );
 
-        Metadata m10 = Metadata.of( MeasurementUnit.of( "SOME_DIM" ),
+        SampleMetadata m10 = SampleMetadata.of( MeasurementUnit.of( "SOME_DIM" ),
                                     DatasetIdentifier.of( l8, "SQIN", "HEFS" ),
                                     thirdWindow,
                                     thresholds );
@@ -170,13 +170,13 @@ public class MetadataTest
                                    null,
                                    null );
 
-        Metadata m11 = Metadata.of( MeasurementUnit.of( "SOME_DIM" ),
+        SampleMetadata m11 = SampleMetadata.of( MeasurementUnit.of( "SOME_DIM" ),
                                     DatasetIdentifier.of( l8, "SQIN", "HEFS" ),
                                     thirdWindow,
                                     thresholds,
                                     mockConfigOne );
 
-        Metadata m12 = Metadata.of( MeasurementUnit.of( "SOME_DIM" ),
+        SampleMetadata m12 = SampleMetadata.of( MeasurementUnit.of( "SOME_DIM" ),
                                     DatasetIdentifier.of( l8, "SQIN", "HEFS" ),
                                     thirdWindow,
                                     thresholds,
@@ -192,7 +192,7 @@ public class MetadataTest
     }
 
     /**
-     * Test {@link Metadata#hashCode()}.
+     * Test {@link SampleMetadata#hashCode()}.
      */
 
     @Test
@@ -200,34 +200,34 @@ public class MetadataTest
     {
         // Equal
         assertTrue( "Unexpected inequality between two metadata hashcodes.",
-                    Metadata.of().hashCode() == Metadata.of().hashCode() );
+                    SampleMetadata.of().hashCode() == SampleMetadata.of().hashCode() );
         Location l1 = Location.of( "DRRC2" );
-        Metadata m1 = Metadata.of( MeasurementUnit.of(),
+        SampleMetadata m1 = SampleMetadata.of( MeasurementUnit.of(),
                                    DatasetIdentifier.of( l1, "SQIN", "HEFS" ) );
         assertTrue( "Unexpected inequality between two metadata instances.", m1.hashCode() == m1.hashCode() );
         Location l2 = Location.of( "DRRC2" );
-        Metadata m2 = Metadata.of( MeasurementUnit.of(),
+        SampleMetadata m2 = SampleMetadata.of( MeasurementUnit.of(),
                                    DatasetIdentifier.of( l2, "SQIN", "HEFS" ) );
         assertTrue( "Unexpected inequality between two metadata hashcodes.", m1.hashCode() == m2.hashCode() );
         Location l3 = Location.of( "DRRC2" );
-        Metadata m3 = Metadata.of( MeasurementUnit.of( "SOME_DIM" ),
+        SampleMetadata m3 = SampleMetadata.of( MeasurementUnit.of( "SOME_DIM" ),
                                    DatasetIdentifier.of( l3, "SQIN", "HEFS" ) );
         Location l4 = Location.of( "DRRC2" );
-        Metadata m4 = Metadata.of( MeasurementUnit.of( "SOME_DIM" ),
+        SampleMetadata m4 = SampleMetadata.of( MeasurementUnit.of( "SOME_DIM" ),
                                    DatasetIdentifier.of( l4, "SQIN", "HEFS" ) );
         assertTrue( "Unexpected inequality between two metadata hashcodes.", m3.hashCode() == m4.hashCode() );
         Location l4t = Location.of( "DRRC2" );
-        Metadata m4t = Metadata.of( MeasurementUnit.of( "SOME_DIM" ),
+        SampleMetadata m4t = SampleMetadata.of( MeasurementUnit.of( "SOME_DIM" ),
                                     DatasetIdentifier.of( l4t, "SQIN", "HEFS" ) );
         assertTrue( "Unexpected inequality between two metadata instances.", m4.hashCode() == m4t.hashCode() );
         assertTrue( "Unexpected inequality between two metadata instances.", m3.hashCode() == m4t.hashCode() );
         // Unequal
         assertFalse( "Unexpected equality between two metadata hashcodes.", m1.hashCode() == m3.hashCode() );
         Location l5 = Location.of( "DRRC3" );
-        Metadata m5 = Metadata.of( MeasurementUnit.of( "SOME_DIM" ),
+        SampleMetadata m5 = SampleMetadata.of( MeasurementUnit.of( "SOME_DIM" ),
                                    DatasetIdentifier.of( l5, "SQIN", "HEFS" ) );
         assertFalse( "Unexpected equality between two metadata hashcodes.", m4.hashCode() == m5.hashCode() );
-        Metadata m5NoDim = Metadata.of( MeasurementUnit.of( "SOME_DIM" ), null );
+        SampleMetadata m5NoDim = SampleMetadata.of( MeasurementUnit.of( "SOME_DIM" ), null );
         assertFalse( "Unexpected equality between two metadata instances.", m5.hashCode() == m5NoDim.hashCode() );
         // Consistent
         for ( int i = 0; i < 20; i++ )
@@ -243,11 +243,11 @@ public class MetadataTest
                                                  Instant.parse( "1986-01-01T00:00:00Z" ),
                                                  ReferenceTime.VALID_TIME );
         Location l6 = Location.of( "DRRC3" );
-        Metadata m6 = Metadata.of( MeasurementUnit.of( "SOME_DIM" ),
+        SampleMetadata m6 = SampleMetadata.of( MeasurementUnit.of( "SOME_DIM" ),
                                    DatasetIdentifier.of( l6, "SQIN", "HEFS" ),
                                    firstWindow );
         Location l7 = Location.of( "DRRC3" );
-        Metadata m7 = Metadata.of( MeasurementUnit.of( "SOME_DIM" ),
+        SampleMetadata m7 = SampleMetadata.of( MeasurementUnit.of( "SOME_DIM" ),
                                    DatasetIdentifier.of( l7, "SQIN", "HEFS" ),
                                    secondWindow );
         assertTrue( "Unexpected inequality between two metadata hashcodes.", m6.hashCode() == m7.hashCode() );
@@ -257,7 +257,7 @@ public class MetadataTest
                                                 Instant.parse( "1986-01-01T00:00:00Z" ),
                                                 ReferenceTime.ISSUE_TIME );
         Location l8 = Location.of( "DRRC3" );
-        Metadata m8 = Metadata.of( MeasurementUnit.of( "SOME_DIM" ),
+        SampleMetadata m8 = SampleMetadata.of( MeasurementUnit.of( "SOME_DIM" ),
                                    DatasetIdentifier.of( l8, "SQIN", "HEFS" ),
                                    thirdWindow );
         assertFalse( "Unexpected equality between two metadata hashcodes.", m6.hashCode() == m8.hashCode() );
@@ -268,12 +268,12 @@ public class MetadataTest
                                                      Operator.GREATER,
                                                      ThresholdDataType.LEFT ) );
 
-        Metadata m9 = Metadata.of( MeasurementUnit.of( "SOME_DIM" ),
+        SampleMetadata m9 = SampleMetadata.of( MeasurementUnit.of( "SOME_DIM" ),
                                    DatasetIdentifier.of( l8, "SQIN", "HEFS" ),
                                    thirdWindow,
                                    thresholds );
 
-        Metadata m10 = Metadata.of( MeasurementUnit.of( "SOME_DIM" ),
+        SampleMetadata m10 = SampleMetadata.of( MeasurementUnit.of( "SOME_DIM" ),
                                     DatasetIdentifier.of( l8, "SQIN", "HEFS" ),
                                     thirdWindow,
                                     thresholds );
@@ -325,13 +325,13 @@ public class MetadataTest
                                    null,
                                    null );
 
-        Metadata m11 = Metadata.of( MeasurementUnit.of( "SOME_DIM" ),
+        SampleMetadata m11 = SampleMetadata.of( MeasurementUnit.of( "SOME_DIM" ),
                                     DatasetIdentifier.of( l8, "SQIN", "HEFS" ),
                                     thirdWindow,
                                     thresholds,
                                     mockConfigOne );
 
-        Metadata m12 = Metadata.of( MeasurementUnit.of( "SOME_DIM" ),
+        SampleMetadata m12 = SampleMetadata.of( MeasurementUnit.of( "SOME_DIM" ),
                                     DatasetIdentifier.of( l8, "SQIN", "HEFS" ),
                                     thirdWindow,
                                     thresholds,

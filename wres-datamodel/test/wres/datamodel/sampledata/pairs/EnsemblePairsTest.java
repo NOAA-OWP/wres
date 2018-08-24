@@ -9,7 +9,7 @@ import java.util.List;
 import org.junit.Test;
 
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.metadata.Metadata;
+import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.EnsemblePair;
 import wres.datamodel.sampledata.pairs.EnsemblePairs;
@@ -37,7 +37,7 @@ public final class EnsemblePairsTest
         {
             values.add( EnsemblePair.of( 1, new double[] { 1, 2, 3, 4 } ) );
         }
-        final Metadata meta = Metadata.of();
+        final SampleMetadata meta = SampleMetadata.of();
         EnsemblePairs p = (EnsemblePairs) b.addData( values ).setMetadata( meta ).build();
 
         //Check dataset count

@@ -8,7 +8,7 @@ import org.junit.Test;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
-import wres.datamodel.metadata.Metadata;
+import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.DiscreteProbabilityPair;
 import wres.datamodel.sampledata.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.sampledata.pairs.DiscreteProbabilityPairs.DiscreteProbabilityPairsBuilder;
@@ -37,7 +37,7 @@ public final class DiscreteProbabilityPairsTest
         }
 
         final Location location = Location.of( "DRRC2" );
-        final Metadata meta = Metadata.of( MeasurementUnit.of(),
+        final SampleMetadata meta = SampleMetadata.of( MeasurementUnit.of(),
                                                            DatasetIdentifier.of( location,
                                                                                                  "SQIN",
                                                                                                  "HEFS" ) );

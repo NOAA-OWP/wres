@@ -18,7 +18,7 @@ import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
-import wres.datamodel.metadata.Metadata;
+import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.DiscreteProbabilityPair;
@@ -140,7 +140,7 @@ public final class ReliabilityDiagramTest
 
         DiscreteProbabilityPairs input =
                 DiscreteProbabilityPairs.of( data,
-                                                        Metadata.of( MeasurementUnit.of(),
+                                                        SampleMetadata.of( MeasurementUnit.of(),
                                                                                      identifier ) );
 
         //Metadata for the output
@@ -180,7 +180,7 @@ public final class ReliabilityDiagramTest
     {
         // Generate empty data
         DiscreteProbabilityPairs input =
-                DiscreteProbabilityPairs.of( Arrays.asList(), Metadata.of() );
+                DiscreteProbabilityPairs.of( Arrays.asList(), SampleMetadata.of() );
 
         MultiVectorStatistic actual = rel.apply( input );
 

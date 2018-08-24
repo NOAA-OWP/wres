@@ -15,7 +15,7 @@ import org.junit.rules.ExpectedException;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreGroup;
 import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.Metadata;
+import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.EnsemblePair;
@@ -62,7 +62,7 @@ public final class ContinousRankedProbabilityScoreTest
         pairs.add( EnsemblePair.of( 47, new double[] { 12, 54, 23, 54, 78 } ) );
         pairs.add( EnsemblePair.of( 12.1, new double[] { 9, 8, 5, 6, 12 } ) );
         pairs.add( EnsemblePair.of( 43, new double[] { 23, 12, 12, 34, 10 } ) );
-        EnsemblePairs input = EnsemblePairs.of( pairs, Metadata.of() );
+        EnsemblePairs input = EnsemblePairs.of( pairs, SampleMetadata.of() );
 
         //Metadata for the output
         StatisticMetadata m1 =
@@ -98,7 +98,7 @@ public final class ContinousRankedProbabilityScoreTest
         pairs.add( EnsemblePair.of( 47, new double[] { 12, 54, 23, 54 } ) );
         pairs.add( EnsemblePair.of( 12, new double[] { 9, 8, 5 } ) );
         pairs.add( EnsemblePair.of( 43, new double[] { 23, 12, 12 } ) );
-        EnsemblePairs input = EnsemblePairs.of( pairs, Metadata.of() );
+        EnsemblePairs input = EnsemblePairs.of( pairs, SampleMetadata.of() );
 
         //Metadata for the output
         StatisticMetadata m1 =
@@ -129,7 +129,7 @@ public final class ContinousRankedProbabilityScoreTest
         //Generate some data
         List<EnsemblePair> pairs = new ArrayList<>();
         pairs.add( EnsemblePair.of( 8, new double[] { 23, 54, 23, 12, 32 } ) );
-        EnsemblePairs input = EnsemblePairs.of( pairs, Metadata.of() );
+        EnsemblePairs input = EnsemblePairs.of( pairs, SampleMetadata.of() );
 
         //Metadata for the output
         StatisticMetadata m1 =
@@ -161,7 +161,7 @@ public final class ContinousRankedProbabilityScoreTest
         //Generate some data
         List<EnsemblePair> pairs = new ArrayList<>();
         pairs.add( EnsemblePair.of( 32, new double[] { 23, 54, 23, 12, 32 } ) );
-        EnsemblePairs input = EnsemblePairs.of( pairs, Metadata.of() );
+        EnsemblePairs input = EnsemblePairs.of( pairs, SampleMetadata.of() );
 
         //Metadata for the output
         StatisticMetadata m1 =
@@ -191,7 +191,7 @@ public final class ContinousRankedProbabilityScoreTest
     {
         // Generate empty data
         EnsemblePairs input =
-                EnsemblePairs.of( Arrays.asList(), Metadata.of() );
+                EnsemblePairs.of( Arrays.asList(), SampleMetadata.of() );
 
         DoubleScoreStatistic actual = crps.apply( input );
 

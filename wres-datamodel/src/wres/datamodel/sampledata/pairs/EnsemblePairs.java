@@ -3,7 +3,7 @@ package wres.datamodel.sampledata.pairs;
 import java.util.List;
 
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.metadata.Metadata;
+import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 
@@ -26,7 +26,7 @@ public class EnsemblePairs extends BasicPairs<EnsemblePair>
      * @throws SampleDataException if the inputs are invalid
      */
 
-    public static EnsemblePairs of( List<EnsemblePair> pairs, Metadata meta )
+    public static EnsemblePairs of( List<EnsemblePair> pairs, SampleMetadata meta )
     {
         return EnsemblePairs.of( pairs, null, meta, null, null );
     }
@@ -42,8 +42,8 @@ public class EnsemblePairs extends BasicPairs<EnsemblePair>
      */
 
     public static EnsemblePairs of( EnsemblePairs pairs,
-                                    Metadata overrideMainMeta,
-                                    Metadata overrideBaselineMeta )
+                                    SampleMetadata overrideMainMeta,
+                                    SampleMetadata overrideBaselineMeta )
     {
         return EnsemblePairs.of( pairs.getRawData(),
                                  pairs.getRawDataForBaseline(),
@@ -63,7 +63,7 @@ public class EnsemblePairs extends BasicPairs<EnsemblePair>
      */
 
     public static EnsemblePairs of( List<EnsemblePair> pairs,
-                                    Metadata meta,
+                                    SampleMetadata meta,
                                     VectorOfDoubles climatology )
     {
         return EnsemblePairs.of( pairs, null, meta, null, climatology );
@@ -82,8 +82,8 @@ public class EnsemblePairs extends BasicPairs<EnsemblePair>
 
     public static EnsemblePairs of( List<EnsemblePair> pairs,
                                     List<EnsemblePair> basePairs,
-                                    Metadata mainMeta,
-                                    Metadata baselineMeta )
+                                    SampleMetadata mainMeta,
+                                    SampleMetadata baselineMeta )
     {
         return EnsemblePairs.of( pairs, basePairs, mainMeta, baselineMeta, null );
     }
@@ -102,8 +102,8 @@ public class EnsemblePairs extends BasicPairs<EnsemblePair>
 
     public static EnsemblePairs of( List<EnsemblePair> pairs,
                                     List<EnsemblePair> basePairs,
-                                    Metadata mainMeta,
-                                    Metadata baselineMeta,
+                                    SampleMetadata mainMeta,
+                                    SampleMetadata baselineMeta,
                                     VectorOfDoubles climatology )
     {
         EnsemblePairsBuilder b = new EnsemblePairsBuilder();

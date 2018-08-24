@@ -25,7 +25,7 @@ import wres.config.generated.TimeSeriesMetricConfigName;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.Metadata;
+import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.sampledata.pairs.DichotomousPair;
@@ -65,7 +65,7 @@ public final class DataFactoryTest
     {
 
         final Location l = Location.of( "DRRC2" );
-        final Metadata m1 = Metadata.of( MeasurementUnit.of(),
+        final SampleMetadata m1 = SampleMetadata.of( MeasurementUnit.of(),
                                                          DatasetIdentifier.of( l, "SQIN", "HEFS" ) );
         final List<DichotomousPair> input = new ArrayList<>();
         input.add( DichotomousPair.of( true, false ) );
@@ -74,10 +74,10 @@ public final class DataFactoryTest
         final List<DiscreteProbabilityPair> dInput = new ArrayList<>();
         dInput.add( DiscreteProbabilityPair.of( 0.0, 1.0 ) );
         final Location l2 = Location.of( "DRRC2" );
-        final Metadata m2 = Metadata.of( MeasurementUnit.of(),
+        final SampleMetadata m2 = SampleMetadata.of( MeasurementUnit.of(),
                                                          DatasetIdentifier.of( l2, "SQIN", "HEFS" ) );
         final Location l3 = Location.of( "DRRC2" );
-        final Metadata m3 = Metadata.of( MeasurementUnit.of(),
+        final SampleMetadata m3 = SampleMetadata.of( MeasurementUnit.of(),
                                                          DatasetIdentifier.of( l3, "SQIN", "ESP" ) );
         assertNotNull( DiscreteProbabilityPairs.of( dInput, m2 ) );
         assertNotNull( DiscreteProbabilityPairs.of( dInput, dInput, m2, m3, null ) );

@@ -18,7 +18,7 @@ import ohd.hseb.charter.datasource.XYChartDataSourceException;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
-import wres.datamodel.metadata.Metadata;
+import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.SingleValuedPair;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
 
@@ -35,7 +35,7 @@ public class Chart2DTestInput extends TestCase
             values.add(SingleValuedPair.of(rand.nextGaussian(), rand.nextGaussian()));
         }
 
-        final Metadata meta = Metadata.of(MeasurementUnit.of("CMS"),
+        final SampleMetadata meta = SampleMetadata.of(MeasurementUnit.of("CMS"),
                                                  DatasetIdentifier.of(Location.of("DRRC2"), "SQIN", "HEFS"));
         final SingleValuedPairs pairs = SingleValuedPairs.of(values, meta);
 
@@ -81,7 +81,7 @@ public class Chart2DTestInput extends TestCase
         values.add(SingleValuedPair.of(12, 12));
         values.add(SingleValuedPair.of(93, 94));
 
-        final Metadata meta = Metadata.of(MeasurementUnit.of("CMS"),
+        final SampleMetadata meta = SampleMetadata.of(MeasurementUnit.of("CMS"),
                                                  DatasetIdentifier.of(Location.of("DRRC2"), "SQIN", "HEFS"));
         final SingleValuedPairs pairs = SingleValuedPairs.of(values, meta);
 

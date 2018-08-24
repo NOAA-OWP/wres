@@ -20,7 +20,7 @@ import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.Metadata;
+import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
@@ -68,7 +68,7 @@ public final class BoxPlotErrorByObservedTest
                                            Instant.MAX,
                                            ReferenceTime.VALID_TIME,
                                            Duration.ofHours( 24 ) );
-        Metadata meta = Metadata.of( MeasurementUnit.of( "MM/DAY" ),
+        SampleMetadata meta = SampleMetadata.of( MeasurementUnit.of( "MM/DAY" ),
                                      DatasetIdentifier.of( Location.of( "A" ),
                                                            "MAP" ),
                                      window );
@@ -114,7 +114,7 @@ public final class BoxPlotErrorByObservedTest
     {
         // Generate empty data
         EnsemblePairs input =
-                EnsemblePairs.of( Arrays.asList(), Metadata.of() );
+                EnsemblePairs.of( Arrays.asList(), SampleMetadata.of() );
 
         BoxPlotStatistic actual = bpe.apply( input );
 

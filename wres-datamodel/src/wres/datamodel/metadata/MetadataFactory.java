@@ -17,7 +17,7 @@ public final class MetadataFactory
 
     /**
      * Finds the union of the input, based on the {@link TimeWindow}. All components of the input must be equal, 
-     * except the {@link Metadata#getTimeWindow()} and {@link Metadata#getThresholds()}, otherwise an exception is 
+     * except the {@link SampleMetadata#getTimeWindow()} and {@link SampleMetadata#getThresholds()}, otherwise an exception is 
      * thrown. See also {@link TimeWindow#unionOf(List)}. No threshold information is represented in the union.
      * 
      * @param input the input metadata
@@ -25,7 +25,7 @@ public final class MetadataFactory
      * @throws MetadataException if the input is invalid
      */
 
-    public static Metadata unionOf( List<Metadata> input )
+    public static SampleMetadata unionOf( List<SampleMetadata> input )
     {
         String nullString = "Cannot find the union of null metadata.";
         if ( Objects.isNull( input ) )
@@ -39,10 +39,10 @@ public final class MetadataFactory
         List<TimeWindow> unionWindow = new ArrayList<>();
         
         // Test entry
-        Metadata test = input.get( 0 );
+        SampleMetadata test = input.get( 0 );
 
         // Validate for equivalence with the first entry and add window to list
-        for ( Metadata next : input )
+        for ( SampleMetadata next : input )
         {
             if ( Objects.isNull( next ) )
             {
@@ -60,11 +60,11 @@ public final class MetadataFactory
         }
         
         // Remove any threshold information from the result
-        test = Metadata.of( test, (OneOrTwoThresholds) null );
+        test = SampleMetadata.of( test, (OneOrTwoThresholds) null );
 
         if ( !unionWindow.isEmpty() )
         {
-            test = Metadata.of( test, TimeWindow.unionOf( unionWindow ) );
+            test = SampleMetadata.of( test, TimeWindow.unionOf( unionWindow ) );
         }
         return test;
     }

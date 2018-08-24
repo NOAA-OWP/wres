@@ -39,7 +39,7 @@ public class StatisticMetadataTest
                                                      ThresholdDataType.LEFT ) );
 
         Location locationBase = Location.of( "DRRC3" );
-        Metadata base = Metadata.of( MeasurementUnit.of( "SOME_DIM" ),
+        SampleMetadata base = SampleMetadata.of( MeasurementUnit.of( "SOME_DIM" ),
                                      DatasetIdentifier.of( locationBase,
                                                            "SQIN",
                                                            "HEFS" ),
@@ -102,7 +102,7 @@ public class StatisticMetadataTest
         assertFalse( "Unexpected equality between two metadata instances.", first.equals( sixth ) );
         // Unequal input dimensions
         Location seventhLocation = Location.of( "DRRC3" );
-        StatisticMetadata seventh = StatisticMetadata.of( Metadata.of( MeasurementUnit.of( "OTHER_DIM" ),
+        StatisticMetadata seventh = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "OTHER_DIM" ),
                      DatasetIdentifier.of( seventhLocation,
                                            "SQIN",
                                            "HEFS" ),
@@ -126,7 +126,7 @@ public class StatisticMetadataTest
     public void testMinimumEquals()
     {
         Location locationBase = Location.of( "DRRC3" );
-        Metadata base = Metadata.of( MeasurementUnit.of( "SOME_DIM" ),
+        SampleMetadata base = SampleMetadata.of( MeasurementUnit.of( "SOME_DIM" ),
                                      DatasetIdentifier.of( locationBase,
                                                            "SQIN",
                                                            "HEFS" ) );
@@ -176,7 +176,7 @@ public class StatisticMetadataTest
                                                               MetricConstants.NONE );
         assertFalse( "Unexpected equality between two metadata instances.", fourth.minimumEquals( fifth ) );
         Location secondLocation = Location.of( "DRRC3" );
-        Metadata baseSecond = Metadata.of( MeasurementUnit.of( "OTHER_DIM" ),
+        SampleMetadata baseSecond = SampleMetadata.of( MeasurementUnit.of( "OTHER_DIM" ),
                                            DatasetIdentifier.of( secondLocation,
                                                                  "SQIN",
                                                                  "HEFS" ) );
@@ -209,7 +209,7 @@ public class StatisticMetadataTest
                                                      ThresholdDataType.LEFT ) );
 
         Location baseLocation = Location.of( "DRRC3" );
-        Metadata base = Metadata.of( MeasurementUnit.of( "SOME_DIM" ),
+        SampleMetadata base = SampleMetadata.of( MeasurementUnit.of( "SOME_DIM" ),
                                      DatasetIdentifier.of( baseLocation,
                                                            "SQIN",
                                                            "HEFS" ),
@@ -267,7 +267,7 @@ public class StatisticMetadataTest
         assertFalse( "Unexpected equality between two metadata hashcodes.", first.hashCode() == sixth.hashCode() );
         // Unequal input dimensions
         Location seventhLocation = Location.of( "DRRC3" );
-        StatisticMetadata seventh = StatisticMetadata.of( Metadata.of( MeasurementUnit.of( "OTHER_DIM" ),
+        StatisticMetadata seventh = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "OTHER_DIM" ),
                      DatasetIdentifier.of( seventhLocation,
                                            "SQIN",
                                            "HEFS" ),

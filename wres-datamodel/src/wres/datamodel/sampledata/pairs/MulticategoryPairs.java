@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Objects;
 
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.metadata.Metadata;
+import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 
@@ -26,7 +26,7 @@ public class MulticategoryPairs extends BasicPairs<MulticategoryPair>
      * @throws SampleDataException if the inputs are invalid
      */
 
-    public static MulticategoryPairs ofMulticategoryPairs( List<MulticategoryPair> pairs, Metadata meta )
+    public static MulticategoryPairs ofMulticategoryPairs( List<MulticategoryPair> pairs, SampleMetadata meta )
     {
         return MulticategoryPairs.ofMulticategoryPairs( pairs, null, meta, null, null );
     }
@@ -42,8 +42,8 @@ public class MulticategoryPairs extends BasicPairs<MulticategoryPair>
      */
 
     public static MulticategoryPairs ofMulticategoryPairs( MulticategoryPairs pairs,
-                                                           Metadata overrideMainMeta,
-                                                           Metadata overrideBaselineMeta )
+                                                           SampleMetadata overrideMainMeta,
+                                                           SampleMetadata overrideBaselineMeta )
     {
         return MulticategoryPairs.ofMulticategoryPairs( pairs.getRawData(),
                                                         pairs.getRawDataForBaseline(),
@@ -66,8 +66,8 @@ public class MulticategoryPairs extends BasicPairs<MulticategoryPair>
 
     public static MulticategoryPairs ofMulticategoryPairs( List<MulticategoryPair> pairs,
                                                            List<MulticategoryPair> basePairs,
-                                                           Metadata mainMeta,
-                                                           Metadata baselineMeta,
+                                                           SampleMetadata mainMeta,
+                                                           SampleMetadata baselineMeta,
                                                            VectorOfDoubles climatology )
     {
         MulticategoryPairsBuilder b = new MulticategoryPairsBuilder();

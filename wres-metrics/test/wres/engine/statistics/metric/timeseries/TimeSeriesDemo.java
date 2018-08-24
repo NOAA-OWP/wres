@@ -8,7 +8,7 @@ import java.util.List;
 import org.junit.Test;
 
 import wres.datamodel.Slicer;
-import wres.datamodel.metadata.Metadata;
+import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.EnsemblePair;
 import wres.datamodel.sampledata.pairs.SingleValuedPair;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
@@ -47,7 +47,7 @@ public class TimeSeriesDemo
         firstValues.add( Event.of( Instant.parse( "1985-01-01T18:00:00Z" ), SingleValuedPair.of( 5, 6 ) ) );
 
         //Create some default metadata for the time-series
-        Metadata metaData = Metadata.of();
+        SampleMetadata metaData = SampleMetadata.of();
         //Build the atomic time-series
         TimeSeriesOfSingleValuedPairs timeSeries =
                 (TimeSeriesOfSingleValuedPairs) builder.addTimeSeriesData( firstId, firstValues )
@@ -252,7 +252,7 @@ public class TimeSeriesDemo
                              EnsemblePair.of( 9, new double[] { 11, 12, 13, 14, 15 } ) ) );
 
         //Build some metadata
-        Metadata meta = Metadata.of();
+        SampleMetadata meta = SampleMetadata.of();
 
         //Build the time-series
         TimeSeriesOfEnsemblePairs ts =

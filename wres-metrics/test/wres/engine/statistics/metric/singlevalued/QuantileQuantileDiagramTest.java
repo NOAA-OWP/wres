@@ -14,7 +14,7 @@ import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.metadata.Metadata;
+import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.SingleValuedPair;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
@@ -60,7 +60,7 @@ public final class QuantileQuantileDiagramTest
             values.add( SingleValuedPair.of( left, right ) );
         }
 
-        final SingleValuedPairs input = SingleValuedPairs.of( values, Metadata.of() );
+        final SingleValuedPairs input = SingleValuedPairs.of( values, SampleMetadata.of() );
 
         //Check the results       
         final MultiVectorStatistic actual = qqd.apply( input );
@@ -108,7 +108,7 @@ public final class QuantileQuantileDiagramTest
     {
         // Generate empty data
         SingleValuedPairs input =
-                SingleValuedPairs.of( Arrays.asList(), Metadata.of() );
+                SingleValuedPairs.of( Arrays.asList(), SampleMetadata.of() );
 
         MultiVectorStatistic actual = qqd.apply( input );
 

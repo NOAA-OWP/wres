@@ -25,7 +25,7 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.SampleDataGroup;
 import wres.datamodel.MetricConstants.StatisticGroup;
 import wres.datamodel.Slicer;
-import wres.datamodel.metadata.Metadata;
+import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.sampledata.pairs.DichotomousPair;
 import wres.datamodel.sampledata.pairs.DichotomousPairs;
@@ -116,7 +116,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
             TimeWindow timeWindow = input.getMetadata().getTimeWindow();
             TimeSeriesOfSingleValuedPairsBuilder builder = new TimeSeriesOfSingleValuedPairsBuilder();
             data = (TimeSeriesOfSingleValuedPairs) builder.addTimeSeries( data )
-                                                          .setMetadata( Metadata.of( data.getMetadata(),
+                                                          .setMetadata( SampleMetadata.of( data.getMetadata(),
                                                                                      timeWindow ) )
                                                           .build();
 
@@ -375,14 +375,14 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
             DichotomousPairs transformed = Slicer.toDichotomousPairs( input, mapper );
 
             // Add the threshold to the metadata, in order to fully qualify the pairs
-            Metadata baselineMeta = null;
+            SampleMetadata baselineMeta = null;
             if ( input.hasBaseline() )
             {
-                baselineMeta = Metadata.of( transformed.getMetadataForBaseline(), oneOrTwo );
+                baselineMeta = SampleMetadata.of( transformed.getMetadataForBaseline(), oneOrTwo );
             }
 
             transformed = DichotomousPairs.ofDichotomousPairs( transformed,
-                                                               Metadata.of( transformed.getMetadata(), oneOrTwo ),
+                                                               SampleMetadata.of( transformed.getMetadata(), oneOrTwo ),
                                                                baselineMeta );
 
             this.processDichotomousPairs( transformed,
@@ -441,15 +441,15 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
             }
 
             // Add the threshold to the metadata, in order to fully qualify the pairs
-            Metadata baselineMeta = null;
+            SampleMetadata baselineMeta = null;
             if ( input.hasBaseline() )
             {
-                baselineMeta = Metadata.of( pairs.getMetadataForBaseline(), oneOrTwo );
+                baselineMeta = SampleMetadata.of( pairs.getMetadataForBaseline(), oneOrTwo );
             }
 
             TimeSeriesOfSingleValuedPairsBuilder builder = new TimeSeriesOfSingleValuedPairsBuilder();
             pairs = (TimeSeriesOfSingleValuedPairs) builder.addTimeSeries( pairs )
-                                                           .setMetadata( Metadata.of( pairs.getMetadata(),
+                                                           .setMetadata( SampleMetadata.of( pairs.getMetadata(),
                                                                                       oneOrTwo ) )
                                                            .setMetadataForBaseline( baselineMeta )
                                                            .build();
