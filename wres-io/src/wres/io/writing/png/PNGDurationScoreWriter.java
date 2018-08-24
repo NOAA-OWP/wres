@@ -2,10 +2,14 @@ package wres.io.writing.png;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartEngineException;
@@ -27,8 +31,10 @@ import wres.vis.ChartEngineFactory;
  */
 
 public class PNGDurationScoreWriter extends PNGWriter
-        implements Consumer<ListOfStatistics<DurationScoreStatistic>>
+        implements Consumer<ListOfStatistics<DurationScoreStatistic>>,
+                   Supplier<Set<Path>>
 {
+    private Set<Path> pathsWrittenTo = new HashSet<>();
 
     /**
      * Returns an instance of a writer.
@@ -64,17 +70,28 @@ public class PNGDurationScoreWriter extends PNGWriter
         // Iterate through destinations
         for ( DestinationConfig destinationConfig : destinations )
         {
-
             // Iterate through each metric 
             SortedSet<MetricConstants> metrics = Slicer.discover( output, meta -> meta.getMetadata().getMetricID() );
             for ( MetricConstants next : metrics )
             {
-                PNGDurationScoreWriter.writeScoreCharts( projectConfigPlus,
-                                                         destinationConfig,
-                                                         Slicer.filter( output, next ) );
+                Set<Path> innerPathsWrittenTo =
+                        PNGDurationScoreWriter.writeScoreCharts( projectConfigPlus,
+                                                                 destinationConfig,
+                                                                 Slicer.filter( output, next ) );
+                this.pathsWrittenTo.addAll( innerPathsWrittenTo );
             }
-
         }
+    }
+
+    /**
+     *
+     * @return paths written to *so far*
+     */
+
+    @Override
+    public Set<Path> get()
+    {
+        return Collections.unmodifiableSet( this.pathsWrittenTo );
     }
 
     /**
@@ -85,12 +102,15 @@ public class PNGDurationScoreWriter extends PNGWriter
      * @param destinationConfig the destination configuration for the written output
      * @param output the metric output
      * @throws PNGWriteException when an error occurs during writing
+     * @return the paths actually written to
      */
 
-    private static void writeScoreCharts( ProjectConfigPlus projectConfigPlus,
-                                          DestinationConfig destinationConfig,
-                                          ListOfStatistics<DurationScoreStatistic> output )
+    private static Set<Path> writeScoreCharts( ProjectConfigPlus projectConfigPlus,
+                                               DestinationConfig destinationConfig,
+                                               ListOfStatistics<DurationScoreStatistic> output )
     {
+        Set<Path> pathsWrittenTo = new HashSet<>();
+
         // Build charts
         try
         {
@@ -109,12 +129,15 @@ public class PNGDurationScoreWriter extends PNGWriter
             Path outputImage = ConfigHelper.getOutputPathToWrite( destinationConfig, meta );
 
             PNGWriter.writeChart( outputImage, engine, destinationConfig );
-
+            // Only if writeChart succeeded do we assume that it was written
+            pathsWrittenTo.add( outputImage );
         }
         catch ( ChartEngineException | IOException e )
         {
             throw new PNGWriteException( "Error while generating multi-vector charts: ", e );
         }
+
+        return Collections.unmodifiableSet( pathsWrittenTo );
     }
 
     /**
