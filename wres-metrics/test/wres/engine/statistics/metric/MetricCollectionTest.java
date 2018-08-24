@@ -25,15 +25,15 @@ import org.slf4j.Logger;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
 import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.sampledata.MetricInput;
+import wres.datamodel.metadata.StatisticMetadata;
+import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.pairs.DichotomousPairs;
 import wres.datamodel.sampledata.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.sampledata.pairs.MulticategoryPairs;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
-import wres.datamodel.statistics.DoubleScoreOutput;
-import wres.datamodel.statistics.ListOfMetricOutput;
-import wres.datamodel.statistics.MetricOutput;
+import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.ListOfStatistics;
+import wres.datamodel.statistics.Statistic;
 import wres.engine.statistics.metric.MetricCollection.MetricCollectionBuilder;
 import wres.engine.statistics.metric.categorical.EquitableThreatScore;
 import wres.engine.statistics.metric.categorical.PeirceSkillScore;
@@ -78,14 +78,14 @@ public class MetricCollectionTest
         final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Finalize
-        final MetricCollection<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput> collection =
+        final MetricCollection<SingleValuedPairs, DoubleScoreStatistic, DoubleScoreStatistic> collection =
                 MetricFactory.ofSingleValuedScoreCollection( ForkJoinPool.commonPool(),
                                                              MetricConstants.MEAN_ERROR,
                                                              MetricConstants.MEAN_ABSOLUTE_ERROR,
                                                              MetricConstants.ROOT_MEAN_SQUARE_ERROR );
 
         //Compute them
-        final ListOfMetricOutput<DoubleScoreOutput> d = collection.apply( input );
+        final ListOfStatistics<DoubleScoreStatistic> d = collection.apply( input );
 
         //Print them
         //d.stream().forEach(g -> System.out.println(g.getData()));
@@ -134,7 +134,7 @@ public class MetricCollectionTest
         //Create a collection of dichotomous metrics that produce a scalar output. Since all scores implement 
         //Collectable, they make efficient use of common intermediate data. In this case, all scores require the 2x2
         //Contingency Table, which is computed only once
-        final MetricCollectionBuilder<DichotomousPairs, MetricOutput<?>, DoubleScoreOutput> m =
+        final MetricCollectionBuilder<DichotomousPairs, Statistic<?>, DoubleScoreStatistic> m =
                 MetricCollectionBuilder.of();
 
         m.setExecutorService( ForkJoinPool.commonPool() );
@@ -147,10 +147,10 @@ public class MetricCollectionTest
         m.addMetric( EquitableThreatScore.of() ); //Should be 0.43768152544513195
 
         //Finalize
-        final MetricCollection<DichotomousPairs, MetricOutput<?>, DoubleScoreOutput> collection = m.build();
+        final MetricCollection<DichotomousPairs, Statistic<?>, DoubleScoreStatistic> collection = m.build();
 
         //Compute them
-        final ListOfMetricOutput<DoubleScoreOutput> c = collection.apply( input );
+        final ListOfStatistics<DoubleScoreStatistic> c = collection.apply( input );
 
         //Print them
         //c.stream().forEach(g -> System.out.println(g.getData().doubleValue()));
@@ -212,7 +212,7 @@ public class MetricCollectionTest
         final DiscreteProbabilityPairs input = MetricTestDataFactory.getDiscreteProbabilityPairsTwo();
 
         //Create a collection metrics that consume probabilistic pairs and generate vector outputs
-        final MetricCollectionBuilder<DiscreteProbabilityPairs, MetricOutput<?>, DoubleScoreOutput> n =
+        final MetricCollectionBuilder<DiscreteProbabilityPairs, Statistic<?>, DoubleScoreStatistic> n =
                 MetricCollectionBuilder.of();
 
         n.setExecutorService( ForkJoinPool.commonPool() );
@@ -222,11 +222,11 @@ public class MetricCollectionTest
         n.addMetric( BrierSkillScore.of() ); //Should be 0.11363636363636376
 
         //Finalize
-        final MetricCollection<DiscreteProbabilityPairs, MetricOutput<?>, DoubleScoreOutput> collection =
+        final MetricCollection<DiscreteProbabilityPairs, Statistic<?>, DoubleScoreStatistic> collection =
                 n.build();
 
         //Compute them
-        final ListOfMetricOutput<DoubleScoreOutput> d = collection.apply( input );
+        final ListOfStatistics<DoubleScoreStatistic> d = collection.apply( input );
 
         //Print them
         //d.stream().forEach(g -> System.out.println(((ScalarOutput)g).getData().valueOf()));
@@ -265,7 +265,7 @@ public class MetricCollectionTest
         final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsTwo();
 
         //Create a collection of metrics that consume single-valued pairs and produce vector outputs
-        final MetricCollectionBuilder<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput> n =
+        final MetricCollectionBuilder<SingleValuedPairs, DoubleScoreStatistic, DoubleScoreStatistic> n =
                 MetricCollectionBuilder.of();
 
         n.setExecutorService( ForkJoinPool.commonPool() );
@@ -275,10 +275,10 @@ public class MetricCollectionTest
         n.addMetric( MeanSquareErrorSkillScore.of() ); //Should be 0.8007025335093799
 
         //Finalize
-        final MetricCollection<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput> collection = n.build();
+        final MetricCollection<SingleValuedPairs, DoubleScoreStatistic, DoubleScoreStatistic> collection = n.build();
 
         //Compute them
-        final ListOfMetricOutput<DoubleScoreOutput> d = collection.apply( input );
+        final ListOfStatistics<DoubleScoreStatistic> d = collection.apply( input );
 
         //Print them
         //d.stream().forEach(g -> System.out.println(((ScalarOutput)g).getData().valueOf()));
@@ -318,7 +318,7 @@ public class MetricCollectionTest
         final MulticategoryPairs input = MetricTestDataFactory.getMulticategoryPairsOne();
 
         //Create a collection of multicategory metrics that produce a scalar output. 
-        final MetricCollectionBuilder<MulticategoryPairs, MetricOutput<?>, DoubleScoreOutput> n =
+        final MetricCollectionBuilder<MulticategoryPairs, Statistic<?>, DoubleScoreStatistic> n =
                 MetricCollectionBuilder.of();
 
         n.setExecutorService( ForkJoinPool.commonPool() );
@@ -327,10 +327,10 @@ public class MetricCollectionTest
         n.addMetric( MetricFactory.ofMulticategoryScore( MetricConstants.PEIRCE_SKILL_SCORE ) ); //Should be 0.05057466520850963
 
         //Finalize
-        final MetricCollection<MulticategoryPairs, MetricOutput<?>, DoubleScoreOutput> collection = n.build();
+        final MetricCollection<MulticategoryPairs, Statistic<?>, DoubleScoreStatistic> collection = n.build();
 
         //Compute them
-        final ListOfMetricOutput<DoubleScoreOutput> c = collection.apply( input );
+        final ListOfStatistics<DoubleScoreStatistic> c = collection.apply( input );
 
         //Print them
         //c.stream().forEach(g -> System.out.println(g.getData().doubleValue()));
@@ -350,7 +350,7 @@ public class MetricCollectionTest
 
     /**
      * Expects a {@link MetricCalculationException} when calling 
-     * {@link MetricCollection#apply(wres.datamodel.sampledata.MetricInput)} with null input.
+     * {@link MetricCollection#apply(wres.datamodel.sampledata.SampleData)} with null input.
      * 
      * @throws MetricCalculationException if the execution fails
      * @throws MetricParameterException if the metric construction fails
@@ -361,7 +361,7 @@ public class MetricCollectionTest
     {
 
         //Create a collection of metrics that consume single-valued pairs and produce a scalar output
-        final MetricCollectionBuilder<SingleValuedPairs, MetricOutput<?>, DoubleScoreOutput> n =
+        final MetricCollectionBuilder<SingleValuedPairs, Statistic<?>, DoubleScoreStatistic> n =
                 MetricCollectionBuilder.of();
 
         //Add some appropriate metrics to the collection
@@ -371,7 +371,7 @@ public class MetricCollectionTest
         n.setExecutorService( metricPool );
 
         //Finalize
-        final MetricCollection<SingleValuedPairs, MetricOutput<?>, DoubleScoreOutput> collection = n.build();
+        final MetricCollection<SingleValuedPairs, Statistic<?>, DoubleScoreStatistic> collection = n.build();
 
         //Null input
         exception.expect( MetricCalculationException.class );
@@ -382,7 +382,7 @@ public class MetricCollectionTest
 
     /**
      * Expects a {@link MetricCalculationException} when calling 
-     * {@link MetricCollection#apply(wres.datamodel.sampledata.MetricInput, Set)} with a null set of metrics to ignore.
+     * {@link MetricCollection#apply(wres.datamodel.sampledata.SampleData, Set)} with a null set of metrics to ignore.
      * 
      * @throws MetricCalculationException if the execution fails
      * @throws MetricParameterException if the metric construction fails
@@ -393,12 +393,12 @@ public class MetricCollectionTest
     {
 
         //Create a collection of metrics that consume single-valued pairs and produce a scalar output
-        final MetricCollectionBuilder<SingleValuedPairs, MetricOutput<?>, DoubleScoreOutput> n =
+        final MetricCollectionBuilder<SingleValuedPairs, Statistic<?>, DoubleScoreStatistic> n =
                 MetricCollectionBuilder.of();
 
         final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
-        final MetricCollection<SingleValuedPairs, MetricOutput<?>, DoubleScoreOutput> collection =
+        final MetricCollection<SingleValuedPairs, Statistic<?>, DoubleScoreStatistic> collection =
                 n.addMetric( MeanError.of() ).setExecutorService( metricPool ).build();
 
         //Null input
@@ -410,7 +410,7 @@ public class MetricCollectionTest
 
     /**
      * Expects a {@link MetricCalculationException} when calling 
-     * {@link MetricCollection#apply(wres.datamodel.sampledata.MetricInput, Set)} with a set of metrics to ignore that 
+     * {@link MetricCollection#apply(wres.datamodel.sampledata.SampleData, Set)} with a set of metrics to ignore that 
      * includes all metrics in the collection.
      * 
      * @throws MetricCalculationException if the execution fails
@@ -422,12 +422,12 @@ public class MetricCollectionTest
     {
 
         //Create a collection of metrics that consume single-valued pairs and produce a scalar output
-        final MetricCollectionBuilder<SingleValuedPairs, MetricOutput<?>, DoubleScoreOutput> n =
+        final MetricCollectionBuilder<SingleValuedPairs, Statistic<?>, DoubleScoreStatistic> n =
                 MetricCollectionBuilder.of();
 
         final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
-        final MetricCollection<SingleValuedPairs, MetricOutput<?>, DoubleScoreOutput> collection =
+        final MetricCollection<SingleValuedPairs, Statistic<?>, DoubleScoreStatistic> collection =
                 n.addMetric( MeanError.of() ).setExecutorService( metricPool ).build();
 
         //Null input
@@ -451,7 +451,7 @@ public class MetricCollectionTest
         exception.expectMessage( "Cannot construct the metric collection without an executor service." );
 
         //No output factory            
-        final MetricCollectionBuilder<SingleValuedPairs, MetricOutput<?>, DoubleScoreOutput> m =
+        final MetricCollectionBuilder<SingleValuedPairs, Statistic<?>, DoubleScoreStatistic> m =
                 MetricCollectionBuilder.of();
         m.build();
     }
@@ -488,7 +488,7 @@ public class MetricCollectionTest
     public void testLogStartOfCalculation() throws MetricParameterException, IllegalAccessException,
             IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException
     {
-        MetricCollection<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput> collection =
+        MetricCollection<SingleValuedPairs, DoubleScoreStatistic, DoubleScoreStatistic> collection =
                 MetricFactory.ofSingleValuedScoreCollection( MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
         Method logStart = collection.getClass().getDeclaredMethod( "logStartOfCalculation", Logger.class );
         logStart.setAccessible( true );
@@ -521,16 +521,16 @@ public class MetricCollectionTest
     public void testLogEndOfCalculation() throws MetricParameterException, IllegalAccessException,
             IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException
     {
-        MetricCollection<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput> collection =
+        MetricCollection<SingleValuedPairs, DoubleScoreStatistic, DoubleScoreStatistic> collection =
                 MetricFactory.ofSingleValuedScoreCollection( MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
         Method logEnd = collection.getClass()
-                                  .getDeclaredMethod( "logEndOfCalculation", Logger.class, ListOfMetricOutput.class );
+                                  .getDeclaredMethod( "logEndOfCalculation", Logger.class, ListOfStatistics.class );
         logEnd.setAccessible( true );
 
         Logger logger = Mockito.mock( Logger.class );
         Mockito.when( logger.isTraceEnabled() ).thenReturn( true );
 
-        logEnd.invoke( collection, logger, ListOfMetricOutput.of( Arrays.asList() ) );
+        logEnd.invoke( collection, logger, ListOfStatistics.of( Arrays.asList() ) );
 
         Mockito.verify( logger ).trace( "Finished computing metrics for a collection that contains {} "
                                         + "ordinary metric(s) and {} collectable metric(s). Obtained {} result(s) of "
@@ -543,7 +543,7 @@ public class MetricCollectionTest
     }
 
     /**
-     * Tests that {@link MetricCollection#apply(MetricInput, Set)} throws an expected exception when cancelled.
+     * Tests that {@link MetricCollection#apply(SampleData, Set)} throws an expected exception when cancelled.
      * 
      * @throws MetricCalculationException if the execution fails
      * @throws MetricParameterException if the metric construction fails
@@ -561,9 +561,9 @@ public class MetricCollectionTest
         exception.expect( InvocationTargetException.class );
         exception.expectCause( CoreMatchers.isA( MetricCalculationException.class ) );
 
-        MetricCollection<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput> collection =
+        MetricCollection<SingleValuedPairs, DoubleScoreStatistic, DoubleScoreStatistic> collection =
                 MetricFactory.ofSingleValuedScoreCollection( MetricConstants.MEAN_ERROR );
-        Method method = collection.getClass().getDeclaredMethod( "apply", MetricInput.class, Set.class );
+        Method method = collection.getClass().getDeclaredMethod( "apply", SampleData.class, Set.class );
         method.setAccessible( true );
 
         Set<?> ignore = Mockito.mock( Set.class );
@@ -593,7 +593,7 @@ public class MetricCollectionTest
         exception.expect( MetricCalculationException.class );
         exception.expectMessage( "Computation of the metric collection failed: " );
 
-        MetricCollectionBuilder<SingleValuedPairs, MetricOutput<?>, DoubleScoreOutput> failed =
+        MetricCollectionBuilder<SingleValuedPairs, Statistic<?>, DoubleScoreStatistic> failed =
                 MetricCollectionBuilder.of();
         failed.setExecutorService( metricPool )
               .addMetric( meanError )
@@ -615,7 +615,7 @@ public class MetricCollectionTest
 
         //Create a collection of metrics that consume single-valued pairs and produce a scalar output
         //Add some appropriate metrics to the collection
-        final MetricCollection<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput> n =
+        final MetricCollection<SingleValuedPairs, DoubleScoreStatistic, DoubleScoreStatistic> n =
                 MetricFactory.ofSingleValuedScoreCollection( ForkJoinPool.commonPool(),
                                                              MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
                                                              MetricConstants.COEFFICIENT_OF_DETERMINATION,
@@ -624,7 +624,7 @@ public class MetricCollectionTest
                                                              MetricConstants.ROOT_MEAN_SQUARE_ERROR );
 
         //Compute them
-        final ListOfMetricOutput<DoubleScoreOutput> d = n.apply( input );
+        final ListOfStatistics<DoubleScoreStatistic> d = n.apply( input );
 
         //Print them
         //d.forEach( ( a, b ) -> System.out.println( a.getKey() + " " + b.getData() ) );
@@ -682,7 +682,7 @@ public class MetricCollectionTest
     /**
      * Construct a collection of metrics that consume single-valued pairs and produce scalar outputs. Computes and 
      * benchmarks the output when specifying a non-empty set of metrics to ignore for
-     * {@link MetricCollection#apply(wres.datamodel.sampledata.MetricInput, Set)}.
+     * {@link MetricCollection#apply(wres.datamodel.sampledata.SampleData, Set)}.
      * @throws MetricParameterException if the metric construction fails 
      */
 
@@ -693,7 +693,7 @@ public class MetricCollectionTest
         final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Add some appropriate metrics to the collection
-        final MetricCollection<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput> collection =
+        final MetricCollection<SingleValuedPairs, DoubleScoreStatistic, DoubleScoreStatistic> collection =
                 MetricFactory.ofSingleValuedScoreCollection( ForkJoinPool.commonPool(),
                                                              MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
                                                              MetricConstants.MEAN_SQUARE_ERROR,
@@ -701,15 +701,15 @@ public class MetricCollectionTest
         //Compute them, ignoring two metrics
         Set<MetricConstants> ignore = new HashSet<>( Arrays.asList( MetricConstants.COEFFICIENT_OF_DETERMINATION,
                                                                     MetricConstants.MEAN_SQUARE_ERROR ) );
-        final ListOfMetricOutput<DoubleScoreOutput> actual = collection.apply( input, ignore );
-        MetricOutputMetadata outM =
-                MetricOutputMetadata.of( 10,
+        final ListOfStatistics<DoubleScoreStatistic> actual = collection.apply( input, ignore );
+        StatisticMetadata outM =
+                StatisticMetadata.of( 10,
                                          MeasurementUnit.of(),
                                          MeasurementUnit.of(),
                                          MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
                                          MetricConstants.MAIN );
-        ListOfMetricOutput<DoubleScoreOutput> expected =
-                ListOfMetricOutput.of( Arrays.asList( DoubleScoreOutput.of( 0.9999999910148981, outM ) ) );
+        ListOfStatistics<DoubleScoreStatistic> expected =
+                ListOfStatistics.of( Arrays.asList( DoubleScoreStatistic.of( 0.9999999910148981, outM ) ) );
         //Check them   
         assertTrue( "Difference between the actual and expected output when ignoring some metrics in the "
                     + "collection.",

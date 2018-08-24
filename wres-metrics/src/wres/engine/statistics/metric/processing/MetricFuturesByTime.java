@@ -14,22 +14,22 @@ import java.util.concurrent.Future;
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.DataFactory;
-import wres.datamodel.MetricConstants.MetricOutputGroup;
+import wres.datamodel.MetricConstants.StatisticGroup;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.statistics.BoxPlotOutput;
-import wres.datamodel.statistics.DoubleScoreOutput;
-import wres.datamodel.statistics.DurationScoreOutput;
-import wres.datamodel.statistics.ListOfMetricOutput;
-import wres.datamodel.statistics.MatrixOutput;
-import wres.datamodel.statistics.MetricOutputForProject;
-import wres.datamodel.statistics.MultiVectorOutput;
-import wres.datamodel.statistics.PairedOutput;
-import wres.datamodel.statistics.MetricOutputForProject.MetricOutputForProjectBuilder;
+import wres.datamodel.statistics.BoxPlotStatistic;
+import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.DurationScoreStatistic;
+import wres.datamodel.statistics.ListOfStatistics;
+import wres.datamodel.statistics.MatrixStatistic;
+import wres.datamodel.statistics.StatisticsForProject;
+import wres.datamodel.statistics.MultiVectorStatistic;
+import wres.datamodel.statistics.PairedStatistic;
+import wres.datamodel.statistics.StatisticsForProject.StatisticsForProjectBuilder;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 
 /**
  * Store of metric futures for each output type. Use {@link #getMetricOutput()} to obtain the processed
- * {@link MetricOutputForProject}.
+ * {@link StatisticsForProject}.
  * 
  * @author james.brown@hydrosolved.com
  */
@@ -38,40 +38,40 @@ class MetricFuturesByTime
 {
 
     /**
-     * {@link DoubleScoreOutput} results.
+     * {@link DoubleScoreStatistic} results.
      */
 
-    private final List<Future<ListOfMetricOutput<DoubleScoreOutput>>> doubleScore = new ArrayList<>();
+    private final List<Future<ListOfStatistics<DoubleScoreStatistic>>> doubleScore = new ArrayList<>();
 
     /**
-     * {@link DurationScoreOutput} results.
+     * {@link DurationScoreStatistic} results.
      */
 
-    private final List<Future<ListOfMetricOutput<DurationScoreOutput>>> durationScore = new ArrayList<>();
+    private final List<Future<ListOfStatistics<DurationScoreStatistic>>> durationScore = new ArrayList<>();
 
     /**
-     * {@link MultiVectorOutput} results.
+     * {@link MultiVectorStatistic} results.
      */
 
-    private final List<Future<ListOfMetricOutput<MultiVectorOutput>>> multiVector = new ArrayList<>();
+    private final List<Future<ListOfStatistics<MultiVectorStatistic>>> multiVector = new ArrayList<>();
 
     /**
-     * {@link BoxPlotOutput} results.
+     * {@link BoxPlotStatistic} results.
      */
 
-    private final List<Future<ListOfMetricOutput<BoxPlotOutput>>> boxplot = new ArrayList<>();
+    private final List<Future<ListOfStatistics<BoxPlotStatistic>>> boxplot = new ArrayList<>();
 
     /**
-     * {@link PairedOutput} results.
+     * {@link PairedStatistic} results.
      */
 
-    private final List<Future<ListOfMetricOutput<PairedOutput<Instant, Duration>>>> paired = new ArrayList<>();
+    private final List<Future<ListOfStatistics<PairedStatistic<Instant, Duration>>>> paired = new ArrayList<>();
 
     /**
-     * {@link MatrixOutput} results.
+     * {@link MatrixStatistic} results.
      */
 
-    private final List<Future<ListOfMetricOutput<MatrixOutput>>> matrix = new ArrayList<>();
+    private final List<Future<ListOfStatistics<MatrixStatistic>>> matrix = new ArrayList<>();
 
     /**
      * Returns the results associated with the futures.
@@ -79,59 +79,59 @@ class MetricFuturesByTime
      * @return the metric results
      */
 
-    MetricOutputForProject getMetricOutput()
+    StatisticsForProject getMetricOutput()
     {
-        MetricOutputForProjectBuilder builder =
+        StatisticsForProjectBuilder builder =
                 DataFactory.ofMetricOutputForProjectByTimeAndThreshold();
 
         //Add outputs for current futures
         doubleScore.forEach( builder::addDoubleScoreOutput );
-        durationScore.forEach( builder::addDurationScoreOutput );
-        multiVector.forEach( builder::addMultiVectorOutput );
-        boxplot.forEach( builder::addBoxPlotOutput );
-        paired.forEach( builder::addPairedOutput );
-        matrix.forEach( builder::addMatrixOutput );
+        durationScore.forEach( builder::addDurationScoreStatistics );
+        multiVector.forEach( builder::addMultiVectorStatistics );
+        boxplot.forEach( builder::addBoxPlotStatistics );
+        paired.forEach( builder::addPairedStatistics );
+        matrix.forEach( builder::addMatrixStatistics );
         return builder.build();
     }
 
     /**
-     * Returns the {@link MetricOutputGroup} for which futures exist.
+     * Returns the {@link StatisticGroup} for which futures exist.
      * 
      * @return the set of output types for which futures exist
      */
 
-    Set<MetricOutputGroup> getOutputTypes()
+    Set<StatisticGroup> getOutputTypes()
     {
-        Set<MetricOutputGroup> returnMe = new HashSet<>();
+        Set<StatisticGroup> returnMe = new HashSet<>();
 
         if ( !this.doubleScore.isEmpty() )
         {
-            returnMe.add( MetricOutputGroup.DOUBLE_SCORE );
+            returnMe.add( StatisticGroup.DOUBLE_SCORE );
         }
 
         if ( !this.durationScore.isEmpty() )
         {
-            returnMe.add( MetricOutputGroup.DURATION_SCORE );
+            returnMe.add( StatisticGroup.DURATION_SCORE );
         }
 
         if ( !this.multiVector.isEmpty() )
         {
-            returnMe.add( MetricOutputGroup.MULTIVECTOR );
+            returnMe.add( StatisticGroup.MULTIVECTOR );
         }
 
         if ( !this.boxplot.isEmpty() )
         {
-            returnMe.add( MetricOutputGroup.BOXPLOT );
+            returnMe.add( StatisticGroup.BOXPLOT );
         }
 
         if ( !this.paired.isEmpty() )
         {
-            returnMe.add( MetricOutputGroup.PAIRED );
+            returnMe.add( StatisticGroup.PAIRED );
         }
 
         if ( !this.matrix.isEmpty() )
         {
-            returnMe.add( MetricOutputGroup.MATRIX );
+            returnMe.add( StatisticGroup.MATRIX );
         }
 
         return Collections.unmodifiableSet( returnMe );
@@ -156,55 +156,55 @@ class MetricFuturesByTime
     {
 
         /**
-         * {@link DoubleScoreOutput} results.
+         * {@link DoubleScoreStatistic} results.
          */
 
-        private final ConcurrentLinkedQueue<Future<ListOfMetricOutput<DoubleScoreOutput>>> doubleScore =
+        private final ConcurrentLinkedQueue<Future<ListOfStatistics<DoubleScoreStatistic>>> doubleScore =
                 new ConcurrentLinkedQueue<>();
 
         /**
-         * {@link DurationScoreOutput} results.
+         * {@link DurationScoreStatistic} results.
          */
 
-        private final ConcurrentLinkedQueue<Future<ListOfMetricOutput<DurationScoreOutput>>> durationScore =
+        private final ConcurrentLinkedQueue<Future<ListOfStatistics<DurationScoreStatistic>>> durationScore =
                 new ConcurrentLinkedQueue<>();
 
         /**
-         * {@link MultiVectorOutput} results.
+         * {@link MultiVectorStatistic} results.
          */
 
-        private final ConcurrentLinkedQueue<Future<ListOfMetricOutput<MultiVectorOutput>>> multiVector =
+        private final ConcurrentLinkedQueue<Future<ListOfStatistics<MultiVectorStatistic>>> multiVector =
                 new ConcurrentLinkedQueue<>();
 
         /**
-         * {@link BoxPlotOutput} results.
+         * {@link BoxPlotStatistic} results.
          */
 
-        private final ConcurrentLinkedQueue<Future<ListOfMetricOutput<BoxPlotOutput>>> boxplot =
+        private final ConcurrentLinkedQueue<Future<ListOfStatistics<BoxPlotStatistic>>> boxplot =
                 new ConcurrentLinkedQueue<>();
 
         /**
-         * {@link PairedOutput} results.
+         * {@link PairedStatistic} results.
          */
 
-        private final ConcurrentLinkedQueue<Future<ListOfMetricOutput<PairedOutput<Instant, Duration>>>> paired =
+        private final ConcurrentLinkedQueue<Future<ListOfStatistics<PairedStatistic<Instant, Duration>>>> paired =
                 new ConcurrentLinkedQueue<>();
 
         /**
-         * {@link MatrixOutput} results.
+         * {@link MatrixStatistic} results.
          */
 
-        private final ConcurrentLinkedQueue<Future<ListOfMetricOutput<MatrixOutput>>> matrix =
+        private final ConcurrentLinkedQueue<Future<ListOfStatistics<MatrixStatistic>>> matrix =
                 new ConcurrentLinkedQueue<>();
 
         /**
-         * Adds a set of future {@link DoubleScoreOutput} to the appropriate internal store.
+         * Adds a set of future {@link DoubleScoreStatistic} to the appropriate internal store.
          * 
          * @param value the future result
          * @return the builder
          */
 
-        MetricFuturesByTimeBuilder addDoubleScoreOutput( Future<ListOfMetricOutput<DoubleScoreOutput>> value )
+        MetricFuturesByTimeBuilder addDoubleScoreOutput( Future<ListOfStatistics<DoubleScoreStatistic>> value )
         {
             this.doubleScore.add( value );
 
@@ -212,13 +212,13 @@ class MetricFuturesByTime
         }
 
         /**
-         * Adds a set of future {@link DurationScoreOutput} to the appropriate internal store.
+         * Adds a set of future {@link DurationScoreStatistic} to the appropriate internal store.
          * 
          * @param value the future result
          * @return the builder
          */
 
-        MetricFuturesByTimeBuilder addDurationScoreOutput( Future<ListOfMetricOutput<DurationScoreOutput>> value )
+        MetricFuturesByTimeBuilder addDurationScoreOutput( Future<ListOfStatistics<DurationScoreStatistic>> value )
         {
             this.durationScore.add( value );
 
@@ -226,13 +226,13 @@ class MetricFuturesByTime
         }
 
         /**
-         * Adds a set of future {@link MultiVectorOutput} to the appropriate internal store.
+         * Adds a set of future {@link MultiVectorStatistic} to the appropriate internal store.
          * 
          * @param value the future result
          * @return the builder
          */
 
-        MetricFuturesByTimeBuilder addMultiVectorOutput( Future<ListOfMetricOutput<MultiVectorOutput>> value )
+        MetricFuturesByTimeBuilder addMultiVectorOutput( Future<ListOfStatistics<MultiVectorStatistic>> value )
         {
             this.multiVector.add( value );
 
@@ -240,13 +240,13 @@ class MetricFuturesByTime
         }
 
         /**
-         * Adds a set of future {@link BoxPlotOutput} to the appropriate internal store.
+         * Adds a set of future {@link BoxPlotStatistic} to the appropriate internal store.
          * 
          * @param value the future result
          * @return the builder
          */
 
-        MetricFuturesByTimeBuilder addBoxPlotOutput( Future<ListOfMetricOutput<BoxPlotOutput>> value )
+        MetricFuturesByTimeBuilder addBoxPlotOutput( Future<ListOfStatistics<BoxPlotStatistic>> value )
         {
             this.boxplot.add( value );
 
@@ -254,13 +254,13 @@ class MetricFuturesByTime
         }
 
         /**
-         * Adds a set of future {@link MatrixOutput} to the appropriate internal store.
+         * Adds a set of future {@link MatrixStatistic} to the appropriate internal store.
          * 
          * @param value the future result
          * @return the builder
          */
 
-        MetricFuturesByTimeBuilder addPairedOutput( Future<ListOfMetricOutput<PairedOutput<Instant, Duration>>> value )
+        MetricFuturesByTimeBuilder addPairedOutput( Future<ListOfStatistics<PairedStatistic<Instant, Duration>>> value )
         {
             this.paired.add( value );
 
@@ -268,13 +268,13 @@ class MetricFuturesByTime
         }
 
         /**
-         * Adds a set of future {@link MatrixOutput} to the appropriate internal store.
+         * Adds a set of future {@link MatrixStatistic} to the appropriate internal store.
          * 
          * @param value the future result
          * @return the builder
          */
 
-        MetricFuturesByTimeBuilder addMatrixOutput( Future<ListOfMetricOutput<MatrixOutput>> value )
+        MetricFuturesByTimeBuilder addMatrixOutput( Future<ListOfStatistics<MatrixStatistic>> value )
         {
             this.matrix.add( value );
 
@@ -282,14 +282,14 @@ class MetricFuturesByTime
         }
 
         /**
-         * Adds a set of future {@link DoubleScoreOutput} to the appropriate internal store.
+         * Adds a set of future {@link DoubleScoreStatistic} to the appropriate internal store.
          * 
          * @param value the future result
          * @return the builder
          */
 
         MetricFuturesByTimeBuilder addDoubleScoreOutput( Pair<TimeWindow, OneOrTwoThresholds> key,
-                                                         Future<ListOfMetricOutput<DoubleScoreOutput>> value )
+                                                         Future<ListOfStatistics<DoubleScoreStatistic>> value )
         {
             Objects.requireNonNull( key.getLeft() );
             
@@ -299,14 +299,14 @@ class MetricFuturesByTime
         }
 
         /**
-         * Adds a set of future {@link DurationScoreOutput} to the appropriate internal store.
+         * Adds a set of future {@link DurationScoreStatistic} to the appropriate internal store.
          * 
          * @param value the future result
          * @return the builder
          */
 
         MetricFuturesByTimeBuilder addDurationScoreOutput( Pair<TimeWindow, OneOrTwoThresholds> key,
-                                                           Future<ListOfMetricOutput<DurationScoreOutput>> value )
+                                                           Future<ListOfStatistics<DurationScoreStatistic>> value )
         {
             this.durationScore.add( value );
 
@@ -314,14 +314,14 @@ class MetricFuturesByTime
         }
 
         /**
-         * Adds a set of future {@link MultiVectorOutput} to the appropriate internal store.
+         * Adds a set of future {@link MultiVectorStatistic} to the appropriate internal store.
          * 
          * @param value the future result
          * @return the builder
          */
 
         MetricFuturesByTimeBuilder addMultiVectorOutput( Pair<TimeWindow, OneOrTwoThresholds> key,
-                                                         Future<ListOfMetricOutput<MultiVectorOutput>> value )
+                                                         Future<ListOfStatistics<MultiVectorStatistic>> value )
         {
             this.multiVector.add( value );
 
@@ -329,14 +329,14 @@ class MetricFuturesByTime
         }
 
         /**
-         * Adds a set of future {@link BoxPlotOutput} to the appropriate internal store.
+         * Adds a set of future {@link BoxPlotStatistic} to the appropriate internal store.
          * 
          * @param value the future result
          * @return the builder
          */
 
         MetricFuturesByTimeBuilder addBoxPlotOutput( Pair<TimeWindow, OneOrTwoThresholds> key,
-                                                     Future<ListOfMetricOutput<BoxPlotOutput>> value )
+                                                     Future<ListOfStatistics<BoxPlotStatistic>> value )
         {
             this.boxplot.add( value );
 
@@ -344,14 +344,14 @@ class MetricFuturesByTime
         }
 
         /**
-         * Adds a set of future {@link MatrixOutput} to the appropriate internal store.
+         * Adds a set of future {@link MatrixStatistic} to the appropriate internal store.
          * 
          * @param value the future result
          * @return the builder
          */
 
         MetricFuturesByTimeBuilder addPairedOutput( Pair<TimeWindow, OneOrTwoThresholds> key,
-                                                    Future<ListOfMetricOutput<PairedOutput<Instant, Duration>>> value )
+                                                    Future<ListOfStatistics<PairedStatistic<Instant, Duration>>> value )
         {
             this.paired.add( value );
 
@@ -359,14 +359,14 @@ class MetricFuturesByTime
         }
 
         /**
-         * Adds a set of future {@link MatrixOutput} to the appropriate internal store.
+         * Adds a set of future {@link MatrixStatistic} to the appropriate internal store.
          * 
          * @param value the future result
          * @return the builder
          */
 
         MetricFuturesByTimeBuilder addMatrixOutput( Pair<TimeWindow, OneOrTwoThresholds> key,
-                                                    Future<ListOfMetricOutput<MatrixOutput>> value )
+                                                    Future<ListOfStatistics<MatrixStatistic>> value )
         {
             this.matrix.add( value );
 
@@ -396,7 +396,7 @@ class MetricFuturesByTime
 
         MetricFuturesByTimeBuilder addFutures( MetricFuturesByTime futures )
         {
-            this.addFutures( futures, MetricOutputGroup.set() );
+            this.addFutures( futures, StatisticGroup.set() );
             return this;
         }
 
@@ -411,33 +411,33 @@ class MetricFuturesByTime
          */
 
         MetricFuturesByTimeBuilder addFutures( MetricFuturesByTime futures,
-                                               Set<MetricOutputGroup> mergeSet )
+                                               Set<StatisticGroup> mergeSet )
         {
             if ( Objects.nonNull( mergeSet ) )
             {
-                for ( MetricOutputGroup nextGroup : mergeSet )
+                for ( StatisticGroup nextGroup : mergeSet )
                 {
-                    if ( nextGroup == MetricOutputGroup.DOUBLE_SCORE )
+                    if ( nextGroup == StatisticGroup.DOUBLE_SCORE )
                     {
                         this.doubleScore.addAll( futures.doubleScore );
                     }
-                    else if ( nextGroup == MetricOutputGroup.DURATION_SCORE )
+                    else if ( nextGroup == StatisticGroup.DURATION_SCORE )
                     {
                         this.durationScore.addAll( futures.durationScore );
                     }
-                    else if ( nextGroup == MetricOutputGroup.MULTIVECTOR )
+                    else if ( nextGroup == StatisticGroup.MULTIVECTOR )
                     {
                         this.multiVector.addAll( futures.multiVector );
                     }
-                    else if ( nextGroup == MetricOutputGroup.BOXPLOT )
+                    else if ( nextGroup == StatisticGroup.BOXPLOT )
                     {
                         this.boxplot.addAll( futures.boxplot );
                     }
-                    else if ( nextGroup == MetricOutputGroup.PAIRED )
+                    else if ( nextGroup == StatisticGroup.PAIRED )
                     {
                         this.paired.addAll( futures.paired );
                     }
-                    else if ( nextGroup == MetricOutputGroup.MATRIX )
+                    else if ( nextGroup == StatisticGroup.MATRIX )
                     {
                         this.matrix.addAll( futures.matrix );
                     }

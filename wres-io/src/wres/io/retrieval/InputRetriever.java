@@ -34,8 +34,8 @@ import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.sampledata.MetricInput;
-import wres.datamodel.sampledata.MetricInputException;
+import wres.datamodel.sampledata.SampleData;
+import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.EnsemblePair;
 import wres.datamodel.sampledata.pairs.EnsemblePairs;
 import wres.datamodel.sampledata.pairs.SingleValuedPair;
@@ -64,7 +64,7 @@ import wres.util.functional.ExceptionalTriFunction;
 /**
  * Created by ctubbs on 7/17/17.
  */
-class InputRetriever extends WRESCallable<MetricInput<?>>
+class InputRetriever extends WRESCallable<SampleData<?>>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(InputRetriever.class);
 
@@ -208,7 +208,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
     }
 
     @Override
-    public MetricInput<?> execute() throws SQLException, IOException
+    public SampleData<?> execute() throws SQLException, IOException
     {
         if (this.projectDetails.usesGriddedData( this.projectDetails.getRight() ))
         {
@@ -242,7 +242,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             }
         }
 
-        MetricInput<?> input;
+        SampleData<?> input;
 
         try
         {
@@ -275,9 +275,9 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
      * @throws IOException
      * @throws SQLException
      */
-    private MetricInput<?> createInput() throws IOException, SQLException
+    private SampleData<?> createInput() throws IOException, SQLException
     {
-        MetricInput<?> input;
+        SampleData<?> input;
 
         Metadata metadata =
                 this.buildMetadata( this.projectDetails.getProjectConfig(), false );
@@ -338,7 +338,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                 }
             }
         }
-        catch ( MetricInputException mie )
+        catch ( SampleDataException mie )
         {
             String message = "A collection of pairs could not be created at"
                              + " window "
@@ -347,13 +347,13 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                              + ConfigHelper.getFeatureDescription( this.feature )
                              + "'.";
             // Decorating with more information in our message.
-            throw new MetricInputException( message, mie );
+            throw new SampleDataException( message, mie );
         }
 
         return input;
     }
 
-    private MetricInput createSingleValuedInput(Metadata rightMetadata, Metadata baselineMetadata)
+    private SampleData createSingleValuedInput(Metadata rightMetadata, Metadata baselineMetadata)
     {
         List<SingleValuedPair> primary = convertToPairOfDoubles( this.primaryPairs );
         List<SingleValuedPair> baseline = null;
@@ -370,7 +370,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                                                 this.climatology );
     }
 
-    private MetricInput createSingleValuedTimeSeriesInput(Metadata rightMetadata, Metadata baselineMetadata)
+    private SampleData createSingleValuedTimeSeriesInput(Metadata rightMetadata, Metadata baselineMetadata)
             throws IOException, SQLException
     {
         TimeSeriesOfSingleValuedPairsBuilder builder = new TimeSeriesOfSingleValuedPairsBuilder();
@@ -391,7 +391,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         return builder.build();
     }
 
-    private MetricInput createEnsembleTimeSeriesInput(Metadata rightMetadata, Metadata baselineMetadata)
+    private SampleData createEnsembleTimeSeriesInput(Metadata rightMetadata, Metadata baselineMetadata)
             throws IOException, SQLException
     {
         throw new NotImplementedException( "Ensemble Time Series Inputs cannot be created yet." );
@@ -415,7 +415,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         return builder.build();*/
     }
 
-    private MetricInput createEnsembleInput(Metadata rightMetadata, Metadata baselineMetadata)
+    private SampleData createEnsembleInput(Metadata rightMetadata, Metadata baselineMetadata)
     {
         List<EnsemblePair> primary =
                 InputRetriever.extractRawPairs( this.primaryPairs );

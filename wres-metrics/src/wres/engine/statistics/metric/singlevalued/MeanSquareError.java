@@ -3,11 +3,11 @@ package wres.engine.statistics.metric.singlevalued;
 import java.util.Objects;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.ScoreOutputGroup;
-import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.sampledata.MetricInputException;
+import wres.datamodel.MetricConstants.ScoreGroup;
+import wres.datamodel.metadata.StatisticMetadata;
+import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
-import wres.datamodel.statistics.DoubleScoreOutput;
+import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricParameterException;
@@ -34,7 +34,7 @@ public class MeanSquareError extends SumOfSquareError
     }
     
     @Override
-    public DoubleScoreOutput apply( final SingleValuedPairs s )
+    public DoubleScoreStatistic apply( final SingleValuedPairs s )
     {
         switch ( this.getScoreOutputGroup() )
         {
@@ -62,16 +62,16 @@ public class MeanSquareError extends SumOfSquareError
     }
 
     @Override
-    public DoubleScoreOutput aggregate( DoubleScoreOutput output )
+    public DoubleScoreStatistic aggregate( DoubleScoreStatistic output )
     {
         if ( Objects.isNull( output ) )
         {
-            throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
+            throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
         }
 
-        final MetricOutputMetadata metIn = output.getMetadata();
+        final StatisticMetadata metIn = output.getMetadata();
 
-        MetricOutputMetadata meta = MetricOutputMetadata.of( metIn,
+        StatisticMetadata meta = StatisticMetadata.of( metIn,
                                                              this.getID(),
                                                              MetricConstants.MAIN,
                                                              this.hasRealUnits(),
@@ -81,7 +81,7 @@ public class MeanSquareError extends SumOfSquareError
         double mse = FunctionFactory.finiteOrMissing()
                                     .applyAsDouble( output.getData() / metIn.getSampleSize() );
 
-        return DoubleScoreOutput.of( mse, meta );
+        return DoubleScoreStatistic.of( mse, meta );
     }
 
     /**
@@ -100,7 +100,7 @@ public class MeanSquareError extends SumOfSquareError
      * @throws MetricParameterException if one or more parameters is invalid 
      */
 
-    MeanSquareError( ScoreOutputGroup decompositionId ) throws MetricParameterException
+    MeanSquareError( ScoreGroup decompositionId ) throws MetricParameterException
     {
         super( decompositionId );
     }

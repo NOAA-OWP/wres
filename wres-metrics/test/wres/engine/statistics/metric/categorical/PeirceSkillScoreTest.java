@@ -11,17 +11,17 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.ScoreOutputGroup;
+import wres.datamodel.MetricConstants.ScoreGroup;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.Metadata;
-import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.sampledata.MetricInputException;
+import wres.datamodel.metadata.StatisticMetadata;
+import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.DichotomousPairs;
 import wres.datamodel.sampledata.pairs.MulticategoryPairs;
-import wres.datamodel.statistics.DoubleScoreOutput;
-import wres.datamodel.statistics.MatrixOutput;
+import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.MatrixStatistic;
 import wres.engine.statistics.metric.Collectable;
 import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricCalculationException;
@@ -50,13 +50,13 @@ public final class PeirceSkillScoreTest
      * Metadata used for testing.
      */
 
-    private MetricOutputMetadata meta;
+    private StatisticMetadata meta;
 
     @Before
     public void setUpBeforeEachTest() throws MetricParameterException
     {
         pss = PeirceSkillScore.of();
-        meta = MetricOutputMetadata.of( 365,
+        meta = StatisticMetadata.of( 365,
                                                   MeasurementUnit.of(),
                                                   MeasurementUnit.of(),
                                                   MetricConstants.PEIRCE_SKILL_SCORE,
@@ -79,8 +79,8 @@ public final class PeirceSkillScoreTest
         final DichotomousPairs input = MetricTestDataFactory.getDichotomousPairsOne();
 
         //Check the results
-        final DoubleScoreOutput actual = pss.apply( input );
-        final DoubleScoreOutput expected = DoubleScoreOutput.of( 0.6347985347985348, meta );
+        final DoubleScoreStatistic actual = pss.apply( input );
+        final DoubleScoreStatistic expected = DoubleScoreStatistic.of( 0.6347985347985348, meta );
         assertTrue( "Actual: " + actual.getData().doubleValue()
                     + ". Expected: "
                     + expected.getData().doubleValue()
@@ -103,9 +103,9 @@ public final class PeirceSkillScoreTest
         PeirceSkillScore<MulticategoryPairs> ps = PeirceSkillScore.of();
 
         //Check the results
-        final DoubleScoreOutput actual = ps.apply( input );
-        final DoubleScoreOutput expected =
-                DoubleScoreOutput.of( 0.05057466520850963, MetricOutputMetadata.of( meta, input.getRawData().size() ) );
+        final DoubleScoreStatistic actual = ps.apply( input );
+        final DoubleScoreStatistic expected =
+                DoubleScoreStatistic.of( 0.05057466520850963, StatisticMetadata.of( meta, input.getRawData().size() ) );
         assertTrue( "Actual: " + actual.getData().doubleValue()
                     + ". Expected: "
                     + expected.getData().doubleValue()
@@ -124,7 +124,7 @@ public final class PeirceSkillScoreTest
         DichotomousPairs input =
                 DichotomousPairs.ofDichotomousPairs( Arrays.asList(), Metadata.of() );
 
-        DoubleScoreOutput actual = pss.apply( input );
+        DoubleScoreStatistic actual = pss.apply( input );
 
         assertTrue( actual.getData().isNaN() );
     }
@@ -160,13 +160,13 @@ public final class PeirceSkillScoreTest
     }
 
     /**
-     * Verifies that {@link Score#getScoreOutputGroup()} returns {@link ScoreOutputGroup#NONE}.
+     * Verifies that {@link Score#getScoreOutputGroup()} returns {@link ScoreGroup#NONE}.
      */
 
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( pss.getScoreOutputGroup() == ScoreOutputGroup.NONE );
+        assertTrue( pss.getScoreOutputGroup() == ScoreGroup.NONE );
     }
 
     /**
@@ -187,9 +187,9 @@ public final class PeirceSkillScoreTest
     @Test
     public void testExceptionOnNullInput()
     {
-        exception.expect( MetricInputException.class );
+        exception.expect( SampleDataException.class );
         exception.expectMessage( "Specify non-null input to the '" + pss.getName() + "'." );
-        pss.aggregate( (MatrixOutput) null );
+        pss.aggregate( (MatrixStatistic) null );
     }
 
     /**
@@ -200,12 +200,12 @@ public final class PeirceSkillScoreTest
     @Test
     public void testExceptionOnInputThatIsNotSquare()
     {
-        exception.expect( MetricInputException.class );
+        exception.expect( SampleDataException.class );
         exception.expectMessage( "Expected an intermediate result with a square matrix when computing the "
                                  + "'"
                                  + pss.getName()
                                  + "': [2, 3]." );
-        pss.aggregate( MatrixOutput.of( new double[][] { { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 } }, meta ) );
+        pss.aggregate( MatrixStatistic.of( new double[][] { { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 } }, meta ) );
     }
 
     /**
@@ -221,7 +221,7 @@ public final class PeirceSkillScoreTest
                                  + "must exceed zero when computing the '"
                                  + pss.getName()
                                  + "': 0.0" );
-        pss.aggregate( MatrixOutput.of( new double[][] { { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 },
+        pss.aggregate( MatrixStatistic.of( new double[][] { { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 },
                                                                     { 0.0, 0.0, 0.0 } },
                                                    meta ) );
     }

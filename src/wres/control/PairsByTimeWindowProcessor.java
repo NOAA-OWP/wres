@@ -8,17 +8,17 @@ import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.datamodel.sampledata.MetricInput;
+import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.pairs.EnsemblePairs;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
-import wres.datamodel.statistics.MetricOutputForProject;
+import wres.datamodel.statistics.StatisticsForProject;
 import wres.engine.statistics.metric.processing.MetricProcessorException;
 import wres.engine.statistics.metric.processing.MetricProcessorForProject;
 
 /**
  * Task that computes a set of metric results for a particular time window.
  */
-class PairsByTimeWindowProcessor implements Supplier<MetricOutputForProject>
+class PairsByTimeWindowProcessor implements Supplier<StatisticsForProject>
 {
     private static final Logger LOGGER =
             LoggerFactory.getLogger( PairsByTimeWindowProcessor.class );
@@ -26,7 +26,7 @@ class PairsByTimeWindowProcessor implements Supplier<MetricOutputForProject>
     /**
      * The future metric input.
      */
-    private final Future<MetricInput<?>> futureInput;
+    private final Future<SampleData<?>> futureInput;
 
     /**
      * Processor.
@@ -42,7 +42,7 @@ class PairsByTimeWindowProcessor implements Supplier<MetricOutputForProject>
      * @throws NullPointerException if either input is null
      */
 
-    PairsByTimeWindowProcessor( final Future<MetricInput<?>> futureInput,
+    PairsByTimeWindowProcessor( final Future<SampleData<?>> futureInput,
                                 final MetricProcessorForProject metricProcessor )
     {
         Objects.requireNonNull( futureInput, "Specify a non-null input for the processor." );
@@ -52,12 +52,12 @@ class PairsByTimeWindowProcessor implements Supplier<MetricOutputForProject>
     }
 
     @Override
-    public MetricOutputForProject get()
+    public StatisticsForProject get()
     {
-        MetricOutputForProject returnMe = null;
+        StatisticsForProject returnMe = null;
         try
         {
-            MetricInput<?> input = futureInput.get();
+            SampleData<?> input = futureInput.get();
             LOGGER.debug( "Completed processing of pairs for feature '{}' and time window {}.",
                           input.getMetadata().getIdentifier().getGeospatialID(),
                           input.getMetadata().getTimeWindow() );

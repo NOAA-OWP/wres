@@ -1,6 +1,6 @@
 package wres.datamodel.sampledata.pairs;
 
-import wres.datamodel.sampledata.MetricInputException;
+import wres.datamodel.sampledata.SampleDataException;
 
 /**
  * <p>Immutable pair of primitive double values that represents a probability.
@@ -28,7 +28,7 @@ public class DiscreteProbabilityPair extends SingleValuedPair
      * 
      * @param left the first item
      * @param right the second item
-     * @throws MetricInputException if the left and right values are not within [0,1]
+     * @throws SampleDataException if the left and right values are not within [0,1]
      */
 
     private DiscreteProbabilityPair( double left, double right )
@@ -37,12 +37,12 @@ public class DiscreteProbabilityPair extends SingleValuedPair
 
         if ( left < 0.0 || left > 1.0 )
         {
-            throw new MetricInputException( "The left side of the discrete probability pair must be greater than or "
+            throw new SampleDataException( "The left side of the discrete probability pair must be greater than or "
                                             + "equal to zero and less than or equal to one." );
         }
         if ( right < 0.0 || right > 1.0 )
         {
-            throw new MetricInputException( "The right side of the discrete probability pair must be greater than or "
+            throw new SampleDataException( "The right side of the discrete probability pair must be greater than or "
                     + "equal to zero and less than or equal to one." );
         }
     }

@@ -14,17 +14,17 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.ScoreOutputGroup;
+import wres.datamodel.MetricConstants.ScoreGroup;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Metadata;
-import wres.datamodel.metadata.MetricOutputMetadata;
+import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.sampledata.MetricInputException;
+import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
-import wres.datamodel.statistics.DoubleScoreOutput;
+import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 
@@ -68,7 +68,7 @@ public final class KlingGuptaEfficiencyTest
                                            Duration.ofHours( 24 ) );
         final TimeWindow timeWindow = window;
 
-        MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getRawData().size(),
+        StatisticMetadata m1 = StatisticMetadata.of( input.getRawData().size(),
                                                            MeasurementUnit.of(),
                                                            MeasurementUnit.of( "MM/DAY" ),
                                                            MetricConstants.KLING_GUPTA_EFFICIENCY,
@@ -81,9 +81,9 @@ public final class KlingGuptaEfficiencyTest
                                                            null  );
 
         //Check the results
-        DoubleScoreOutput actual = kge.apply( input );
+        DoubleScoreStatistic actual = kge.apply( input );
 
-        DoubleScoreOutput expected = DoubleScoreOutput.of( 0.8921704394462281, m1 );
+        DoubleScoreStatistic expected = DoubleScoreStatistic.of( 0.8921704394462281, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -100,16 +100,16 @@ public final class KlingGuptaEfficiencyTest
     {
         SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
-        MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getRawData().size(),
+        StatisticMetadata m1 = StatisticMetadata.of( input.getRawData().size(),
                                                            MeasurementUnit.of(),
                                                            MeasurementUnit.of(),
                                                            MetricConstants.KLING_GUPTA_EFFICIENCY,
                                                            MetricConstants.MAIN );
 
         //Check the results
-        DoubleScoreOutput actual = kge.apply( input );
+        DoubleScoreStatistic actual = kge.apply( input );
 
-        DoubleScoreOutput expected = DoubleScoreOutput.of( 0.9432025316651065, m1 );
+        DoubleScoreStatistic expected = DoubleScoreStatistic.of( 0.9432025316651065, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -128,7 +128,7 @@ public final class KlingGuptaEfficiencyTest
         SingleValuedPairs input =
                 SingleValuedPairs.of( Arrays.asList(), Metadata.of() );
 
-        DoubleScoreOutput actual = kge.apply( input );
+        DoubleScoreStatistic actual = kge.apply( input );
 
         assertTrue( actual.getData().isNaN() );
     }
@@ -181,7 +181,7 @@ public final class KlingGuptaEfficiencyTest
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( kge.getScoreOutputGroup() == ScoreOutputGroup.NONE );
+        assertTrue( kge.getScoreOutputGroup() == ScoreGroup.NONE );
     }
 
     /**
@@ -192,7 +192,7 @@ public final class KlingGuptaEfficiencyTest
     @Test
     public void testApplyExceptionOnNullInput()
     {
-        exception.expect( MetricInputException.class );
+        exception.expect( SampleDataException.class );
         exception.expectMessage( "Specify non-null input to the 'KLING GUPTA EFFICIENCY'." );
 
         kge.apply( null );

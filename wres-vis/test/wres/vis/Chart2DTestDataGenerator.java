@@ -30,17 +30,17 @@ import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.MetricOutputMetadata;
+import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.sampledata.pairs.EnsemblePair;
-import wres.datamodel.statistics.BoxPlotOutput;
-import wres.datamodel.statistics.DoubleScoreOutput;
-import wres.datamodel.statistics.DurationScoreOutput;
-import wres.datamodel.statistics.ListOfMetricOutput;
-import wres.datamodel.statistics.MultiVectorOutput;
-import wres.datamodel.statistics.PairedOutput;
-import wres.datamodel.statistics.ListOfMetricOutput.ListOfMetricOutputBuilder;
+import wres.datamodel.statistics.BoxPlotStatistic;
+import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.DurationScoreStatistic;
+import wres.datamodel.statistics.ListOfStatistics;
+import wres.datamodel.statistics.MultiVectorStatistic;
+import wres.datamodel.statistics.PairedStatistic;
+import wres.datamodel.statistics.ListOfStatistics.ListOfStatisticsBuilder;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
@@ -50,18 +50,18 @@ public abstract class Chart2DTestDataGenerator
 {
 
     /**
-     * Returns a {@link ListOfMetricOutput} of {@link DoubleScoreOutput} comprising the CRPSS for a
+     * Returns a {@link ListOfStatistics} of {@link DoubleScoreStatistic} comprising the CRPSS for a
      * subset of thresholds and forecast lead times. Reads the input data from
      * {@link #getScalarMetricOutputMapByLeadThreshold()} and slices.
      *
      * @return an output map of verification scores
      */
 
-    public static ListOfMetricOutput<DoubleScoreOutput> getMetricOutputMapByLeadThresholdOne()
+    public static ListOfStatistics<DoubleScoreStatistic> getMetricOutputMapByLeadThresholdOne()
             throws IOException
     {
-        ListOfMetricOutput<DoubleScoreOutput> full = getScalarMetricOutputMapByLeadThreshold();
-        ListOfMetricOutputBuilder<DoubleScoreOutput> builder = new ListOfMetricOutputBuilder<>();
+        ListOfStatistics<DoubleScoreStatistic> full = getScalarMetricOutputMapByLeadThreshold();
+        ListOfStatisticsBuilder<DoubleScoreStatistic> builder = new ListOfStatisticsBuilder<>();
 
         double[][] allow =
                 new double[][] { { Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY }, { 0.5, 2707.5 },
@@ -73,24 +73,24 @@ public abstract class Chart2DTestDataGenerator
                                                                           OneOrTwoDoubles.of( next[0] ),
                                                                           Operator.GREATER,
                                                                           ThresholdDataType.LEFT ) );
-            Slicer.filter( full, data -> data.getThresholds().equals( filter ) ).forEach( builder::addOutput );
+            Slicer.filter( full, data -> data.getThresholds().equals( filter ) ).forEach( builder::addStatistic );
         }
 
         return builder.build();
     }
 
     /**
-     * Returns a {@link ListOfMetricOutput} of {@link DoubleScoreOutput} comprising the CRPSS for a
+     * Returns a {@link ListOfStatistics} of {@link DoubleScoreStatistic} comprising the CRPSS for a
      * subset of thresholds and forecast lead times. Reads the input data from {@link #getScalarMetricOutputMapByLeadThreshold()}
      * and slices.
      *
      * @return an output map of verification scores
      */
-    public static ListOfMetricOutput<DoubleScoreOutput> getMetricOutputMapByLeadThresholdTwo()
+    public static ListOfStatistics<DoubleScoreStatistic> getMetricOutputMapByLeadThresholdTwo()
             throws IOException
     {
-        ListOfMetricOutput<DoubleScoreOutput> full = getScalarMetricOutputMapByLeadThreshold();
-        ListOfMetricOutputBuilder<DoubleScoreOutput> builder = new ListOfMetricOutputBuilder<>();
+        ListOfStatistics<DoubleScoreStatistic> full = getScalarMetricOutputMapByLeadThreshold();
+        ListOfStatisticsBuilder<DoubleScoreStatistic> builder = new ListOfStatisticsBuilder<>();
 
         final int[] allow = new int[] { 42, 258, 474, 690 };
         for ( final int next : allow )
@@ -99,23 +99,23 @@ public abstract class Chart2DTestDataGenerator
                                                Instant.MAX,
                                                ReferenceTime.VALID_TIME,
                                                Duration.ofHours( next ) );
-            Slicer.filter( full, data -> data.getTimeWindow().equals( filter ) ).forEach( builder::addOutput );
+            Slicer.filter( full, data -> data.getTimeWindow().equals( filter ) ).forEach( builder::addStatistic );
         }
 
         return builder.build();
     }
 
     /**
-     * Returns a {@link ListOfMetricOutput} of {@link DoubleScoreOutput} comprising the CRPSS for various
+     * Returns a {@link ListOfStatistics} of {@link DoubleScoreStatistic} comprising the CRPSS for various
      * thresholds and forecast lead times. Reads the input data from
      * testinput/chart2DTest/getMetricOutputMapByLeadThreshold.xml.
      *
      * @return an output map of verification scores
      */
-    static ListOfMetricOutput<DoubleScoreOutput> getScalarMetricOutputMapByLeadThreshold()
+    static ListOfStatistics<DoubleScoreStatistic> getScalarMetricOutputMapByLeadThreshold()
             throws IOException
     {
-        final List<DoubleScoreOutput> rawData = new ArrayList<>();
+        final List<DoubleScoreStatistic> rawData = new ArrayList<>();
 
         //Create the input file
         final File resultFile = new File( "testinput/chart2DTest/getMetricOutputMapByLeadThreshold.xml" );
@@ -124,7 +124,7 @@ public abstract class Chart2DTestDataGenerator
         final Iterator<MetricResultKey> d = data.getIterator();
 
         //Metric output metadata: add fake sample sizes as these are not available in the test input file
-        final MetricOutputMetadata meta = MetricOutputMetadata.of( 1000,
+        final StatisticMetadata meta = StatisticMetadata.of( 1000,
                                                                    MeasurementUnit.of(),
                                                                    MeasurementUnit.of( "CMS" ),
                                                                    MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
@@ -162,28 +162,28 @@ public abstract class Chart2DTestDataGenerator
                 //Build the scalar result
                 final MetricResult result = t.getResult( f );
                 final double[] res = ( (DoubleMatrix1DResult) result ).getResult().toArray();
-                final DoubleScoreOutput value =
-                        DoubleScoreOutput.of( res[0], MetricOutputMetadata.of( meta, window, q ) );
+                final DoubleScoreStatistic value =
+                        DoubleScoreStatistic.of( res[0], StatisticMetadata.of( meta, window, q ) );
 
                 //Append result
                 rawData.add( value );
             }
         }
 
-        return ListOfMetricOutput.of( rawData );
+        return ListOfStatistics.of( rawData );
     }
 
     /**
-     * Returns a {@link ListOfMetricOutput} of {@link DoubleScoreOutput} comprising the CRPSS for
+     * Returns a {@link ListOfStatistics} of {@link DoubleScoreStatistic} comprising the CRPSS for
      * various thresholds and forecast lead times. Reads the input data from
      * testinput/chart2DTest/getMetricOutputMapByLeadThreshold.xml.
      *
      * @return an output map of verification scores
      */
-    static ListOfMetricOutput<DoubleScoreOutput> getScoreMetricOutputMapByLeadThreshold()
+    static ListOfStatistics<DoubleScoreStatistic> getScoreMetricOutputMapByLeadThreshold()
             throws IOException
     {
-        final List<DoubleScoreOutput> rawData = new ArrayList<>();
+        final List<DoubleScoreStatistic> rawData = new ArrayList<>();
 
         //Create the input file
         final File resultFile = new File( "testinput/chart2DTest/getMetricOutputMapByLeadThreshold.xml" );
@@ -192,7 +192,7 @@ public abstract class Chart2DTestDataGenerator
         final Iterator<MetricResultKey> d = data.getIterator();
 
         //Metric output metadata: add fake sample sizes as these are not available in the test input file
-        final MetricOutputMetadata meta = MetricOutputMetadata.of( 1000,
+        final StatisticMetadata meta = StatisticMetadata.of( 1000,
                                                                    MeasurementUnit.of(),
                                                                    MeasurementUnit.of( "CMS" ),
                                                                    MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
@@ -229,28 +229,28 @@ public abstract class Chart2DTestDataGenerator
                 //Build the scalar result
                 final MetricResult result = t.getResult( f );
                 final double res = ( (DoubleMatrix1DResult) result ).getResult().toArray()[0];
-                final DoubleScoreOutput value = DoubleScoreOutput.of( res, MetricOutputMetadata.of( meta, window, q ) );
+                final DoubleScoreStatistic value = DoubleScoreStatistic.of( res, StatisticMetadata.of( meta, window, q ) );
 
                 //Append result
                 rawData.add( value );
             }
         }
 
-        return ListOfMetricOutput.of( rawData );
+        return ListOfStatistics.of( rawData );
     }
 
     /**
-     * Returns a {@link ListOfMetricOutput} of {@link MultiVectorOutput} that contains the components of the
+     * Returns a {@link ListOfStatistics} of {@link MultiVectorStatistic} that contains the components of the
      * reliability diagram (forecast probabilities, observed given forecast probabilities, and sample sizes) for various
      * thresholds and forecast lead times. Reads the input data from
      * testinput/chart2DTest/getReliabilityDiagramByLeadThreshold.xml.
      *
      * @return an output map of reliability diagrams
      */
-    static ListOfMetricOutput<MultiVectorOutput> getReliabilityDiagramByLeadThreshold()
+    static ListOfStatistics<MultiVectorStatistic> getReliabilityDiagramByLeadThreshold()
             throws IOException
     {
-        final List<MultiVectorOutput> rawData = new ArrayList<>();
+        final List<MultiVectorStatistic> rawData = new ArrayList<>();
         //Read only selected quantiles
         final List<Threshold> allowed = new ArrayList<>();
         final double[][] allow =
@@ -270,7 +270,7 @@ public abstract class Chart2DTestDataGenerator
         final Iterator<MetricResultKey> d = data.getIterator();
 
         //Metric output metadata: add fake sample sizes as these are not available in the test input file
-        final MetricOutputMetadata meta = MetricOutputMetadata.of( 1000,
+        final StatisticMetadata meta = StatisticMetadata.of( 1000,
                                                                    MeasurementUnit.of(),
                                                                    MeasurementUnit.of( "CMS" ),
                                                                    MetricConstants.RELIABILITY_DIAGRAM,
@@ -343,9 +343,9 @@ public abstract class Chart2DTestDataGenerator
                     output.put( MetricDimension.FORECAST_PROBABILITY, res[0] ); //Forecast probabilities
                     output.put( MetricDimension.OBSERVED_RELATIVE_FREQUENCY, res[1] ); //Observed | forecast probabilities
                     output.put( MetricDimension.SAMPLE_SIZE, res[2] ); //Observed | forecast probabilities
-                    final MultiVectorOutput value =
-                            MultiVectorOutput.ofMultiVectorOutput( output,
-                                                                   MetricOutputMetadata.of( meta,
+                    final MultiVectorStatistic value =
+                            MultiVectorStatistic.ofMultiVectorOutput( output,
+                                                                   StatisticMetadata.of( meta,
                                                                                             window,
                                                                                             OneOrTwoThresholds.of( q ) ) );
 
@@ -356,11 +356,11 @@ public abstract class Chart2DTestDataGenerator
         }
 
         //Return the results
-        return ListOfMetricOutput.of( rawData );
+        return ListOfStatistics.of( rawData );
     }
 
     /**
-     * Returns a {@link ListOfMetricOutput} of {@link MultiVectorOutput} that contains the components of the
+     * Returns a {@link ListOfStatistics} of {@link MultiVectorStatistic} that contains the components of the
      * Relative Operating Characteristic (ROC) diagram (probability of detection and probability of false detection) for
      * various thresholds and forecast lead times. Reads the input data from
      * testinput/chart2DTest/getROCDiagramByLeadThreshold.xml.
@@ -368,10 +368,10 @@ public abstract class Chart2DTestDataGenerator
      * @return an output map of ROC diagrams
      */
 
-    static ListOfMetricOutput<MultiVectorOutput> getROCDiagramByLeadThreshold()
+    static ListOfStatistics<MultiVectorStatistic> getROCDiagramByLeadThreshold()
             throws IOException
     {
-        final List<MultiVectorOutput> rawData = new ArrayList<>();
+        final List<MultiVectorStatistic> rawData = new ArrayList<>();
         //Read only selected quantiles
         final List<Threshold> allowed = new ArrayList<>();
         final double[][] allow =
@@ -391,7 +391,7 @@ public abstract class Chart2DTestDataGenerator
         final Iterator<MetricResultKey> d = data.getIterator();
 
         //Metric output metadata
-        final MetricOutputMetadata meta = MetricOutputMetadata.of( 1000,
+        final StatisticMetadata meta = StatisticMetadata.of( 1000,
                                                                    MeasurementUnit.of(),
                                                                    MeasurementUnit.of( "CMS" ),
                                                                    MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
@@ -446,9 +446,9 @@ public abstract class Chart2DTestDataGenerator
                     final Map<MetricDimension, double[]> output = new EnumMap<>( MetricDimension.class );
                     output.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, roc[0] ); //PoFD
                     output.put( MetricDimension.PROBABILITY_OF_DETECTION, roc[1] ); //PoD
-                    final MultiVectorOutput value =
-                            MultiVectorOutput.ofMultiVectorOutput( output,
-                                                                   MetricOutputMetadata.of( meta,
+                    final MultiVectorStatistic value =
+                            MultiVectorStatistic.ofMultiVectorOutput( output,
+                                                                   StatisticMetadata.of( meta,
                                                                                             window,
                                                                                             OneOrTwoThresholds.of( q ) ) );
 
@@ -459,11 +459,11 @@ public abstract class Chart2DTestDataGenerator
         }
 
         //Return the results
-        return ListOfMetricOutput.of( rawData );
+        return ListOfStatistics.of( rawData );
     }
 
     /**
-     * Returns a {@link ListOfMetricOutput} of {@link MultiVectorOutput} that contains the components of the
+     * Returns a {@link ListOfStatistics} of {@link MultiVectorStatistic} that contains the components of the
      * Rank Histogram (rank position, which represents the number of gaps between ensemble members plus one) and
      * the relative frequency of observations that fall within each gap. The results include various thresholds and
      * forecast lead times. Reads the input data from testinput/chart2DTest/getRankHistogramByLeadThreshold.xml.
@@ -471,10 +471,10 @@ public abstract class Chart2DTestDataGenerator
      * @return an output map of rank histograms
      */
 
-    static ListOfMetricOutput<MultiVectorOutput> getRankHistogramByLeadThreshold()
+    static ListOfStatistics<MultiVectorStatistic> getRankHistogramByLeadThreshold()
             throws IOException
     {
-        final List<MultiVectorOutput> rawData = new ArrayList<>();
+        final List<MultiVectorStatistic> rawData = new ArrayList<>();
 
         //Create the input file
         final File resultFile = new File( "testinput/chart2DTest/getRankHistogramByLeadThreshold.xml" );
@@ -483,7 +483,7 @@ public abstract class Chart2DTestDataGenerator
         final Iterator<MetricResultKey> d = data.getIterator();
 
         //Metric output metadata
-        final MetricOutputMetadata meta = MetricOutputMetadata.of( 1000,
+        final StatisticMetadata meta = StatisticMetadata.of( 1000,
                                                                    MeasurementUnit.of(),
                                                                    MeasurementUnit.of( "CMS" ),
                                                                    MetricConstants.RANK_HISTOGRAM,
@@ -542,9 +542,9 @@ public abstract class Chart2DTestDataGenerator
                 final Map<MetricDimension, double[]> output = new EnumMap<>( MetricDimension.class );
                 output.put( MetricDimension.RANK_ORDER, rh[0] );
                 output.put( MetricDimension.OBSERVED_RELATIVE_FREQUENCY, rh[1] );
-                final MultiVectorOutput value =
-                        MultiVectorOutput.ofMultiVectorOutput( output,
-                                                               MetricOutputMetadata.of( meta,
+                final MultiVectorStatistic value =
+                        MultiVectorStatistic.ofMultiVectorOutput( output,
+                                                               StatisticMetadata.of( meta,
                                                                                         window,
                                                                                         OneOrTwoThresholds.of( q ) ) );
 
@@ -554,21 +554,21 @@ public abstract class Chart2DTestDataGenerator
         }
 
         //Return the results
-        return ListOfMetricOutput.of( rawData );
+        return ListOfStatistics.of( rawData );
     }
 
     /**
-     * Returns a {@link ListOfMetricOutput} of {@link MultiVectorOutput} that contains the components of the
+     * Returns a {@link ListOfStatistics} of {@link MultiVectorStatistic} that contains the components of the
      * Quantile-Quantile Diagram (predicted quantiles and observed quantiles) for various thresholds and forecast lead
      * times. Reads the input data from testinput/chart2DTest/getQQDiagramByLeadThreshold.xml.
      *
      * @return an output map of QQ diagrams
      */
 
-    static ListOfMetricOutput<MultiVectorOutput> getQQDiagramByLeadThreshold()
+    static ListOfStatistics<MultiVectorStatistic> getQQDiagramByLeadThreshold()
             throws IOException
     {
-        final List<MultiVectorOutput> rawData = new ArrayList<>();
+        final List<MultiVectorStatistic> rawData = new ArrayList<>();
 
         //Create the input file
         final File resultFile = new File( "testinput/chart2DTest/getQQDiagramByLeadThreshold.xml" );
@@ -583,7 +583,7 @@ public abstract class Chart2DTestDataGenerator
                                                Duration.ofHours( 24 ),
                                                Duration.ofHours( 120 ) );
         final TimeWindow timeWindow = windowMeta;
-        final MetricOutputMetadata meta = MetricOutputMetadata.of( 1000,
+        final StatisticMetadata meta = StatisticMetadata.of( 1000,
                                                                    MeasurementUnit.of(),
                                                                    MeasurementUnit.of( "MILLIMETER" ),
                                                                    MetricConstants.QUANTILE_QUANTILE_DIAGRAM,
@@ -619,9 +619,9 @@ public abstract class Chart2DTestDataGenerator
             final Map<MetricDimension, double[]> output = new EnumMap<>( MetricDimension.class );
             output.put( MetricDimension.PREDICTED_QUANTILES, qq[0] );
             output.put( MetricDimension.OBSERVED_QUANTILES, qq[1] );
-            final MultiVectorOutput value =
-                    MultiVectorOutput.ofMultiVectorOutput( output,
-                                                           MetricOutputMetadata.of( meta,
+            final MultiVectorStatistic value =
+                    MultiVectorStatistic.ofMultiVectorOutput( output,
+                                                           StatisticMetadata.of( meta,
                                                                                     window,
                                                                                     threshold ) );
 
@@ -631,21 +631,21 @@ public abstract class Chart2DTestDataGenerator
         }
 
         //Return the results
-        return ListOfMetricOutput.of( rawData );
+        return ListOfStatistics.of( rawData );
     }
 
     /**
-     * Returns a {@link ListOfMetricOutput} of {@link BoxPlotOutput} that contains a box plot of forecast
+     * Returns a {@link ListOfStatistics} of {@link BoxPlotStatistic} that contains a box plot of forecast
      * errors against observed value for a single threshold (all data) and for several forecast lead times.
      * Reads the input data from testinput/chart2DTest/getBoxPlotErrorsByObservedAndLeadThreshold.xml.
      *
      * @return an output map of verification scores
      */
 
-    static ListOfMetricOutput<BoxPlotOutput> getBoxPlotErrorsByObservedAndLeadThreshold()
+    static ListOfStatistics<BoxPlotStatistic> getBoxPlotErrorsByObservedAndLeadThreshold()
             throws IOException
     {
-        final List<BoxPlotOutput> rawData = new ArrayList<>();
+        final List<BoxPlotStatistic> rawData = new ArrayList<>();
 
         //Create the input file
         final File resultFile = new File( "testinput/chart2DTest/getBoxPlotErrorsByObservedAndLeadThreshold.xml" );
@@ -654,7 +654,7 @@ public abstract class Chart2DTestDataGenerator
         final Iterator<MetricResultKey> d = data.getIterator();
 
         //Metric output metadata
-        final MetricOutputMetadata meta = MetricOutputMetadata.of( 1000,
+        final StatisticMetadata meta = StatisticMetadata.of( 1000,
                                                                    MeasurementUnit.of( "INCH" ),
                                                                    MeasurementUnit.of( "INCH" ),
                                                                    MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
@@ -692,9 +692,9 @@ public abstract class Chart2DTestDataGenerator
                     output.add( EnsemblePair.of( next[0], Arrays.copyOfRange( next, 1, next.length ) ) );
                 }
             }
-            final BoxPlotOutput out = BoxPlotOutput.of( output,
+            final BoxPlotStatistic out = BoxPlotStatistic.of( output,
                                                         probabilities,
-                                                        MetricOutputMetadata.of( meta, window, threshold ),
+                                                        StatisticMetadata.of( meta, window, threshold ),
                                                         MetricDimension.OBSERVED_VALUE,
                                                         MetricDimension.FORECAST_ERROR );
 
@@ -703,21 +703,21 @@ public abstract class Chart2DTestDataGenerator
         }
 
         //Return the results
-        return ListOfMetricOutput.of( rawData );
+        return ListOfStatistics.of( rawData );
     }
 
     /**
-     * Returns a {@link ListOfMetricOutput} of {@link BoxPlotOutput} that contains a box plot of forecast
+     * Returns a {@link ListOfStatistics} of {@link BoxPlotStatistic} that contains a box plot of forecast
      * errors against observed value for a single threshold (all data) and for several forecast lead times.
      * Reads the input data from testinput/chart2DTest/getBoxPlotErrorsByForecastAndLeadThreshold.xml.
      *
      * @return an output map of verification scores
      */
 
-    static ListOfMetricOutput<BoxPlotOutput> getBoxPlotErrorsByForecastAndLeadThreshold()
+    static ListOfStatistics<BoxPlotStatistic> getBoxPlotErrorsByForecastAndLeadThreshold()
             throws IOException
     {
-        final List<BoxPlotOutput> rawData = new ArrayList<>();
+        final List<BoxPlotStatistic> rawData = new ArrayList<>();
 
         //Create the input file
         final File resultFile = new File( "testinput/chart2DTest/getBoxPlotErrorsByForecastAndLeadThreshold.xml" );
@@ -726,7 +726,7 @@ public abstract class Chart2DTestDataGenerator
         final Iterator<MetricResultKey> d = data.getIterator();
 
         //Metric output metadata
-        final MetricOutputMetadata meta = MetricOutputMetadata.of( 1000,
+        final StatisticMetadata meta = StatisticMetadata.of( 1000,
                                                                    MeasurementUnit.of( "INCH" ),
                                                                    MeasurementUnit.of( "INCH" ),
                                                                    MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE,
@@ -764,9 +764,9 @@ public abstract class Chart2DTestDataGenerator
                     output.add( EnsemblePair.of( next[0], Arrays.copyOfRange( next, 1, next.length ) ) );
                 }
             }
-            final BoxPlotOutput out = BoxPlotOutput.of( output,
+            final BoxPlotStatistic out = BoxPlotStatistic.of( output,
                                                         probabilities,
-                                                        MetricOutputMetadata.of( meta, window, threshold ),
+                                                        StatisticMetadata.of( meta, window, threshold ),
                                                         MetricDimension.ENSEMBLE_MEAN,
                                                         MetricDimension.FORECAST_ERROR );
 
@@ -775,18 +775,18 @@ public abstract class Chart2DTestDataGenerator
         }
 
         //Return the results
-        return ListOfMetricOutput.of( rawData );
+        return ListOfStatistics.of( rawData );
     }
 
     /**
-     * Returns a {@link ListOfMetricOutput} of {@link DoubleScoreOutput} comprising the CRPSS for various
+     * Returns a {@link ListOfStatistics} of {@link DoubleScoreStatistic} comprising the CRPSS for various
      * rolling time windows at one threshold (all data). Corresponds to the use case in Redmine ticket #40785.
      *
      * @return an output map of verification scores
      */
-    static ListOfMetricOutput<DoubleScoreOutput> getScoreOutputForPoolingWindowsFirst()
+    static ListOfStatistics<DoubleScoreStatistic> getScoreOutputForPoolingWindowsFirst()
     {
-        final List<DoubleScoreOutput> rawData = new ArrayList<>();
+        final List<DoubleScoreStatistic> rawData = new ArrayList<>();
 
         // Threshold
         final OneOrTwoThresholds threshold =
@@ -796,7 +796,7 @@ public abstract class Chart2DTestDataGenerator
                                                                       ThresholdDataType.LEFT ) );
 
         // Create the metric output metadata: add fake sample sizes as these are not available in the test input file
-        final MetricOutputMetadata meta = MetricOutputMetadata.of( 90,
+        final StatisticMetadata meta = StatisticMetadata.of( 90,
                                                                    MeasurementUnit.of(),
                                                                    MeasurementUnit.of( "CMS" ),
                                                                    MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
@@ -831,53 +831,53 @@ public abstract class Chart2DTestDataGenerator
                                                       end,
                                                       ReferenceTime.ISSUE_TIME,
                                                       Duration.ofHours( 6 ) );
-            DoubleScoreOutput sixHourOutput =
-                    DoubleScoreOutput.of( sixHourOutputs[i], MetricOutputMetadata.of( meta, sixHourWindow, null ) );
+            DoubleScoreStatistic sixHourOutput =
+                    DoubleScoreStatistic.of( sixHourOutputs[i], StatisticMetadata.of( meta, sixHourWindow, null ) );
             rawData.add( sixHourOutput );
             //Add the 12h data
             TimeWindow twelveHourWindow = TimeWindow.of( begin,
                                                          end,
                                                          ReferenceTime.ISSUE_TIME,
                                                          Duration.ofHours( 12 ) );
-            DoubleScoreOutput twelveHourOutput =
-                    DoubleScoreOutput.of( twelveHourOutputs[i],
-                                          MetricOutputMetadata.of( meta, twelveHourWindow, null ) );
+            DoubleScoreStatistic twelveHourOutput =
+                    DoubleScoreStatistic.of( twelveHourOutputs[i],
+                                          StatisticMetadata.of( meta, twelveHourWindow, null ) );
             rawData.add( twelveHourOutput );
             //Add the 18h data
             TimeWindow eighteenHourWindow = TimeWindow.of( begin,
                                                            end,
                                                            ReferenceTime.ISSUE_TIME,
                                                            Duration.ofHours( 18 ) );
-            DoubleScoreOutput eighteenHourOutput =
-                    DoubleScoreOutput.of( eighteenHourOutputs[i],
-                                          MetricOutputMetadata.of( meta, eighteenHourWindow, null ) );
+            DoubleScoreStatistic eighteenHourOutput =
+                    DoubleScoreStatistic.of( eighteenHourOutputs[i],
+                                          StatisticMetadata.of( meta, eighteenHourWindow, null ) );
             rawData.add( eighteenHourOutput );
             //Add the 24h data
             TimeWindow twentyFourHourWindow = TimeWindow.of( begin,
                                                              end,
                                                              ReferenceTime.ISSUE_TIME,
                                                              Duration.ofHours( 24 ) );
-            DoubleScoreOutput twentyFourHourOutput =
-                    DoubleScoreOutput.of( twentyFourHourOutputs[i],
-                                          MetricOutputMetadata.of( meta, twentyFourHourWindow, null ) );
+            DoubleScoreStatistic twentyFourHourOutput =
+                    DoubleScoreStatistic.of( twentyFourHourOutputs[i],
+                                          StatisticMetadata.of( meta, twentyFourHourWindow, null ) );
             rawData.add( twentyFourHourOutput );
         }
 
-        return ListOfMetricOutput.of( rawData );
+        return ListOfStatistics.of( rawData );
     }
 
     /**
-     * Returns a {@link ListOfMetricOutput} of {@link DoubleScoreOutput} comprising the bias fraction
+     * Returns a {@link ListOfStatistics} of {@link DoubleScoreStatistic} comprising the bias fraction
      * for various pooling windows at one threshold (all data). Corresponds to the use case in Redmine ticket #46461.
      *
      * @return an output map of verification scores
      */
-    static ListOfMetricOutput<DoubleScoreOutput> getScoreOutputForPoolingWindowsSecond()
+    static ListOfStatistics<DoubleScoreStatistic> getScoreOutputForPoolingWindowsSecond()
     {
-        final List<DoubleScoreOutput> rawData = new ArrayList<>();
+        final List<DoubleScoreStatistic> rawData = new ArrayList<>();
 
         // Create the metric output metadata: add fake sample sizes as these are not available in the test input file
-        final MetricOutputMetadata meta = MetricOutputMetadata.of( 18,
+        final StatisticMetadata meta = StatisticMetadata.of( 18,
                                                                    MeasurementUnit.of(),
                                                                    MeasurementUnit.of( "CMS" ),
                                                                    MetricConstants.BIAS_FRACTION,
@@ -926,14 +926,14 @@ public abstract class Chart2DTestDataGenerator
                                                    Duration.ofHours( 0 ),
                                                    Duration.ofHours( 18 ) );
 
-            rawData.add( DoubleScoreOutput.of( scores[i], MetricOutputMetadata.of( meta, timeWindow, threshold ) ) );
+            rawData.add( DoubleScoreStatistic.of( scores[i], StatisticMetadata.of( meta, timeWindow, threshold ) ) );
         }
 
-        return ListOfMetricOutput.of( rawData );
+        return ListOfStatistics.of( rawData );
     }
 
     /**
-     * Returns a {@link PairedOutput} that comprises a {@link Duration} that represents a time-to-peak error against an
+     * Returns a {@link PairedStatistic} that comprises a {@link Duration} that represents a time-to-peak error against an
      * {@link Instant} that represents the origin (basis time) of the time-series from which the timing error
      * originates. Contains results for forecasts issued at 12Z each day from 1985-01-01T12:00:00Z to
      * 1985-01-10T12:00:00Z and with a forecast horizon of 336h.
@@ -941,7 +941,7 @@ public abstract class Chart2DTestDataGenerator
      * @return a paired output of timing errors by basis time
      */
 
-    public static ListOfMetricOutput<PairedOutput<Instant, Duration>> getTimeToPeakErrors()
+    public static ListOfStatistics<PairedStatistic<Instant, Duration>> getTimeToPeakErrors()
     {
         // Create a list of pairs
         List<Pair<Instant, Duration>> input = new ArrayList<>();
@@ -969,7 +969,7 @@ public abstract class Chart2DTestDataGenerator
                                                      Operator.GREATER,
                                                      ThresholdDataType.LEFT ) );
 
-        MetricOutputMetadata meta = MetricOutputMetadata.of( input.size(),
+        StatisticMetadata meta = StatisticMetadata.of( input.size(),
                                                              MeasurementUnit.of( "DURATION" ),
                                                              MeasurementUnit.of( "CMS" ),
                                                              MetricConstants.TIME_TO_PEAK_ERROR,
@@ -981,7 +981,7 @@ public abstract class Chart2DTestDataGenerator
                                                              threshold,
                                                              null  );
         // Build and return
-        return ListOfMetricOutput.of( Arrays.asList( PairedOutput.of( input, meta ) ) );
+        return ListOfStatistics.of( Arrays.asList( PairedStatistic.of( input, meta ) ) );
     }
 
     /**
@@ -999,7 +999,7 @@ public abstract class Chart2DTestDataGenerator
      * @return a set of summary statistics for time-to-peak errors
      */
 
-    public static ListOfMetricOutput<DurationScoreOutput> getTimeToPeakErrorStatistics()
+    public static ListOfStatistics<DurationScoreStatistic> getTimeToPeakErrorStatistics()
     {
         // Create a list of pairs
         Map<MetricConstants, Duration> returnMe = new HashMap<>();
@@ -1021,7 +1021,7 @@ public abstract class Chart2DTestDataGenerator
                                                                             Operator.GREATER,
                                                                             ThresholdDataType.LEFT ) );
         
-        MetricOutputMetadata meta = MetricOutputMetadata.of( 10,
+        StatisticMetadata meta = StatisticMetadata.of( 10,
                                                              MeasurementUnit.of( "DURATION" ),
                                                              MeasurementUnit.of( "CMS" ),
                                                              MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
@@ -1033,7 +1033,7 @@ public abstract class Chart2DTestDataGenerator
                                                              threshold,
                                                              null  );
 
-        return ListOfMetricOutput.of( Arrays.asList( DurationScoreOutput.of( returnMe, meta ) ) );
+        return ListOfStatistics.of( Arrays.asList( DurationScoreStatistic.of( returnMe, meta ) ) );
     }
 
 }

@@ -5,10 +5,10 @@ import java.util.Objects;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.sampledata.MetricInputException;
+import wres.datamodel.metadata.StatisticMetadata;
+import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
-import wres.datamodel.statistics.DoubleScoreOutput;
+import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.engine.statistics.metric.Collectable;
 import wres.engine.statistics.metric.DecomposableScore;
 import wres.engine.statistics.metric.FunctionFactory;
@@ -86,11 +86,11 @@ public class KlingGuptaEfficiency extends DecomposableScore<SingleValuedPairs>
     }
 
     @Override
-    public DoubleScoreOutput apply( final SingleValuedPairs s )
+    public DoubleScoreStatistic apply( final SingleValuedPairs s )
     {
         if ( Objects.isNull( s ) )
         {
-            throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
+            throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
         }
 
         //TODO: implement any required decompositions, based on the instance parameters and return the decomposition
@@ -116,13 +116,13 @@ public class KlingGuptaEfficiency extends DecomposableScore<SingleValuedPairs>
             result = FunctionFactory.finiteOrMissing().applyAsDouble( 1.0 - Math.sqrt( left + middle + right ) );
         }
         //Metadata
-        final MetricOutputMetadata metOut = MetricOutputMetadata.of( s.getMetadata(),
+        final StatisticMetadata metOut = StatisticMetadata.of( s.getMetadata(),
                                                                 this.getID(),
                                                                 MetricConstants.MAIN,
                                                                 this.hasRealUnits(),
                                                                 s.getRawData().size(),
                                                                 null );
-        return DoubleScoreOutput.of( result, metOut );
+        return DoubleScoreStatistic.of( result, metOut );
     }
 
     @Override

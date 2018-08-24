@@ -21,21 +21,21 @@ import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
-import wres.datamodel.metadata.MetricOutputMetadata;
+import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.statistics.ListOfMetricOutput;
-import wres.datamodel.statistics.MatrixOutput;
+import wres.datamodel.statistics.ListOfStatistics;
+import wres.datamodel.statistics.MatrixStatistic;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.io.config.ConfigHelper;
 
 /**
- * Helps write contingency tables comprising {@link MatrixOutput} to a file of Comma Separated Values (CSV).
+ * Helps write contingency tables comprising {@link MatrixStatistic} to a file of Comma Separated Values (CSV).
  * 
  * @author james.brown@hydrosolved.com
  */
 
 public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
-        implements Consumer<ListOfMetricOutput<MatrixOutput>>, Supplier<Set<Path>>
+        implements Consumer<ListOfStatistics<MatrixStatistic>>, Supplier<Set<Path>>
 {
     /**
      * Set of paths that this writer actually wrote to
@@ -65,7 +65,7 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
      */
 
     @Override
-    public void accept( final ListOfMetricOutput<MatrixOutput> output )
+    public void accept( final ListOfStatistics<MatrixStatistic> output )
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing box plot outputs." );
 
@@ -108,7 +108,7 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
 
     private static Set<Path> writeOneMatrixOutputType( ProjectConfig projectConfig,
                                                        DestinationConfig destinationConfig,
-                                                       ListOfMetricOutput<MatrixOutput> output,
+                                                       ListOfStatistics<MatrixStatistic> output,
                                                        Format formatter )
             throws IOException
     {
@@ -164,7 +164,7 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
      */
 
     private static Set<Path> writeOneMatrixOutputTypePerTimeWindow( DestinationConfig destinationConfig,
-                                                                    ListOfMetricOutput<MatrixOutput> output,
+                                                                    ListOfStatistics<MatrixStatistic> output,
                                                                     StringJoiner headerRow,
                                                                     Format formatter )
             throws IOException
@@ -175,10 +175,10 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
         SortedSet<TimeWindow> timeWindows = Slicer.discover( output, next -> next.getMetadata().getTimeWindow() );
         for ( TimeWindow timeWindow : timeWindows )
         {
-            ListOfMetricOutput<MatrixOutput> next =
+            ListOfStatistics<MatrixStatistic> next =
                     Slicer.filter( output, data -> data.getTimeWindow().equals( timeWindow ) );
             
-            MetricOutputMetadata meta = next.getData().get( 0 ).getMetadata();
+            StatisticMetadata meta = next.getData().get( 0 ).getMetadata();
             
             List<RowCompareByLeft> rows = CommaSeparatedMatrixWriter.getRowsForOneMatrixOutput( next, formatter );
 
@@ -212,7 +212,7 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
      */
 
     private static Set<Path> writeOneMatrixOutputTypePerThreshold( DestinationConfig destinationConfig,
-                                                                   ListOfMetricOutput<MatrixOutput> output,
+                                                                   ListOfStatistics<MatrixStatistic> output,
                                                                    StringJoiner headerRow,
                                                                    Format formatter )
             throws IOException
@@ -224,10 +224,10 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
                 Slicer.discover( output, meta -> meta.getMetadata().getThresholds() );
         for ( OneOrTwoThresholds threshold : thresholds )
         {
-            ListOfMetricOutput<MatrixOutput> next =
+            ListOfStatistics<MatrixStatistic> next =
                     Slicer.filter( output, data -> data.getThresholds().equals( threshold ) );
             
-            MetricOutputMetadata meta = next.getData().get( 0 ).getMetadata();
+            StatisticMetadata meta = next.getData().get( 0 ).getMetadata();
             
             List<RowCompareByLeft> rows = CommaSeparatedMatrixWriter.getRowsForOneMatrixOutput( next, formatter );
 
@@ -257,13 +257,13 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
      * @return the mutated header
      */
 
-    private static StringJoiner getMatrixOutputHeader( ListOfMetricOutput<MatrixOutput> output,
+    private static StringJoiner getMatrixOutputHeader( ListOfStatistics<MatrixStatistic> output,
                                                        StringJoiner headerRow )
     {
         // Append to header
         StringJoiner returnMe = new StringJoiner( "," );
         returnMe.merge( headerRow );
-        MatrixOutput data = output.getData().get( 0 );
+        MatrixStatistic data = output.getData().get( 0 );
         String metricName = data.getMetadata().getMetricID().toString();
         List<String> dimensions = new ArrayList<>();
         // Add names
@@ -309,7 +309,7 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
      */
 
     private static List<RowCompareByLeft>
-            getRowsForOneMatrixOutput( ListOfMetricOutput<MatrixOutput> output,
+            getRowsForOneMatrixOutput( ListOfStatistics<MatrixStatistic> output,
                                        Format formatter )
     {
         List<RowCompareByLeft> returnMe = new ArrayList<>();
@@ -326,7 +326,7 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
             for ( OneOrTwoThresholds threshold : thresholds )
             {
                 // One output per time window and threshold
-                MatrixOutput nextOutput = Slicer.filter( output,
+                MatrixStatistic nextOutput = Slicer.filter( output,
                                                          data -> data.getThresholds().equals( threshold )
                                                                  && data.getTimeWindow().equals( timeWindow ) )
                                                 .getData()

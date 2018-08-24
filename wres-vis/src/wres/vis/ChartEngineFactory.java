@@ -41,18 +41,18 @@ import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.MetricConstants.MetricOutputGroup;
+import wres.datamodel.MetricConstants.StatisticGroup;
 import wres.datamodel.Slicer;
-import wres.datamodel.metadata.MetricOutputMetadata;
+import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
-import wres.datamodel.statistics.BoxPlotOutput;
-import wres.datamodel.statistics.DoubleScoreOutput;
-import wres.datamodel.statistics.DurationScoreOutput;
-import wres.datamodel.statistics.ListOfMetricOutput;
-import wres.datamodel.statistics.MetricOutput;
-import wres.datamodel.statistics.MultiVectorOutput;
-import wres.datamodel.statistics.PairedOutput;
+import wres.datamodel.statistics.BoxPlotStatistic;
+import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.DurationScoreStatistic;
+import wres.datamodel.statistics.ListOfStatistics;
+import wres.datamodel.statistics.Statistic;
+import wres.datamodel.statistics.MultiVectorStatistic;
+import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 
 /**
@@ -117,22 +117,22 @@ public abstract class ChartEngineFactory
     }
 
     /**
-     * Provides the default {@link ChartType} for a given {@link MetricOutputGroup}.
+     * Provides the default {@link ChartType} for a given {@link StatisticGroup}.
      * That chart type can then be used in the other maps to determine the default template file name.
      * Thus, the values from this map must be kept consistent with the template maps.
      * Any chart type selection of {@link ChartType#UNIQUE} indicates that the chart type doesn't matter for that metric
      * group, likely because the chart type is fixed for all metrics in that metric group.
      */
-    private static EnumMap<MetricOutputGroup, ChartType> metricOutputGroupToDefaultChartTypeMap =
-            new EnumMap<>( MetricOutputGroup.class );
+    private static EnumMap<StatisticGroup, ChartType> metricOutputGroupToDefaultChartTypeMap =
+            new EnumMap<>( StatisticGroup.class );
     static
     {
-        metricOutputGroupToDefaultChartTypeMap.put( MetricOutputGroup.BOXPLOT, ChartType.UNIQUE );
-        metricOutputGroupToDefaultChartTypeMap.put( MetricOutputGroup.DOUBLE_SCORE, ChartType.LEAD_THRESHOLD );
-        metricOutputGroupToDefaultChartTypeMap.put( MetricOutputGroup.DURATION_SCORE, ChartType.UNIQUE );
-        metricOutputGroupToDefaultChartTypeMap.put( MetricOutputGroup.MATRIX, ChartType.UNIQUE );
-        metricOutputGroupToDefaultChartTypeMap.put( MetricOutputGroup.MULTIVECTOR, ChartType.LEAD_THRESHOLD );
-        metricOutputGroupToDefaultChartTypeMap.put( MetricOutputGroup.PAIRED, ChartType.UNIQUE );
+        metricOutputGroupToDefaultChartTypeMap.put( StatisticGroup.BOXPLOT, ChartType.UNIQUE );
+        metricOutputGroupToDefaultChartTypeMap.put( StatisticGroup.DOUBLE_SCORE, ChartType.LEAD_THRESHOLD );
+        metricOutputGroupToDefaultChartTypeMap.put( StatisticGroup.DURATION_SCORE, ChartType.UNIQUE );
+        metricOutputGroupToDefaultChartTypeMap.put( StatisticGroup.MATRIX, ChartType.UNIQUE );
+        metricOutputGroupToDefaultChartTypeMap.put( StatisticGroup.MULTIVECTOR, ChartType.LEAD_THRESHOLD );
+        metricOutputGroupToDefaultChartTypeMap.put( StatisticGroup.PAIRED, ChartType.UNIQUE );
     }
 
     /**
@@ -185,8 +185,8 @@ public abstract class ChartEngineFactory
      * @param userSpecifiedOutputType A user specified plot type; null means the user did not provide one.
      * @return The {@link OutputTypeSelection} specifying the output type for the plot.  
      */
-    private static <T extends MetricOutput<?>> ChartType determineChartType( ProjectConfig config,
-                                                                             ListOfMetricOutput<T> input,
+    private static <T extends Statistic<?>> ChartType determineChartType( ProjectConfig config,
+                                                                             ListOfStatistics<T> input,
                                                                              OutputTypeSelection userSpecifiedOutputType )
     {
         //Pooling window case.
@@ -235,17 +235,17 @@ public abstract class ChartEngineFactory
     }
 
     /**
-     * For diagrams only, which use {@link MultiVectorOutput}.
+     * For diagrams only, which use {@link MultiVectorStatistic}.
      * @param inputKeyInstance The key-instance corresponding to the slice to create.
      * @param input The input from which to draw the data.
      * @param usedPlotType The plot type.
      * @return A single input slice for use in drawing the diagram.
      */
-    private static ListOfMetricOutput<MultiVectorOutput> sliceInputForDiagram( Object inputKeyInstance,
-                                                                               final ListOfMetricOutput<MultiVectorOutput> input,
+    private static ListOfStatistics<MultiVectorStatistic> sliceInputForDiagram( Object inputKeyInstance,
+                                                                               final ListOfStatistics<MultiVectorStatistic> input,
                                                                                OutputTypeSelection usedPlotType )
     {
-        ListOfMetricOutput<MultiVectorOutput> inputSlice;
+        ListOfStatistics<MultiVectorStatistic> inputSlice;
         if ( usedPlotType == OutputTypeSelection.LEAD_THRESHOLD )
         {
 
@@ -264,14 +264,14 @@ public abstract class ChartEngineFactory
     }
 
     /**
-     * For diagrams only, which use {@link MultiVectorOutput}.
+     * For diagrams only, which use {@link MultiVectorStatistic}.
      * @param inputKeyInstance The key-instance corresponding to the slice to create.
      * @param inputSlice The input slice from which to draw the data.
      * @param usedPlotType The plot type.
      * @return
      */
     private static WRESArgumentProcessor constructDiagramArguments( Object inputKeyInstance,
-                                                                    ListOfMetricOutput<MultiVectorOutput> inputSlice,
+                                                                    ListOfStatistics<MultiVectorStatistic> inputSlice,
                                                                     ChartType usedPlotType )
     {
         WRESArgumentProcessor args = new WRESArgumentProcessor( inputSlice, usedPlotType );
@@ -308,7 +308,7 @@ public abstract class ChartEngineFactory
     private static WRESChartEngine
             processReliabilityDiagram(
                                        Object inputKeyInstance,
-                                       final ListOfMetricOutput<MultiVectorOutput> input,
+                                       final ListOfStatistics<MultiVectorStatistic> input,
                                        ChartType usedPlotType,
                                        String templateName,
                                        String overrideParametersStr )
@@ -318,7 +318,7 @@ public abstract class ChartEngineFactory
         int[] diagonalDataSourceIndices = null;
         String axisToSquareAgainstDomain = null;
 
-        final ListOfMetricOutput<MultiVectorOutput> inputSlice =
+        final ListOfStatistics<MultiVectorStatistic> inputSlice =
                 sliceInputForDiagram( inputKeyInstance, input, usedPlotType.getBasis() );
         WRESArgumentProcessor arguments = constructDiagramArguments( inputKeyInstance, inputSlice, usedPlotType );
 
@@ -371,7 +371,7 @@ public abstract class ChartEngineFactory
     private static WRESChartEngine
             processROCDiagram(
                                Object inputKeyInstance,
-                               final ListOfMetricOutput<MultiVectorOutput> input,
+                               final ListOfStatistics<MultiVectorStatistic> input,
                                ChartType usedPlotType,
                                String templateName,
                                String overrideParametersStr )
@@ -381,7 +381,7 @@ public abstract class ChartEngineFactory
         int[] diagonalDataSourceIndices = null;
         String axisToSquareAgainstDomain = null;
 
-        final ListOfMetricOutput<MultiVectorOutput> inputSlice =
+        final ListOfStatistics<MultiVectorStatistic> inputSlice =
                 sliceInputForDiagram( inputKeyInstance, input, usedPlotType.getBasis() );
         WRESArgumentProcessor arguments = constructDiagramArguments( inputKeyInstance, inputSlice, usedPlotType );
 
@@ -424,7 +424,7 @@ public abstract class ChartEngineFactory
      */
     private static WRESChartEngine
             processQQDiagram( Object inputKeyInstance,
-                              final ListOfMetricOutput<MultiVectorOutput> input,
+                              final ListOfStatistics<MultiVectorStatistic> input,
                               ChartType usedPlotType,
                               String templateName,
                               String overrideParametersStr )
@@ -434,7 +434,7 @@ public abstract class ChartEngineFactory
         int[] diagonalDataSourceIndices = null;
         String axisToSquareAgainstDomain = null;
 
-        final ListOfMetricOutput<MultiVectorOutput> inputSlice =
+        final ListOfStatistics<MultiVectorStatistic> inputSlice =
                 sliceInputForDiagram( inputKeyInstance, input, usedPlotType.getBasis() );
         WRESArgumentProcessor arguments = constructDiagramArguments( inputKeyInstance, inputSlice, usedPlotType );
 
@@ -479,7 +479,7 @@ public abstract class ChartEngineFactory
      */
     private static WRESChartEngine
             processRankHistogram( Object inputKeyInstance,
-                                  final ListOfMetricOutput<MultiVectorOutput> input,
+                                  final ListOfStatistics<MultiVectorStatistic> input,
                                   ChartType usedPlotType,
                                   String templateName,
                                   String overrideParametersStr )
@@ -489,7 +489,7 @@ public abstract class ChartEngineFactory
         int[] diagonalDataSourceIndices = null;
         String axisToSquareAgainstDomain = null;
 
-        final ListOfMetricOutput<MultiVectorOutput> inputSlice =
+        final ListOfStatistics<MultiVectorStatistic> inputSlice =
                 sliceInputForDiagram( inputKeyInstance, input, usedPlotType.getBasis() );
         WRESArgumentProcessor arguments = constructDiagramArguments( inputKeyInstance, inputSlice, usedPlotType );
 
@@ -530,7 +530,7 @@ public abstract class ChartEngineFactory
      */
     public static ConcurrentMap<Object, ChartEngine>
             buildMultiVectorOutputChartEngine( final ProjectConfig config, 
-                                               final ListOfMetricOutput<MultiVectorOutput> input,
+                                               final ListOfStatistics<MultiVectorStatistic> input,
                                                final OutputTypeSelection userSpecifiedPlotType,
                                                final String userSpecifiedTemplateResourceName,
                                                final String overrideParametersStr )
@@ -542,7 +542,7 @@ public abstract class ChartEngineFactory
         ChartType usedPlotType = determineChartType( config, input, userSpecifiedPlotType );
         
         // Find the metadata for the first element, which is sufficient here
-        MetricOutputMetadata meta = input.getData().get( 0 ).getMetadata();
+        StatisticMetadata meta = input.getData().get( 0 ).getMetadata();
         
         String templateName = determineTemplate( meta.getMetricID(),
                                                  usedPlotType );
@@ -616,7 +616,7 @@ public abstract class ChartEngineFactory
      * @throws WRESVisXMLReadingException when reading template fails.
      */
     private static WRESChartEngine
-            processBoxPlotErrorsDiagram( final BoxPlotOutput input,
+            processBoxPlotErrorsDiagram( final BoxPlotStatistic input,
                                          String templateName,
                                          String overrideParametersStr )
                     throws ChartEngineException, WRESVisXMLReadingException
@@ -661,7 +661,7 @@ public abstract class ChartEngineFactory
      */
     public static ConcurrentMap<Pair<TimeWindow, OneOrTwoThresholds>, ChartEngine>
             buildBoxPlotChartEngine( final ProjectConfig config, 
-                                     final ListOfMetricOutput<BoxPlotOutput> input,
+                                     final ListOfStatistics<BoxPlotStatistic> input,
                                      final String userSpecifiedTemplateResourceName,
                                      final String overrideParametersStr )
                     throws ChartEngineException, WRESVisXMLReadingException
@@ -672,7 +672,7 @@ public abstract class ChartEngineFactory
         ChartType usedPlotType = determineChartType( config, input, null );
         
         // Find the metadata for the first element, which is sufficient here
-        MetricOutputMetadata meta = input.getData().get( 0 ).getMetadata();
+        StatisticMetadata meta = input.getData().get( 0 ).getMetadata();
         
         String templateName = determineTemplate( meta.getMetricID(),
                                                  usedPlotType );
@@ -682,7 +682,7 @@ public abstract class ChartEngineFactory
         }
 
         //For each lead time, do the following....
-        for ( BoxPlotOutput next : input )
+        for ( BoxPlotStatistic next : input )
         {
             if ( meta.getMetricID() == MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE
                  || meta.getMetricID() == MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE )
@@ -725,7 +725,7 @@ public abstract class ChartEngineFactory
      */
     public static ConcurrentMap<MetricConstants, ChartEngine>
             buildScoreOutputChartEngine( final ProjectConfig config, 
-                                         final ListOfMetricOutput<DoubleScoreOutput> input,
+                                         final ListOfStatistics<DoubleScoreStatistic> input,
                                          final OutputTypeSelection userSpecifiedPlotType,
                                          final String userSpecifiedTemplateResourceName,
                                          final String overrideParametersStr )
@@ -733,9 +733,9 @@ public abstract class ChartEngineFactory
     {
         final ConcurrentMap<MetricConstants, ChartEngine> results = new ConcurrentSkipListMap<>();
 
-        final Map<MetricConstants, ListOfMetricOutput<DoubleScoreOutput>> slicedInput =
+        final Map<MetricConstants, ListOfStatistics<DoubleScoreStatistic>> slicedInput =
                 Slicer.filterByMetricComponent( input );
-        for ( final Map.Entry<MetricConstants, ListOfMetricOutput<DoubleScoreOutput>> entry : slicedInput.entrySet() )
+        for ( final Map.Entry<MetricConstants, ListOfStatistics<DoubleScoreStatistic>> entry : slicedInput.entrySet() )
         {
             final ChartEngine engine = buildScoreOutputChartEngineForOneComponent( config,
                                                                                    entry.getValue(),
@@ -765,7 +765,7 @@ public abstract class ChartEngineFactory
      */
     private static ChartEngine
             buildScoreOutputChartEngineForOneComponent( final ProjectConfig config,
-                                                        final ListOfMetricOutput<DoubleScoreOutput> input,
+                                                        final ListOfStatistics<DoubleScoreStatistic> input,
                                                         final OutputTypeSelection userSpecifiedPlotType,
                                                         final String userSpecifiedTemplateResourceName,
                                                         final String overrideParametersStr )
@@ -775,7 +775,7 @@ public abstract class ChartEngineFactory
         ChartType usedPlotType = determineChartType( config, input, userSpecifiedPlotType );
         
         // Find the metadata for the first element, which is sufficient here
-        MetricOutputMetadata meta = input.getData().get( 0 ).getMetadata();
+        StatisticMetadata meta = input.getData().get( 0 ).getMetadata();
         
         String templateName = determineTemplate( meta.getMetricID(),
                                                  usedPlotType );
@@ -834,7 +834,7 @@ public abstract class ChartEngineFactory
 
 
     /**
-     * Only usable with {@link PairedOutput} in which the left is {@link Instant} and the right is {@link Duration}.
+     * Only usable with {@link PairedStatistic} in which the left is {@link Instant} and the right is {@link Duration}.
      * @param config The project configuration.
      * @param input The input from which to build the plot.
      * @param userSpecifiedTemplateResourceName Template resource name, or null to use default.
@@ -845,7 +845,7 @@ public abstract class ChartEngineFactory
      */
     public static ChartEngine
             buildPairedInstantDurationChartEngine( final ProjectConfig config,
-                                                   ListOfMetricOutput<PairedOutput<Instant, Duration>> input,
+                                                   ListOfStatistics<PairedStatistic<Instant, Duration>> input,
                                                    final String userSpecifiedTemplateResourceName,
                                                    final String overrideParametersStr )
                     throws ChartEngineException, WRESVisXMLReadingException
@@ -854,7 +854,7 @@ public abstract class ChartEngineFactory
         ChartType usedPlotType = determineChartType( config, input, null );
         
         // Find the metadata for the first element, which is sufficient here
-        MetricOutputMetadata meta = input.getData().get( 0 ).getMetadata();
+        StatisticMetadata meta = input.getData().get( 0 ).getMetadata();
         
         String templateName = determineTemplate( meta.getMetricID(),
                                                  usedPlotType );
@@ -901,7 +901,7 @@ public abstract class ChartEngineFactory
      */
     public static ChartEngine
             buildCategoricalDurationScoreChartEngine( final ProjectConfig config,
-                                                      ListOfMetricOutput<DurationScoreOutput> input,
+                                                      ListOfStatistics<DurationScoreStatistic> input,
                                                       final String userSpecifiedTemplateResourceName,
                                                       final String overrideParametersStr )
                     throws ChartEngineException, WRESVisXMLReadingException
@@ -910,7 +910,7 @@ public abstract class ChartEngineFactory
         ChartType usedPlotType = determineChartType( config, input, null );
         
         // Find the metadata for the first element, which is sufficient here
-        MetricOutputMetadata meta = input.getData().get( 0 ).getMetadata();
+        StatisticMetadata meta = input.getData().get( 0 ).getMetadata();
         
         String templateName = determineTemplate( meta.getMetricID(),
                                                  usedPlotType );

@@ -28,14 +28,14 @@ import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.MetricOutputMetadata;
+import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.sampledata.pairs.EnsemblePair;
-import wres.datamodel.statistics.BoxPlotOutput;
-import wres.datamodel.statistics.ListOfMetricOutput;
-import wres.datamodel.statistics.MetricOutputAccessException;
-import wres.datamodel.statistics.MetricOutputForProject;
+import wres.datamodel.statistics.BoxPlotStatistic;
+import wres.datamodel.statistics.ListOfStatistics;
+import wres.datamodel.statistics.StatisticAccessException;
+import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
@@ -49,19 +49,19 @@ public class CommaSeparatedBoxPlotWriterTest extends CommaSeparatedWriterTestHel
 {
 
     /**
-     * Tests the writing of {@link BoxPlotOutput} to file.
+     * Tests the writing of {@link BoxPlotStatistic} to file.
      * 
      * @throws ProjectConfigException if the project configuration is incorrect
      * @throws IOException if the output could not be written
      * @throws InterruptedException if the process is interrupted
      * @throws ExecutionException if the execution fails
-     * @throws MetricOutputAccessException if the metric output could not be accessed
+     * @throws StatisticAccessException if the metric output could not be accessed
      */
 
     @Test
     public void writeBoxPlotOutput()
             throws IOException, InterruptedException,
-            ExecutionException, MetricOutputAccessException
+            ExecutionException, StatisticAccessException
     {
 
         // location id
@@ -69,7 +69,7 @@ public class CommaSeparatedBoxPlotWriterTest extends CommaSeparatedWriterTestHel
 
         // Create fake outputs
 
-        MetricOutputForProject.MetricOutputForProjectBuilder outputBuilder =
+        StatisticsForProject.StatisticsForProjectBuilder outputBuilder =
                 DataFactory.ofMetricOutputForProjectByTimeAndThreshold();
 
         TimeWindow timeOne =
@@ -90,8 +90,8 @@ public class CommaSeparatedBoxPlotWriterTest extends CommaSeparatedWriterTestHel
         DatasetIdentifier datasetIdentifier =
                 DatasetIdentifier.of( Location.of( LID ), "SQIN", "HEFS", "ESP" );
 
-        MetricOutputMetadata fakeMetadata =
-                MetricOutputMetadata.of( 1000,
+        StatisticMetadata fakeMetadata =
+                StatisticMetadata.of( 1000,
                                          MeasurementUnit.of(),
                                          MeasurementUnit.of( "CMS" ),
                                          MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
@@ -109,26 +109,26 @@ public class CommaSeparatedBoxPlotWriterTest extends CommaSeparatedWriterTestHel
         fakeOutputs.add( EnsemblePair.of( 5, new double[] { 21, 24, 27, 30, 33 } ) );
 
         // Fake output wrapper.
-        ListOfMetricOutput<BoxPlotOutput> fakeOutputData =
-                ListOfMetricOutput.of( Collections.singletonList( BoxPlotOutput.of( fakeOutputs,
+        ListOfStatistics<BoxPlotStatistic> fakeOutputData =
+                ListOfStatistics.of( Collections.singletonList( BoxPlotStatistic.of( fakeOutputs,
                                                                                     probs,
                                                                                     fakeMetadata,
                                                                                     MetricDimension.OBSERVED_VALUE,
                                                                                     MetricDimension.FORECAST_ERROR ) ) );
         // wrap outputs in future
-        Future<ListOfMetricOutput<BoxPlotOutput>> outputMapByMetricFuture =
+        Future<ListOfStatistics<BoxPlotStatistic>> outputMapByMetricFuture =
                 CompletableFuture.completedFuture( fakeOutputData );
 
-        outputBuilder.addBoxPlotOutput( outputMapByMetricFuture );
+        outputBuilder.addBoxPlotStatistics( outputMapByMetricFuture );
 
-        MetricOutputForProject output = outputBuilder.build();
+        StatisticsForProject output = outputBuilder.build();
 
         // Construct a fake configuration file.
         Feature feature = getMockedFeature( LID );
         ProjectConfig projectConfig = getMockedProjectConfig( feature );
 
         // Begin the actual test now that we have constructed dependencies.
-        CommaSeparatedBoxPlotWriter.of( projectConfig ).accept( output.getBoxPlotOutput() );
+        CommaSeparatedBoxPlotWriter.of( projectConfig ).accept( output.getBoxPlotStatistics() );
 
         // Read the file, verify it has what we wanted:
         Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ),

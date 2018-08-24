@@ -15,11 +15,11 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.MissingValues;
 import wres.datamodel.Slicer;
-import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.sampledata.MetricInputException;
+import wres.datamodel.metadata.StatisticMetadata;
+import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.EnsemblePair;
 import wres.datamodel.sampledata.pairs.EnsemblePairs;
-import wres.datamodel.statistics.MultiVectorOutput;
+import wres.datamodel.statistics.MultiVectorStatistic;
 import wres.engine.statistics.metric.Diagram;
 
 /**
@@ -35,7 +35,7 @@ import wres.engine.statistics.metric.Diagram;
  * @author james.brown@hydrosolved.com
  */
 
-public class RankHistogram extends Diagram<EnsemblePairs, MultiVectorOutput>
+public class RankHistogram extends Diagram<EnsemblePairs, MultiVectorStatistic>
 {
 
     /**
@@ -68,11 +68,11 @@ public class RankHistogram extends Diagram<EnsemblePairs, MultiVectorOutput>
     }
 
     @Override
-    public MultiVectorOutput apply( EnsemblePairs s )
+    public MultiVectorStatistic apply( EnsemblePairs s )
     {
         if ( Objects.isNull( s ) )
         {
-            throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
+            throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
         }
 
         double[] ranks = new double[] { MissingValues.MISSING_DOUBLE };
@@ -108,14 +108,14 @@ public class RankHistogram extends Diagram<EnsemblePairs, MultiVectorOutput>
         Map<MetricDimension, double[]> output = new EnumMap<>( MetricDimension.class );
         output.put( MetricDimension.RANK_ORDER, ranks );
         output.put( MetricDimension.OBSERVED_RELATIVE_FREQUENCY, relativeFrequencies );
-        final MetricOutputMetadata metOut =
-                MetricOutputMetadata.of( s.getMetadata(),
+        final StatisticMetadata metOut =
+                StatisticMetadata.of( s.getMetadata(),
                                     this.getID(),
                                     MetricConstants.MAIN,
                                     this.hasRealUnits(),
                                     s.getRawData().size(),
                                     null );
-        return MultiVectorOutput.ofMultiVectorOutput( output, metOut );
+        return MultiVectorStatistic.ofMultiVectorOutput( output, metOut );
     }
 
     @Override

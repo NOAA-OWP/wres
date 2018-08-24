@@ -28,13 +28,13 @@ import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.MetricOutputMetadata;
+import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.statistics.ListOfMetricOutput;
-import wres.datamodel.statistics.MetricOutputAccessException;
-import wres.datamodel.statistics.MetricOutputForProject;
-import wres.datamodel.statistics.MultiVectorOutput;
+import wres.datamodel.statistics.ListOfStatistics;
+import wres.datamodel.statistics.StatisticAccessException;
+import wres.datamodel.statistics.StatisticsForProject;
+import wres.datamodel.statistics.MultiVectorStatistic;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
@@ -48,26 +48,26 @@ public class CommaSeparatedDiagramOutputTest extends CommaSeparatedWriterTestHel
 {
 
     /**
-     * Tests the writing of {@link MultiVectorOutput} to file.
+     * Tests the writing of {@link MultiVectorStatistic} to file.
      * 
      * @throws ProjectConfigException if the project configuration is incorrect
      * @throws IOException if the output could not be written
      * @throws InterruptedException if the process is interrupted
      * @throws ExecutionException if the execution fails
-     * @throws MetricOutputAccessException if the metric output could not be accessed
+     * @throws StatisticAccessException if the metric output could not be accessed
      */
 
     @Test
     public void writeDiagramOutput()
             throws IOException, InterruptedException,
-            ExecutionException, MetricOutputAccessException
+            ExecutionException, StatisticAccessException
     {
 
         // location id
         final String LID = "CREC1";
 
         // Create fake outputs
-        MetricOutputForProject.MetricOutputForProjectBuilder outputBuilder =
+        StatisticsForProject.StatisticsForProjectBuilder outputBuilder =
                 DataFactory.ofMetricOutputForProjectByTimeAndThreshold();
 
         TimeWindow timeOne =
@@ -89,8 +89,8 @@ public class CommaSeparatedDiagramOutputTest extends CommaSeparatedWriterTestHel
         DatasetIdentifier datasetIdentifier =
                 DatasetIdentifier.of( Location.of( LID ), "SQIN", "HEFS", "ESP" );
 
-        MetricOutputMetadata fakeMetadata =
-                MetricOutputMetadata.of( 1000,
+        StatisticMetadata fakeMetadata =
+                StatisticMetadata.of( 1000,
                                          MeasurementUnit.of(),
                                          MeasurementUnit.of( "CMS" ),
                                          MetricConstants.RELIABILITY_DIAGRAM,
@@ -108,24 +108,24 @@ public class CommaSeparatedDiagramOutputTest extends CommaSeparatedWriterTestHel
         fakeOutputs.put( MetricDimension.SAMPLE_SIZE, new double[] { 5926, 371, 540, 650, 1501 } );
 
         // Fake output wrapper.
-        ListOfMetricOutput<MultiVectorOutput> fakeOutputData =
-                ListOfMetricOutput.of( Collections.singletonList( MultiVectorOutput.ofMultiVectorOutput( fakeOutputs,
+        ListOfStatistics<MultiVectorStatistic> fakeOutputData =
+                ListOfStatistics.of( Collections.singletonList( MultiVectorStatistic.ofMultiVectorOutput( fakeOutputs,
                                                                                                          fakeMetadata ) ) );
 
         // wrap outputs in future
-        Future<ListOfMetricOutput<MultiVectorOutput>> outputMapByMetricFuture =
+        Future<ListOfStatistics<MultiVectorStatistic>> outputMapByMetricFuture =
                 CompletableFuture.completedFuture( fakeOutputData );
 
-        outputBuilder.addMultiVectorOutput( outputMapByMetricFuture );
+        outputBuilder.addMultiVectorStatistics( outputMapByMetricFuture );
 
-        MetricOutputForProject output = outputBuilder.build();
+        StatisticsForProject output = outputBuilder.build();
 
         // Construct a fake configuration file.
         Feature feature = getMockedFeature( LID );
         ProjectConfig projectConfig = getMockedProjectConfig( feature );
 
         // Begin the actual test now that we have constructed dependencies.
-        CommaSeparatedDiagramWriter.of( projectConfig ).accept( output.getMultiVectorOutput() );
+        CommaSeparatedDiagramWriter.of( projectConfig ).accept( output.getMultiVectorStatistics() );
 
         // read the file, verify it has what we wanted:
         Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ),

@@ -21,14 +21,14 @@ import wres.config.generated.DestinationConfig;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
-import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.statistics.ListOfMetricOutput;
-import wres.datamodel.statistics.PairedOutput;
+import wres.datamodel.metadata.StatisticMetadata;
+import wres.datamodel.statistics.ListOfStatistics;
+import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.io.config.ConfigHelper;
 
 /**
- * Helps write paired output comprising {@link PairedOutput} to a file of Comma Separated Values (CSV).
+ * Helps write paired output comprising {@link PairedStatistic} to a file of Comma Separated Values (CSV).
  * 
  * @param <S> the left side of the paired output type
  * @param <T> the right side if the paired output type
@@ -36,7 +36,7 @@ import wres.io.config.ConfigHelper;
  */
 
 public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedWriter
-        implements Consumer<ListOfMetricOutput<PairedOutput<S, T>>>
+        implements Consumer<ListOfStatistics<PairedStatistic<S, T>>>
 {
 
     /**
@@ -64,7 +64,7 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedWriter
      */
 
     @Override
-    public void accept( final ListOfMetricOutput<PairedOutput<S, T>> output )
+    public void accept( final ListOfStatistics<PairedStatistic<S, T>> output )
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing box plot outputs." );
 
@@ -105,7 +105,7 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedWriter
      */
 
     private static <S, T> Set<Path> writeOnePairedOutputType( DestinationConfig destinationConfig,
-                                                              ListOfMetricOutput<PairedOutput<S, T>> output,
+                                                              ListOfStatistics<PairedStatistic<S, T>> output,
                                                               Format formatter )
             throws IOException
     {
@@ -118,7 +118,7 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedWriter
             StringJoiner headerRow = new StringJoiner( "," );
             headerRow.merge( HEADER_DEFAULT );
             
-            ListOfMetricOutput<PairedOutput<S, T>> nextOutput = Slicer.filter( output, m );
+            ListOfStatistics<PairedStatistic<S, T>> nextOutput = Slicer.filter( output, m );
             
             List<RowCompareByLeft> rows =
                     CommaSeparatedPairedWriter.getRowsForOnePairedOutput( m,
@@ -130,7 +130,7 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedWriter
             rows.add( RowCompareByLeft.of( HEADER_INDEX, headerRow ) );
 
             // Write the output
-            MetricOutputMetadata meta = nextOutput.getData().get( 0 ).getMetadata();
+            StatisticMetadata meta = nextOutput.getData().get( 0 ).getMetadata();
             
             Path outputPath = ConfigHelper.getOutputPathToWrite( destinationConfig, meta );
 
@@ -160,7 +160,7 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedWriter
 
     private static <S, T> List<RowCompareByLeft>
             getRowsForOnePairedOutput( MetricConstants metricName,
-                                       ListOfMetricOutput<PairedOutput<S, T>> output,
+                                       ListOfStatistics<PairedStatistic<S, T>> output,
                                        StringJoiner headerRow,
                                        Format formatter )
     {
@@ -180,10 +180,10 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedWriter
             headerRow.add( outerName + "DURATION" + HEADER_DELIMITER + t );
             
             // Slice by threshold
-            ListOfMetricOutput<PairedOutput<S, T>> sliced = Slicer.filter( output,
+            ListOfStatistics<PairedStatistic<S, T>> sliced = Slicer.filter( output,
                                                                            data -> data.getThresholds().equals( t ) );            
             // Loop across the outputs
-            for ( PairedOutput<S, T> next : sliced )
+            for ( PairedStatistic<S, T> next : sliced )
             {
                 // Loop across the pairs
                 for ( Pair<S, T> nextPair : next )

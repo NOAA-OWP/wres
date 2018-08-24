@@ -16,20 +16,20 @@ import wres.config.ProjectConfigPlus;
 import wres.config.generated.DestinationConfig;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
-import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.statistics.ListOfMetricOutput;
-import wres.datamodel.statistics.PairedOutput;
+import wres.datamodel.metadata.StatisticMetadata;
+import wres.datamodel.statistics.ListOfStatistics;
+import wres.datamodel.statistics.PairedStatistic;
 import wres.io.config.ConfigHelper;
 import wres.vis.ChartEngineFactory;
 
 /**
- * Helps write charts comprising {@link PairedOutput} to a file in Portable Network Graphics (PNG) format.
+ * Helps write charts comprising {@link PairedStatistic} to a file in Portable Network Graphics (PNG) format.
  * 
  * @author james.brown@hydrosolved.com
  */
 
 public class PNGPairedWriter extends PNGWriter
-        implements Consumer<ListOfMetricOutput<PairedOutput<Instant, Duration>>>
+        implements Consumer<ListOfStatistics<PairedStatistic<Instant, Duration>>>
 {
 
     /**
@@ -55,7 +55,7 @@ public class PNGPairedWriter extends PNGWriter
      */
 
     @Override
-    public void accept( final ListOfMetricOutput<PairedOutput<Instant, Duration>> output )
+    public void accept( final ListOfStatistics<PairedStatistic<Instant, Duration>> output )
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing diagram outputs." );
 
@@ -80,8 +80,8 @@ public class PNGPairedWriter extends PNGWriter
     }
 
     /**
-     * Writes a set of charts associated with {@link PairedOutput} for a single metric and time window,
-     * stored in a {@link ListOfMetricOutput}.
+     * Writes a set of charts associated with {@link PairedStatistic} for a single metric and time window,
+     * stored in a {@link ListOfStatistics}.
      *
      * @param projectConfigPlus the project configuration
      * @param destinationConfig the destination configuration for the written output
@@ -91,12 +91,12 @@ public class PNGPairedWriter extends PNGWriter
 
     private static void writePairedOutputByInstantDurationCharts( ProjectConfigPlus projectConfigPlus,
                                                                   DestinationConfig destinationConfig,
-                                                                  ListOfMetricOutput<PairedOutput<Instant, Duration>> output )
+                                                                  ListOfStatistics<PairedStatistic<Instant, Duration>> output )
     {
         // Build charts
         try
         {
-            MetricOutputMetadata meta = output.getData().get( 0 ).getMetadata();
+            StatisticMetadata meta = output.getData().get( 0 ).getMetadata();
 
             GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, destinationConfig, meta.getMetricID() );
 

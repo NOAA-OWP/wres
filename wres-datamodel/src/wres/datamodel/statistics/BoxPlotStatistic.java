@@ -8,17 +8,17 @@ import java.util.StringJoiner;
 
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.metadata.MetricOutputMetadata;
+import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.sampledata.pairs.EnsemblePair;
 
 /**
- * Immutable store of outputs associated with a box plot. Contains a {@link EnsemblePair} where the 
+ * Immutable store of box plot statistics. Contains a {@link EnsemblePair} where the 
  * left side is a single value and the right side comprises the "whiskers" (quantiles) associated with a single box.
  * 
  * @author james.brown@hydrosolved.com
  */
-public class BoxPlotOutput
-        implements MetricOutput<List<EnsemblePair>>, Iterable<EnsemblePair>
+public class BoxPlotStatistic
+        implements Statistic<List<EnsemblePair>>, Iterable<EnsemblePair>
 {
 
     /**
@@ -31,7 +31,7 @@ public class BoxPlotOutput
      * The metadata associated with the output.
      */
 
-    private final MetricOutputMetadata meta;
+    private final StatisticMetadata meta;
 
     /**
      * The dimension associated with the domain axis.
@@ -59,21 +59,21 @@ public class BoxPlotOutput
      * @param meta the box plot metadata
      * @param domainAxisDimension the domain axis dimension
      * @param rangeAxisDimension the range axis dimension
-     * @throws MetricOutputException if any of the inputs are invalid
+     * @throws StatisticException if any of the inputs are invalid
      * @return an instance of the output
      */
 
-    public static BoxPlotOutput of( List<EnsemblePair> output,
+    public static BoxPlotStatistic of( List<EnsemblePair> output,
                                     VectorOfDoubles probabilities,
-                                    MetricOutputMetadata meta,
+                                    StatisticMetadata meta,
                                     MetricDimension domainAxisDimension,
                                     MetricDimension rangeAxisDimension )
     {
-        return new BoxPlotOutput( output, probabilities, meta, domainAxisDimension, rangeAxisDimension );
+        return new BoxPlotStatistic( output, probabilities, meta, domainAxisDimension, rangeAxisDimension );
     }
 
     @Override
-    public MetricOutputMetadata getMetadata()
+    public StatisticMetadata getMetadata()
     {
         return meta;
     }
@@ -129,11 +129,11 @@ public class BoxPlotOutput
     @Override
     public boolean equals( Object o )
     {
-        if ( ! ( o instanceof BoxPlotOutput ) )
+        if ( ! ( o instanceof BoxPlotStatistic ) )
         {
             return false;
         }
-        final BoxPlotOutput v = (BoxPlotOutput) o;
+        final BoxPlotStatistic v = (BoxPlotStatistic) o;
         //Check probabilities
         if ( !getProbabilities().equals( v.getProbabilities() ) )
         {
@@ -192,43 +192,43 @@ public class BoxPlotOutput
      * @param meta the box plot metadata
      * @param domainAxisDimension the domain axis dimension
      * @param rangeAxisDimension the range axis dimension
-     * @throws MetricOutputException if any of the inputs are invalid
+     * @throws StatisticException if any of the inputs are invalid
      */
 
-    private BoxPlotOutput( List<EnsemblePair> output,
+    private BoxPlotStatistic( List<EnsemblePair> output,
                            VectorOfDoubles probabilities,
-                           MetricOutputMetadata meta,
+                           StatisticMetadata meta,
                            MetricDimension domainAxisDimension,
                            MetricDimension rangeAxisDimension )
     {
         //Validate
         if ( Objects.isNull( output ) )
         {
-            throw new MetricOutputException( "Specify a non-null output." );
+            throw new StatisticException( "Specify a non-null output." );
         }
         if ( Objects.isNull( meta ) )
         {
-            throw new MetricOutputException( "Specify non-null metadata." );
+            throw new StatisticException( "Specify non-null metadata." );
         }
         if ( Objects.isNull( domainAxisDimension ) )
         {
-            throw new MetricOutputException( "Specify a non-null domain axis dimension." );
+            throw new StatisticException( "Specify a non-null domain axis dimension." );
         }
         if ( Objects.isNull( rangeAxisDimension ) )
         {
-            throw new MetricOutputException( "Specify a non-null range axis dimension." );
+            throw new StatisticException( "Specify a non-null range axis dimension." );
         }
         if ( Objects.isNull( probabilities ) )
         {
-            throw new MetricOutputException( "Specify non-null probabilities." );
+            throw new StatisticException( "Specify non-null probabilities." );
         }
         if ( probabilities.size() < 2 )
         {
-            throw new MetricOutputException( "Specify two or more probabilities for the whiskers." );
+            throw new StatisticException( "Specify two or more probabilities for the whiskers." );
         }
         if ( !output.isEmpty() && probabilities.size() != output.get( 0 ).getRight().length )
         {
-            throw new MetricOutputException( "The number of probabilities does not match the number of whiskers "
+            throw new StatisticException( "The number of probabilities does not match the number of whiskers "
                                              + "associated with each box." );
         }
 
@@ -259,11 +259,11 @@ public class BoxPlotOutput
             {
                 if ( next.getRight().length == 0 )
                 {
-                    throw new MetricOutputException( "One or more boxes are missing whiskers." );
+                    throw new StatisticException( "One or more boxes are missing whiskers." );
                 }
                 if ( next.getRight().length != check )
                 {
-                    throw new MetricOutputException( "One or more boxes has a different number of whiskers than "
+                    throw new StatisticException( "One or more boxes has a different number of whiskers than "
                                                      + "input probabilities." );
                 }
             }
@@ -282,7 +282,7 @@ public class BoxPlotOutput
         {
             if ( next < 0.0 || next > 1.0 )
             {
-                throw new MetricOutputException( "One or more of the probabilities is invalid." );
+                throw new StatisticException( "One or more of the probabilities is invalid." );
             }
         }
     }

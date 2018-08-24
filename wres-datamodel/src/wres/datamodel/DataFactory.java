@@ -25,13 +25,13 @@ import wres.config.generated.ThresholdType;
 import wres.config.generated.ThresholdsConfig;
 import wres.config.generated.TimeSeriesMetricConfig;
 import wres.config.generated.TimeSeriesMetricConfigName;
-import wres.datamodel.MetricConstants.MetricInputGroup;
-import wres.datamodel.MetricConstants.MetricOutputGroup;
-import wres.datamodel.metadata.MetricOutputMetadata;
+import wres.datamodel.MetricConstants.SampleDataGroup;
+import wres.datamodel.MetricConstants.StatisticGroup;
+import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.statistics.MetricOutputForProject;
-import wres.datamodel.statistics.PairedOutput;
-import wres.datamodel.statistics.MetricOutputForProject.MetricOutputForProjectBuilder;
+import wres.datamodel.statistics.StatisticsForProject;
+import wres.datamodel.statistics.PairedStatistic;
+import wres.datamodel.statistics.StatisticsForProject.StatisticsForProjectBuilder;
 import wres.datamodel.thresholds.ThresholdConstants;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 
@@ -119,10 +119,10 @@ public final class DataFactory
             if ( next.getName() == TimeSeriesMetricConfigName.ALL_VALID )
             {
                 Set<MetricConstants> allValid = null;
-                MetricInputGroup inGroup = DataFactory.getMetricInputGroup( projectConfig.getInputs().getRight() );
+                SampleDataGroup inGroup = DataFactory.getMetricInputGroup( projectConfig.getInputs().getRight() );
 
                 // Single-valued input source
-                if ( inGroup == MetricInputGroup.SINGLE_VALUED )
+                if ( inGroup == SampleDataGroup.SINGLE_VALUED )
                 {
                     allValid = DataFactory.getAllValidMetricsForSingleValuedTimeSeriesInput( projectConfig,
                                                                                              metricsConfig );
@@ -175,16 +175,16 @@ public final class DataFactory
             if ( next.getName() == MetricConfigName.ALL_VALID )
             {
                 Set<MetricConstants> allValid = null;
-                MetricInputGroup inGroup = DataFactory.getMetricInputGroup( projectConfig.getInputs().getRight() );
+                SampleDataGroup inGroup = DataFactory.getMetricInputGroup( projectConfig.getInputs().getRight() );
 
                 // Single-valued metrics
-                if ( inGroup == MetricInputGroup.SINGLE_VALUED )
+                if ( inGroup == SampleDataGroup.SINGLE_VALUED )
                 {
                     allValid =
                             DataFactory.getAllValidMetricsForSingleValuedInput( projectConfig, metricsConfig );
                 }
                 // Ensemble metrics
-                else if ( inGroup == MetricInputGroup.ENSEMBLE )
+                else if ( inGroup == SampleDataGroup.ENSEMBLE )
                 {
                     allValid = DataFactory.getAllValidMetricsForEnsembleInput( projectConfig, metricsConfig );
                 }
@@ -340,7 +340,7 @@ public final class DataFactory
      * @throws NullPointerException if the input is null or the {@link DataSourceConfig#getType()} returns null 
      */
 
-    public static MetricInputGroup getMetricInputGroup( DataSourceConfig dataSourceConfig )
+    public static SampleDataGroup getMetricInputGroup( DataSourceConfig dataSourceConfig )
     {
         Objects.requireNonNull( dataSourceConfig, NULL_CONFIGURATION_ERROR );
 
@@ -349,10 +349,10 @@ public final class DataFactory
         switch ( dataSourceConfig.getType() )
         {
             case ENSEMBLE_FORECASTS:
-                return MetricInputGroup.ENSEMBLE;
+                return SampleDataGroup.ENSEMBLE;
             case SINGLE_VALUED_FORECASTS:
             case SIMULATIONS:
-                return MetricInputGroup.SINGLE_VALUED;
+                return SampleDataGroup.SINGLE_VALUED;
             default:
                 throw new MetricConfigException( dataSourceConfig,
                                                  "Unable to interpret the input type '" + dataSourceConfig.getType()
@@ -361,23 +361,23 @@ public final class DataFactory
     }
 
     /**
-     * Forms the union of the {@link PairedOutput}, returning a {@link PairedOutput} that contains all of the pairs in 
+     * Forms the union of the {@link PairedStatistic}, returning a {@link PairedStatistic} that contains all of the pairs in 
      * the inputs.
      * 
      * @param <S> the left side of the paired output
      * @param <T> the right side of the paired output
      * @param collection the list of inputs
-     * @return a combined {@link PairedOutput}
+     * @return a combined {@link PairedStatistic}
      * @throws NullPointerException if the input is null
      */
 
-    public static <S, T> PairedOutput<S, T> unionOf( Collection<PairedOutput<S, T>> collection )
+    public static <S, T> PairedStatistic<S, T> unionOf( Collection<PairedStatistic<S, T>> collection )
     {
         Objects.requireNonNull( collection );
         List<Pair<S, T>> combined = new ArrayList<>();
         List<TimeWindow> combinedWindows = new ArrayList<>();
-        MetricOutputMetadata sourceMeta = null;
-        for ( PairedOutput<S, T> next : collection )
+        StatisticMetadata sourceMeta = null;
+        for ( PairedStatistic<S, T> next : collection )
         {
             combined.addAll( next.getData() );
             if ( Objects.isNull( sourceMeta ) )
@@ -392,11 +392,11 @@ public final class DataFactory
             unionWindow = TimeWindow.unionOf( combinedWindows );
         }
 
-        MetricOutputMetadata combinedMeta =
-                MetricOutputMetadata.of( MetricOutputMetadata.of( sourceMeta, combined.size() ),
+        StatisticMetadata combinedMeta =
+                StatisticMetadata.of( StatisticMetadata.of( sourceMeta, combined.size() ),
                                          unionWindow,
                                          sourceMeta.getThresholds() );
-        return PairedOutput.of( combined, combinedMeta );
+        return PairedStatistic.of( combined, combinedMeta );
     }
 
     /**
@@ -435,15 +435,15 @@ public final class DataFactory
     }
 
     /**
-     * Returns a builder for a {@link MetricOutputForProject}.
+     * Returns a builder for a {@link StatisticsForProject}.
      * 
-     * @return a {@link MetricOutputForProjectBuilder} for a map of metric outputs by time window and
+     * @return a {@link StatisticsForProjectBuilder} for a map of metric outputs by time window and
      *         threshold
      */
 
-    public static MetricOutputForProjectBuilder ofMetricOutputForProjectByTimeAndThreshold()
+    public static StatisticsForProjectBuilder ofMetricOutputForProjectByTimeAndThreshold()
     {
-        return new MetricOutputForProject.MetricOutputForProjectBuilder();
+        return new StatisticsForProject.StatisticsForProjectBuilder();
     }
 
     /**
@@ -503,11 +503,11 @@ public final class DataFactory
     }
 
     /**
-     * Returns valid metrics for {@link MetricInputGroup#ENSEMBLE}
+     * Returns valid metrics for {@link SampleDataGroup#ENSEMBLE}
      * 
      * @param projectConfig the project configuration
      * @param metricsConfig the metrics configuration
-     * @return the valid metrics for {@link MetricInputGroup#ENSEMBLE}
+     * @return the valid metrics for {@link SampleDataGroup#ENSEMBLE}
      * @throws NullPointerException if the input is null
      */
 
@@ -520,19 +520,19 @@ public final class DataFactory
 
         if ( !metricsConfig.getMetric().isEmpty() )
         {
-            returnMe.addAll( MetricInputGroup.ENSEMBLE.getMetrics() );
-            returnMe.addAll( MetricInputGroup.SINGLE_VALUED.getMetrics() );
+            returnMe.addAll( SampleDataGroup.ENSEMBLE.getMetrics() );
+            returnMe.addAll( SampleDataGroup.SINGLE_VALUED.getMetrics() );
 
             if ( DataFactory.hasThresholds( metricsConfig, ThresholdType.PROBABILITY )
                  || DataFactory.hasThresholds( metricsConfig, ThresholdType.VALUE ) )
             {
-                returnMe.addAll( MetricInputGroup.DISCRETE_PROBABILITY.getMetrics() );
+                returnMe.addAll( SampleDataGroup.DISCRETE_PROBABILITY.getMetrics() );
             }
 
             // Allow dichotomous metrics when probability classifiers are defined
             if ( DataFactory.hasThresholds( metricsConfig, ThresholdType.PROBABILITY_CLASSIFIER ) )
             {
-                returnMe.addAll( MetricInputGroup.DICHOTOMOUS.getMetrics() );
+                returnMe.addAll( SampleDataGroup.DICHOTOMOUS.getMetrics() );
             }
         }
 
@@ -540,12 +540,12 @@ public final class DataFactory
     }
 
     /**
-     * Returns valid ordinary metrics for {@link MetricInputGroup#SINGLE_VALUED}. Also see:
+     * Returns valid ordinary metrics for {@link SampleDataGroup#SINGLE_VALUED}. Also see:
      * {@link #getValidMetricsForSingleValuedInput(ProjectConfig, MetricsConfig)}
      * 
      * @param projectConfig the project configuration
      * @param metricsConfig the metrics configuration
-     * @return the valid metrics for {@link MetricInputGroup#SINGLE_VALUED}
+     * @return the valid metrics for {@link SampleDataGroup#SINGLE_VALUED}
      * @throws NullPointerException if the input is null
      */
 
@@ -558,12 +558,12 @@ public final class DataFactory
 
         if ( !metricsConfig.getMetric().isEmpty() )
         {
-            returnMe.addAll( MetricInputGroup.SINGLE_VALUED.getMetrics() );
+            returnMe.addAll( SampleDataGroup.SINGLE_VALUED.getMetrics() );
 
             if ( DataFactory.hasThresholds( metricsConfig, ThresholdType.PROBABILITY )
                  || DataFactory.hasThresholds( metricsConfig, ThresholdType.VALUE ) )
             {
-                returnMe.addAll( MetricInputGroup.DICHOTOMOUS.getMetrics() );
+                returnMe.addAll( SampleDataGroup.DICHOTOMOUS.getMetrics() );
             }
         }
 
@@ -571,11 +571,11 @@ public final class DataFactory
     }
 
     /**
-     * Returns valid metrics for {@link MetricInputGroup#SINGLE_VALUED_TIME_SERIES}
+     * Returns valid metrics for {@link SampleDataGroup#SINGLE_VALUED_TIME_SERIES}
      * 
      * @param projectConfig the project configuration
      * @param metricsConfig the metrics configuration
-     * @return the valid metrics for {@link MetricInputGroup#SINGLE_VALUED_TIME_SERIES}
+     * @return the valid metrics for {@link SampleDataGroup#SINGLE_VALUED_TIME_SERIES}
      * @throws NullPointerException if the input is null
      */
 
@@ -589,7 +589,7 @@ public final class DataFactory
         //Add time-series metrics if required
         if ( !metricsConfig.getTimeSeriesMetric().isEmpty() )
         {
-            returnMe.addAll( MetricInputGroup.SINGLE_VALUED_TIME_SERIES.getMetrics() );
+            returnMe.addAll( SampleDataGroup.SINGLE_VALUED_TIME_SERIES.getMetrics() );
         }
 
         return removeMetricsDisallowedByOtherConfig( projectConfig, returnMe );
@@ -618,8 +618,8 @@ public final class DataFactory
         PoolingWindowConfig windows = projectConfig.getPair().getIssuedDatesPoolingWindow();
         if ( Objects.nonNull( windows ) )
         {
-            returnMe.removeIf( a -> ! ( a.isInGroup( MetricOutputGroup.DOUBLE_SCORE )
-                                        || a.isInGroup( MetricOutputGroup.DURATION_SCORE ) ) );
+            returnMe.removeIf( a -> ! ( a.isInGroup( StatisticGroup.DOUBLE_SCORE )
+                                        || a.isInGroup( StatisticGroup.DURATION_SCORE ) ) );
         }
 
         //Remove CRPSS if no baseline is available

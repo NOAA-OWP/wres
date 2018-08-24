@@ -10,9 +10,9 @@ import java.util.StringJoiner;
 
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.metadata.Metadata;
-import wres.datamodel.sampledata.MetricInput;
-import wres.datamodel.sampledata.MetricInputBuilder;
-import wres.datamodel.sampledata.MetricInputException;
+import wres.datamodel.sampledata.SampleData;
+import wres.datamodel.sampledata.SampleDataBuilder;
+import wres.datamodel.sampledata.SampleDataException;
 
 /**
  * An abstract base class for storing zero or more paired values. 
@@ -27,7 +27,7 @@ import wres.datamodel.sampledata.MetricInputException;
  * @param <T> the paired type
  * @author james.brown@hydrosolved.com
  */
-public abstract class BasicPairs<T> implements MetricInput<T>
+public abstract class BasicPairs<T> implements SampleData<T>
 {
 
     /**
@@ -122,7 +122,7 @@ public abstract class BasicPairs<T> implements MetricInput<T>
      * A builder to build the metric input.
      */
 
-    public abstract static class BasicPairsBuilder<T> implements MetricInputBuilder<T>
+    public abstract static class BasicPairsBuilder<T> implements SampleDataBuilder<T>
     {
 
         /**
@@ -222,7 +222,7 @@ public abstract class BasicPairs<T> implements MetricInput<T>
      * Construct the pairs with a builder.
      * 
      * @param b the builder
-     * @throws MetricInputException if the pairs are invalid
+     * @throws SampleDataException if the pairs are invalid
      */
 
     BasicPairs( final BasicPairsBuilder<T> b )
@@ -254,7 +254,7 @@ public abstract class BasicPairs<T> implements MetricInput<T>
     /**
      * Validates the main pairs and associated metadata after the constructor has copied it.
      * 
-     * @throws MetricInputException if the input is invalid
+     * @throws SampleDataException if the input is invalid
      */
 
     private void validateMainInput()
@@ -262,17 +262,17 @@ public abstract class BasicPairs<T> implements MetricInput<T>
 
         if ( Objects.isNull( mainMeta ) )
         {
-            throw new MetricInputException( "Specify non-null metadata for the metric input." );
+            throw new SampleDataException( "Specify non-null metadata for the metric input." );
         }
 
         if ( Objects.isNull( mainInput ) )
         {
-            throw new MetricInputException( "Specify a non-null dataset for the metric input." );
+            throw new SampleDataException( "Specify a non-null dataset for the metric input." );
         }
 
         if ( mainInput.contains( null ) )
         {
-            throw new MetricInputException( "One or more of the pairs is null." );
+            throw new SampleDataException( "One or more of the pairs is null." );
         }
 
     }
@@ -280,20 +280,20 @@ public abstract class BasicPairs<T> implements MetricInput<T>
     /**
      * Validates the baseline pairs and associated metadata after the constructor has copied it.
      * 
-     * @throws MetricInputException if the baseline input is invalid
+     * @throws SampleDataException if the baseline input is invalid
      */
 
     private void validateBaselineInput()
     {
         if ( Objects.isNull( baselineInput ) != Objects.isNull( baselineMeta ) )
         {
-            throw new MetricInputException( "Specify a non-null baseline input and associated metadata or leave both "
+            throw new SampleDataException( "Specify a non-null baseline input and associated metadata or leave both "
                                             + "null." );
         }
 
         if ( Objects.nonNull( baselineInput ) && baselineInput.contains( null ) )
         {
-            throw new MetricInputException( "One or more of the baseline pairs is null." );
+            throw new SampleDataException( "One or more of the baseline pairs is null." );
         }
 
     }
@@ -301,7 +301,7 @@ public abstract class BasicPairs<T> implements MetricInput<T>
     /**
      * Validates the climatological input after the constructor has copied it.
      * 
-     * @throws MetricInputException if the climatological input is invalid
+     * @throws SampleDataException if the climatological input is invalid
      */
 
     private void validateClimatologicalInput()
@@ -310,13 +310,13 @@ public abstract class BasicPairs<T> implements MetricInput<T>
         {
             if ( climatology.size() == 0 )
             {
-                throw new MetricInputException( "Cannot build the paired data with an empty climatology: add one or "
+                throw new SampleDataException( "Cannot build the paired data with an empty climatology: add one or "
                                                 + "more values." );
             }
 
             if ( !Arrays.stream( climatology.getDoubles() ).anyMatch( Double::isFinite ) )
             {
-                throw new MetricInputException( "Must have at least one non-missing value in the climatological "
+                throw new SampleDataException( "Must have at least one non-missing value in the climatological "
                                                 + "input" );
             }
         }

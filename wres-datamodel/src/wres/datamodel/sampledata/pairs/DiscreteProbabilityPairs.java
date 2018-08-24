@@ -4,8 +4,8 @@ import java.util.List;
 
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.metadata.Metadata;
-import wres.datamodel.sampledata.MetricInput;
-import wres.datamodel.sampledata.MetricInputException;
+import wres.datamodel.sampledata.SampleData;
+import wres.datamodel.sampledata.SampleDataException;
 
 /**
  * Immutable store of verification pairs for two probabilistic variables that are defined for a common, discrete, 
@@ -22,7 +22,7 @@ public class DiscreteProbabilityPairs extends BasicPairs<DiscreteProbabilityPair
      * 
      * @param pairs the discrete probability pairs
      * @param meta the metadata
-     * @throws MetricInputException if the inputs are invalid
+     * @throws SampleDataException if the inputs are invalid
      * @return the pairs
      */
 
@@ -39,7 +39,7 @@ public class DiscreteProbabilityPairs extends BasicPairs<DiscreteProbabilityPair
      * @param overrideMainMeta the metadata for the main pairs
      * @param overrideBaselineMeta the metadata for the baseline pairs (may be null, if the baseline pairs are null)
      * @return the pairs
-     * @throws MetricInputException if the inputs are invalid
+     * @throws SampleDataException if the inputs are invalid
      */
 
     public static DiscreteProbabilityPairs of( DiscreteProbabilityPairs pairs,
@@ -59,7 +59,7 @@ public class DiscreteProbabilityPairs extends BasicPairs<DiscreteProbabilityPair
      * @param pairs the discrete probability pairs
      * @param meta the metadata
      * @param climatology an optional climatological dataset (may be null)
-     * @throws MetricInputException if the inputs are invalid
+     * @throws SampleDataException if the inputs are invalid
      * @return the pairs
      */
 
@@ -77,7 +77,7 @@ public class DiscreteProbabilityPairs extends BasicPairs<DiscreteProbabilityPair
      * @param basePairs the baseline pairs (may be null)
      * @param mainMeta the metadata for the main pairs
      * @param baselineMeta the metadata for the baseline pairs (may be null, if the basePairs are null)
-     * @throws MetricInputException if the inputs are invalid
+     * @throws SampleDataException if the inputs are invalid
      * @return the pairs
      */
 
@@ -97,7 +97,7 @@ public class DiscreteProbabilityPairs extends BasicPairs<DiscreteProbabilityPair
      * @param mainMeta the metadata for the main pairs
      * @param baselineMeta the metadata for the baseline pairs (may be null, if the basePairs are null)
      * @param climatology an optional climatological dataset (may be null)
-     * @throws MetricInputException if the inputs are invalid
+     * @throws SampleDataException if the inputs are invalid
      * @return the pairs
      */
 
@@ -118,7 +118,7 @@ public class DiscreteProbabilityPairs extends BasicPairs<DiscreteProbabilityPair
     }
     
     /**
-     * Returns the baseline data as a {@link MetricInput} or null if no baseline is defined.
+     * Returns the baseline data as a {@link SampleData} or null if no baseline is defined.
      * 
      * @return the baseline
      */
@@ -151,7 +151,7 @@ public class DiscreteProbabilityPairs extends BasicPairs<DiscreteProbabilityPair
      * Construct the pairs with a builder. TODO: check the inputs are valid probabilities
      * 
      * @param b the builder
-     * @throws MetricInputException if the pairs are invalid
+     * @throws SampleDataException if the pairs are invalid
      */
 
     private DiscreteProbabilityPairs( final DiscreteProbabilityPairsBuilder b )

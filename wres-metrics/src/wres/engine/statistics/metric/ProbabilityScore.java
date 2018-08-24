@@ -1,7 +1,7 @@
 package wres.engine.statistics.metric;
 
-import wres.datamodel.sampledata.MetricInput;
-import wres.datamodel.statistics.ScoreOutput;
+import wres.datamodel.sampledata.SampleData;
+import wres.datamodel.statistics.ScoreStatistic;
 
 /**
  * <p>
@@ -26,7 +26,7 @@ import wres.datamodel.statistics.ScoreOutput;
  * 
  * @author james.brown@hydrosolved.com
  */
-public interface ProbabilityScore<S extends MetricInput<?>, T extends ScoreOutput<?,T>> extends Score<S,T>
+public interface ProbabilityScore<S extends SampleData<?>, T extends ScoreStatistic<?,T>> extends Score<S,T>
 {
 
     /**

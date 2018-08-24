@@ -11,7 +11,7 @@ import org.junit.Test;
 
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.metadata.Metadata;
-import wres.datamodel.sampledata.MetricInputException;
+import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.SingleValuedPair;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs.SingleValuedPairsBuilder;
@@ -78,7 +78,7 @@ public final class SingleValuedPairsTest
             c.addData( values ).setMetadata( meta ).setClimatology( climatology ).build();
             fail( "Expected a checked exception on invalid inputs: all climatology data missing." );
         }
-        catch ( final MetricInputException e )
+        catch ( final SampleDataException e )
         {
         }
 

@@ -24,7 +24,7 @@ import org.junit.rules.ExpectedException;
 
 import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Metadata;
-import wres.datamodel.metadata.MetricOutputMetadata;
+import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.sampledata.pairs.DichotomousPair;
@@ -40,9 +40,9 @@ import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfEnsemblePairs.TimeSeriesOfEnsemblePairsBuilder;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs.TimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.statistics.DataModelTestDataFactory;
-import wres.datamodel.statistics.DoubleScoreOutput;
-import wres.datamodel.statistics.ListOfMetricOutput;
-import wres.datamodel.statistics.MetricOutput;
+import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.ListOfStatistics;
+import wres.datamodel.statistics.Statistic;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
@@ -547,9 +547,9 @@ public final class SlicerTest
     public void testFilterByMetricComponent()
     {
         //Obtain input and slice
-        ListOfMetricOutput<DoubleScoreOutput> toSlice =
+        ListOfStatistics<DoubleScoreStatistic> toSlice =
                 DataModelTestDataFactory.getVectorMetricOutputOne();
-        Map<MetricConstants, ListOfMetricOutput<DoubleScoreOutput>> sliced =
+        Map<MetricConstants, ListOfStatistics<DoubleScoreStatistic>> sliced =
                 Slicer.filterByMetricComponent( toSlice );
 
         //Check the results
@@ -1005,14 +1005,14 @@ public final class SlicerTest
     }
 
     /**
-     * Tests the {@link Slicer#filter(ListOfMetricOutput, java.util.function.Predicate)}.
+     * Tests the {@link Slicer#filter(ListOfStatistics, java.util.function.Predicate)}.
      */
 
     @Test
     public void testFilterListOfMetricOutputs()
     {
         // Populate a list of outputs
-        MetricOutputMetadata metadata = MetricOutputMetadata.of( 0,
+        StatisticMetadata metadata = StatisticMetadata.of( 0,
                                                                  MeasurementUnit.of(),
                                                                  MeasurementUnit.of(),
                                                                  MetricConstants.BIAS_FRACTION,
@@ -1040,34 +1040,34 @@ public final class SlicerTest
                                                      Operator.GREATER,
                                                      ThresholdDataType.LEFT ) );
 
-        ListOfMetricOutput<DoubleScoreOutput> listOfOutputs =
-                ListOfMetricOutput.of( Arrays.asList( DoubleScoreOutput.of( 0.1,
-                                                                            MetricOutputMetadata.of( metadata,
+        ListOfStatistics<DoubleScoreStatistic> listOfOutputs =
+                ListOfStatistics.of( Arrays.asList( DoubleScoreStatistic.of( 0.1,
+                                                                            StatisticMetadata.of( metadata,
                                                                                                      windowOne,
                                                                                                      thresholdOne ) ),
-                                                      DoubleScoreOutput.of( 0.2,
-                                                                            MetricOutputMetadata.of( metadata,
+                                                      DoubleScoreStatistic.of( 0.2,
+                                                                            StatisticMetadata.of( metadata,
                                                                                                      windowTwo,
                                                                                                      thresholdTwo ) ),
-                                                      DoubleScoreOutput.of( 0.3,
-                                                                            MetricOutputMetadata.of( metadata,
+                                                      DoubleScoreStatistic.of( 0.3,
+                                                                            StatisticMetadata.of( metadata,
                                                                                                      windowThree,
                                                                                                      thresholdThree ) ) ) );
 
         // Filter by the first lead time and the last lead time and threshold
-        Predicate<MetricOutputMetadata> filter = meta -> meta.getTimeWindow().equals( windowOne )
+        Predicate<StatisticMetadata> filter = meta -> meta.getTimeWindow().equals( windowOne )
                                                          || ( meta.getTimeWindow().equals( windowThree )
                                                               && meta.getThresholds().equals( thresholdThree ) );
 
-        ListOfMetricOutput<DoubleScoreOutput> actualOutput = Slicer.filter( listOfOutputs, filter );
+        ListOfStatistics<DoubleScoreStatistic> actualOutput = Slicer.filter( listOfOutputs, filter );
 
-        ListOfMetricOutput<DoubleScoreOutput> expectedOutput =
-                ListOfMetricOutput.of( Arrays.asList( DoubleScoreOutput.of( 0.1,
-                                                                            MetricOutputMetadata.of( metadata,
+        ListOfStatistics<DoubleScoreStatistic> expectedOutput =
+                ListOfStatistics.of( Arrays.asList( DoubleScoreStatistic.of( 0.1,
+                                                                            StatisticMetadata.of( metadata,
                                                                                                      windowOne,
                                                                                                      thresholdOne ) ),
-                                                      DoubleScoreOutput.of( 0.3,
-                                                                            MetricOutputMetadata.of( metadata,
+                                                      DoubleScoreStatistic.of( 0.3,
+                                                                            StatisticMetadata.of( metadata,
                                                                                                      windowThree,
                                                                                                      thresholdThree ) ) ) );
 
@@ -1075,14 +1075,14 @@ public final class SlicerTest
     }
 
     /**
-     * Tests the {@link Slicer#discover(ListOfMetricOutput, Function)}.
+     * Tests the {@link Slicer#discover(ListOfStatistics, Function)}.
      */
 
     @Test
     public void testDiscoverListOfMetricOutputs()
     {
         // Populate a list of outputs
-        MetricOutputMetadata metadata = MetricOutputMetadata.of( 0,
+        StatisticMetadata metadata = StatisticMetadata.of( 0,
                                                                  MeasurementUnit.of(),
                                                                  MeasurementUnit.of(),
                                                                  MetricConstants.BIAS_FRACTION,
@@ -1110,17 +1110,17 @@ public final class SlicerTest
                                                      Operator.GREATER,
                                                      ThresholdDataType.LEFT ) );
 
-        ListOfMetricOutput<DoubleScoreOutput> listOfOutputs =
-                ListOfMetricOutput.of( Arrays.asList( DoubleScoreOutput.of( 0.1,
-                                                                            MetricOutputMetadata.of( metadata,
+        ListOfStatistics<DoubleScoreStatistic> listOfOutputs =
+                ListOfStatistics.of( Arrays.asList( DoubleScoreStatistic.of( 0.1,
+                                                                            StatisticMetadata.of( metadata,
                                                                                                      windowOne,
                                                                                                      thresholdOne ) ),
-                                                      DoubleScoreOutput.of( 0.2,
-                                                                            MetricOutputMetadata.of( metadata,
+                                                      DoubleScoreStatistic.of( 0.2,
+                                                                            StatisticMetadata.of( metadata,
                                                                                                      windowTwo,
                                                                                                      thresholdTwo ) ),
-                                                      DoubleScoreOutput.of( 0.3,
-                                                                            MetricOutputMetadata.of( metadata,
+                                                      DoubleScoreStatistic.of( 0.3,
+                                                                            StatisticMetadata.of( metadata,
                                                                                                      windowThree,
                                                                                                      thresholdThree ) ) ) );
 
@@ -1163,7 +1163,7 @@ public final class SlicerTest
     }
     
     /**
-     * Tests the {@link Slicer#filter(ListOfMetricOutput, java.util.function.Predicate)} produces an expected 
+     * Tests the {@link Slicer#filter(ListOfStatistics, java.util.function.Predicate)} produces an expected 
      * {@link NullPointerException} when the input list is null.
      */
 
@@ -1172,11 +1172,11 @@ public final class SlicerTest
     {
         exception.expect( NullPointerException.class );
 
-        Slicer.filter( (ListOfMetricOutput<MetricOutput<?>>) null, (Predicate<MetricOutputMetadata>) null );
+        Slicer.filter( (ListOfStatistics<Statistic<?>>) null, (Predicate<StatisticMetadata>) null );
     }
     
     /**
-     * Tests the {@link Slicer#filter(ListOfMetricOutput, java.util.function.Predicate)} produces an expected 
+     * Tests the {@link Slicer#filter(ListOfStatistics, java.util.function.Predicate)} produces an expected 
      * {@link NullPointerException} when the input predicate is null.
      */
 
@@ -1185,11 +1185,11 @@ public final class SlicerTest
     {
         exception.expect( NullPointerException.class );
 
-        Slicer.filter( ListOfMetricOutput.of( Arrays.asList() ), (Predicate<MetricOutputMetadata>) null );
+        Slicer.filter( ListOfStatistics.of( Arrays.asList() ), (Predicate<StatisticMetadata>) null );
     }
     
     /**
-     * Tests the {@link Slicer#discover(ListOfMetricOutput, Function)} produces an expected 
+     * Tests the {@link Slicer#discover(ListOfStatistics, Function)} produces an expected 
      * {@link NullPointerException} when the input list is null.
      */
 
@@ -1198,11 +1198,11 @@ public final class SlicerTest
     {
         exception.expect( NullPointerException.class );
 
-        Slicer.discover( (ListOfMetricOutput<MetricOutput<?>>) null, (Function<MetricOutput<?>,?>) null );
+        Slicer.discover( (ListOfStatistics<Statistic<?>>) null, (Function<Statistic<?>,?>) null );
     }
     
     /**
-     * Tests the {@link Slicer#discover(ListOfMetricOutput, Function)} produces an expected 
+     * Tests the {@link Slicer#discover(ListOfStatistics, Function)} produces an expected 
      * {@link NullPointerException} when the input predicate is null.
      */
 
@@ -1211,7 +1211,7 @@ public final class SlicerTest
     {
         exception.expect( NullPointerException.class );
 
-        Slicer.discover( ListOfMetricOutput.of( Arrays.asList() ), (Function<MetricOutput<?>,?>) null );
+        Slicer.discover( ListOfStatistics.of( Arrays.asList() ), (Function<Statistic<?>,?>) null );
     }
 
 }

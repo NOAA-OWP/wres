@@ -16,12 +16,12 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.MetricOutputMetadata;
+import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.sampledata.MetricInputException;
+import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
-import wres.datamodel.statistics.PairedOutput;
+import wres.datamodel.statistics.PairedStatistic;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 
@@ -54,7 +54,7 @@ public final class TimeToPeakRelativeErrorTest
                                                  ReferenceTime.ISSUE_TIME,
                                                  Duration.ofHours( 6 ),
                                                  Duration.ofHours( 18 ) );
-        final MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getBasisTimes().size(),
+        final StatisticMetadata m1 = StatisticMetadata.of( input.getBasisTimes().size(),
                                                                  MeasurementUnit.of( "DURATION IN RELATIVE HOURS" ),
                                                                  MeasurementUnit.of( "CMS" ),
                                                                  MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR,
@@ -72,11 +72,11 @@ public final class TimeToPeakRelativeErrorTest
                     ttp.getName().equals( MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR.toString() ) );
 
         // Check the results
-        final PairedOutput<Instant, Duration> actual = ttp.apply( input );
+        final PairedStatistic<Instant, Duration> actual = ttp.apply( input );
         List<Pair<Instant, Duration>> expectedSource = new ArrayList<>();
         expectedSource.add( Pair.of( Instant.parse( "1985-01-01T00:00:00Z" ), Duration.ofMinutes( -20 ) ) );
         expectedSource.add( Pair.of( Instant.parse( "1985-01-02T00:00:00Z" ), Duration.ofHours( 2 ) ) );
-        final PairedOutput<Instant, Duration> expected = PairedOutput.of( expectedSource, m1 );
+        final PairedStatistic<Instant, Duration> expected = PairedStatistic.of( expectedSource, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -94,7 +94,7 @@ public final class TimeToPeakRelativeErrorTest
     public void testApplyThrowsExceptionOnNullInput() throws MetricParameterException
     {
         //Check the exceptions
-        exception.expect( MetricInputException.class );
+        exception.expect( SampleDataException.class );
 
         TimeToPeakRelativeError ttp = TimeToPeakRelativeError.of();
 

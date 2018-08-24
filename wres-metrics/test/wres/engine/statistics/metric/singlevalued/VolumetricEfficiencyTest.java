@@ -14,17 +14,17 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.ScoreOutputGroup;
+import wres.datamodel.MetricConstants.ScoreGroup;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Metadata;
-import wres.datamodel.metadata.MetricOutputMetadata;
+import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.sampledata.MetricInputException;
+import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
-import wres.datamodel.statistics.DoubleScoreOutput;
+import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 
@@ -67,7 +67,7 @@ public final class VolumetricEfficiencyTest
                                                  Instant.parse( "2010-12-31T11:59:59Z" ),
                                                  ReferenceTime.VALID_TIME,
                                                  Duration.ofHours( 24 ) );
-        final MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getRawData().size(),
+        final StatisticMetadata m1 = StatisticMetadata.of( input.getRawData().size(),
                                                                  MeasurementUnit.of(),
                                                                  MeasurementUnit.of( "MM/DAY" ),
                                                                  MetricConstants.VOLUMETRIC_EFFICIENCY,
@@ -79,8 +79,8 @@ public final class VolumetricEfficiencyTest
                                                                  null,
                                                                  null  );
         //Check the results
-        DoubleScoreOutput actual = ve.apply( input );
-        DoubleScoreOutput expected = DoubleScoreOutput.of( 0.657420176533252, m1 );
+        DoubleScoreStatistic actual = ve.apply( input );
+        DoubleScoreStatistic expected = DoubleScoreStatistic.of( 0.657420176533252, m1 );
         assertTrue( "Actual: " + actual.getData().doubleValue()
                     + ". Expected: "
                     + expected.getData().doubleValue()
@@ -99,7 +99,7 @@ public final class VolumetricEfficiencyTest
         SingleValuedPairs input =
                 SingleValuedPairs.of( Arrays.asList(), Metadata.of() );
 
-        DoubleScoreOutput actual = ve.apply( input );
+        DoubleScoreStatistic actual = ve.apply( input );
 
         assertTrue( actual.getData().isNaN() );
     }
@@ -142,7 +142,7 @@ public final class VolumetricEfficiencyTest
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( ve.getScoreOutputGroup() == ScoreOutputGroup.NONE );
+        assertTrue( ve.getScoreOutputGroup() == ScoreGroup.NONE );
     }
 
     /**
@@ -153,7 +153,7 @@ public final class VolumetricEfficiencyTest
     @Test
     public void testApplyExceptionOnNullInput()
     {
-        exception.expect( MetricInputException.class );
+        exception.expect( SampleDataException.class );
         exception.expectMessage( "Specify non-null input to the 'VOLUMETRIC EFFICIENCY'." );
 
         ve.apply( null );

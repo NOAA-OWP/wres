@@ -6,7 +6,7 @@ import java.util.Iterator;
 import java.util.concurrent.Future;
 
 import wres.config.generated.Feature;
-import wres.datamodel.sampledata.MetricInput;
+import wres.datamodel.sampledata.SampleData;
 import wres.io.config.ConfigHelper;
 import wres.io.data.details.ProjectDetails;
 import wres.util.NotImplementedException;
@@ -14,7 +14,7 @@ import wres.util.NotImplementedException;
 /**
  * Interprets a project configuration and spawns asynchronous metric input retrieval operations
  */
-public class InputGenerator implements Iterable<Future<MetricInput<?>>>
+public class InputGenerator implements Iterable<Future<SampleData<?>>>
 {
 
     public InputGenerator( Feature feature,
@@ -28,9 +28,9 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>>
     private final ProjectDetails projectDetails;
 
     @Override
-    public Iterator<Future<MetricInput<?>>> iterator()
+    public Iterator<Future<SampleData<?>>> iterator()
     {
-        Iterator<Future<MetricInput<?>>> iterator;
+        Iterator<Future<SampleData<?>>> iterator;
         try
         {
             switch (this.projectDetails.getPairingMode())

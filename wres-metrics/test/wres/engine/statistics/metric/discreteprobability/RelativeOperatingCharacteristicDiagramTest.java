@@ -17,10 +17,10 @@ import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.Metadata;
-import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.sampledata.MetricInputException;
+import wres.datamodel.metadata.StatisticMetadata;
+import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.DiscreteProbabilityPairs;
-import wres.datamodel.statistics.MultiVectorOutput;
+import wres.datamodel.statistics.MultiVectorStatistic;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 /**
@@ -58,8 +58,8 @@ public final class RelativeOperatingCharacteristicDiagramTest
         DiscreteProbabilityPairs input = MetricTestDataFactory.getDiscreteProbabilityPairsThree();
 
         //Metadata for the output
-        final MetricOutputMetadata m1 =
-                MetricOutputMetadata.of( input.getRawData().size(),
+        final StatisticMetadata m1 =
+                StatisticMetadata.of( input.getRawData().size(),
                                                    MeasurementUnit.of(),
                                                    MeasurementUnit.of(),
                                                    MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
@@ -69,7 +69,7 @@ public final class RelativeOperatingCharacteristicDiagramTest
                                                                                          "FMI" ) );
 
         //Check the results       
-        final MultiVectorOutput actual = roc.apply( input );
+        final MultiVectorStatistic actual = roc.apply( input );
         double[] expectedPOD = new double[] { 0.0, 0.13580246913580246, 0.2345679012345679, 0.43209876543209874,
                                               0.6296296296296297, 0.7037037037037037, 0.8024691358024691,
                                               0.8518518518518519, 0.9135802469135802,
@@ -81,7 +81,7 @@ public final class RelativeOperatingCharacteristicDiagramTest
         Map<MetricDimension, double[]> output = new HashMap<>();
         output.put( MetricDimension.PROBABILITY_OF_DETECTION, expectedPOD );
         output.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, expectedPOFD );
-        final MultiVectorOutput expected = MultiVectorOutput.ofMultiVectorOutput( output, m1 );
+        final MultiVectorStatistic expected = MultiVectorStatistic.ofMultiVectorOutput( output, m1 );
         assertTrue( "Difference between actual and expected ROC.", actual.equals( expected ) );
     }
 
@@ -97,7 +97,7 @@ public final class RelativeOperatingCharacteristicDiagramTest
         DiscreteProbabilityPairs input =
                 DiscreteProbabilityPairs.of( Arrays.asList(), Metadata.of() );
 
-        MultiVectorOutput actual = roc.apply( input );
+        MultiVectorStatistic actual = roc.apply( input );
 
         double[] source = new double[11];
 
@@ -133,7 +133,7 @@ public final class RelativeOperatingCharacteristicDiagramTest
     @Test
     public void testApplyExceptionOnNullInput()
     {
-        exception.expect( MetricInputException.class );
+        exception.expect( SampleDataException.class );
         exception.expectMessage( "Specify non-null input to the 'RELATIVE OPERATING CHARACTERISTIC DIAGRAM'." );
 
         roc.apply( null );

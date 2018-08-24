@@ -4,12 +4,12 @@ import java.util.Objects;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MissingValues;
-import wres.datamodel.MetricConstants.ScoreOutputGroup;
+import wres.datamodel.MetricConstants.ScoreGroup;
 import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.sampledata.MetricInputException;
+import wres.datamodel.metadata.StatisticMetadata;
+import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
-import wres.datamodel.statistics.DoubleScoreOutput;
+import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.engine.statistics.metric.DoubleErrorFunction;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.OrdinaryScore;
@@ -21,7 +21,7 @@ import wres.engine.statistics.metric.OrdinaryScore;
  * 
  * @author james.brown@hydrosolved.com
  */
-public abstract class DoubleErrorScore<S extends SingleValuedPairs> extends OrdinaryScore<S, DoubleScoreOutput>
+public abstract class DoubleErrorScore<S extends SingleValuedPairs> extends OrdinaryScore<S, DoubleScoreStatistic>
 {
     /**
      * The error function.
@@ -30,11 +30,11 @@ public abstract class DoubleErrorScore<S extends SingleValuedPairs> extends Ordi
     DoubleErrorFunction function;
 
     @Override
-    public DoubleScoreOutput apply( final S s )
+    public DoubleScoreStatistic apply( final S s )
     {
         if ( Objects.isNull( s ) )
         {
-            throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
+            throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
         }
         if ( Objects.isNull( function ) )
         {
@@ -47,8 +47,8 @@ public abstract class DoubleErrorScore<S extends SingleValuedPairs> extends Ordi
         {
             id = s.getMetadataForBaseline().getIdentifier();
         }
-        final MetricOutputMetadata metOut =
-                MetricOutputMetadata.of( s.getMetadata(),
+        final StatisticMetadata metOut =
+                StatisticMetadata.of( s.getMetadata(),
                                     this.getID(),
                                     MetricConstants.MAIN,
                                     this.hasRealUnits(),
@@ -61,13 +61,13 @@ public abstract class DoubleErrorScore<S extends SingleValuedPairs> extends Ordi
         {
             doubleScore = s.getRawData().stream().mapToDouble( function ).average().getAsDouble();
         }
-        return DoubleScoreOutput.of( doubleScore, metOut );
+        return DoubleScoreStatistic.of( doubleScore, metOut );
     }
 
     @Override
-    public ScoreOutputGroup getScoreOutputGroup()
+    public ScoreGroup getScoreOutputGroup()
     {
-        return ScoreOutputGroup.NONE;
+        return ScoreGroup.NONE;
     }
 
     @Override

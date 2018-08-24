@@ -11,7 +11,7 @@ import java.util.TreeSet;
 
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.sampledata.MetricInputException;
+import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 
@@ -187,27 +187,27 @@ public class TimeSeriesHelper
      * @param <T> the event type
      * @param input the input with possibly mutable lists
      * @return the input with immutable lists
-     * @throws MetricInputException if the input is null or any items in the list are null
+     * @throws SampleDataException if the input is null or any items in the list are null
      */
 
     static <T> List<Event<List<Event<T>>>> getImmutableTimeSeries( List<Event<List<Event<T>>>> input )
     {
         if ( Objects.isNull( input ) )
         {
-            throw new MetricInputException( "Specify a non-null list of pairs to render immutable." );
+            throw new SampleDataException( "Specify a non-null list of pairs to render immutable." );
         }
         List<Event<List<Event<T>>>> returnMe = new ArrayList<>();
         for ( Event<List<Event<T>>> nextSeries : input )
         {
             if ( Objects.isNull( nextSeries ) )
             {
-                throw new MetricInputException( "Cannot build a time-series with one or more null time-series." );
+                throw new SampleDataException( "Cannot build a time-series with one or more null time-series." );
             }
             List<Event<T>> nextList = new ArrayList<>();
             nextList.addAll( nextSeries.getValue() );
             if ( nextList.stream().anyMatch( Objects::isNull ) )
             {
-                throw new MetricInputException( "Cannot build a time-series with one or more null events." );
+                throw new SampleDataException( "Cannot build a time-series with one or more null events." );
             }
             returnMe.add( Event.of( nextSeries.getTime(), Collections.unmodifiableList( nextList ) ) );
         }
@@ -220,27 +220,27 @@ public class TimeSeriesHelper
      * @param <T> the event type
      * @param input the unsorted input
      * @return the sorted input in time order
-     * @throws MetricInputException if the input is null or any items in the list are null
+     * @throws SampleDataException if the input is null or any items in the list are null
      */
 
     public static <T> List<Event<List<Event<T>>>> sort( List<Event<List<Event<T>>>> input )
     {
         if ( Objects.isNull( input ) )
         {
-            throw new MetricInputException( "Specify a non-null list of pairs to sort." );
+            throw new SampleDataException( "Specify a non-null list of pairs to sort." );
         }
         List<Event<List<Event<T>>>> returnMe = new ArrayList<>();
         for ( Event<List<Event<T>>> nextSeries : input )
         {
             if ( Objects.isNull( nextSeries ) )
             {
-                throw new MetricInputException( "Cannot sort a time-series with one or more null time-series." );
+                throw new SampleDataException( "Cannot sort a time-series with one or more null time-series." );
             }
             List<Event<T>> nextList = new ArrayList<>();
             nextList.addAll( nextSeries.getValue() );
             if ( nextList.stream().anyMatch( Objects::isNull ) )
             {
-                throw new MetricInputException( "Cannot sort a time-series with one or more null events." );
+                throw new SampleDataException( "Cannot sort a time-series with one or more null events." );
             }
             // Sort by inner time
             nextList.sort( TimeSeriesHelper::compareByTime );

@@ -18,21 +18,21 @@ import wres.config.generated.DestinationConfig;
 import wres.config.generated.OutputTypeSelection;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
-import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.statistics.DoubleScoreOutput;
-import wres.datamodel.statistics.ListOfMetricOutput;
+import wres.datamodel.metadata.StatisticMetadata;
+import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.thresholds.Threshold;
 import wres.io.config.ConfigHelper;
 import wres.vis.ChartEngineFactory;
 
 /**
- * Helps write charts comprising {@link DoubleScoreOutput} to a file in Portable Network Graphics (PNG) format.
+ * Helps write charts comprising {@link DoubleScoreStatistic} to a file in Portable Network Graphics (PNG) format.
  * 
  * @author james.brown@hydrosolved.com
  */
 
 public class PNGDoubleScoreWriter extends PNGWriter
-        implements Consumer<ListOfMetricOutput<DoubleScoreOutput>>
+        implements Consumer<ListOfStatistics<DoubleScoreStatistic>>
 {
 
     /**
@@ -58,7 +58,7 @@ public class PNGDoubleScoreWriter extends PNGWriter
      */
 
     @Override
-    public void accept( final ListOfMetricOutput<DoubleScoreOutput> output )
+    public void accept( final ListOfStatistics<DoubleScoreStatistic> output )
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing diagram outputs." );
 
@@ -82,8 +82,8 @@ public class PNGDoubleScoreWriter extends PNGWriter
     }
 
     /**
-     * Writes a set of charts associated with {@link DoubleScoreOutput} for a single metric and time window,
-     * stored in a {@link ListOfMetricOutput}.
+     * Writes a set of charts associated with {@link DoubleScoreStatistic} for a single metric and time window,
+     * stored in a {@link ListOfStatistics}.
      *
      * @param projectConfigPlus the project configuration
      * @param destinationConfig the destination configuration for the written output
@@ -93,18 +93,18 @@ public class PNGDoubleScoreWriter extends PNGWriter
 
     private static void writeScoreCharts( ProjectConfigPlus projectConfigPlus,
                                           DestinationConfig destinationConfig,
-                                          ListOfMetricOutput<DoubleScoreOutput> output )
+                                          ListOfStatistics<DoubleScoreStatistic> output )
     {
         // Build charts
         try
         {
-            MetricOutputMetadata meta = output.getData().get( 0 ).getMetadata();
+            StatisticMetadata meta = output.getData().get( 0 ).getMetadata();
 
             GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, destinationConfig, meta.getMetricID() );
 
             // As many outputs as secondary thresholds if secondary thresholds are defined
             // and the output type is OutputTypeSelection.THRESHOLD_LEAD.
-            List<ListOfMetricOutput<DoubleScoreOutput>> allOutputs = new ArrayList<>();
+            List<ListOfStatistics<DoubleScoreStatistic>> allOutputs = new ArrayList<>();
 
             SortedSet<Threshold> secondThreshold =
                     Slicer.discover( output, next -> next.getMetadata().getThresholds().second() );
@@ -123,7 +123,7 @@ public class PNGDoubleScoreWriter extends PNGWriter
                 allOutputs.add( output );
             }
 
-            for ( ListOfMetricOutput<DoubleScoreOutput> nextOutput : allOutputs )
+            for ( ListOfStatistics<DoubleScoreStatistic> nextOutput : allOutputs )
             {
                 ConcurrentMap<MetricConstants, ChartEngine> engines =
                         ChartEngineFactory.buildScoreOutputChartEngine( projectConfigPlus.getProjectConfig(),

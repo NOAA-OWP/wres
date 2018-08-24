@@ -15,18 +15,18 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.ScoreOutputGroup;
+import wres.datamodel.MetricConstants.ScoreGroup;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.Slicer;
 import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Metadata;
-import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.sampledata.MetricInputException;
+import wres.datamodel.metadata.StatisticMetadata;
+import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.DiscreteProbabilityPair;
 import wres.datamodel.sampledata.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.sampledata.pairs.EnsemblePair;
 import wres.datamodel.sampledata.pairs.EnsemblePairs;
-import wres.datamodel.statistics.DoubleScoreOutput;
+import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
@@ -86,15 +86,15 @@ public final class RelativeOperatingCharacteristicScoreTest
                 DiscreteProbabilityPairs.of( values, Metadata.of() );
 
         //Metadata for the output
-        final MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getRawData().size(),
+        final StatisticMetadata m1 = StatisticMetadata.of( input.getRawData().size(),
                                                                            MeasurementUnit.of(),
                                                                            MeasurementUnit.of(),
                                                                            MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE,
                                                                            MetricConstants.MAIN );
 
         //Check the results       
-        final DoubleScoreOutput actual = rocScore.apply( input );
-        final DoubleScoreOutput expected = DoubleScoreOutput.of( 0.6785714285714286, m1 );
+        final DoubleScoreStatistic actual = rocScore.apply( input );
+        final DoubleScoreStatistic expected = DoubleScoreStatistic.of( 0.6785714285714286, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -131,15 +131,15 @@ public final class RelativeOperatingCharacteristicScoreTest
         DiscreteProbabilityPairs input = DiscreteProbabilityPairs.of( values, meta );
 
         //Metadata for the output
-        MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getRawData().size(),
+        StatisticMetadata m1 = StatisticMetadata.of( input.getRawData().size(),
                                                                      MeasurementUnit.of(),
                                                                      MeasurementUnit.of(),
                                                                      MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE,
                                                                      MetricConstants.MAIN );
 
         //Check the results       
-        DoubleScoreOutput actual = rocScore.apply( input );
-        DoubleScoreOutput expected = DoubleScoreOutput.of( 0.75, m1 );
+        DoubleScoreStatistic actual = rocScore.apply( input );
+        DoubleScoreStatistic expected = DoubleScoreStatistic.of( 0.75, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -148,8 +148,8 @@ public final class RelativeOperatingCharacteristicScoreTest
 
         //Check against a baseline
         DiscreteProbabilityPairs inputBase = DiscreteProbabilityPairs.of( values, values, meta, meta );
-        DoubleScoreOutput actualBase = rocScore.apply( inputBase );
-        DoubleScoreOutput expectedBase = DoubleScoreOutput.of( 0.0, m1 );
+        DoubleScoreStatistic actualBase = rocScore.apply( inputBase );
+        DoubleScoreStatistic expectedBase = DoubleScoreStatistic.of( 0.0, m1 );
         assertTrue( "Actual: " + actualBase.getData()
                     + ". Expected: "
                     + expectedBase.getData()
@@ -187,15 +187,15 @@ public final class RelativeOperatingCharacteristicScoreTest
         DiscreteProbabilityPairs input = DiscreteProbabilityPairs.of( values, meta );
 
         //Metadata for the output
-        final MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getRawData().size(),
+        final StatisticMetadata m1 = StatisticMetadata.of( input.getRawData().size(),
                                                                            MeasurementUnit.of(),
                                                                            MeasurementUnit.of(),
                                                                            MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE,
                                                                            MetricConstants.MAIN );
 
         //Check the results       
-        DoubleScoreOutput actual = rocScore.apply( input );
-        DoubleScoreOutput expected = DoubleScoreOutput.of( Double.NaN, m1 );
+        DoubleScoreStatistic actual = rocScore.apply( input );
+        DoubleScoreStatistic expected = DoubleScoreStatistic.of( Double.NaN, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -215,7 +215,7 @@ public final class RelativeOperatingCharacteristicScoreTest
         DiscreteProbabilityPairs input =
                 DiscreteProbabilityPairs.of( Arrays.asList(), Metadata.of() );
 
-        DoubleScoreOutput actual = rocScore.apply( input );
+        DoubleScoreStatistic actual = rocScore.apply( input );
 
         assertTrue( actual.getData().isNaN() );
     }
@@ -259,7 +259,7 @@ public final class RelativeOperatingCharacteristicScoreTest
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( rocScore.getScoreOutputGroup() == ScoreOutputGroup.NONE );
+        assertTrue( rocScore.getScoreOutputGroup() == ScoreGroup.NONE );
     }
 
     /**
@@ -317,7 +317,7 @@ public final class RelativeOperatingCharacteristicScoreTest
     @Test
     public void testApplyExceptionOnNullInput()
     {
-        exception.expect( MetricInputException.class );
+        exception.expect( SampleDataException.class );
         exception.expectMessage( "Specify non-null input to the 'RELATIVE OPERATING CHARACTERISTIC SCORE'." );
 
         rocScore.apply( null );

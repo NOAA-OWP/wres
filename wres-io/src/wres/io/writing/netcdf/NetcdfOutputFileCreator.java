@@ -19,7 +19,7 @@ import ucar.ma2.InvalidRangeException;
 import ucar.nc2.NetcdfFileWriter;
 import wres.config.generated.DestinationConfig;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.statistics.DoubleScoreOutput;
+import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.io.utilities.NoDataException;
 
@@ -36,7 +36,7 @@ class NetcdfOutputFileCreator
                                     final TimeWindow window,
                                     final ZonedDateTime analysisTime,
                                     final Collection<MetricVariable> metricVariables,
-                                    final Collection<DoubleScoreOutput> output)
+                                    final Collection<DoubleScoreStatistic> output)
             throws IOException
     {
         // We're locking because each created output will be using the same
@@ -110,7 +110,7 @@ class NetcdfOutputFileCreator
 
     private static Path getFileName(final DestinationConfig destinationConfig,
                                       final TimeWindow timeWindow,
-                                      final Collection<DoubleScoreOutput> output)
+                                      final Collection<DoubleScoreStatistic> output)
             throws NoDataException
     {
         if( output.isEmpty() )

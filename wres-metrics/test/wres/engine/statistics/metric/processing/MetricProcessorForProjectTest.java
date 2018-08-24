@@ -22,7 +22,7 @@ import wres.config.generated.MetricConfigName;
 import wres.config.generated.MetricsConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Inputs;
-import wres.datamodel.MetricConstants.MetricOutputGroup;
+import wres.datamodel.MetricConstants.StatisticGroup;
 import wres.engine.statistics.metric.MetricParameterException;
 
 /**
@@ -143,11 +143,11 @@ public final class MetricProcessorForProjectTest
     public void testGetMetricOutputTypesToCache()
     {
         assertTrue( singleValuedProcessor.getMetricOutputTypesToCache()
-                                         .equals( new HashSet<>( Arrays.asList( MetricOutputGroup.PAIRED,
-                                                                                MetricOutputGroup.DOUBLE_SCORE ) ) ) );
+                                         .equals( new HashSet<>( Arrays.asList( StatisticGroup.PAIRED,
+                                                                                StatisticGroup.DOUBLE_SCORE ) ) ) );
         assertTrue( ensembleProcessor.getMetricOutputTypesToCache()
-                                     .equals( new HashSet<>( Arrays.asList( MetricOutputGroup.PAIRED,
-                                                                            MetricOutputGroup.DOUBLE_SCORE ) ) ) );
+                                     .equals( new HashSet<>( Arrays.asList( StatisticGroup.PAIRED,
+                                                                            StatisticGroup.DOUBLE_SCORE ) ) ) );
     }
 
     /**

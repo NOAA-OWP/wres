@@ -11,7 +11,7 @@ import java.util.SortedSet;
 
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
-import wres.datamodel.sampledata.MetricInputException;
+import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.BasicTimeSeries;
 import wres.datamodel.time.TimeSeries;
@@ -164,7 +164,7 @@ public class TimeSeriesOfSingleValuedPairs extends SingleValuedPairs implements 
          * 
          * @param timeSeries the time-series
          * @return the builder
-         * @throws MetricInputException if the specified input is inconsistent with any existing input
+         * @throws SampleDataException if the specified input is inconsistent with any existing input
          */
 
         public TimeSeriesOfSingleValuedPairsBuilder
@@ -206,7 +206,7 @@ public class TimeSeriesOfSingleValuedPairs extends SingleValuedPairs implements 
          * 
          * @param timeSeries the time-series
          * @return the builder
-         * @throws MetricInputException if the specified input is inconsistent with any existing input
+         * @throws SampleDataException if the specified input is inconsistent with any existing input
          */
 
         public TimeSeriesOfSingleValuedPairsBuilder addTimeSeriesForBaseline( TimeSeriesOfSingleValuedPairs timeSeries )
@@ -300,7 +300,7 @@ public class TimeSeriesOfSingleValuedPairs extends SingleValuedPairs implements 
          * 
          * @param timeSeries the time-series
          * @return the builder
-         * @throws MetricInputException if the specified input is inconsistent with any existing input
+         * @throws SampleDataException if the specified input is inconsistent with any existing input
          * @throws NullPointerException if the input is null
          */
 
@@ -315,7 +315,7 @@ public class TimeSeriesOfSingleValuedPairs extends SingleValuedPairs implements 
          * 
          * @param timeSeries the time-series
          * @return the builder
-         * @throws MetricInputException if the specified input is inconsistent with any existing input
+         * @throws SampleDataException if the specified input is inconsistent with any existing input
          * @throws NullPointerException if the input is null
          */
 
@@ -341,7 +341,7 @@ public class TimeSeriesOfSingleValuedPairs extends SingleValuedPairs implements 
      * Construct the pairs with a builder.
      * 
      * @param b the builder
-     * @throws MetricInputException if the pairs are invalid
+     * @throws SampleDataException if the pairs are invalid
      */
 
     TimeSeriesOfSingleValuedPairs( final TimeSeriesOfSingleValuedPairsBuilder b )

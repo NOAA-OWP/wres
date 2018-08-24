@@ -11,8 +11,8 @@ import java.util.Set;
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.ScoreOutputGroup;
-import wres.datamodel.metadata.MetricOutputMetadata;
+import wres.datamodel.MetricConstants.ScoreGroup;
+import wres.datamodel.metadata.StatisticMetadata;
 
 /**
  * An abstract base class for an immutable score output.
@@ -20,7 +20,7 @@ import wres.datamodel.metadata.MetricOutputMetadata;
  * @author james.brown@hydrosolved.com
  */
 
-abstract class BasicScoreOutput<T,U extends ScoreOutput<T,?>> implements ScoreOutput<T,U>
+abstract class BasicScoreStatistic<T,U extends ScoreStatistic<T,?>> implements ScoreStatistic<T,U>
 {
 
     /**
@@ -33,25 +33,25 @@ abstract class BasicScoreOutput<T,U extends ScoreOutput<T,?>> implements ScoreOu
      * Null output message.
      */
 
-    private static final String NULL_OUTPUT_MESSAGE = "Specify a non-null output.";
+    private static final String NULL_OUTPUT_MESSAGE = "Specify a non-null statistic.";
     
     /**
      * Null metadata message.
      */
 
-    private static final String NULL_METADATA_MESSAGE = "Specify non-null metadata.";
+    private static final String NULL_METADATA_MESSAGE = "Specify non-null metadata for the statistic.";
         
     /**
-     * The output.
+     * The statistic.
      */
 
-    private final EnumMap<MetricConstants, T> output;
+    private final EnumMap<MetricConstants, T> statistic;
 
     /**
-     * The metadata associated with the output.
+     * The metadata associated with the statistic.
      */
 
-    private final MetricOutputMetadata meta;
+    private final StatisticMetadata meta;
 
     /**
      * Returns a score from the specified input.
@@ -61,10 +61,10 @@ abstract class BasicScoreOutput<T,U extends ScoreOutput<T,?>> implements ScoreOu
      * @return the score
      */
     
-    abstract U getScoreOutput( T input, MetricOutputMetadata meta );    
+    abstract U getScore( T input, StatisticMetadata meta );    
     
     @Override
-    public MetricOutputMetadata getMetadata()
+    public StatisticMetadata getMetadata()
     {
         return meta;
     }
@@ -72,23 +72,23 @@ abstract class BasicScoreOutput<T,U extends ScoreOutput<T,?>> implements ScoreOu
     @Override
     public boolean equals( final Object o )
     {
-        if ( ! ( o instanceof BasicScoreOutput ) )
+        if ( ! ( o instanceof BasicScoreStatistic ) )
         {
             return false;
         }
-        final BasicScoreOutput<?,?> v = (BasicScoreOutput<?,?>) o;
+        final BasicScoreStatistic<?,?> v = (BasicScoreStatistic<?,?>) o;
         boolean start = meta.equals( v.getMetadata() );
         if ( !start )
         {
             return false;
         }
-        return output.equals( v.output );
+        return statistic.equals( v.statistic );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( output, meta );
+        return Objects.hash( statistic, meta );
     }
 
     @Override
@@ -96,11 +96,11 @@ abstract class BasicScoreOutput<T,U extends ScoreOutput<T,?>> implements ScoreOu
     {
         if( this.hasComponent( MetricConstants.MAIN ) )
         {
-            return output.get( MetricConstants.MAIN );
+            return statistic.get( MetricConstants.MAIN );
         }
-        else if( output.size() == 1 )
+        else if( statistic.size() == 1 )
         {
-            return output.values().iterator().next();
+            return statistic.values().iterator().next();
         }
         return null;
     }
@@ -110,7 +110,7 @@ abstract class BasicScoreOutput<T,U extends ScoreOutput<T,?>> implements ScoreOu
     {
         return new Iterator<Pair<MetricConstants, T>>()
         {
-            private final Iterator<Entry<MetricConstants, T>> iterator = output.entrySet().iterator();
+            private final Iterator<Entry<MetricConstants, T>> iterator = statistic.entrySet().iterator();
 
             @Override
             public boolean hasNext()
@@ -128,7 +128,7 @@ abstract class BasicScoreOutput<T,U extends ScoreOutput<T,?>> implements ScoreOu
             @Override
             public void remove()
             {
-                throw new UnsupportedOperationException( "Cannot modify this immutable container of score outputs." );
+                throw new UnsupportedOperationException( "Cannot modify this immutable container of score statistics." );
             }
         };
 
@@ -137,27 +137,27 @@ abstract class BasicScoreOutput<T,U extends ScoreOutput<T,?>> implements ScoreOu
     @Override
     public Set<MetricConstants> getComponents()
     {
-        return Collections.unmodifiableSet( output.keySet() );
+        return Collections.unmodifiableSet( statistic.keySet() );
     }
 
     @Override
     public boolean hasComponent( MetricConstants component )
     {
-        return output.containsKey( component );
+        return statistic.containsKey( component );
     }
     
     @Override
     public U getComponent( MetricConstants component )
     {
-        return getScoreOutput( output.get( component ),
-                               MetricOutputMetadata.of( meta, meta.getMetricID(), component ) );
+        return getScore( statistic.get( component ),
+                               StatisticMetadata.of( meta, meta.getMetricID(), component ) );
     }        
 
     @Override
     public String toString()
     {
         StringBuilder b = new StringBuilder();
-        output.forEach( ( key, value ) -> b.append( "(" )
+        statistic.forEach( ( key, value ) -> b.append( "(" )
                                            .append( key )
                                            .append( "," )
                                            .append( value )
@@ -171,99 +171,99 @@ abstract class BasicScoreOutput<T,U extends ScoreOutput<T,?>> implements ScoreOu
     /**
      * Construct the output.
      * 
-     * @param output the verification output
+     * @param statistic the verification statistic
      * @param meta the metadata
-     * @throws MetricOutputException if any of the inputs are invalid
+     * @throws StatisticException if any of the inputs are invalid
      */
 
-    BasicScoreOutput( final T output, final MetricOutputMetadata meta )
+    BasicScoreStatistic( final T statistic, final StatisticMetadata meta )
     {
         // Allow a null score, but not null metadata
         if ( Objects.isNull( meta ) )
         {
-            throw new MetricOutputException( NULL_METADATA_MESSAGE );
+            throw new StatisticException( NULL_METADATA_MESSAGE );
         }
         
-        this.output = new EnumMap<>( MetricConstants.class );
+        this.statistic = new EnumMap<>( MetricConstants.class );
         if( Objects.nonNull( meta.getMetricComponentID() ) )
         {
-            this.output.put( meta.getMetricComponentID(), output );
+            this.statistic.put( meta.getMetricComponentID(), statistic );
         }
         else
         {
-            this.output.put( MetricConstants.MAIN, output );
+            this.statistic.put( MetricConstants.MAIN, statistic );
         }
         this.meta = meta;
     }
 
     /**
-     * Construct the output with a map.
+     * Construct the statistic with a map.
      * 
-     * @param output the verification output
+     * @param statistic the verification statistic
      * @param meta the metadata
-     * @throws MetricOutputException if any of the inputs are invalid
+     * @throws StatisticException if any of the inputs are invalid
      */
 
-    BasicScoreOutput( final Map<MetricConstants, T> output, final MetricOutputMetadata meta )
+    BasicScoreStatistic( final Map<MetricConstants, T> statistic, final StatisticMetadata meta )
     {
-        this.output = new EnumMap<>( MetricConstants.class );
-        this.output.putAll( output );
+        this.statistic = new EnumMap<>( MetricConstants.class );
+        this.statistic.putAll( statistic );
         this.meta = meta;
         
         // Validate
-        if ( Objects.isNull( output ) )
+        if ( Objects.isNull( statistic ) )
         {
-            throw new MetricOutputException( NULL_OUTPUT_MESSAGE );
+            throw new StatisticException( NULL_OUTPUT_MESSAGE );
         }
         if ( Objects.isNull( meta ) )
         {
-            throw new MetricOutputException( NULL_METADATA_MESSAGE );
+            throw new StatisticException( NULL_METADATA_MESSAGE );
         }
         // Allow a null score, but not a null identifier
-        output.forEach( ( key, value ) -> {
+        statistic.forEach( ( key, value ) -> {
             if ( Objects.isNull( key ) )
             {
-                throw new MetricOutputException( "Cannot build a score with null components." );
+                throw new StatisticException( "Cannot build a score with null components." );
             }
         } );
     }
 
     /**
-     * Construct the output with a template.
+     * Construct the statistic with a template.
      * 
-     * @param output the verification output
+     * @param statistic the verification statistic
      * @param template the score template
      * @param meta the metadata
-     * @throws MetricOutputException if any of the inputs are invalid
+     * @throws StatisticException if any of the inputs are invalid
      */
 
-    BasicScoreOutput( final T[] output, final ScoreOutputGroup template, final MetricOutputMetadata meta )
+    BasicScoreStatistic( final T[] statistic, final ScoreGroup template, final StatisticMetadata meta )
     {
-        this.output = new EnumMap<>( MetricConstants.class );
+        this.statistic = new EnumMap<>( MetricConstants.class );
         this.meta = meta;
         
         // Validate
         if ( Objects.isNull( template ) )
         {
-            throw new MetricOutputException( "Specify a non-null output group for the score output." );
+            throw new StatisticException( "Specify a non-null output group for the score output." );
         }
-        if ( Objects.isNull( output ) )
+        if ( Objects.isNull( statistic ) )
         {
-            throw new MetricOutputException( NULL_OUTPUT_MESSAGE );
+            throw new StatisticException( NULL_OUTPUT_MESSAGE );
         }
         if ( Objects.isNull( meta ) )
         {
-            throw new MetricOutputException( NULL_METADATA_MESSAGE );
+            throw new StatisticException( NULL_METADATA_MESSAGE );
         }
         // Check that the decomposition template is compatible
         Set<MetricConstants> components = template.getAllComponents();
-        if ( components.size() != output.length )
+        if ( components.size() != statistic.length )
         {
-            throw new MetricOutputException( "The specified output template '" + template
+            throw new StatisticException( "The specified output template '" + template
                                              + "' has more components than metric inputs provided ["
                                              + template.getAllComponents().size()
                                              + ", "
-                                             + output.length
+                                             + statistic.length
                                              + "]." );
         }
         // Add the components
@@ -271,7 +271,7 @@ abstract class BasicScoreOutput<T,U extends ScoreOutput<T,?>> implements ScoreOu
         int index = 0;
         while ( iterator.hasNext() )
         {
-            this.output.put( iterator.next(), output[index] );
+            this.statistic.put( iterator.next(), statistic[index] );
             index++;
         }
     }

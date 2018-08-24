@@ -9,10 +9,10 @@ import java.util.function.DoubleUnaryOperator;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.Slicer;
-import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.sampledata.MetricInputException;
+import wres.datamodel.metadata.StatisticMetadata;
+import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
-import wres.datamodel.statistics.MultiVectorOutput;
+import wres.datamodel.statistics.MultiVectorStatistic;
 import wres.engine.statistics.metric.Diagram;
 import wres.engine.statistics.metric.MetricParameterException;
 
@@ -24,7 +24,7 @@ import wres.engine.statistics.metric.MetricParameterException;
  * @author james.brown@hydrosolved.com
  */
 
-public class QuantileQuantileDiagram extends Diagram<SingleValuedPairs, MultiVectorOutput>
+public class QuantileQuantileDiagram extends Diagram<SingleValuedPairs, MultiVectorStatistic>
 {
 
     /**
@@ -51,11 +51,11 @@ public class QuantileQuantileDiagram extends Diagram<SingleValuedPairs, MultiVec
     }
 
     @Override
-    public MultiVectorOutput apply( SingleValuedPairs s )
+    public MultiVectorStatistic apply( SingleValuedPairs s )
     {
         if ( Objects.isNull( s ) )
         {
-            throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
+            throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
         }
 
         //Determine the number of order statistics to compute
@@ -82,14 +82,14 @@ public class QuantileQuantileDiagram extends Diagram<SingleValuedPairs, MultiVec
         Map<MetricDimension, double[]> output = new EnumMap<>( MetricDimension.class );
         output.put( MetricDimension.OBSERVED_QUANTILES, observedQ );
         output.put( MetricDimension.PREDICTED_QUANTILES, predictedQ );
-        final MetricOutputMetadata metOut =
-                MetricOutputMetadata.of( s.getMetadata(),
+        final StatisticMetadata metOut =
+                StatisticMetadata.of( s.getMetadata(),
                                     this.getID(),
                                     MetricConstants.MAIN,
                                     this.hasRealUnits(),
                                     s.getRawData().size(),
                                     null );
-        return MultiVectorOutput.ofMultiVectorOutput( output, metOut );
+        return MultiVectorStatistic.ofMultiVectorOutput( output, metOut );
     }
 
     @Override

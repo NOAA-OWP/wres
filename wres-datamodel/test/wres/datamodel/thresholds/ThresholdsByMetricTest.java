@@ -13,8 +13,8 @@ import java.util.Set;
 import org.junit.Test;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.MetricInputGroup;
-import wres.datamodel.MetricConstants.MetricOutputGroup;
+import wres.datamodel.MetricConstants.SampleDataGroup;
+import wres.datamodel.MetricConstants.StatisticGroup;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
@@ -528,7 +528,7 @@ public class ThresholdsByMetricTest
     }
 
     /**
-     * Tests the {@link ThresholdsByMetric#filterByGroup(wres.datamodel.MetricConstants.MetricInputGroup)}.
+     * Tests the {@link ThresholdsByMetric#filterByGroup(wres.datamodel.MetricConstants.SampleDataGroup)}.
      */
 
     @Test
@@ -547,18 +547,18 @@ public class ThresholdsByMetricTest
                                                           ThresholdDataType.LEFT ) );
 
         assertTrue( "Unexpected union of thresholds in the container.",
-                    expected.equals( container.filterByGroup( MetricInputGroup.DICHOTOMOUS,
-                                                              MetricOutputGroup.DOUBLE_SCORE )
+                    expected.equals( container.filterByGroup( SampleDataGroup.DICHOTOMOUS,
+                                                              StatisticGroup.DOUBLE_SCORE )
                                               .filterByType( ThresholdGroup.PROBABILITY )
                                               .union() ) );
         assertTrue( "Unexpected union of thresholds in the container.",
-                    expected.equals( container.filterByGroup( MetricInputGroup.DICHOTOMOUS,
+                    expected.equals( container.filterByGroup( SampleDataGroup.DICHOTOMOUS,
                                                               null )
                                               .filterByType( ThresholdGroup.PROBABILITY )
                                               .union() ) );
         assertTrue( "Unexpected union of thresholds in the container.",
                     expected.equals( container.filterByGroup( null,
-                                                              MetricOutputGroup.DOUBLE_SCORE )
+                                                              StatisticGroup.DOUBLE_SCORE )
                                               .filterByType( ThresholdGroup.PROBABILITY )
                                               .union() ) );
 

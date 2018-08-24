@@ -13,7 +13,7 @@ import wres.config.ProjectConfigs;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.sampledata.MetricInput;
+import wres.datamodel.sampledata.SampleData;
 import wres.io.config.ConfigHelper;
 import wres.io.data.details.ProjectDetails;
 import wres.io.retrieval.left.LeftHandCache;
@@ -21,7 +21,7 @@ import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
 import wres.system.ProgressMonitor;
 
-abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
+abstract class MetricInputIterator implements Iterator<Future<SampleData<?>>>
 {
     protected static final String NEWLINE = System.lineSeparator();
 
@@ -222,9 +222,9 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
     }
 
     @Override
-    public Future<MetricInput<?>> next()
+    public Future<SampleData<?>> next()
     {
-        Future<MetricInput<?>> nextInput;
+        Future<SampleData<?>> nextInput;
 
         this.incrementWindowNumber();
 
@@ -246,7 +246,7 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
      * @return A callable object that will create a Metric Input
      * @throws IOException Thrown if a climatology could not be created as needed
      */
-    Callable<MetricInput<?>> createRetriever() throws IOException
+    Callable<SampleData<?>> createRetriever() throws IOException
     {
         InputRetriever retriever = new InputRetriever(
                 this.getProjectDetails(),
@@ -266,7 +266,7 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
      * when null is returned.
      * @throws IOException Thrown if the retrieval object could not be created
      */
-    protected Future<MetricInput<?>> submitForRetrieval() throws IOException
+    protected Future<SampleData<?>> submitForRetrieval() throws IOException
     {
         return Database.submit( this.createRetriever() );
     }

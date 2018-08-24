@@ -3,8 +3,8 @@ package wres.engine.statistics.metric.categorical;
 import wres.datamodel.MatrixOfDoubles;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.sampledata.pairs.MulticategoryPairs;
-import wres.datamodel.statistics.DoubleScoreOutput;
-import wres.datamodel.statistics.MatrixOutput;
+import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.MatrixStatistic;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricCalculationException;
 
@@ -32,13 +32,13 @@ public class PeirceSkillScore<S extends MulticategoryPairs> extends ContingencyT
     } 
 
     @Override
-    public DoubleScoreOutput apply( final S s )
+    public DoubleScoreStatistic apply( final S s )
     {
         return aggregate( this.getInputForAggregation( s ) );
     }
 
     @Override
-    public DoubleScoreOutput aggregate( final MatrixOutput output )
+    public DoubleScoreStatistic aggregate( final MatrixStatistic output )
     {
         //Check the input
         this.isContingencyTable( output, this );
@@ -51,7 +51,7 @@ public class PeirceSkillScore<S extends MulticategoryPairs> extends ContingencyT
         {
             double result = FunctionFactory.finiteOrMissing().applyAsDouble( ( cm[0][0] / ( cm[0][0] + cm[1][0] ) )
                                                                              - ( cm[0][1] / ( cm[0][1] + cm[1][1] ) ) );
-            return DoubleScoreOutput.of( result, getMetadata( output ) );
+            return DoubleScoreStatistic.of( result, getMetadata( output ) );
         }
 
         //Multicategory predictand
@@ -90,7 +90,7 @@ public class PeirceSkillScore<S extends MulticategoryPairs> extends ContingencyT
         final double nSquared = n * n;
         final double result = FunctionFactory.finiteOrMissing().applyAsDouble( ( ( diag / n ) - ( sumProd / nSquared ) )
                                                                                / ( 1.0 - ( uniProd / nSquared ) ) );
-        return DoubleScoreOutput.of( result, getMetadata( output ) );
+        return DoubleScoreStatistic.of( result, getMetadata( output ) );
     }
 
     @Override

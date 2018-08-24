@@ -11,16 +11,16 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.ScoreOutputGroup;
+import wres.datamodel.MetricConstants.ScoreGroup;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.Metadata;
-import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.sampledata.MetricInputException;
+import wres.datamodel.metadata.StatisticMetadata;
+import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.DichotomousPairs;
-import wres.datamodel.statistics.DoubleScoreOutput;
-import wres.datamodel.statistics.MatrixOutput;
+import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.MatrixStatistic;
 import wres.engine.statistics.metric.Collectable;
 import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricParameterException;
@@ -48,13 +48,13 @@ public final class EquitableThreatScoreTest
      * Metadata used for testing.
      */
 
-    private MetricOutputMetadata meta;
+    private StatisticMetadata meta;
 
     @Before
     public void setUpBeforeEachTest() throws MetricParameterException
     {
         ets = EquitableThreatScore.of();
-        meta = MetricOutputMetadata.of( 365,
+        meta = StatisticMetadata.of( 365,
                                                   MeasurementUnit.of(),
                                                   MeasurementUnit.of(),
                                                   MetricConstants.EQUITABLE_THREAT_SCORE,
@@ -75,8 +75,8 @@ public final class EquitableThreatScoreTest
         final DichotomousPairs input = MetricTestDataFactory.getDichotomousPairsOne();
 
         //Check the results
-        final DoubleScoreOutput actual = ets.apply( input );
-        final DoubleScoreOutput expected = DoubleScoreOutput.of( 0.43768152544513195, meta );
+        final DoubleScoreStatistic actual = ets.apply( input );
+        final DoubleScoreStatistic expected = DoubleScoreStatistic.of( 0.43768152544513195, meta );
         assertTrue( "Actual: " + actual.getData().doubleValue()
                     + ". Expected: "
                     + expected.getData().doubleValue()
@@ -95,7 +95,7 @@ public final class EquitableThreatScoreTest
         DichotomousPairs input =
                 DichotomousPairs.ofDichotomousPairs( Arrays.asList(), Metadata.of() );
 
-        DoubleScoreOutput actual = ets.apply( input );
+        DoubleScoreStatistic actual = ets.apply( input );
 
         assertTrue( actual.getData().isNaN() );
     }
@@ -137,7 +137,7 @@ public final class EquitableThreatScoreTest
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( ets.getScoreOutputGroup() == ScoreOutputGroup.NONE );
+        assertTrue( ets.getScoreOutputGroup() == ScoreGroup.NONE );
     }
 
     /**
@@ -158,9 +158,9 @@ public final class EquitableThreatScoreTest
     @Test
     public void testExceptionOnNullInput()
     {
-        exception.expect( MetricInputException.class );
+        exception.expect( SampleDataException.class );
         exception.expectMessage( "Specify non-null input to the '" + ets.getName() + "'." );
-        ets.aggregate( (MatrixOutput) null );
+        ets.aggregate( (MatrixStatistic) null );
     }
 
 }

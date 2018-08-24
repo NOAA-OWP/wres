@@ -3,12 +3,12 @@ package wres.engine.statistics.metric.ensemble;
 import java.util.Objects;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.ScoreOutputGroup;
+import wres.datamodel.MetricConstants.ScoreGroup;
 import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.sampledata.MetricInputException;
+import wres.datamodel.metadata.StatisticMetadata;
+import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.EnsemblePairs;
-import wres.datamodel.statistics.DoubleScoreOutput;
+import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 
@@ -43,22 +43,22 @@ public class ContinuousRankedProbabilitySkillScore extends ContinuousRankedProba
      * @throws MetricParameterException if one or more parameters is invalid 
      */
 
-    public static ContinuousRankedProbabilitySkillScore of( ScoreOutputGroup decompositionId )
+    public static ContinuousRankedProbabilitySkillScore of( ScoreGroup decompositionId )
             throws MetricParameterException
     {
         return new ContinuousRankedProbabilitySkillScore( decompositionId );
     }
 
     @Override
-    public DoubleScoreOutput apply( EnsemblePairs s )
+    public DoubleScoreStatistic apply( EnsemblePairs s )
     {
         if ( Objects.isNull( s ) )
         {
-            throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
+            throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
         }
         if ( !s.hasBaseline() )
         {
-            throw new MetricInputException( "Specify a non-null baseline for the '" + this + "'." );
+            throw new SampleDataException( "Specify a non-null baseline for the '" + this + "'." );
         }
         //CRPSS, currently without decomposition
         //TODO: implement the decomposition
@@ -68,13 +68,13 @@ public class ContinuousRankedProbabilitySkillScore extends ContinuousRankedProba
 
         //Metadata
         DatasetIdentifier baselineIdentifier = s.getMetadataForBaseline().getIdentifier();
-        MetricOutputMetadata metOut = MetricOutputMetadata.of( s.getMetadata(),
+        StatisticMetadata metOut = StatisticMetadata.of( s.getMetadata(),
                                                           this.getID(),
                                                           MetricConstants.MAIN,
                                                           this.hasRealUnits(),
                                                           s.getRawData().size(),
                                                           baselineIdentifier );
-        return DoubleScoreOutput.of( result, metOut );
+        return DoubleScoreStatistic.of( result, metOut );
     }
 
     @Override
@@ -123,7 +123,7 @@ public class ContinuousRankedProbabilitySkillScore extends ContinuousRankedProba
      * @throws MetricParameterException if one or more parameters is invalid 
      */
 
-    private ContinuousRankedProbabilitySkillScore( ScoreOutputGroup decompositionId ) throws MetricParameterException
+    private ContinuousRankedProbabilitySkillScore( ScoreGroup decompositionId ) throws MetricParameterException
     {
         super( decompositionId );
     }

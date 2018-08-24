@@ -2,8 +2,8 @@ package wres.engine.statistics.metric.categorical;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.sampledata.pairs.DichotomousPairs;
-import wres.datamodel.statistics.DoubleScoreOutput;
-import wres.datamodel.statistics.MatrixOutput;
+import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.MatrixStatistic;
 import wres.engine.statistics.metric.FunctionFactory;
 
 /**
@@ -27,20 +27,20 @@ public class FrequencyBias extends ContingencyTableScore<DichotomousPairs>
     }    
 
     @Override
-    public DoubleScoreOutput apply( final DichotomousPairs s )
+    public DoubleScoreStatistic apply( final DichotomousPairs s )
     {
         return aggregate( this.getInputForAggregation( s ) );
     }
 
     @Override
-    public DoubleScoreOutput aggregate( final MatrixOutput output )
+    public DoubleScoreStatistic aggregate( final MatrixStatistic output )
     {
         this.is2x2ContingencyTable( output, this );
-        final MatrixOutput v = output;
+        final MatrixStatistic v = output;
         final double[][] cm = v.getData().getDoubles();
         final double score =
                 FunctionFactory.finiteOrMissing().applyAsDouble( ( cm[0][0] + cm[0][1] ) / ( cm[0][0] + cm[1][0] ) );
-        return DoubleScoreOutput.of( score, getMetadata( output ) );
+        return DoubleScoreStatistic.of( score, getMetadata( output ) );
     }
 
     @Override

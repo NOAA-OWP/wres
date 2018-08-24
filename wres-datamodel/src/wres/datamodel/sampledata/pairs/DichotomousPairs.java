@@ -6,8 +6,8 @@ import java.util.Objects;
 
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.metadata.Metadata;
-import wres.datamodel.sampledata.MetricInput;
-import wres.datamodel.sampledata.MetricInputException;
+import wres.datamodel.sampledata.SampleData;
+import wres.datamodel.sampledata.SampleDataException;
 
 /**
  * Immutable store of verification pairs associated with a dichotomous input, i.e. a single event whose outcome is
@@ -26,7 +26,7 @@ public class DichotomousPairs extends MulticategoryPairs
      * @param pairs the verification pairs
      * @param meta the metadata
      * @return the pairs
-     * @throws MetricInputException if the inputs are invalid
+     * @throws SampleDataException if the inputs are invalid
      */
 
     public static DichotomousPairs ofDichotomousPairs( List<DichotomousPair> pairs,
@@ -43,7 +43,7 @@ public class DichotomousPairs extends MulticategoryPairs
      * @param meta the metadata
      * @param climatology an optional climatological dataset (may be null)
      * @return the pairs
-     * @throws MetricInputException if the inputs are invalid
+     * @throws SampleDataException if the inputs are invalid
      */
 
     public static DichotomousPairs ofDichotomousPairs( List<DichotomousPair> pairs,
@@ -60,7 +60,7 @@ public class DichotomousPairs extends MulticategoryPairs
      * @param overrideMainMeta the metadata for the main pairs
      * @param overrideBaselineMeta the metadata for the baseline pairs (may be null, if the baseline pairs are null)
      * @return the pairs
-     * @throws MetricInputException if the inputs are invalid
+     * @throws SampleDataException if the inputs are invalid
      */
 
     public static DichotomousPairs ofDichotomousPairs( DichotomousPairs pairs,
@@ -85,7 +85,7 @@ public class DichotomousPairs extends MulticategoryPairs
      * @param baselineMeta the metadata for the baseline pairs (may be null, if the basePairs are null)
      * @param climatology an optional climatological dataset (may be null)
      * @return the pairs
-     * @throws MetricInputException if the inputs are invalid
+     * @throws SampleDataException if the inputs are invalid
      */
 
     public static DichotomousPairs ofDichotomousPairs( List<DichotomousPair> pairs,
@@ -102,7 +102,7 @@ public class DichotomousPairs extends MulticategoryPairs
     }
 
     /**
-     * Returns the baseline data as a {@link MetricInput} or null if no baseline is defined.
+     * Returns the baseline data as a {@link SampleData} or null if no baseline is defined.
      * 
      * @return the baseline
      */
@@ -186,7 +186,7 @@ public class DichotomousPairs extends MulticategoryPairs
      * Construct the pairs with a builder.
      * 
      * @param b the builder
-     * @throws MetricInputException if the pairs are invalid
+     * @throws SampleDataException if the pairs are invalid
      */
 
     private DichotomousPairs( final DichotomousPairsBuilder b )
@@ -197,7 +197,7 @@ public class DichotomousPairs extends MulticategoryPairs
         // Allow empty data or two categories
         if ( count > 0 && count != 2 )
         {
-            throw new MetricInputException( "Expected one category in the dichotomous input, represented as either "
+            throw new SampleDataException( "Expected one category in the dichotomous input, represented as either "
                                             + "one or two elements." );
         }
     }

@@ -35,27 +35,27 @@ import wres.config.generated.TimeSeriesMetricConfig;
 import wres.config.generated.TimeSeriesMetricConfigName;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.MetricConstants.MetricInputGroup;
-import wres.datamodel.MetricConstants.MetricOutputGroup;
+import wres.datamodel.MetricConstants.SampleDataGroup;
+import wres.datamodel.MetricConstants.StatisticGroup;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.Slicer;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Metadata;
-import wres.datamodel.metadata.MetricOutputMetadata;
+import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
-import wres.datamodel.statistics.DoubleScoreOutput;
-import wres.datamodel.statistics.DurationScoreOutput;
-import wres.datamodel.statistics.ListOfMetricOutput;
-import wres.datamodel.statistics.MatrixOutput;
-import wres.datamodel.statistics.MetricOutputAccessException;
-import wres.datamodel.statistics.MetricOutputException;
-import wres.datamodel.statistics.MetricOutputForProject;
-import wres.datamodel.statistics.PairedOutput;
+import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.DurationScoreStatistic;
+import wres.datamodel.statistics.ListOfStatistics;
+import wres.datamodel.statistics.MatrixStatistic;
+import wres.datamodel.statistics.StatisticAccessException;
+import wres.datamodel.statistics.StatisticException;
+import wres.datamodel.statistics.StatisticsForProject;
+import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants;
@@ -88,7 +88,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
      * @throws IOException if the input data could not be read
      * @throws InterruptedException if the outputs were interrupted
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
-     * @throws MetricOutputException if the results could not be generated 
+     * @throws StatisticException if the results could not be generated 
      */
 
     @Test
@@ -97,28 +97,28 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/testApplyWithoutThresholds.xml";
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-        MetricProcessor<SingleValuedPairs, MetricOutputForProject> processor =
+        MetricProcessor<SingleValuedPairs, StatisticsForProject> processor =
                 MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( config,
                                                                         null,
                                                                         Executors.newSingleThreadExecutor(),
                                                                         Executors.newSingleThreadExecutor(),
                                                                         null );
         SingleValuedPairs pairs = MetricTestDataFactory.getSingleValuedPairsFour();
-        MetricOutputForProject results = processor.apply( pairs );
-        ListOfMetricOutput<DoubleScoreOutput> bias =
-                Slicer.filter( results.getDoubleScoreOutput(), MetricConstants.BIAS_FRACTION );
-        ListOfMetricOutput<DoubleScoreOutput> cod =
-                Slicer.filter( results.getDoubleScoreOutput(), MetricConstants.COEFFICIENT_OF_DETERMINATION );
-        ListOfMetricOutput<DoubleScoreOutput> rho =
-                Slicer.filter( results.getDoubleScoreOutput(), MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
-        ListOfMetricOutput<DoubleScoreOutput> mae =
-                Slicer.filter( results.getDoubleScoreOutput(), MetricConstants.MEAN_ABSOLUTE_ERROR );
-        ListOfMetricOutput<DoubleScoreOutput> me =
-                Slicer.filter( results.getDoubleScoreOutput(), MetricConstants.MEAN_ERROR );
-        ListOfMetricOutput<DoubleScoreOutput> rmse =
-                Slicer.filter( results.getDoubleScoreOutput(), MetricConstants.ROOT_MEAN_SQUARE_ERROR );
-        ListOfMetricOutput<DoubleScoreOutput> ve =
-                Slicer.filter( results.getDoubleScoreOutput(), MetricConstants.VOLUMETRIC_EFFICIENCY );
+        StatisticsForProject results = processor.apply( pairs );
+        ListOfStatistics<DoubleScoreStatistic> bias =
+                Slicer.filter( results.getDoubleScoreStatistics(), MetricConstants.BIAS_FRACTION );
+        ListOfStatistics<DoubleScoreStatistic> cod =
+                Slicer.filter( results.getDoubleScoreStatistics(), MetricConstants.COEFFICIENT_OF_DETERMINATION );
+        ListOfStatistics<DoubleScoreStatistic> rho =
+                Slicer.filter( results.getDoubleScoreStatistics(), MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
+        ListOfStatistics<DoubleScoreStatistic> mae =
+                Slicer.filter( results.getDoubleScoreStatistics(), MetricConstants.MEAN_ABSOLUTE_ERROR );
+        ListOfStatistics<DoubleScoreStatistic> me =
+                Slicer.filter( results.getDoubleScoreStatistics(), MetricConstants.MEAN_ERROR );
+        ListOfStatistics<DoubleScoreStatistic> rmse =
+                Slicer.filter( results.getDoubleScoreStatistics(), MetricConstants.ROOT_MEAN_SQUARE_ERROR );
+        ListOfStatistics<DoubleScoreStatistic> ve =
+                Slicer.filter( results.getDoubleScoreStatistics(), MetricConstants.VOLUMETRIC_EFFICIENCY );
 
         //Test contents
         assertTrue( "Unexpected difference in " + MetricConstants.BIAS_FRACTION,
@@ -147,7 +147,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
      * @throws IOException if the input data could not be read
      * @throws InterruptedException if the outputs were interrupted
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
-     * @throws MetricOutputException if the results could not be generated 
+     * @throws StatisticException if the results could not be generated 
      */
 
     @Test
@@ -156,8 +156,8 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/testApplyWithThresholds.xml";
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-        MetricProcessor<SingleValuedPairs, MetricOutputForProject> processor =
-                MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( config, MetricOutputGroup.set() );
+        MetricProcessor<SingleValuedPairs, StatisticsForProject> processor =
+                MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( config, StatisticGroup.set() );
         SingleValuedPairs pairs = MetricTestDataFactory.getSingleValuedPairsFour();
 
         // Generate results for 10 nominal lead times
@@ -176,12 +176,12 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         }
 
         // Validate a subset of the data 
-        assertTrue( Slicer.filter( processor.getCachedMetricOutput().getDoubleScoreOutput(),
+        assertTrue( Slicer.filter( processor.getCachedMetricOutput().getDoubleScoreStatistics(),
                                    MetricConstants.THREAT_SCORE )
                           .getData()
                           .size() == 10 );
 
-        assertTrue( Slicer.filter( processor.getCachedMetricOutput().getDoubleScoreOutput(),
+        assertTrue( Slicer.filter( processor.getCachedMetricOutput().getDoubleScoreStatistics(),
                                    metric -> metric.getMetricID() != MetricConstants.THREAT_SCORE )
                           .getData()
                           .size() == 20 * 8 );
@@ -197,7 +197,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                                           ThresholdDataType.LEFT,
                                                                                           MeasurementUnit.of( "CMS" ) ) );
 
-        MetricOutputMetadata expectedMeta = MetricOutputMetadata.of( 500,
+        StatisticMetadata expectedMeta = StatisticMetadata.of( 500,
                                                                      MeasurementUnit.of( "DIMENSIONLESS" ),
                                                                      MeasurementUnit.of( "CMS" ),
                                                                      MetricConstants.CONTINGENCY_TABLE,
@@ -209,15 +209,15 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                      expectedThreshold,
                                                                      null );
 
-        MatrixOutput expected =
-                MatrixOutput.of( new double[][] { { 400.0, 100.0 }, { 0.0, 0.0 } },
+        MatrixStatistic expected =
+                MatrixStatistic.of( new double[][] { { 400.0, 100.0 }, { 0.0, 0.0 } },
                                  Arrays.asList( MetricDimension.TRUE_POSITIVES,
                                                 MetricDimension.FALSE_POSITIVES,
                                                 MetricDimension.FALSE_NEGATIVES,
                                                 MetricDimension.TRUE_NEGATIVES ),
                                  expectedMeta );
 
-        MatrixOutput actual = Slicer.filter( processor.getCachedMetricOutput().getMatrixOutput(),
+        MatrixStatistic actual = Slicer.filter( processor.getCachedMetricOutput().getMatrixStatistics(),
                                              meta -> meta.getThresholds().equals( expectedThreshold )
                                                      && meta.getTimeWindow().equals( expectedWindow ) )
                                     .getData()
@@ -239,14 +239,14 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
     {
         String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/testAllValid.xml";
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-        MetricProcessor<SingleValuedPairs, MetricOutputForProject> processor =
+        MetricProcessor<SingleValuedPairs, StatisticsForProject> processor =
                 MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( config,
-                                                                        MetricOutputGroup.set() );
+                                                                        StatisticGroup.set() );
 
         //Check for the expected number of metrics
         assertTrue( "Unexpected number of metrics.",
-                    processor.metrics.size() == MetricInputGroup.SINGLE_VALUED.getMetrics().size()
-                                                + MetricInputGroup.DICHOTOMOUS.getMetrics().size() );
+                    processor.metrics.size() == SampleDataGroup.SINGLE_VALUED.getMetrics().size()
+                                                + SampleDataGroup.DICHOTOMOUS.getMetrics().size() );
     }
 
     /**
@@ -257,7 +257,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
      * 
      * @throws InterruptedException if the outputs were interrupted
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
-     * @throws MetricOutputException if the results could not be generated 
+     * @throws StatisticException if the results could not be generated 
      */
 
     @Test
@@ -276,9 +276,9 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                    null,
                                    null );
 
-        MetricProcessor<SingleValuedPairs, MetricOutputForProject> processor =
+        MetricProcessor<SingleValuedPairs, StatisticsForProject> processor =
                 MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( mockedConfig,
-                                                                        MetricOutputGroup.set() );
+                                                                        StatisticGroup.set() );
 
         //Break into two time-series to test sequential calls
         TimeSeriesOfSingleValuedPairs first = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsTwo();
@@ -290,8 +290,8 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
         //Validate the outputs
         //Compare the errors against the benchmark
-        ListOfMetricOutput<PairedOutput<Instant, Duration>> actual =
-                processor.getCachedMetricOutput().getPairedOutput();
+        ListOfStatistics<PairedStatistic<Instant, Duration>> actual =
+                processor.getCachedMetricOutput().getPairedStatistics();
 
         //Build the expected output
         List<Pair<Instant, Duration>> expectedFirst = new ArrayList<>();
@@ -310,7 +310,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                  Duration.ofHours( 6 ),
                                                  Duration.ofHours( 18 ) );
         final TimeWindow timeWindow = firstWindow;
-        MetricOutputMetadata m1 = MetricOutputMetadata.of( 1,
+        StatisticMetadata m1 = StatisticMetadata.of( 1,
                                                            MeasurementUnit.of( "DURATION" ),
                                                            MeasurementUnit.of( "CMS" ),
                                                            MetricConstants.TIME_TO_PEAK_ERROR,
@@ -326,10 +326,10 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                      Operator.GREATER,
                                                      ThresholdDataType.LEFT_AND_RIGHT ) );
 
-        List<PairedOutput<Instant, Duration>> inList = new ArrayList<>();
-        inList.add( PairedOutput.of( expectedFirst, MetricOutputMetadata.of( m1, firstWindow, thresholds ) ) );
-        inList.add( PairedOutput.of( expectedSecond, MetricOutputMetadata.of( m1, secondWindow, thresholds ) ) );
-        ListOfMetricOutput<PairedOutput<Instant, Duration>> expected = ListOfMetricOutput.of( inList );
+        List<PairedStatistic<Instant, Duration>> inList = new ArrayList<>();
+        inList.add( PairedStatistic.of( expectedFirst, StatisticMetadata.of( m1, firstWindow, thresholds ) ) );
+        inList.add( PairedStatistic.of( expectedSecond, StatisticMetadata.of( m1, secondWindow, thresholds ) ) );
+        ListOfStatistics<PairedStatistic<Instant, Duration>> expected = ListOfStatistics.of( inList );
 
         assertTrue( "Actual output differs from expected output for time-series metrics. ", actual.equals( expected ) );
     }
@@ -342,7 +342,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
      * 
      * @throws InterruptedException if the outputs were interrupted
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
-     * @throws MetricOutputException if the results could not be generated 
+     * @throws StatisticException if the results could not be generated 
      */
 
     @Test
@@ -368,9 +368,9 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                    null,
                                    null );
 
-        MetricProcessor<SingleValuedPairs, MetricOutputForProject> processor =
+        MetricProcessor<SingleValuedPairs, StatisticsForProject> processor =
                 MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( mockedConfig,
-                                                                        MetricOutputGroup.set() );
+                                                                        StatisticGroup.set() );
 
         //Break into two time-series to test sequential calls
         TimeSeriesOfSingleValuedPairs first = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsTwo();
@@ -382,8 +382,8 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
         //Validate the outputs
         //Compare the errors against the benchmark
-        ListOfMetricOutput<PairedOutput<Instant, Duration>> actual =
-                processor.getCachedMetricOutput().getPairedOutput();
+        ListOfStatistics<PairedStatistic<Instant, Duration>> actual =
+                processor.getCachedMetricOutput().getPairedStatistics();
 
         //Build the expected output
         List<Pair<Instant, Duration>> expectedFirst = new ArrayList<>();
@@ -412,7 +412,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                                   Operator.GREATER,
                                                                                   ThresholdDataType.LEFT_AND_RIGHT ) );
 
-        MetricOutputMetadata m1 = MetricOutputMetadata.of( 1,
+        StatisticMetadata m1 = StatisticMetadata.of( 1,
                                                            MeasurementUnit.of( "DURATION" ),
                                                            MeasurementUnit.of( "CMS" ),
                                                            MetricConstants.TIME_TO_PEAK_ERROR,
@@ -423,19 +423,19 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                            null,
                                                            null  );
 
-        List<PairedOutput<Instant, Duration>> inList = new ArrayList<>();
+        List<PairedStatistic<Instant, Duration>> inList = new ArrayList<>();
 
-        inList.add( PairedOutput.of( expectedFirst, MetricOutputMetadata.of( m1, firstWindow, firstThreshold ) ) );
+        inList.add( PairedStatistic.of( expectedFirst, StatisticMetadata.of( m1, firstWindow, firstThreshold ) ) );
 
-        inList.add( PairedOutput.of( Arrays.asList(),
-                                    MetricOutputMetadata.of( MetricOutputMetadata.of( m1, 0 ),
+        inList.add( PairedStatistic.of( Arrays.asList(),
+                                    StatisticMetadata.of( StatisticMetadata.of( m1, 0 ),
                                                              firstWindow,
                                                              secondThreshold ) ) );
 
-        inList.add( PairedOutput.of( expectedSecond, MetricOutputMetadata.of( m1, secondWindow, firstThreshold ) ) );
-        inList.add( PairedOutput.of( expectedSecond, MetricOutputMetadata.of( m1, secondWindow, secondThreshold ) ) );
+        inList.add( PairedStatistic.of( expectedSecond, StatisticMetadata.of( m1, secondWindow, firstThreshold ) ) );
+        inList.add( PairedStatistic.of( expectedSecond, StatisticMetadata.of( m1, secondWindow, secondThreshold ) ) );
 
-        ListOfMetricOutput<PairedOutput<Instant, Duration>> expected = ListOfMetricOutput.of( inList );
+        ListOfStatistics<PairedStatistic<Instant, Duration>> expected = ListOfStatistics.of( inList );
 
         assertTrue( "Actual output differs from expected output for time-series metrics. ",
                     actual.equals( expected ) );
@@ -452,7 +452,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
      * @throws IOException if the input data could not be read
      * @throws InterruptedException if the outputs were interrupted
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
-     * @throws MetricOutputException if the results could not be generated 
+     * @throws StatisticException if the results could not be generated 
      */
 
     @Test
@@ -462,9 +462,9 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/testApplyTimeSeriesSummaryStats.xml";
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-        MetricProcessor<SingleValuedPairs, MetricOutputForProject> processor =
+        MetricProcessor<SingleValuedPairs, StatisticsForProject> processor =
                 MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( config,
-                                                                        MetricOutputGroup.set() );
+                                                                        StatisticGroup.set() );
 
         //Break into two time-series to test sequential calls
         TimeSeriesOfSingleValuedPairs first = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsTwo();
@@ -477,8 +477,8 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
         //Validate the outputs
         //Compare the errors against the benchmark
-        ListOfMetricOutput<DurationScoreOutput> actualScores =
-                processor.getCachedMetricOutput().getDurationScoreOutput();
+        ListOfStatistics<DurationScoreStatistic> actualScores =
+                processor.getCachedMetricOutput().getDurationScoreStatistics();
 
         //Build the expected statistics
         Map<MetricConstants, Duration> expectedSource = new HashMap<>();
@@ -501,7 +501,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                      Operator.GREATER,
                                                      ThresholdDataType.LEFT_AND_RIGHT ) );
 
-        MetricOutputMetadata scoreMeta = MetricOutputMetadata.of( 2,
+        StatisticMetadata scoreMeta = StatisticMetadata.of( 2,
                                                                   MeasurementUnit.of( "DURATION" ),
                                                                   MeasurementUnit.of( "CMS" ),
                                                                   MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
@@ -511,11 +511,11 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                   timeWindow,
                                                                   thresholds,
                                                                   null  );
-        DurationScoreOutput expectedScoresSource = DurationScoreOutput.of( expectedSource, scoreMeta );
-        List<DurationScoreOutput> scoreInList = new ArrayList<>();
+        DurationScoreStatistic expectedScoresSource = DurationScoreStatistic.of( expectedSource, scoreMeta );
+        List<DurationScoreStatistic> scoreInList = new ArrayList<>();
         scoreInList.add( expectedScoresSource );
 
-        ListOfMetricOutput<DurationScoreOutput> expectedScores = ListOfMetricOutput.of( scoreInList );
+        ListOfStatistics<DurationScoreStatistic> expectedScores = ListOfStatistics.of( scoreInList );
 
         assertTrue( "Actual output differs from expected output for time-series metrics. ",
                     actualScores.equals( expectedScores ) );
@@ -531,12 +531,12 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
      * @throws IOException if the input data could not be read
      * @throws InterruptedException if the outputs were interrupted
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
-     * @throws MetricOutputException if the results could not be generated 
+     * @throws StatisticException if the results could not be generated 
      */
 
     @Test
     public void testApplyWithThresholdsFromSource()
-            throws IOException, MetricOutputAccessException, MetricParameterException, InterruptedException
+            throws IOException, StatisticAccessException, MetricParameterException, InterruptedException
     {
         String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/testApplyWithThresholds.xml";
 
@@ -566,10 +566,10 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         ThresholdsByMetric thresholdsByMetric = builder.build();
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-        MetricProcessor<SingleValuedPairs, MetricOutputForProject> processor =
+        MetricProcessor<SingleValuedPairs, StatisticsForProject> processor =
                 MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( config,
                                                                         thresholdsByMetric,
-                                                                        MetricOutputGroup.set() );
+                                                                        StatisticGroup.set() );
         
         SingleValuedPairs pairs = MetricTestDataFactory.getSingleValuedPairsFour();
 
@@ -589,12 +589,12 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         }
 
         // Validate a subset of the data       
-        assertTrue( Slicer.filter( processor.getCachedMetricOutput().getDoubleScoreOutput(),
+        assertTrue( Slicer.filter( processor.getCachedMetricOutput().getDoubleScoreStatistics(),
                                    MetricConstants.THREAT_SCORE )
                           .getData()
                           .size() == 20 );
 
-        assertTrue( Slicer.filter( processor.getCachedMetricOutput().getDoubleScoreOutput(),
+        assertTrue( Slicer.filter( processor.getCachedMetricOutput().getDoubleScoreStatistics(),
                                    metric -> metric.getMetricID() != MetricConstants.THREAT_SCORE )
                           .getData()
                           .size() == 30 * 8 );
@@ -609,7 +609,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                                           Operator.GREATER_EQUAL,
                                                                                           ThresholdDataType.LEFT ) );
 
-        MetricOutputMetadata expectedMeta = MetricOutputMetadata.of( 500,
+        StatisticMetadata expectedMeta = StatisticMetadata.of( 500,
                                                                      MeasurementUnit.of( "DIMENSIONLESS" ),
                                                                      MeasurementUnit.of( "CMS" ),
                                                                      MetricConstants.CONTINGENCY_TABLE,
@@ -621,15 +621,15 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                      expectedThreshold,
                                                                      null  );
 
-        MatrixOutput expected =
-                MatrixOutput.of( new double[][] { { 500.0, 0.0 }, { 0.0, 0.0 } },
+        MatrixStatistic expected =
+                MatrixStatistic.of( new double[][] { { 500.0, 0.0 }, { 0.0, 0.0 } },
                                  Arrays.asList( MetricDimension.TRUE_POSITIVES,
                                                 MetricDimension.FALSE_POSITIVES,
                                                 MetricDimension.FALSE_NEGATIVES,
                                                 MetricDimension.TRUE_NEGATIVES ),
                                  expectedMeta );
 
-        MatrixOutput actual = Slicer.filter( processor.getCachedMetricOutput().getMatrixOutput(),
+        MatrixStatistic actual = Slicer.filter( processor.getCachedMetricOutput().getMatrixStatistics(),
                                              meta -> meta.getThresholds().equals( expectedThreshold )
                                                      && meta.getTimeWindow().equals( expectedWindow ) )
                                     .getData()
@@ -648,7 +648,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
      * @throws IOException if the input data could not be read
      * @throws InterruptedException if the outputs were interrupted
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
-     * @throws MetricOutputException if the results could not be generated 
+     * @throws StatisticException if the results could not be generated 
      */
 
     @Test
@@ -657,8 +657,8 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/testApplyWithThresholds.xml";
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-        MetricProcessor<SingleValuedPairs, MetricOutputForProject> processor =
-                MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( config, MetricOutputGroup.set() );
+        MetricProcessor<SingleValuedPairs, StatisticsForProject> processor =
+                MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( config, StatisticGroup.set() );
         SingleValuedPairs pairs = MetricTestDataFactory.getSingleValuedPairsSeven();
 
         // Generate results for 10 nominal lead times
@@ -677,12 +677,12 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         }
 
         // Validate a subset of the data       
-        assertTrue( Slicer.filter( processor.getCachedMetricOutput().getDoubleScoreOutput(),
+        assertTrue( Slicer.filter( processor.getCachedMetricOutput().getDoubleScoreStatistics(),
                                    MetricConstants.THREAT_SCORE )
                           .getData()
                           .size() == 10 );
 
-        assertTrue( Slicer.filter( processor.getCachedMetricOutput().getDoubleScoreOutput(),
+        assertTrue( Slicer.filter( processor.getCachedMetricOutput().getDoubleScoreStatistics(),
                                    metric -> metric.getMetricID() != MetricConstants.THREAT_SCORE )
                           .getData()
                           .size() == 20 * 8 );
@@ -698,7 +698,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                                           ThresholdDataType.LEFT,
                                                                                           MeasurementUnit.of( "CMS" ) ) );
 
-        MetricOutputMetadata expectedMeta = MetricOutputMetadata.of( 0,
+        StatisticMetadata expectedMeta = StatisticMetadata.of( 0,
                                                                      MeasurementUnit.of( "DIMENSIONLESS" ),
                                                                      MeasurementUnit.of( "CMS" ),
                                                                      MetricConstants.CONTINGENCY_TABLE,
@@ -710,15 +710,15 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                      expectedThreshold,
                                                                      null  );
 
-        MatrixOutput expected =
-                MatrixOutput.of( new double[][] { { 0.0, 0.0 }, { 0.0, 0.0 } },
+        MatrixStatistic expected =
+                MatrixStatistic.of( new double[][] { { 0.0, 0.0 }, { 0.0, 0.0 } },
                                  Arrays.asList( MetricDimension.TRUE_POSITIVES,
                                                 MetricDimension.FALSE_POSITIVES,
                                                 MetricDimension.FALSE_NEGATIVES,
                                                 MetricDimension.TRUE_NEGATIVES ),
                                  expectedMeta );
 
-        MatrixOutput actual = Slicer.filter( processor.getCachedMetricOutput().getMatrixOutput(),
+        MatrixStatistic actual = Slicer.filter( processor.getCachedMetricOutput().getMatrixStatistics(),
                                              meta -> meta.getThresholds().equals( expectedThreshold )
                                                      && meta.getTimeWindow().equals( expectedWindow ) )
                                     .getData()
@@ -739,7 +739,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
      * @throws InterruptedException if the outputs were interrupted
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
      * @throws MetricConfigException if the metric configuration is incorrect
-     * @throws MetricOutputException if the results could not be generated 
+     * @throws StatisticException if the results could not be generated 
      */
 
     @Test
@@ -750,9 +750,9 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
 
-        MetricProcessor<SingleValuedPairs, MetricOutputForProject> processor =
+        MetricProcessor<SingleValuedPairs, StatisticsForProject> processor =
                 MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( config,
-                                                                        MetricOutputGroup.set() );
+                                                                        StatisticGroup.set() );
 
         TimeSeriesOfSingleValuedPairs pairs = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsFour();
 
@@ -760,8 +760,8 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         processor.apply( pairs );
 
         //Validate the outputs
-        ListOfMetricOutput<DurationScoreOutput> actualScores =
-                processor.getCachedMetricOutput().getDurationScoreOutput();
+        ListOfStatistics<DurationScoreStatistic> actualScores =
+                processor.getCachedMetricOutput().getDurationScoreStatistics();
 
         //Build the expected statistics
         Map<MetricConstants, Duration> expectedSource = new HashMap<>();
@@ -781,7 +781,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                      Operator.GREATER,
                                                      ThresholdDataType.LEFT_AND_RIGHT ) );
 
-        MetricOutputMetadata scoreMeta = MetricOutputMetadata.of( 0,
+        StatisticMetadata scoreMeta = StatisticMetadata.of( 0,
                                                                   MeasurementUnit.of( "DURATION" ),
                                                                   MeasurementUnit.of( "CMS" ),
                                                                   MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
@@ -792,11 +792,11 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                   thresholds,
                                                                   null );
 
-        DurationScoreOutput expectedScoresSource = DurationScoreOutput.of( expectedSource, scoreMeta );
-        List<DurationScoreOutput> scoreInList = new ArrayList<>();
+        DurationScoreStatistic expectedScoresSource = DurationScoreStatistic.of( expectedSource, scoreMeta );
+        List<DurationScoreStatistic> scoreInList = new ArrayList<>();
         scoreInList.add( expectedScoresSource );
 
-        ListOfMetricOutput<DurationScoreOutput> expectedScores = ListOfMetricOutput.of( scoreInList );
+        ListOfStatistics<DurationScoreStatistic> expectedScores = ListOfStatistics.of( scoreInList );
 
         assertTrue( "Actual output differs from expected output for time-series metrics. ",
                     actualScores.equals( expectedScores ) );
@@ -813,14 +813,14 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
     {
         exception.expect( NullPointerException.class );
         exception.expectMessage( "Expected non-null input to the metric processor." );
-        MetricProcessor<SingleValuedPairs, MetricOutputForProject> processor =
+        MetricProcessor<SingleValuedPairs, StatisticsForProject> processor =
                 MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( new ProjectConfig( null,
                                                                                            null,
                                                                                            null,
                                                                                            null,
                                                                                            null,
                                                                                            null ),
-                                                                        Collections.singleton( MetricOutputGroup.DOUBLE_SCORE ) );
+                                                                        Collections.singleton( StatisticGroup.DOUBLE_SCORE ) );
         processor.apply( null );
     }
 
@@ -842,14 +842,14 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                 new MetricsConfig( null,
                                    Arrays.asList( new MetricConfig( null, null, MetricConfigName.FREQUENCY_BIAS ) ),
                                    null );
-        MetricProcessor<SingleValuedPairs, MetricOutputForProject> processor =
+        MetricProcessor<SingleValuedPairs, StatisticsForProject> processor =
                 MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( new ProjectConfig( null,
                                                                                            null,
                                                                                            Arrays.asList( metrics ),
                                                                                            null,
                                                                                            null,
                                                                                            null ),
-                                                                        Collections.singleton( MetricOutputGroup.DOUBLE_SCORE ) );
+                                                                        Collections.singleton( StatisticGroup.DOUBLE_SCORE ) );
         processor.apply( MetricTestDataFactory.getSingleValuedPairsSix() );
 
     }
@@ -889,9 +889,9 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                    null );
 
 
-        MetricProcessor<SingleValuedPairs, MetricOutputForProject> processor =
+        MetricProcessor<SingleValuedPairs, StatisticsForProject> processor =
                 MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( mockedConfig,
-                                                                        Collections.singleton( MetricOutputGroup.DOUBLE_SCORE ) );
+                                                                        Collections.singleton( StatisticGroup.DOUBLE_SCORE ) );
         processor.apply( MetricTestDataFactory.getSingleValuedPairsSix() );
     }
 
@@ -923,9 +923,9 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                    null,
                                    null );
 
-        MetricProcessor<SingleValuedPairs, MetricOutputForProject> processor =
+        MetricProcessor<SingleValuedPairs, StatisticsForProject> processor =
                 MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( mockedConfig,
-                                                                        Collections.singleton( MetricOutputGroup.DOUBLE_SCORE ) );
+                                                                        Collections.singleton( StatisticGroup.DOUBLE_SCORE ) );
         processor.apply( MetricTestDataFactory.getSingleValuedPairsFour() );
     }
 

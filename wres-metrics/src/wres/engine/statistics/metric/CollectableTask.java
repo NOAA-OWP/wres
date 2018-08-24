@@ -5,18 +5,18 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-import wres.datamodel.sampledata.MetricInput;
-import wres.datamodel.sampledata.MetricInputException;
-import wres.datamodel.statistics.MetricOutput;
+import wres.datamodel.sampledata.SampleData;
+import wres.datamodel.sampledata.SampleDataException;
+import wres.datamodel.statistics.Statistic;
 
 /**
- * Wraps a {@link Collectable} and a {@link MetricOutput} into a {@link Callable} task to compute a metric result from
+ * Wraps a {@link Collectable} and a {@link Statistic} into a {@link Callable} task to compute a metric result from
  * the intermediate input (output).
  * 
  * @author james.brown@hydrosolved.com
  */
 
-class CollectableTask<S extends MetricInput<?>, T extends MetricOutput<?>, U extends MetricOutput<?>>
+class CollectableTask<S extends SampleData<?>, T extends Statistic<?>, U extends Statistic<?>>
 implements Callable<U>
 {
 
@@ -32,8 +32,8 @@ implements Callable<U>
     private final Future<T> input;
 
     /**
-     * Construct a task with a {@link Collectable} metric and a {@link MetricOutput} that represents the intermediate
-     * input to the {@link Collectable} metric. The {@link MetricOutput} is wrapped in a {@link Future}.
+     * Construct a task with a {@link Collectable} metric and a {@link Statistic} that represents the intermediate
+     * input to the {@link Collectable} metric. The {@link Statistic} is wrapped in a {@link Future}.
      * 
      * @param metric the collectable metric
      * @param input the metric input
@@ -53,7 +53,7 @@ implements Callable<U>
         final T in = input.get();
         if(Objects.isNull(in))
         {
-            throw new MetricInputException("Specify non-null input to the '"+this+"'.");
+            throw new SampleDataException("Specify non-null input to the '"+this+"'.");
         }
         return metric.aggregate(in);
     }

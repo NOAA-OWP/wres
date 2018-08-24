@@ -5,15 +5,16 @@ import java.util.Objects;
 
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.statistics.MetricOutput;
+import wres.datamodel.sampledata.SampleData;
+import wres.datamodel.statistics.Statistic;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 
 /**
- * An immutable store of metadata associated with a {@link MetricOutput}.
+ * An immutable store of metadata associated with a {@link Statistic}.
  * 
  * @author james.brown@hydrosolved.com
  */
-public class MetricOutputMetadata extends Metadata implements Comparable<MetricOutputMetadata>
+public class StatisticMetadata extends Metadata implements Comparable<StatisticMetadata>
 {
     /**
      * The sample size.
@@ -22,10 +23,10 @@ public class MetricOutputMetadata extends Metadata implements Comparable<MetricO
     private final int sampleSize;
 
     /**
-     * The dimension associated with the input data from which the output was computed.
+     * The {@link MeasurementUnit} associated with the {@link SampleData} from which the {@link Statistic} was computed.
      */
 
-    private final MeasurementUnit inputDim;
+    private final MeasurementUnit sampleDataUnit;
 
     /**
      * The metric identifier.
@@ -40,77 +41,77 @@ public class MetricOutputMetadata extends Metadata implements Comparable<MetricO
     private final MetricConstants componentID;
 
     /**
-     * Builds a {@link MetricOutputMetadata} with an input source and an override for the sample size.
+     * Builds a {@link StatisticMetadata} with an input source and an override for the sample size.
      * 
      * @param source the input source
      * @param sampleSize the sample size
-     * @return a {@link MetricOutputMetadata} object
+     * @return a {@link StatisticMetadata} object
      */
 
-    public static MetricOutputMetadata of( final MetricOutputMetadata source,
-                                           final int sampleSize )
+    public static StatisticMetadata of( final StatisticMetadata source,
+                                        final int sampleSize )
     {
-        return MetricOutputMetadata.of( sampleSize,
-                                        source.getMeasurementUnit(),
-                                        source.getInputDimension(),
-                                        source.getMetricID(),
-                                        source.getMetricComponentID(),
-                                        source.getIdentifier(),
-                                        source.getTimeWindow(),
-                                        source.getThresholds(),
-                                        source.getProjectConfig() );
+        return StatisticMetadata.of( sampleSize,
+                                     source.getMeasurementUnit(),
+                                     source.getSampleDataMeasurementUnit(),
+                                     source.getMetricID(),
+                                     source.getMetricComponentID(),
+                                     source.getIdentifier(),
+                                     source.getTimeWindow(),
+                                     source.getThresholds(),
+                                     source.getProjectConfig() );
     }
 
     /**
-     * Builds a {@link MetricOutputMetadata} with an input source and an override for the time window and thresholds.
+     * Builds a {@link StatisticMetadata} with an input source and an override for the time window and thresholds.
      * 
      * @param source the input source
      * @param timeWindow the optional time window
      * @param thresholds the optional thresholds
-     * @return a {@link MetricOutputMetadata} object
+     * @return a {@link StatisticMetadata} object
      */
 
-    public static MetricOutputMetadata of( final MetricOutputMetadata source,
-                                           final TimeWindow timeWindow,
-                                           final OneOrTwoThresholds thresholds )
+    public static StatisticMetadata of( final StatisticMetadata source,
+                                        final TimeWindow timeWindow,
+                                        final OneOrTwoThresholds thresholds )
     {
-        return MetricOutputMetadata.of( source.getSampleSize(),
-                                        source.getMeasurementUnit(),
-                                        source.getInputDimension(),
-                                        source.getMetricID(),
-                                        source.getMetricComponentID(),
-                                        source.getIdentifier(),
-                                        timeWindow,
-                                        thresholds,
-                                        source.getProjectConfig() );
+        return StatisticMetadata.of( source.getSampleSize(),
+                                     source.getMeasurementUnit(),
+                                     source.getSampleDataMeasurementUnit(),
+                                     source.getMetricID(),
+                                     source.getMetricComponentID(),
+                                     source.getIdentifier(),
+                                     timeWindow,
+                                     thresholds,
+                                     source.getProjectConfig() );
     }
 
     /**
-     * Builds a {@link MetricOutputMetadata} with an input source and an override for the metric identifiers.
+     * Builds a {@link StatisticMetadata} with an input source and an override for the metric identifiers.
      * 
      * @param source the input source
      * @param metricID the metric identifier
      * @param componentID the metric component identifier or decomposition template
-     * @return a {@link MetricOutputMetadata} object
+     * @return a {@link StatisticMetadata} object
      */
 
-    public static MetricOutputMetadata of( final MetricOutputMetadata source,
-                                           final MetricConstants metricID,
-                                           final MetricConstants componentID )
+    public static StatisticMetadata of( final StatisticMetadata source,
+                                        final MetricConstants metricID,
+                                        final MetricConstants componentID )
     {
-        return MetricOutputMetadata.of( source.getSampleSize(),
-                                        source.getMeasurementUnit(),
-                                        source.getInputDimension(),
-                                        metricID,
-                                        componentID,
-                                        source.getIdentifier(),
-                                        source.getTimeWindow(),
-                                        source.getThresholds(),
-                                        source.getProjectConfig() );
+        return StatisticMetadata.of( source.getSampleSize(),
+                                     source.getMeasurementUnit(),
+                                     source.getSampleDataMeasurementUnit(),
+                                     metricID,
+                                     componentID,
+                                     source.getIdentifier(),
+                                     source.getTimeWindow(),
+                                     source.getThresholds(),
+                                     source.getProjectConfig() );
     }
-    
+
     /**
-     * Builds a default {@link MetricOutputMetadata} with a prescribed source of {@link Metadata} whose parameters are
+     * Builds a default {@link StatisticMetadata} with a prescribed source of {@link Metadata} whose parameters are
      * copied, together with a sample size, a {@link MeasurementUnit} for the output, and {@link MetricConstants} 
      * identifiers for the metric and the metric component, respectively.
      * 
@@ -119,29 +120,29 @@ public class MetricOutputMetadata extends Metadata implements Comparable<MetricO
      * @param outputDim the output dimension
      * @param metricID the metric identifier
      * @param componentID the metric component identifier or decomposition template
-     * @return a {@link MetricOutputMetadata} object
+     * @return a {@link StatisticMetadata} object
      * @throws NullPointerException if the input metadata is null
      */
 
-    public static MetricOutputMetadata of( final Metadata source,
-                                           final int sampleSize,
-                                           final MeasurementUnit outputDim,
-                                           final MetricConstants metricID,
-                                           final MetricConstants componentID )
+    public static StatisticMetadata of( final Metadata source,
+                                        final int sampleSize,
+                                        final MeasurementUnit outputDim,
+                                        final MetricConstants metricID,
+                                        final MetricConstants componentID )
     {
         Objects.requireNonNull( source,
                                 "Specify a non-null source of input metadata from which to build the output metadata." );
 
-        return MetricOutputMetadata.of( sampleSize,
-                                        outputDim,
-                                        source.getMeasurementUnit(),
-                                        metricID,
-                                        componentID,
-                                        source.getIdentifier(),
-                                        source.getTimeWindow(),
-                                        source.getThresholds(),
-                                        source.getProjectConfig() );
-    }    
+        return StatisticMetadata.of( sampleSize,
+                                     outputDim,
+                                     source.getMeasurementUnit(),
+                                     metricID,
+                                     componentID,
+                                     source.getIdentifier(),
+                                     source.getTimeWindow(),
+                                     source.getThresholds(),
+                                     source.getProjectConfig() );
+    }
 
     /**
      * Returns an instance from the inputs.
@@ -155,12 +156,12 @@ public class MetricOutputMetadata extends Metadata implements Comparable<MetricO
      * @return the output metadata
      */
 
-    public static MetricOutputMetadata of( final Metadata source,
-                                           final MetricConstants metricID,
-                                           final MetricConstants componentID,
-                                           final boolean hasRealUnits,
-                                           final int sampleSize,
-                                           final DatasetIdentifier baselineID )
+    public static StatisticMetadata of( final Metadata source,
+                                        final MetricConstants metricID,
+                                        final MetricConstants componentID,
+                                        final boolean hasRealUnits,
+                                        final int sampleSize,
+                                        final DatasetIdentifier baselineID )
     {
         MeasurementUnit outputDim = null;
 
@@ -183,19 +184,19 @@ public class MetricOutputMetadata extends Metadata implements Comparable<MetricO
                     DatasetIdentifier.of( identifier, baselineID.getScenarioID() );
         }
 
-        return MetricOutputMetadata.of( sampleSize,
-                   outputDim,
-                   source.getMeasurementUnit(),
-                   metricID,
-                   componentID,
-                   identifier,
-                   source.getTimeWindow(),
-                   source.getThresholds(),
-                   source.getProjectConfig() );
+        return StatisticMetadata.of( sampleSize,
+                                     outputDim,
+                                     source.getMeasurementUnit(),
+                                     metricID,
+                                     componentID,
+                                     identifier,
+                                     source.getTimeWindow(),
+                                     source.getThresholds(),
+                                     source.getProjectConfig() );
     }
 
     /**
-     * Builds a default {@link MetricOutputMetadata} with a prescribed sample size, a {@link MeasurementUnit} for the output
+     * Builds a default {@link StatisticMetadata} with a prescribed sample size, a {@link MeasurementUnit} for the output
      * and the input, and {@link MetricConstants} identifiers for the metric and the metric component, respectively.
      * 
      * @param sampleSize the sample size
@@ -203,28 +204,28 @@ public class MetricOutputMetadata extends Metadata implements Comparable<MetricO
      * @param inputDim the input dimension
      * @param metricID the metric identifier
      * @param componentID the metric component identifier or decomposition template
-     * @return a {@link MetricOutputMetadata} object
+     * @return a {@link StatisticMetadata} object
      */
 
-    public static MetricOutputMetadata of( final int sampleSize,
-                                           final MeasurementUnit outputDim,
-                                           final MeasurementUnit inputDim,
-                                           final MetricConstants metricID,
-                                           final MetricConstants componentID )
+    public static StatisticMetadata of( final int sampleSize,
+                                        final MeasurementUnit outputDim,
+                                        final MeasurementUnit inputDim,
+                                        final MetricConstants metricID,
+                                        final MetricConstants componentID )
     {
-        return MetricOutputMetadata.of( sampleSize,
-                                        outputDim,
-                                        inputDim,
-                                        metricID,
-                                        componentID,
-                                        null,
-                                        null,
-                                        null,
-                                        null );
+        return StatisticMetadata.of( sampleSize,
+                                     outputDim,
+                                     inputDim,
+                                     metricID,
+                                     componentID,
+                                     null,
+                                     null,
+                                     null,
+                                     null );
     }
 
     /**
-     * Builds a default {@link MetricOutputMetadata} with a prescribed sample size, a {@link MeasurementUnit} for the output
+     * Builds a default {@link StatisticMetadata} with a prescribed sample size, a {@link MeasurementUnit} for the output
      * and the input, {@link MetricConstants} identifiers for the metric and the metric component, respectively, and an
      * optional {@link DatasetIdentifier} identifier.
      * 
@@ -234,25 +235,25 @@ public class MetricOutputMetadata extends Metadata implements Comparable<MetricO
      * @param metricID the metric identifier
      * @param componentID the metric component identifier or decomposition template
      * @param identifier an optional dataset identifier (may be null)
-     * @return a {@link MetricOutputMetadata} object
+     * @return a {@link StatisticMetadata} object
      */
 
-    public static MetricOutputMetadata of( final int sampleSize,
-                                           final MeasurementUnit outputDim,
-                                           final MeasurementUnit inputDim,
-                                           final MetricConstants metricID,
-                                           final MetricConstants componentID,
-                                           final DatasetIdentifier identifier )
+    public static StatisticMetadata of( final int sampleSize,
+                                        final MeasurementUnit outputDim,
+                                        final MeasurementUnit inputDim,
+                                        final MetricConstants metricID,
+                                        final MetricConstants componentID,
+                                        final DatasetIdentifier identifier )
     {
-        return MetricOutputMetadata.of( sampleSize,
-                                        outputDim,
-                                        inputDim,
-                                        metricID,
-                                        componentID,
-                                        identifier,
-                                        null,
-                                        null,
-                                        null );
+        return StatisticMetadata.of( sampleSize,
+                                     outputDim,
+                                     inputDim,
+                                     metricID,
+                                     componentID,
+                                     identifier,
+                                     null,
+                                     null,
+                                     null );
     }
 
     /**
@@ -267,29 +268,29 @@ public class MetricOutputMetadata extends Metadata implements Comparable<MetricO
      * @param timeWindow the optional time window
      * @param thresholds the optional thresholds
      * @param projectConfig the optional project configuration
-     * @return a {@link MetricOutputMetadata} object
+     * @return a {@link StatisticMetadata} object
      * @throws NullPointerException if the output dimension is null
      */
 
-    public static MetricOutputMetadata of( int sampleSize,
-                                           MeasurementUnit outputDim,
-                                           MeasurementUnit inputDim,
-                                           MetricConstants metricID,
-                                           MetricConstants componentID,
-                                           DatasetIdentifier identifier,
-                                           TimeWindow timeWindow,
-                                           OneOrTwoThresholds thresholds,
-                                           ProjectConfig projectConfig )
+    public static StatisticMetadata of( int sampleSize,
+                                        MeasurementUnit outputDim,
+                                        MeasurementUnit inputDim,
+                                        MetricConstants metricID,
+                                        MetricConstants componentID,
+                                        DatasetIdentifier identifier,
+                                        TimeWindow timeWindow,
+                                        OneOrTwoThresholds thresholds,
+                                        ProjectConfig projectConfig )
     {
-        return new MetricOutputMetadata( sampleSize,
-                                         outputDim,
-                                         inputDim,
-                                         metricID,
-                                         componentID,
-                                         identifier,
-                                         timeWindow,
-                                         thresholds,
-                                         projectConfig );
+        return new StatisticMetadata( sampleSize,
+                                      outputDim,
+                                      inputDim,
+                                      metricID,
+                                      componentID,
+                                      identifier,
+                                      timeWindow,
+                                      thresholds,
+                                      projectConfig );
     }
 
     /**
@@ -328,19 +329,20 @@ public class MetricOutputMetadata extends Metadata implements Comparable<MetricO
     }
 
     /**
-     * Returns the dimension associated with the metric input, which may differ from the output. The output dimension
-     * is returned by {@link #getMeasurementUnit()}.
+     * Returns the measurement unit associated with the {@link SampleData} which may differ from that associated with the
+     * {@link Statistic}. The {@link MeasurementUnit} for the {@link Statistic} is returned by 
+     * {@link #getMeasurementUnit()}.
      * 
-     * @return the dimension
+     * @return the measurement unit
      */
 
-    public MeasurementUnit getInputDimension()
+    public MeasurementUnit getSampleDataMeasurementUnit()
     {
-        return inputDim;
+        return sampleDataUnit;
     }
 
     /**
-     * Returns the sample size associated with the {@link MetricOutput}.
+     * Returns the sample size associated with the {@link Statistic}.
      * 
      * @return the sample size
      */
@@ -352,13 +354,13 @@ public class MetricOutputMetadata extends Metadata implements Comparable<MetricO
 
     /**
      * <p>
-     * Returns <code>true</code> if the input is minimally equal to this {@link MetricOutputMetadata}, otherwise
+     * Returns <code>true</code> if the input is minimally equal to this {@link StatisticMetadata}, otherwise
      * <code>false</code>. The two metadata objects are minimally equal if all of the following are equal, otherwise 
      * they are minimally unequal (and hence also unequal in terms of the stricter {@link Object#equals(Object)}.
      * </p>
      * <ol>
      * <li>{@link #getMeasurementUnit()}</li>
-     * <li>{@link #getInputDimension()}</li>
+     * <li>{@link #getSampleDataMeasurementUnit()}</li>
      * <li>{@link #getMetricID()}</li>
      * <li>{@link #getMetricComponentID()}</li>
      * </ol>
@@ -367,24 +369,24 @@ public class MetricOutputMetadata extends Metadata implements Comparable<MetricO
      * @return true if the mandatory elements match, false otherwise
      */
 
-    public boolean minimumEquals( MetricOutputMetadata meta )
+    public boolean minimumEquals( StatisticMetadata meta )
     {
         return meta.getMetricID() == getMetricID()
                && meta.getMetricComponentID() == getMetricComponentID()
                && meta.getMeasurementUnit().equals( getMeasurementUnit() )
-               && meta.getInputDimension().equals( getInputDimension() );
+               && meta.getSampleDataMeasurementUnit().equals( getSampleDataMeasurementUnit() );
     }
 
     @Override
     public boolean equals( final Object o )
     {
-        if ( ! ( o instanceof MetricOutputMetadata ) )
+        if ( ! ( o instanceof StatisticMetadata ) )
         {
             return false;
         }
-        final MetricOutputMetadata p = ( (MetricOutputMetadata) o );
+        final StatisticMetadata p = ( (StatisticMetadata) o );
         boolean returnMe = super.equals( o ) && p.getSampleSize() == getSampleSize()
-                           && p.getInputDimension().equals( getInputDimension() );
+                           && p.getSampleDataMeasurementUnit().equals( getSampleDataMeasurementUnit() );
         return returnMe && p.getMetricID() == getMetricID()
                && p.getMetricComponentID() == getMetricComponentID();
     }
@@ -396,11 +398,11 @@ public class MetricOutputMetadata extends Metadata implements Comparable<MetricO
                              getSampleSize(),
                              getMetricID(),
                              getMetricComponentID(),
-                             getInputDimension() );
+                             getSampleDataMeasurementUnit() );
     }
 
     @Override
-    public int compareTo( MetricOutputMetadata input )
+    public int compareTo( StatisticMetadata input )
     {
         Objects.requireNonNull( input, "Specify non-null metadata for comparison." );
 
@@ -459,7 +461,9 @@ public class MetricOutputMetadata extends Metadata implements Comparable<MetricO
 
         // Compare the input dimension
         Comparator<MeasurementUnit> compareInputUnits = Comparator.nullsFirst( Comparator.naturalOrder() );
-        return Objects.compare( this.getInputDimension(), input.getInputDimension(), compareInputUnits );
+        return Objects.compare( this.getSampleDataMeasurementUnit(),
+                                input.getSampleDataMeasurementUnit(),
+                                compareInputUnits );
     }
 
     @Override
@@ -469,7 +473,7 @@ public class MetricOutputMetadata extends Metadata implements Comparable<MetricO
         start = start.substring( 0, start.length() - 1 ); // Remove bookend char, ')'
         final StringBuilder b = new StringBuilder( start );
         b.append( "," )
-         .append( inputDim )
+         .append( sampleDataUnit )
          .append( "," )
          .append( sampleSize )
          .append( "," )
@@ -484,32 +488,32 @@ public class MetricOutputMetadata extends Metadata implements Comparable<MetricO
      * Hidden constructor.
      * 
      * @param sampleSize the sample size
-     * @param outputDim the required output dimension
-     * @param inputDim the optional input dimension
+     * @param statisticUnit the required output dimension
+     * @param sampleDataUnit the optional input dimension
      * @param metricID the optional metric identifier
      * @param componentID the optional metric component identifier or decomposition template
      * @param identifier the optional dataset identifier
      * @param timeWindow the optional time window
      * @param thresholds the optional thresholds
      * @param projectConfig the optional project configuration
-     * @return a {@link MetricOutputMetadata} object
+     * @return a {@link StatisticMetadata} object
      * @throws NullPointerException if the output dimension is null
      */
 
-    private MetricOutputMetadata( int sampleSize,
-                                  MeasurementUnit outputDim,
-                                  MeasurementUnit inputDim,
-                                  MetricConstants metricID,
-                                  MetricConstants componentID,
-                                  DatasetIdentifier identifier,
-                                  TimeWindow timeWindow,
-                                  OneOrTwoThresholds thresholds,
-                                  ProjectConfig projectConfig )
+    private StatisticMetadata( int sampleSize,
+                               MeasurementUnit statisticUnit,
+                               MeasurementUnit sampleDataUnit,
+                               MetricConstants metricID,
+                               MetricConstants componentID,
+                               DatasetIdentifier identifier,
+                               TimeWindow timeWindow,
+                               OneOrTwoThresholds thresholds,
+                               ProjectConfig projectConfig )
     {
-        super( outputDim, identifier, timeWindow, thresholds, projectConfig );
+        super( statisticUnit, identifier, timeWindow, thresholds, projectConfig );
 
         this.sampleSize = sampleSize;
-        this.inputDim = inputDim;
+        this.sampleDataUnit = sampleDataUnit;
         this.componentID = componentID;
         this.metricID = metricID;
     }

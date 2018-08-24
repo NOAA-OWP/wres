@@ -15,27 +15,27 @@ import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
-import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.statistics.MatrixOutput;
-import wres.datamodel.statistics.MetricOutputException;
+import wres.datamodel.metadata.StatisticMetadata;
+import wres.datamodel.statistics.MatrixStatistic;
+import wres.datamodel.statistics.StatisticException;
 
 /**
- * Tests the {@link MatrixOutput}.
+ * Tests the {@link MatrixStatistic}.
  * 
  * @author james.brown@hydrosolveDataFactory.com
  */
-public final class MatrixOutputTest
+public final class MatrixStatisticTest
 {
 
     /**
-     * Constructs a {@link MatrixOutput} and tests for equality with another {@link MatrixOutput}.
+     * Constructs a {@link MatrixStatistic} and tests for equality with another {@link MatrixStatistic}.
      */
 
     @Test
     public void test1Equals()
     {
         final Location l1 = Location.of( "A" );
-        final MetricOutputMetadata m1 = MetricOutputMetadata.of( 10,
+        final StatisticMetadata m1 = StatisticMetadata.of( 10,
                                                                            MeasurementUnit.of(),
                                                                            MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
@@ -44,7 +44,7 @@ public final class MatrixOutputTest
                                                                                                                  "B",
                                                                                                                  "C" ) );
         final Location l2 = Location.of( "A" );
-        final MetricOutputMetadata m2 = MetricOutputMetadata.of( 11,
+        final StatisticMetadata m2 = StatisticMetadata.of( 11,
                                                                            MeasurementUnit.of(),
                                                                            MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
@@ -53,7 +53,7 @@ public final class MatrixOutputTest
                                                                                                                  "B",
                                                                                                                  "C" ) );
         final Location l3 = Location.of( "B" );
-        final MetricOutputMetadata m3 = MetricOutputMetadata.of( 10,
+        final StatisticMetadata m3 = StatisticMetadata.of( 10,
                                                                            MeasurementUnit.of(),
                                                                            MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
@@ -61,20 +61,20 @@ public final class MatrixOutputTest
                                                                            DatasetIdentifier.of( l3,
                                                                                                                  "B",
                                                                                                                  "C" ) );
-        final MatrixOutput s = MatrixOutput.of( new double[][] { { 1.0 }, { 1.0 } }, m1 );
-        final MatrixOutput t = MatrixOutput.of( new double[][] { { 1.0 }, { 1.0 } }, m1 );
+        final MatrixStatistic s = MatrixStatistic.of( new double[][] { { 1.0 }, { 1.0 } }, m1 );
+        final MatrixStatistic t = MatrixStatistic.of( new double[][] { { 1.0 }, { 1.0 } }, m1 );
         assertTrue( "Expected equal outputs.", s.equals( t ) );
         assertFalse( "Expected unequal outputs.", s.equals( null ) );
         assertFalse( "Expected unequal outputs.", s.equals( new Double( 1.0 ) ) );
         assertFalse( "Expected unequal outputs.",
-                     s.equals( MatrixOutput.of( new double[][] { { 2.0 }, { 1.0 } }, m1 ) ) );
+                     s.equals( MatrixStatistic.of( new double[][] { { 2.0 }, { 1.0 } }, m1 ) ) );
         assertFalse( "Expected unequal outputs.",
-                     s.equals( MatrixOutput.of( new double[][] { { 2.0 }, { 1.0 } }, m2 ) ) );
-        final MatrixOutput q = MatrixOutput.of( new double[][] { { 1.0 }, { 1.0 } }, m2 );
-        final MatrixOutput r = MatrixOutput.of( new double[][] { { 1.0 }, { 1.0 } }, m3 );
-        final MatrixOutput u = MatrixOutput.of( new double[][] { { 1.0, 1.0 } }, m3 );
-        final MatrixOutput v = MatrixOutput.of( new double[][] { { 1.0 }, { 1.0 }, { 1.0 } }, m3 );
-        final MatrixOutput w = MatrixOutput.of( new double[][] { { 1.0, 1.0 }, { 1.0, 1.0 } }, m3 );
+                     s.equals( MatrixStatistic.of( new double[][] { { 2.0 }, { 1.0 } }, m2 ) ) );
+        final MatrixStatistic q = MatrixStatistic.of( new double[][] { { 1.0 }, { 1.0 } }, m2 );
+        final MatrixStatistic r = MatrixStatistic.of( new double[][] { { 1.0 }, { 1.0 } }, m3 );
+        final MatrixStatistic u = MatrixStatistic.of( new double[][] { { 1.0, 1.0 } }, m3 );
+        final MatrixStatistic v = MatrixStatistic.of( new double[][] { { 1.0 }, { 1.0 }, { 1.0 } }, m3 );
+        final MatrixStatistic w = MatrixStatistic.of( new double[][] { { 1.0, 1.0 }, { 1.0, 1.0 } }, m3 );
         assertTrue( "Expected equal outputs.", q.equals( q ) );
         assertFalse( "Expected unequal outputs.", s.equals( q ) );
         assertFalse( "Expected unequal outputs.", q.equals( s ) );
@@ -82,13 +82,13 @@ public final class MatrixOutputTest
         assertFalse( "Expected unequal outputs.", r.equals( u ) );
         assertFalse( "Expected unequal outputs.", r.equals( v ) );
         assertFalse( "Expected unequal outputs.", r.equals( w ) );
-        final MatrixOutput x =
-                MatrixOutput.of( new double[][] { { 1.0 }, { 1.0 } },
+        final MatrixStatistic x =
+                MatrixStatistic.of( new double[][] { { 1.0 }, { 1.0 } },
                                             Arrays.asList( MetricDimension.ENSEMBLE_MEAN,
                                                            MetricDimension.ENSEMBLE_MEDIAN ),
                                             m1 );
-        final MatrixOutput y =
-                MatrixOutput.of( new double[][] { { 1.0 }, { 1.0 } },
+        final MatrixStatistic y =
+                MatrixStatistic.of( new double[][] { { 1.0 }, { 1.0 } },
                                             Arrays.asList( MetricDimension.ENSEMBLE_MEAN,
                                                            MetricDimension.ENSEMBLE_MEDIAN ),
                                             m1 );
@@ -98,14 +98,14 @@ public final class MatrixOutputTest
     }
 
     /**
-     * Constructs a {@link MatrixOutput} and checks the {@link MatrixOutput#toString()} representation.
+     * Constructs a {@link MatrixStatistic} and checks the {@link MatrixStatistic#toString()} representation.
      */
 
     @Test
     public void test2ToString()
     {
         final Location l1 = Location.of( "A" );
-        final MetricOutputMetadata m1 = MetricOutputMetadata.of( 10,
+        final StatisticMetadata m1 = StatisticMetadata.of( 10,
                                                                            MeasurementUnit.of(),
                                                                            MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
@@ -113,20 +113,20 @@ public final class MatrixOutputTest
                                                                            DatasetIdentifier.of( l1,
                                                                                                                  "B",
                                                                                                                  "C" ) );
-        final MatrixOutput s = MatrixOutput.of( new double[][] { { 1.0 }, { 1.0 } }, m1 );
-        final MatrixOutput t = MatrixOutput.of( new double[][] { { 1.0 }, { 1.0 } }, m1 );
+        final MatrixStatistic s = MatrixStatistic.of( new double[][] { { 1.0 }, { 1.0 } }, m1 );
+        final MatrixStatistic t = MatrixStatistic.of( new double[][] { { 1.0 }, { 1.0 } }, m1 );
         assertTrue( "Expected equal string representations.", s.toString().equals( t.toString() ) );
     }
 
     /**
-     * Constructs a {@link MatrixOutput} and checks the {@link MatrixOutput#getMetadata()}.
+     * Constructs a {@link MatrixStatistic} and checks the {@link MatrixStatistic#getMetadata()}.
      */
 
     @Test
     public void test3GetMetadata()
     {
         final Location l1 = Location.of( "A" );
-        final MetricOutputMetadata m1 = MetricOutputMetadata.of( 10,
+        final StatisticMetadata m1 = StatisticMetadata.of( 10,
                                                                            MeasurementUnit.of(),
                                                                            MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
@@ -135,7 +135,7 @@ public final class MatrixOutputTest
                                                                                                                  "B",
                                                                                                                  "C" ) );
         final Location l2 = Location.of( "B" );
-        final MetricOutputMetadata m2 = MetricOutputMetadata.of( 10,
+        final StatisticMetadata m2 = StatisticMetadata.of( 10,
                                                                            MeasurementUnit.of(),
                                                                            MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
@@ -143,21 +143,21 @@ public final class MatrixOutputTest
                                                                            DatasetIdentifier.of( l2,
                                                                                                                  "B",
                                                                                                                  "C" ) );
-        final MatrixOutput q = MatrixOutput.of( new double[][] { { 1.0 }, { 1.0 } }, m1 );
-        final MatrixOutput r = MatrixOutput.of( new double[][] { { 1.0 }, { 1.0 } }, m2 );
+        final MatrixStatistic q = MatrixStatistic.of( new double[][] { { 1.0 }, { 1.0 } }, m1 );
+        final MatrixStatistic r = MatrixStatistic.of( new double[][] { { 1.0 }, { 1.0 } }, m2 );
         assertFalse( "Metadata equal.", q.getMetadata().equals( r.getMetadata() ) );
         assertTrue( "Metadata unequal.", q.getMetadata().equals( m1 ) );
     }
 
     /**
-     * Constructs a {@link MatrixOutput} and checks the {@link MatrixOutput#hashCode()}.
+     * Constructs a {@link MatrixStatistic} and checks the {@link MatrixStatistic#hashCode()}.
      */
 
     @Test
     public void test4HashCode()
     {
         final Location l1 = Location.of( "A" );
-        final MetricOutputMetadata m1 = MetricOutputMetadata.of( 10,
+        final StatisticMetadata m1 = StatisticMetadata.of( 10,
                                                                            MeasurementUnit.of(),
                                                                            MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
@@ -166,15 +166,15 @@ public final class MatrixOutputTest
                                                                                                                  "B",
                                                                                                                  "C" ) );
 
-        final MatrixOutput q = MatrixOutput.of( new double[][] { { 1.0 }, { 1.0 } }, m1 );
-        final MatrixOutput r = MatrixOutput.of( new double[][] { { 1.0 }, { 1.0 } }, m1 );
-        final MatrixOutput s =
-                MatrixOutput.of( new double[][] { { 1.0 }, { 1.0 } },
+        final MatrixStatistic q = MatrixStatistic.of( new double[][] { { 1.0 }, { 1.0 } }, m1 );
+        final MatrixStatistic r = MatrixStatistic.of( new double[][] { { 1.0 }, { 1.0 } }, m1 );
+        final MatrixStatistic s =
+                MatrixStatistic.of( new double[][] { { 1.0 }, { 1.0 } },
                                             Arrays.asList( MetricDimension.ENSEMBLE_MEAN,
                                                            MetricDimension.ENSEMBLE_MEDIAN ),
                                             m1 );
-        final MatrixOutput t =
-                MatrixOutput.of( new double[][] { { 1.0 }, { 1.0 } },
+        final MatrixStatistic t =
+                MatrixStatistic.of( new double[][] { { 1.0 }, { 1.0 } },
                                             Arrays.asList( MetricDimension.ENSEMBLE_MEAN,
                                                            MetricDimension.ENSEMBLE_MEDIAN ),
                                             m1 );
@@ -188,14 +188,14 @@ public final class MatrixOutputTest
     }
 
     /**
-     * Constructs a {@link MatrixOutput} and tests the {@link MatrixOutput#getComponentAtIndex(int)}.
+     * Constructs a {@link MatrixStatistic} and tests the {@link MatrixStatistic#getComponentAtIndex(int)}.
      */
 
     @Test
     public void test5RowMajorIndex()
     {
         final Location l1 = Location.of( "A" );
-        final MetricOutputMetadata m1 = MetricOutputMetadata.of( 10,
+        final StatisticMetadata m1 = StatisticMetadata.of( 10,
                                                                            MeasurementUnit.of(),
                                                                            MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
@@ -203,8 +203,8 @@ public final class MatrixOutputTest
                                                                            DatasetIdentifier.of( l1,
                                                                                                                  "B",
                                                                                                                  "C" ) );
-        final MatrixOutput s =
-                MatrixOutput.of( new double[][] { { 1.0, 2.0, 3.0 }, { 4.0, 5.0, 6.0 }, { 7.0, 8.0, 9.0 } },
+        final MatrixStatistic s =
+                MatrixStatistic.of( new double[][] { { 1.0, 2.0, 3.0 }, { 4.0, 5.0, 6.0 }, { 7.0, 8.0, 9.0 } },
                                             m1 );
         assertTrue( "Unexpected number of elements in the maxtrix.", s.size() == 9 );
         assertFalse( "Unexpected component names in the maxtrix.", s.hasComponentNames() );
@@ -222,14 +222,14 @@ public final class MatrixOutputTest
     }
 
     /**
-     * Tests the exceptional cases associated with {@link MatrixOutput}.
+     * Tests the exceptional cases associated with {@link MatrixStatistic}.
      */
 
     @Test
     public void test6Exceptions()
     {
         final Location l1 = Location.of( "A" );
-        final MetricOutputMetadata m1 = MetricOutputMetadata.of( 10,
+        final StatisticMetadata m1 = StatisticMetadata.of( 10,
                                                                            MeasurementUnit.of(),
                                                                            MeasurementUnit.of( "CMS" ),
                                                                            MetricConstants.CONTINGENCY_TABLE,
@@ -240,38 +240,38 @@ public final class MatrixOutputTest
         // Null raw data
         try
         {
-            MatrixOutput.of( (MatrixOfDoubles) null, null, m1 );
+            MatrixStatistic.of( (MatrixOfDoubles) null, null, m1 );
             fail( "Expected an exception on attempting to construct a matrix output with null input." );
         }
-        catch ( MetricOutputException e )
+        catch ( StatisticException e )
         {
         }
         // Null metadata 
         try
         {
-            MatrixOutput.of( new double[][] { { 1.0, 2.0, 3.0 }, { 4.0, 5.0, 6.0 }, { 7.0, 8.0, 9.0 } },
+            MatrixStatistic.of( new double[][] { { 1.0, 2.0, 3.0 }, { 4.0, 5.0, 6.0 }, { 7.0, 8.0, 9.0 } },
                                         null );
             fail( "Expected an exception on attempting to construct a matrix output with null metadata." );
         }
-        catch ( MetricOutputException e )
+        catch ( StatisticException e )
         {
         }
         // Wrong number of names
         try
         {
-            MatrixOutput.of( new double[][] { { 1.0 }, { 1.0 } },
+            MatrixStatistic.of( new double[][] { { 1.0 }, { 1.0 } },
                                         Arrays.asList( MetricDimension.ENSEMBLE_MEAN ),
                                         m1 );
             fail( "Expected an exception on attempting to construct a matrix output with fewer named components than "
                   + "requrieDataFactory." );
         }
-        catch ( MetricOutputException e )
+        catch ( StatisticException e )
         {
         }
         // Attempting to access an incorrect index
         try
         {
-            MatrixOutput test = MatrixOutput.of( new double[][] { { 1.0 }, { 1.0 } }, m1 );
+            MatrixStatistic test = MatrixStatistic.of( new double[][] { { 1.0 }, { 1.0 } }, m1 );
             test.getComponentAtIndex( 3 );
             fail( "Expected an exception on attempting to access an incorrect index." );
         }
@@ -281,7 +281,7 @@ public final class MatrixOutputTest
         // Attempting to access an incorrect index
         try
         {
-            MatrixOutput test = MatrixOutput.of( new double[][] { { 1.0, 1.0 }, { 1.0, 1.0 } }, m1 );
+            MatrixStatistic test = MatrixStatistic.of( new double[][] { { 1.0, 1.0 }, { 1.0, 1.0 } }, m1 );
             test.getComponentAtIndex( 4 );
             fail( "Expected an exception on attempting to access an incorrect index." );
         }

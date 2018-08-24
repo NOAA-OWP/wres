@@ -16,11 +16,11 @@ import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.sampledata.MetricInputException;
+import wres.datamodel.metadata.StatisticMetadata;
+import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.DichotomousPairs;
-import wres.datamodel.statistics.DoubleScoreOutput;
-import wres.datamodel.statistics.MatrixOutput;
+import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.MatrixStatistic;
 import wres.engine.statistics.metric.categorical.ThreatScore;
 
 /**
@@ -37,13 +37,13 @@ public final class CollectableTaskTest
     public final ExpectedException exception = ExpectedException.none();
 
     private ExecutorService pairPool;
-    private Collectable<DichotomousPairs, MatrixOutput, DoubleScoreOutput> m;
+    private Collectable<DichotomousPairs, MatrixStatistic, DoubleScoreStatistic> m;
 
     /** 
      * Metadata for the output 
      */
 
-    private MetricOutputMetadata m1;
+    private StatisticMetadata m1;
 
     @Before
     public void setupBeforeEachTest() throws MetricParameterException
@@ -53,7 +53,7 @@ public final class CollectableTaskTest
         //Add some appropriate metrics to the collection
         m = ThreatScore.of();
 
-        m1 = MetricOutputMetadata.of( 100,
+        m1 = StatisticMetadata.of( 100,
                                                 MeasurementUnit.of(),
                                                 MeasurementUnit.of(),
                                                 MetricConstants.CONTINGENCY_TABLE,
@@ -64,18 +64,18 @@ public final class CollectableTaskTest
     public void testCollectableTask() throws ExecutionException, InterruptedException
     {
         //Wrap an input in a future
-        final FutureTask<MatrixOutput> futureInput =
-                new FutureTask<MatrixOutput>( new Callable<MatrixOutput>()
+        final FutureTask<MatrixStatistic> futureInput =
+                new FutureTask<MatrixStatistic>( new Callable<MatrixStatistic>()
                 {
-                    public MatrixOutput call()
+                    public MatrixStatistic call()
                     {
                         final double[][] returnMe =
                                 new double[][] { { 1.0, 1.0 }, { 1.0, 1.0 } };
-                        return MatrixOutput.of( returnMe, m1 );
+                        return MatrixStatistic.of( returnMe, m1 );
                     }
                 } );
 
-        CollectableTask<DichotomousPairs, MatrixOutput, DoubleScoreOutput> task =
+        CollectableTask<DichotomousPairs, MatrixStatistic, DoubleScoreStatistic> task =
                 new CollectableTask<>( m,
                                        futureInput );
 
@@ -83,7 +83,7 @@ public final class CollectableTaskTest
         pairPool.submit( futureInput );
 
         //Should not throw an exception
-        DoubleScoreOutput output = task.call();
+        DoubleScoreStatistic output = task.call();
 
         assertEquals( 0.333333, output.getData(), DOUBLE_COMPARE_THRESHOLD );
     }
@@ -91,10 +91,10 @@ public final class CollectableTaskTest
     @Test
     public void testExceptionOnNullInput() throws ExecutionException, InterruptedException
     {
-        final FutureTask<MatrixOutput> futureInputNull =
-                new FutureTask<MatrixOutput>( new Callable<MatrixOutput>()
+        final FutureTask<MatrixStatistic> futureInputNull =
+                new FutureTask<MatrixStatistic>( new Callable<MatrixStatistic>()
                 {
-                    public MatrixOutput call()
+                    public MatrixStatistic call()
                     {
                         return null;
                     }
@@ -102,12 +102,12 @@ public final class CollectableTaskTest
 
         pairPool.submit( futureInputNull );
 
-        final CollectableTask<DichotomousPairs, MatrixOutput, DoubleScoreOutput> task2 =
+        final CollectableTask<DichotomousPairs, MatrixStatistic, DoubleScoreStatistic> task2 =
                 new CollectableTask<>( m,
                                        futureInputNull );
 
         //Should throw an exception
-        exception.expect( MetricInputException.class );
+        exception.expect( SampleDataException.class );
         task2.call();
     }
 
