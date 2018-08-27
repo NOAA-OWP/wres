@@ -87,7 +87,7 @@ public class MeanSquareErrorSkillScore extends DecomposableScore<SingleValuedPai
         DatasetIdentifier baselineIdentifier = null;
         if ( s.hasBaseline() )
         {
-            baselineIdentifier = s.getMetadataForBaseline().getIdentifier();
+            baselineIdentifier = s.getBaselineData().getMetadata().getIdentifier();
         }
         final StatisticMetadata metOut = StatisticMetadata.of( s.getMetadata(),
                                                                      this.getID(),

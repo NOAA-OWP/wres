@@ -9,11 +9,11 @@ import java.util.List;
 import java.util.Objects;
 import java.util.SortedSet;
 
-import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.time.Event;
 import wres.datamodel.time.BasicTimeSeries;
+import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesBuilder;
 import wres.datamodel.time.TimeSeriesHelper;
@@ -41,7 +41,7 @@ public class TimeSeriesOfSingleValuedPairs extends SingleValuedPairs implements 
     @Override
     public TimeSeriesOfSingleValuedPairs getBaselineData()
     {
-        if ( !hasBaseline() )
+        if ( Objects.isNull( this.getRawDataForBaseline() ) )
         {
             return null;
         }
@@ -334,7 +334,6 @@ public class TimeSeriesOfSingleValuedPairs extends SingleValuedPairs implements 
             return this;
         }
 
-
     }
 
     /**
@@ -349,7 +348,7 @@ public class TimeSeriesOfSingleValuedPairs extends SingleValuedPairs implements 
         super( b );
         this.main = BasicTimeSeries.of( b.data );
         // Baseline data?
-        if ( this.hasBaseline() )
+        if ( Objects.nonNull( b.baselineData ) )
         {
             this.baseline = BasicTimeSeries.of( b.baselineData );
         }

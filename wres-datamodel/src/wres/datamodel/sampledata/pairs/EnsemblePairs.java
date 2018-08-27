@@ -1,6 +1,7 @@
 package wres.datamodel.sampledata.pairs;
 
 import java.util.List;
+import java.util.Objects;
 
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.metadata.SampleMetadata;
@@ -123,7 +124,7 @@ public class EnsemblePairs extends BasicPairs<EnsemblePair>
     @Override
     public EnsemblePairs getBaselineData()
     {
-        if ( !hasBaseline() )
+        if ( Objects.isNull( this.getRawDataForBaseline() ) )
         {
             return null;
         }

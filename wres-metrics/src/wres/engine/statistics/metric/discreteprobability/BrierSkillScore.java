@@ -51,7 +51,7 @@ public class BrierSkillScore extends BrierScore
         DatasetIdentifier baselineIdentifier = null;
         if ( s.hasBaseline() )
         {
-            baselineIdentifier = s.getMetadataForBaseline().getIdentifier();
+            baselineIdentifier = s.getBaselineData().getMetadata().getIdentifier();
         }
 
         StatisticMetadata metOut =

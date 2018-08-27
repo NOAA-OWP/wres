@@ -28,7 +28,7 @@ public interface SampleData<S> extends Iterable<S>
 
     default boolean hasBaseline()
     {
-        return Objects.nonNull( this.getRawDataForBaseline() );
+        return Objects.nonNull( this.getBaselineData() );
     }
 
     /**
@@ -65,23 +65,6 @@ public interface SampleData<S> extends Iterable<S>
      */
 
     SampleData<S> getBaselineData();
-
-    /**
-     * Returns the raw sample associated with a baseline/reference for skill calculations or null if no baseline is
-     * defined.
-     * 
-     * @return the raw sample associated with a baseline
-     */
-
-    List<S> getRawDataForBaseline();
-
-    /**
-     * Returns the metadata associated with the baseline sample or null if no baseline is defined.
-     * 
-     * @return the metadata associated with the baseline sample
-     */
-
-    SampleMetadata getMetadataForBaseline();
 
     /**
      * Returns a climatological dataset if {@link #hasClimatology()} returns true, otherwise null.

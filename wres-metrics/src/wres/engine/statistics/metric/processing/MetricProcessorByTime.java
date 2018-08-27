@@ -279,7 +279,7 @@ public abstract class MetricProcessorByTime<S extends SampleData<?>>
             SampleMetadata baselineMeta = null;
             if ( input.hasBaseline() )
             {
-                baselineMeta = SampleMetadata.of( input.getMetadataForBaseline(), oneOrTwo );
+                baselineMeta = SampleMetadata.of( input.getBaselineData().getMetadata(), oneOrTwo );
             }
 
             SingleValuedPairs pairs = SingleValuedPairs.of( input,

@@ -1,6 +1,7 @@
 package wres.datamodel.sampledata.pairs;
 
 import java.util.List;
+import java.util.Objects;
 
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.metadata.SampleMetadata;
@@ -125,7 +126,7 @@ public class DiscreteProbabilityPairs extends BasicPairs<DiscreteProbabilityPair
 
     public DiscreteProbabilityPairs getBaselineData()
     {
-        if ( !hasBaseline() )
+        if ( Objects.isNull( this.getRawDataForBaseline() ) )
         {
             return null;
         }

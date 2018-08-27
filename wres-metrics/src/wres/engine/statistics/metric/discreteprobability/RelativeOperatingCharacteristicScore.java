@@ -71,7 +71,7 @@ public class RelativeOperatingCharacteristicScore extends OrdinaryScore<Discrete
             double rocMain = getAUCMasonGraham( s );
             double rocBase = getAUCMasonGraham( s.getBaselineData() );
             rocScore = ( rocMain - rocBase ) / ( 1.0 - rocBase );
-            baselineIdentifier = s.getMetadataForBaseline().getIdentifier();
+            baselineIdentifier = s.getBaselineData().getMetadata().getIdentifier();
         }
         else
         {

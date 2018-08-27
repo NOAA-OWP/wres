@@ -87,7 +87,7 @@ public class MulticategoryPairs extends BasicPairs<MulticategoryPair>
     @Override
     public MulticategoryPairs getBaselineData()
     {
-        if ( !hasBaseline() )
+        if ( Objects.isNull( this.getRawDataForBaseline() ) )
         {
             return null;
         }
