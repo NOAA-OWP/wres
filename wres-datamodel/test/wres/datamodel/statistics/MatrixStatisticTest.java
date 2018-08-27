@@ -13,11 +13,10 @@ import wres.datamodel.MatrixOfDoubles;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
+import wres.datamodel.metadata.MeasurementUnit;
+import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.StatisticMetadata;
-import wres.datamodel.statistics.MatrixStatistic;
-import wres.datamodel.statistics.StatisticException;
 
 /**
  * Tests the {@link MatrixStatistic}.
@@ -35,32 +34,33 @@ public final class MatrixStatisticTest
     public void test1Equals()
     {
         final Location l1 = Location.of( "A" );
-        final StatisticMetadata m1 = StatisticMetadata.of( 10,
-                                                                           MeasurementUnit.of(),
-                                                                           MeasurementUnit.of( "CMS" ),
-                                                                           MetricConstants.CONTINGENCY_TABLE,
-                                                                           MetricConstants.MAIN,
-                                                                           DatasetIdentifier.of( l1,
-                                                                                                                 "B",
-                                                                                                                 "C" ) );
+        final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                                              DatasetIdentifier.of( l1,
+                                                                                                    "B",
+                                                                                                    "C" ) ),
+                                                           10,
+                                                           MeasurementUnit.of(),
+                                                           MetricConstants.CONTINGENCY_TABLE,
+                                                           MetricConstants.MAIN );
         final Location l2 = Location.of( "A" );
-        final StatisticMetadata m2 = StatisticMetadata.of( 11,
-                                                                           MeasurementUnit.of(),
-                                                                           MeasurementUnit.of( "CMS" ),
-                                                                           MetricConstants.CONTINGENCY_TABLE,
-                                                                           MetricConstants.MAIN,
-                                                                           DatasetIdentifier.of( l2,
-                                                                                                                 "B",
-                                                                                                                 "C" ) );
+        final StatisticMetadata m2 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                                              DatasetIdentifier.of( l2,
+                                                                                                    "B",
+                                                                                                    "C" ) ),
+                                                           11,
+                                                           MeasurementUnit.of(),
+                                                           MetricConstants.CONTINGENCY_TABLE,
+                                                           MetricConstants.MAIN );
         final Location l3 = Location.of( "B" );
-        final StatisticMetadata m3 = StatisticMetadata.of( 10,
-                                                                           MeasurementUnit.of(),
-                                                                           MeasurementUnit.of( "CMS" ),
-                                                                           MetricConstants.CONTINGENCY_TABLE,
-                                                                           MetricConstants.MAIN,
-                                                                           DatasetIdentifier.of( l3,
-                                                                                                                 "B",
-                                                                                                                 "C" ) );
+        final StatisticMetadata m3 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                                              DatasetIdentifier.of( l3,
+                                                                                                    "B",
+                                                                                                    "C" ) ),
+                                                           10,
+                                                           MeasurementUnit.of(),
+                                                           MetricConstants.CONTINGENCY_TABLE,
+                                                           MetricConstants.MAIN );
+        
         final MatrixStatistic s = MatrixStatistic.of( new double[][] { { 1.0 }, { 1.0 } }, m1 );
         final MatrixStatistic t = MatrixStatistic.of( new double[][] { { 1.0 }, { 1.0 } }, m1 );
         assertTrue( "Expected equal outputs.", s.equals( t ) );
@@ -105,14 +105,15 @@ public final class MatrixStatisticTest
     public void test2ToString()
     {
         final Location l1 = Location.of( "A" );
-        final StatisticMetadata m1 = StatisticMetadata.of( 10,
-                                                                           MeasurementUnit.of(),
-                                                                           MeasurementUnit.of( "CMS" ),
-                                                                           MetricConstants.CONTINGENCY_TABLE,
-                                                                           MetricConstants.MAIN,
-                                                                           DatasetIdentifier.of( l1,
-                                                                                                                 "B",
-                                                                                                                 "C" ) );
+        final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                                              DatasetIdentifier.of( l1,
+                                                                                                    "B",
+                                                                                                    "C" ) ),
+                                                           10,
+                                                           MeasurementUnit.of(),
+                                                           MetricConstants.CONTINGENCY_TABLE,
+                                                           MetricConstants.MAIN );
+        
         final MatrixStatistic s = MatrixStatistic.of( new double[][] { { 1.0 }, { 1.0 } }, m1 );
         final MatrixStatistic t = MatrixStatistic.of( new double[][] { { 1.0 }, { 1.0 } }, m1 );
         assertTrue( "Expected equal string representations.", s.toString().equals( t.toString() ) );
@@ -126,23 +127,25 @@ public final class MatrixStatisticTest
     public void test3GetMetadata()
     {
         final Location l1 = Location.of( "A" );
-        final StatisticMetadata m1 = StatisticMetadata.of( 10,
-                                                                           MeasurementUnit.of(),
-                                                                           MeasurementUnit.of( "CMS" ),
-                                                                           MetricConstants.CONTINGENCY_TABLE,
-                                                                           MetricConstants.MAIN,
-                                                                           DatasetIdentifier.of( l1,
-                                                                                                                 "B",
-                                                                                                                 "C" ) );
+        final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                                              DatasetIdentifier.of( l1,
+                                                                                                    "B",
+                                                                                                    "C" ) ),
+                                                           10,
+                                                           MeasurementUnit.of(),
+                                                           MetricConstants.CONTINGENCY_TABLE,
+                                                           MetricConstants.MAIN );
+        
         final Location l2 = Location.of( "B" );
-        final StatisticMetadata m2 = StatisticMetadata.of( 10,
-                                                                           MeasurementUnit.of(),
-                                                                           MeasurementUnit.of( "CMS" ),
-                                                                           MetricConstants.CONTINGENCY_TABLE,
-                                                                           MetricConstants.MAIN,
-                                                                           DatasetIdentifier.of( l2,
-                                                                                                                 "B",
-                                                                                                                 "C" ) );
+        final StatisticMetadata m2 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                                              DatasetIdentifier.of( l2,
+                                                                                                    "B",
+                                                                                                    "C" ) ),
+                                                           10,
+                                                           MeasurementUnit.of(),
+                                                           MetricConstants.CONTINGENCY_TABLE,
+                                                           MetricConstants.MAIN );
+        
         final MatrixStatistic q = MatrixStatistic.of( new double[][] { { 1.0 }, { 1.0 } }, m1 );
         final MatrixStatistic r = MatrixStatistic.of( new double[][] { { 1.0 }, { 1.0 } }, m2 );
         assertFalse( "Metadata equal.", q.getMetadata().equals( r.getMetadata() ) );
@@ -157,14 +160,14 @@ public final class MatrixStatisticTest
     public void test4HashCode()
     {
         final Location l1 = Location.of( "A" );
-        final StatisticMetadata m1 = StatisticMetadata.of( 10,
-                                                                           MeasurementUnit.of(),
-                                                                           MeasurementUnit.of( "CMS" ),
-                                                                           MetricConstants.CONTINGENCY_TABLE,
-                                                                           MetricConstants.MAIN,
-                                                                           DatasetIdentifier.of( l1,
-                                                                                                                 "B",
-                                                                                                                 "C" ) );
+        final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                                              DatasetIdentifier.of( l1,
+                                                                                                    "B",
+                                                                                                    "C" ) ),
+                                                           10,
+                                                           MeasurementUnit.of(),
+                                                           MetricConstants.CONTINGENCY_TABLE,
+                                                           MetricConstants.MAIN );
 
         final MatrixStatistic q = MatrixStatistic.of( new double[][] { { 1.0 }, { 1.0 } }, m1 );
         final MatrixStatistic r = MatrixStatistic.of( new double[][] { { 1.0 }, { 1.0 } }, m1 );
@@ -195,14 +198,14 @@ public final class MatrixStatisticTest
     public void test5RowMajorIndex()
     {
         final Location l1 = Location.of( "A" );
-        final StatisticMetadata m1 = StatisticMetadata.of( 10,
-                                                                           MeasurementUnit.of(),
-                                                                           MeasurementUnit.of( "CMS" ),
-                                                                           MetricConstants.CONTINGENCY_TABLE,
-                                                                           MetricConstants.MAIN,
-                                                                           DatasetIdentifier.of( l1,
-                                                                                                                 "B",
-                                                                                                                 "C" ) );
+        final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                                              DatasetIdentifier.of( l1,
+                                                                                                    "B",
+                                                                                                    "C" ) ),
+                                                           10,
+                                                           MeasurementUnit.of(),
+                                                           MetricConstants.CONTINGENCY_TABLE,
+                                                           MetricConstants.MAIN );
         final MatrixStatistic s =
                 MatrixStatistic.of( new double[][] { { 1.0, 2.0, 3.0 }, { 4.0, 5.0, 6.0 }, { 7.0, 8.0, 9.0 } },
                                             m1 );
@@ -229,14 +232,14 @@ public final class MatrixStatisticTest
     public void test6Exceptions()
     {
         final Location l1 = Location.of( "A" );
-        final StatisticMetadata m1 = StatisticMetadata.of( 10,
-                                                                           MeasurementUnit.of(),
-                                                                           MeasurementUnit.of( "CMS" ),
-                                                                           MetricConstants.CONTINGENCY_TABLE,
-                                                                           MetricConstants.MAIN,
-                                                                           DatasetIdentifier.of( l1,
-                                                                                                                 "B",
-                                                                                                                 "C" ) );
+        final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                                              DatasetIdentifier.of( l1,
+                                                                                                    "B",
+                                                                                                    "C" ) ),
+                                                           10,
+                                                           MeasurementUnit.of(),
+                                                           MetricConstants.CONTINGENCY_TABLE,
+                                                           MetricConstants.MAIN );
         // Null raw data
         try
         {

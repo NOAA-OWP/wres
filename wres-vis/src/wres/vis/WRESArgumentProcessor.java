@@ -17,9 +17,9 @@ import ohd.hseb.util.misc.HString;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
 import wres.datamodel.metadata.DatasetIdentifier;
+import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.StatisticMetadata;
-import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.statistics.BoxPlotStatistic;
 import wres.datamodel.statistics.ListOfStatistics;
@@ -85,12 +85,12 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         StatisticMetadata meta = displayPlotInput.getMetadata();
         extractStandardArgumentsFromMetadata( meta );
 
-        recordWindowingArguments( meta );
+        recordWindowingArguments( meta.getSampleMetadata() );
 
         addArgument( "diagramInstanceDescription",
-                     "at Lead Hour " + meta.getTimeWindow().getLatestLeadTimeInHours()
+                     "at Lead Hour " + meta.getSampleMetadata().getTimeWindow().getLatestLeadTimeInHours()
                                                    + " for "
-                                                   + meta.getThresholds() );
+                                                   + meta.getSampleMetadata().getThresholds() );
         addArgument( "probabilities",
                      HString.buildStringFromArray( displayPlotInput.getProbabilities().getDoubles(), ", " )
                             .replaceAll( "0.0,", "min," )
@@ -117,7 +117,8 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         if ( plotType != null && plotType == ChartType.POOLING_WINDOW )
         {
             SortedSet<TimeWindow> timeWindows =
-                    Slicer.discover( displayedPlotInput, next -> next.getMetadata().getTimeWindow() );
+                    Slicer.discover( displayedPlotInput,
+                                     next -> next.getMetadata().getSampleMetadata().getTimeWindow() );
             recordWindowingArguments( timeWindows.first().getEarliestTime(),
                                       timeWindows.last().getLatestTime(),
                                       timeWindows.first().getEarliestLeadTimeInHours(),
@@ -126,7 +127,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         }
         else
         {
-            recordWindowingArguments( meta );
+            recordWindowingArguments( meta.getSampleMetadata() );
         }
 
         initializeFunctionInformation();
@@ -142,11 +143,11 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         addArgument( "metricName", meta.getMetricID().toString() );
         addArgument( "metricShortName", meta.getMetricID().toString() );
         addArgument( "outputUnits", meta.getMeasurementUnit().toString() );
-        addArgument( "inputUnits", meta.getSampleDataMeasurementUnit().toString() );
+        addArgument( "inputUnits", meta.getSampleMetadata().getMeasurementUnit().toString() );
         addArgument( "outputUnitsLabelSuffix", " [" + meta.getMeasurementUnit() + "]" );
-        addArgument( "inputUnitsLabelSuffix", " [" + meta.getSampleDataMeasurementUnit() + "]" );
+        addArgument( "inputUnitsLabelSuffix", " [" + meta.getSampleMetadata().getMeasurementUnit() + "]" );
 
-        recordIdentifierArguments( meta );
+        recordIdentifierArguments( meta.getSampleMetadata() );
 
         //I could create a helper method to handle this wrapping, but I don't think this will be used outside of this context,
         //so why bother?  (This relates to an email James wrote.)
@@ -241,11 +242,12 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         final String legendTitle = "Threshold";
         String legendUnitsText = "";
         SortedSet<Boolean> thresholds =
-                Slicer.discover( displayedPlotInput, next -> next.getMetadata().getThresholds().first().isQuantile() );
-        
+                Slicer.discover( displayedPlotInput,
+                                 next -> next.getMetadata().getSampleMetadata().getThresholds().first().isQuantile() );
+
         if ( thresholds.contains( true ) || ( thresholds.size() > 1 ) )
         {
-            legendUnitsText += " [" + meta.getSampleDataMeasurementUnit() + "]";
+            legendUnitsText += " [" + meta.getSampleMetadata().getMeasurementUnit() + "]";
         }
 
         addArgument( "legendTitle", legendTitle );
@@ -273,8 +275,9 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         // Create a string from the set of secondary thresholds
         String supplementary = "";
         SortedSet<Threshold> secondThresholds =
-                Slicer.discover( displayedPlotInput, next -> next.getMetadata().getThresholds().second() );
-        if( !secondThresholds.isEmpty() )
+                Slicer.discover( displayedPlotInput,
+                                 next -> next.getMetadata().getSampleMetadata().getThresholds().second() );
+        if ( !secondThresholds.isEmpty() )
         {
             String set = secondThresholds.toString();
             supplementary = " with occurrences defined as " + set;
@@ -300,7 +303,10 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
     public <T extends Statistic<?>> void addPoolingWindowArguments(ListOfStatistics<T> displayedPlotInput )
     {
         final StatisticMetadata meta = displayedPlotInput.getData().get( 0 ).getMetadata();
-        if ( !meta.getTimeWindow().getEarliestLeadTime().equals( meta.getTimeWindow().getLatestLeadTime() ) )
+        if ( !meta.getSampleMetadata()
+                  .getTimeWindow()
+                  .getEarliestLeadTime()
+                  .equals( meta.getSampleMetadata().getTimeWindow().getLatestLeadTime() ) )
         {
             addArgument( "legendTitle", "Lead time window [HOUR], Threshold " );
         }
@@ -309,7 +315,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
 
             addArgument( "legendTitle", "Lead time [HOUR], Threshold " );
         }
-        addArgument( "legendUnitsText", "[" + meta.getSampleDataMeasurementUnit() + "]" );
+        addArgument( "legendUnitsText", "[" + meta.getSampleMetadata().getMeasurementUnit() + "]" );
     }
 
     public void addDurationMetricArguments()
@@ -326,7 +332,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
     {
         final StatisticMetadata meta = displayedPlotInput.getData().get( 0 ).getMetadata();
         addArgument( "legendTitle", "Threshold " );
-        addArgument( "legendUnitsText", "[" + meta.getSampleDataMeasurementUnit() + "]" );
+        addArgument( "legendUnitsText", "[" + meta.getSampleMetadata().getMeasurementUnit() + "]" );
     }
 
     /**
@@ -335,7 +341,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
      */
     public void addBaselineArguments( StatisticMetadata meta )
     {
-        final DatasetIdentifier identifier = meta.getIdentifier();
+        final DatasetIdentifier identifier = meta.getSampleMetadata().getIdentifier();
         String baselineSuffix = "";
         if ( !Objects.isNull( identifier.getScenarioIDForBaseline() ) )
         {

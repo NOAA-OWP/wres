@@ -179,14 +179,15 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
         Set<Path> pathsWrittenTo = new HashSet<>( 1 );
 
         // Loop across time windows
-        SortedSet<TimeWindow> timeWindows = Slicer.discover( output, next -> next.getMetadata().getTimeWindow() );
+        SortedSet<TimeWindow> timeWindows =
+                Slicer.discover( output, next -> next.getMetadata().getSampleMetadata().getTimeWindow() );
         for ( TimeWindow timeWindow : timeWindows )
         {
             ListOfStatistics<MultiVectorStatistic> next =
-                    Slicer.filter( output, data -> data.getTimeWindow().equals( timeWindow ) );
-            
+                    Slicer.filter( output, data -> data.getSampleMetadata().getTimeWindow().equals( timeWindow ) );
+
             StatisticMetadata meta = next.getData().get( 0 ).getMetadata();
-            
+
             List<RowCompareByLeft> rows = getRowsForOneDiagram( next, formatter );
 
             // Add the header row
@@ -228,15 +229,15 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
 
         // Loop across thresholds
         SortedSet<OneOrTwoThresholds> thresholds =
-                Slicer.discover( output, meta -> meta.getMetadata().getThresholds() );
+                Slicer.discover( output, meta -> meta.getMetadata().getSampleMetadata().getThresholds() );
         for ( OneOrTwoThresholds threshold : thresholds )
         {
-            
+
             ListOfStatistics<MultiVectorStatistic> next =
-                    Slicer.filter( output, data -> data.getThresholds().equals( threshold ) );
-            
+                    Slicer.filter( output, data -> data.getSampleMetadata().getThresholds().equals( threshold ) );
+
             StatisticMetadata meta = next.getData().get( 0 ).getMetadata();
-            
+
             List<RowCompareByLeft> rows = CommaSeparatedDiagramWriter.getRowsForOneDiagram( next, formatter );
 
             // Add the header row
@@ -273,8 +274,9 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
 
         // Discover the time windows and thresholds to loop
         SortedSet<OneOrTwoThresholds> thresholds =
-                Slicer.discover( output, meta -> meta.getMetadata().getThresholds() );
-        SortedSet<TimeWindow> timeWindows = Slicer.discover( output, meta -> meta.getMetadata().getTimeWindow() );
+                Slicer.discover( output, meta -> meta.getMetadata().getSampleMetadata().getThresholds() );
+        SortedSet<TimeWindow> timeWindows =
+                Slicer.discover( output, meta -> meta.getMetadata().getSampleMetadata().getTimeWindow() );
         // Loop across time windows
         for ( TimeWindow timeWindow : timeWindows )
         {
@@ -284,10 +286,14 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
             {
                 // One output per time window and threshold
                 MultiVectorStatistic nextOutput = Slicer.filter( output,
-                                                              data -> data.getThresholds().equals( threshold )
-                                                                      && data.getTimeWindow().equals( timeWindow ) )
-                                                     .getData()
-                                                     .get( 0 );
+                                                                 data -> data.getSampleMetadata()
+                                                                             .getThresholds()
+                                                                             .equals( threshold )
+                                                                         && data.getSampleMetadata()
+                                                                                .getTimeWindow()
+                                                                                .equals( timeWindow ) )
+                                                        .getData()
+                                                        .get( 0 );
                 CommaSeparatedDiagramWriter.addRowsForOneDiagramAtOneTimeWindowAndThreshold( nextOutput, merge );
             }
             // Add the merged rows
@@ -388,11 +394,11 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
         // Discover first item to help
         MultiVectorStatistic data = output.getData().get( 0 );
         String metricName = data.getMetadata().getMetricID().toString();
-        
+
         Set<MetricDimension> dimensions = data.getData().keySet();
         //Add the metric name, dimension, and threshold for each column-vector
         SortedSet<OneOrTwoThresholds> thresholds =
-                Slicer.discover( output, meta -> meta.getMetadata().getThresholds() );
+                Slicer.discover( output, meta -> meta.getMetadata().getSampleMetadata().getThresholds() );
         for ( OneOrTwoThresholds nextThreshold : thresholds )
         {
             for ( MetricDimension nextDimension : dimensions )

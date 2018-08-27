@@ -65,12 +65,11 @@ public final class ContinousRankedProbabilityScoreTest
         EnsemblePairs input = EnsemblePairs.of( pairs, SampleMetadata.of() );
 
         //Metadata for the output
-        StatisticMetadata m1 =
-                StatisticMetadata.of( input.getRawData().size(),
-                                                   MeasurementUnit.of(),
-                                                   MeasurementUnit.of(),
-                                                   MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE,
-                                                   MetricConstants.MAIN );
+        final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
+                                                           input.getRawData().size(),
+                                                           MeasurementUnit.of(),
+                                                           MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE,
+                                                           MetricConstants.MAIN );
         //Check the results       
         final DoubleScoreStatistic actual = crps.apply( input );
         final DoubleScoreStatistic expected = DoubleScoreStatistic.of( 7.63, m1 );
@@ -101,12 +100,11 @@ public final class ContinousRankedProbabilityScoreTest
         EnsemblePairs input = EnsemblePairs.of( pairs, SampleMetadata.of() );
 
         //Metadata for the output
-        StatisticMetadata m1 =
-                StatisticMetadata.of( input.getRawData().size(),
-                                                   MeasurementUnit.of(),
-                                                   MeasurementUnit.of(),
-                                                   MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE,
-                                                   MetricConstants.MAIN );
+        final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
+                                                           input.getRawData().size(),
+                                                           MeasurementUnit.of(),
+                                                           MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE,
+                                                           MetricConstants.MAIN );
         //Check the results       
         DoubleScoreStatistic actual = crps.apply( input );
         DoubleScoreStatistic expected = DoubleScoreStatistic.of( 8.734401927437641, m1 );
@@ -132,12 +130,11 @@ public final class ContinousRankedProbabilityScoreTest
         EnsemblePairs input = EnsemblePairs.of( pairs, SampleMetadata.of() );
 
         //Metadata for the output
-        StatisticMetadata m1 =
-                StatisticMetadata.of( input.getRawData().size(),
-                                                   MeasurementUnit.of(),
-                                                   MeasurementUnit.of(),
-                                                   MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE,
-                                                   MetricConstants.MAIN );
+        final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
+                                                           input.getRawData().size(),
+                                                           MeasurementUnit.of(),
+                                                           MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE,
+                                                           MetricConstants.MAIN );
         //Check the results       
         DoubleScoreStatistic actual = crps.apply( input );
         DoubleScoreStatistic expected = DoubleScoreStatistic.of( 13.36, m1 );
@@ -164,12 +161,11 @@ public final class ContinousRankedProbabilityScoreTest
         EnsemblePairs input = EnsemblePairs.of( pairs, SampleMetadata.of() );
 
         //Metadata for the output
-        StatisticMetadata m1 =
-                StatisticMetadata.of( input.getRawData().size(),
-                                                   MeasurementUnit.of(),
-                                                   MeasurementUnit.of(),
-                                                   MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE,
-                                                   MetricConstants.MAIN );
+        final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
+                                                           input.getRawData().size(),
+                                                           MeasurementUnit.of(),
+                                                           MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE,
+                                                           MetricConstants.MAIN );
         //Check the results       
         DoubleScoreStatistic actual = crps.apply( input );
         DoubleScoreStatistic expected = DoubleScoreStatistic.of( 4.56, m1 );

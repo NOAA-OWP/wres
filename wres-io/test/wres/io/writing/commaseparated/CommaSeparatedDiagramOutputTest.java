@@ -28,13 +28,14 @@ import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.ReferenceTime;
+import wres.datamodel.metadata.SampleMetadata;
+import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.statistics.ListOfStatistics;
+import wres.datamodel.statistics.MultiVectorStatistic;
 import wres.datamodel.statistics.StatisticAccessException;
 import wres.datamodel.statistics.StatisticsForProject;
-import wres.datamodel.statistics.MultiVectorStatistic;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
@@ -90,16 +91,15 @@ public class CommaSeparatedDiagramOutputTest extends CommaSeparatedWriterTestHel
                 DatasetIdentifier.of( Location.of( LID ), "SQIN", "HEFS", "ESP" );
 
         StatisticMetadata fakeMetadata =
-                StatisticMetadata.of( 1000,
-                                         MeasurementUnit.of(),
-                                         MeasurementUnit.of( "CMS" ),
-                                         MetricConstants.RELIABILITY_DIAGRAM,
-                                         null,
-                                         datasetIdentifier,
-                                         timeOne,
-                                         threshold,
-                                         null  );
-
+                StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                         datasetIdentifier,
+                                                         timeOne,
+                                                         threshold ),
+                                      1000,
+                                      MeasurementUnit.of(),
+                                      MetricConstants.RELIABILITY_DIAGRAM,
+                                      null );
+        
         Map<MetricDimension, double[]> fakeOutputs = new HashMap<>();
         fakeOutputs.put( MetricDimension.FORECAST_PROBABILITY,
                          new double[] { 0.08625, 0.2955, 0.50723, 0.70648, 0.92682 } );

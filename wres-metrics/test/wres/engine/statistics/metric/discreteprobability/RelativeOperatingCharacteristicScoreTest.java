@@ -86,11 +86,11 @@ public final class RelativeOperatingCharacteristicScoreTest
                 DiscreteProbabilityPairs.of( values, SampleMetadata.of() );
 
         //Metadata for the output
-        final StatisticMetadata m1 = StatisticMetadata.of( input.getRawData().size(),
-                                                                           MeasurementUnit.of(),
-                                                                           MeasurementUnit.of(),
-                                                                           MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE,
-                                                                           MetricConstants.MAIN );
+        final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
+                                                           input.getRawData().size(),
+                                                           MeasurementUnit.of(),
+                                                           MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE,
+                                                           MetricConstants.MAIN );
 
         //Check the results       
         final DoubleScoreStatistic actual = rocScore.apply( input );
@@ -131,11 +131,11 @@ public final class RelativeOperatingCharacteristicScoreTest
         DiscreteProbabilityPairs input = DiscreteProbabilityPairs.of( values, meta );
 
         //Metadata for the output
-        StatisticMetadata m1 = StatisticMetadata.of( input.getRawData().size(),
-                                                                     MeasurementUnit.of(),
-                                                                     MeasurementUnit.of(),
-                                                                     MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE,
-                                                                     MetricConstants.MAIN );
+        final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
+                                                           input.getRawData().size(),
+                                                           MeasurementUnit.of(),
+                                                           MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE,
+                                                           MetricConstants.MAIN );
 
         //Check the results       
         DoubleScoreStatistic actual = rocScore.apply( input );
@@ -187,11 +187,11 @@ public final class RelativeOperatingCharacteristicScoreTest
         DiscreteProbabilityPairs input = DiscreteProbabilityPairs.of( values, meta );
 
         //Metadata for the output
-        final StatisticMetadata m1 = StatisticMetadata.of( input.getRawData().size(),
-                                                                           MeasurementUnit.of(),
-                                                                           MeasurementUnit.of(),
-                                                                           MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE,
-                                                                           MetricConstants.MAIN );
+        final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
+                                                           input.getRawData().size(),
+                                                           MeasurementUnit.of(),
+                                                           MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE,
+                                                           MetricConstants.MAIN );
 
         //Check the results       
         DoubleScoreStatistic actual = rocScore.apply( input );
@@ -304,6 +304,7 @@ public final class RelativeOperatingCharacteristicScoreTest
 
         assertTrue( rocScore.apply( transPairs )
                             .getMetadata()
+                            .getSampleMetadata()
                             .getIdentifier()
                             .getScenarioIDForBaseline()
                             .equals( "ESP" ) );

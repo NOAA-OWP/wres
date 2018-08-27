@@ -27,12 +27,12 @@ public class MeanSquareError extends SumOfSquareError
      * 
      * @return an instance
      */
-    
+
     public static MeanSquareError of()
     {
         return new MeanSquareError();
     }
-    
+
     @Override
     public DoubleScoreStatistic apply( final SingleValuedPairs s )
     {
@@ -69,17 +69,15 @@ public class MeanSquareError extends SumOfSquareError
             throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
         }
 
-        final StatisticMetadata metIn = output.getMetadata();
-
-        StatisticMetadata meta = StatisticMetadata.of( metIn,
-                                                             this.getID(),
-                                                             MetricConstants.MAIN,
-                                                             this.hasRealUnits(),
-                                                             metIn.getSampleSize(),
-                                                             null );
+        StatisticMetadata meta = StatisticMetadata.of( output.getMetadata().getSampleMetadata(),
+                                                       this.getID(),
+                                                       MetricConstants.MAIN,
+                                                       this.hasRealUnits(),
+                                                       output.getMetadata().getSampleSize(),
+                                                       null );
 
         double mse = FunctionFactory.finiteOrMissing()
-                                    .applyAsDouble( output.getData() / metIn.getSampleSize() );
+                                    .applyAsDouble( output.getData() / output.getMetadata().getSampleSize() );
 
         return DoubleScoreStatistic.of( mse, meta );
     }
@@ -92,7 +90,7 @@ public class MeanSquareError extends SumOfSquareError
     {
         super();
     }
-    
+
     /**
      * Hidden constructor.
      * 

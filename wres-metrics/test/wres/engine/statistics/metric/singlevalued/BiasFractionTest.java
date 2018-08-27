@@ -31,7 +31,7 @@ public final class BiasFractionTest
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
-    
+
     /**
      * Default instance of a {@link BiasFraction}.
      */
@@ -55,11 +55,12 @@ public final class BiasFractionTest
         SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Metadata for the output
-        StatisticMetadata m1 = StatisticMetadata.of( input.getRawData().size(),
-                                                                   MeasurementUnit.of(),
-                                                                   MeasurementUnit.of(),
-                                                                   MetricConstants.BIAS_FRACTION,
-                                                                   MetricConstants.MAIN );
+        StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
+                                                     input.getRawData().size(),
+                                                     MeasurementUnit.of(),
+                                                     MetricConstants.BIAS_FRACTION,
+                                                     MetricConstants.MAIN );
+
         //Check the results
         DoubleScoreStatistic actual = biasFraction.apply( input );
         DoubleScoreStatistic expected = DoubleScoreStatistic.of( 0.056796297974534414, m1 );
@@ -80,7 +81,7 @@ public final class BiasFractionTest
         // Generate empty data
         SingleValuedPairs input =
                 SingleValuedPairs.of( Arrays.asList(), SampleMetadata.of() );
- 
+
         DoubleScoreStatistic actual = biasFraction.apply( input );
 
         assertTrue( actual.getData().isNaN() );
@@ -136,7 +137,7 @@ public final class BiasFractionTest
     {
         exception.expect( SampleDataException.class );
         exception.expectMessage( "Specify non-null input to the 'BIAS FRACTION'." );
-        
+
         biasFraction.apply( null );
     }
 

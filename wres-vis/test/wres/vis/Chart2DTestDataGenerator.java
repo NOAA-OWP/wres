@@ -30,17 +30,18 @@ import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.ReferenceTime;
+import wres.datamodel.metadata.SampleMetadata;
+import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.sampledata.pairs.EnsemblePair;
 import wres.datamodel.statistics.BoxPlotStatistic;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.DurationScoreStatistic;
 import wres.datamodel.statistics.ListOfStatistics;
+import wres.datamodel.statistics.ListOfStatistics.ListOfStatisticsBuilder;
 import wres.datamodel.statistics.MultiVectorStatistic;
 import wres.datamodel.statistics.PairedStatistic;
-import wres.datamodel.statistics.ListOfStatistics.ListOfStatisticsBuilder;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
@@ -73,7 +74,7 @@ public abstract class Chart2DTestDataGenerator
                                                                           OneOrTwoDoubles.of( next[0] ),
                                                                           Operator.GREATER,
                                                                           ThresholdDataType.LEFT ) );
-            Slicer.filter( full, data -> data.getThresholds().equals( filter ) ).forEach( builder::addStatistic );
+            Slicer.filter( full, data -> data.getSampleMetadata().getThresholds().equals( filter ) ).forEach( builder::addStatistic );
         }
 
         return builder.build();
@@ -99,7 +100,7 @@ public abstract class Chart2DTestDataGenerator
                                                Instant.MAX,
                                                ReferenceTime.VALID_TIME,
                                                Duration.ofHours( next ) );
-            Slicer.filter( full, data -> data.getTimeWindow().equals( filter ) ).forEach( builder::addStatistic );
+            Slicer.filter( full, data -> data.getSampleMetadata().getTimeWindow().equals( filter ) ).forEach( builder::addStatistic );
         }
 
         return builder.build();
@@ -123,16 +124,12 @@ public abstract class Chart2DTestDataGenerator
 
         final Iterator<MetricResultKey> d = data.getIterator();
 
-        //Metric output metadata: add fake sample sizes as these are not available in the test input file
-        final StatisticMetadata meta = StatisticMetadata.of( 1000,
-                                                                   MeasurementUnit.of(),
-                                                                   MeasurementUnit.of( "CMS" ),
-                                                                   MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
-                                                                   MetricConstants.MAIN,
-                                                                   DatasetIdentifier.of( Location.of( "NPTP1" ),
-                                                                                         "STREAMFLOW",
-                                                                                         "HEFS",
-                                                                                         "ESP" ) );
+        //Source metadata
+        final SampleMetadata source = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                         DatasetIdentifier.of( Location.of( "NPTP1" ),
+                                                                               "STREAMFLOW",
+                                                                               "HEFS",
+                                                                               "ESP" ) );
 
         //Iterate through the lead times
         while ( d.hasNext() )
@@ -163,7 +160,12 @@ public abstract class Chart2DTestDataGenerator
                 final MetricResult result = t.getResult( f );
                 final double[] res = ( (DoubleMatrix1DResult) result ).getResult().toArray();
                 final DoubleScoreStatistic value =
-                        DoubleScoreStatistic.of( res[0], StatisticMetadata.of( meta, window, q ) );
+                        DoubleScoreStatistic.of( res[0],
+                                                 StatisticMetadata.of( SampleMetadata.of( source, window, q ),
+                                                                       1000,
+                                                                       MeasurementUnit.of(),
+                                                                       MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
+                                                                       MetricConstants.MAIN ) );
 
                 //Append result
                 rawData.add( value );
@@ -191,16 +193,12 @@ public abstract class Chart2DTestDataGenerator
 
         final Iterator<MetricResultKey> d = data.getIterator();
 
-        //Metric output metadata: add fake sample sizes as these are not available in the test input file
-        final StatisticMetadata meta = StatisticMetadata.of( 1000,
-                                                                   MeasurementUnit.of(),
-                                                                   MeasurementUnit.of( "CMS" ),
-                                                                   MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
-                                                                   MetricConstants.MAIN,
-                                                                   DatasetIdentifier.of( Location.of( "NPTP1" ),
-                                                                                         "STREAMFLOW",
-                                                                                         "HEFS",
-                                                                                         "ESP" ) );
+        //Source metadata
+        final SampleMetadata source = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                         DatasetIdentifier.of( Location.of( "NPTP1" ),
+                                                                               "STREAMFLOW",
+                                                                               "HEFS",
+                                                                               "ESP" ) );
 
         //Iterate through the lead times
         while ( d.hasNext() )
@@ -229,7 +227,13 @@ public abstract class Chart2DTestDataGenerator
                 //Build the scalar result
                 final MetricResult result = t.getResult( f );
                 final double res = ( (DoubleMatrix1DResult) result ).getResult().toArray()[0];
-                final DoubleScoreStatistic value = DoubleScoreStatistic.of( res, StatisticMetadata.of( meta, window, q ) );
+                final DoubleScoreStatistic value =
+                        DoubleScoreStatistic.of( res,
+                                                 StatisticMetadata.of( SampleMetadata.of( source, window, q ),
+                                                                       1000,
+                                                                       MeasurementUnit.of(),
+                                                                       MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
+                                                                       MetricConstants.MAIN ) );
 
                 //Append result
                 rawData.add( value );
@@ -269,15 +273,11 @@ public abstract class Chart2DTestDataGenerator
 
         final Iterator<MetricResultKey> d = data.getIterator();
 
-        //Metric output metadata: add fake sample sizes as these are not available in the test input file
-        final StatisticMetadata meta = StatisticMetadata.of( 1000,
-                                                                   MeasurementUnit.of(),
-                                                                   MeasurementUnit.of( "CMS" ),
-                                                                   MetricConstants.RELIABILITY_DIAGRAM,
-                                                                   MetricConstants.MAIN,
-                                                                   DatasetIdentifier.of( Location.of( "NPTP1" ),
-                                                                                         "STREAMFLOW",
-                                                                                         "HEFS" ) );
+        //Source metadata
+        final SampleMetadata source = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                         DatasetIdentifier.of( Location.of( "NPTP1" ),
+                                                                               "STREAMFLOW",
+                                                                               "HEFS" ) );
 
         //Iterate through the lead times.
         int count = -1;
@@ -345,9 +345,13 @@ public abstract class Chart2DTestDataGenerator
                     output.put( MetricDimension.SAMPLE_SIZE, res[2] ); //Observed | forecast probabilities
                     final MultiVectorStatistic value =
                             MultiVectorStatistic.ofMultiVectorOutput( output,
-                                                                   StatisticMetadata.of( meta,
-                                                                                            window,
-                                                                                            OneOrTwoThresholds.of( q ) ) );
+                                                                      StatisticMetadata.of( SampleMetadata.of( source,
+                                                                                                               window,
+                                                                                                               OneOrTwoThresholds.of( q ) ),
+                                                                                            1000,
+                                                                                            MeasurementUnit.of(),
+                                                                                            MetricConstants.RELIABILITY_DIAGRAM,
+                                                                                            MetricConstants.MAIN ) );
 
                     //Append result
                     rawData.add( value );
@@ -390,15 +394,11 @@ public abstract class Chart2DTestDataGenerator
 
         final Iterator<MetricResultKey> d = data.getIterator();
 
-        //Metric output metadata
-        final StatisticMetadata meta = StatisticMetadata.of( 1000,
-                                                                   MeasurementUnit.of(),
-                                                                   MeasurementUnit.of( "CMS" ),
-                                                                   MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
-                                                                   MetricConstants.MAIN,
-                                                                   DatasetIdentifier.of( Location.of( "NPTP1" ),
-                                                                                         "STREAMFLOW",
-                                                                                         "HEFS" ) );
+        //Source metadata
+        final SampleMetadata source = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                         DatasetIdentifier.of( Location.of( "NPTP1" ),
+                                                                               "STREAMFLOW",
+                                                                               "HEFS" ) );
 
         //Iterate through the lead times.
         while ( d.hasNext() )
@@ -448,9 +448,13 @@ public abstract class Chart2DTestDataGenerator
                     output.put( MetricDimension.PROBABILITY_OF_DETECTION, roc[1] ); //PoD
                     final MultiVectorStatistic value =
                             MultiVectorStatistic.ofMultiVectorOutput( output,
-                                                                   StatisticMetadata.of( meta,
-                                                                                            window,
-                                                                                            OneOrTwoThresholds.of( q ) ) );
+                                                                      StatisticMetadata.of( SampleMetadata.of( source,
+                                                                                                               window,
+                                                                                                               OneOrTwoThresholds.of( q ) ),
+                                                                                            1000,
+                                                                                            MeasurementUnit.of(),
+                                                                                            MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
+                                                                                            MetricConstants.MAIN ) );
 
                     //Append result
                     rawData.add( value );
@@ -482,15 +486,11 @@ public abstract class Chart2DTestDataGenerator
 
         final Iterator<MetricResultKey> d = data.getIterator();
 
-        //Metric output metadata
-        final StatisticMetadata meta = StatisticMetadata.of( 1000,
-                                                                   MeasurementUnit.of(),
-                                                                   MeasurementUnit.of( "CMS" ),
-                                                                   MetricConstants.RANK_HISTOGRAM,
-                                                                   MetricConstants.MAIN,
-                                                                   DatasetIdentifier.of( Location.of( "NPTP1" ),
-                                                                                         "STREAMFLOW",
-                                                                                         "HEFS" ) );
+        //Source metadata
+        final SampleMetadata source = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                         DatasetIdentifier.of( Location.of( "NPTP1" ),
+                                                                               "STREAMFLOW",
+                                                                               "HEFS" ) );
 
         //Iterate through the lead times.
         while ( d.hasNext() )
@@ -544,9 +544,13 @@ public abstract class Chart2DTestDataGenerator
                 output.put( MetricDimension.OBSERVED_RELATIVE_FREQUENCY, rh[1] );
                 final MultiVectorStatistic value =
                         MultiVectorStatistic.ofMultiVectorOutput( output,
-                                                               StatisticMetadata.of( meta,
-                                                                                        window,
-                                                                                        OneOrTwoThresholds.of( q ) ) );
+                                                                  StatisticMetadata.of( SampleMetadata.of( source,
+                                                                                                           window,
+                                                                                                           OneOrTwoThresholds.of( q ) ),
+                                                                                        1000,
+                                                                                        MeasurementUnit.of(),
+                                                                                        MetricConstants.RANK_HISTOGRAM,
+                                                                                        MetricConstants.MAIN ) );
 
                 //Append result
                 rawData.add( value );
@@ -583,17 +587,13 @@ public abstract class Chart2DTestDataGenerator
                                                Duration.ofHours( 24 ),
                                                Duration.ofHours( 120 ) );
         final TimeWindow timeWindow = windowMeta;
-        final StatisticMetadata meta = StatisticMetadata.of( 1000,
-                                                                   MeasurementUnit.of(),
-                                                                   MeasurementUnit.of( "MILLIMETER" ),
-                                                                   MetricConstants.QUANTILE_QUANTILE_DIAGRAM,
-                                                                   MetricConstants.MAIN,
-                                                                   DatasetIdentifier.of( Location.of( "WGCM8" ),
-                                                                                         "PRECIPITATION",
-                                                                                         "HEFS" ),
-                                                                   timeWindow,
-                                                                   null,
-                                                                   null  );
+        
+        //Source metadata
+        final SampleMetadata source = SampleMetadata.of( MeasurementUnit.of( "MILLIMETER" ),
+                                                         DatasetIdentifier.of( Location.of( "WGCM8" ),
+                                                                               "PRECIPITATION",
+                                                                               "HEFS" ),
+                                                         timeWindow );
 
         //Single threshold
         final OneOrTwoThresholds threshold =
@@ -621,9 +621,13 @@ public abstract class Chart2DTestDataGenerator
             output.put( MetricDimension.OBSERVED_QUANTILES, qq[1] );
             final MultiVectorStatistic value =
                     MultiVectorStatistic.ofMultiVectorOutput( output,
-                                                           StatisticMetadata.of( meta,
-                                                                                    window,
-                                                                                    threshold ) );
+                                                              StatisticMetadata.of( SampleMetadata.of( source,
+                                                                                                       window,
+                                                                                                       threshold ),
+                                                                                    1000,
+                                                                                    MeasurementUnit.of( "MILLIMETER" ),
+                                                                                    MetricConstants.QUANTILE_QUANTILE_DIAGRAM,
+                                                                                    MetricConstants.MAIN ) );
 
             //Append result
             rawData.add( value );
@@ -653,15 +657,12 @@ public abstract class Chart2DTestDataGenerator
 
         final Iterator<MetricResultKey> d = data.getIterator();
 
-        //Metric output metadata
-        final StatisticMetadata meta = StatisticMetadata.of( 1000,
-                                                                   MeasurementUnit.of( "INCH" ),
-                                                                   MeasurementUnit.of( "INCH" ),
-                                                                   MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
-                                                                   MetricConstants.MAIN,
-                                                                   DatasetIdentifier.of( Location.of( "NBBC1" ),
-                                                                                         "PRECIPITATION",
-                                                                                         "HEFS" ) );
+        //Source metadata
+        final SampleMetadata source = SampleMetadata.of( MeasurementUnit.of( "INCH" ),
+                                                         DatasetIdentifier.of( Location.of( "NBBC1" ),
+                                                                               "PRECIPITATION",
+                                                                               "HEFS" ) );
+
         //Single threshold
         final OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
@@ -694,7 +695,13 @@ public abstract class Chart2DTestDataGenerator
             }
             final BoxPlotStatistic out = BoxPlotStatistic.of( output,
                                                         probabilities,
-                                                        StatisticMetadata.of( meta, window, threshold ),
+                                                        StatisticMetadata.of( SampleMetadata.of( source,
+                                                                                                 window,
+                                                                                                 threshold ),
+                                                                              1000,
+                                                                              MeasurementUnit.of( "INCH" ),
+                                                                              MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
+                                                                              MetricConstants.MAIN ),
                                                         MetricDimension.OBSERVED_VALUE,
                                                         MetricDimension.FORECAST_ERROR );
 
@@ -725,15 +732,11 @@ public abstract class Chart2DTestDataGenerator
 
         final Iterator<MetricResultKey> d = data.getIterator();
 
-        //Metric output metadata
-        final StatisticMetadata meta = StatisticMetadata.of( 1000,
-                                                                   MeasurementUnit.of( "INCH" ),
-                                                                   MeasurementUnit.of( "INCH" ),
-                                                                   MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE,
-                                                                   MetricConstants.MAIN,
-                                                                   DatasetIdentifier.of( Location.of( "NBBC1" ),
-                                                                                         "PRECIPITATION",
-                                                                                         "HEFS" ) );
+        //Source metadata
+        final SampleMetadata source = SampleMetadata.of( MeasurementUnit.of( "INCH" ),
+                                                         DatasetIdentifier.of( Location.of( "NBBC1" ),
+                                                                               "PRECIPITATION",
+                                                                               "HEFS" ) );
         //Single threshold
         final OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
@@ -766,7 +769,13 @@ public abstract class Chart2DTestDataGenerator
             }
             final BoxPlotStatistic out = BoxPlotStatistic.of( output,
                                                         probabilities,
-                                                        StatisticMetadata.of( meta, window, threshold ),
+                                                        StatisticMetadata.of( SampleMetadata.of( source,
+                                                                                                 window,
+                                                                                                 threshold ),
+                                                                              1000,
+                                                                              MeasurementUnit.of( "INCH" ),
+                                                                              MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE,
+                                                                              MetricConstants.MAIN ),
                                                         MetricDimension.ENSEMBLE_MEAN,
                                                         MetricDimension.FORECAST_ERROR );
 
@@ -795,20 +804,14 @@ public abstract class Chart2DTestDataGenerator
                                                                       Operator.GREATER,
                                                                       ThresholdDataType.LEFT ) );
 
-        // Create the metric output metadata: add fake sample sizes as these are not available in the test input file
-        final StatisticMetadata meta = StatisticMetadata.of( 90,
-                                                                   MeasurementUnit.of(),
-                                                                   MeasurementUnit.of( "CMS" ),
-                                                                   MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
-                                                                   MetricConstants.MAIN,
-                                                                   DatasetIdentifier.of( Location.of( "DOSC1" ),
-                                                                                         "STREAMFLOW",
-                                                                                         "HEFS",
-                                                                                         "ESP" ),
-                                                                   null,
-                                                                   threshold,
-                                                                   null  );
-
+        //Source metadata
+        final SampleMetadata source = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                         DatasetIdentifier.of( Location.of( "DOSC1" ),
+                                                                               "STREAMFLOW",
+                                                                               "HEFS",
+                                                                               "ESP"),
+                                                         null,
+                                                         threshold );
 
         // Rolling window parameters
         Instant start = Instant.parse( "2015-12-01T00:00:00Z" );
@@ -832,7 +835,13 @@ public abstract class Chart2DTestDataGenerator
                                                       ReferenceTime.ISSUE_TIME,
                                                       Duration.ofHours( 6 ) );
             DoubleScoreStatistic sixHourOutput =
-                    DoubleScoreStatistic.of( sixHourOutputs[i], StatisticMetadata.of( meta, sixHourWindow, null ) );
+                    DoubleScoreStatistic.of( sixHourOutputs[i],
+                                             StatisticMetadata.of( SampleMetadata.of( source,
+                                                                                      sixHourWindow ),
+                                                                   90,
+                                                                   MeasurementUnit.of(),
+                                                                   MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
+                                                                   MetricConstants.MAIN ) );
             rawData.add( sixHourOutput );
             //Add the 12h data
             TimeWindow twelveHourWindow = TimeWindow.of( begin,
@@ -841,7 +850,12 @@ public abstract class Chart2DTestDataGenerator
                                                          Duration.ofHours( 12 ) );
             DoubleScoreStatistic twelveHourOutput =
                     DoubleScoreStatistic.of( twelveHourOutputs[i],
-                                          StatisticMetadata.of( meta, twelveHourWindow, null ) );
+                                             StatisticMetadata.of( SampleMetadata.of( source,
+                                                                                      twelveHourWindow ),
+                                                                   90,
+                                                                   MeasurementUnit.of(),
+                                                                   MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
+                                                                   MetricConstants.MAIN ) );
             rawData.add( twelveHourOutput );
             //Add the 18h data
             TimeWindow eighteenHourWindow = TimeWindow.of( begin,
@@ -850,7 +864,12 @@ public abstract class Chart2DTestDataGenerator
                                                            Duration.ofHours( 18 ) );
             DoubleScoreStatistic eighteenHourOutput =
                     DoubleScoreStatistic.of( eighteenHourOutputs[i],
-                                          StatisticMetadata.of( meta, eighteenHourWindow, null ) );
+                                             StatisticMetadata.of( SampleMetadata.of( source,
+                                                                                      eighteenHourWindow ),
+                                                                   90,
+                                                                   MeasurementUnit.of(),
+                                                                   MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
+                                                                   MetricConstants.MAIN ) );
             rawData.add( eighteenHourOutput );
             //Add the 24h data
             TimeWindow twentyFourHourWindow = TimeWindow.of( begin,
@@ -859,7 +878,12 @@ public abstract class Chart2DTestDataGenerator
                                                              Duration.ofHours( 24 ) );
             DoubleScoreStatistic twentyFourHourOutput =
                     DoubleScoreStatistic.of( twentyFourHourOutputs[i],
-                                          StatisticMetadata.of( meta, twentyFourHourWindow, null ) );
+                                             StatisticMetadata.of( SampleMetadata.of( source,
+                                                                                      twentyFourHourWindow ),
+                                                                   90,
+                                                                   MeasurementUnit.of(),
+                                                                   MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
+                                                                   MetricConstants.MAIN ) );
             rawData.add( twentyFourHourOutput );
         }
 
@@ -876,15 +900,19 @@ public abstract class Chart2DTestDataGenerator
     {
         final List<DoubleScoreStatistic> rawData = new ArrayList<>();
 
-        // Create the metric output metadata: add fake sample sizes as these are not available in the test input file
-        final StatisticMetadata meta = StatisticMetadata.of( 18,
-                                                                   MeasurementUnit.of(),
-                                                                   MeasurementUnit.of( "CMS" ),
-                                                                   MetricConstants.BIAS_FRACTION,
-                                                                   MetricConstants.MAIN,
-                                                                   DatasetIdentifier.of( Location.of( "ABEC2" ),
-                                                                                         "STREAMFLOW",
-                                                                                         "NWM" ) );
+        OneOrTwoThresholds threshold =
+                OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                                                     Operator.GREATER,
+                                                     ThresholdDataType.LEFT ) );
+        
+        //Source metadata
+        final SampleMetadata source = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                         DatasetIdentifier.of( Location.of( "ABEC2" ),
+                                                                               "STREAMFLOW",
+                                                                               "NWM" ),
+                                                         null,
+                                                         threshold );
+
         double[] scores = new double[] {
                                          -0.39228763627058233,
                                          -0.38540392640098137,
@@ -912,10 +940,6 @@ public abstract class Chart2DTestDataGenerator
                                          -0.28105802405674500
         };
         // Build the map
-        OneOrTwoThresholds threshold =
-                OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                     Operator.GREATER,
-                                                     ThresholdDataType.LEFT ) );
         for ( int i = 0; i < scores.length; i++ )
         {
             String nextDate = "2017-08-08T" + String.format( "%02d", i ) + ":00:00Z";
@@ -926,7 +950,13 @@ public abstract class Chart2DTestDataGenerator
                                                    Duration.ofHours( 0 ),
                                                    Duration.ofHours( 18 ) );
 
-            rawData.add( DoubleScoreStatistic.of( scores[i], StatisticMetadata.of( meta, timeWindow, threshold ) ) );
+            rawData.add( DoubleScoreStatistic.of( scores[i],
+                                                  StatisticMetadata.of( SampleMetadata.of( source,
+                                                                                           timeWindow ),
+                                                                        18,
+                                                                        MeasurementUnit.of(),
+                                                                        MetricConstants.BIAS_FRACTION,
+                                                                        MetricConstants.MAIN ) ) );
         }
 
         return ListOfStatistics.of( rawData );
@@ -969,17 +999,16 @@ public abstract class Chart2DTestDataGenerator
                                                      Operator.GREATER,
                                                      ThresholdDataType.LEFT ) );
 
-        StatisticMetadata meta = StatisticMetadata.of( input.size(),
-                                                             MeasurementUnit.of( "DURATION" ),
-                                                             MeasurementUnit.of( "CMS" ),
-                                                             MetricConstants.TIME_TO_PEAK_ERROR,
-                                                             MetricConstants.MAIN,
-                                                             DatasetIdentifier.of( Location.of( "DRRC2" ),
-                                                                                   "Streamflow",
-                                                                                   "HEFS" ),
-                                                             window,
-                                                             threshold,
-                                                             null  );
+        StatisticMetadata meta = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                                          DatasetIdentifier.of( Location.of( "DRRC2" ),
+                                                                                                "Streamflow",
+                                                                                                "HEFS" ),
+                                                                          window,
+                                                                          threshold ),
+                                                       input.size(),
+                                                       MeasurementUnit.of( "DURATION" ),
+                                                       MetricConstants.TIME_TO_PEAK_ERROR,
+                                                       MetricConstants.MAIN );
         // Build and return
         return ListOfStatistics.of( Arrays.asList( PairedStatistic.of( input, meta ) ) );
     }
@@ -1021,17 +1050,16 @@ public abstract class Chart2DTestDataGenerator
                                                                             Operator.GREATER,
                                                                             ThresholdDataType.LEFT ) );
         
-        StatisticMetadata meta = StatisticMetadata.of( 10,
-                                                             MeasurementUnit.of( "DURATION" ),
-                                                             MeasurementUnit.of( "CMS" ),
-                                                             MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
-                                                             MetricConstants.MAIN,
-                                                             DatasetIdentifier.of( Location.of( "DRRC2" ),
-                                                                                   "Streamflow",
-                                                                                   "HEFS" ),
-                                                             window,
-                                                             threshold,
-                                                             null  );
+        StatisticMetadata meta = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                                          DatasetIdentifier.of( Location.of( "DRRC2" ),
+                                                                                                "Streamflow",
+                                                                                                "HEFS" ),
+                                                                          window,
+                                                                          threshold ),
+                                                       10,
+                                                       MeasurementUnit.of( "DURATION" ),
+                                                       MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
+                                                       MetricConstants.MAIN );
 
         return ListOfStatistics.of( Arrays.asList( DurationScoreStatistic.of( returnMe, meta ) ) );
     }

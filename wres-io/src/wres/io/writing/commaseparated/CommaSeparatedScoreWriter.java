@@ -136,7 +136,8 @@ public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends C
             ListOfStatistics<T> nextMetric = Slicer.filter( output, m );
 
             SortedSet<Threshold> secondThreshold =
-                    Slicer.discover( nextMetric, next -> next.getMetadata().getThresholds().second() );
+                    Slicer.discover( nextMetric,
+                                     next -> next.getMetadata().getSampleMetadata().getThresholds().second() );
 
             // As many outputs as secondary thresholds if secondary thresholds are defined
             // and the output type is OutputTypeSelection.THRESHOLD_LEAD.
@@ -146,7 +147,8 @@ public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends C
             {
                 // Slice by threshold two
                 secondThreshold.forEach( next -> allOutputs.add( Slicer.filter( nextMetric,
-                                                                                data -> data.getThresholds()
+                                                                                data -> data.getSampleMetadata()
+                                                                                            .getThresholds()
                                                                                             .second()
                                                                                             .equals( next ) ) ) );
             }
@@ -175,7 +177,8 @@ public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends C
 
                 // Secondary threshold? If yes, only one, as this was sliced above
                 SortedSet<Threshold> secondThresholds =
-                        Slicer.discover( nextOutput, next -> next.getMetadata().getThresholds().second() );
+                        Slicer.discover( nextOutput,
+                                         next -> next.getMetadata().getSampleMetadata().getThresholds().second() );
                 if ( !secondThresholds.isEmpty() )
                 {
                     append = secondThresholds.iterator().next().toStringSafe();
@@ -251,8 +254,9 @@ public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends C
 
         // Discover the time windows and thresholds
         SortedSet<OneOrTwoThresholds> thresholds =
-                Slicer.discover( component, meta -> meta.getMetadata().getThresholds() );
-        SortedSet<TimeWindow> timeWindows = Slicer.discover( component, meta -> meta.getMetadata().getTimeWindow() );
+                Slicer.discover( component, meta -> meta.getMetadata().getSampleMetadata().getThresholds() );
+        SortedSet<TimeWindow> timeWindows =
+                Slicer.discover( component, meta -> meta.getMetadata().getSampleMetadata().getTimeWindow() );
 
         // Loop across the thresholds
         for ( OneOrTwoThresholds t : thresholds )
@@ -264,8 +268,12 @@ public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends C
             {
                 // Find the next score
                 ListOfStatistics<T> nextScore = Slicer.filter( component,
-                                                                 next -> next.getThresholds().equals( t )
-                                                                         && next.getTimeWindow().equals( timeWindow ) );
+                                                               next -> next.getSampleMetadata()
+                                                                           .getThresholds()
+                                                                           .equals( t )
+                                                                       && next.getSampleMetadata()
+                                                                              .getTimeWindow()
+                                                                              .equals( timeWindow ) );
                 if ( !nextScore.getData().isEmpty() )
                 {
                     CommaSeparatedWriter.addRowToInput( rows,

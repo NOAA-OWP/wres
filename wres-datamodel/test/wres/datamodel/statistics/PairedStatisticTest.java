@@ -15,9 +15,8 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MeasurementUnit;
+import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.StatisticMetadata;
-import wres.datamodel.statistics.StatisticException;
-import wres.datamodel.statistics.PairedStatistic;
 
 /**
  * Tests the {@link PairedStatistic}.
@@ -35,32 +34,32 @@ public final class PairedStatisticTest
     public void test1Equals()
     {
         final Location l1 = Location.of( "A" );
-        final StatisticMetadata m1 = StatisticMetadata.of( 10,
-                                                                 MeasurementUnit.of(),
-                                                                 MeasurementUnit.of( "CMS" ),
-                                                                 MetricConstants.TIME_TO_PEAK_ERROR,
-                                                                 MetricConstants.MAIN,
-                                                                 DatasetIdentifier.of( l1,
-                                                                                       "B",
-                                                                                       "C" ) );
+        final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                                              DatasetIdentifier.of( l1,
+                                                                                                    "B",
+                                                                                                    "C" ) ),
+                                                           10,
+                                                           MeasurementUnit.of(),
+                                                           MetricConstants.TIME_TO_PEAK_ERROR,
+                                                           MetricConstants.MAIN );
         final Location l2 = Location.of( "A" );
-        final StatisticMetadata m2 = StatisticMetadata.of( 11,
-                                                                 MeasurementUnit.of(),
-                                                                 MeasurementUnit.of( "CMS" ),
-                                                                 MetricConstants.TIME_TO_PEAK_ERROR,
-                                                                 MetricConstants.MAIN,
-                                                                 DatasetIdentifier.of( l2,
-                                                                                       "B",
-                                                                                       "C" ) );
+        final StatisticMetadata m2 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                                              DatasetIdentifier.of( l2,
+                                                                                                    "B",
+                                                                                                    "C" ) ),
+                                                           11,
+                                                           MeasurementUnit.of(),
+                                                           MetricConstants.TIME_TO_PEAK_ERROR,
+                                                           MetricConstants.MAIN );
         final Location l3 = Location.of( "B" );
-        final StatisticMetadata m3 = StatisticMetadata.of( 10,
-                                                                 MeasurementUnit.of(),
-                                                                 MeasurementUnit.of( "CMS" ),
-                                                                 MetricConstants.TIME_TO_PEAK_ERROR,
-                                                                 MetricConstants.MAIN,
-                                                                 DatasetIdentifier.of( l3,
-                                                                                       "B",
-                                                                                       "C" ) );
+        final StatisticMetadata m3 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                                              DatasetIdentifier.of( l3,
+                                                                                                    "B",
+                                                                                                    "C" ) ),
+                                                           10,
+                                                           MeasurementUnit.of(),
+                                                           MetricConstants.TIME_TO_PEAK_ERROR,
+                                                           MetricConstants.MAIN );
         List<Pair<Instant, Duration>> input = new ArrayList<>();
         input.add( Pair.of( Instant.parse( "1985-01-01T00:00:00Z" ), Duration.ofHours( 1 ) ) );
         final PairedStatistic<Instant, Duration> s = PairedStatistic.of( input, m1 );
@@ -96,14 +95,14 @@ public final class PairedStatisticTest
     public void test2ToString()
     {
         final Location l1 = Location.of( "A" );
-        final StatisticMetadata m1 = StatisticMetadata.of( 10,
-                                                                 MeasurementUnit.of(),
-                                                                 MeasurementUnit.of( "CMS" ),
-                                                                 MetricConstants.TIME_TO_PEAK_ERROR,
-                                                                 MetricConstants.MAIN,
-                                                                 DatasetIdentifier.of( l1,
-                                                                                       "B",
-                                                                                       "C" ) );
+        final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                                              DatasetIdentifier.of( l1,
+                                                                                                    "B",
+                                                                                                    "C" ) ),
+                                                           10,
+                                                           MeasurementUnit.of(),
+                                                           MetricConstants.TIME_TO_PEAK_ERROR,
+                                                           MetricConstants.MAIN );
         List<Pair<Instant, Duration>> input = new ArrayList<>();
         input.add( Pair.of( Instant.parse( "1985-01-01T00:00:00Z" ), Duration.ofHours( 1 ) ) );
         input.add( Pair.of( Instant.parse( "1985-01-01T00:00:00Z" ), Duration.ofHours( 1 ) ) );
@@ -120,23 +119,23 @@ public final class PairedStatisticTest
     public void test3GetMetadata()
     {
         final Location l1 = Location.of( "A" );
-        final StatisticMetadata m1 = StatisticMetadata.of( 10,
-                                                                 MeasurementUnit.of(),
-                                                                 MeasurementUnit.of( "CMS" ),
-                                                                 MetricConstants.TIME_TO_PEAK_ERROR,
-                                                                 MetricConstants.MAIN,
-                                                                 DatasetIdentifier.of( l1,
-                                                                                       "B",
-                                                                                       "C" ) );
+        final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                                              DatasetIdentifier.of( l1,
+                                                                                                    "B",
+                                                                                                    "C" ) ),
+                                                           10,
+                                                           MeasurementUnit.of(),
+                                                           MetricConstants.TIME_TO_PEAK_ERROR,
+                                                           MetricConstants.MAIN );
         final Location l2 = Location.of( "B" );
-        final StatisticMetadata m2 = StatisticMetadata.of( 10,
-                                                                 MeasurementUnit.of(),
-                                                                 MeasurementUnit.of( "CMS" ),
-                                                                 MetricConstants.TIME_TO_PEAK_ERROR,
-                                                                 MetricConstants.MAIN,
-                                                                 DatasetIdentifier.of( l2,
-                                                                                       "B",
-                                                                                       "C" ) );
+        final StatisticMetadata m2 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                                              DatasetIdentifier.of( l2,
+                                                                                                    "B",
+                                                                                                    "C" ) ),
+                                                           10,
+                                                           MeasurementUnit.of(),
+                                                           MetricConstants.TIME_TO_PEAK_ERROR,
+                                                           MetricConstants.MAIN );
         List<Pair<Instant, Duration>> inputThird = new ArrayList<>();
         inputThird.add( Pair.of( Instant.parse( "1985-01-01T00:00:00Z" ), Duration.ofHours( 1 ) ) );
         final PairedStatistic<Instant, Duration> q = PairedStatistic.of( inputThird, m1 );
@@ -152,32 +151,32 @@ public final class PairedStatisticTest
     public void test4HashCode()
     {
         final Location l1 = Location.of( "A" );
-        final StatisticMetadata m1 = StatisticMetadata.of( 10,
-                                                                 MeasurementUnit.of(),
-                                                                 MeasurementUnit.of( "CMS" ),
-                                                                 MetricConstants.CONTINGENCY_TABLE,
-                                                                 MetricConstants.MAIN,
-                                                                 DatasetIdentifier.of( l1,
-                                                                                       "B",
-                                                                                       "C" ) );
+        final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                                              DatasetIdentifier.of( l1,
+                                                                                                    "B",
+                                                                                                    "C" ) ),
+                                                           10,
+                                                           MeasurementUnit.of(),
+                                                           MetricConstants.TIME_TO_PEAK_ERROR,
+                                                           MetricConstants.MAIN );
         final Location l2 = Location.of( "A" );
-        final StatisticMetadata m2 = StatisticMetadata.of( 10,
-                                                                 MeasurementUnit.of(),
-                                                                 MeasurementUnit.of( "CMS" ),
-                                                                 MetricConstants.CONTINGENCY_TABLE,
-                                                                 MetricConstants.MAIN,
-                                                                 DatasetIdentifier.of( l2,
-                                                                                       "B",
-                                                                                       "C" ) );
+        final StatisticMetadata m2 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                                              DatasetIdentifier.of( l2,
+                                                                                                    "B",
+                                                                                                    "C" ) ),
+                                                           10,
+                                                           MeasurementUnit.of(),
+                                                           MetricConstants.TIME_TO_PEAK_ERROR,
+                                                           MetricConstants.MAIN );
         final Location l3 = Location.of( "B" );
-        final StatisticMetadata m3 = StatisticMetadata.of( 10,
-                                                                 MeasurementUnit.of(),
-                                                                 MeasurementUnit.of( "CMS" ),
-                                                                 MetricConstants.CONTINGENCY_TABLE,
-                                                                 MetricConstants.MAIN,
-                                                                 DatasetIdentifier.of( l3,
-                                                                                       "B",
-                                                                                       "C" ) );
+        final StatisticMetadata m3 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                                              DatasetIdentifier.of( l3,
+                                                                                                    "B",
+                                                                                                    "C" ) ),
+                                                           10,
+                                                           MeasurementUnit.of(),
+                                                           MetricConstants.TIME_TO_PEAK_ERROR,
+                                                           MetricConstants.MAIN );
         List<Pair<Instant, Duration>> inputThird = new ArrayList<>();
         inputThird.add( Pair.of( Instant.parse( "1985-01-01T00:00:00Z" ), Duration.ofHours( 1 ) ) );
         final PairedStatistic<Instant, Duration> q = PairedStatistic.of( inputThird, m1 );
@@ -195,14 +194,14 @@ public final class PairedStatisticTest
     public void test6Exceptions()
     {
         final Location l1 = Location.of( "A" );
-        final StatisticMetadata m1 = StatisticMetadata.of( 10,
-                                                                 MeasurementUnit.of(),
-                                                                 MeasurementUnit.of( "CMS" ),
-                                                                 MetricConstants.CONTINGENCY_TABLE,
-                                                                 MetricConstants.MAIN,
-                                                                 DatasetIdentifier.of( l1,
-                                                                                       "B",
-                                                                                       "C" ) );
+        final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                                              DatasetIdentifier.of( l1,
+                                                                                                    "B",
+                                                                                                    "C" ) ),
+                                                           10,
+                                                           MeasurementUnit.of(),
+                                                           MetricConstants.TIME_TO_PEAK_ERROR,
+                                                           MetricConstants.MAIN );
         List<Pair<Instant, Duration>> input = new ArrayList<>();
         input.add( Pair.of( Instant.parse( "1985-01-01T00:00:00Z" ), Duration.ofHours( 1 ) ) );
         // Null output

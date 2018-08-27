@@ -18,9 +18,9 @@ import wres.datamodel.MetricConstants.ScoreGroup;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MeasurementUnit;
+import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.StatisticMetadata;
-import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
@@ -67,17 +67,16 @@ public final class VolumetricEfficiencyTest
                                                  Instant.parse( "2010-12-31T11:59:59Z" ),
                                                  ReferenceTime.VALID_TIME,
                                                  Duration.ofHours( 24 ) );
-        final StatisticMetadata m1 = StatisticMetadata.of( input.getRawData().size(),
-                                                                 MeasurementUnit.of(),
-                                                                 MeasurementUnit.of( "MM/DAY" ),
-                                                                 MetricConstants.VOLUMETRIC_EFFICIENCY,
-                                                                 MetricConstants.MAIN,
-                                                                 DatasetIdentifier.of( Location.of( "103.1" ),
-                                                                                       "QME",
-                                                                                       "NVE" ),
-                                                                 window,
-                                                                 null,
-                                                                 null  );
+
+        final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "MM/DAY" ),
+                                                                              DatasetIdentifier.of( Location.of( "103.1" ),
+                                                                                                    "QME",
+                                                                                                    "NVE" ),
+                                                                              window ),
+                                                           input.getRawData().size(),
+                                                           MeasurementUnit.of(),
+                                                           MetricConstants.VOLUMETRIC_EFFICIENCY,
+                                                           MetricConstants.MAIN );
         //Check the results
         DoubleScoreStatistic actual = ve.apply( input );
         DoubleScoreStatistic expected = DoubleScoreStatistic.of( 0.657420176533252, m1 );

@@ -53,11 +53,11 @@ public final class CorrelationPearsonsTest
     {
         SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
-        final StatisticMetadata m1 = StatisticMetadata.of( input.getRawData().size(),
-                                                                   MeasurementUnit.of(),
-                                                                   MeasurementUnit.of(),
-                                                                   MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
-                                                                   MetricConstants.MAIN );
+        final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
+                                                           input.getRawData().size(),
+                                                           MeasurementUnit.of(),
+                                                           MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
+                                                           MetricConstants.MAIN );
 
         //Compute normally
         final DoubleScoreStatistic actual = rho.apply( input );

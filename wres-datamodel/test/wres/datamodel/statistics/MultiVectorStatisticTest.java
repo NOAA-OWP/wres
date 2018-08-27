@@ -9,14 +9,13 @@ import java.util.Map;
 import org.junit.Test;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.MetricConstants.MetricDimension;
+import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
+import wres.datamodel.metadata.MeasurementUnit;
+import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.StatisticMetadata;
-import wres.datamodel.statistics.StatisticException;
-import wres.datamodel.statistics.MultiVectorStatistic;
 
 /**
  * Tests the {@link MultiVectorStatistic}.
@@ -34,32 +33,32 @@ public final class MultiVectorStatisticTest
     public void test1Equals()
     {
         final Location l1 = Location.of( "A" );
-        final StatisticMetadata m1 = StatisticMetadata.of( 10,
-                                                                           MeasurementUnit.of(),
-                                                                           MeasurementUnit.of( "CMS" ),
-                                                                           MetricConstants.CONTINGENCY_TABLE,
-                                                                           MetricConstants.MAIN,
-                                                                           DatasetIdentifier.of( l1,
-                                                                                                                 "B",
-                                                                                                                 "C" ) );
+        final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                                              DatasetIdentifier.of( l1,
+                                                                                                    "B",
+                                                                                                    "C" ) ),
+                                                           10,
+                                                           MeasurementUnit.of(),
+                                                           MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
+                                                           MetricConstants.MAIN );
         final Location l2 = Location.of( "A" );
-        final StatisticMetadata m2 = StatisticMetadata.of( 11,
-                                                                           MeasurementUnit.of(),
-                                                                           MeasurementUnit.of( "CMS" ),
-                                                                           MetricConstants.CONTINGENCY_TABLE,
-                                                                           MetricConstants.MAIN,
-                                                                           DatasetIdentifier.of( l2,
-                                                                                                                 "B",
-                                                                                                                 "C" ) );
+        final StatisticMetadata m2 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                                              DatasetIdentifier.of( l2,
+                                                                                                    "B",
+                                                                                                    "C" ) ),
+                                                           11,
+                                                           MeasurementUnit.of(),
+                                                           MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
+                                                           MetricConstants.MAIN );
         final Location l3 = Location.of( "B" );
-        final StatisticMetadata m3 = StatisticMetadata.of( 10,
-                                                                           MeasurementUnit.of(),
-                                                                           MeasurementUnit.of( "CMS" ),
-                                                                           MetricConstants.CONTINGENCY_TABLE,
-                                                                           MetricConstants.MAIN,
-                                                                           DatasetIdentifier.of( l3,
-                                                                                                                 "B",
-                                                                                                                 "C" ) );
+        final StatisticMetadata m3 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                                              DatasetIdentifier.of( l3,
+                                                                                                    "B",
+                                                                                                    "C" ) ),
+                                                           10,
+                                                           MeasurementUnit.of(),
+                                                           MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
+                                                           MetricConstants.MAIN );
         Map<MetricDimension, double[]> mva = new HashMap<>();
         Map<MetricDimension, double[]> mvb = new HashMap<>();
         Map<MetricDimension, double[]> mvc = new HashMap<>();
@@ -92,23 +91,23 @@ public final class MultiVectorStatisticTest
     public void test2GetMetadata()
     {
         final Location l1 = Location.of( "A" );
-        final StatisticMetadata m1 = StatisticMetadata.of( 10,
-                                                                           MeasurementUnit.of(),
-                                                                           MeasurementUnit.of( "CMS" ),
-                                                                           MetricConstants.CONTINGENCY_TABLE,
-                                                                           MetricConstants.MAIN,
-                                                                           DatasetIdentifier.of( l1,
-                                                                                                                 "B",
-                                                                                                                 "C" ) );
+        final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                                              DatasetIdentifier.of( l1,
+                                                                                                    "B",
+                                                                                                    "C" ) ),
+                                                           10,
+                                                           MeasurementUnit.of(),
+                                                           MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
+                                                           MetricConstants.MAIN );
         final Location l2 = Location.of( "B" );
-        final StatisticMetadata m2 = StatisticMetadata.of( 10,
-                                                                           MeasurementUnit.of(),
-                                                                           MeasurementUnit.of( "CMS" ),
-                                                                           MetricConstants.CONTINGENCY_TABLE,
-                                                                           MetricConstants.MAIN,
-                                                                           DatasetIdentifier.of( l2,
-                                                                                                                 "B",
-                                                                                                                 "C" ) );
+        final StatisticMetadata m2 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                                              DatasetIdentifier.of( l2,
+                                                                                                    "B",
+                                                                                                    "C" ) ),
+                                                           10,
+                                                           MeasurementUnit.of(),
+                                                           MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
+                                                           MetricConstants.MAIN );
         Map<MetricDimension, double[]> mva = new HashMap<>();
         mva.put( MetricDimension.PROBABILITY_OF_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4 } );
         mva.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4 } );
@@ -125,32 +124,33 @@ public final class MultiVectorStatisticTest
     public void test3HashCode()
     {
         final Location l1 = Location.of( "A" );
-        final StatisticMetadata m1 = StatisticMetadata.of( 10,
-                                                                           MeasurementUnit.of(),
-                                                                           MeasurementUnit.of( "CMS" ),
-                                                                           MetricConstants.CONTINGENCY_TABLE,
-                                                                           MetricConstants.MAIN,
-                                                                           DatasetIdentifier.of( l1,
-                                                                                                                 "B",
-                                                                                                                 "C" ) );
+        final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                                              DatasetIdentifier.of( l1,
+                                                                                                    "B",
+                                                                                                    "C" ) ),
+                                                           10,
+                                                           MeasurementUnit.of(),
+                                                           MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
+                                                           MetricConstants.MAIN );
         final Location l2 = Location.of( "A" );
-        final StatisticMetadata m2 = StatisticMetadata.of( 10,
-                                                                           MeasurementUnit.of(),
-                                                                           MeasurementUnit.of( "CMS" ),
-                                                                           MetricConstants.CONTINGENCY_TABLE,
-                                                                           MetricConstants.MAIN,
-                                                                           DatasetIdentifier.of( l2,
-                                                                                                                 "B",
-                                                                                                                 "C" ) );
+        final StatisticMetadata m2 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                                              DatasetIdentifier.of( l2,
+                                                                                                    "B",
+                                                                                                    "C" ) ),
+                                                           10,
+                                                           MeasurementUnit.of(),
+                                                           MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
+                                                           MetricConstants.MAIN );
         final Location l3 = Location.of( "B" );
-        final StatisticMetadata m3 = StatisticMetadata.of( 10,
-                                                                           MeasurementUnit.of(),
-                                                                           MeasurementUnit.of( "CMS" ),
-                                                                           MetricConstants.CONTINGENCY_TABLE,
-                                                                           MetricConstants.MAIN,
-                                                                           DatasetIdentifier.of( l3,
-                                                                                                                 "B",
-                                                                                                                 "C" ) );
+        final StatisticMetadata m3 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                                              DatasetIdentifier.of( l3,
+                                                                                                    "B",
+                                                                                                    "C" ) ),
+                                                           10,
+                                                           MeasurementUnit.of(),
+                                                           MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
+                                                           MetricConstants.MAIN );
+        
         Map<MetricDimension, double[]> mva = new HashMap<>();
         Map<MetricDimension, double[]> mvb = new HashMap<>();
         Map<MetricDimension, double[]> mvc = new HashMap<>();
@@ -175,14 +175,14 @@ public final class MultiVectorStatisticTest
     public void test4Accessors()
     {
         final Location l1 = Location.of( "A" );
-        final StatisticMetadata m1 = StatisticMetadata.of( 10,
-                                                                           MeasurementUnit.of(),
-                                                                           MeasurementUnit.of( "CMS" ),
-                                                                           MetricConstants.CONTINGENCY_TABLE,
-                                                                           MetricConstants.MAIN,
-                                                                           DatasetIdentifier.of( l1,
-                                                                                                                 "B",
-                                                                                                                 "C" ) );
+        final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                                              DatasetIdentifier.of( l1,
+                                                                                                    "B",
+                                                                                                    "C" ) ),
+                                                           10,
+                                                           MeasurementUnit.of(),
+                                                           MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
+                                                           MetricConstants.MAIN );
         Map<MetricDimension, double[]> mva = new HashMap<>();
         mva.put( MetricDimension.PROBABILITY_OF_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4 } );
         mva.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, new double[] { 0.1, 0.2, 0.3, 0.4 } );
@@ -204,14 +204,14 @@ public final class MultiVectorStatisticTest
     public void test5Exceptions()
     {
         final Location l1 = Location.of( "A" );
-        final StatisticMetadata m1 = StatisticMetadata.of( 10,
-                                                                           MeasurementUnit.of(),
-                                                                           MeasurementUnit.of( "CMS" ),
-                                                                           MetricConstants.CONTINGENCY_TABLE,
-                                                                           MetricConstants.MAIN,
-                                                                           DatasetIdentifier.of( l1,
-                                                                                                                 "B",
-                                                                                                                 "C" ) );
+        final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                                              DatasetIdentifier.of( l1,
+                                                                                                    "B",
+                                                                                                    "C" ) ),
+                                                           10,
+                                                           MeasurementUnit.of(),
+                                                           MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
+                                                           MetricConstants.MAIN );
         Map<MetricDimension, VectorOfDoubles> mva = new HashMap<>();
         mva.put( MetricDimension.PROBABILITY_OF_DETECTION,
                  VectorOfDoubles.of( new double[] { 0.1, 0.2, 0.3, 0.4 } ) );

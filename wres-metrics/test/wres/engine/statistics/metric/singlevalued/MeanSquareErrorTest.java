@@ -55,11 +55,11 @@ public final class MeanSquareErrorTest
         SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Metadata for the output
-        StatisticMetadata m1 = StatisticMetadata.of( input.getRawData().size(),
-                                                                     MeasurementUnit.of(),
-                                                                     MeasurementUnit.of(),
-                                                                     MetricConstants.MEAN_SQUARE_ERROR,
-                                                                     MetricConstants.MAIN );
+        StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
+                                                     input.getRawData().size(),
+                                                     MeasurementUnit.of(),
+                                                     MetricConstants.MEAN_SQUARE_ERROR,
+                                                     MetricConstants.MAIN );
         //Check the results
         final DoubleScoreStatistic actual = mse.apply( input );
         final DoubleScoreStatistic expected = DoubleScoreStatistic.of( 400003.929, m1 );

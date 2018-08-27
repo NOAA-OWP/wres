@@ -17,9 +17,9 @@ import wres.datamodel.MetricConstants.ScoreGroup;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MeasurementUnit;
+import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.StatisticMetadata;
-import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
@@ -62,15 +62,15 @@ public final class MeanSquareErrorSkillScoreTest
         SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsTwo();
 
         //Metadata for the output
-        final StatisticMetadata m1 = StatisticMetadata.of( input.getRawData().size(),
-                                                                 MeasurementUnit.of(),
-                                                                 MeasurementUnit.of( "CMS" ),
-                                                                 MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE,
-                                                                 MetricConstants.MAIN,
-                                                                 DatasetIdentifier.of( Location.of( "DRRC2" ),
-                                                                                       "SQIN",
-                                                                                       "HEFS",
-                                                                                       "ESP" ) );
+        final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                                              DatasetIdentifier.of( Location.of( "DRRC2" ),
+                                                                                                    "SQIN",
+                                                                                                    "HEFS",
+                                                                                                    "ESP" ) ),
+                                                           input.getRawData().size(),
+                                                           MeasurementUnit.of(),
+                                                           MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE,
+                                                           MetricConstants.MAIN );
 
         //Check the results
         final DoubleScoreStatistic actual = msess.apply( input );
@@ -99,18 +99,16 @@ public final class MeanSquareErrorSkillScoreTest
                                            Instant.parse( "2010-12-31T11:59:59Z" ),
                                            ReferenceTime.VALID_TIME,
                                            Duration.ofHours( 24 ) );
-        final TimeWindow timeWindow = window;
-        StatisticMetadata m1 = StatisticMetadata.of( input.getRawData().size(),
+
+        final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "MM/DAY" ),
+                                                                              DatasetIdentifier.of( Location.of( "103.1" ),
+                                                                                                    "QME",
+                                                                                                    "NVE" ),
+                                                                              window ),
+                                                           input.getRawData().size(),
                                                            MeasurementUnit.of(),
-                                                           MeasurementUnit.of( "MM/DAY" ),
                                                            MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE,
-                                                           MetricConstants.MAIN,
-                                                           DatasetIdentifier.of( Location.of( "103.1" ),
-                                                                                 "QME",
-                                                                                 "NVE" ),
-                                                           timeWindow,
-                                                           null,
-                                                           null  );
+                                                           MetricConstants.MAIN );
 
         //Check the results
         DoubleScoreStatistic actual = msess.apply( input );
@@ -134,11 +132,11 @@ public final class MeanSquareErrorSkillScoreTest
         SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Metadata for the output
-        StatisticMetadata m1 = StatisticMetadata.of( input.getRawData().size(),
-                                                           MeasurementUnit.of(),
-                                                           MeasurementUnit.of(),
-                                                           MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE,
-                                                           MetricConstants.MAIN );
+        StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
+                                                     input.getRawData().size(),
+                                                     MeasurementUnit.of(),
+                                                     MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE,
+                                                     MetricConstants.MAIN );
 
         //Check the results
         DoubleScoreStatistic actual = msess.apply( input );

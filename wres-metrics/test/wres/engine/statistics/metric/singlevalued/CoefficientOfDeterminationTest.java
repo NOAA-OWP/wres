@@ -52,11 +52,11 @@ public final class CoefficientOfDeterminationTest
     public void testApply()
     {
         SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
-        StatisticMetadata m1 = StatisticMetadata.of( input.getRawData().size(),
-                                                                   MeasurementUnit.of(),
-                                                                   MeasurementUnit.of(),
-                                                                   MetricConstants.COEFFICIENT_OF_DETERMINATION,
-                                                                   MetricConstants.MAIN );
+        StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
+                                                     input.getRawData().size(),
+                                                     MeasurementUnit.of(),
+                                                     MetricConstants.COEFFICIENT_OF_DETERMINATION,
+                                                     MetricConstants.MAIN );
 
         //Compute normally
         DoubleScoreStatistic actual = cod.apply( input );

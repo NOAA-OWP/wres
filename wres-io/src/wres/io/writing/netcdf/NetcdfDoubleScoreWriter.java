@@ -35,7 +35,7 @@ import wres.config.generated.DestinationType;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
-import wres.datamodel.metadata.StatisticMetadata;
+import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.ListOfStatistics;
@@ -679,7 +679,7 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreStatisti
                                                                       "station_id" );
         
         // Find the metadata for the first element, which is sufficient here
-        StatisticMetadata meta = output.getData().get( 0 ).getMetadata();
+        SampleMetadata meta = output.getData().get( 0 ).getMetadata().getSampleMetadata();
 
         String featureName = meta.getIdentifier()
                                  .getGeospatialID()
@@ -712,7 +712,7 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreStatisti
 
         // Discover the available thresholds
         SortedSet<OneOrTwoThresholds> setOfThresholds =
-                Slicer.discover( output, next -> next.getMetadata().getThresholds() );
+                Slicer.discover( output, next -> next.getMetadata().getSampleMetadata().getThresholds() );
 
         for ( OneOrTwoThresholds t : setOfThresholds )
         {
@@ -775,7 +775,8 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreStatisti
                                                           "lead_seconds" );
 
         // Discover the time windows
-        SortedSet<TimeWindow> timeWindows = Slicer.discover( output, next -> next.getMetadata().getTimeWindow() );
+        SortedSet<TimeWindow> timeWindows =
+                Slicer.discover( output, next -> next.getMetadata().getSampleMetadata().getTimeWindow() );
 
         for ( TimeWindow window : timeWindows )
         {
@@ -879,21 +880,26 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreStatisti
         // Discover the available pairs of time windows and thresholds
         SortedSet<Pair<TimeWindow, OneOrTwoThresholds>> pairsOfTimesAndThresholds =
                 Slicer.discover( output,
-                                 next -> Pair.of( next.getMetadata().getTimeWindow(),
-                                                  next.getMetadata().getThresholds() ) );
+                                 next -> Pair.of( next.getMetadata().getSampleMetadata().getTimeWindow(),
+                                                  next.getMetadata().getSampleMetadata().getThresholds() ) );
 
         for ( Pair<TimeWindow, OneOrTwoThresholds> wrappedKey : pairsOfTimesAndThresholds )
         {
             // Obtain the output for the next pair of time window and threshold
             ListOfStatistics<DoubleScoreStatistic> next =
                     Slicer.filter( output,
-                                   nextItem -> nextItem.getTimeWindow().equals( wrappedKey.getLeft() )
-                                               && nextItem.getThresholds().equals( wrappedKey.getRight() ) );
-            
+                                   nextItem -> nextItem.getSampleMetadata()
+                                                       .getTimeWindow()
+                                                       .equals( wrappedKey.getLeft() )
+                                               && nextItem.getSampleMetadata()
+                                                          .getThresholds()
+                                                          .equals( wrappedKey.getRight() ) );
+
             // One score per time and threshold
             DoubleScoreStatistic nextScore = next.getData().get( 0 );
 
             String stationName = nextScore.getMetadata()
+                                          .getSampleMetadata()
                                           .getIdentifier()
                                           .getGeospatialID()
                                           .getLocationName();

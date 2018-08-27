@@ -147,14 +147,15 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedWriter
         Set<Path> pathsWrittenTo = new HashSet<>( 1 );
 
         // Loop across time windows
-        SortedSet<TimeWindow> timeWindows = Slicer.discover( output, meta -> meta.getMetadata().getTimeWindow() );
+        SortedSet<TimeWindow> timeWindows =
+                Slicer.discover( output, meta -> meta.getMetadata().getSampleMetadata().getTimeWindow() );
         for ( TimeWindow nextWindow : timeWindows )
         {
             ListOfStatistics<BoxPlotStatistic> next =
-                    Slicer.filter( output, data -> data.getTimeWindow().equals( nextWindow ) );
-            
+                    Slicer.filter( output, data -> data.getSampleMetadata().getTimeWindow().equals( nextWindow ) );
+
             StatisticMetadata meta = next.getData().get( 0 ).getMetadata();
-            
+
             StringJoiner headerRow = new StringJoiner( "," );
             headerRow.merge( HEADER_DEFAULT );
             List<RowCompareByLeft> rows = CommaSeparatedBoxPlotWriter.getRowsForOneBoxPlot( next, formatter );
@@ -190,8 +191,9 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedWriter
 
         // Discover the time windows and thresholds to loop
         SortedSet<OneOrTwoThresholds> thresholds =
-                Slicer.discover( output, meta -> meta.getMetadata().getThresholds() );
-        SortedSet<TimeWindow> timeWindows = Slicer.discover( output, meta -> meta.getMetadata().getTimeWindow() );
+                Slicer.discover( output, meta -> meta.getMetadata().getSampleMetadata().getThresholds() );
+        SortedSet<TimeWindow> timeWindows =
+                Slicer.discover( output, meta -> meta.getMetadata().getSampleMetadata().getTimeWindow() );
         // Loop across the thresholds
         for ( OneOrTwoThresholds t : thresholds )
         {
@@ -199,10 +201,14 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedWriter
             for ( TimeWindow timeWindow : timeWindows )
             {
                 BoxPlotStatistic nextValues = Slicer.filter( output,
-                                                          next -> next.getThresholds().equals( t )
-                                                                  && next.getTimeWindow().equals( timeWindow ) )
-                                                 .getData()
-                                                 .get( 0 );
+                                                             next -> next.getSampleMetadata()
+                                                                         .getThresholds()
+                                                                         .equals( t )
+                                                                     && next.getSampleMetadata()
+                                                                            .getTimeWindow()
+                                                                            .equals( timeWindow ) )
+                                                    .getData()
+                                                    .get( 0 );
                 // Add each box
                 for ( EnsemblePair nextBox : nextValues )
                 {
@@ -238,7 +244,7 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedWriter
         // Discover the first item and use this to help
         BoxPlotStatistic nextValues = output.getData().get( 0 );
         SortedSet<OneOrTwoThresholds> thresholds =
-                Slicer.discover( output, next -> next.getMetadata().getThresholds() );
+                Slicer.discover( output, next -> next.getMetadata().getSampleMetadata().getThresholds() );
         for ( OneOrTwoThresholds nextThreshold : thresholds )
         {
             returnMe.add( HEADER_DELIMITER + nextValues.getDomainAxisDimension() + HEADER_DELIMITER + nextThreshold );

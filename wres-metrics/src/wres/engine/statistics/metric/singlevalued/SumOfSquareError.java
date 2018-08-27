@@ -76,11 +76,11 @@ public class SumOfSquareError extends DecomposableScore<SingleValuedPairs>
 
         //Metadata
         StatisticMetadata metOut = StatisticMetadata.of( input.getMetadata(),
-                                                               MetricConstants.SUM_OF_SQUARE_ERROR,
-                                                               MetricConstants.MAIN,
-                                                               this.hasRealUnits(),
-                                                               input.getRawData().size(),
-                                                               null );
+                                                         MetricConstants.SUM_OF_SQUARE_ERROR,
+                                                         MetricConstants.MAIN,
+                                                         this.hasRealUnits(),
+                                                         input.getRawData().size(),
+                                                         null );
 
         return DoubleScoreStatistic.of( returnMe, metOut );
     }
@@ -93,15 +93,13 @@ public class SumOfSquareError extends DecomposableScore<SingleValuedPairs>
             throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
         }
 
-        final StatisticMetadata metIn = output.getMetadata();
-
         // Set the output dimension
-        StatisticMetadata meta = StatisticMetadata.of( metIn,
-                                                             this.getID(),
-                                                             MetricConstants.MAIN,
-                                                             this.hasRealUnits(),
-                                                             metIn.getSampleSize(),
-                                                             null );
+        StatisticMetadata meta = StatisticMetadata.of( output.getMetadata().getSampleMetadata(),
+                                                       this.getID(),
+                                                       MetricConstants.MAIN,
+                                                       this.hasRealUnits(),
+                                                       output.getMetadata().getSampleSize(),
+                                                       null );
 
         return DoubleScoreStatistic.of( output.getData(), meta );
     }

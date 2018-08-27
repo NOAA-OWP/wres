@@ -33,8 +33,9 @@ public class ScoreOutputByThresholdAndLeadXYDataset extends
 
         //Handling the legend name in here because otherwise the key will be lost (I don't keep the raw data).
         int seriesIndex = 0;
-        SortedSet<TimeWindow> timeWindows = Slicer.discover( input, next -> next.getMetadata().getTimeWindow() );
-        for(final TimeWindow lead: timeWindows)
+        SortedSet<TimeWindow> timeWindows =
+                Slicer.discover( input, next -> next.getMetadata().getSampleMetadata().getTimeWindow() );
+        for ( final TimeWindow lead : timeWindows )
         {
             setOverrideLegendName( seriesIndex, Long.toString( lead.getLatestLeadTimeInHours() ) );
             seriesIndex++;
@@ -49,16 +50,17 @@ public class ScoreOutputByThresholdAndLeadXYDataset extends
      *            {@link DoubleScoreStatistic}.
      */
     @Override
-    protected void preparePlotData(final ListOfStatistics<DoubleScoreStatistic> rawData)
+    protected void preparePlotData( final ListOfStatistics<DoubleScoreStatistic> rawData )
     {
         //Cast the raw data input and check the size.
         final List<ListOfStatistics<DoubleScoreStatistic>> data = new ArrayList<>();
-        SortedSet<TimeWindow> timeWindows = Slicer.discover( rawData, next -> next.getMetadata().getTimeWindow() );
-        for(final TimeWindow lead: timeWindows)
+        SortedSet<TimeWindow> timeWindows =
+                Slicer.discover( rawData, next -> next.getMetadata().getSampleMetadata().getTimeWindow() );
+        for ( final TimeWindow lead : timeWindows )
         {
-            data.add( Slicer.filter( rawData, next -> next.getTimeWindow().equals( lead ) ) );
+            data.add( Slicer.filter( rawData, next -> next.getSampleMetadata().getTimeWindow().equals( lead ) ) );
         }
-        setPlotData(data);
+        setPlotData( data );
     }
 
     @Override
@@ -75,6 +77,7 @@ public class ScoreOutputByThresholdAndLeadXYDataset extends
                                          .getData()
                                          .get( item )
                                          .getMetadata()
+                                         .getSampleMetadata()
                                          .getThresholds()
                                          .first()
                                          .getValues()

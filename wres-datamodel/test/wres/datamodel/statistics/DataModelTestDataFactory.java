@@ -20,12 +20,10 @@ import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.ReferenceTime;
+import wres.datamodel.metadata.SampleMetadata;
+import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.statistics.DoubleScoreStatistic;
-import wres.datamodel.statistics.ListOfStatistics;
-import wres.datamodel.statistics.ScoreStatistic;
 import wres.datamodel.statistics.ListOfStatistics.ListOfStatisticsBuilder;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
@@ -61,17 +59,13 @@ public final class DataModelTestDataFactory
             final MetricResultByLeadTime data = ProductFileIO.read( resultFile );
 
             final Iterator<MetricResultKey> d = data.getIterator();
-
-            //Metric output metadata: add fake sample sizes as these are not readily available
-            final StatisticMetadata meta = StatisticMetadata.of( 1000,
-                                                                       MeasurementUnit.of(),
-                                                                       MeasurementUnit.of( "CMS" ),
-                                                                       MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
-                                                                       MetricConstants.MAIN,
-                                                                       DatasetIdentifier.of( Location.of( "DRRC2" ),
-                                                                                             "SQIN",
-                                                                                             "HEFS",
-                                                                                             "ESP" ) );
+            
+            //Source metadata
+            final SampleMetadata source = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                             DatasetIdentifier.of( Location.of( "DRRC2" ),
+                                                                                   "SQIN",
+                                                                                   "HEFS",
+                                                                                   "ESP" ) );
 
             //Iterate through the lead times
             while ( d.hasNext() )
@@ -102,7 +96,12 @@ public final class DataModelTestDataFactory
                     final MetricResult result = t.getResult( f );
                     final double[] res = ( (DoubleMatrix1DResult) result ).getResult().toArray();
                     final DoubleScoreStatistic value =
-                            DoubleScoreStatistic.of( res[0], StatisticMetadata.of( meta, timeWindow, q ) );
+                            DoubleScoreStatistic.of( res[0],
+                                                     StatisticMetadata.of( SampleMetadata.of( source, timeWindow, q ),
+                                                                           1000,
+                                                                           MeasurementUnit.of(),
+                                                                           MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
+                                                                           MetricConstants.MAIN ) );
 
                     //Append result
                     builder.addStatistic( value );
@@ -131,15 +130,11 @@ public final class DataModelTestDataFactory
         ListOfStatisticsBuilder<DoubleScoreStatistic> builder = new ListOfStatisticsBuilder<>();
 
         //Fake metadata
-        StatisticMetadata meta = StatisticMetadata.of( 1000,
-                                                             MeasurementUnit.of(),
-                                                             MeasurementUnit.of( "CMS" ),
-                                                             MetricConstants.MEAN_ABSOLUTE_ERROR,
-                                                             MetricConstants.MAIN,
-                                                             DatasetIdentifier.of( Location.of( "DRRC2" ),
-                                                                                   "SQIN",
-                                                                                   "HEFS",
-                                                                                   "ESP" ) );
+        final SampleMetadata source = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                         DatasetIdentifier.of( Location.of( "DRRC2" ),
+                                                                               "SQIN",
+                                                                               "HEFS",
+                                                                               "ESP" ) );
 
         int[] leadTimes = new int[] { 1, 2, 3, 4, 5 };
 
@@ -162,7 +157,11 @@ public final class DataModelTestDataFactory
                                                          ThresholdDataType.LEFT ) );
 
             DoubleScoreStatistic firstValue =
-                    DoubleScoreStatistic.of( 66.0, StatisticMetadata.of( meta, timeWindow, first ) );
+                    DoubleScoreStatistic.of( 66.0, StatisticMetadata.of( SampleMetadata.of( source, timeWindow, first ),
+                                                                         1000,
+                                                                         MeasurementUnit.of(),
+                                                                         MetricConstants.MEAN_ABSOLUTE_ERROR,
+                                                                         MetricConstants.MAIN ) );
 
             builder.addStatistic( firstValue );
 
@@ -178,7 +177,11 @@ public final class DataModelTestDataFactory
                                                          ThresholdDataType.LEFT ) );
 
             DoubleScoreStatistic secondValue =
-                    DoubleScoreStatistic.of( 67.0, StatisticMetadata.of( meta, timeWindow, second ) );
+                    DoubleScoreStatistic.of( 67.0, StatisticMetadata.of( SampleMetadata.of( source, timeWindow, second ),
+                                                                         1000,
+                                                                         MeasurementUnit.of(),
+                                                                         MetricConstants.MEAN_ABSOLUTE_ERROR,
+                                                                         MetricConstants.MAIN ) );
 
             builder.addStatistic( secondValue );
 
@@ -195,7 +198,11 @@ public final class DataModelTestDataFactory
 
 
             DoubleScoreStatistic thirdValue =
-                    DoubleScoreStatistic.of( 68.0, StatisticMetadata.of( meta, timeWindow, third ) );
+                    DoubleScoreStatistic.of( 68.0, StatisticMetadata.of( SampleMetadata.of( source, timeWindow, third ),
+                                                                         1000,
+                                                                         MeasurementUnit.of(),
+                                                                         MetricConstants.MEAN_ABSOLUTE_ERROR,
+                                                                         MetricConstants.MAIN ) );
 
             builder.addStatistic( thirdValue );
 
@@ -225,16 +232,12 @@ public final class DataModelTestDataFactory
 
             final Iterator<MetricResultKey> d = data.getIterator();
 
-            //Metric output metadata: add fake sample sizes as these are not readily available
-            final StatisticMetadata meta = StatisticMetadata.of( 1000,
-                                                                       MeasurementUnit.of(),
-                                                                       MeasurementUnit.of( "CFS" ),
-                                                                       MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
-                                                                       MetricConstants.CR_POT,
-                                                                       DatasetIdentifier.of( Location.of( "NPTP1" ),
-                                                                                             "SQIN",
-                                                                                             "HEFS",
-                                                                                             "ESP" ) );
+            //Fake metadata
+            final SampleMetadata source = SampleMetadata.of( MeasurementUnit.of( "CFS" ),
+                                                             DatasetIdentifier.of( Location.of( "NPTP1" ),
+                                                                                   "SQIN",
+                                                                                   "HEFS",
+                                                                                   "ESP" ) );
 
             //Iterate through the lead times
             while ( d.hasNext() )
@@ -267,7 +270,11 @@ public final class DataModelTestDataFactory
                     final DoubleScoreStatistic value =
                             DoubleScoreStatistic.of( res,
                                                   ScoreGroup.CR_POT,
-                                                  StatisticMetadata.of( meta, timeWindow, q ) );
+                                                  StatisticMetadata.of( SampleMetadata.of( source, timeWindow, q ),
+                                                                        1000,
+                                                                        MeasurementUnit.of(),
+                                                                        MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
+                                                                        MetricConstants.CR_POT ) );
 
                     //Append result
                     builder.addStatistic( value );

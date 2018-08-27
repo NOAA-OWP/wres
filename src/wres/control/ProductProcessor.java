@@ -33,10 +33,10 @@ import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.DurationScoreStatistic;
 import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.MatrixStatistic;
-import wres.datamodel.statistics.Statistic;
-import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.statistics.MultiVectorStatistic;
 import wres.datamodel.statistics.PairedStatistic;
+import wres.datamodel.statistics.Statistic;
+import wres.datamodel.statistics.StatisticsForProject;
 import wres.io.writing.SharedWriters;
 import wres.io.writing.commaseparated.CommaSeparatedBoxPlotWriter;
 import wres.io.writing.commaseparated.CommaSeparatedDiagramWriter;
@@ -739,8 +739,8 @@ class ProductProcessor implements Consumer<StatisticsForProject>,
                           + "at time window {}.",
                           positionString,
                           type,
-                          output.getData().get( 0 ).getMetadata().getIdentifier(),
-                          output.getData().get( 0 ).getMetadata().getTimeWindow() );
+                          output.getData().get( 0 ).getMetadata().getSampleMetadata().getIdentifier(),
+                          output.getData().get( 0 ).getMetadata().getSampleMetadata().getTimeWindow() );
         }
         else
         {

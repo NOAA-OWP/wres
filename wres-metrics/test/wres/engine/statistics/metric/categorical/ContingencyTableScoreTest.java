@@ -14,8 +14,9 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.ScoreGroup;
 import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
+import wres.datamodel.metadata.MeasurementUnit;
+import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.DichotomousPairs;
@@ -50,11 +51,11 @@ public final class ContingencyTableScoreTest
     public void setupBeforeEachTest() throws MetricParameterException
     {
         cs = ThreatScore.of();
-        meta = StatisticMetadata.of( 365,
-                                                  MeasurementUnit.of(),
-                                                  MeasurementUnit.of(),
-                                                  MetricConstants.CONTINGENCY_TABLE,
-                                                  MetricConstants.MAIN );
+        meta = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
+                              365,
+                              MeasurementUnit.of(),
+                              MetricConstants.CONTINGENCY_TABLE,
+                              MetricConstants.MAIN );        
     }
 
     /**
@@ -119,15 +120,14 @@ public final class ContingencyTableScoreTest
 
         //Metadata for the output
         final StatisticMetadata m1 =
-                StatisticMetadata.of( input.getRawData().size(),
-                                                   MeasurementUnit.of(),
-                                                   MeasurementUnit.of(),
-                                                   MetricConstants.CONTINGENCY_TABLE,
-                                                   MetricConstants.MAIN,
-                                                   DatasetIdentifier.of( Location.of( "DRRC2" ),
-                                                                                         "SQIN",
-                                                                                         "HEFS" ) );
-
+                StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of(),
+                                                         DatasetIdentifier.of( Location.of( "DRRC2" ),
+                                                                               "SQIN",
+                                                                               "HEFS" ) ),
+                                      input.getRawData().size(),
+                                      MeasurementUnit.of(),
+                                      MetricConstants.CONTINGENCY_TABLE,
+                                      MetricConstants.MAIN );
 
         final double[][] benchmark = new double[][] { { 82.0, 38.0 }, { 23.0, 222.0 } };
         final MatrixStatistic expected = MatrixStatistic.of( benchmark,
@@ -172,14 +172,14 @@ public final class ContingencyTableScoreTest
         final DichotomousPairs input = MetricTestDataFactory.getDichotomousPairsOne();
 
         final StatisticMetadata expected =
-                StatisticMetadata.of( input.getRawData().size(),
-                                                   MeasurementUnit.of(),
-                                                   MeasurementUnit.of(),
-                                                   MetricConstants.THREAT_SCORE,
-                                                   MetricConstants.MAIN,
-                                                   DatasetIdentifier.of( Location.of( "DRRC2" ),
-                                                                                         "SQIN",
-                                                                                         "HEFS" ) );
+                StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of(),
+                                                         DatasetIdentifier.of( Location.of( "DRRC2" ),
+                                                                               "SQIN",
+                                                                               "HEFS" ) ),
+                                      input.getRawData().size(),
+                                      MeasurementUnit.of(),
+                                      MetricConstants.THREAT_SCORE,
+                                      MetricConstants.MAIN );
 
         assertTrue( cs.getMetadata( cs.getInputForAggregation( input ) ).equals( expected ) );
     }

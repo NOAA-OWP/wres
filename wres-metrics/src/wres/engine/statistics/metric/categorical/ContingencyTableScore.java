@@ -79,14 +79,12 @@ abstract class ContingencyTableScore<S extends MulticategoryPairs> extends Ordin
 
     StatisticMetadata getMetadata( final MatrixStatistic output )
     {    
-        final StatisticMetadata metIn = output.getMetadata();
-
-        return StatisticMetadata.of( output.getMetadata(),
-                                        this.getID(),
-                                        MetricConstants.MAIN,
-                                        this.hasRealUnits(),
-                                        metIn.getSampleSize(),
-                                        null );
+        return StatisticMetadata.of( output.getMetadata().getSampleMetadata(),
+                                     this.getID(),
+                                     MetricConstants.MAIN,
+                                     this.hasRealUnits(),
+                                     output.getMetadata().getSampleSize(),
+                                     null );
     }
 
     /**

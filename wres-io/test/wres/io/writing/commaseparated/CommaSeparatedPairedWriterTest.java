@@ -27,13 +27,14 @@ import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.ReferenceTime;
+import wres.datamodel.metadata.SampleMetadata;
+import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.statistics.ListOfStatistics;
+import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.statistics.StatisticAccessException;
 import wres.datamodel.statistics.StatisticsForProject;
-import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
@@ -89,15 +90,14 @@ public class CommaSeparatedPairedWriterTest extends CommaSeparatedWriterTestHelp
                 DatasetIdentifier.of( Location.of( LID ), "SQIN", "HEFS", "ESP" );
 
         StatisticMetadata fakeMetadata =
-                StatisticMetadata.of( 1000,
-                                         MeasurementUnit.of(),
-                                         MeasurementUnit.of( "CMS" ),
-                                         MetricConstants.TIME_TO_PEAK_ERROR,
-                                         null,
-                                         datasetIdentifier,
-                                         timeOne,
-                                         threshold,
-                                         null  );
+                StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                         datasetIdentifier,
+                                                         timeOne,
+                                                         threshold ),
+                                      1000,
+                                      MeasurementUnit.of(),
+                                      MetricConstants.TIME_TO_PEAK_ERROR,
+                                      null );
 
         List<Pair<Instant, Duration>> fakeOutputs = new ArrayList<>();
         fakeOutputs.add( Pair.of( Instant.parse( "1985-01-01T00:00:00Z" ), Duration.ofHours( 1 ) ) );

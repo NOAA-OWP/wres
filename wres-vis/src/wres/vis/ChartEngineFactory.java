@@ -50,9 +50,9 @@ import wres.datamodel.statistics.BoxPlotStatistic;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.DurationScoreStatistic;
 import wres.datamodel.statistics.ListOfStatistics;
-import wres.datamodel.statistics.Statistic;
 import wres.datamodel.statistics.MultiVectorStatistic;
 import wres.datamodel.statistics.PairedStatistic;
+import wres.datamodel.statistics.Statistic;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 
 /**
@@ -248,12 +248,13 @@ public abstract class ChartEngineFactory
         ListOfStatistics<MultiVectorStatistic> inputSlice;
         if ( usedPlotType == OutputTypeSelection.LEAD_THRESHOLD )
         {
-
-            inputSlice = Slicer.filter( input, next -> next.getTimeWindow().equals( inputKeyInstance ) );
+            inputSlice =
+                    Slicer.filter( input, next -> next.getSampleMetadata().getTimeWindow().equals( inputKeyInstance ) );
         }
         else if ( usedPlotType == OutputTypeSelection.THRESHOLD_LEAD )
         {
-            inputSlice = Slicer.filter( input, next -> next.getThresholds().equals( inputKeyInstance ) );
+            inputSlice =
+                    Slicer.filter( input, next -> next.getSampleMetadata().getThresholds().equals( inputKeyInstance ) );
         }
         else
         {
@@ -552,10 +553,11 @@ public abstract class ChartEngineFactory
         }
 
         //Determine the key set for the loop below based on if this is a lead time first and threshold first plot type.
-        Set<Object> keySetValues = Slicer.discover( input, next -> next.getMetadata().getTimeWindow() );
+        Set<Object> keySetValues =
+                Slicer.discover( input, next -> next.getMetadata().getSampleMetadata().getTimeWindow() );
         if ( usedPlotType.isFor( OutputTypeSelection.THRESHOLD_LEAD ) )
         {
-            keySetValues = Slicer.discover( input, next -> next.getMetadata().getThresholds() );
+            keySetValues = Slicer.discover( input, next -> next.getMetadata().getSampleMetadata().getThresholds() );
         }
 
         //For each key instance, do the following....
@@ -691,7 +693,8 @@ public abstract class ChartEngineFactory
                 final ChartEngine engine = processBoxPlotErrorsDiagram( next,
                                                                         templateName,
                                                                         overrideParametersStr );
-                results.put( Pair.of( next.getMetadata().getTimeWindow(), next.getMetadata().getThresholds() ),
+                results.put( Pair.of( next.getMetadata().getSampleMetadata().getTimeWindow(),
+                                      next.getMetadata().getSampleMetadata().getThresholds() ),
                              engine );
             }
 

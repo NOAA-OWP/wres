@@ -28,8 +28,9 @@ import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.ReferenceTime;
+import wres.datamodel.metadata.SampleMetadata;
+import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.sampledata.pairs.EnsemblePair;
 import wres.datamodel.statistics.BoxPlotStatistic;
@@ -91,15 +92,14 @@ public class CommaSeparatedBoxPlotWriterTest extends CommaSeparatedWriterTestHel
                 DatasetIdentifier.of( Location.of( LID ), "SQIN", "HEFS", "ESP" );
 
         StatisticMetadata fakeMetadata =
-                StatisticMetadata.of( 1000,
-                                         MeasurementUnit.of(),
-                                         MeasurementUnit.of( "CMS" ),
-                                         MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
-                                         null,
-                                         datasetIdentifier,
-                                         timeOne,
-                                         threshold,
-                                         null );
+                StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                         datasetIdentifier,
+                                                         timeOne,
+                                                         threshold ),
+                                      1000,
+                                      MeasurementUnit.of(),
+                                      MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
+                                      null );
 
         List<EnsemblePair> fakeOutputs = new ArrayList<>();
         VectorOfDoubles probs = VectorOfDoubles.of( new double[] { 0, 0.25, 0.5, 0.75, 1.0 } );

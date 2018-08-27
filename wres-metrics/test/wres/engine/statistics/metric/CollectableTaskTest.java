@@ -16,6 +16,7 @@ import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.metadata.MeasurementUnit;
+import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.DichotomousPairs;
@@ -53,11 +54,11 @@ public final class CollectableTaskTest
         //Add some appropriate metrics to the collection
         m = ThreatScore.of();
 
-        m1 = StatisticMetadata.of( 100,
-                                                MeasurementUnit.of(),
-                                                MeasurementUnit.of(),
-                                                MetricConstants.CONTINGENCY_TABLE,
-                                                MetricConstants.MAIN );
+        m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
+                                   100,
+                                   MeasurementUnit.of(),
+                                   MetricConstants.CONTINGENCY_TABLE,
+                                   MetricConstants.MAIN );
     }
 
     @Test

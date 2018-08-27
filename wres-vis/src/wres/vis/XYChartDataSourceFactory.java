@@ -164,7 +164,7 @@ public abstract class XYChartDataSourceFactory
                 TimeSeriesCollection returnMe = new TimeSeriesCollection();
 
                 Set<OneOrTwoThresholds> thresholds =
-                        Slicer.discover( input, next -> next.getMetadata().getThresholds() );
+                        Slicer.discover( input, next -> next.getMetadata().getSampleMetadata().getThresholds() );
                 
                 // Filter by by threshold
                 for ( OneOrTwoThresholds nextSeries : thresholds )
@@ -173,7 +173,7 @@ public abstract class XYChartDataSourceFactory
                             new TimeSeries( nextSeries.toStringWithoutUnits(), FixedMillisecond.class );
 
                     ListOfStatistics<PairedStatistic<Instant, Duration>> filtered =
-                            Slicer.filter( input, data -> data.getThresholds().equals( nextSeries ) );
+                            Slicer.filter( input, data -> data.getSampleMetadata().getThresholds().equals( nextSeries ) );
                     // Create the series
                     for ( PairedStatistic<Instant, Duration> nextSet : filtered )
                     {
@@ -196,7 +196,8 @@ public abstract class XYChartDataSourceFactory
 
         buildInitialParameters( source,
                                 orderIndex,
-                                Slicer.discover( input, next -> next.getMetadata().getThresholds() ).size() ); //# of series = number of thresholds in input.
+                                Slicer.discover( input, next -> next.getMetadata().getSampleMetadata().getThresholds() )
+                                      .size() ); //# of series = number of thresholds in input.
         source.setXAxisType( ChartConstants.AXIS_IS_TIME );
         source.getDefaultFullySpecifiedDataSourceDrawingParameters()
               .setDefaultDomainAxisTitle( "FORECAST ISSUE DATE/TIME [UTC]" );
@@ -301,9 +302,11 @@ public abstract class XYChartDataSourceFactory
                 // Filter by the lead time window, as contained within the TimeWindow portion of the key.
                 SortedSet<Pair<Duration, Duration>> durations = Slicer.discover( input,
                                                                                  next -> Pair.of( next.getMetadata()
+                                                                                                      .getSampleMetadata()
                                                                                                       .getTimeWindow()
                                                                                                       .getEarliestLeadTime(),
                                                                                                   next.getMetadata()
+                                                                                                      .getSampleMetadata()
                                                                                                       .getTimeWindow()
                                                                                                       .getLatestLeadTime() ) );
 
@@ -312,22 +315,27 @@ public abstract class XYChartDataSourceFactory
                     // Slice the data by the lead time in the window.  The resulting output will span
                     // multiple issued time windows and thresholds.
                     ListOfStatistics<DoubleScoreStatistic> slice = Slicer.filter( input,
-                                                                                 next -> next.getTimeWindow()
-                                                                                             .getEarliestLeadTime()
-                                                                                             .equals( nextTime.getLeft() )
-                                                                                         && next.getTimeWindow()
-                                                                                                .getLatestLeadTime()
-                                                                                                .equals( nextTime.getRight() ) );
+                                                                                  next -> next.getSampleMetadata()
+                                                                                              .getTimeWindow()
+                                                                                              .getEarliestLeadTime()
+                                                                                              .equals( nextTime.getLeft() )
+                                                                                          && next.getSampleMetadata()
+                                                                                                 .getTimeWindow()
+                                                                                                 .getLatestLeadTime()
+                                                                                                 .equals( nextTime.getRight() ) );
 
                     // Filter by threshold
                     SortedSet<OneOrTwoThresholds> thresholds =
-                            Slicer.discover( slice, next -> next.getMetadata().getThresholds() );
+                            Slicer.discover( slice, next -> next.getMetadata().getSampleMetadata().getThresholds() );
                     for ( OneOrTwoThresholds nextThreshold : thresholds )
                     {
                         // Slice the data by threshold.  The resulting data will still contain potentially
                         // multiple issued time pooling windows.
                         ListOfStatistics<DoubleScoreStatistic> finalSlice =
-                                Slicer.filter( slice, next -> next.getThresholds().equals( nextThreshold ) );
+                                Slicer.filter( slice,
+                                               next -> next.getSampleMetadata()
+                                                           .getThresholds()
+                                                           .equals( nextThreshold ) );
 
                         // Create the time series with a label determined by whether the lead time is a 
                         // single value or window.
@@ -348,6 +356,7 @@ public abstract class XYChartDataSourceFactory
                         for ( DoubleScoreStatistic nextDouble : finalSlice )
                         {
                             next.add( new FixedMillisecond( nextDouble.getMetadata()
+                                                                      .getSampleMetadata()
                                                                       .getTimeWindow()
                                                                       .getMidPointTime()
                                                                       .toEpochMilli() ),
@@ -362,13 +371,16 @@ public abstract class XYChartDataSourceFactory
 
         SortedSet<Pair<Duration, Duration>> durations = Slicer.discover( input,
                                                                          next -> Pair.of( next.getMetadata()
+                                                                                              .getSampleMetadata()
                                                                                               .getTimeWindow()
                                                                                               .getEarliestLeadTime(),
                                                                                           next.getMetadata()
+                                                                                              .getSampleMetadata()
                                                                                               .getTimeWindow()
                                                                                               .getLatestLeadTime() ) );
-        SortedSet<OneOrTwoThresholds> thresholds = Slicer.discover( input, next -> next.getMetadata().getThresholds() );
-        
+        SortedSet<OneOrTwoThresholds> thresholds =
+                Slicer.discover( input, next -> next.getMetadata().getSampleMetadata().getThresholds() );
+
         buildInitialParameters( source,
                                 orderIndex,
                                 durations.size() * thresholds.size() ); //one series per lead and threshold
@@ -409,8 +421,9 @@ public abstract class XYChartDataSourceFactory
             }
         };
 
-        SortedSet<TimeWindow> timeWindows = Slicer.discover( input, next -> next.getMetadata().getTimeWindow() );
-        
+        SortedSet<TimeWindow> timeWindows =
+                Slicer.discover( input, next -> next.getMetadata().getSampleMetadata().getTimeWindow() );
+
         buildInitialParameters( source, orderIndex, timeWindows.size() );
         source.getDefaultFullySpecifiedDataSourceDrawingParameters()
               .setDefaultDomainAxisTitle( "THRESHOLD VALUE@inputUnitsLabelSuffix@" );
@@ -449,8 +462,9 @@ public abstract class XYChartDataSourceFactory
             }
         };
 
-        SortedSet<OneOrTwoThresholds> thresholds = Slicer.discover( input, next -> next.getMetadata().getThresholds() );
-        
+        SortedSet<OneOrTwoThresholds> thresholds =
+                Slicer.discover( input, next -> next.getMetadata().getSampleMetadata().getThresholds() );
+
         buildInitialParameters( source, orderIndex, thresholds.size() );
         source.getDefaultFullySpecifiedDataSourceDrawingParameters()
               .setDefaultDomainAxisTitle( "FORECAST LEAD TIME [HOUR]" );
@@ -528,7 +542,7 @@ public abstract class XYChartDataSourceFactory
 //                          + timeWindow.getLatestLeadTime().toHours()
 //                          + "]";
 //            }
-            legendEntryBySeries.add( entry.getMetadata().getThresholds().toStringWithoutUnits() );
+            legendEntryBySeries.add( entry.getMetadata().getSampleMetadata().getThresholds().toStringWithoutUnits() );
         }
 
         //Creates the source.
