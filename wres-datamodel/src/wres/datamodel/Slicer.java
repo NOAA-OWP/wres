@@ -31,12 +31,12 @@ import wres.datamodel.sampledata.pairs.EnsemblePairs;
 import wres.datamodel.sampledata.pairs.SingleValuedPair;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfEnsemblePairs;
-import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfEnsemblePairs.TimeSeriesOfEnsemblePairsBuilder;
+import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs.TimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.statistics.ListOfStatistics;
-import wres.datamodel.statistics.Statistic;
 import wres.datamodel.statistics.ScoreStatistic;
+import wres.datamodel.statistics.Statistic;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdType;
@@ -535,14 +535,14 @@ public final class Slicer
         //Filter baseline as required
         if ( input.hasBaseline() )
         {
-            List<SingleValuedPair> basePairs = input.getRawDataForBaseline();
+            List<SingleValuedPair> basePairs = input.getBaselineData().getRawData();
             List<SingleValuedPair> basePairsSubset =
                     basePairs.stream().filter( condition ).collect( Collectors.toList() );
 
             return SingleValuedPairs.of( mainPairsSubset,
                                          basePairsSubset,
                                          input.getMetadata(),
-                                         input.getMetadataForBaseline(),
+                                         input.getBaselineData().getMetadata(),
                                          climatology );
         }
 
@@ -583,14 +583,14 @@ public final class Slicer
         //Filter baseline as required
         if ( input.hasBaseline() )
         {
-            List<EnsemblePair> basePairs = input.getRawDataForBaseline();
+            List<EnsemblePair> basePairs = input.getBaselineData().getRawData();
             List<EnsemblePair> basePairsSubset =
                     basePairs.stream().filter( condition ).collect( Collectors.toList() );
 
             return EnsemblePairs.of( mainPairsSubset,
                                      basePairsSubset,
                                      input.getMetadata(),
-                                     input.getMetadataForBaseline(),
+                                     input.getBaselineData().getMetadata(),
                                      climatology );
         }
 
@@ -639,7 +639,7 @@ public final class Slicer
 
         if ( input.hasBaseline() )
         {
-            List<EnsemblePair> basePairs = input.getRawDataForBaseline();
+            List<EnsemblePair> basePairs = input.getBaselineData().getRawData();
             List<EnsemblePair> basePairsSubset = new ArrayList<>();
 
             for ( EnsemblePair next : basePairs )
@@ -654,7 +654,7 @@ public final class Slicer
             return EnsemblePairs.of( mainPairsSubset,
                                      basePairsSubset,
                                      input.getMetadata(),
-                                     input.getMetadataForBaseline(),
+                                     input.getBaselineData().getMetadata(),
                                      climatology );
         }
         return EnsemblePairs.of( mainPairsSubset, input.getMetadata(), climatology );
@@ -705,7 +705,7 @@ public final class Slicer
         //Filter baseline pairs as required
         if ( input.hasBaseline() )
         {
-            builder.setMetadataForBaseline( input.getMetadataForBaseline() );
+            builder.setMetadataForBaseline( input.getBaselineData().getMetadata() );
 
             for ( TimeSeries<SingleValuedPair> next : input.getBaselineData().basisTimeIterator() )
             {
@@ -1147,13 +1147,13 @@ public final class Slicer
         mainPairs.stream().map( mapper ).forEach( mainPairsTransformed::add );
         if ( input.hasBaseline() )
         {
-            List<SingleValuedPair> basePairs = input.getRawDataForBaseline();
+            List<SingleValuedPair> basePairs = input.getBaselineData().getRawData();
             List<DichotomousPair> basePairsTransformed = new ArrayList<>();
             basePairs.stream().map( mapper ).forEach( basePairsTransformed::add );
             return DichotomousPairs.ofDichotomousPairs( mainPairsTransformed,
                                                         basePairsTransformed,
                                                         input.getMetadata(),
-                                                        input.getMetadataForBaseline(),
+                                                        input.getBaselineData().getMetadata(),
                                                         input.getClimatology() );
         }
         return DichotomousPairs.ofDichotomousPairs( mainPairsTransformed,
@@ -1183,13 +1183,13 @@ public final class Slicer
         mainPairs.stream().map( mapper ).forEach( mainPairsTransformed::add );
         if ( input.hasBaseline() )
         {
-            List<DiscreteProbabilityPair> basePairs = input.getRawDataForBaseline();
+            List<DiscreteProbabilityPair> basePairs = input.getBaselineData().getRawData();
             List<DichotomousPair> basePairsTransformed = new ArrayList<>();
             basePairs.stream().map( mapper ).forEach( basePairsTransformed::add );
             return DichotomousPairs.ofDichotomousPairs( mainPairsTransformed,
                                                         basePairsTransformed,
                                                         input.getMetadata(),
-                                                        input.getMetadataForBaseline(),
+                                                        input.getBaselineData().getMetadata(),
                                                         input.getClimatology() );
         }
         return DichotomousPairs.ofDichotomousPairs( mainPairsTransformed,
@@ -1216,11 +1216,11 @@ public final class Slicer
         List<SingleValuedPair> mainPairsTransformed = toSingleValuedPairs( input.getRawData(), mapper );
         if ( input.hasBaseline() )
         {
-            List<SingleValuedPair> basePairsTransformed = toSingleValuedPairs( input.getRawDataForBaseline(), mapper );
+            List<SingleValuedPair> basePairsTransformed = toSingleValuedPairs( input.getBaselineData().getRawData(), mapper );
             return SingleValuedPairs.of( mainPairsTransformed,
                                          basePairsTransformed,
                                          input.getMetadata(),
-                                         input.getMetadataForBaseline(),
+                                         input.getBaselineData().getMetadata(),
                                          input.getClimatology() );
         }
         return SingleValuedPairs.of( mainPairsTransformed, input.getMetadata(), input.getClimatology() );
@@ -1241,9 +1241,9 @@ public final class Slicer
         if ( input.hasBaseline() )
         {
             return SingleValuedPairs.of( new ArrayList<SingleValuedPair>( input.getRawData() ),
-                                         new ArrayList<SingleValuedPair>( input.getRawDataForBaseline() ),
+                                         new ArrayList<SingleValuedPair>( input.getBaselineData().getRawData() ),
                                          input.getMetadata(),
-                                         input.getMetadataForBaseline(),
+                                         input.getBaselineData().getMetadata(),
                                          input.getClimatology() );
         }
         return SingleValuedPairs.of( new ArrayList<SingleValuedPair>( input.getRawData() ),
@@ -1276,13 +1276,13 @@ public final class Slicer
         mainPairs.forEach( pair -> mainPairsTransformed.add( mapper.apply( pair, threshold ) ) );
         if ( input.hasBaseline() )
         {
-            List<EnsemblePair> basePairs = input.getRawDataForBaseline();
+            List<EnsemblePair> basePairs = input.getBaselineData().getRawData();
             List<DiscreteProbabilityPair> basePairsTransformed = new ArrayList<>();
             basePairs.forEach( pair -> basePairsTransformed.add( mapper.apply( pair, threshold ) ) );
             return DiscreteProbabilityPairs.of( mainPairsTransformed,
                                                 basePairsTransformed,
                                                 input.getMetadata(),
-                                                input.getMetadataForBaseline(),
+                                                input.getBaselineData().getMetadata(),
                                                 input.getClimatology() );
         }
         return DiscreteProbabilityPairs.of( mainPairsTransformed,

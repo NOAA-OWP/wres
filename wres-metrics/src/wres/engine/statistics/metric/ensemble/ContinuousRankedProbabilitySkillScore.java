@@ -67,7 +67,7 @@ public class ContinuousRankedProbabilitySkillScore extends ContinuousRankedProba
         double result = FunctionFactory.skill().applyAsDouble( numerator, denominator );
 
         //Metadata
-        DatasetIdentifier baselineIdentifier = s.getMetadataForBaseline().getIdentifier();
+        DatasetIdentifier baselineIdentifier = s.getBaselineData().getMetadata().getIdentifier();
         StatisticMetadata metOut = StatisticMetadata.of( s.getMetadata(),
                                                           this.getID(),
                                                           MetricConstants.MAIN,

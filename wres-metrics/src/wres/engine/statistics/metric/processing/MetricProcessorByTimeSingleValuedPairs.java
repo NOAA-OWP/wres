@@ -35,8 +35,8 @@ import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs.TimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.statistics.DurationScoreStatistic;
 import wres.datamodel.statistics.ListOfStatistics;
-import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.statistics.PairedStatistic;
+import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdGroup;
@@ -378,7 +378,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
             SampleMetadata baselineMeta = null;
             if ( input.hasBaseline() )
             {
-                baselineMeta = SampleMetadata.of( transformed.getMetadataForBaseline(), oneOrTwo );
+                baselineMeta = SampleMetadata.of( transformed.getBaselineData().getMetadata(), oneOrTwo );
             }
 
             transformed = DichotomousPairs.ofDichotomousPairs( transformed,
@@ -444,7 +444,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
             SampleMetadata baselineMeta = null;
             if ( input.hasBaseline() )
             {
-                baselineMeta = SampleMetadata.of( pairs.getMetadataForBaseline(), oneOrTwo );
+                baselineMeta = SampleMetadata.of( pairs.getBaselineData().getMetadata(), oneOrTwo );
             }
 
             TimeSeriesOfSingleValuedPairsBuilder builder = new TimeSeriesOfSingleValuedPairsBuilder();

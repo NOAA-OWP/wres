@@ -43,9 +43,9 @@ public abstract class DoubleErrorScore<S extends SingleValuedPairs> extends Ordi
         }
         //Metadata
         DatasetIdentifier id = null;
-        if ( s.hasBaseline() && s.getMetadataForBaseline().hasIdentifier() )
+        if ( s.hasBaseline() )
         {
-            id = s.getMetadataForBaseline().getIdentifier();
+            id = s.getBaselineData().getMetadata().getIdentifier();
         }
         final StatisticMetadata metOut =
                 StatisticMetadata.of( s.getMetadata(),

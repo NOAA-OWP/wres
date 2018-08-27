@@ -34,7 +34,7 @@ public abstract class BasicPairs<T> implements SampleData<T>
      * The verification pairs in an immutable list.
      */
 
-    private final List<T> mainInput;
+    private final List<T> sampleData;
 
     /**
      * Metadata associated with the verification pairs.
@@ -46,7 +46,7 @@ public abstract class BasicPairs<T> implements SampleData<T>
      * The verification pairs for a baseline in an immutable list (may be null).
      */
 
-    private final List<T> baselineInput;
+    private final List<T> baselineSampleData;
 
     /**
      * Metadata associated with the baseline verification pairs (may be null).
@@ -63,25 +63,13 @@ public abstract class BasicPairs<T> implements SampleData<T>
     @Override
     public List<T> getRawData()
     {
-        return mainInput;
+        return sampleData;
     }
 
     @Override
     public SampleMetadata getMetadata()
     {
         return mainMeta;
-    }
-
-    @Override
-    public List<T> getRawDataForBaseline()
-    {
-        return baselineInput;
-    }
-
-    @Override
-    public SampleMetadata getMetadataForBaseline()
-    {
-        return baselineMeta;
     }
 
     @Override
@@ -93,7 +81,7 @@ public abstract class BasicPairs<T> implements SampleData<T>
     @Override
     public Iterator<T> iterator()
     {
-        return mainInput.iterator();
+        return sampleData.iterator();
     }
 
     @Override
@@ -101,13 +89,13 @@ public abstract class BasicPairs<T> implements SampleData<T>
     {
         StringJoiner join = new StringJoiner( System.lineSeparator() );
         join.add( "Main pairs:" );
-        mainInput.forEach( a -> join.add( a.toString() ) );
-        if ( hasBaseline() )
+        sampleData.forEach( a -> join.add( a.toString() ) );
+        if ( this.hasBaseline() )
         {
             join.add( "" ).add( "Baseline pairs:" );
-            baselineInput.forEach( a -> join.add( a.toString() ) );
+            baselineSampleData.forEach( a -> join.add( a.toString() ) );
         }
-        if ( hasClimatology() )
+        if ( this.hasClimatology() )
         {
             join.add( "" ).add( "Climatology:" );
             for ( Double next : climatology.getDoubles() )
@@ -219,6 +207,38 @@ public abstract class BasicPairs<T> implements SampleData<T>
     }
 
     /**
+     * Convenience method that returns the raw data associated with the baseline or null.
+     * 
+     * @return the raw pairs
+     */
+
+    List<T> getRawDataForBaseline()
+    {
+        if( Objects.isNull( baselineSampleData ) )
+        {
+            return null;
+        }
+        
+        return Collections.unmodifiableList( baselineSampleData );
+    }
+
+    /**
+     * Convenience method that returns the metadata associated with the baseline or null.
+     * 
+     * @return baseline metadata
+     */
+
+    SampleMetadata getMetadataForBaseline()
+    {
+        if( Objects.isNull( baselineMeta ) )
+        {
+            return null;
+        }
+        
+        return baselineMeta;
+    }
+
+    /**
      * Construct the pairs with a builder.
      * 
      * @param b the builder
@@ -228,18 +248,18 @@ public abstract class BasicPairs<T> implements SampleData<T>
     BasicPairs( final BasicPairsBuilder<T> b )
     {
         //Ensure safe types
-        this.mainInput = Collections.unmodifiableList( b.mainInput );
+        this.sampleData = Collections.unmodifiableList( b.mainInput );
         this.mainMeta = b.mainMeta;
         this.climatology = b.climatology;
 
         // Baseline data?
         if ( Objects.nonNull( b.baselineInput ) )
         {
-            this.baselineInput = Collections.unmodifiableList( b.baselineInput );
+            this.baselineSampleData = Collections.unmodifiableList( b.baselineInput );
         }
         else
         {
-            this.baselineInput = null;
+            this.baselineSampleData = null;
         }
 
         // Always set baseline metadata because null-status is validated
@@ -265,12 +285,12 @@ public abstract class BasicPairs<T> implements SampleData<T>
             throw new SampleDataException( "Specify non-null metadata for the metric input." );
         }
 
-        if ( Objects.isNull( mainInput ) )
+        if ( Objects.isNull( sampleData ) )
         {
             throw new SampleDataException( "Specify a non-null dataset for the metric input." );
         }
 
-        if ( mainInput.contains( null ) )
+        if ( sampleData.contains( null ) )
         {
             throw new SampleDataException( "One or more of the pairs is null." );
         }
@@ -285,13 +305,13 @@ public abstract class BasicPairs<T> implements SampleData<T>
 
     private void validateBaselineInput()
     {
-        if ( Objects.isNull( baselineInput ) != Objects.isNull( baselineMeta ) )
+        if ( Objects.isNull( baselineSampleData ) != Objects.isNull( baselineMeta ) )
         {
             throw new SampleDataException( "Specify a non-null baseline input and associated metadata or leave both "
-                                            + "null." );
+                                           + "null." );
         }
 
-        if ( Objects.nonNull( baselineInput ) && baselineInput.contains( null ) )
+        if ( Objects.nonNull( baselineSampleData ) && baselineSampleData.contains( null ) )
         {
             throw new SampleDataException( "One or more of the baseline pairs is null." );
         }
@@ -311,13 +331,13 @@ public abstract class BasicPairs<T> implements SampleData<T>
             if ( climatology.size() == 0 )
             {
                 throw new SampleDataException( "Cannot build the paired data with an empty climatology: add one or "
-                                                + "more values." );
+                                               + "more values." );
             }
 
             if ( !Arrays.stream( climatology.getDoubles() ).anyMatch( Double::isFinite ) )
             {
                 throw new SampleDataException( "Must have at least one non-missing value in the climatological "
-                                                + "input" );
+                                               + "input" );
             }
         }
     }

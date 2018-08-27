@@ -9,8 +9,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.SortedSet;
 
-import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.time.BasicTimeSeries;
 import wres.datamodel.time.Event;
@@ -41,7 +41,7 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements TimeSeri
     @Override
     public TimeSeriesOfEnsemblePairs getBaselineData()
     {
-        if ( !hasBaseline() )
+        if ( Objects.isNull( this.getRawDataForBaseline() ) )
         {
             return null;
         }
@@ -218,7 +218,7 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements TimeSeri
                 addTimeSeriesData( List<Event<List<Event<EnsemblePair>>>> values )
         {
             List<Event<List<Event<EnsemblePair>>>> sorted = TimeSeriesHelper.sort( values );
-            data.addAll( sorted );
+            this.data.addAll( sorted );
             addData( TimeSeriesHelper.unwrap( sorted ) );
             return this;
         }
@@ -351,7 +351,7 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements TimeSeri
         super( b );
         this.main = BasicTimeSeries.of( b.data );
         // Baseline data?
-        if ( this.hasBaseline() )
+        if ( Objects.nonNull( b.baselineData ) )
         {
             this.baseline = BasicTimeSeries.of( b.baselineData );
         }

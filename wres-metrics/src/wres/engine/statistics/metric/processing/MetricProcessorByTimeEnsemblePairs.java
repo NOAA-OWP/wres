@@ -31,10 +31,10 @@ import wres.datamodel.sampledata.pairs.SingleValuedPairs;
 import wres.datamodel.statistics.BoxPlotStatistic;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.ListOfStatistics;
-import wres.datamodel.statistics.Statistic;
-import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.statistics.MultiVectorStatistic;
 import wres.datamodel.statistics.ScoreStatistic;
+import wres.datamodel.statistics.Statistic;
+import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants;
@@ -417,7 +417,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
             SampleMetadata baselineMeta = null;
             if ( input.hasBaseline() )
             {
-                baselineMeta = SampleMetadata.of( input.getMetadataForBaseline(), oneOrTwo );
+                baselineMeta = SampleMetadata.of( input.getBaselineData().getMetadata(), oneOrTwo );
             }
 
             EnsemblePairs pairs = EnsemblePairs.of( input,
@@ -563,7 +563,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
             SampleMetadata baselineMeta = null;
             if ( input.hasBaseline() )
             {
-                baselineMeta = SampleMetadata.of( transformed.getMetadataForBaseline(), oneOrTwo );
+                baselineMeta = SampleMetadata.of( transformed.getBaselineData().getMetadata(), oneOrTwo );
             }
 
             transformed = DiscreteProbabilityPairs.of( transformed,
@@ -720,7 +720,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                 SampleMetadata baselineMeta = null;
                 if ( input.hasBaseline() )
                 {
-                    baselineMeta = SampleMetadata.of( dichotomous.getMetadataForBaseline(), compound );
+                    baselineMeta = SampleMetadata.of( dichotomous.getBaselineData().getMetadata(), compound );
                 }
 
                 dichotomous = DichotomousPairs.ofDichotomousPairs( dichotomous,

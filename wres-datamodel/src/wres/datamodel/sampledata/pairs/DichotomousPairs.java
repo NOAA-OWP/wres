@@ -109,7 +109,7 @@ public class DichotomousPairs extends MulticategoryPairs
 
     public DichotomousPairs getBaselineData()
     {
-        if ( !hasBaseline() )
+        if ( Objects.isNull( this.getRawDataForBaseline() ) )
         {
             return null;
         }
