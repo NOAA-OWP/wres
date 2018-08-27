@@ -13,8 +13,8 @@ import org.junit.rules.ExpectedException;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreGroup;
 import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.sampledata.SampleDataException;
@@ -56,15 +56,14 @@ public final class PeirceSkillScoreTest
     public void setUpBeforeEachTest() throws MetricParameterException
     {
         pss = PeirceSkillScore.of();
-        meta = StatisticMetadata.of( 365,
-                                                  MeasurementUnit.of(),
-                                                  MeasurementUnit.of(),
-                                                  MetricConstants.PEIRCE_SKILL_SCORE,
-                                                  MetricConstants.MAIN,
-                                                  DatasetIdentifier.of(
-                                                                                        Location.of( "DRRC2" ),
-                                                                                        "SQIN",
-                                                                                        "HEFS" ) );
+        meta = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of(),
+                                                        DatasetIdentifier.of( Location.of( "DRRC2" ),
+                                                                              "SQIN",
+                                                                              "HEFS" ) ),
+                                     365,
+                                     MeasurementUnit.of(),
+                                     MetricConstants.PEIRCE_SKILL_SCORE,
+                                     MetricConstants.MAIN );
     }
 
     /**

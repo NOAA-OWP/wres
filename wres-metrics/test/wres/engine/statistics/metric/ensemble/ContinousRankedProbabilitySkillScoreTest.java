@@ -72,17 +72,16 @@ public final class ContinousRankedProbabilitySkillScoreTest
         basePairs.add( EnsemblePair.of( 12.1, new double[] { 9, 18, 5, 6, 12 } ) );
         basePairs.add( EnsemblePair.of( 43, new double[] { 23, 12, 12, 39, 10 } ) );
         EnsemblePairs input = EnsemblePairs.of( pairs,
-                                                           basePairs,
-                                                           SampleMetadata.of(),
-                                                           SampleMetadata.of() );
+                                                basePairs,
+                                                SampleMetadata.of(),
+                                                SampleMetadata.of() );
 
         //Metadata for the output
-        StatisticMetadata m1 =
-                StatisticMetadata.of( input.getRawData().size(),
-                                                   MeasurementUnit.of(),
-                                                   MeasurementUnit.of(),
-                                                   MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
-                                                   MetricConstants.MAIN );
+        final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
+                                                           input.getRawData().size(),
+                                                           MeasurementUnit.of(),
+                                                           MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
+                                                           MetricConstants.MAIN );
         //Check the results       
         DoubleScoreStatistic actual = crpss.apply( input );
         DoubleScoreStatistic expected = DoubleScoreStatistic.of( 0.0779168348809044, m1 );
@@ -105,9 +104,9 @@ public final class ContinousRankedProbabilitySkillScoreTest
         // Generate empty data
         EnsemblePairs input =
                 EnsemblePairs.of( Arrays.asList(),
-                                             Arrays.asList(),
-                                             SampleMetadata.of(),
-                                             SampleMetadata.of() );
+                                  Arrays.asList(),
+                                  SampleMetadata.of(),
+                                  SampleMetadata.of() );
 
         DoubleScoreStatistic actual = crpss.apply( input );
 
@@ -186,7 +185,12 @@ public final class ContinousRankedProbabilitySkillScoreTest
     {
         EnsemblePairs pairs = MetricTestDataFactory.getEnsemblePairsOne();
 
-        assertTrue( crpss.apply( pairs ).getMetadata().getIdentifier().getScenarioIDForBaseline().equals( "ESP" ) );
+        assertTrue( crpss.apply( pairs )
+                         .getMetadata()
+                         .getSampleMetadata()
+                         .getIdentifier()
+                         .getScenarioIDForBaseline()
+                         .equals( "ESP" ) );
     }
 
     /**
@@ -214,7 +218,7 @@ public final class ContinousRankedProbabilitySkillScoreTest
     {
         exception.expect( MetricParameterException.class );
         exception.expectMessage( "Unsupported decomposition identifier 'LBR'." );
-        
+
         ContinuousRankedProbabilitySkillScore.of( ScoreGroup.LBR );
     }
 

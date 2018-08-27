@@ -22,16 +22,16 @@ public class CoefficientOfDetermination extends CorrelationPearsons
      * 
      * @return an instance
      */
-    
+
     public static CoefficientOfDetermination of()
     {
         return new CoefficientOfDetermination();
     }
-    
+
     @Override
-    public DoubleScoreStatistic apply(SingleValuedPairs s)
+    public DoubleScoreStatistic apply( SingleValuedPairs s )
     {
-        return aggregate(getInputForAggregation(s));
+        return aggregate( getInputForAggregation( s ) );
     }
 
     @Override
@@ -41,32 +41,31 @@ public class CoefficientOfDetermination extends CorrelationPearsons
     }
 
     @Override
-    public DoubleScoreStatistic aggregate(DoubleScoreStatistic output)
+    public DoubleScoreStatistic aggregate( DoubleScoreStatistic output )
     {
         if ( Objects.isNull( output ) )
         {
             throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
         }
 
-        StatisticMetadata metIn = output.getMetadata();
-        StatisticMetadata meta = StatisticMetadata.of( metIn,
-                                                             MetricConstants.COEFFICIENT_OF_DETERMINATION,
-                                                             MetricConstants.MAIN,
-                                                             this.hasRealUnits(),
-                                                             metIn.getSampleSize(),
-                                                             null );
+        StatisticMetadata meta = StatisticMetadata.of( output.getMetadata().getSampleMetadata(),
+                                                       MetricConstants.COEFFICIENT_OF_DETERMINATION,
+                                                       MetricConstants.MAIN,
+                                                       this.hasRealUnits(),
+                                                       output.getMetadata().getSampleSize(),
+                                                       null );
 
-        return DoubleScoreStatistic.of( Math.pow(output.getData(), 2), meta );
+        return DoubleScoreStatistic.of( Math.pow( output.getData(), 2 ), meta );
     }
 
     @Override
-    public DoubleScoreStatistic getInputForAggregation(SingleValuedPairs input)
+    public DoubleScoreStatistic getInputForAggregation( SingleValuedPairs input )
     {
-        if(Objects.isNull(input))
+        if ( Objects.isNull( input ) )
         {
-            throw new SampleDataException("Specify non-null input to the '"+this+"'.");
+            throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
         }
-        return super.apply(input);
+        return super.apply( input );
     }
 
     @Override
@@ -82,6 +81,6 @@ public class CoefficientOfDetermination extends CorrelationPearsons
     private CoefficientOfDetermination()
     {
         super();
-    }    
-    
+    }
+
 }

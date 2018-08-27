@@ -57,14 +57,15 @@ public final class SumOfSquareErrorTest
         SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsTwo();
 
         //Metadata for the output
-        final StatisticMetadata m1 = StatisticMetadata.of( input.getRawData().size(),
-                                                                 MeasurementUnit.of( "CMS" ),
-                                                                 MeasurementUnit.of( "CMS" ),
-                                                                 MetricConstants.SUM_OF_SQUARE_ERROR,
-                                                                 MetricConstants.MAIN,
-                                                                 DatasetIdentifier.of( Location.of( "DRRC2" ),
-                                                                                       "SQIN",
-                                                                                       "HEFS" ) );
+        final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                                              DatasetIdentifier.of( Location.of( "DRRC2" ),
+                                                                                                    "SQIN",
+                                                                                                    "HEFS" ) ),
+                                                           input.getRawData().size(),
+                                                           MeasurementUnit.of( "CMS" ),
+                                                           MetricConstants.SUM_OF_SQUARE_ERROR,
+                                                           MetricConstants.MAIN );
+
         //Check the results
         DoubleScoreStatistic actual = sse.apply( input );
 

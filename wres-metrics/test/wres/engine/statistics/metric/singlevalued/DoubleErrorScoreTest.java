@@ -24,7 +24,7 @@ import wres.engine.statistics.metric.MetricTestDataFactory;
  */
 public final class DoubleErrorScoreTest
 {
-    
+
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
@@ -39,7 +39,7 @@ public final class DoubleErrorScoreTest
     {
         this.score = MeanError.of();
     }
-    
+
     /**
      * Checks that the baseline is set correctly.
      * @throws MetricParameterException if the metric could not be constructed 
@@ -48,7 +48,7 @@ public final class DoubleErrorScoreTest
     @Test
     public void testBaseline() throws MetricParameterException
     {
-       
+
         //Generate some data with a baseline
         final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsTwo();
 
@@ -57,7 +57,11 @@ public final class DoubleErrorScoreTest
 
         //Check the parameters
         assertTrue( "Unexpected baseline identifier for the DoubleErrorScore.",
-                    actual.getMetadata().getIdentifier().getScenarioIDForBaseline().equals( "ESP" ) );
+                    actual.getMetadata()
+                          .getSampleMetadata()
+                          .getIdentifier()
+                          .getScenarioIDForBaseline()
+                          .equals( "ESP" ) );
     }
 
     /**
@@ -69,7 +73,7 @@ public final class DoubleErrorScoreTest
     {
         assertFalse( score.isDecomposable() );
     }
-    
+
     /**
      * Checks that the {@link DoubleErrorScore#getScoreOutputGroup()} returns {@link ScoreGroup#NONE}.
      */
@@ -87,8 +91,9 @@ public final class DoubleErrorScoreTest
 
     @Test
     public void testExceptionOnMissingFunction() throws MetricParameterException
-    {     
-        class ExceptionCheck extends DoubleErrorScore<SingleValuedPairs> {
+    {
+        class ExceptionCheck extends DoubleErrorScore<SingleValuedPairs>
+        {
 
             @Override
             public boolean isSkillScore()
@@ -108,13 +113,13 @@ public final class DoubleErrorScoreTest
                 return false;
             }
         }
-        
+
         exception.expect( MetricCalculationException.class );
         exception.expectMessage( "Override or specify a non-null error function for the 'MEAN ERROR'." );
-        
+
         new ExceptionCheck().apply( MetricTestDataFactory.getSingleValuedPairsOne() );
-    }  
-    
+    }
+
     /**
      * Tests for an expected exception on calling {@link DoubleErrorScore#apply(SingleValuedPairs)} with null 
      * input.
@@ -129,5 +134,5 @@ public final class DoubleErrorScoreTest
 
         score.apply( null );
     }
-    
+
 }

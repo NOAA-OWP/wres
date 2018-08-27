@@ -25,11 +25,9 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.Slicer;
 import wres.datamodel.metadata.MeasurementUnit;
+import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.statistics.DoubleScoreStatistic;
-import wres.datamodel.statistics.ListOfStatistics;
-import wres.datamodel.statistics.StatisticException;
 import wres.datamodel.statistics.ListOfStatistics.ListOfStatisticsBuilder;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
@@ -57,11 +55,11 @@ public final class ListOfStatisticsTest
     @Before
     public void runBeforeEachTest()
     {
-        metadata = StatisticMetadata.of( 0,
-                                            MeasurementUnit.of(),
-                                            MeasurementUnit.of(),
-                                            MetricConstants.BIAS_FRACTION,
-                                            MetricConstants.MAIN );
+        metadata = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
+                                         0,
+                                         MeasurementUnit.of(),
+                                         MetricConstants.BIAS_FRACTION,
+                                         MetricConstants.MAIN );
     }
 
     /**
@@ -119,7 +117,7 @@ public final class ListOfStatisticsTest
                 expectedOutput.add( next );
                 futures[i] =
                         CompletableFuture.supplyAsync( () -> builder.addStatistic( DoubleScoreStatistic.of( next,
-                                                                                                      metadata ) ),
+                                                                                                            metadata ) ),
                                                        service );
             }
 
@@ -316,17 +314,32 @@ public final class ListOfStatisticsTest
 
         ListOfStatistics<DoubleScoreStatistic> listOfOutputs =
                 ListOfStatistics.of( Arrays.asList( DoubleScoreStatistic.of( 0.1,
-                                                                            StatisticMetadata.of( metadata,
-                                                                                                     window,
-                                                                                                     thresholdOne ) ),
-                                                      DoubleScoreStatistic.of( 0.2,
-                                                                            StatisticMetadata.of( metadata,
-                                                                                                     window,
-                                                                                                     thresholdTwo ) ),
-                                                      DoubleScoreStatistic.of( 0.3,
-                                                                            StatisticMetadata.of( metadata,
-                                                                                                     window,
-                                                                                                     thresholdThree ) ) ) );
+                                                                             StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of(),
+                                                                                                                      null,
+                                                                                                                      window,
+                                                                                                                      thresholdOne ),
+                                                                                                   0,
+                                                                                                   MeasurementUnit.of(),
+                                                                                                   MetricConstants.BIAS_FRACTION,
+                                                                                                   MetricConstants.MAIN ) ),
+                                                    DoubleScoreStatistic.of( 0.2,
+                                                                             StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of(),
+                                                                                                                      null,
+                                                                                                                      window,
+                                                                                                                      thresholdTwo ),
+                                                                                                   0,
+                                                                                                   MeasurementUnit.of(),
+                                                                                                   MetricConstants.BIAS_FRACTION,
+                                                                                                   MetricConstants.MAIN ) ),
+                                                    DoubleScoreStatistic.of( 0.3,
+                                                                             StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of(),
+                                                                                                                      null,
+                                                                                                                      window,
+                                                                                                                      thresholdThree ),
+                                                                                                   0,
+                                                                                                   MeasurementUnit.of(),
+                                                                                                   MetricConstants.BIAS_FRACTION,
+                                                                                                   MetricConstants.MAIN ) ) ) );
 
         StringBuilder expected = new StringBuilder();
         expected.append( "{([-1000000000-01-01T00:00:00Z, +1000000000-12-31T23:59:59.999999999Z, VALID TIME, PT0S, "

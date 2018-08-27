@@ -1,5 +1,6 @@
 package wres.datamodel.metadata;
 
+import java.util.Comparator;
 import java.util.Objects;
 
 import wres.config.generated.ProjectConfig;
@@ -11,7 +12,7 @@ import wres.datamodel.thresholds.OneOrTwoThresholds;
  * 
  * @author james.brown@hydrosolved.com
  */
-public class SampleMetadata
+public class SampleMetadata implements Comparable<SampleMetadata>
 {
 
     /**
@@ -97,7 +98,7 @@ public class SampleMetadata
      */
 
     public static SampleMetadata
-            of( final MeasurementUnit unit, DatasetIdentifier identifier, final TimeWindow timeWindow )
+            of( final MeasurementUnit unit, final DatasetIdentifier identifier, final TimeWindow timeWindow )
     {
         return SampleMetadata.of( unit, identifier, timeWindow, null, null );
     }
@@ -162,7 +163,7 @@ public class SampleMetadata
     }
 
     /**
-     * Builds a {@link SampleMetadata} from a prescribed input source and a new {@link MeasurementUnit}.
+     * Builds a {@link SampleMetadata} from a prescribed input source and an override {@link MeasurementUnit}.
      * 
      * @param input the source metadata
      * @param unit the required measurement unit
@@ -182,7 +183,27 @@ public class SampleMetadata
     }
 
     /**
-     * Builds a {@link SampleMetadata} from a prescribed input source and a {@link OneOrTwoThresholds}.
+     * Builds a {@link SampleMetadata} from a prescribed input source and an override {@link DatasetIdentifier}.
+     * 
+     * @param input the source metadata
+     * @param identifier the required dataset identifier
+     * @return a {@link SampleMetadata} object
+     * @throws NullPointerException if the input is null
+     */
+
+    public static SampleMetadata of( final SampleMetadata input, final DatasetIdentifier identifier )
+    {
+        Objects.requireNonNull( input, NULL_INPUT_ERROR );
+
+        return SampleMetadata.of( input.getMeasurementUnit(),
+                                  identifier,
+                                  input.getTimeWindow(),
+                                  input.getThresholds(),
+                                  input.getProjectConfig() );
+    }
+    
+    /**
+     * Builds a {@link SampleMetadata} from a prescribed input source and an override {@link OneOrTwoThresholds}.
      * 
      * @param input the source metadata
      * @param thresholds the thresholds
@@ -202,7 +223,7 @@ public class SampleMetadata
     }
 
     /**
-     * Builds a {@link SampleMetadata} from a prescribed input source and a new {@link TimeWindow}.
+     * Builds a {@link SampleMetadata} from a prescribed input source and an override {@link TimeWindow}.
      * 
      * @param input the source metadata
      * @param timeWindow the new time window
@@ -221,6 +242,69 @@ public class SampleMetadata
                                   input.getProjectConfig() );
     }
 
+    /**
+     * Builds a {@link SampleMetadata} from a prescribed input source and an override {@link TimeWindow} and 
+     * {@link OneOrTwoThresholds}.
+     * 
+     * @param input the source metadata
+     * @param timeWindow the new time window
+     * @param thresholds the thresholds
+     * @return a {@link SampleMetadata} object
+     * @throws NullPointerException if the input is null
+     */
+
+    public static SampleMetadata
+            of( final SampleMetadata input, final TimeWindow timeWindow, final OneOrTwoThresholds thresholds )
+    {
+        Objects.requireNonNull( input, NULL_INPUT_ERROR );
+
+        return SampleMetadata.of( input.getMeasurementUnit(),
+                                  input.getIdentifier(),
+                                  timeWindow,
+                                  thresholds,
+                                  input.getProjectConfig() );
+    }
+
+    @Override
+    public int compareTo( SampleMetadata input )
+    {
+        Objects.requireNonNull( input, "Specify non-null metadata for comparison." );
+
+        // Check measurement units, which are always available
+        int returnMe = this.getMeasurementUnit().compareTo( input.getMeasurementUnit() );
+        if ( returnMe != 0 )
+        {
+            return returnMe;
+        }
+
+        // Check identifier via the string representation
+        returnMe = Objects.compare( this.getIdentifier() + "", input.getIdentifier() + "", Comparator.naturalOrder() );
+        if ( returnMe != 0 )
+        {
+            return returnMe;
+        }
+
+        // Check the time window
+        Comparator<TimeWindow> compareWindows = Comparator.nullsFirst( Comparator.naturalOrder() );
+        returnMe = Objects.compare( this.getTimeWindow(), input.getTimeWindow(), compareWindows );
+        if ( returnMe != 0 )
+        {
+            return returnMe;
+        }
+
+        // Check the thresholds
+        Comparator<OneOrTwoThresholds> compareThresholds = Comparator.nullsFirst( Comparator.naturalOrder() );
+        returnMe = Objects.compare( this.getThresholds(), input.getThresholds(), compareThresholds );
+        if ( returnMe != 0 )
+        {
+            return returnMe;
+        }
+
+        // Check the project configuration
+        Comparator<ProjectConfig> compareProjects = Comparator.nullsFirst( Comparator.naturalOrder() );
+        return Objects.compare( this.getProjectConfig(), input.getProjectConfig(), compareProjects );
+    }    
+    
     @Override
     public boolean equals( final Object o )
     {

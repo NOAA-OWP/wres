@@ -279,14 +279,15 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                 TimingErrorDurationStatistics timeToPeakErrorStats = nextStats.getValue();
 
                 SortedSet<OneOrTwoThresholds> thresholds =
-                        Slicer.discover( output, meta -> meta.getMetadata().getThresholds() );
+                        Slicer.discover( output, meta -> meta.getMetadata().getSampleMetadata().getThresholds() );
 
                 // Iterate through the thresholds
                 for ( OneOrTwoThresholds threshold : thresholds )
                 {
                     // Filter by current threshold  
                     ListOfStatistics<PairedStatistic<Instant, Duration>> sliced =
-                            Slicer.filter( output, next -> next.getThresholds().equals( threshold ) );
+                            Slicer.filter( output,
+                                           next -> next.getSampleMetadata().getThresholds().equals( threshold ) );
 
                     // Find the union of the paired output
                     PairedStatistic<Instant, Duration> union = DataFactory.unionOf( sliced.getData() );

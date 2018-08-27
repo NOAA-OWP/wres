@@ -9,6 +9,7 @@ import org.junit.rules.ExpectedException;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreGroup;
 import wres.datamodel.metadata.MeasurementUnit;
+import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
@@ -40,11 +41,12 @@ public final class SampleSizeTest
         final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Metadata for the output
-        final StatisticMetadata m1 = StatisticMetadata.of( input.getRawData().size(),
-                                                                           MeasurementUnit.of(),
-                                                                           MeasurementUnit.of(),
-                                                                           MetricConstants.SAMPLE_SIZE,
-                                                                           MetricConstants.MAIN );
+        final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
+                                                           input.getRawData().size(),
+                                                           MeasurementUnit.of(),
+                                                           MetricConstants.SAMPLE_SIZE,
+                                                           MetricConstants.MAIN );
+        
         //Build the metric
         SampleSize<SingleValuedPairs> ss = SampleSize.of();
 

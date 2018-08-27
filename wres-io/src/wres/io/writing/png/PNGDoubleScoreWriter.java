@@ -130,14 +130,15 @@ public class PNGDoubleScoreWriter extends PNGWriter
             List<ListOfStatistics<DoubleScoreStatistic>> allOutputs = new ArrayList<>();
 
             SortedSet<Threshold> secondThreshold =
-                    Slicer.discover( output, next -> next.getMetadata().getThresholds().second() );
+                    Slicer.discover( output, next -> next.getMetadata().getSampleMetadata().getThresholds().second() );
 
             if ( destinationConfig.getOutputType() == OutputTypeSelection.THRESHOLD_LEAD
                  && !secondThreshold.isEmpty() )
             {
                 // Slice by the second threshold
                 secondThreshold.forEach( next -> allOutputs.add( Slicer.filter( output,
-                                                                                value -> next.equals( value.getThresholds()
+                                                                                value -> next.equals( value.getSampleMetadata()
+                                                                                                           .getThresholds()
                                                                                                            .second() ) ) ) );
             }
             // One output only
@@ -159,7 +160,8 @@ public class PNGDoubleScoreWriter extends PNGWriter
 
                 // Secondary threshold? If yes, only, one as this was sliced above
                 SortedSet<Threshold> second =
-                        Slicer.discover( nextOutput, next -> next.getMetadata().getThresholds().second() );
+                        Slicer.discover( nextOutput,
+                                         next -> next.getMetadata().getSampleMetadata().getThresholds().second() );
                 if ( !second.isEmpty() )
                 {
                     append = second.iterator().next().toStringSafe();

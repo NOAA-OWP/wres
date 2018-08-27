@@ -28,8 +28,9 @@ import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.ReferenceTime;
+import wres.datamodel.metadata.SampleMetadata;
+import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.DurationScoreStatistic;
@@ -83,35 +84,33 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTestHelpe
                 DatasetIdentifier.of( Location.of( LID ), "SQIN", "HEFS", "ESP" );
 
         StatisticMetadata fakeMetadataA =
-                StatisticMetadata.of( 1000,
-                                         MeasurementUnit.of(),
-                                         MeasurementUnit.of( "CMS" ),
-                                         MetricConstants.MEAN_SQUARE_ERROR,
-                                         MetricConstants.MAIN,
-                                         datasetIdentifier,
-                                         timeOne,
-                                         threshold,
-                                         null  );
+                StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                         datasetIdentifier,
+                                                         timeOne,
+                                                         threshold ),
+                                      1000,
+                                      MeasurementUnit.of(),
+                                      MetricConstants.MEAN_SQUARE_ERROR,
+                                      MetricConstants.MAIN );
+
         StatisticMetadata fakeMetadataB =
-                StatisticMetadata.of( 1000,
-                                         MeasurementUnit.of(),
-                                         MeasurementUnit.of( "CMS" ),
-                                         MetricConstants.MEAN_ERROR,
-                                         MetricConstants.MAIN,
-                                         datasetIdentifier,
-                                         timeOne,
-                                         threshold,
-                                         null  );
+                StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                         datasetIdentifier,
+                                                         timeOne,
+                                                         threshold ),
+                                      1000,
+                                      MeasurementUnit.of(),
+                                      MetricConstants.MEAN_ERROR,
+                                      MetricConstants.MAIN );
         StatisticMetadata fakeMetadataC =
-                StatisticMetadata.of( 1000,
-                                         MeasurementUnit.of(),
-                                         MeasurementUnit.of( "CMS" ),
-                                         MetricConstants.MEAN_ABSOLUTE_ERROR,
-                                         MetricConstants.MAIN,
-                                         datasetIdentifier,
-                                         timeOne,
-                                         threshold,
-                                         null  );
+                StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                         datasetIdentifier,
+                                                         timeOne,
+                                                         threshold ),
+                                      1000,
+                                      MeasurementUnit.of(),
+                                      MetricConstants.MEAN_ABSOLUTE_ERROR,
+                                      MetricConstants.MAIN );
 
         List<DoubleScoreStatistic> fakeOutputs = new ArrayList<>();
         fakeOutputs.add( DoubleScoreStatistic.of( 1.0, fakeMetadataA ) );
@@ -215,15 +214,14 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTestHelpe
                 DatasetIdentifier.of( Location.of( LID ), "SQIN", "HEFS", "ESP" );
 
         StatisticMetadata fakeMetadata =
-                StatisticMetadata.of( 1000,
-                                         MeasurementUnit.of(),
-                                         MeasurementUnit.of( "CMS" ),
-                                         MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
-                                         null,
-                                         datasetIdentifier,
-                                         timeOne,
-                                         threshold,
-                                         null  );
+                StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                         datasetIdentifier,
+                                                         timeOne,
+                                                         threshold ),
+                                      1000,
+                                      MeasurementUnit.of(),
+                                      MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
+                                      null );
 
         Map<MetricConstants, Duration> fakeOutputs = new HashMap<>();
         fakeOutputs.put( MetricConstants.MEAN, Duration.ofHours( 1 ) );
@@ -233,7 +231,7 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTestHelpe
         // Fake output wrapper.
         ListOfStatistics<DurationScoreStatistic> fakeOutputData =
                 ListOfStatistics.of( Collections.singletonList( DurationScoreStatistic.of( fakeOutputs,
-                                                                                          fakeMetadata ) ) );
+                                                                                           fakeMetadata ) ) );
 
         // wrap outputs in future
         Future<ListOfStatistics<DurationScoreStatistic>> outputMapByMetricFuture =
@@ -303,15 +301,14 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTestHelpe
                 DatasetIdentifier.of( Location.of( LID ), "SQIN", "HEFS", "ESP" );
 
         StatisticMetadata fakeMetadataA =
-                StatisticMetadata.of( 1000,
-                                         MeasurementUnit.of(),
-                                         MeasurementUnit.of( "CMS" ),
-                                         MetricConstants.MEAN_SQUARE_ERROR,
-                                         MetricConstants.MAIN,
-                                         datasetIdentifier,
-                                         timeOne,
-                                         thresholdOne,
-                                         null  );
+                StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                         datasetIdentifier,
+                                                         timeOne,
+                                                         thresholdOne ),
+                                      1000,
+                                      MeasurementUnit.of(),
+                                      MetricConstants.MEAN_SQUARE_ERROR,
+                                      MetricConstants.MAIN );
 
         List<DoubleScoreStatistic> fakeOutputs =
                 Collections.singletonList( DoubleScoreStatistic.of( 1.0, fakeMetadataA ) );
@@ -333,15 +330,14 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTestHelpe
                                                      ThresholdDataType.LEFT ) );
 
         StatisticMetadata fakeMetadataB =
-                StatisticMetadata.of( 1000,
-                                         MeasurementUnit.of(),
-                                         MeasurementUnit.of( "CMS" ),
-                                         MetricConstants.MEAN_SQUARE_ERROR,
-                                         MetricConstants.MAIN,
-                                         datasetIdentifier,
-                                         timeOne,
-                                         thresholdTwo,
-                                         null  );
+                StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                         datasetIdentifier,
+                                                         timeOne,
+                                                         thresholdTwo ),
+                                      1000,
+                                      MeasurementUnit.of(),
+                                      MetricConstants.MEAN_SQUARE_ERROR,
+                                      MetricConstants.MAIN );
 
         List<DoubleScoreStatistic> fakeOutputsB =
                 Collections.singletonList( DoubleScoreStatistic.of( 1.0, fakeMetadataB ) );
@@ -358,15 +354,14 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTestHelpe
         TimeWindow timeTwo = TimeWindow.of( Instant.MIN, Instant.MAX, ReferenceTime.VALID_TIME, Duration.ofHours( 2 ) );
 
         StatisticMetadata fakeMetadataC =
-                StatisticMetadata.of( 1000,
-                                         MeasurementUnit.of(),
-                                         MeasurementUnit.of( "CMS" ),
-                                         MetricConstants.MEAN_SQUARE_ERROR,
-                                         MetricConstants.MAIN,
-                                         datasetIdentifier,
-                                         timeTwo,
-                                         thresholdOne,
-                                         null  );
+                StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                         datasetIdentifier,
+                                                         timeTwo,
+                                                         thresholdOne ),
+                                      1000,
+                                      MeasurementUnit.of(),
+                                      MetricConstants.MEAN_SQUARE_ERROR,
+                                      MetricConstants.MAIN );
 
         List<DoubleScoreStatistic> fakeOutputsC =
                 Collections.singletonList( DoubleScoreStatistic.of( 1.0, fakeMetadataC ) );

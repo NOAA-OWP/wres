@@ -129,7 +129,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
 
         Map<TimeWindow, List<DoubleScoreStatistic>> outputByTimeWindow = wres.util.Collections.group(
                 output,
-                score -> score.getMetadata().getTimeWindow()
+                score -> score.getMetadata().getSampleMetadata().getTimeWindow()
         );
 
         for (TimeWindow window : outputByTimeWindow.keySet())
@@ -371,7 +371,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
             {
                 String name = MetricVariable.getName( score );
                 // Figure out the location of all values and build the origin in each variable grid
-                Location location = score.getMetadata().getIdentifier().getGeospatialID();
+                Location location = score.getMetadata().getSampleMetadata().getIdentifier().getGeospatialID();
 
                 int[] origin = this.getOrigin( name, location );
                 Double actualValue = score.getData();

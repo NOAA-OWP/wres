@@ -34,10 +34,11 @@ public class ScoreOutputByLeadAndThresholdXYDataset extends
         //Handling the legend name in here because otherwise the key will be lost (I don't keep the raw data).
         //The data is processed into a list based on the key that must appear in the legend.
         int seriesIndex = 0;
-        SortedSet<OneOrTwoThresholds> thresholds = Slicer.discover( input, next -> next.getMetadata().getThresholds() );
-        for(final OneOrTwoThresholds key: thresholds)
+        SortedSet<OneOrTwoThresholds> thresholds =
+                Slicer.discover( input, next -> next.getMetadata().getSampleMetadata().getThresholds() );
+        for ( final OneOrTwoThresholds key : thresholds )
         {
-            setOverrideLegendName(seriesIndex, key.toStringWithoutUnits());
+            setOverrideLegendName( seriesIndex, key.toStringWithoutUnits() );
             seriesIndex++;
         }
     }
@@ -50,15 +51,16 @@ public class ScoreOutputByLeadAndThresholdXYDataset extends
      *            {@link ScoreStatistic}.
      */
     @Override
-    protected void preparePlotData(final ListOfStatistics<DoubleScoreStatistic> rawData)
+    protected void preparePlotData( final ListOfStatistics<DoubleScoreStatistic> rawData )
     {
         final List<ListOfStatistics<DoubleScoreStatistic>> data = new ArrayList<>();
-        SortedSet<OneOrTwoThresholds> thresholds = Slicer.discover( rawData, next -> next.getMetadata().getThresholds() );
-        for(final OneOrTwoThresholds key: thresholds)
+        SortedSet<OneOrTwoThresholds> thresholds =
+                Slicer.discover( rawData, next -> next.getMetadata().getSampleMetadata().getThresholds() );
+        for ( final OneOrTwoThresholds key : thresholds )
         {
-            data.add( Slicer.filter( rawData, next -> next.getThresholds().equals( key ) ));
+            data.add( Slicer.filter( rawData, next -> next.getSampleMetadata().getThresholds().equals( key ) ) );
         }
-        setPlotData(data);
+        setPlotData( data );
     }
 
     @Override
@@ -68,9 +70,15 @@ public class ScoreOutputByLeadAndThresholdXYDataset extends
     }
 
     @Override
-    public Number getX(final int series, final int item)
+    public Number getX( final int series, final int item )
     {
-        return getPlotData().get(series).getData().get(item).getMetadata().getTimeWindow().getLatestLeadTimeInHours();
+        return getPlotData().get( series )
+                            .getData()
+                            .get( item )
+                            .getMetadata()
+                            .getSampleMetadata()
+                            .getTimeWindow()
+                            .getLatestLeadTimeInHours();
     }
 
     @Override

@@ -66,8 +66,8 @@ import wres.config.generated.TimeScaleConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.ReferenceTime;
+import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
@@ -1461,7 +1461,7 @@ public class ConfigHelper
      * @param append an optional string to append to the end of the path, may be null
      * @return a path to write
      * @throws NullPointerException if any required input is null, including the identifier associated 
-     *            with the metadata
+     *            with the sample metadata
      * @throws IOException if the path cannot be produced
      * @throws ProjectConfigException when the destination configuration is invalid
      */
@@ -1471,26 +1471,28 @@ public class ConfigHelper
                                              String append )
             throws IOException
     {
-        Objects.requireNonNull( destinationConfig, "Enter non-null destination configuration to establish "
+        Objects.requireNonNull( destinationConfig,
+                                "Enter non-null destination configuration to establish "
                                                    + "a path for writing." );
 
         Objects.requireNonNull( meta, "Enter non-null metadata to establish a path for writing." );
 
-        Objects.requireNonNull( meta.getIdentifier(), "Enter a non-null identifier for the metadata to establish "
-                                                      + "a path for writing." );
+        Objects.requireNonNull( meta.getSampleMetadata().getIdentifier(),
+                                "Enter a non-null identifier for the metadata to establish "
+                                                                          + "a path for writing." );
 
         // Determine the directory
         File outputDirectory = getDirectoryFromDestinationConfig( destinationConfig );
 
         // Build the path 
         StringJoiner joinElements = new StringJoiner( "_" );
-        joinElements.add( meta.getIdentifier().getGeospatialID().toString() )
-                    .add( meta.getIdentifier().getVariableID() );
+        joinElements.add( meta.getSampleMetadata().getIdentifier().getGeospatialID().toString() )
+                    .add( meta.getSampleMetadata().getIdentifier().getVariableID() );
 
         // Add optional scenario identifier
-        if ( meta.getIdentifier().hasScenarioID() )
+        if ( meta.getSampleMetadata().getIdentifier().hasScenarioID() )
         {
-            joinElements.add( meta.getIdentifier().getScenarioID() );
+            joinElements.add( meta.getSampleMetadata().getIdentifier().getScenarioID() );
         }
 
         // Add the metric name()

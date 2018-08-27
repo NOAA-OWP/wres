@@ -25,6 +25,7 @@ import org.slf4j.Logger;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
 import wres.datamodel.metadata.MeasurementUnit;
+import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.pairs.DichotomousPairs;
@@ -703,11 +704,11 @@ public class MetricCollectionTest
                                                                     MetricConstants.MEAN_SQUARE_ERROR ) );
         final ListOfStatistics<DoubleScoreStatistic> actual = collection.apply( input, ignore );
         StatisticMetadata outM =
-                StatisticMetadata.of( 10,
-                                         MeasurementUnit.of(),
-                                         MeasurementUnit.of(),
-                                         MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
-                                         MetricConstants.MAIN );
+                StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
+                                      10,
+                                      MeasurementUnit.of(),
+                                      MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
+                                      MetricConstants.MAIN );
         ListOfStatistics<DoubleScoreStatistic> expected =
                 ListOfStatistics.of( Arrays.asList( DoubleScoreStatistic.of( 0.9999999910148981, outM ) ) );
         //Check them   

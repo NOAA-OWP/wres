@@ -951,8 +951,8 @@ public final class Slicer
      * example, to filter by a particular {@link TimeWindow} and {@link OneOrTwoThresholds} associated with the 
      * output metadata:</p>
      * 
-     * <p><code>Slicer.filter( list, a {@literal ->} a.getTimeWindow().equals( someWindow ) {@literal &&} 
-     *              a.getThresholds().equals( someThreshold ) );</code></p>
+     * <p><code>Slicer.filter( list, a {@literal ->} a.getSampleMetadata().getTimeWindow().equals( someWindow ) 
+     *                      {@literal &&} a.getSampleMetadata().getThresholds().equals( someThreshold ) );</code></p>
      *              
      * @param <T> the output type
      * @param outputs the outputs to filter
@@ -962,12 +962,12 @@ public final class Slicer
      */
 
     public static <T extends Statistic<?>> ListOfStatistics<T> filter( ListOfStatistics<T> outputs,
-                                                                            Predicate<StatisticMetadata> predicate )
+                                                                       Predicate<StatisticMetadata> predicate )
     {
         Objects.requireNonNull( outputs, NULL_INPUT_EXCEPTION );
 
         Objects.requireNonNull( predicate, NULL_INPUT_EXCEPTION );
-        
+
         List<T> results = new ArrayList<>();
 
         // Filter
@@ -987,17 +987,19 @@ public final class Slicer
      * function identifies the type to discover. For example, to discover the unique thresholds contained in the list of
      * outputs:</p>
      * 
-     * <p><code>Slicer.discover( outputs, next {@literal ->} next.getMetadata().getThresholds() );</code></p>
+     * <p><code>Slicer.discover( outputs, next {@literal ->} 
+     *                                         next.getMetadata().getSampleMetadata().getThresholds() );</code></p>
      * 
      * <p>To discover the unique metrics contained in the list of outputs:</p>
      * 
-     * <p><code>Slicer.discover( outputs, next {@literal ->} next.getMetadata().getMetricID() );</code></p>
+     * <p><code>Slicer.discover( outputs, next {@literal ->}
+     *                                         next.getSampleMetadata().getMetadata().getMetricID() );</code></p>
      * 
      * <p>To discover the unique pairs of lead times in the list of outputs:</p>
      * 
      * <p><code>Slicer.discover( outputs, next {@literal ->} 
-     * Pair.of( next.getMetadata().getTimeWindow().getEarliestLeadTime(), 
-     * next.getMetadata().getTimeWindow().getLatestLeadTime() );</code></p>
+     * Pair.of( next.getMetadata().getSampleMetadata().getTimeWindow().getEarliestLeadTime(), 
+     * next.getMetadata().getSampleMetadata().getTimeWindow().getLatestLeadTime() );</code></p>
      * 
      * <p>Returns the empty set if no elements are mapped.</p>
      * 
@@ -1010,12 +1012,12 @@ public final class Slicer
      */
 
     public static <S extends Statistic<?>, T extends Object> SortedSet<T> discover( ListOfStatistics<S> outputs,
-                                                                                       Function<S, T> mapper )
+                                                                                    Function<S, T> mapper )
     {
         Objects.requireNonNull( outputs, NULL_INPUT_EXCEPTION );
-        
+
         Objects.requireNonNull( mapper, NULL_INPUT_EXCEPTION );
-        
+
         return Collections.unmodifiableSortedSet( outputs.getData()
                                                          .stream()
                                                          .map( mapper )
@@ -1037,7 +1039,7 @@ public final class Slicer
      */
 
     public static <T extends Statistic<?>> ListOfStatistics<T> filter( ListOfStatistics<T> outputs,
-                                                                            MetricConstants metricIdentifier )
+                                                                       MetricConstants metricIdentifier )
     {
         Objects.requireNonNull( outputs, NULL_INPUT_EXCEPTION );
 
@@ -1081,19 +1083,19 @@ public final class Slicer
         Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
 
         Map<MetricConstants, ListOfStatistics<T>> returnMe = new EnumMap<>( MetricConstants.class );
-        
+
         // Find the components
         SortedSet<MetricConstants> components = new TreeSet<>();
         input.forEach( next -> components.addAll( next.getComponents() ) );
-        
+
         // Loop the components
         for ( MetricConstants nextComponent : components )
         {
             List<T> listOfComponent = new ArrayList<>();
             // Loop the entries
-            for( T nextItem : input )
+            for ( T nextItem : input )
             {
-                if( nextItem.hasComponent( nextComponent ) )
+                if ( nextItem.hasComponent( nextComponent ) )
                 {
                     listOfComponent.add( nextItem.getComponent( nextComponent ) );
                 }
@@ -1216,7 +1218,8 @@ public final class Slicer
         List<SingleValuedPair> mainPairsTransformed = toSingleValuedPairs( input.getRawData(), mapper );
         if ( input.hasBaseline() )
         {
-            List<SingleValuedPair> basePairsTransformed = toSingleValuedPairs( input.getBaselineData().getRawData(), mapper );
+            List<SingleValuedPair> basePairsTransformed =
+                    toSingleValuedPairs( input.getBaselineData().getRawData(), mapper );
             return SingleValuedPairs.of( mainPairsTransformed,
                                          basePairsTransformed,
                                          input.getMetadata(),

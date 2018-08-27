@@ -22,6 +22,7 @@ import wres.datamodel.MetricConstants.StatisticGroup;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.metadata.MeasurementUnit;
+import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.statistics.BoxPlotStatistic;
@@ -109,15 +110,15 @@ public final class MetricFuturesByTimeTest
         // Add a boxplot future
         boxplot =
                 ListOfStatistics.of( Collections.singletonList( BoxPlotStatistic.of( Arrays.asList(),
-                                                                                    VectorOfDoubles.of( new double[] { 0.1,
-                                                                                                                       0.9 } ),
-                                                                                    StatisticMetadata.of( 1,
-                                                                                                             MeasurementUnit.of(),
-                                                                                                             MeasurementUnit.of(),
-                                                                                                             MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
-                                                                                                             MetricConstants.MAIN ),
-                                                                                    MetricDimension.OBSERVED_VALUE,
-                                                                                    MetricDimension.FORECAST_ERROR ) ) );
+                                                                                     VectorOfDoubles.of( new double[] { 0.1,
+                                                                                                                        0.9 } ),
+                                                                                     StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
+                                                                                                           1,
+                                                                                                           MeasurementUnit.of(),
+                                                                                                           MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
+                                                                                                           MetricConstants.MAIN ),
+                                                                                     MetricDimension.OBSERVED_VALUE,
+                                                                                     MetricDimension.FORECAST_ERROR ) ) );
 
         builder.addBoxPlotOutput( key,
                                   CompletableFuture.completedFuture( boxplot ) );
@@ -125,11 +126,11 @@ public final class MetricFuturesByTimeTest
         // Add a double score future
         doubleScore =
                 ListOfStatistics.of( Collections.singletonList( DoubleScoreStatistic.of( 1.0,
-                                                                                        StatisticMetadata.of( 1,
-                                                                                                                 MeasurementUnit.of(),
-                                                                                                                 MeasurementUnit.of(),
-                                                                                                                 MetricConstants.MEAN_ERROR,
-                                                                                                                 MetricConstants.MAIN ) ) ) );
+                                                                                         StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
+                                                                                                               1,
+                                                                                                               MeasurementUnit.of(),
+                                                                                                               MetricConstants.MEAN_ERROR,
+                                                                                                               MetricConstants.MAIN ) ) ) );
 
         builder.addDoubleScoreOutput( key,
                                       CompletableFuture.completedFuture( doubleScore ) );
@@ -138,11 +139,11 @@ public final class MetricFuturesByTimeTest
         // Add a duration score future
         durationScore =
                 ListOfStatistics.of( Collections.singletonList( DurationScoreStatistic.of( Duration.ofDays( 1 ),
-                                                                                          StatisticMetadata.of( 1,
-                                                                                                                   MeasurementUnit.of(),
-                                                                                                                   MeasurementUnit.of(),
-                                                                                                                   MetricConstants.TIME_TO_PEAK_ERROR,
-                                                                                                                   MetricConstants.MAIN ) ) ) );
+                                                                                           StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
+                                                                                                                 1,
+                                                                                                                 MeasurementUnit.of(),
+                                                                                                                 MetricConstants.TIME_TO_PEAK_ERROR,
+                                                                                                                 MetricConstants.MAIN ) ) ) );
 
         builder.addDurationScoreOutput( key,
                                         CompletableFuture.completedFuture( durationScore ) );
@@ -151,12 +152,12 @@ public final class MetricFuturesByTimeTest
         // Add a matrix output
         matrix =
                 ListOfStatistics.of( Collections.singletonList( MatrixStatistic.of( new double[][] { { 1, 1 },
-                                                                                                    { 1, 1 } },
-                                                                                   StatisticMetadata.of( 1,
-                                                                                                            MeasurementUnit.of(),
-                                                                                                            MeasurementUnit.of(),
-                                                                                                            MetricConstants.CONTINGENCY_TABLE,
-                                                                                                            MetricConstants.MAIN ) ) ) );
+                                                                                                     { 1, 1 } },
+                                                                                    StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
+                                                                                                          1,
+                                                                                                          MeasurementUnit.of(),
+                                                                                                          MetricConstants.CONTINGENCY_TABLE,
+                                                                                                          MetricConstants.MAIN ) ) ) );
 
         builder.addMatrixOutput( key,
                                  CompletableFuture.completedFuture( matrix ) );
@@ -164,12 +165,12 @@ public final class MetricFuturesByTimeTest
         // Add multi-vector output
         multivector =
                 ListOfStatistics.of( Collections.singletonList( MultiVectorStatistic.ofMultiVectorOutput( Collections.singletonMap( MetricDimension.FORECAST_PROBABILITY,
-                                                                                                                                   new double[] { 1 } ),
-                                                                                                         StatisticMetadata.of( 1,
-                                                                                                                                  MeasurementUnit.of(),
-                                                                                                                                  MeasurementUnit.of(),
-                                                                                                                                  MetricConstants.CONTINGENCY_TABLE,
-                                                                                                                                  MetricConstants.MAIN ) ) ) );
+                                                                                                                                    new double[] { 1 } ),
+                                                                                                          StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
+                                                                                                                                1,
+                                                                                                                                MeasurementUnit.of(),
+                                                                                                                                MetricConstants.CONTINGENCY_TABLE,
+                                                                                                                                MetricConstants.MAIN ) ) ) );
 
         builder.addMultiVectorOutput( key,
                                       CompletableFuture.completedFuture( multivector ) );
@@ -177,11 +178,11 @@ public final class MetricFuturesByTimeTest
         // Add paired output
         paired =
                 ListOfStatistics.of( Collections.singletonList( PairedStatistic.of( Arrays.asList(),
-                                                                                   StatisticMetadata.of( 1,
-                                                                                                            MeasurementUnit.of(),
-                                                                                                            MeasurementUnit.of(),
-                                                                                                            MetricConstants.CONTINGENCY_TABLE,
-                                                                                                            MetricConstants.MAIN ) ) ) );
+                                                                                    StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
+                                                                                                          1,
+                                                                                                          MeasurementUnit.of(),
+                                                                                                          MetricConstants.CONTINGENCY_TABLE,
+                                                                                                          MetricConstants.MAIN ) ) ) );
 
         builder.addPairedOutput( key,
                                  CompletableFuture.completedFuture( paired ) );

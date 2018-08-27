@@ -169,7 +169,7 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedWriter
 
         // Discover the time windows and thresholds
         SortedSet<OneOrTwoThresholds> thresholds =
-                Slicer.discover( output, meta -> meta.getMetadata().getThresholds() );
+                Slicer.discover( output, meta -> meta.getMetadata().getSampleMetadata().getThresholds() );
 
         // Add the rows
         // Loop across the thresholds
@@ -178,10 +178,12 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedWriter
             // Append to header
             headerRow.add( outerName + "BASIS TIME" + HEADER_DELIMITER + t );
             headerRow.add( outerName + "DURATION" + HEADER_DELIMITER + t );
-            
+
             // Slice by threshold
             ListOfStatistics<PairedStatistic<S, T>> sliced = Slicer.filter( output,
-                                                                           data -> data.getThresholds().equals( t ) );            
+                                                                            data -> data.getSampleMetadata()
+                                                                                        .getThresholds()
+                                                                                        .equals( t ) );
             // Loop across the outputs
             for ( PairedStatistic<S, T> next : sliced )
             {
@@ -189,7 +191,7 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedWriter
                 for ( Pair<S, T> nextPair : next )
                 {
                     CommaSeparatedWriter.addRowToInput( returnMe,
-                                                        next.getMetadata().getTimeWindow(),
+                                                        next.getMetadata().getSampleMetadata().getTimeWindow(),
                                                         Arrays.asList( nextPair.getLeft(), nextPair.getRight() ),
                                                         formatter,
                                                         true,

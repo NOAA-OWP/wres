@@ -55,11 +55,11 @@ public final class MeanAbsoluteErrorTest
         SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Metadata for the output
-        StatisticMetadata m1 = StatisticMetadata.of( input.getRawData().size(),
-                                                                   MeasurementUnit.of(),
-                                                                   MeasurementUnit.of(),
-                                                                   MetricConstants.MEAN_ABSOLUTE_ERROR,
-                                                                   MetricConstants.MAIN );
+        StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
+                                                     input.getRawData().size(),
+                                                     MeasurementUnit.of(),
+                                                     MetricConstants.MEAN_ABSOLUTE_ERROR,
+                                                     MetricConstants.MAIN );
         //Check the results
         final DoubleScoreStatistic actual = mae.apply( input );
         final DoubleScoreStatistic expected = DoubleScoreStatistic.of( 201.37, m1 );

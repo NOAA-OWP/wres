@@ -86,9 +86,9 @@ public class MultiVectorOutputDiagramXYDataset extends WRESAbstractXYDataset<Lis
         }
         
         SortedSet<TimeWindow> timeWindows =
-                Slicer.discover( getPlotData(), meta -> meta.getMetadata().getTimeWindow() );
+                Slicer.discover( getPlotData(), meta -> meta.getMetadata().getSampleMetadata().getTimeWindow() );
         SortedSet<OneOrTwoThresholds> thresholds =
-                Slicer.discover( getPlotData(), meta -> meta.getMetadata().getThresholds() );
+                Slicer.discover( getPlotData(), meta -> meta.getMetadata().getSampleMetadata().getThresholds() );
 
         if ( ( timeWindows.size() == 1 ) && ( thresholds.size() == 1 ) )
         {
@@ -99,12 +99,18 @@ public class MultiVectorOutputDiagramXYDataset extends WRESAbstractXYDataset<Lis
             return Long.toString( getPlotData().getData()
                                                .get( series )
                                                .getMetadata()
+                                               .getSampleMetadata()
                                                .getTimeWindow()
                                                .getLatestLeadTimeInHours() );
         }
         else
         {
-            return getPlotData().getData().get( series ).getMetadata().getThresholds().toStringWithoutUnits();
+            return getPlotData().getData()
+                                .get( series )
+                                .getMetadata()
+                                .getSampleMetadata()
+                                .getThresholds()
+                                .toStringWithoutUnits();
         }
     }
 

@@ -12,8 +12,9 @@ import org.junit.rules.ExpectedException;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
+import wres.datamodel.metadata.MeasurementUnit;
+import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.DichotomousPairs;
@@ -58,14 +59,14 @@ public final class ContingencyTableTest
 
         //Metadata for the output
         final StatisticMetadata meta =
-                StatisticMetadata.of( input.getRawData().size(),
-                                                   MeasurementUnit.of(),
-                                                   MeasurementUnit.of(),
-                                                   MetricConstants.CONTINGENCY_TABLE,
-                                                   MetricConstants.MAIN,
-                                                   DatasetIdentifier.of( Location.of( "DRRC2" ),
-                                                                                         "SQIN",
-                                                                                         "HEFS" ) );
+                StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of(),
+                                                         DatasetIdentifier.of( Location.of( "DRRC2" ),
+                                                                               "SQIN",
+                                                                               "HEFS" ) ),
+                                      input.getRawData().size(),
+                                      MeasurementUnit.of(),
+                                      MetricConstants.CONTINGENCY_TABLE,
+                                      MetricConstants.MAIN );
 
         final double[][] benchmark = new double[][] { { 82.0, 38.0 }, { 23.0, 222.0 } };
         final MatrixStatistic actual = table.apply( input );

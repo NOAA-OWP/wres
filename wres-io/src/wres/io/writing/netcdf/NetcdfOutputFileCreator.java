@@ -119,7 +119,7 @@ class NetcdfOutputFileCreator
         }
         
         StringJoiner filename = new StringJoiner("_", "wres.", ".nc");
-        filename.add( output.iterator().next().getMetadata().getIdentifier().getVariableID() );
+        filename.add( output.iterator().next().getMetadata().getSampleMetadata().getIdentifier().getVariableID() );
         filename.add("lead");
         filename.add(timeWindow.getLatestLeadTime().toString());
 

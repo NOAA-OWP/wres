@@ -27,8 +27,9 @@ import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.ReferenceTime;
+import wres.datamodel.metadata.SampleMetadata;
+import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.MatrixStatistic;
@@ -91,16 +92,14 @@ public class CommaSeparatedMatrixWriterTest extends CommaSeparatedWriterTestHelp
         DatasetIdentifier datasetIdentifier =
                 DatasetIdentifier.of( geospatialID, "SQIN", "HEFS", "ESP" );
 
-        StatisticMetadata fakeMetadata =
-                StatisticMetadata.of( 1000,
-                                         MeasurementUnit.of(),
-                                         MeasurementUnit.of( "CMS" ),
-                                         MetricConstants.CONTINGENCY_TABLE,
-                                         null,
-                                         datasetIdentifier,
-                                         timeOne,
-                                         threshold,
-                                         null  );
+        StatisticMetadata fakeMetadata = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                                                  datasetIdentifier,
+                                                                                  timeOne,
+                                                                                  threshold ),
+                                                               1000,
+                                                               MeasurementUnit.of(),
+                                                               MetricConstants.CONTINGENCY_TABLE,
+                                                               null );
 
         double[][] fakeOutputs = new double[][] { { 23, 79 }, { 56, 342 } };
 

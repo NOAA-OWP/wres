@@ -13,8 +13,8 @@ import org.junit.rules.ExpectedException;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreGroup;
 import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.sampledata.SampleDataException;
@@ -33,7 +33,7 @@ public final class BrierScoreTest
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
-    
+
     /**
      * Default instance of a {@link BrierScore}.
      */
@@ -58,12 +58,14 @@ public final class BrierScoreTest
 
         // Metadata for the output
         StatisticMetadata m1 =
-                StatisticMetadata.of( input.getRawData().size(),
-                                           MeasurementUnit.of(),
-                                           MeasurementUnit.of(),
-                                           MetricConstants.BRIER_SCORE,
-                                           MetricConstants.MAIN,
-                                           DatasetIdentifier.of( Location.of("DRRC2"), "SQIN", "HEFS" ) );
+                StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of(),
+                                                         DatasetIdentifier.of( Location.of( "DRRC2" ),
+                                                                               "SQIN",
+                                                                               "HEFS" ) ),
+                                      input.getRawData().size(),
+                                      MeasurementUnit.of(),
+                                      MetricConstants.BRIER_SCORE,
+                                      MetricConstants.MAIN );
 
         // Check the results       
         DoubleScoreStatistic actual = brierScore.apply( input );
@@ -85,7 +87,7 @@ public final class BrierScoreTest
         // Generate empty data
         DiscreteProbabilityPairs input =
                 DiscreteProbabilityPairs.of( Arrays.asList(), SampleMetadata.of() );
- 
+
         DoubleScoreStatistic actual = brierScore.apply( input );
 
         assertTrue( actual.getData().isNaN() );
@@ -150,7 +152,7 @@ public final class BrierScoreTest
     {
         assertTrue( brierScore.isStrictlyProper() );
     }
-    
+
     /**
      * Tests for an expected exception on calling {@link BrierScore#apply(DiscreteProbabilityPairs)} with null 
      * input.
@@ -161,7 +163,7 @@ public final class BrierScoreTest
     {
         exception.expect( SampleDataException.class );
         exception.expectMessage( "Specify non-null input to the 'BRIER SCORE'." );
-        
+
         brierScore.apply( null );
     }
 

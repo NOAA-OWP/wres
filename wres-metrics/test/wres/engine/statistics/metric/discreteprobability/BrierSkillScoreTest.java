@@ -13,8 +13,8 @@ import org.junit.rules.ExpectedException;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreGroup;
 import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.sampledata.SampleDataException;
@@ -59,12 +59,15 @@ public final class BrierSkillScoreTest
 
         // Metadata for the output
         StatisticMetadata m1 =
-                StatisticMetadata.of( input.getRawData().size(),
-                                                   MeasurementUnit.of(),
-                                                   MeasurementUnit.of(),
-                                                   MetricConstants.BRIER_SKILL_SCORE,
-                                                   MetricConstants.MAIN,
-                                                   DatasetIdentifier.of( Location.of( "DRRC2" ), "SQIN", "HEFS", "ESP" ) );
+                StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of(),
+                                                         DatasetIdentifier.of( Location.of( "DRRC2" ),
+                                                                               "SQIN",
+                                                                               "HEFS",
+                                                                               "ESP") ),
+                                      input.getRawData().size(),
+                                      MeasurementUnit.of(),
+                                      MetricConstants.BRIER_SKILL_SCORE,
+                                      MetricConstants.MAIN );
 
         // Check the results       
         final DoubleScoreStatistic actual = brierSkillScore.apply( input );
@@ -89,14 +92,14 @@ public final class BrierSkillScoreTest
 
         // Metadata for the output
         StatisticMetadata m1 =
-                StatisticMetadata.of( input.getRawData().size(),
-                                                   MeasurementUnit.of(),
-                                                   MeasurementUnit.of(),
-                                                   MetricConstants.BRIER_SKILL_SCORE,
-                                                   MetricConstants.MAIN,
-                                                   DatasetIdentifier.of( Location.of( "DRRC2" ),
-                                                                                         "SQIN",
-                                                                                         "HEFS" ) );
+                StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of(),
+                                                         DatasetIdentifier.of( Location.of( "DRRC2" ),
+                                                                               "SQIN",
+                                                                               "HEFS" ) ),
+                                      input.getRawData().size(),
+                                      MeasurementUnit.of(),
+                                      MetricConstants.BRIER_SKILL_SCORE,
+                                      MetricConstants.MAIN );
 
         // Check the results       
         final DoubleScoreStatistic actual = brierSkillScore.apply( input );

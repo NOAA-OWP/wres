@@ -172,12 +172,13 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
         Set<Path> pathsWrittenTo = new HashSet<>( 1 );
 
         // Loop across time windows
-        SortedSet<TimeWindow> timeWindows = Slicer.discover( output, next -> next.getMetadata().getTimeWindow() );
+        SortedSet<TimeWindow> timeWindows =
+                Slicer.discover( output, next -> next.getMetadata().getSampleMetadata().getTimeWindow() );
         for ( TimeWindow timeWindow : timeWindows )
         {
             ListOfStatistics<MatrixStatistic> next =
-                    Slicer.filter( output, data -> data.getTimeWindow().equals( timeWindow ) );
-            
+                    Slicer.filter( output, data -> data.getSampleMetadata().getTimeWindow().equals( timeWindow ) );
+
             StatisticMetadata meta = next.getData().get( 0 ).getMetadata();
             
             List<RowCompareByLeft> rows = CommaSeparatedMatrixWriter.getRowsForOneMatrixOutput( next, formatter );
@@ -221,11 +222,11 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
 
         // Loop across thresholds
         SortedSet<OneOrTwoThresholds> thresholds =
-                Slicer.discover( output, meta -> meta.getMetadata().getThresholds() );
+                Slicer.discover( output, meta -> meta.getMetadata().getSampleMetadata().getThresholds() );
         for ( OneOrTwoThresholds threshold : thresholds )
         {
             ListOfStatistics<MatrixStatistic> next =
-                    Slicer.filter( output, data -> data.getThresholds().equals( threshold ) );
+                    Slicer.filter( output, data -> data.getSampleMetadata().getThresholds().equals( threshold ) );
             
             StatisticMetadata meta = next.getData().get( 0 ).getMetadata();
             
@@ -284,7 +285,7 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
 
         //Add the metric name, dimension, and threshold for each column-vector
         SortedSet<OneOrTwoThresholds> thresholds =
-                Slicer.discover( output, next -> next.getMetadata().getThresholds() );
+                Slicer.discover( output, next -> next.getMetadata().getSampleMetadata().getThresholds() );
         for ( OneOrTwoThresholds nextThreshold : thresholds )
         {
             for ( String nextDimension : dimensions )
@@ -317,8 +318,9 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
         // Add the rows
         // Loop across time windows
         SortedSet<OneOrTwoThresholds> thresholds =
-                Slicer.discover( output, meta -> meta.getMetadata().getThresholds() );
-        SortedSet<TimeWindow> timeWindows = Slicer.discover( output, meta -> meta.getMetadata().getTimeWindow() );
+                Slicer.discover( output, meta -> meta.getMetadata().getSampleMetadata().getThresholds() );
+        SortedSet<TimeWindow> timeWindows =
+                Slicer.discover( output, meta -> meta.getMetadata().getSampleMetadata().getTimeWindow() );
         for ( TimeWindow timeWindow : timeWindows )
         {
             // Loop across the thresholds, merging results when multiple thresholds occur
@@ -327,10 +329,14 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
             {
                 // One output per time window and threshold
                 MatrixStatistic nextOutput = Slicer.filter( output,
-                                                         data -> data.getThresholds().equals( threshold )
-                                                                 && data.getTimeWindow().equals( timeWindow ) )
-                                                .getData()
-                                                .get( 0 );
+                                                            data -> data.getSampleMetadata()
+                                                                        .getThresholds()
+                                                                        .equals( threshold )
+                                                                    && data.getSampleMetadata()
+                                                                           .getTimeWindow()
+                                                                           .equals( timeWindow ) )
+                                                   .getData()
+                                                   .get( 0 );
 
                 // Add the row
                 nextOutput.iterator().forEachRemaining( merge::add );

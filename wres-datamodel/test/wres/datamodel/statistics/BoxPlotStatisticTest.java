@@ -10,15 +10,14 @@ import java.util.Objects;
 import org.junit.Test;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.MetricConstants.MetricDimension;
+import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
+import wres.datamodel.metadata.MeasurementUnit;
+import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.sampledata.pairs.EnsemblePair;
-import wres.datamodel.statistics.BoxPlotStatistic;
-import wres.datamodel.statistics.StatisticException;
 
 /**
  * Tests the {@link BoxPlotStatistic}.
@@ -38,32 +37,32 @@ public final class BoxPlotStatisticTest
 
         //Build datasets
         final Location l1 = Location.of( "A" );
-        final StatisticMetadata m1 = StatisticMetadata.of( 10,
-                                                                           MeasurementUnit.of(),
-                                                                           MeasurementUnit.of( "CMS" ),
-                                                                           MetricConstants.CONTINGENCY_TABLE,
-                                                                           MetricConstants.MAIN,
-                                                                           DatasetIdentifier.of( l1,
-                                                                                                                 "B",
-                                                                                                                 "C" ) );
+        final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                                              DatasetIdentifier.of( l1,
+                                                                                                    "B",
+                                                                                                    "C" ) ),
+                                                           10,
+                                                           MeasurementUnit.of(),
+                                                           MetricConstants.CONTINGENCY_TABLE,
+                                                           MetricConstants.MAIN );
         final Location l2 = Location.of( "A" );
-        final StatisticMetadata m2 = StatisticMetadata.of( 11,
-                                                                           MeasurementUnit.of(),
-                                                                           MeasurementUnit.of( "CMS" ),
-                                                                           MetricConstants.CONTINGENCY_TABLE,
-                                                                           MetricConstants.MAIN,
-                                                                           DatasetIdentifier.of( l2,
-                                                                                                                 "B",
-                                                                                                                 "C" ) );
+        final StatisticMetadata m2 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                                              DatasetIdentifier.of( l2,
+                                                                                                    "B",
+                                                                                                    "C" ) ),
+                                                           12,
+                                                           MeasurementUnit.of(),
+                                                           MetricConstants.CONTINGENCY_TABLE,
+                                                           MetricConstants.MAIN );
         final Location l3 = Location.of( "B" );
-        final StatisticMetadata m3 = StatisticMetadata.of( 10,
-                                                                           MeasurementUnit.of(),
-                                                                           MeasurementUnit.of( "CMS" ),
-                                                                           MetricConstants.CONTINGENCY_TABLE,
-                                                                           MetricConstants.MAIN,
-                                                                           DatasetIdentifier.of( l3,
-                                                                                                                 "B",
-                                                                                                                 "C" ) );
+        final StatisticMetadata m3 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                                              DatasetIdentifier.of( l3,
+                                                                                                    "B",
+                                                                                                    "C" ) ),
+                                                           10,
+                                                           MeasurementUnit.of(),
+                                                           MetricConstants.CONTINGENCY_TABLE,
+                                                           MetricConstants.MAIN );
         List<EnsemblePair> mva = new ArrayList<>();
         List<EnsemblePair> mvb = new ArrayList<>();
         VectorOfDoubles pa = VectorOfDoubles.of( new double[] { 0.0, 0.5, 1.0 } );
@@ -135,32 +134,32 @@ public final class BoxPlotStatisticTest
 
         //Build datasets
         final Location l1 = Location.of( "A" );
-        final StatisticMetadata m1 = StatisticMetadata.of( 10,
-                                                                           MeasurementUnit.of(),
-                                                                           MeasurementUnit.of( "CMS" ),
-                                                                           MetricConstants.CONTINGENCY_TABLE,
-                                                                           MetricConstants.MAIN,
-                                                                           DatasetIdentifier.of( l1,
-                                                                                                                 "B",
-                                                                                                                 "C" ) );
+        final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                                              DatasetIdentifier.of( l1,
+                                                                                                    "B",
+                                                                                                    "C" ) ),
+                                                           10,
+                                                           MeasurementUnit.of(),
+                                                           MetricConstants.CONTINGENCY_TABLE,
+                                                           MetricConstants.MAIN );
         final Location l2 = Location.of( "A" );
-        final StatisticMetadata m2 = StatisticMetadata.of( 11,
-                                                                           MeasurementUnit.of(),
-                                                                           MeasurementUnit.of( "CMS" ),
-                                                                           MetricConstants.CONTINGENCY_TABLE,
-                                                                           MetricConstants.MAIN,
-                                                                           DatasetIdentifier.of( l2,
-                                                                                                                 "B",
-                                                                                                                 "C" ) );
+        final StatisticMetadata m2 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                                              DatasetIdentifier.of( l2,
+                                                                                                    "B",
+                                                                                                    "C" ) ),
+                                                           11,
+                                                           MeasurementUnit.of(),
+                                                           MetricConstants.CONTINGENCY_TABLE,
+                                                           MetricConstants.MAIN );
         final Location l3 = Location.of( "B" );
-        final StatisticMetadata m3 = StatisticMetadata.of( 10,
-                                                                           MeasurementUnit.of(),
-                                                                           MeasurementUnit.of( "CMS" ),
-                                                                           MetricConstants.CONTINGENCY_TABLE,
-                                                                           MetricConstants.MAIN,
-                                                                           DatasetIdentifier.of( l3,
-                                                                                                                 "B",
-                                                                                                                 "C" ) );
+        final StatisticMetadata m3 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                                              DatasetIdentifier.of( l3,
+                                                                                                    "B",
+                                                                                                    "C" ) ),
+                                                           10,
+                                                           MeasurementUnit.of(),
+                                                           MetricConstants.CONTINGENCY_TABLE,
+                                                           MetricConstants.MAIN );
         List<EnsemblePair> mva = new ArrayList<>();
         List<EnsemblePair> mvb = new ArrayList<>();
         VectorOfDoubles pa = VectorOfDoubles.of( new double[] { 0.0, 0.5, 1.0 } );
@@ -231,23 +230,23 @@ public final class BoxPlotStatisticTest
     {
 
         final Location l1 = Location.of( "A" );
-        final StatisticMetadata m1 = StatisticMetadata.of( 10,
-                                                                           MeasurementUnit.of(),
-                                                                           MeasurementUnit.of( "CMS" ),
-                                                                           MetricConstants.CONTINGENCY_TABLE,
-                                                                           MetricConstants.MAIN,
-                                                                           DatasetIdentifier.of( l1,
-                                                                                                                 "B",
-                                                                                                                 "C" ) );
+        final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                                              DatasetIdentifier.of( l1,
+                                                                                                    "B",
+                                                                                                    "C" ) ),
+                                                           10,
+                                                           MeasurementUnit.of(),
+                                                           MetricConstants.CONTINGENCY_TABLE,
+                                                           MetricConstants.MAIN );
         final Location l2 = Location.of( "B" );
-        final StatisticMetadata m2 = StatisticMetadata.of( 10,
-                                                                           MeasurementUnit.of(),
-                                                                           MeasurementUnit.of( "CMS" ),
-                                                                           MetricConstants.CONTINGENCY_TABLE,
-                                                                           MetricConstants.MAIN,
-                                                                           DatasetIdentifier.of( l2,
-                                                                                                                 "B",
-                                                                                                                 "C" ) );
+        final StatisticMetadata m2 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                                              DatasetIdentifier.of( l2,
+                                                                                                    "B",
+                                                                                                    "C" ) ),
+                                                           10,
+                                                           MeasurementUnit.of(),
+                                                           MetricConstants.CONTINGENCY_TABLE,
+                                                           MetricConstants.MAIN );
         final List<EnsemblePair> values = new ArrayList<>();
         for ( int i = 0; i < 10; i++ )
         {
@@ -255,16 +254,16 @@ public final class BoxPlotStatisticTest
         }
         final BoxPlotStatistic q =
                 BoxPlotStatistic.of( values,
-                                  VectorOfDoubles.of( new double[] { 0.1, 0.5, 1.0 } ),
-                                  m1,
-                                  MetricDimension.OBSERVED_VALUE,
-                                  MetricDimension.FORECAST_ERROR );
+                                     VectorOfDoubles.of( new double[] { 0.1, 0.5, 1.0 } ),
+                                     m1,
+                                     MetricDimension.OBSERVED_VALUE,
+                                     MetricDimension.FORECAST_ERROR );
         final BoxPlotStatistic r =
                 BoxPlotStatistic.of( values,
-                                  VectorOfDoubles.of( new double[] { 0.1, 0.5, 1.0 } ),
-                                  m2,
-                                  MetricDimension.OBSERVED_VALUE,
-                                  MetricDimension.FORECAST_ERROR );
+                                     VectorOfDoubles.of( new double[] { 0.1, 0.5, 1.0 } ),
+                                     m2,
+                                     MetricDimension.OBSERVED_VALUE,
+                                     MetricDimension.FORECAST_ERROR );
         assertTrue( "Expected unequal dimensions.", !q.getMetadata().equals( r.getMetadata() ) );
     }
 
@@ -277,14 +276,15 @@ public final class BoxPlotStatisticTest
     {
 
         final Location l1 = Location.of( "A" );
-        final StatisticMetadata m1 = StatisticMetadata.of( 10,
-                                                                           MeasurementUnit.of(),
-                                                                           MeasurementUnit.of( "CMS" ),
-                                                                           MetricConstants.CONTINGENCY_TABLE,
-                                                                           MetricConstants.MAIN,
-                                                                           DatasetIdentifier.of( l1,
-                                                                                                                 "B",
-                                                                                                                 "C" ) );
+        final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                                              DatasetIdentifier.of( l1,
+                                                                                                    "B",
+                                                                                                    "C" ) ),
+                                                           10,
+                                                           MeasurementUnit.of(),
+                                                           MetricConstants.CONTINGENCY_TABLE,
+                                                           MetricConstants.MAIN );
+        ;
         final List<EnsemblePair> values = new ArrayList<>();
         for ( int i = 0; i < 10; i++ )
         {
@@ -292,10 +292,10 @@ public final class BoxPlotStatisticTest
         }
         final BoxPlotStatistic q =
                 BoxPlotStatistic.of( values,
-                                  VectorOfDoubles.of( new double[] { 0.1, 0.5, 1.0 } ),
-                                  m1,
-                                  MetricDimension.OBSERVED_VALUE,
-                                  MetricDimension.FORECAST_ERROR );
+                                     VectorOfDoubles.of( new double[] { 0.1, 0.5, 1.0 } ),
+                                     m1,
+                                     MetricDimension.OBSERVED_VALUE,
+                                     MetricDimension.FORECAST_ERROR );
         assertTrue( "Expected a list of data.", !q.getData().isEmpty() );
         assertTrue( "Expected an iterator with some elements to iterate.", q.iterator().hasNext() );
         assertTrue( "Unexpected probabilities associated with the box plot data.",
@@ -317,14 +317,14 @@ public final class BoxPlotStatisticTest
     {
 
         final Location l1 = Location.of( "A" );
-        final StatisticMetadata m1 = StatisticMetadata.of( 10,
-                                                                           MeasurementUnit.of(),
-                                                                           MeasurementUnit.of( "CMS" ),
-                                                                           MetricConstants.CONTINGENCY_TABLE,
-                                                                           MetricConstants.MAIN,
-                                                                           DatasetIdentifier.of( l1,
-                                                                                                                 "B",
-                                                                                                                 "C" ) );
+        final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                                              DatasetIdentifier.of( l1,
+                                                                                                    "B",
+                                                                                                    "C" ) ),
+                                                           10,
+                                                           MeasurementUnit.of(),
+                                                           MetricConstants.CONTINGENCY_TABLE,
+                                                           MetricConstants.MAIN );
         final List<EnsemblePair> values = new ArrayList<>();
         for ( int i = 0; i < 10; i++ )
         {
@@ -333,10 +333,10 @@ public final class BoxPlotStatisticTest
         try
         {
             BoxPlotStatistic.of( null,
-                              VectorOfDoubles.of( new double[] { 0.1, 0.5, 1.0 } ),
-                              m1,
-                              MetricDimension.OBSERVED_VALUE,
-                              MetricDimension.FORECAST_ERROR );
+                                 VectorOfDoubles.of( new double[] { 0.1, 0.5, 1.0 } ),
+                                 m1,
+                                 MetricDimension.OBSERVED_VALUE,
+                                 MetricDimension.FORECAST_ERROR );
             fail( "Expected an exception on null input data." );
         }
         catch ( StatisticException e )
@@ -345,10 +345,10 @@ public final class BoxPlotStatisticTest
         try
         {
             BoxPlotStatistic.of( values,
-                              VectorOfDoubles.of( new double[] { 0.1, 0.5, 1.0 } ),
-                              null,
-                              MetricDimension.OBSERVED_VALUE,
-                              MetricDimension.FORECAST_ERROR );
+                                 VectorOfDoubles.of( new double[] { 0.1, 0.5, 1.0 } ),
+                                 null,
+                                 MetricDimension.OBSERVED_VALUE,
+                                 MetricDimension.FORECAST_ERROR );
             fail( "Expected an exception on null metadata." );
         }
         catch ( StatisticException e )
@@ -357,10 +357,10 @@ public final class BoxPlotStatisticTest
         try
         {
             BoxPlotStatistic.of( values,
-                              null,
-                              m1,
-                              MetricDimension.OBSERVED_VALUE,
-                              MetricDimension.FORECAST_ERROR );
+                                 null,
+                                 m1,
+                                 MetricDimension.OBSERVED_VALUE,
+                                 MetricDimension.FORECAST_ERROR );
             fail( "Expected an exception on a null vector of probabilities." );
         }
         catch ( StatisticException e )
@@ -369,10 +369,10 @@ public final class BoxPlotStatisticTest
         try
         {
             BoxPlotStatistic.of( values,
-                              VectorOfDoubles.of( new double[] {} ),
-                              m1,
-                              MetricDimension.OBSERVED_VALUE,
-                              MetricDimension.FORECAST_ERROR );
+                                 VectorOfDoubles.of( new double[] {} ),
+                                 m1,
+                                 MetricDimension.OBSERVED_VALUE,
+                                 MetricDimension.FORECAST_ERROR );
             fail( "Expected an exception on an empty vector of probabilities." );
         }
         catch ( StatisticException e )
@@ -381,10 +381,10 @@ public final class BoxPlotStatisticTest
         try
         {
             BoxPlotStatistic.of( values,
-                              VectorOfDoubles.of( new double[] { 5.0, 10.0, 15.0 } ),
-                              m1,
-                              MetricDimension.OBSERVED_VALUE,
-                              MetricDimension.FORECAST_ERROR );
+                                 VectorOfDoubles.of( new double[] { 5.0, 10.0, 15.0 } ),
+                                 m1,
+                                 MetricDimension.OBSERVED_VALUE,
+                                 MetricDimension.FORECAST_ERROR );
             fail( "Expected an exception on invalid probabilities." );
         }
         catch ( StatisticException e )
@@ -393,10 +393,10 @@ public final class BoxPlotStatisticTest
         try
         {
             BoxPlotStatistic.of( values,
-                              VectorOfDoubles.of( new double[] { 5.0, 10.0 } ),
-                              m1,
-                              MetricDimension.OBSERVED_VALUE,
-                              MetricDimension.FORECAST_ERROR );
+                                 VectorOfDoubles.of( new double[] { 5.0, 10.0 } ),
+                                 m1,
+                                 MetricDimension.OBSERVED_VALUE,
+                                 MetricDimension.FORECAST_ERROR );
             fail( "Expected an exception on fewer probabilities than whiskers." );
         }
         catch ( StatisticException e )
@@ -408,10 +408,10 @@ public final class BoxPlotStatisticTest
             uneven.add( EnsemblePair.of( 1.0, new double[] { 1, 2, 3 } ) );
             uneven.add( EnsemblePair.of( 1.0, new double[] { 1, 2, 3, 4 } ) );
             BoxPlotStatistic.of( uneven,
-                              VectorOfDoubles.of( new double[] { 0.0, 0.5, 1.0 } ),
-                              m1,
-                              MetricDimension.OBSERVED_VALUE,
-                              MetricDimension.FORECAST_ERROR );
+                                 VectorOfDoubles.of( new double[] { 0.0, 0.5, 1.0 } ),
+                                 m1,
+                                 MetricDimension.OBSERVED_VALUE,
+                                 MetricDimension.FORECAST_ERROR );
             fail( "Expected an exception on boxes with varying numbers of whiskers." );
         }
         catch ( StatisticException e )
@@ -423,10 +423,10 @@ public final class BoxPlotStatisticTest
             uneven.add( EnsemblePair.of( 1.0, new double[] { 1, 2, 3 } ) );
             uneven.add( EnsemblePair.of( 1.0, new double[] {} ) );
             BoxPlotStatistic.of( uneven,
-                              VectorOfDoubles.of( new double[] { 0.0, 0.5, 1.0 } ),
-                              m1,
-                              MetricDimension.OBSERVED_VALUE,
-                              MetricDimension.FORECAST_ERROR );
+                                 VectorOfDoubles.of( new double[] { 0.0, 0.5, 1.0 } ),
+                                 m1,
+                                 MetricDimension.OBSERVED_VALUE,
+                                 MetricDimension.FORECAST_ERROR );
             fail( "Expected an exception on boxes with missing whiskers." );
         }
         catch ( StatisticException e )
@@ -435,10 +435,10 @@ public final class BoxPlotStatisticTest
         try
         {
             BoxPlotStatistic.of( values,
-                              VectorOfDoubles.of( new double[] { 0.0, -0.5, 1.0 } ),
-                              m1,
-                              MetricDimension.OBSERVED_VALUE,
-                              MetricDimension.FORECAST_ERROR );
+                                 VectorOfDoubles.of( new double[] { 0.0, -0.5, 1.0 } ),
+                                 m1,
+                                 MetricDimension.OBSERVED_VALUE,
+                                 MetricDimension.FORECAST_ERROR );
             fail( "Expected an exception on boxes with invalid probabilities." );
         }
         catch ( StatisticException e )
@@ -447,10 +447,10 @@ public final class BoxPlotStatisticTest
         try
         {
             BoxPlotStatistic.of( values,
-                              VectorOfDoubles.of( new double[] { 0.0, 0.5, 1.0 } ),
-                              m1,
-                              null,
-                              MetricDimension.FORECAST_ERROR );
+                                 VectorOfDoubles.of( new double[] { 0.0, 0.5, 1.0 } ),
+                                 m1,
+                                 null,
+                                 MetricDimension.FORECAST_ERROR );
             fail( "Expected an exception on a null domain axis dimension." );
         }
         catch ( StatisticException e )
@@ -459,10 +459,10 @@ public final class BoxPlotStatisticTest
         try
         {
             BoxPlotStatistic.of( values,
-                              VectorOfDoubles.of( new double[] { 0.0, 0.5, 1.0 } ),
-                              m1,
-                              MetricDimension.OBSERVED_VALUE,
-                              null );
+                                 VectorOfDoubles.of( new double[] { 0.0, 0.5, 1.0 } ),
+                                 m1,
+                                 MetricDimension.OBSERVED_VALUE,
+                                 null );
             fail( "Expected an exception on a null range axis dimension." );
         }
         catch ( StatisticException e )

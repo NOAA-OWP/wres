@@ -14,8 +14,8 @@ import org.junit.rules.ExpectedException;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.sampledata.SampleDataException;
@@ -23,6 +23,7 @@ import wres.datamodel.sampledata.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.statistics.MultiVectorStatistic;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
+
 /**
  * Tests the {@link RelativeOperatingCharacteristicDiagram}.
  * 
@@ -59,14 +60,14 @@ public final class RelativeOperatingCharacteristicDiagramTest
 
         //Metadata for the output
         final StatisticMetadata m1 =
-                StatisticMetadata.of( input.getRawData().size(),
-                                                   MeasurementUnit.of(),
-                                                   MeasurementUnit.of(),
-                                                   MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
-                                                   MetricConstants.MAIN,
-                                                   DatasetIdentifier.of( Location.of( "Tampere" ),
-                                                                                         "MAP",
-                                                                                         "FMI" ) );
+                StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of(),
+                                                         DatasetIdentifier.of( Location.of( "Tampere" ),
+                                                                               "MAP",
+                                                                               "FMI" ) ),
+                                      input.getRawData().size(),
+                                      MeasurementUnit.of(),
+                                      MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
+                                      MetricConstants.MAIN );
 
         //Check the results       
         final MultiVectorStatistic actual = roc.apply( input );

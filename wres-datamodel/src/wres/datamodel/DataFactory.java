@@ -27,10 +27,11 @@ import wres.config.generated.TimeSeriesMetricConfig;
 import wres.config.generated.TimeSeriesMetricConfigName;
 import wres.datamodel.MetricConstants.SampleDataGroup;
 import wres.datamodel.MetricConstants.StatisticGroup;
+import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.statistics.PairedStatistic;
+import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.statistics.StatisticsForProject.StatisticsForProjectBuilder;
 import wres.datamodel.thresholds.ThresholdConstants;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
@@ -361,19 +362,26 @@ public final class DataFactory
     }
 
     /**
-     * Forms the union of the {@link PairedStatistic}, returning a {@link PairedStatistic} that contains all of the pairs in 
-     * the inputs.
+     * Forms the union of the {@link PairedStatistic}, returning a {@link PairedStatistic} that contains all of the 
+     * pairs in the inputs.
      * 
      * @param <S> the left side of the paired output
      * @param <T> the right side of the paired output
      * @param collection the list of inputs
      * @return a combined {@link PairedStatistic}
      * @throws NullPointerException if the input is null
+     * @throws IllegalArgumentException if the input is empty
      */
 
     public static <S, T> PairedStatistic<S, T> unionOf( Collection<PairedStatistic<S, T>> collection )
     {
         Objects.requireNonNull( collection );
+        
+        if( collection.isEmpty() )
+        {
+            throw new IllegalArgumentException( "Specify one or more sets of pairs to combine." );
+        }
+        
         List<Pair<S, T>> combined = new ArrayList<>();
         List<TimeWindow> combinedWindows = new ArrayList<>();
         StatisticMetadata sourceMeta = null;
@@ -384,7 +392,7 @@ public final class DataFactory
             {
                 sourceMeta = next.getMetadata();
             }
-            combinedWindows.add( next.getMetadata().getTimeWindow() );
+            combinedWindows.add( next.getMetadata().getSampleMetadata().getTimeWindow() );
         }
         TimeWindow unionWindow = null;
         if ( !combinedWindows.isEmpty() )
@@ -393,9 +401,12 @@ public final class DataFactory
         }
 
         StatisticMetadata combinedMeta =
-                StatisticMetadata.of( StatisticMetadata.of( sourceMeta, combined.size() ),
-                                         unionWindow,
-                                         sourceMeta.getThresholds() );
+                StatisticMetadata.of( SampleMetadata.of( sourceMeta.getSampleMetadata(), unionWindow ),
+                                      combined.size(),
+                                      sourceMeta.getMeasurementUnit(),
+                                      sourceMeta.getMetricID(),
+                                      sourceMeta.getMetricComponentID() );
+        
         return PairedStatistic.of( combined, combinedMeta );
     }
 

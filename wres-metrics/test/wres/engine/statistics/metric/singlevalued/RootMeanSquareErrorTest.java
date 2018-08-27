@@ -55,11 +55,11 @@ public final class RootMeanSquareErrorTest
         SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Metadata for the output
-        StatisticMetadata m1 = StatisticMetadata.of( input.getRawData().size(),
-                                                                   MeasurementUnit.of(),
-                                                                   MeasurementUnit.of(),
-                                                                   MetricConstants.ROOT_MEAN_SQUARE_ERROR,
-                                                                   MetricConstants.MAIN );
+        StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
+                                                     input.getRawData().size(),
+                                                     MeasurementUnit.of(),
+                                                     MetricConstants.ROOT_MEAN_SQUARE_ERROR,
+                                                     MetricConstants.MAIN );
         //Check the results
         DoubleScoreStatistic actual = rmse.apply( input );
         DoubleScoreStatistic expected = DoubleScoreStatistic.of( 632.4586381732801, m1 );

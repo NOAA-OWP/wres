@@ -30,8 +30,8 @@ class MetricVariable
     {
         StatisticMetadata metadata = output.getMetadata();
         String metric = metadata.getMetricID().toString();
-        OneOrTwoThresholds thresholds = metadata.getThresholds();
-        TimeWindow timeWindow = metadata.getTimeWindow();
+        OneOrTwoThresholds thresholds = metadata.getSampleMetadata().getThresholds();
+        TimeWindow timeWindow = metadata.getSampleMetadata().getTimeWindow();
 
         this.name = MetricVariable.getName( output );
         this.longName = metric + " " + thresholds;
@@ -88,12 +88,13 @@ class MetricVariable
 
         // If the calling metric is associated with a threshold, combine
         // threshold information with it
-        if ( metadata.getThresholds() != null &&
-             metadata.getThresholds().first() != null &&
-             metadata.getThresholds().first().hasProbabilities())
+        if ( metadata.getSampleMetadata().getThresholds() != null &&
+             metadata.getSampleMetadata().getThresholds().first() != null &&
+             metadata.getSampleMetadata().getThresholds().first().hasProbabilities())
         {
             // We first get the probability in raw percentage, i.e., 0.95 becomes 95
-            Double probability = metadata.getThresholds().first().getProbabilities().first() * 100.0;
+            Double probability =
+                    metadata.getSampleMetadata().getThresholds().first().getProbabilities().first() * 100.0;
 
             // We now want to indicate that it is a probability and attach
             // the integer representation. If the probability ended up

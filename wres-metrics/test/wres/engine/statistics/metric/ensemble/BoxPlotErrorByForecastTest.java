@@ -19,9 +19,9 @@ import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MeasurementUnit;
+import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.StatisticMetadata;
-import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.EnsemblePair;
@@ -68,22 +68,21 @@ public final class BoxPlotErrorByForecastTest
                                            ReferenceTime.VALID_TIME,
                                            Duration.ofHours( 24 ) );
         final SampleMetadata meta = SampleMetadata.of( MeasurementUnit.of( "MM/DAY" ),
-                                           DatasetIdentifier.of( Location.of( "A" ),
-                                                                 "MAP" ),
-                                           window );
+                                                       DatasetIdentifier.of( Location.of( "A" ),
+                                                                             "MAP" ),
+                                                       window );
         EnsemblePairs input = EnsemblePairs.of( values, meta );
         final TimeWindow timeWindow = window;
 
-        final StatisticMetadata m1 = StatisticMetadata.of( input.getRawData().size(),
-                                                                 MeasurementUnit.of( "MM/DAY" ),
-                                                                 MeasurementUnit.of( "MM/DAY" ),
-                                                                 MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE,
-                                                                 MetricConstants.MAIN,
-                                                                 DatasetIdentifier.of( Location.of( "A" ),
-                                                                                       "MAP" ),
-                                                                 timeWindow,
-                                                                 null,
-                                                                 null );
+        final StatisticMetadata m1 =
+                StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "MM/DAY" ),
+                                                         DatasetIdentifier.of( Location.of( "A" ),
+                                                                               "MAP" ),
+                                                         timeWindow ),
+                                      input.getRawData().size(),
+                                      MeasurementUnit.of( "MM/DAY" ),
+                                      MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE,
+                                      MetricConstants.MAIN );
 
         //Compute normally
         final BoxPlotStatistic actual = bpe.apply( input );
@@ -92,11 +91,11 @@ public final class BoxPlotErrorByForecastTest
         List<EnsemblePair> expectedBoxes = new ArrayList<>();
         expectedBoxes.add( expectedBox );
         BoxPlotStatistic expected = BoxPlotStatistic.of( expectedBoxes,
-                                                   VectorOfDoubles.of( new double[] { 0.0, 0.25, 0.5, 0.75,
-                                                                                      1.0 } ),
-                                                   m1,
-                                                   MetricDimension.ENSEMBLE_MEAN,
-                                                   MetricDimension.FORECAST_ERROR );
+                                                         VectorOfDoubles.of( new double[] { 0.0, 0.25, 0.5, 0.75,
+                                                                                            1.0 } ),
+                                                         m1,
+                                                         MetricDimension.ENSEMBLE_MEAN,
+                                                         MetricDimension.FORECAST_ERROR );
         //Check the results
         assertTrue( "The actual output for the box plot of forecast errors by observed value does not match the "
                     + "expected output.",
@@ -120,22 +119,20 @@ public final class BoxPlotErrorByForecastTest
                                            ReferenceTime.VALID_TIME,
                                            Duration.ofHours( 24 ) );
         final SampleMetadata meta = SampleMetadata.of( MeasurementUnit.of( "MM/DAY" ),
-                                           DatasetIdentifier.of( Location.of( "A" ),
-                                                                 "MAP" ),
-                                           window );
+                                                       DatasetIdentifier.of( Location.of( "A" ),
+                                                                             "MAP" ),
+                                                       window );
         EnsemblePairs input = EnsemblePairs.of( values, meta );
         final TimeWindow timeWindow = window;
 
-        final StatisticMetadata m1 = StatisticMetadata.of( input.getRawData().size(),
-                                                                 MeasurementUnit.of( "MM/DAY" ),
-                                                                 MeasurementUnit.of( "MM/DAY" ),
-                                                                 MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE,
-                                                                 MetricConstants.MAIN,
-                                                                 DatasetIdentifier.of( Location.of( "A" ),
-                                                                                       "MAP" ),
-                                                                 timeWindow,
-                                                                 null,
-                                                                 null );
+        final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "MM/DAY" ),
+                                                                              DatasetIdentifier.of( Location.of( "A" ),
+                                                                                                    "MAP" ),
+                                                                              timeWindow ),
+                                                           input.getRawData().size(),
+                                                           MeasurementUnit.of( "MM/DAY" ),
+                                                           MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE,
+                                                           MetricConstants.MAIN );
 
         //Build the metric
         BoxPlotErrorByForecast bpe = BoxPlotErrorByForecast.of( MetricDimension.ENSEMBLE_MEDIAN,
@@ -148,10 +145,10 @@ public final class BoxPlotErrorByForecastTest
         List<EnsemblePair> expectedBoxes = new ArrayList<>();
         expectedBoxes.add( expectedBox );
         BoxPlotStatistic expected = BoxPlotStatistic.of( expectedBoxes,
-                                                   VectorOfDoubles.of( 0.0, 0.25, 0.5, 0.75, 1.0 ),
-                                                   m1,
-                                                   MetricDimension.ENSEMBLE_MEDIAN,
-                                                   MetricDimension.FORECAST_ERROR );
+                                                         VectorOfDoubles.of( 0.0, 0.25, 0.5, 0.75, 1.0 ),
+                                                         m1,
+                                                         MetricDimension.ENSEMBLE_MEDIAN,
+                                                         MetricDimension.FORECAST_ERROR );
         //Check the results
         assertTrue( "The actual output for the box plot of forecast errors by observed value does not match the "
                     + "expected output.",
