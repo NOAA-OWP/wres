@@ -87,6 +87,7 @@ class VectorCache implements LeftHandCache
 
             if (timeShift != null)
             {
+                // Time shift is measured in hours in the config
                 script.add(" + INTERVAL '1 hour' * ", timeShift);
             }
 
@@ -99,6 +100,7 @@ class VectorCache implements LeftHandCache
 
             if (timeShift != null)
             {
+                // Time shift is measured in hours in the config
                 script.add(" + INTERVAL '1 hour' * ", timeShift);
             }
 

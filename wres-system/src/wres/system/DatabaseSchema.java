@@ -6,6 +6,7 @@ import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.net.URL;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -82,7 +83,11 @@ public class DatabaseSchema
                                             + "administrator to add it." );
                 }
 
-                statement.execute( "CREATE DATABASE " + this.databaseName + ";" );
+                try (  PreparedStatement preparedStatement = connection.prepareStatement( "CREATE DATABASE ?;" ))
+                {
+                    preparedStatement.setString( 1, this.databaseName );
+                    preparedStatement.execute();
+                }
             }
         }
     }
