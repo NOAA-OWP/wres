@@ -286,7 +286,7 @@ public final class TimeWindowTest
         //Equality against a benchmark
         assertTrue( "Unexpected inequality between the string representation of two time windows that are equal.",
                     window.toString()
-                          .equals( "[1985-01-01T00:00:00Z, 2010-12-31T11:59:59Z, VALID TIME, PT0S, PT0S]" ) );
+                          .equals( "[1985-01-01T00:00:00Z,2010-12-31T11:59:59Z,VALID TIME,PT0S,PT0S]" ) );
     }
 
     /**

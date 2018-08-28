@@ -45,6 +45,12 @@ public class SampleMetadata implements Comparable<SampleMetadata>
      */
 
     private final ProjectConfig projectConfig;
+    
+    /**
+     * The optional time scale information, may be null.
+     */
+    
+    private final TimeScale timeScale;
 
     /**
      * Build a {@link SampleMetadata} object with a default {@link MeasurementUnit}.
@@ -200,8 +206,9 @@ public class SampleMetadata implements Comparable<SampleMetadata>
             return false;
         }
         final SampleMetadata p = (SampleMetadata) o;
-        boolean returnMe = this.equalsWithoutTimeWindowOrThresholds( p ) && this.hasTimeWindow() == p.hasTimeWindow()
-                           && this.hasThresholds() == p.hasThresholds();
+        boolean returnMe = this.hasTimeWindow() == p.hasTimeWindow()
+                           && this.hasThresholds() == p.hasThresholds()
+                           && this.equalsWithoutTimeWindowOrThresholds( p );
 
         if ( returnMe && hasTimeWindow() )
         {
@@ -223,11 +230,13 @@ public class SampleMetadata implements Comparable<SampleMetadata>
                              this.hasTimeWindow(),
                              this.hasThresholds(),
                              this.hasProjectConfig(),
+                             this.hasTimeScale(),
                              this.getMeasurementUnit(),
                              this.getIdentifier(),
                              this.getTimeWindow(),
                              this.getThresholds(),
-                             this.getProjectConfig() );
+                             this.getProjectConfig(),
+                             this.getTimeScale() );
     }
 
     @Override
@@ -253,12 +262,15 @@ public class SampleMetadata implements Comparable<SampleMetadata>
         {
             b.append( this.getThresholds() ).append( "," );
         }
+        if ( this.hasTimeScale() )
+        {
+            b.append( this.getTimeScale() ).append( "," );
+        }
 
         b.append( this.getMeasurementUnit() ).append( ")" );
 
         return b.toString();
     }
-
 
     /**
      * Returns <code>true</code> if {@link #getIdentifier()} returns non-null, otherwise <code>false</code>.
@@ -299,6 +311,16 @@ public class SampleMetadata implements Comparable<SampleMetadata>
     {
         return Objects.nonNull( this.getProjectConfig() );
     }
+    
+    /**
+     * Returns <code>true</code> if {@link #getTimeScale()} returns non-null, otherwise <code>false</code>.
+     * 
+     * @return true if {@link #getTimeScale()} returns non-null, false otherwise.
+     */
+    public boolean hasTimeScale()
+    {
+        return Objects.nonNull( this.getTimeScale() );
+    }    
 
     /**
      * Returns <code>true</code> if the input is equal to the current {@link SampleMetadata} without considering the 
@@ -316,18 +338,25 @@ public class SampleMetadata implements Comparable<SampleMetadata>
         boolean returnMe =
                 input.getMeasurementUnit().equals( this.getMeasurementUnit() )
                            && this.hasIdentifier() == input.hasIdentifier()
-                           && this.hasProjectConfig() == input.hasProjectConfig();
+                           && this.hasProjectConfig() == input.hasProjectConfig()
+                           && this.hasTimeScale() == input.hasTimeScale();
 
-        if ( hasIdentifier() )
+        // The following tests apply where both the existing and input attributes are non-null,
+        // as equivalent null status is tested above
+        if ( this.hasIdentifier() )
         {
             returnMe = returnMe && this.getIdentifier().equals( input.getIdentifier() );
         }
 
-        if ( hasProjectConfig() )
+        if ( this.hasProjectConfig() )
         {
             returnMe = returnMe && this.getProjectConfig().equals( input.getProjectConfig() );
         }
-
+        
+        if ( this.hasTimeScale() )
+        {
+            returnMe = returnMe && this.getTimeScale().equals( input.getTimeScale() );
+        }
 
         return returnMe;
     }
@@ -388,6 +417,17 @@ public class SampleMetadata implements Comparable<SampleMetadata>
     }
 
     /**
+     * Returns a {@link TimeScale} associated with the metadata or null.
+     * 
+     * @return the time scale or null
+     */
+
+    public TimeScale getTimeScale()
+    {
+        return this.timeScale;
+    }
+    
+    /**
      * Builder.
      */
 
@@ -429,6 +469,12 @@ public class SampleMetadata implements Comparable<SampleMetadata>
          */
 
         private ProjectConfig projectConfig;
+        
+        /**
+         * The optional time scale information.
+         */
+        
+        private TimeScale timeScale;
 
         /**
          * Sets the measurement unit.
@@ -496,6 +542,19 @@ public class SampleMetadata implements Comparable<SampleMetadata>
         }
         
         /**
+         * Sets the time scale information.
+         * 
+         * @param timeScale the time scale
+         * @return the builder
+         */
+        
+        public SampleMetadataBuilder setTimeScale( TimeScale timeScale )
+        {
+            this.timeScale = timeScale;
+            return this;
+        }
+        
+        /**
          * Sets the contents from an existing metadata instance.
          * 
          * @param sampleMetadata the source metadata
@@ -512,6 +571,7 @@ public class SampleMetadata implements Comparable<SampleMetadata>
             this.timeWindow = sampleMetadata.timeWindow;
             this.thresholds = sampleMetadata.thresholds;
             this.projectConfig = sampleMetadata.projectConfig;
+            this.timeScale = sampleMetadata.timeScale;
             
             return this;
         }
@@ -544,6 +604,7 @@ public class SampleMetadata implements Comparable<SampleMetadata>
         this.timeWindow = builder.timeWindow;
         this.thresholds = builder.thresholds;
         this.projectConfig = builder.projectConfig;
+        this.timeScale = builder.timeScale;
 
         Objects.requireNonNull( this.unit,
                                 "Specify a non-null measurement unit from which to build "

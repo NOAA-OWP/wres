@@ -141,6 +141,6 @@ public final class TimeScaleTest
     @Test
     public void testToString()
     {
-        assertEquals( timeScale.toString(), "[PT24H, AVG]" );
+        assertEquals( timeScale.toString(), "[PT24H,AVG]" );
     }
 }

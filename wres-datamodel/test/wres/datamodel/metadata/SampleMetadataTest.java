@@ -1,8 +1,12 @@
 package wres.datamodel.metadata;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 
@@ -17,6 +21,7 @@ import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Inputs;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.metadata.SampleMetadata.SampleMetadataBuilder;
+import wres.datamodel.metadata.TimeScale.TimeScaleFunction;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
@@ -32,6 +37,52 @@ public class SampleMetadataTest
 {
 
     /**
+     * Tests construction of the {@link SampleMetadata} using the various construction options.
+     */
+
+    @Test
+    public void testBuildProducesNonNullInstances()
+    {
+        assertNotNull( SampleMetadata.of() );
+
+        assertNotNull( SampleMetadata.of( MeasurementUnit.of() ) );
+
+        DatasetIdentifier identifier = DatasetIdentifier.of( Location.of( "A" ), "B" );
+
+        assertNotNull( SampleMetadata.of( MeasurementUnit.of(), identifier ) );
+
+        OneOrTwoThresholds thresholds = OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 1.0 ),
+                                                                             Operator.EQUAL,
+                                                                             ThresholdDataType.LEFT ) );
+
+        assertNotNull( SampleMetadata.of( SampleMetadata.of(), thresholds ) );
+
+        TimeWindow timeWindow =
+                TimeWindow.of( Instant.parse( "2000-02-02T00:00:00Z" ), Instant.parse( "2000-02-02T00:00:00Z" ) );
+
+        assertNotNull( SampleMetadata.of( SampleMetadata.of(), timeWindow ) );
+
+        assertNotNull( SampleMetadata.of( SampleMetadata.of(), timeWindow, thresholds ) );
+
+        assertNotNull( SampleMetadata.of( MeasurementUnit.of(), identifier, timeWindow, thresholds ) );
+
+        assertNotNull( new SampleMetadataBuilder().setFromExistingInstance( SampleMetadata.of() )
+                                                  .setIdentifier( identifier )
+                                                  .setMeasurementUnit( MeasurementUnit.of() )
+                                                  .setProjectConfig( new ProjectConfig( null,
+                                                                                        null,
+                                                                                        null,
+                                                                                        null,
+                                                                                        null,
+                                                                                        null ) )
+                                                  .setThresholds( thresholds )
+                                                  .setTimeWindow( timeWindow )
+                                                  .setTimeScale( TimeScale.of( Duration.ofDays( 1 ),
+                                                                               TimeScaleFunction.AVG ) )
+                                                  .build() );
+    }
+
+    /**
      * Test {@link SampleMetadata#equals(Object)}.
      */
 
@@ -39,44 +90,44 @@ public class SampleMetadataTest
     @Test
     public void testEquals()
     {
-        assertTrue( "Unexpected inequality between two metadata instances.",
-                    SampleMetadata.of().equals( SampleMetadata.of() ) );
+        assertEquals( SampleMetadata.of(), SampleMetadata.of() );
         Location l1 = Location.of( "DRRC2" );
         SampleMetadata m1 = SampleMetadata.of( MeasurementUnit.of(),
                                                DatasetIdentifier.of( l1, "SQIN", "HEFS" ) );
         // Reflexive
-        assertTrue( "Unexpected inequality between two metadata instances.", m1.equals( m1 ) );
+        assertEquals( m1, m1 );
         Location l2 = Location.of( "DRRC2" );
         SampleMetadata m2 = SampleMetadata.of( MeasurementUnit.of(),
                                                DatasetIdentifier.of( l2, "SQIN", "HEFS" ) );
         // Symmetric
-        assertTrue( "Unexpected inequality between two metadata instances.", m1.equals( m2 ) );
-        assertTrue( "Unexpected inequality between two metadata instances.", m2.equals( m1 ) );
+        assertEquals( m1, m2 );
+        assertEquals( m2, m1 );
         Location l3 = Location.of( "DRRC2" );
         SampleMetadata m3 = SampleMetadata.of( MeasurementUnit.of( "SOME_DIM" ),
                                                DatasetIdentifier.of( l3, "SQIN", "HEFS" ) );
         Location l4 = Location.of( "DRRC2" );
         SampleMetadata m4 = SampleMetadata.of( MeasurementUnit.of( "SOME_DIM" ),
                                                DatasetIdentifier.of( l4, "SQIN", "HEFS" ) );
-        assertTrue( "Unexpected inequality between two metadata instances.", m3.equals( m4 ) );
-        assertFalse( "Unexpected equality between two metadata instances.", m1.equals( m3 ) );
+        assertEquals( m3, m4 );
+        assertNotEquals( m1, m3 );
         // Transitive
         Location l4t = Location.of( "DRRC2" );
         SampleMetadata m4t = SampleMetadata.of( MeasurementUnit.of( "SOME_DIM" ),
                                                 DatasetIdentifier.of( l4t, "SQIN", "HEFS" ) );
-        assertTrue( "Unexpected inequality between two metadata instances.", m4.equals( m4t ) );
-        assertTrue( "Unexpected inequality between two metadata instances.", m3.equals( m4t ) );
+        assertEquals( m4, m4t );
+        assertEquals( m3, m4t );
         // Unequal
         Location l5 = Location.of( "DRRC3" );
         SampleMetadata m5 = SampleMetadata.of( MeasurementUnit.of( "SOME_DIM" ),
                                                DatasetIdentifier.of( l5, "SQIN", "HEFS" ) );
-        assertFalse( "Unexpected equality between two metadata instances.", m4.equals( m5 ) );
+        assertNotEquals( m4, m5 );
         SampleMetadata m5NoDim = SampleMetadata.of( MeasurementUnit.of( "SOME_DIM" ), null );
-        assertFalse( "Unexpected equality between two metadata instances.", m5.equals( m5NoDim ) );
+        assertNotEquals( m5, m5NoDim );
+
         // Consistent
         for ( int i = 0; i < 20; i++ )
         {
-            assertTrue( "Unexpected inequality between two metadata instances.", m1.equals( m2 ) );
+            assertTrue( m1.equals( m2 ) );
         }
         // Add a time window
         TimeWindow firstWindow = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
@@ -97,9 +148,9 @@ public class SampleMetadataTest
                                                        .setIdentifier( DatasetIdentifier.of( l7, "SQIN", "HEFS" ) )
                                                        .setTimeWindow( timeWindow3 )
                                                        .build();
-        assertTrue( "Unexpected inequality between two metadata instances.", m6.equals( m7 ) );
-        assertTrue( "Unexpected inequality between two metadata instances.", m7.equals( m6 ) );
-        assertFalse( "Unexpected equality between two metadata instances.", m3.equals( m6 ) );
+        assertEquals( m6, m7 );
+        assertEquals( m7, m6 );
+        assertNotEquals( m3, m6 );
 
         TimeWindow thirdWindow = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                 Instant.parse( "1986-01-01T00:00:00Z" ),
@@ -110,7 +161,7 @@ public class SampleMetadataTest
                                                        .setIdentifier( DatasetIdentifier.of( l8, "SQIN", "HEFS" ) )
                                                        .setTimeWindow( timeWindow4 )
                                                        .build();
-        assertFalse( "Unexpected equality between two metadata instances.", m6.equals( m8 ) );
+        assertNotEquals( m6, m8 );
 
         // Add a threshold
         OneOrTwoThresholds thresholds =
@@ -123,14 +174,14 @@ public class SampleMetadataTest
                                                thirdWindow,
                                                thresholds );
 
-        assertFalse( "Unexpected equality between two metadata instances.", m8.equals( m9 ) );
+        assertNotEquals( m8, m9 );
 
         SampleMetadata m10 = SampleMetadata.of( MeasurementUnit.of( "SOME_DIM" ),
                                                 DatasetIdentifier.of( l8, "SQIN", "HEFS" ),
                                                 thirdWindow,
                                                 thresholds );
 
-        assertTrue( "Unexpected inequality between two metadata instances.", m9.equals( m10 ) );
+        assertEquals( m9, m10 );
 
         // Add a project configuration
         ProjectConfig mockConfigOne =
@@ -197,13 +248,106 @@ public class SampleMetadataTest
                                                         .setProjectConfig( projectConfig1 )
                                                         .build();
 
-        assertTrue( "Unexpected inequality between two metadata instances.", m11.equals( m12 ) );
+        assertEquals( m11, m12 );
+
+        // Add a time scale
+        SampleMetadata m13 =
+                new SampleMetadataBuilder().setFromExistingInstance( m12 )
+                                           .setTimeScale( TimeScale.of( Duration.ofDays( 1 ), TimeScaleFunction.AVG ) )
+                                           .build();
+
+        SampleMetadata m14 =
+                new SampleMetadataBuilder().setFromExistingInstance( m12 )
+                                           .setTimeScale( TimeScale.of( Duration.ofDays( 1 ), TimeScaleFunction.AVG ) )
+                                           .build();
+
+        SampleMetadata m15 =
+                new SampleMetadataBuilder().setFromExistingInstance( m12 )
+                                           .setTimeScale( TimeScale.of( Duration.ofDays( 2 ), TimeScaleFunction.AVG ) )
+                                           .build();
+
+        assertEquals( m13, m14 );
+
+        assertNotEquals( m13, m15 );
 
         // Null check
-        assertFalse( "Unexpected equality between two metadata instances.", m6.equals( null ) );
+        assertFalse( m6.equals( null ) );
 
         // Other type check
-        assertFalse( "Unexpected equality between two metadata instances.", m6.equals( Double.valueOf( 2 ) ) );
+        assertFalse( m6.equals( Double.valueOf( 2 ) ) );
+    }
+
+    /**
+     * Test {@link SampleMetadata#equalsWithoutTimeWindowOrThresholds(SampleMetadata)}.
+     */
+
+    @Test
+    public void testEqualsWithoutTimeWindowOrThresholds()
+    {
+        // False if the input is null
+        assertFalse( SampleMetadata.of().equalsWithoutTimeWindowOrThresholds( null ) );
+
+        // Simplest case of equality
+        assertTrue( SampleMetadata.of().equalsWithoutTimeWindowOrThresholds( SampleMetadata.of() ) );
+
+        // Remaining cases test scenarios not tested already through Object::equals
+        SampleMetadata metaOne = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of() )
+                                                            .setProjectConfig( new ProjectConfig( null,
+                                                                                                  null,
+                                                                                                  null,
+                                                                                                  null,
+                                                                                                  null,
+                                                                                                  null ) )
+                                                            .setTimeScale( TimeScale.of( Duration.ofDays( 1 ),
+                                                                                         TimeScaleFunction.MAX ) )
+                                                            .build();
+
+        SampleMetadata metaTwo = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of() )
+                                                            .build();
+
+        SampleMetadata metaThree = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of() )
+                                                              .setProjectConfig( new ProjectConfig( null,
+                                                                                                    null,
+                                                                                                    null,
+                                                                                                    null,
+                                                                                                    null,
+                                                                                                    "A" ) )
+                                                              .setTimeScale( TimeScale.of( Duration.ofDays( 1 ),
+                                                                                           TimeScaleFunction.MAX ) )
+                                                              .build();
+
+        assertTrue( metaOne.equalsWithoutTimeWindowOrThresholds( metaOne ) );
+        
+        assertFalse( metaOne.equalsWithoutTimeWindowOrThresholds( metaTwo ) );
+
+        assertFalse( metaOne.equalsWithoutTimeWindowOrThresholds( metaThree ) );
+        
+        SampleMetadata metaFour = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of() )
+                                                             .setTimeScale( TimeScale.of( Duration.ofDays( 1 ),
+                                                                                          TimeScaleFunction.AVG ) )
+                                                             .build();
+
+        SampleMetadata metaFive = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of() )
+                                                             .setTimeScale( TimeScale.of( Duration.ofDays( 1 ),
+                                                                                          TimeScaleFunction.MAX ) )
+                                                             .build();
+        
+        SampleMetadata metaSix = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of() )
+                .setProjectConfig( new ProjectConfig( null,
+                                                      null,
+                                                      null,
+                                                      null,
+                                                      null,
+                                                      "A" ) )
+                .build();
+
+        assertFalse( metaFour.equalsWithoutTimeWindowOrThresholds( metaOne ) );
+        
+        assertTrue( metaFour.equalsWithoutTimeWindowOrThresholds( metaFour ) );
+
+        assertFalse( metaFour.equalsWithoutTimeWindowOrThresholds( metaFive ) );
+
+        assertFalse( metaSix.equalsWithoutTimeWindowOrThresholds( metaOne ) );
     }
 
     /**
@@ -214,40 +358,32 @@ public class SampleMetadataTest
     public void testHashcode()
     {
         // Equal
-        assertTrue( "Unexpected inequality between two metadata hashcodes.",
-                    SampleMetadata.of().hashCode() == SampleMetadata.of().hashCode() );
+        assertEquals( SampleMetadata.of().hashCode(), SampleMetadata.of().hashCode() );
         Location l1 = Location.of( "DRRC2" );
         SampleMetadata m1 = SampleMetadata.of( MeasurementUnit.of(),
                                                DatasetIdentifier.of( l1, "SQIN", "HEFS" ) );
-        assertTrue( "Unexpected inequality between two metadata instances.", m1.hashCode() == m1.hashCode() );
+        assertEquals( m1.hashCode(), m1.hashCode() );
         Location l2 = Location.of( "DRRC2" );
         SampleMetadata m2 = SampleMetadata.of( MeasurementUnit.of(),
                                                DatasetIdentifier.of( l2, "SQIN", "HEFS" ) );
-        assertTrue( "Unexpected inequality between two metadata hashcodes.", m1.hashCode() == m2.hashCode() );
+        assertEquals( m1.hashCode(), m2.hashCode() );
         Location l3 = Location.of( "DRRC2" );
         SampleMetadata m3 = SampleMetadata.of( MeasurementUnit.of( "SOME_DIM" ),
                                                DatasetIdentifier.of( l3, "SQIN", "HEFS" ) );
         Location l4 = Location.of( "DRRC2" );
         SampleMetadata m4 = SampleMetadata.of( MeasurementUnit.of( "SOME_DIM" ),
                                                DatasetIdentifier.of( l4, "SQIN", "HEFS" ) );
-        assertTrue( "Unexpected inequality between two metadata hashcodes.", m3.hashCode() == m4.hashCode() );
+        assertEquals( m3.hashCode(), m4.hashCode() );
         Location l4t = Location.of( "DRRC2" );
         SampleMetadata m4t = SampleMetadata.of( MeasurementUnit.of( "SOME_DIM" ),
                                                 DatasetIdentifier.of( l4t, "SQIN", "HEFS" ) );
-        assertTrue( "Unexpected inequality between two metadata instances.", m4.hashCode() == m4t.hashCode() );
-        assertTrue( "Unexpected inequality between two metadata instances.", m3.hashCode() == m4t.hashCode() );
-        // Unequal
-        assertFalse( "Unexpected equality between two metadata hashcodes.", m1.hashCode() == m3.hashCode() );
-        Location l5 = Location.of( "DRRC3" );
-        SampleMetadata m5 = SampleMetadata.of( MeasurementUnit.of( "SOME_DIM" ),
-                                               DatasetIdentifier.of( l5, "SQIN", "HEFS" ) );
-        assertFalse( "Unexpected equality between two metadata hashcodes.", m4.hashCode() == m5.hashCode() );
-        SampleMetadata m5NoDim = SampleMetadata.of( MeasurementUnit.of( "SOME_DIM" ), null );
-        assertFalse( "Unexpected equality between two metadata instances.", m5.hashCode() == m5NoDim.hashCode() );
+        assertEquals( m4.hashCode(), m4t.hashCode() );
+        assertEquals( m3.hashCode(), m4t.hashCode() );
+
         // Consistent
         for ( int i = 0; i < 20; i++ )
         {
-            assertTrue( "Unexpected inequality between two metadata hashcodes.", m1.hashCode() == m2.hashCode() );
+            assertTrue( m1.hashCode() == m2.hashCode() );
         }
 
         // Add a time window
@@ -269,19 +405,13 @@ public class SampleMetadataTest
                                                        .setIdentifier( DatasetIdentifier.of( l7, "SQIN", "HEFS" ) )
                                                        .setTimeWindow( timeWindow3 )
                                                        .build();
-        assertTrue( "Unexpected inequality between two metadata hashcodes.", m6.hashCode() == m7.hashCode() );
-        assertTrue( "Unexpected inequality between two metadata hashcodes.", m7.hashCode() == m6.hashCode() );
-        assertFalse( "Unexpected equality between two metadata hashcodes.", m3.hashCode() == m6.hashCode() );
+        assertEquals( m6.hashCode(), m7.hashCode() );
+        assertEquals( m7.hashCode(), m6.hashCode() );
+
         TimeWindow thirdWindow = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                 Instant.parse( "1986-01-01T00:00:00Z" ),
                                                 ReferenceTime.ISSUE_TIME );
         Location l8 = Location.of( "DRRC3" );
-        final TimeWindow timeWindow4 = thirdWindow;
-        SampleMetadata m8 = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "SOME_DIM" ) )
-                                                       .setIdentifier( DatasetIdentifier.of( l8, "SQIN", "HEFS" ) )
-                                                       .setTimeWindow( timeWindow4 )
-                                                       .build();
-        assertFalse( "Unexpected equality between two metadata hashcodes.", m6.hashCode() == m8.hashCode() );
 
         // Add a threshold
         OneOrTwoThresholds thresholds =
@@ -299,7 +429,7 @@ public class SampleMetadataTest
                                                 thirdWindow,
                                                 thresholds );
 
-        assertTrue( "Unexpected inequality between two metadata hashcode instances.", m9.equals( m10 ) );
+        assertEquals( m9.hashCode(), m10.hashCode() );
 
         // Add a project configuration
         ProjectConfig mockConfigOne =
@@ -366,11 +496,42 @@ public class SampleMetadataTest
                                                         .setProjectConfig( projectConfig1 )
                                                         .build();
 
-        assertTrue( "Unexpected inequality between two metadata hashcode instances.", m11.equals( m12 ) );
+        assertEquals( m11.hashCode(), m12.hashCode() );
+    }
 
-        // Other type check
-        assertFalse( "Unexpected equality between two metadata hashcodes.",
-                     m6.hashCode() == Double.valueOf( 2 ).hashCode() );
+    /**
+     * Confirms that {@link SampleMetadata#toString()} produces an expected string.
+     */
+
+    @Test
+    public void testToString()
+    {
+        // Simplest case
+        assertEquals( SampleMetadata.of().toString(), "(DIMENSIONLESS)" );
+
+        // Most complex case
+        DatasetIdentifier identifier = DatasetIdentifier.of( Location.of( "A" ), "B" );
+
+        OneOrTwoThresholds thresholds = OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 1.0 ),
+                                                                             Operator.EQUAL,
+                                                                             ThresholdDataType.LEFT ) );
+
+        TimeWindow timeWindow =
+                TimeWindow.of( Instant.parse( "2000-02-02T00:00:00Z" ), Instant.parse( "2000-02-02T00:00:00Z" ) );
+
+        SampleMetadata meta = new SampleMetadataBuilder().setFromExistingInstance( SampleMetadata.of() )
+                                                         .setIdentifier( identifier )
+                                                         .setMeasurementUnit( MeasurementUnit.of() )
+                                                         .setThresholds( thresholds )
+                                                         .setTimeWindow( timeWindow )
+                                                         .setTimeScale( TimeScale.of( Duration.ofDays( 1 ),
+                                                                                      TimeScaleFunction.AVG ) )
+                                                         .build();
+
+        assertEquals( meta.toString(),
+                      "(A,B,[2000-02-02T00:00:00Z,2000-02-02T00:00:00Z,VALID TIME,PT0S,PT0S],"
+                                       + "= 1.0,[PT24H,AVG],DIMENSIONLESS)" );
+
     }
 
 }

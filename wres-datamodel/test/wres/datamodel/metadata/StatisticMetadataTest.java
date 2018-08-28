@@ -192,7 +192,6 @@ public class StatisticMetadataTest
                                                         null );
         assertFalse( "Unexpected equality between two metadata instances.", first.minimumEquals( sixth ) );
 
-
     }
 
     /**
