@@ -10,6 +10,7 @@ import wres.config.generated.Feature;
 import wres.io.config.ConfigHelper;
 import wres.io.data.details.ProjectDetails;
 import wres.io.utilities.NoDataException;
+import wres.util.CalculationException;
 
 final class BackToBackMetricInputIterator extends MetricInputIterator
 {
@@ -24,14 +25,13 @@ final class BackToBackMetricInputIterator extends MetricInputIterator
 
     BackToBackMetricInputIterator( Feature feature,
                                    ProjectDetails projectDetails )
-            throws SQLException, IOException
+            throws IOException
     {
         super( feature, projectDetails );
     }
 
     @Override
-    int calculateWindowCount()
-            throws SQLException, IOException
+    int calculateWindowCount() throws CalculationException
     {
         int count;
         if ( ConfigHelper.isForecast( this.getRight() ))
@@ -41,15 +41,15 @@ final class BackToBackMetricInputIterator extends MetricInputIterator
 
             if (last == null)
             {
-                throw new NoDataException( "The final lead time for the data set for: " +
+                throw new CalculationException( "The final lead time for the data set for: " +
                                                     this.getRight()
                                                         .getVariable()
                                                         .getValue() +
-                                                    " could not be determined.");
+                                                    " could not be calculated.");
             }
             else if (start > last)
             {
-                throw new NoDataException( "No data can be retrieved because " +
+                throw new CalculationException( "No data can be retrieved because " +
                                            "the first requested lead time " +
                                            "(" + String.valueOf(start) +
                                            ") is greater than or equal to " +

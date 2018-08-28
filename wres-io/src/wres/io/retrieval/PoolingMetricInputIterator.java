@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.generated.Feature;
 import wres.io.data.details.ProjectDetails;
+import wres.util.CalculationException;
 
 class PoolingMetricInputIterator extends MetricInputIterator
 {
@@ -16,13 +17,13 @@ class PoolingMetricInputIterator extends MetricInputIterator
 
     PoolingMetricInputIterator( Feature feature,
                                 ProjectDetails projectDetails )
-            throws SQLException, IOException
+            throws IOException
     {
         super( feature, projectDetails );
     }
 
     @Override
-    int calculateWindowCount() throws SQLException
+    int calculateWindowCount() throws CalculationException
     {
         return this.getProjectDetails().getIssuePoolCount( this.getFeature() );
     }

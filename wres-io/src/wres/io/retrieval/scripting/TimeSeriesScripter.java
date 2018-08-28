@@ -7,6 +7,7 @@ import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
 import wres.io.config.ConfigHelper;
 import wres.io.data.details.ProjectDetails;
+import wres.util.CalculationException;
 import wres.util.Strings;
 
 class TimeSeriesScripter extends Scripter
@@ -30,7 +31,16 @@ class TimeSeriesScripter extends Scripter
         this.addTab().addLine( "ARRAY_AGG(TSV.series_value ORDER BY TS.ensemble_id) AS measurements," );
         this.addTab().addLine( "TS.measurementunit_id" );
         this.addLine("FROM (");
-        this.applyTimeSeriesSelect();
+
+        try
+        {
+            this.applyTimeSeriesSelect();
+        }
+        catch ( CalculationException e )
+        {
+            throw new IOException( "The logic used to select time series could not be formed.", e );
+        }
+
         this.addLine(") AS TS");
         this.addLine( "INNER JOIN wres.TimeSeriesValue TSV");
         this.addLine( "    ON TSV.timeseries_id = TS.timeseries_id" );
@@ -58,7 +68,7 @@ class TimeSeriesScripter extends Scripter
         return "TS.initialization_date";
     }
 
-    private void applyTimeSeriesSelect() throws SQLException
+    private void applyTimeSeriesSelect() throws SQLException, CalculationException
     {
         this.addTab().add("SELECT TS.initialization_date, TS.ensemble_id, TS.timeseries_id, TS.measurementunit_id, ");
 
@@ -257,7 +267,7 @@ class TimeSeriesScripter extends Scripter
         return this.getProjectDetails().getInitialForecastDate( this.getDataSourceConfig(), this.getFeature() );
     }
 
-    private Integer getForecastLag() throws SQLException
+    private Integer getForecastLag() throws CalculationException
     {
         return this.getProjectDetails().getForecastLag( this.getDataSourceConfig(), this.getFeature() );
     }

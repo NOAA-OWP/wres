@@ -1,6 +1,7 @@
 package wres.io.utilities;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -457,6 +458,15 @@ public interface DataProvider extends AutoCloseable
      * @throws IndexOutOfBoundsException Thrown if the data is empty
      */
     Instant getInstant(final String columnName);
+
+    /**
+     * @param columnName The name of the column containing some representation
+     *                   that may be converted into a duration
+     * @return A duration object converted from the given column
+     * @throws IllegalStateException Thrown if the data has been closed down or the column name doesn't exist
+     * @throws IndexOutOfBoundsException Thrown if the data is empty
+     */
+    Duration getDuration( final String columnName);
 
     /**
      * @param columnName The name of the column with the desired value

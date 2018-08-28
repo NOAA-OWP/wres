@@ -2,6 +2,7 @@ package wres.io.retrieval;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
@@ -20,6 +21,7 @@ import wres.io.retrieval.left.LeftHandCache;
 import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
 import wres.system.ProgressMonitor;
+import wres.util.CalculationException;
 
 abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
 {
@@ -32,13 +34,13 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
     private final Feature feature;
 
     private final ProjectDetails projectDetails;
-    private LeftHandCache leftCache;
+    protected LeftHandCache leftCache;
     private VectorOfDoubles climatology;
     private int poolingStep;
     private Integer finalPoolingStep;
     private int iterationCount = 0;
 
-    private int getWindowNumber()
+    protected int getWindowNumber()
     {
         return this.windowNumber;
     }
@@ -94,7 +96,7 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
         this.poolingStep = 0;
     }
 
-    private Integer getWindowCount() throws SQLException, IOException
+    private Integer getWindowCount() throws CalculationException
     {
         if (this.windowCount == null)
         {
@@ -114,35 +116,63 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
         return this.projectDetails;
     }
 
-    private VectorOfDoubles getClimatology() throws IOException
+    protected VectorOfDoubles getClimatology() throws IOException
     {
         if (this.getProjectDetails().usesProbabilityThresholds() && this.climatology == null)
         {
             ClimatologyBuilder climatologyBuilder = new ClimatologyBuilder( this.getProjectDetails(),
                                                                             this.getProjectDetails().getLeft(),
                                                                             this.getFeature() );
-            this.climatology = climatologyBuilder.getClimatology();
+            try
+            {
+                this.climatology = climatologyBuilder.getClimatology();
+            }
+            catch ( CalculationException e )
+            {
+                throw new IOException( "The climatology could not be formed.", e );
+            }
         }
 
         return this.climatology;
     }
 
     MetricInputIterator( final Feature feature, final ProjectDetails projectDetails )
-            throws SQLException, IOException
+            throws IOException
     {
 
         this.projectDetails = projectDetails;
 
         this.feature = feature;
 
-        this.leftCache = LeftHandCache.getCache( this.projectDetails, this.feature );
+        try
+        {
+            this.leftCache = LeftHandCache.getCache( this.projectDetails, this.feature );
+        }
+        catch ( SQLException e )
+        {
+            throw new IOException( "Values used as control values for evaluation could not be loaded.", e );
+        }
 
-        this.finalPoolingStep = this.getFinalPoolingStep();
+        try
+        {
+            this.finalPoolingStep = this.getFinalPoolingStep();
+        }
+        catch ( CalculationException e )
+        {
+            throw new IOException( "The last pool to be evaluated could not be calculated.", e );
+        }
 
-        ProgressMonitor.setSteps( Long.valueOf( this.getWindowCount() ) );
+        try
+        {
+            ProgressMonitor.setSteps( Long.valueOf( this.getWindowCount() ) );
+        }
+        catch ( CalculationException e )
+        {
+            throw new IOException( "The number of inputs to evaluate could not be calculated.", e );
+        }
     }
 
-    int getFinalPoolingStep() throws SQLException
+    int getFinalPoolingStep() throws CalculationException
     {
         if (this.finalPoolingStep == null)
         {
@@ -151,7 +181,7 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
         return this.finalPoolingStep;
     }
 
-    protected int calculateFinalPoolingStep() throws SQLException
+    protected int calculateFinalPoolingStep() throws CalculationException
     {
         return this.projectDetails.getIssuePoolCount( this.feature );
     }
@@ -205,10 +235,10 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
                 throw new IterationFailedException( message, new NoDataException( message ) );
             }
         }
-        catch ( SQLException | IOException e )
+        catch ( CalculationException e )
         {
             throw new IterationFailedException( "The data provided could not be "
-                                                + "used to determine if another "
+                                                + "used to calculate if another "
                                                 + "object is present for "
                                                 + "iteration.", e );
         }
@@ -287,20 +317,29 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
     }
 
     long getFirstLeadInWindow()
-            throws SQLException, IOException
+            throws CalculationException
     {
-        Integer offset = this.getProjectDetails().getLeadOffset( feature );
+        Integer offset;
+
+        try
+        {
+            offset = this.getProjectDetails().getLeadOffset( feature );
+        }
+        catch ( IOException | SQLException e )
+        {
+            throw new CalculationException("");
+        }
 
         if (offset == null)
         {
-            throw new NoDataException( "There was not enough data to evaluate a "
+            throw new CalculationException( "There was not enough data to evaluate a "
                                        + "lead time offset for the location: " +
                                        ConfigHelper.getFeatureDescription( feature ) );
         }
         return this.getProjectDetails().getWindowWidth() + offset;
     }
 
-    abstract int calculateWindowCount() throws SQLException, IOException;
+    abstract int calculateWindowCount() throws CalculationException;
 
     abstract Logger getLogger();
 }

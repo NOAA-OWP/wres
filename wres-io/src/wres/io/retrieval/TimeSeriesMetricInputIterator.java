@@ -13,6 +13,7 @@ import wres.io.concurrency.Executor;
 import wres.io.config.ConfigHelper;
 import wres.io.data.details.ProjectDetails;
 import wres.io.utilities.ScriptBuilder;
+import wres.util.CalculationException;
 
 public class TimeSeriesMetricInputIterator extends MetricInputIterator
 {
@@ -21,13 +22,13 @@ public class TimeSeriesMetricInputIterator extends MetricInputIterator
 
     TimeSeriesMetricInputIterator( Feature feature,
                                    ProjectDetails projectDetails )
-            throws SQLException, IOException
+            throws IOException
     {
         super( feature, projectDetails );
     }
 
     @Override
-    int calculateWindowCount() throws SQLException
+    int calculateWindowCount() throws CalculationException
     {
         // If we're going to end up with 100 MetricInputs due to the size of
         // the data, we want to ensure that we have a step for each.
@@ -46,9 +47,18 @@ public class TimeSeriesMetricInputIterator extends MetricInputIterator
     }
 
     @Override
-    protected int calculateFinalPoolingStep() throws SQLException
+    protected int calculateFinalPoolingStep() throws CalculationException
     {
-        String minimumDate = this.getProjectDetails().getInitialForecastDate( this.getRight(), this.getFeature() );
+        String minimumDate = null;
+        try
+        {
+            minimumDate = this.getProjectDetails().getInitialForecastDate( this.getRight(), this.getFeature() );
+        }
+        catch ( SQLException e )
+        {
+            throw new CalculationException( "The final pooling step could not be calculated because "
+                                            + "the system could not determine when to start.", e );
+        }
 
         // This will give an estimate of the amount of hours between each Time Series
         Integer lag = this.getProjectDetails().getForecastLag( this.getRight(), this.getFeature() );
@@ -59,11 +69,21 @@ public class TimeSeriesMetricInputIterator extends MetricInputIterator
         }
 
         Integer seriesToRetrieve = this.getProjectDetails().getNumberOfSeriesToRetrieve();
-        String variablePosition = ConfigHelper.getVariableFeatureClause(
-                this.getFeature(),
-                getProjectDetails().getRightVariableID(),
-                "TS"
-        );
+        String variablePosition = null;
+        try
+        {
+            variablePosition = ConfigHelper.getVariableFeatureClause(
+                    this.getFeature(),
+                    getProjectDetails().getRightVariableID(),
+                    "TS"
+            );
+        }
+        catch ( SQLException e )
+        {
+            throw new CalculationException( "The final pooling step could not be "
+                                            + "calculated because the identifier for "
+                                            + "the variable could not be determined.", e );
+        }
 
         // If we know that we want to retrieve 851 time series at a time, we
         // want to determine how many 851 time series pulls to execute
@@ -95,13 +115,23 @@ public class TimeSeriesMetricInputIterator extends MetricInputIterator
         script.addTab(  2  ).addLine(")");
         script.addLine(") AS TS;");
 
-        Double steps = script.retrieve( "total_steps" );
+        Double steps = null;
+        try
+        {
+            steps = script.retrieve( "total_steps" );
+        }
+        catch ( SQLException e )
+        {
+            throw new CalculationException( "The calculation used to determine the "
+                                            + "number of groups of time series to "
+                                            + "evaluate failed.", e );
+        }
 
         if (steps == null)
         {
-            throw new SQLException( "The number of windows within which to pull "
-                                    + "data could not be determined by the data "
-                                    + "in the database." );
+            throw new CalculationException( "The calculation used to determine the "
+                                            + "number of windows to evaluate returned "
+                                            + "nothing.");
         }
 
         return steps.intValue();

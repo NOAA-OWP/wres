@@ -598,7 +598,7 @@
         <xs:sequence>
             <xs:element name="unit" type="xs:string" />
             <xs:element name="feature" type="feature" minOccurs="0" maxOccurs="unbounded"/>
-
+            <xs:element name="byTimeSeries" type="xs:boolean" default="false" minOccurs="0" />
             <xs:element name="leadHours" type="intBoundsType" minOccurs="0" />
             <xs:element name="dates" type="dateCondition" minOccurs="0" />
             <xs:element name="issuedDates" type="dateCondition" minOccurs="0" />

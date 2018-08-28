@@ -28,7 +28,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.FeaturePlus;
 import wres.config.ProjectConfigs;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DestinationConfig;
@@ -54,6 +53,7 @@ import wres.io.utilities.LRUMap;
 import wres.io.utilities.NoDataException;
 import wres.io.utilities.ScriptBuilder;
 import wres.io.utilities.ScriptGenerator;
+import wres.util.CalculationException;
 import wres.util.Collections;
 import wres.util.FormattedStopwatch;
 import wres.util.Strings;
@@ -71,7 +71,8 @@ public class ProjectDetails
         ROLLING,
         @Deprecated
         BACK_TO_BACK,
-        TIME_SERIES
+        TIME_SERIES,
+        BY_TIMESERIES
     }
 
     private static final Logger LOGGER = LoggerFactory.getLogger( ProjectDetails.class );
@@ -407,7 +408,7 @@ public class ProjectDetails
         return name;
     }
 
-    public void prepareForExecution() throws SQLException, IOException
+    public void prepareForExecution() throws SQLException, IOException, CalculationException
     {
         if (!ConfigHelper.isSimulation( this.getRight() ) &&
             !ProjectConfigs.hasTimeSeriesMetrics( this.getProjectConfig() ) &&
@@ -656,14 +657,6 @@ public class ProjectDetails
     }
 
     /**
-     * @return The unit that the left variable is measured in
-     */
-    private String getLeftVariableUnit()
-    {
-        return this.getLeft().getVariable().getUnit();
-    }
-
-    /**
      * Determines the ID of the right variable
      * @return The ID of the right variable
      * @throws SQLException Thrown if the ID cannot be retrieved from the database
@@ -684,14 +677,6 @@ public class ProjectDetails
     public String getRightVariableName()
     {
         return this.getRight().getVariable().getValue();
-    }
-
-    /**
-     * @return The unit that the right variable is measured in
-     */
-    private String getRightVariableUnit()
-    {
-        return this.getRight().getVariable().getUnit();
     }
 
     /**
@@ -723,19 +708,6 @@ public class ProjectDetails
     }
 
     /**
-     * @return The unit that the baseline variable is measured in
-     */
-    private String getBaselineVariableUnit()
-    {
-        String unit = null;
-        if (this.hasBaseline())
-        {
-            unit = this.getBaseline().getVariable().getUnit();
-        }
-        return unit;
-    }
-
-    /**
      * @return The largest possible value for the data. Double.MAX_VALUE by default.
      */
     public Double getMaximumValue()
@@ -751,6 +723,10 @@ public class ProjectDetails
         return maximum;
     }
 
+    /**
+     * Gets the value that should replace a value that exceeds the maximum allowable value
+     * @return The configured default maximum value. null if not configured.
+     */
     public Double getDefaultMaximumValue()
     {
         Double maximum = null;
@@ -780,6 +756,10 @@ public class ProjectDetails
         return minimum;
     }
 
+    /**
+     * Gets the value that should replace a value that falls below the minimum allowable value
+     * @return The configured default minimum value. null if not configured.
+     */
     public Double getDefaultMinimumValue()
     {
         Double defaultMinimum = null;
@@ -919,7 +899,7 @@ public class ProjectDetails
      * from the scale
      * @throws SQLException when communication with the database failed
      */
-    private Integer getLeadPeriod() throws NoDataException, SQLException
+    private Integer getLeadPeriod() throws CalculationException
     {
         Integer period;
 
@@ -964,7 +944,7 @@ public class ProjectDetails
      * determine the scale
      * @throws SQLException when communication with the database failed
      */
-    public String getLeadUnit() throws NoDataException, SQLException
+    public String getLeadUnit() throws CalculationException
     {
         String unit;
 
@@ -1011,7 +991,7 @@ public class ProjectDetails
      * infer a frequency from.
      * @throws SQLException when communication with the database failed
      */
-    public Integer getLeadFrequency() throws NoDataException, SQLException
+    public Integer getLeadFrequency() throws CalculationException
     {
         Integer frequency;
 
@@ -1067,7 +1047,7 @@ public class ProjectDetails
      * @throws NoDataException Thrown if a dynamic scale could not be created
      * @throws SQLException when communication with the database failed
      */
-    public boolean shouldScale() throws NoDataException, SQLException
+    public boolean shouldScale() throws CalculationException
     {
         return this.getScale() != null &&
                !TimeScaleFunction.NONE
@@ -1089,7 +1069,7 @@ public class ProjectDetails
      * right handed data could not be evaluated.
      * @throws SQLException when communication with the database failed
      */
-    private TimeScaleConfig getCommonScale() throws NoDataException, SQLException
+    private TimeScaleConfig getCommonScale() throws CalculationException
     {
         Long commonScale;
 
@@ -1166,9 +1146,9 @@ public class ProjectDetails
         }
         catch ( NoDataException e )
         {
-            throw new NoDataException( "The common scale between left and "
-                                       + "right inputs could not be evaluated.",
-                                       e );
+            throw new CalculationException( "The common scale between left and "
+                                            + "right inputs could not be evaluated.",
+                                            e );
         }
 
         return new TimeScaleConfig(
@@ -1184,12 +1164,16 @@ public class ProjectDetails
      * <p>
      *     If no desired scale has been configured, one is dynamically generated
      * </p>
+     *
+     * TODO: A unified common scale is not guaranteed; Left hand data from USGS can range
+     * from a couple minutes between values to a single value per day, while AHPS data
+     * could be all over the place.
      * @return The expected scale of the data
      * @throws NoDataException Thrown if there wasn't enough data in the
      * database to determine the scale of both the left and right inputs
      * @throws SQLException when communication with the database failed
      */
-    public TimeScaleConfig getScale() throws NoDataException, SQLException
+    public TimeScaleConfig getScale() throws CalculationException
     {
         // TODO: Convert this to a function to determine time step; this doesn't actually have anything to do with scale
         if (this.desiredTimeScale == null)
@@ -1253,6 +1237,11 @@ public class ProjectDetails
         else if ( ProjectConfigs.hasTimeSeriesMetrics( this.projectConfig ))
         {
             mode = PairingMode.TIME_SERIES;
+        }
+        else if (this.projectConfig.getPair().isByTimeSeries() != null &&
+                 this.projectConfig.getPair().isByTimeSeries())
+        {
+            mode = PairingMode.BY_TIMESERIES;
         }
 
         return mode;
@@ -1318,7 +1307,7 @@ public class ProjectDetails
      * @return Whether or not ranges of lead times should be calculated
      * @throws SQLException
      */
-    private boolean shouldCalculateLeads() throws SQLException
+    private boolean shouldCalculateLeads() throws CalculationException
     {
         if ( this.calculateLeads == null )
         {
@@ -1358,7 +1347,17 @@ public class ProjectDetails
                 script.addTab().addLine( "GROUP BY lead - lag" );
                 script.addLine( ") AS differences;" );
 
-                this.calculateLeads = script.retrieve( "is_regular" );
+                try
+                {
+                    this.calculateLeads = script.retrieve( "is_regular" );
+                }
+                catch ( SQLException e )
+                {
+                    throw new CalculationException(
+                            "Could not determine whether or not discrete leads should be calculated.",
+                            e
+                    );
+                }
             }
         }
 
@@ -1387,7 +1386,7 @@ public class ProjectDetails
      * @return The number of Time Series' to return in one window
      * @throws SQLException Thrown if the number could not be computed in the database
      */
-    public Integer getNumberOfSeriesToRetrieve() throws SQLException
+    public Integer getNumberOfSeriesToRetrieve() throws CalculationException
     {
         synchronized ( ProjectDetails.SERIES_AMOUNT_LOCK )
         {
@@ -1440,7 +1439,19 @@ public class ProjectDetails
 
                     for ( EnsembleCondition condition : this.getRight().getEnsemble())
                     {
-                        List<Integer> ids = Ensembles.getEnsembleIDs( condition );
+                        List<Integer> ids = null;
+                        try
+                        {
+                            ids = Ensembles.getEnsembleIDs( condition );
+                        }
+                        catch ( SQLException e )
+                        {
+                            throw new CalculationException(
+                                    "Ensemble IDs needed to determine the size of a single time "
+                                    + "series could not be retrieved.",
+                                    e
+                            );
+                        }
                         if ( condition.isExclude() )
                         {
                             excludeCount += ids.size();
@@ -1464,7 +1475,15 @@ public class ProjectDetails
                     }
                 }
 
-                double timeSeriesSize = script.retrieve( "size" );
+                double timeSeriesSize;
+                try
+                {
+                    timeSeriesSize = script.retrieve( "size" );
+                }
+                catch ( SQLException e )
+                {
+                    throw new CalculationException( "The size of a single time series could not be determined.", e );
+                }
 
                 // We're going to limit the size of a time series group to 1MB
                 final int sizeCap = 1000;
@@ -1598,7 +1617,7 @@ public class ProjectDetails
      * @throws IOException Thrown if irregular lead times could not be determined
      */
     public Pair<Integer, Integer> getLeadRange(final Feature feature, final int windowNumber)
-            throws SQLException, IOException
+            throws CalculationException
     {
         Integer beginning;
         Integer end;
@@ -1613,7 +1632,19 @@ public class ProjectDetails
         {
             int frequency = (int)TimeHelper.unitsToLeadUnits( this.getLeadUnit(), this.getLeadFrequency() );
             int period = (int)TimeHelper.unitsToLeadUnits( this.getLeadUnit(), this.getLeadPeriod() );
-            Integer offset = this.getLeadOffset( feature );
+            Integer offset = null;
+            try
+            {
+                offset = this.getLeadOffset( feature );
+            }
+            catch ( IOException | SQLException e )
+            {
+                throw new CalculationException( "The offset between observed values and "
+                                                + "forecasted values are needed to determine "
+                                                + "when a lead range should begin, but could "
+                                                + "not be loaded.",
+                                                e );
+            }
             beginning = windowNumber * frequency + offset;
             end = beginning + period;
         }
@@ -1626,7 +1657,18 @@ public class ProjectDetails
                             + "the others.");
                 LOGGER.warn("Irregular forecasts are not fully supported, so "
                             + "only discrete leads will be evaluated.");
-                populateDiscreteLeads();
+                try
+                {
+                    populateDiscreteLeads();
+                }
+                catch ( IOException e )
+                {
+                    throw new CalculationException(
+                            "The unique lead times needed to determine a range of "
+                            + "lead times could not be loaded.",
+                            e
+                    );
+                }
             }
 
             // We can probably do an operation on period to get a full scale
@@ -1650,7 +1692,7 @@ public class ProjectDetails
      * @throws SQLException Thrown  if the range of leads cannot be determined
      */
     public String getLeadQualifier(Feature feature, Integer windowNumber, String alias)
-            throws IOException, SQLException
+            throws CalculationException
     {
         Pair<Integer, Integer> range = this.getLeadRange( feature, windowNumber );
         String qualifier = "";
@@ -1870,7 +1912,7 @@ public class ProjectDetails
      * system being unable to determine what locations to retrieve offsets from.
      */
     public Integer getLeadOffset(Feature feature)
-            throws IOException, SQLException
+            throws IOException, SQLException, CalculationException
     {
         if (ConfigHelper.isSimulation( this.getRight() ) ||
                 ProjectConfigs.hasTimeSeriesMetrics( this.projectConfig ) ||
@@ -1903,7 +1945,7 @@ public class ProjectDetails
      * @throws SQLException Thrown if the script used to determine what
      * locations to find offsets for cannot be formed
      */
-    private void populateLeadOffsets() throws IOException, SQLException
+    private void populateLeadOffsets() throws IOException, SQLException, CalculationException
     {
         FormattedStopwatch timer = null;
 
@@ -2153,7 +2195,7 @@ public class ProjectDetails
      * not be created
      * @throws SQLException Thrown if the count could not be retrieved
      */
-    public Integer getIssuePoolCount( Feature feature) throws SQLException
+    public Integer getIssuePoolCount( Feature feature) throws CalculationException
     {
         if ( this.getPairingMode() != PairingMode.ROLLING)
         {
@@ -2164,7 +2206,19 @@ public class ProjectDetails
         {
             if (!this.poolCounts.containsKey( feature ))
             {
-                this.addIssuePoolCount( feature );
+                try
+                {
+                    this.addIssuePoolCount( feature );
+                }
+                catch ( SQLException e )
+                {
+                    throw new CalculationException(
+                            "The number of value pools revolving around issue times "
+                            + "could not be determined for " +
+                            ConfigHelper.getFeatureDescription( feature ),
+                            e
+                    );
+                }
             }
         }
 
@@ -2224,7 +2278,7 @@ public class ProjectDetails
      * @throws SQLException Thrown if an error was encountered while retrieving
      * scale information from the database
      */
-    private long getLeftScale() throws NoDataException, SQLException
+    private long getLeftScale() throws CalculationException
     {
         synchronized ( LEFT_LEAD_LOCK )
         {
@@ -2264,7 +2318,7 @@ public class ProjectDetails
      * @throws SQLException Thrown if an error was encountered while retrieving
      * scale information from the database
      */
-    private long getRightScale() throws NoDataException, SQLException
+    private long getRightScale() throws CalculationException
     {
         synchronized ( RIGHT_LEAD_LOCK )
         {
@@ -2302,7 +2356,7 @@ public class ProjectDetails
      * scale from the database
      */
     private int getScale(DataSourceConfig dataSourceConfig)
-            throws NoDataException, SQLException
+            throws CalculationException
     {
         Integer leadScale;
 
@@ -2317,12 +2371,12 @@ public class ProjectDetails
 
         if (leadScale == null || leadScale < 1)
         {
-            throw new NoDataException("The scale for the " +
-                                      this.getInputName( dataSourceConfig ) +
-                                      " either could not be determined or was "
-                                      + "invalid. (lead = " +
-                                      leadScale +
-                                      ")");
+            throw new CalculationException("The scale for the " +
+                                           this.getInputName( dataSourceConfig ) +
+                                           " either could not be determined or was "
+                                           + "invalid. (lead = " +
+                                           leadScale +
+                                           ")");
         }
 
         return leadScale;
@@ -2336,8 +2390,10 @@ public class ProjectDetails
      * from the database
      */
     private Integer getForecastScale(DataSourceConfig dataSourceConfig)
-            throws SQLException
+            throws CalculationException
     {
+        // TODO: Forecasts between locations might not be unified.
+        // Generalizing the scale for all locations based on a single one could cause miscalculations
         ScriptBuilder script = new ScriptBuilder(  );
 
         script.addLine("WITH differences AS");
@@ -2373,21 +2429,48 @@ public class ProjectDetails
             script.addTab().addLine( "AND lead <= ", 6000 );
         }
 
-        Optional<FeatureDetails> featureDetails = this.getFeatures().stream().findFirst();
+        Optional<FeatureDetails> featureDetails = null;
+        try
+        {
+            featureDetails = this.getFeatures().stream().findFirst();
+        }
+        catch ( SQLException e )
+        {
+            throw new CalculationException( "A feature needed to determine a"
+                                            + "scale for forecasts could not be loaded.",
+                                            e );
+        }
 
         if (featureDetails.isPresent())
         {
             FeatureDetails feature = featureDetails.get();
-            Integer variableId = this.getVariableId( dataSourceConfig );
-            Integer variablePositionId = Features.getVariableFeatureByFeature( feature, variableId );
-            Integer arbitraryEnsembleId = Ensembles.getSingleEnsembleID(this.getId(), variablePositionId);
+            Integer variableFeatureId;
+            try
+            {
+                variableFeatureId =
+                        Features.getVariableFeatureByFeature( feature, this.getVariableId( dataSourceConfig ) );
+            }
+            catch ( SQLException e )
+            {
+                throw new CalculationException( "The location and variable needed to "
+                                                + "evaluate an ensemble member for the "
+                                                + "scale could not be loaded.",
+                                                e );
+            }
 
-            String variablePositionClause = ConfigHelper.getVariableFeatureClause(
-                    feature.toFeature(),
-                    variableId,
-                    "TS" );
-            script.addLine("        AND ", variablePositionClause);
+            Integer arbitraryEnsembleId;
+            try
+            {
+                arbitraryEnsembleId = Ensembles.getSingleEnsembleID( this.getId(), variableFeatureId);
+            }
+            catch ( SQLException e )
+            {
+                throw new CalculationException( "An ensemble member used to evaluate the "
+                                                + "scale of a forecast could not be loaded.",
+                                                e );
+            }
 
+            script.addLine("        AND TS.variablefeature_id = ", variableFeatureId);
             script.addTab(  2  ).addLine("AND TS.ensemble_id = ", arbitraryEnsembleId);
 
         }
@@ -2407,7 +2490,14 @@ public class ProjectDetails
         script.addLine("WHERE difference IS NOT NULL");
         script.addLine("    AND difference > 0");
 
-        return script.retrieve( "scale" );
+        try
+        {
+            return script.retrieve( "scale" );
+        }
+        catch ( SQLException e )
+        {
+            throw new CalculationException( "The scale of the forecast data could not be evaluated.", e );
+        }
     }
 
     /**
@@ -2418,8 +2508,10 @@ public class ProjectDetails
      * from the database
      */
     private int getObservationScale(DataSourceConfig dataSourceConfig)
-            throws SQLException
+            throws CalculationException
     {
+        // TODO: Observations between locations are often not unified.
+        // Generalizing the scale for all locations based on a single one could cause miscalculations
         ScriptBuilder script = new ScriptBuilder(  );
 
         script.addLine("WITH differences AS");
@@ -2427,15 +2519,37 @@ public class ProjectDetails
         script.addLine("    SELECT AGE(observation_time, (LAG(observation_time) OVER (ORDER BY observation_time)))");
         script.addLine("    FROM wres.Observation O");
 
-        Optional<FeatureDetails> featureDetails = this.getFeatures().stream().findFirst();
+        Optional<FeatureDetails> featureDetails;
+        try
+        {
+            featureDetails = this.getFeatures().stream().findFirst();
+        }
+        catch ( SQLException e )
+        {
+            throw new CalculationException( "A feature needed to determine a"
+                                            + "scale for observations could not be loaded.",
+                                            e );
+        }
+
         int tabCount;
 
         if (featureDetails.isPresent())
         {
-            String variablePositionClause = ConfigHelper.getVariableFeatureClause(
-                    featureDetails.get().toFeature(),
-                    this.getVariableId( dataSourceConfig ),
-                    "O" );
+            String variablePositionClause = null;
+            try
+            {
+                variablePositionClause = ConfigHelper.getVariableFeatureClause(
+                        featureDetails.get().toFeature(),
+                        this.getVariableId( dataSourceConfig ),
+                        "O" );
+            }
+            catch ( SQLException e )
+            {
+                throw new CalculationException( "The location and variable needed to "
+                                                + "determine the scale of observations "
+                                                + "could not be loaded.",
+                                                e );
+            }
             script.addLine("    WHERE ", variablePositionClause);
             tabCount = 3;
             script.addTab(  2  ).add("AND ");
@@ -2463,7 +2577,16 @@ public class ProjectDetails
         script.addLine("WHERE age IS NOT NULL");
         script.addLine("GROUP BY age;");
 
-        return script.retrieve( "scale" );
+        try
+        {
+            return script.retrieve( "scale" );
+        }
+        catch ( SQLException e )
+        {
+            throw new CalculationException( "The calculation used to determine the "
+                                            + "scale of observational data failed.",
+                                            e );
+        }
     }
 
     /**
@@ -2623,12 +2746,27 @@ public class ProjectDetails
      * database
      * @throws IOException If the value could not be retrieved for gridded data
      */
-    public Integer getLastLead(Feature feature) throws SQLException, IOException
+    public Integer getLastLead(Feature feature) throws CalculationException
     {
         boolean leadIsMissing = !this.lastLeads.containsKey( feature );
         Integer lastLead;
 
-        if (leadIsMissing && this.usesGriddedData( this.getRight() ))
+        boolean usesGriddedData;
+
+        try
+        {
+            usesGriddedData = this.usesGriddedData( this.getRight() );
+        }
+        catch ( SQLException e )
+        {
+            throw new CalculationException( "To determine the last possible lead to "
+                                            + "evaluate, the system needs to know whether "
+                                            + "or not ingested data is gridded, but that "
+                                            + "could not be loaded.",
+                                            e );
+        }
+
+        if (leadIsMissing && usesGriddedData)
         {
             ScriptBuilder script = new ScriptBuilder(  );
 
@@ -2723,7 +2861,16 @@ public class ProjectDetails
 
                 script.addLine("S.output_time + INTERVAL '1 MINUTE' * S.lead <= '", this.getLatestDate(), "'");
             }
-            this.lastLeads.put( feature, script.retrieve ("last_lead" ));
+            try
+            {
+                this.lastLeads.put( feature, script.retrieve ("last_lead" ));
+            }
+            catch ( SQLException e )
+            {
+                throw new CalculationException( "The calculation used to evaluate the last "
+                                                + "lead for this sample of gridded data failed.",
+                                                e );
+            }
         }
         else if (leadIsMissing)
         {
@@ -2735,10 +2882,21 @@ public class ProjectDetails
                 script.addLine("FROM wres.TimeSeries TS");
                 script.addLine("INNER JOIN wres.TimeSeriesValue TSV");
                 script.addTab().addLine("ON TS.timeseries_id = TSV.timeseries_id");
-                script.addLine("WHERE " +
-                          ConfigHelper.getVariableFeatureClause( feature,
-                                                                 this.getRightVariableID(),
-                                                                 "TS" ));
+                try
+                {
+                    script.addLine("WHERE " +
+                              ConfigHelper.getVariableFeatureClause( feature,
+                                                                     this.getRightVariableID(),
+                                                                     "TS" ));
+                }
+                catch ( SQLException e )
+                {
+                    throw new CalculationException( "The variable is needed to determine the "
+                                                    + "last lead for " +
+                                                    ConfigHelper.getFeatureDescription( feature ) +
+                                                    ", but it could not be loaded.",
+                                                    e);
+                }
 
                 if ( this.getMaximumLead() != Integer.MAX_VALUE )
                 {
@@ -2787,21 +2945,42 @@ public class ProjectDetails
                 script.addLine("INNER JOIN wres.ProjectSource PS");
                 script.addTab().addLine("ON PS.source_id = O.source_id");
                 script.addLine("WHERE PS.project_id = " + this.getId());
-                script.addTab().addLine("AND " +
-                          ConfigHelper.getVariableFeatureClause(
-                                  feature,
-                                  this.getRightVariableID(),
-                                  "O;" ));
+                try
+                {
+                    script.addTab().addLine("AND " +
+                              ConfigHelper.getVariableFeatureClause(
+                                      feature,
+                                      this.getRightVariableID(),
+                                      "O;" ));
+                }
+                catch ( SQLException e )
+                {
+                    throw new CalculationException( "The variable is needed to determine the "
+                                                    + "number of observations for " +
+                                                    ConfigHelper.getFeatureDescription( feature ) +
+                                                    ", but it could not be loaded.",
+                                                    e);
+                }
             }
-            lastLead = script.retrieve( "last_lead" );
+            try
+            {
+                lastLead = script.retrieve( "last_lead" );
+            }
+            catch ( SQLException e )
+            {
+                throw new CalculationException( "The calculation used to determine "
+                                                + "where to stop evaluating " +
+                                                ConfigHelper.getFeatureDescription( feature ) +
+                                                " failed.",
+                                                e);
+            }
 
             if (Objects.isNull( lastLead ))
             {
-                throw new NoDataException( "No count of the right hand data "
-                                           + "could be performed. Variable ID: " +
-                                           this.getRightVariableID() +
-                                           " Feature: " +
-                                           FeaturePlus.of( feature ));
+                throw new CalculationException( "The calculation used to determine when to "
+                                                + "stop evaluating data for " +
+                                                ConfigHelper.getFeatureDescription( feature ) +
+                                                " returned nothing.");
             }
 
             this.lastLeads.put(feature, lastLead);
@@ -2863,7 +3042,7 @@ public class ProjectDetails
      * evaluate
      * @throws SQLException when communication with the database failed
      */
-    public long getWindowWidth() throws NoDataException, SQLException
+    public long getWindowWidth() throws CalculationException
     {
         return TimeHelper.unitsToLeadUnits( this.getLeadUnit(), this.getLeadPeriod() );
     }
@@ -2962,7 +3141,7 @@ public class ProjectDetails
      * @throws SQLException Thrown if the ID for the variable could not be evaluated
      * @throws SQLException Thrown if the lag could not be computed in the database
      */
-    public Integer getForecastLag(DataSourceConfig sourceConfig, Feature feature) throws SQLException
+    public Integer getForecastLag(DataSourceConfig sourceConfig, Feature feature) throws CalculationException
     {
         synchronized (this.timeSeriesLag )
         {
@@ -2990,11 +3169,22 @@ public class ProjectDetails
                 script.addTab(  2  ).addLine(") / 60)::int AS lag");
                 script.addTab().addLine("FROM wres.TimeSeries TS");
                 script.addTab().add("WHERE ");
-                script.addLine(ConfigHelper.getVariableFeatureClause(
-                        feature,
-                        Variables.getVariableID( sourceConfig ),
-                        "TS" )
-                );
+                try
+                {
+                    script.addLine(ConfigHelper.getVariableFeatureClause(
+                            feature,
+                            Variables.getVariableID( sourceConfig ),
+                            "TS" )
+                    );
+                }
+                catch ( SQLException e )
+                {
+                    throw new CalculationException( "The variable is needed to calculate the "
+                                                    + "maximum distance between forecasts for " +
+                                                    ConfigHelper.getFeatureDescription( feature ) +
+                                                    ", but it could not be loaded",
+                                                    e );
+                }
                 script.addTab(  2  ).addLine("AND EXISTS (");
                 script.addTab(   3   ).addLine("SELECT 1");
                 script.addTab(   3   ).addLine("FROM wres.TimeSeriesSource TSS");
@@ -3014,7 +3204,16 @@ public class ProjectDetails
                 script.addLine("FROM initialization_lag IL");
                 script.addLine("WHERE IL.lag IS NOT NULL;");
 
-                this.timeSeriesLag.put( feature, script.retrieve( "typical_gap" ) );
+                try
+                {
+                    this.timeSeriesLag.put( feature, script.retrieve( "typical_gap" ) );
+                }
+                catch ( SQLException e )
+                {
+                    throw new CalculationException( "The calculation used to determine a "
+                                                    + "reasonable gap between forecasts failed.",
+                                                    e );
+                }
             }
 
 

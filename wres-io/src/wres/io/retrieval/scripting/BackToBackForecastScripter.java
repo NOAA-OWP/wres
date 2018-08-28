@@ -7,6 +7,7 @@ import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
 import wres.io.config.ConfigHelper;
 import wres.io.data.details.ProjectDetails;
+import wres.util.CalculationException;
 
 class BackToBackForecastScripter extends Scripter
 {
@@ -71,16 +72,23 @@ class BackToBackForecastScripter extends Scripter
         this.addLine(")::bigint AS basis_epoch_time,");
     }
 
-    private void applyLeadQualifier() throws SQLException, IOException
+    private void applyLeadQualifier() throws IOException
     {
-        this.addTab().addLine("AND ",
-                              this.getProjectDetails()
-                                  .getLeadQualifier(
-                                          this.getFeature(),
-                                          this.getProgress(),
-                                          "TSV"
-                                  )
-        );
+        try
+        {
+            this.addTab().addLine("AND ",
+                                  this.getProjectDetails()
+                                      .getLeadQualifier(
+                                              this.getFeature(),
+                                              this.getProgress(),
+                                              "TSV"
+                                      )
+            );
+        }
+        catch ( CalculationException e )
+        {
+            throw new IOException( "The lead qualifier could not be calculated.", e );
+        }
     }
 
     @Override

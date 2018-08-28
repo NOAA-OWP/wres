@@ -49,8 +49,6 @@ public class ForecastReader
         Instant now = Instant.now();
         String hash = Strings.getMD5Checksum( this.location.getFile().getBytes());
 
-
-
         boolean foundAlready;
         SourceDetails source;
 

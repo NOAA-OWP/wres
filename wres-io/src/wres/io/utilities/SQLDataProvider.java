@@ -7,6 +7,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -20,6 +21,8 @@ import java.util.Objects;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import wres.util.TimeHelper;
 
 public class SQLDataProvider implements DataProvider
 {
@@ -570,6 +573,34 @@ public class SQLDataProvider implements DataProvider
         catch (SQLException e)
         {
             throw new IllegalStateException( "The data is not accessible.", e );
+        }
+
+        return result;
+    }
+
+    public Duration getDuration(String columnName)
+    {
+        Duration result;
+
+        Object value = this.getObject( columnName );
+
+        if (value == null)
+        {
+            return null;
+        }
+        else if (value instanceof Number)
+        {
+            result = Duration.of( this.getLong( columnName ), TimeHelper.LEAD_RESOLUTION );
+        }
+        else if (value instanceof String)
+        {
+            result = Duration.parse( value.toString() );
+        }
+        else
+        {
+            throw new IllegalArgumentException( "The type for the column named '" +
+                                                columnName +
+                                                "' cannot be converted into a Duration." );
         }
 
         return result;

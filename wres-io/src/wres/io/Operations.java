@@ -59,6 +59,7 @@ import wres.io.writing.PairWriter;
 import wres.io.writing.netcdf.NetCDFCopier;
 import wres.io.writing.netcdf.NetcdfOutputWriter;
 import wres.system.ProgressMonitor;
+import wres.util.CalculationException;
 
 public final class Operations {
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(Operations.class);
@@ -148,7 +149,7 @@ public final class Operations {
         {
             projectDetails.prepareForExecution();
         }
-        catch (SQLException exception)
+        catch (CalculationException | SQLException exception)
         {
             throw new IOException("This project could not be prepared for "
                                   + "execution.", exception);
@@ -737,8 +738,21 @@ public final class Operations {
             // Check if the feature has any intersecting values
             Feature feature = details.toFeature();
 
+            boolean hasLeadOffset;
+
+            try
+            {
+                hasLeadOffset = projectDetails.getLeadOffset( feature ) != null;
+            }
+            catch ( CalculationException e )
+            {
+                throw new IOException( "It could not be determined whether or "
+                                       + "not left and right hand data intersect at " +
+                                       ConfigHelper.getFeatureDescription( feature ) );
+            }
+
             if ( projectDetails.usesGriddedData( projectDetails.getRight() ) ||
-                 projectDetails.getLeadOffset( feature ) != null)
+                 hasLeadOffset)
             {
                 Feature resolvedFeature = details.toFeature();
                 atomicFeatures.add( FeaturePlus.of ( resolvedFeature ));
