@@ -96,6 +96,7 @@ public final class TimeSeriesValues
 
     /**
      * Send all values across all stored partitions to the database
+     * @throws  IOException Thrown if an error occurred while attempting to save out read data
      */
     public static void complete() throws IOException
     {

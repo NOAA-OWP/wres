@@ -215,17 +215,6 @@ public class ProjectDetails
     private long rightScale = -1;
 
     /**
-     * The number of application standard wres.config.generated.DurationUnit
-     * for the scale of the baseline data
-     *
-     * <p>
-     * If the standard DurationUnit is 'HOURS' and the data is generated daily,
-     * the scale will be 24
-     * </p>
-     */
-    private long baselineScale = -1;
-
-    /**
      * The desired scale for the project
      *<p>
      * If the configuration doesn't specify the desired scale, the system
@@ -894,10 +883,10 @@ public class ProjectDetails
      * The period from the scale is taken into account because a range of lead
      * hours is required to scale
      *</p>
+     * <br><br>
+     * TODO: Change documentation and names to indicate that this doesn't really involve scale; just the time between values
      * @return The length of a period of lead time to retrieve from the database
-     * @throws NoDataException Thrown if the period could not be determined
-     * from the scale
-     * @throws SQLException when communication with the database failed
+     * @throws CalculationException Thrown if the scale of the data could not be calculated
      */
     private Integer getLeadPeriod() throws CalculationException
     {
@@ -939,10 +928,10 @@ public class ProjectDetails
      * Determines the unit of time that leads should be queried in. If no lead time
      * pooling window has been configured, the default is that of the expected
      * scale of the data
+     * <br><br>
+     * TODO: Change documentation and names to indicate that this doesn't really involve scale; just the time between values
      * @return The unit of time that leads should be queried in
-     * @throws NoDataException Thrown if there wasn't enough data available to
-     * determine the scale
-     * @throws SQLException when communication with the database failed
+     * @throws CalculationException Thrown if the scale of the data could not be calculated
      */
     public String getLeadUnit() throws CalculationException
     {
@@ -986,10 +975,10 @@ public class ProjectDetails
      * If no lead time pooling window has been specified, the specifications from
      * the scale will be used instead
      *</p>
+     * <br><br>
+     * TODO: Change documentation and names to indicate that this doesn't really involve scale; just the time between values
      * @return The frequency will which to retrieve a period of leads
-     * @throws NoDataException Thrown if there wasn't enough data available to
-     * infer a frequency from.
-     * @throws SQLException when communication with the database failed
+     * @throws CalculationException Thrown if the scale of the data could not be calculated
      */
     public Integer getLeadFrequency() throws CalculationException
     {
@@ -1043,9 +1032,9 @@ public class ProjectDetails
     }
 
     /**
+     * TODO: Change documentation and names to indicate that this doesn't really involve scale; just the time between values
      * @return Whether or not data should be scaled
-     * @throws NoDataException Thrown if a dynamic scale could not be created
-     * @throws SQLException when communication with the database failed
+     * @throws CalculationException Thrown if the scale of the data could not be calculated
      */
     public boolean shouldScale() throws CalculationException
     {
@@ -1063,11 +1052,16 @@ public class ProjectDetails
      * hours. If both sides are of the same scale, no scaling aggregation will
      * be performed. Otherwise, the scale is achieved via the mean
      * </p>
+     * <br><br>
+     * TODO: Change documentation and names to indicate that this doesn't really involve scale; just the time between values
      * @return A dynamically generated scale between the left and right handed
      * data
-     * @throws NoDataException Thrown if the scales for either the left or
-     * right handed data could not be evaluated.
-     * @throws SQLException when communication with the database failed
+     * @throws CalculationException Thrown if the scale of the left hand data
+     * could not be calculated
+     * @throws CalculationException Thrown if the scale of the right hand data
+     * could not be calculated
+     * @throws CalculationException Thrown if a scale that was compatible with
+     * left and right hand data could not be calculated
      */
     private TimeScaleConfig getCommonScale() throws CalculationException
     {
@@ -1168,10 +1162,11 @@ public class ProjectDetails
      * TODO: A unified common scale is not guaranteed; Left hand data from USGS can range
      * from a couple minutes between values to a single value per day, while AHPS data
      * could be all over the place.
+     * <br><br>
+     * TODO: Change documentation and names to indicate that this doesn't really involve scale; just the time between values
      * @return The expected scale of the data
-     * @throws NoDataException Thrown if there wasn't enough data in the
-     * database to determine the scale of both the left and right inputs
-     * @throws SQLException when communication with the database failed
+     * @throws CalculationException Thrown if a common scale between the left and
+     * right hand data could not be calculated
      */
     public TimeScaleConfig getScale() throws CalculationException
     {
@@ -1305,7 +1300,8 @@ public class ProjectDetails
      * </p>
      *
      * @return Whether or not ranges of lead times should be calculated
-     * @throws SQLException
+     * @throws CalculationException Thrown if the logic sent to the database
+     * could not calculate whether or not there was a regular distance between leads
      */
     private boolean shouldCalculateLeads() throws CalculationException
     {
@@ -1384,7 +1380,10 @@ public class ProjectDetails
      *     retrieving data all at once.
      * </p>
      * @return The number of Time Series' to return in one window
-     * @throws SQLException Thrown if the number could not be computed in the database
+     * @throws CalculationException Thrown if the ids of ensembles to include or
+     * exclude could not be calculated
+     * @throws CalculationException Thrown if the estimated size of a time
+     * series could not be calculated
      */
     public Integer getNumberOfSeriesToRetrieve() throws CalculationException
     {
@@ -1439,7 +1438,7 @@ public class ProjectDetails
 
                     for ( EnsembleCondition condition : this.getRight().getEnsemble())
                     {
-                        List<Integer> ids = null;
+                        List<Integer> ids;
                         try
                         {
                             ids = Ensembles.getEnsembleIDs( condition );
@@ -1613,8 +1612,14 @@ public class ProjectDetails
      * @param feature The feature who the range belongs to
      * @param windowNumber The iteration number over lead times
      * @return A pair containing the earliest lead and latest lead
-     * @throws SQLException Thrown if the lead offset could not be determined
-     * @throws IOException Thrown if irregular lead times could not be determined
+     * @throws CalculationException Thrown if the calculation used to
+     * determine whether or not lead offsets should be calculated failed
+     * @throws CalculationException Thrown if a common scale between
+     * left and right data could not be calculated
+     * @throws CalculationException Thrown if an offset between left
+     * and right data could not be calculated
+     * @throws CalculationException Thrown if the specific leads used to
+     * evaluate could not be calculated
      */
     public Pair<Integer, Integer> getLeadRange(final Feature feature, final int windowNumber)
             throws CalculationException
@@ -1632,7 +1637,7 @@ public class ProjectDetails
         {
             int frequency = (int)TimeHelper.unitsToLeadUnits( this.getLeadUnit(), this.getLeadFrequency() );
             int period = (int)TimeHelper.unitsToLeadUnits( this.getLeadUnit(), this.getLeadPeriod() );
-            Integer offset = null;
+            Integer offset;
             try
             {
                 offset = this.getLeadOffset( feature );
@@ -1688,8 +1693,8 @@ public class ProjectDetails
      * @param windowNumber The identifier for the current iteration over lead times
      * @param alias The alias for a table to be used in the SQL statement
      * @return A SQL where clause stating which leads to use for retrieval
-     * @throws IOException Thrown  if the range of leads cannot be determined
-     * @throws SQLException Thrown  if the range of leads cannot be determined
+     * @throws CalculationException Thrown if the first and last leads of a window
+     * could not be calculated
      */
     public String getLeadQualifier(Feature feature, Integer windowNumber, String alias)
             throws CalculationException
@@ -1910,6 +1915,7 @@ public class ProjectDetails
      * interrupted
      * @throws SQLException Thrown if offsets cannot be populated due to the
      * system being unable to determine what locations to retrieve offsets from.
+     * @throws CalculationException Thrown if lead offsets cannot be calculated
      */
     public Integer getLeadOffset(Feature feature)
             throws IOException, SQLException, CalculationException
@@ -1944,6 +1950,7 @@ public class ProjectDetails
      * @throws IOException Thrown if the loading of the offset values is interrupted
      * @throws SQLException Thrown if the script used to determine what
      * locations to find offsets for cannot be formed
+     * @throws CalculationException Thrown if a common scale between left and right data could be calculated
      */
     private void populateLeadOffsets() throws IOException, SQLException, CalculationException
     {
@@ -2191,9 +2198,8 @@ public class ProjectDetails
      * </p>
      * @param feature The feature whose pool count to use
      * @return The number of issue date pools for a feature
-     * @throws SQLException Thrown if the script used to find the count could
-     * not be created
-     * @throws SQLException Thrown if the count could not be retrieved
+     * @throws CalculationException Thrown if the number of issue pools
+     * for a set of leads for a feature could not be calculated
      */
     public Integer getIssuePoolCount( Feature feature) throws CalculationException
     {
@@ -2271,12 +2277,11 @@ public class ProjectDetails
      *     If no existing time scale has been dictated, it is evaluated from the
      *     database
      * </p>
+     * <br><br>
+     * TODO: Change documentation and names to indicate that this doesn't really involve scale; just the time between values
      * @return The number of standard temporal units between each value on the
      * left side of the data
-     * @throws NoDataException Thrown if there wasn't enough data available to
-     * evaluate the scale
-     * @throws SQLException Thrown if an error was encountered while retrieving
-     * scale information from the database
+     * @throws CalculationException thrown if the scale of the left hand data could not be calculated
      */
     private long getLeftScale() throws CalculationException
     {
@@ -2311,12 +2316,12 @@ public class ProjectDetails
      *     If no existing time scale has been dictated, it is evaluated from the
      *     database
      * </p>
+     * <br><br>
+     * TODO: Change documentation and names to indicate that this doesn't really involve scale; just the time between values
      * @return The number of standard temporal units between each value on the
      * right side of the data
-     * @throws NoDataException Thrown if there wasn't enough data available to
-     * evaluate the scale
-     * @throws SQLException Thrown if an error was encountered while retrieving
-     * scale information from the database
+     * @throws CalculationException thrown if the scale of the right hand data
+     * could not be calculated
      */
     private long getRightScale() throws CalculationException
     {
@@ -2349,14 +2354,16 @@ public class ProjectDetails
 
     /**
      * Determines the number of standard lead units between values
+     * <br><br>
+     * TODO: Change documentation and names to indicate that this doesn't really involve scale; just the time between values
      * @param dataSourceConfig The specification for which values to investigate
      * @return The number of standard lead units between values
-     * @throws NoDataException Thrown if the scale could not be determined
-     * @throws SQLException Thrown if an error occurred while retrieving the
-     * scale from the database
+     * @throws CalculationException thrown if the scale for forecast data could not be calculated
+     * @throws CalculationException thrown if the scale for observed data could not be calculated
+     * @throws CalculationException thrown if the calculation of the scale resulted in an
+     * impossible value
      */
-    private int getScale(DataSourceConfig dataSourceConfig)
-            throws CalculationException
+    private int getScale(DataSourceConfig dataSourceConfig) throws CalculationException
     {
         Integer leadScale;
 
@@ -2384,13 +2391,18 @@ public class ProjectDetails
 
     /**
      * Retrieves the scale of forecast data from the database
+     * <br><br>
+     * TODO: Change documentation and names to indicate that this doesn't really involve scale; just the time between values
      * @param dataSourceConfig The specification for the data with which to investigate
      * @return The number of standard lead units between values
-     * @throws SQLException Thrown if the number of lead units could not be retrieved
-     * from the database
+     * @throws CalculationException thrown if a feature to use in the calculation could not be found
+     * @throws CalculationException thrown if the intersection between feature data and variable data
+     * could not be calculated
+     * @throws CalculationException thrown if an isolated ensemble to evaluate could not be found
+     * @throws CalculationException thrown if the calculation used to determine the scale of the
+     * forecast encountered an error
      */
-    private Integer getForecastScale(DataSourceConfig dataSourceConfig)
-            throws CalculationException
+    private Integer getForecastScale(DataSourceConfig dataSourceConfig) throws CalculationException
     {
         // TODO: Forecasts between locations might not be unified.
         // Generalizing the scale for all locations based on a single one could cause miscalculations
@@ -2429,7 +2441,7 @@ public class ProjectDetails
             script.addTab().addLine( "AND lead <= ", 6000 );
         }
 
-        Optional<FeatureDetails> featureDetails = null;
+        Optional<FeatureDetails> featureDetails;
         try
         {
             featureDetails = this.getFeatures().stream().findFirst();
@@ -2502,13 +2514,17 @@ public class ProjectDetails
 
     /**
      * Retrieves the scale of observation data from the database
+     * <br><br>
+     * TODO: Change documentation and names to indicate that this doesn't really involve scale; just the time between values
      * @param dataSourceConfig The specification for the data with which to investigate
      * @return The number of standard lead units between values
-     * @throws SQLException Thrown if the number of lead units could not be retrieved
-     * from the database
+     * @throws CalculationException thrown if a feature to evaluate could not be found
+     * @throws CalculationException thrown if the intersection between variable and
+     * location data could not be calculated
+     * @throws CalculationException thrown if the calculation used to determine the
+     * scale of the observation encountered an error
      */
-    private int getObservationScale(DataSourceConfig dataSourceConfig)
-            throws CalculationException
+    private int getObservationScale(DataSourceConfig dataSourceConfig) throws CalculationException
     {
         // TODO: Observations between locations are often not unified.
         // Generalizing the scale for all locations based on a single one could cause miscalculations
@@ -2535,7 +2551,7 @@ public class ProjectDetails
 
         if (featureDetails.isPresent())
         {
-            String variablePositionClause = null;
+            String variablePositionClause;
             try
             {
                 variablePositionClause = ConfigHelper.getVariableFeatureClause(
@@ -2572,7 +2588,7 @@ public class ProjectDetails
         script.addTab().addLine(")");
         script.addTab().addLine("GROUP BY observation_time");
         script.addLine(")");
-        script.addLine("SELECT ( EXTRACT( epoch FROM MIN(age))/60 )::integer AS scale");
+        script.addLine("SELECT ( EXTRACT( epoch FROM MIN(age))/60 )::integer AS scale -- Divide by 60 to convert the seconds to minutes");
         script.addLine("FROM differences");
         script.addLine("WHERE age IS NOT NULL");
         script.addLine("GROUP BY age;");
@@ -2742,9 +2758,16 @@ public class ProjectDetails
     /**
      * @param feature The feature to investigate
      * @return The last lead time for the feature available for evaluation
-     * @throws SQLException Thrown if the value could not be retrieved from the
-     * database
-     * @throws IOException If the value could not be retrieved for gridded data
+     * @throws CalculationException thrown if the calculation used to determine
+     * if gridded data is used encounters an error
+     * @throws CalculationException thrown if the calculation used to find the
+     * last possible lead for attached gridded data encounters an error
+     * @throws CalculationException thrown if the intersection of location and
+     * variable data could not be calculated
+     * @throws CalculationException thrown if the calculation used to find the
+     * last possible lead for attached vector data encountered an error
+     * @throws CalculationException thrown if the calculation used to find the
+     * last lead for vector data did not return a result
      */
     public Integer getLastLead(Feature feature) throws CalculationException
     {
@@ -3038,9 +3061,7 @@ public class ProjectDetails
 
     /**
      * @return The overall number of lead units within a single window
-     * @throws NoDataException Thrown if there wasn't enough data available to
-     * evaluate
-     * @throws SQLException when communication with the database failed
+     * @throws CalculationException thrown if an overarching scale could not be calculated
      */
     public long getWindowWidth() throws CalculationException
     {
@@ -3138,8 +3159,10 @@ public class ProjectDetails
      *                     type of data to use
      * @param feature The location to find the lag for
      * @return The number of lead hours between forecasts for a feature
-     * @throws SQLException Thrown if the ID for the variable could not be evaluated
-     * @throws SQLException Thrown if the lag could not be computed in the database
+     * @throws CalculationException thrown if the intersection between variable
+     * and location data could not be calculated
+     * @throws CalculationException thrown if the calculation used to determine
+     * the typical gap encountered an error
      */
     public Integer getForecastLag(DataSourceConfig sourceConfig, Feature feature) throws CalculationException
     {
@@ -3166,7 +3189,7 @@ public class ProjectDetails
                 script.addTab(     5     ).addLine("LAG(TS.initialization_date) OVER (ORDER BY TS.initialization_date)");
                 script.addTab(    4    ).addLine( ")");
                 script.addTab(   3   ).addLine(")");
-                script.addTab(  2  ).addLine(") / 60)::int AS lag");
+                script.addTab(  2  ).addLine(") / 60)::int AS lag -- Divide by 60 to convert seconds into minutes");
                 script.addTab().addLine("FROM wres.TimeSeries TS");
                 script.addTab().add("WHERE ");
                 try
