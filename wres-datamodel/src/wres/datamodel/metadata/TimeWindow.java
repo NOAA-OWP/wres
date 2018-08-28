@@ -246,7 +246,7 @@ public final class TimeWindow implements Comparable<TimeWindow>
     @Override
     public String toString()
     {
-        StringJoiner sj = new StringJoiner( ", ", "[", "]" );
+        StringJoiner sj = new StringJoiner( ",", "[", "]" );
         sj.add( earliestTime.toString() )
           .add( latestTime.toString() )
           .add( referenceTime.toString() )
