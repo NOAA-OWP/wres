@@ -11,13 +11,13 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.ScoreOutputGroup;
-import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.inputs.pairs.SingleValuedPairs;
+import wres.datamodel.MetricConstants.ScoreGroup;
 import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.Metadata;
-import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.DoubleScoreOutput;
+import wres.datamodel.metadata.SampleMetadata;
+import wres.datamodel.metadata.StatisticMetadata;
+import wres.datamodel.sampledata.SampleDataException;
+import wres.datamodel.sampledata.pairs.SingleValuedPairs;
+import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 
@@ -55,14 +55,14 @@ public final class RootMeanSquareErrorTest
         SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Metadata for the output
-        MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getRawData().size(),
-                                                                   MeasurementUnit.of(),
-                                                                   MeasurementUnit.of(),
-                                                                   MetricConstants.ROOT_MEAN_SQUARE_ERROR,
-                                                                   MetricConstants.MAIN );
+        StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
+                                                     input.getRawData().size(),
+                                                     MeasurementUnit.of(),
+                                                     MetricConstants.ROOT_MEAN_SQUARE_ERROR,
+                                                     MetricConstants.MAIN );
         //Check the results
-        DoubleScoreOutput actual = rmse.apply( input );
-        DoubleScoreOutput expected = DoubleScoreOutput.of( 632.4586381732801, m1 );
+        DoubleScoreStatistic actual = rmse.apply( input );
+        DoubleScoreStatistic expected = DoubleScoreStatistic.of( 632.4586381732801, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -79,9 +79,9 @@ public final class RootMeanSquareErrorTest
     {
         // Generate empty data
         SingleValuedPairs input =
-                SingleValuedPairs.of( Arrays.asList(), Metadata.of() );
+                SingleValuedPairs.of( Arrays.asList(), SampleMetadata.of() );
  
-        DoubleScoreOutput actual = rmse.apply( input );
+        DoubleScoreStatistic actual = rmse.apply( input );
 
         assertTrue( actual.getData().isNaN() );
     }
@@ -124,7 +124,7 @@ public final class RootMeanSquareErrorTest
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( rmse.getScoreOutputGroup() == ScoreOutputGroup.NONE );
+        assertTrue( rmse.getScoreOutputGroup() == ScoreGroup.NONE );
     }
     
     /**
@@ -156,7 +156,7 @@ public final class RootMeanSquareErrorTest
     @Test
     public void testApplyExceptionOnNullInput()
     {
-        exception.expect( MetricInputException.class );
+        exception.expect( SampleDataException.class );
         exception.expectMessage( "Specify non-null input to the 'ROOT MEAN SQUARE ERROR'." );
         
         rmse.apply( null );

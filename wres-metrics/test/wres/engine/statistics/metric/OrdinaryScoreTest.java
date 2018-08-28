@@ -6,7 +6,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import wres.datamodel.inputs.pairs.SingleValuedPairs;
+import wres.datamodel.sampledata.pairs.SingleValuedPairs;
 
 /**
  * Tests the {@link OrdinaryScore}.

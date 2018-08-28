@@ -18,19 +18,20 @@ import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.MetricConstants.MetricOutputGroup;
+import wres.datamodel.MetricConstants.StatisticGroup;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.MetricOutputMetadata;
+import wres.datamodel.metadata.SampleMetadata;
+import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.outputs.BoxPlotOutput;
-import wres.datamodel.outputs.DoubleScoreOutput;
-import wres.datamodel.outputs.DurationScoreOutput;
-import wres.datamodel.outputs.ListOfMetricOutput;
-import wres.datamodel.outputs.MatrixOutput;
-import wres.datamodel.outputs.MultiVectorOutput;
-import wres.datamodel.outputs.PairedOutput;
+import wres.datamodel.statistics.BoxPlotStatistic;
+import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.DurationScoreStatistic;
+import wres.datamodel.statistics.ListOfStatistics;
+import wres.datamodel.statistics.MatrixStatistic;
+import wres.datamodel.statistics.MultiVectorStatistic;
+import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
@@ -58,37 +59,37 @@ public final class MetricFuturesByTimeTest
      * Default boxplot output.
      */
 
-    private ListOfMetricOutput<BoxPlotOutput> boxplot;
+    private ListOfStatistics<BoxPlotStatistic> boxplot;
 
     /**
      * Default double score output.
      */
 
-    private ListOfMetricOutput<DoubleScoreOutput> doubleScore;
+    private ListOfStatistics<DoubleScoreStatistic> doubleScore;
 
     /**
      * Default duration score output.
      */
 
-    private ListOfMetricOutput<DurationScoreOutput> durationScore;
+    private ListOfStatistics<DurationScoreStatistic> durationScore;
 
     /**
      * Default matrix output.
      */
 
-    private ListOfMetricOutput<MatrixOutput> matrix;
+    private ListOfStatistics<MatrixStatistic> matrix;
 
     /**
      * Default multivector output.
      */
 
-    private ListOfMetricOutput<MultiVectorOutput> multivector;
+    private ListOfStatistics<MultiVectorStatistic> multivector;
 
     /**
      * Default paired output.
      */
 
-    private ListOfMetricOutput<PairedOutput<Instant, Duration>> paired;
+    private ListOfStatistics<PairedStatistic<Instant, Duration>> paired;
 
     /**
      * A key used to store output.
@@ -108,28 +109,28 @@ public final class MetricFuturesByTimeTest
 
         // Add a boxplot future
         boxplot =
-                ListOfMetricOutput.of( Collections.singletonList( BoxPlotOutput.of( Arrays.asList(),
-                                                                                    VectorOfDoubles.of( new double[] { 0.1,
-                                                                                                                       0.9 } ),
-                                                                                    MetricOutputMetadata.of( 1,
-                                                                                                             MeasurementUnit.of(),
-                                                                                                             MeasurementUnit.of(),
-                                                                                                             MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
-                                                                                                             MetricConstants.MAIN ),
-                                                                                    MetricDimension.OBSERVED_VALUE,
-                                                                                    MetricDimension.FORECAST_ERROR ) ) );
+                ListOfStatistics.of( Collections.singletonList( BoxPlotStatistic.of( Arrays.asList(),
+                                                                                     VectorOfDoubles.of( new double[] { 0.1,
+                                                                                                                        0.9 } ),
+                                                                                     StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
+                                                                                                           1,
+                                                                                                           MeasurementUnit.of(),
+                                                                                                           MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
+                                                                                                           MetricConstants.MAIN ),
+                                                                                     MetricDimension.OBSERVED_VALUE,
+                                                                                     MetricDimension.FORECAST_ERROR ) ) );
 
         builder.addBoxPlotOutput( key,
                                   CompletableFuture.completedFuture( boxplot ) );
 
         // Add a double score future
         doubleScore =
-                ListOfMetricOutput.of( Collections.singletonList( DoubleScoreOutput.of( 1.0,
-                                                                                        MetricOutputMetadata.of( 1,
-                                                                                                                 MeasurementUnit.of(),
-                                                                                                                 MeasurementUnit.of(),
-                                                                                                                 MetricConstants.MEAN_ERROR,
-                                                                                                                 MetricConstants.MAIN ) ) ) );
+                ListOfStatistics.of( Collections.singletonList( DoubleScoreStatistic.of( 1.0,
+                                                                                         StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
+                                                                                                               1,
+                                                                                                               MeasurementUnit.of(),
+                                                                                                               MetricConstants.MEAN_ERROR,
+                                                                                                               MetricConstants.MAIN ) ) ) );
 
         builder.addDoubleScoreOutput( key,
                                       CompletableFuture.completedFuture( doubleScore ) );
@@ -137,12 +138,12 @@ public final class MetricFuturesByTimeTest
 
         // Add a duration score future
         durationScore =
-                ListOfMetricOutput.of( Collections.singletonList( DurationScoreOutput.of( Duration.ofDays( 1 ),
-                                                                                          MetricOutputMetadata.of( 1,
-                                                                                                                   MeasurementUnit.of(),
-                                                                                                                   MeasurementUnit.of(),
-                                                                                                                   MetricConstants.TIME_TO_PEAK_ERROR,
-                                                                                                                   MetricConstants.MAIN ) ) ) );
+                ListOfStatistics.of( Collections.singletonList( DurationScoreStatistic.of( Duration.ofDays( 1 ),
+                                                                                           StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
+                                                                                                                 1,
+                                                                                                                 MeasurementUnit.of(),
+                                                                                                                 MetricConstants.TIME_TO_PEAK_ERROR,
+                                                                                                                 MetricConstants.MAIN ) ) ) );
 
         builder.addDurationScoreOutput( key,
                                         CompletableFuture.completedFuture( durationScore ) );
@@ -150,38 +151,38 @@ public final class MetricFuturesByTimeTest
 
         // Add a matrix output
         matrix =
-                ListOfMetricOutput.of( Collections.singletonList( MatrixOutput.of( new double[][] { { 1, 1 },
-                                                                                                    { 1, 1 } },
-                                                                                   MetricOutputMetadata.of( 1,
-                                                                                                            MeasurementUnit.of(),
-                                                                                                            MeasurementUnit.of(),
-                                                                                                            MetricConstants.CONTINGENCY_TABLE,
-                                                                                                            MetricConstants.MAIN ) ) ) );
+                ListOfStatistics.of( Collections.singletonList( MatrixStatistic.of( new double[][] { { 1, 1 },
+                                                                                                     { 1, 1 } },
+                                                                                    StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
+                                                                                                          1,
+                                                                                                          MeasurementUnit.of(),
+                                                                                                          MetricConstants.CONTINGENCY_TABLE,
+                                                                                                          MetricConstants.MAIN ) ) ) );
 
         builder.addMatrixOutput( key,
                                  CompletableFuture.completedFuture( matrix ) );
 
         // Add multi-vector output
         multivector =
-                ListOfMetricOutput.of( Collections.singletonList( MultiVectorOutput.ofMultiVectorOutput( Collections.singletonMap( MetricDimension.FORECAST_PROBABILITY,
-                                                                                                                                   new double[] { 1 } ),
-                                                                                                         MetricOutputMetadata.of( 1,
-                                                                                                                                  MeasurementUnit.of(),
-                                                                                                                                  MeasurementUnit.of(),
-                                                                                                                                  MetricConstants.CONTINGENCY_TABLE,
-                                                                                                                                  MetricConstants.MAIN ) ) ) );
+                ListOfStatistics.of( Collections.singletonList( MultiVectorStatistic.ofMultiVectorOutput( Collections.singletonMap( MetricDimension.FORECAST_PROBABILITY,
+                                                                                                                                    new double[] { 1 } ),
+                                                                                                          StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
+                                                                                                                                1,
+                                                                                                                                MeasurementUnit.of(),
+                                                                                                                                MetricConstants.CONTINGENCY_TABLE,
+                                                                                                                                MetricConstants.MAIN ) ) ) );
 
         builder.addMultiVectorOutput( key,
                                       CompletableFuture.completedFuture( multivector ) );
 
         // Add paired output
         paired =
-                ListOfMetricOutput.of( Collections.singletonList( PairedOutput.of( Arrays.asList(),
-                                                                                   MetricOutputMetadata.of( 1,
-                                                                                                            MeasurementUnit.of(),
-                                                                                                            MeasurementUnit.of(),
-                                                                                                            MetricConstants.CONTINGENCY_TABLE,
-                                                                                                            MetricConstants.MAIN ) ) ) );
+                ListOfStatistics.of( Collections.singletonList( PairedStatistic.of( Arrays.asList(),
+                                                                                    StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
+                                                                                                          1,
+                                                                                                          MeasurementUnit.of(),
+                                                                                                          MetricConstants.CONTINGENCY_TABLE,
+                                                                                                          MetricConstants.MAIN ) ) ) );
 
         builder.addPairedOutput( key,
                                  CompletableFuture.completedFuture( paired ) );
@@ -197,21 +198,21 @@ public final class MetricFuturesByTimeTest
     public void testGetOutputTypes()
     {
         // Check with all present
-        assertTrue( futures.getOutputTypes().contains( MetricOutputGroup.BOXPLOT ) );
-        assertTrue( futures.getOutputTypes().contains( MetricOutputGroup.DOUBLE_SCORE ) );
-        assertTrue( futures.getOutputTypes().contains( MetricOutputGroup.DURATION_SCORE ) );
-        assertTrue( futures.getOutputTypes().contains( MetricOutputGroup.MATRIX ) );
-        assertTrue( futures.getOutputTypes().contains( MetricOutputGroup.MULTIVECTOR ) );
-        assertTrue( futures.getOutputTypes().contains( MetricOutputGroup.PAIRED ) );
+        assertTrue( futures.getOutputTypes().contains( StatisticGroup.BOXPLOT ) );
+        assertTrue( futures.getOutputTypes().contains( StatisticGroup.DOUBLE_SCORE ) );
+        assertTrue( futures.getOutputTypes().contains( StatisticGroup.DURATION_SCORE ) );
+        assertTrue( futures.getOutputTypes().contains( StatisticGroup.MATRIX ) );
+        assertTrue( futures.getOutputTypes().contains( StatisticGroup.MULTIVECTOR ) );
+        assertTrue( futures.getOutputTypes().contains( StatisticGroup.PAIRED ) );
 
         // Check with none present
         MetricFuturesByTime emptyFutures = new MetricFuturesByTimeBuilder().build();
-        assertFalse( emptyFutures.getOutputTypes().contains( MetricOutputGroup.BOXPLOT ) );
-        assertFalse( emptyFutures.getOutputTypes().contains( MetricOutputGroup.DOUBLE_SCORE ) );
-        assertFalse( emptyFutures.getOutputTypes().contains( MetricOutputGroup.DURATION_SCORE ) );
-        assertFalse( emptyFutures.getOutputTypes().contains( MetricOutputGroup.MATRIX ) );
-        assertFalse( emptyFutures.getOutputTypes().contains( MetricOutputGroup.MULTIVECTOR ) );
-        assertFalse( emptyFutures.getOutputTypes().contains( MetricOutputGroup.PAIRED ) );
+        assertFalse( emptyFutures.getOutputTypes().contains( StatisticGroup.BOXPLOT ) );
+        assertFalse( emptyFutures.getOutputTypes().contains( StatisticGroup.DOUBLE_SCORE ) );
+        assertFalse( emptyFutures.getOutputTypes().contains( StatisticGroup.DURATION_SCORE ) );
+        assertFalse( emptyFutures.getOutputTypes().contains( StatisticGroup.MATRIX ) );
+        assertFalse( emptyFutures.getOutputTypes().contains( StatisticGroup.MULTIVECTOR ) );
+        assertFalse( emptyFutures.getOutputTypes().contains( StatisticGroup.PAIRED ) );
     }
 
     /**
@@ -277,12 +278,12 @@ public final class MetricFuturesByTimeTest
 
         // Check all expected output is present
         MetricFuturesByTime futures = builder.build();
-        assertTrue( futures.getOutputTypes().contains( MetricOutputGroup.BOXPLOT ) );
-        assertTrue( futures.getOutputTypes().contains( MetricOutputGroup.DOUBLE_SCORE ) );
-        assertTrue( futures.getOutputTypes().contains( MetricOutputGroup.DURATION_SCORE ) );
-        assertTrue( futures.getOutputTypes().contains( MetricOutputGroup.MATRIX ) );
-        assertTrue( futures.getOutputTypes().contains( MetricOutputGroup.MULTIVECTOR ) );
-        assertTrue( futures.getOutputTypes().contains( MetricOutputGroup.PAIRED ) );
+        assertTrue( futures.getOutputTypes().contains( StatisticGroup.BOXPLOT ) );
+        assertTrue( futures.getOutputTypes().contains( StatisticGroup.DOUBLE_SCORE ) );
+        assertTrue( futures.getOutputTypes().contains( StatisticGroup.DURATION_SCORE ) );
+        assertTrue( futures.getOutputTypes().contains( StatisticGroup.MATRIX ) );
+        assertTrue( futures.getOutputTypes().contains( StatisticGroup.MULTIVECTOR ) );
+        assertTrue( futures.getOutputTypes().contains( StatisticGroup.PAIRED ) );
     }
 
     /**
@@ -317,12 +318,12 @@ public final class MetricFuturesByTimeTest
 
         // Check all expected output is present
         MetricFuturesByTime futures = builder.build();
-        assertTrue( futures.getOutputTypes().contains( MetricOutputGroup.BOXPLOT ) );
-        assertTrue( futures.getOutputTypes().contains( MetricOutputGroup.DOUBLE_SCORE ) );
-        assertTrue( futures.getOutputTypes().contains( MetricOutputGroup.DURATION_SCORE ) );
-        assertTrue( futures.getOutputTypes().contains( MetricOutputGroup.MATRIX ) );
-        assertTrue( futures.getOutputTypes().contains( MetricOutputGroup.MULTIVECTOR ) );
-        assertTrue( futures.getOutputTypes().contains( MetricOutputGroup.PAIRED ) );
+        assertTrue( futures.getOutputTypes().contains( StatisticGroup.BOXPLOT ) );
+        assertTrue( futures.getOutputTypes().contains( StatisticGroup.DOUBLE_SCORE ) );
+        assertTrue( futures.getOutputTypes().contains( StatisticGroup.DURATION_SCORE ) );
+        assertTrue( futures.getOutputTypes().contains( StatisticGroup.MATRIX ) );
+        assertTrue( futures.getOutputTypes().contains( StatisticGroup.MULTIVECTOR ) );
+        assertTrue( futures.getOutputTypes().contains( StatisticGroup.PAIRED ) );
     }
 
 }

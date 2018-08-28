@@ -13,11 +13,11 @@ import org.apache.commons.math3.util.Precision;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.MissingValues;
-import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
-import wres.datamodel.inputs.pairs.SingleValuedPair;
-import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.MultiVectorOutput;
+import wres.datamodel.metadata.StatisticMetadata;
+import wres.datamodel.sampledata.SampleDataException;
+import wres.datamodel.sampledata.pairs.DiscreteProbabilityPairs;
+import wres.datamodel.sampledata.pairs.SingleValuedPair;
+import wres.datamodel.statistics.MultiVectorStatistic;
 import wres.engine.statistics.metric.Diagram;
 
 /**
@@ -36,7 +36,7 @@ import wres.engine.statistics.metric.Diagram;
  * @author james.brown@hydrosolved.com
  */
 
-public class ReliabilityDiagram extends Diagram<DiscreteProbabilityPairs, MultiVectorOutput>
+public class ReliabilityDiagram extends Diagram<DiscreteProbabilityPairs, MultiVectorStatistic>
 {
 
     /**
@@ -63,11 +63,11 @@ public class ReliabilityDiagram extends Diagram<DiscreteProbabilityPairs, MultiV
     }
 
     @Override
-    public MultiVectorOutput apply( final DiscreteProbabilityPairs s )
+    public MultiVectorStatistic apply( final DiscreteProbabilityPairs s )
     {
         if ( Objects.isNull( s ) )
         {
-            throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
+            throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
         }
         // Determine the probabilities and sample sizes 
         double constant = 1.0 / bins;
@@ -119,15 +119,15 @@ public class ReliabilityDiagram extends Diagram<DiscreteProbabilityPairs, MultiV
         output.put( MetricDimension.OBSERVED_RELATIVE_FREQUENCY, oProb );
         output.put( MetricDimension.SAMPLE_SIZE, samples );
 
-        MetricOutputMetadata metOut =
-                MetricOutputMetadata.of( s.getMetadata(),
+        StatisticMetadata metOut =
+                StatisticMetadata.of( s.getMetadata(),
                                     this.getID(),
                                     MetricConstants.MAIN,
                                     this.hasRealUnits(),
                                     s.getRawData().size(),
                                     null );
 
-        return MultiVectorOutput.ofMultiVectorOutput( output, metOut );
+        return MultiVectorStatistic.ofMultiVectorOutput( output, metOut );
     }
 
     @Override

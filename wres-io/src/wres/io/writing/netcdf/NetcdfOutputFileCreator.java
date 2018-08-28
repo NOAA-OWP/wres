@@ -8,12 +8,8 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.Collection;
-import java.util.Map;
-import java.util.SortedSet;
 import java.util.StringJoiner;
-import java.util.TreeMap;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,12 +18,8 @@ import ucar.ma2.DataType;
 import ucar.ma2.InvalidRangeException;
 import ucar.nc2.NetcdfFileWriter;
 import wres.config.generated.DestinationConfig;
-import wres.datamodel.MetricConstants;
-import wres.datamodel.Slicer;
-import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.outputs.DoubleScoreOutput;
-import wres.datamodel.outputs.ListOfMetricOutput;
+import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.io.utilities.NoDataException;
 
@@ -44,7 +36,7 @@ class NetcdfOutputFileCreator
                                     final TimeWindow window,
                                     final ZonedDateTime analysisTime,
                                     final Collection<MetricVariable> metricVariables,
-                                    final Collection<DoubleScoreOutput> output)
+                                    final Collection<DoubleScoreStatistic> output)
             throws IOException
     {
         // We're locking because each created output will be using the same
@@ -61,50 +53,55 @@ class NetcdfOutputFileCreator
 
             LOGGER.debug("Opening a copier to create a new file at {} based off of {}.", targetPath.toString(), templatePath);
 
-            // This is essentially leaving the underlying copier open. We need
-            // to close it, but we can't currently do so without closing the
-            // writer. We need the copier to return the name of the target,
-            // not the actual writer. We can then open a new one later.
-            NetCDFCopier copier = new NetCDFCopier( templatePath, targetPath.toString(), analysisTime);
+            String location;
 
-            for (MetricVariable metricVariable : metricVariables)
+            try ( NetCDFCopier copier = new NetCDFCopier( templatePath, targetPath.toString(), analysisTime) )
             {
-                copier.addVariable( metricVariable.getName(),
-                                    DataType.FLOAT,
-                                    copier.getMetricDimensionNames(),
-                                    metricVariable.getAttributes() );
+
+                for ( MetricVariable metricVariable : metricVariables )
+                {
+                    copier.addVariable( metricVariable.getName(),
+                                        DataType.FLOAT,
+                                        copier.getMetricDimensionNames(),
+                                        metricVariable.getAttributes() );
+                }
+
+                NetcdfFileWriter writer = copier.write();
+
+                ArrayInt.D1 duration = new ArrayInt.D1( 1, false );
+                duration.set( 0,
+                              ( int ) window.getLatestLeadTime().toMinutes() );
+
+                try
+                {
+                    writer.write( "time", duration );
+                }
+                catch ( InvalidRangeException e )
+                {
+                    throw new IOException(
+                            "The lead time could not be written to the output." );
+                }
+
+                ArrayInt.D1 analysisMinutes = new ArrayInt.D1( 1, false );
+                analysisMinutes.set( 0,
+                                     ( int ) Duration.between( Instant.ofEpochSecond(
+                                             0 ), analysisTime.toInstant() )
+                                                     .toMinutes() );
+
+                try
+                {
+                    writer.write( "analysis_time", analysisMinutes );
+                }
+                catch ( InvalidRangeException e )
+                {
+                    throw new IOException(
+                            "The analysis time could not be written to the output." );
+                }
+
+                writer.flush();
+
+                location = writer.getNetcdfFile().getLocation();
             }
-
-            NetcdfFileWriter writer = copier.write();
-
-            ArrayInt.D1 duration = new ArrayInt.D1( 1, false );
-            duration.set( 0, (int)window.getLatestLeadTime().toMinutes() );
-
-            try
-            {
-                writer.write( "time", duration );
-            }
-            catch ( InvalidRangeException e )
-            {
-                throw new IOException( "The lead time could not be written to the output." );
-            }
-
-            ArrayInt.D1 analysisMinutes = new ArrayInt.D1(1, false);
-            analysisMinutes.set( 0, (int)Duration.between( Instant.ofEpochSecond( 0 ), analysisTime.toInstant() ).toMinutes());
-
-            try
-            {
-                writer.write( "analysis_time", analysisMinutes );
-            }
-            catch ( InvalidRangeException e )
-            {
-                throw new IOException( "The analysis time could not be written to the output." );
-            }
-
-            writer.flush();
-
-            String location = writer.getNetcdfFile().getLocation();
-            writer.close();
 
             return location;
 
@@ -113,7 +110,7 @@ class NetcdfOutputFileCreator
 
     private static Path getFileName(final DestinationConfig destinationConfig,
                                       final TimeWindow timeWindow,
-                                      final Collection<DoubleScoreOutput> output)
+                                      final Collection<DoubleScoreStatistic> output)
             throws NoDataException
     {
         if( output.isEmpty() )
@@ -122,7 +119,7 @@ class NetcdfOutputFileCreator
         }
         
         StringJoiner filename = new StringJoiner("_", "wres.", ".nc");
-        filename.add( output.iterator().next().getMetadata().getIdentifier().getVariableID() );
+        filename.add( output.iterator().next().getMetadata().getSampleMetadata().getIdentifier().getVariableID() );
         filename.add("lead");
         filename.add(timeWindow.getLatestLeadTime().toString());
 

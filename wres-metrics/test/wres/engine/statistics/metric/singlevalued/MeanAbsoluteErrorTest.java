@@ -11,13 +11,13 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.ScoreOutputGroup;
-import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.inputs.pairs.SingleValuedPairs;
+import wres.datamodel.MetricConstants.ScoreGroup;
 import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.Metadata;
-import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.DoubleScoreOutput;
+import wres.datamodel.metadata.SampleMetadata;
+import wres.datamodel.metadata.StatisticMetadata;
+import wres.datamodel.sampledata.SampleDataException;
+import wres.datamodel.sampledata.pairs.SingleValuedPairs;
+import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 
@@ -55,14 +55,14 @@ public final class MeanAbsoluteErrorTest
         SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Metadata for the output
-        MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getRawData().size(),
-                                                                   MeasurementUnit.of(),
-                                                                   MeasurementUnit.of(),
-                                                                   MetricConstants.MEAN_ABSOLUTE_ERROR,
-                                                                   MetricConstants.MAIN );
+        StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
+                                                     input.getRawData().size(),
+                                                     MeasurementUnit.of(),
+                                                     MetricConstants.MEAN_ABSOLUTE_ERROR,
+                                                     MetricConstants.MAIN );
         //Check the results
-        final DoubleScoreOutput actual = mae.apply( input );
-        final DoubleScoreOutput expected = DoubleScoreOutput.of( 201.37, m1 );
+        final DoubleScoreStatistic actual = mae.apply( input );
+        final DoubleScoreStatistic expected = DoubleScoreStatistic.of( 201.37, m1 );
         assertTrue( "Actual: " + actual.getData().doubleValue()
                     + ". Expected: "
                     + expected.getData().doubleValue()
@@ -79,9 +79,9 @@ public final class MeanAbsoluteErrorTest
     {
         // Generate empty data
         SingleValuedPairs input =
-                SingleValuedPairs.of( Arrays.asList(), Metadata.of() );
+                SingleValuedPairs.of( Arrays.asList(), SampleMetadata.of() );
  
-        DoubleScoreOutput actual = mae.apply( input );
+        DoubleScoreStatistic actual = mae.apply( input );
 
         assertTrue( actual.getData().isNaN() );
     }
@@ -124,7 +124,7 @@ public final class MeanAbsoluteErrorTest
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( mae.getScoreOutputGroup() == ScoreOutputGroup.NONE );
+        assertTrue( mae.getScoreOutputGroup() == ScoreGroup.NONE );
     }
 
     /**
@@ -135,7 +135,7 @@ public final class MeanAbsoluteErrorTest
     @Test
     public void testApplyExceptionOnNullInput()
     {
-        exception.expect( MetricInputException.class );
+        exception.expect( SampleDataException.class );
         exception.expectMessage( "Specify non-null input to the 'MEAN ABSOLUTE ERROR'." );
         
         mae.apply( null );

@@ -15,15 +15,16 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
+import wres.datamodel.metadata.SampleMetadata.SampleMetadataBuilder;
+import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.outputs.PairedOutput;
+import wres.datamodel.sampledata.SampleDataException;
+import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
+import wres.datamodel.statistics.PairedStatistic;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.engine.statistics.metric.singlevalued.SumOfSquareError;
@@ -70,27 +71,28 @@ public final class TimeToPeakErrorTest
                                            Duration.ofHours( 6 ),
                                            Duration.ofHours( 18 ) );
         final TimeWindow timeWindow = window;
-        MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getBasisTimes().size(),
-                                                           MeasurementUnit.of( "DURATION" ),
-                                                           MeasurementUnit.of( "CMS" ),
-                                                           MetricConstants.TIME_TO_PEAK_ERROR,
-                                                           MetricConstants.MAIN,
-                                                           DatasetIdentifier.of( Location.of( "A" ),
-                                                                                 "Streamflow" ),
-                                                           timeWindow,
-                                                           null,
-                                                           null  );
+
+        StatisticMetadata m1 =
+                StatisticMetadata.of( new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
+                                                                 .setIdentifier( DatasetIdentifier.of( Location.of( "A" ),
+                                                                                                       "Streamflow" ) )
+                                                                 .setTimeWindow( timeWindow )
+                                                                 .build(),
+                                      input.getBasisTimes().size(),
+                                      MeasurementUnit.of( "DURATION" ),
+                                      MetricConstants.TIME_TO_PEAK_ERROR,
+                                      MetricConstants.MAIN );
 
         // Check the parameters
         assertTrue( "Unexpected name for the Time-to-Peak Error.",
                     ttp.getName().equals( MetricConstants.TIME_TO_PEAK_ERROR.toString() ) );
 
         // Check the results
-        PairedOutput<Instant, Duration> actual = ttp.apply( input );
+        PairedStatistic<Instant, Duration> actual = ttp.apply( input );
         List<Pair<Instant, Duration>> expectedSource = new ArrayList<>();
         expectedSource.add( Pair.of( Instant.parse( "1985-01-01T00:00:00Z" ), Duration.ofHours( -6 ) ) );
         expectedSource.add( Pair.of( Instant.parse( "1985-01-02T00:00:00Z" ), Duration.ofHours( 12 ) ) );
-        PairedOutput<Instant, Duration> expected = PairedOutput.of( expectedSource, m1 );
+        PairedStatistic<Instant, Duration> expected = PairedStatistic.of( expectedSource, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -118,7 +120,7 @@ public final class TimeToPeakErrorTest
     public void testApplyThrowsExceptionOnNullInput() throws MetricParameterException
     {
         //Check the exceptions
-        exception.expect( MetricInputException.class );
+        exception.expect( SampleDataException.class );
 
         ttp.apply( null );
     }

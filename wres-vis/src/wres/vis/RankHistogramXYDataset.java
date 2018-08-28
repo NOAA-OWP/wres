@@ -1,14 +1,14 @@
 package wres.vis;
 
 import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.outputs.ListOfMetricOutput;
-import wres.datamodel.outputs.MultiVectorOutput;
+import wres.datamodel.statistics.ListOfStatistics;
+import wres.datamodel.statistics.MultiVectorStatistic;
 
 public class RankHistogramXYDataset extends MultiVectorOutputDiagramXYDataset
 {
     private static final long serialVersionUID = -798561678672865289L;
 
-    public RankHistogramXYDataset( final ListOfMetricOutput<MultiVectorOutput> input,
+    public RankHistogramXYDataset( final ListOfStatistics<MultiVectorStatistic> input,
                                           final MetricDimension xConstant,
                                           final MetricDimension yConstant )
     {

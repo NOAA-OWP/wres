@@ -15,11 +15,11 @@ import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.inputs.pairs.EnsemblePairs;
-import wres.datamodel.metadata.Metadata;
-import wres.datamodel.inputs.pairs.EnsemblePair;
-import wres.datamodel.outputs.MultiVectorOutput;
+import wres.datamodel.metadata.SampleMetadata;
+import wres.datamodel.sampledata.SampleDataException;
+import wres.datamodel.sampledata.pairs.EnsemblePair;
+import wres.datamodel.sampledata.pairs.EnsemblePairs;
+import wres.datamodel.statistics.MultiVectorStatistic;
 import wres.engine.statistics.metric.MetricParameterException;
 
 /**
@@ -72,10 +72,10 @@ public final class RankHistogramTest
             values.add( EnsemblePair.of( left, right ) );
         }
 
-        final EnsemblePairs input = EnsemblePairs.of( values, Metadata.of() );
+        final EnsemblePairs input = EnsemblePairs.of( values, SampleMetadata.of() );
 
         //Check the results       
-        final MultiVectorOutput actual = rh.apply( input );
+        final MultiVectorStatistic actual = rh.apply( input );
         double[] actualRanks = actual.get( MetricDimension.RANK_ORDER ).getDoubles();
         double[] actualRFreqs = actual.get( MetricDimension.OBSERVED_RELATIVE_FREQUENCY ).getDoubles();
         double[] expectedRanks = new double[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
@@ -100,10 +100,10 @@ public final class RankHistogramTest
         //Generate some data using an RNG for a uniform U[0,1] distribution with a fixed seed
         final List<EnsemblePair> values = new ArrayList<>();
         values.add( EnsemblePair.of( 2, new double[] { 1, 2, 2, 2, 4, 5, 6, 7, 8 } ) );
-        final EnsemblePairs input = EnsemblePairs.of( values, Metadata.of() );
+        final EnsemblePairs input = EnsemblePairs.of( values, SampleMetadata.of() );
 
         //Check the results       
-        final MultiVectorOutput actual = rh.apply( input );
+        final MultiVectorStatistic actual = rh.apply( input );
 
         double[] actualRanks = actual.get( MetricDimension.RANK_ORDER ).getDoubles();
         double[] actualRFreqs = actual.get( MetricDimension.OBSERVED_RELATIVE_FREQUENCY ).getDoubles();
@@ -129,9 +129,9 @@ public final class RankHistogramTest
     {
         // Generate empty data
         EnsemblePairs input =
-                EnsemblePairs.of( Arrays.asList(), Metadata.of() );
+                EnsemblePairs.of( Arrays.asList(), SampleMetadata.of() );
 
-        MultiVectorOutput actual = rh.apply( input );
+        MultiVectorStatistic actual = rh.apply( input );
 
         double[] source = new double[1];
 
@@ -167,7 +167,7 @@ public final class RankHistogramTest
     @Test
     public void testApplyExceptionOnNullInput()
     {
-        exception.expect( MetricInputException.class );
+        exception.expect( SampleDataException.class );
         exception.expectMessage( "Specify non-null input to the 'RANK HISTOGRAM'." );
 
         rh.apply( null );

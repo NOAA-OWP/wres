@@ -4,11 +4,11 @@ import java.util.Objects;
 import java.util.concurrent.atomic.DoubleAdder;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.ScoreOutputGroup;
-import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.inputs.pairs.SingleValuedPairs;
-import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.DoubleScoreOutput;
+import wres.datamodel.MetricConstants.ScoreGroup;
+import wres.datamodel.metadata.StatisticMetadata;
+import wres.datamodel.sampledata.SampleDataException;
+import wres.datamodel.sampledata.pairs.SingleValuedPairs;
+import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.engine.statistics.metric.DoubleErrorFunction;
 import wres.engine.statistics.metric.FunctionFactory;
 
@@ -32,14 +32,14 @@ public class BiasFraction extends DoubleErrorScore<SingleValuedPairs>
     }
 
     @Override
-    public DoubleScoreOutput apply( SingleValuedPairs s )
+    public DoubleScoreStatistic apply( SingleValuedPairs s )
     {
         if ( Objects.isNull( s ) )
         {
-            throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
+            throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
         }
-        final MetricOutputMetadata metOut =
-                MetricOutputMetadata.of( s.getMetadata(),
+        final StatisticMetadata metOut =
+                StatisticMetadata.of( s.getMetadata(),
                                     this.getID(),
                                     MetricConstants.MAIN,
                                     this.hasRealUnits(),
@@ -58,7 +58,7 @@ public class BiasFraction extends DoubleErrorScore<SingleValuedPairs>
         {
             result = Double.NaN;
         }
-        return DoubleScoreOutput.of( result, metOut );
+        return DoubleScoreStatistic.of( result, metOut );
     }
 
     @Override
@@ -80,9 +80,9 @@ public class BiasFraction extends DoubleErrorScore<SingleValuedPairs>
     }
 
     @Override
-    public ScoreOutputGroup getScoreOutputGroup()
+    public ScoreGroup getScoreOutputGroup()
     {
-        return ScoreOutputGroup.NONE;
+        return ScoreGroup.NONE;
     }
 
     @Override

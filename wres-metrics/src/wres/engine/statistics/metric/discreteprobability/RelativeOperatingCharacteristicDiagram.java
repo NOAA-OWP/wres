@@ -11,15 +11,15 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.MissingValues;
 import wres.datamodel.Slicer;
-import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.inputs.pairs.DichotomousPair;
-import wres.datamodel.inputs.pairs.DichotomousPairs;
-import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
-import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.DoubleScoreOutput;
-import wres.datamodel.outputs.ListOfMetricOutput;
-import wres.datamodel.outputs.MatrixOutput;
-import wres.datamodel.outputs.MultiVectorOutput;
+import wres.datamodel.metadata.StatisticMetadata;
+import wres.datamodel.sampledata.SampleDataException;
+import wres.datamodel.sampledata.pairs.DichotomousPair;
+import wres.datamodel.sampledata.pairs.DichotomousPairs;
+import wres.datamodel.sampledata.pairs.DiscreteProbabilityPairs;
+import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.ListOfStatistics;
+import wres.datamodel.statistics.MatrixStatistic;
+import wres.datamodel.statistics.MultiVectorStatistic;
 import wres.engine.statistics.metric.Diagram;
 import wres.engine.statistics.metric.MetricCollection;
 import wres.engine.statistics.metric.MetricFactory;
@@ -34,7 +34,7 @@ import wres.engine.statistics.metric.MetricParameterException;
  * @author james.brown@hydrosolved.com
  */
 
-public class RelativeOperatingCharacteristicDiagram extends Diagram<DiscreteProbabilityPairs, MultiVectorOutput>
+public class RelativeOperatingCharacteristicDiagram extends Diagram<DiscreteProbabilityPairs, MultiVectorStatistic>
 {
 
     /**
@@ -47,7 +47,7 @@ public class RelativeOperatingCharacteristicDiagram extends Diagram<DiscreteProb
      * Components of the ROC.
      */
 
-    private final MetricCollection<DichotomousPairs, MatrixOutput, DoubleScoreOutput> roc;
+    private final MetricCollection<DichotomousPairs, MatrixStatistic, DoubleScoreStatistic> roc;
 
     /**
      * Number of points in the empirical ROC diagram.
@@ -68,11 +68,11 @@ public class RelativeOperatingCharacteristicDiagram extends Diagram<DiscreteProb
     }
 
     @Override
-    public MultiVectorOutput apply( final DiscreteProbabilityPairs s )
+    public MultiVectorStatistic apply( final DiscreteProbabilityPairs s )
     {
         if ( Objects.isNull( s ) )
         {
-            throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
+            throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
         }
         //Determine the empirical ROC. 
         //For each classifier, derive the pairs of booleans and compute the PoD and PoFD from the
@@ -93,7 +93,7 @@ public class RelativeOperatingCharacteristicDiagram extends Diagram<DiscreteProb
                 double prob = Precision.round( 1.0 - ( i * constant ), 5 );
                 //Compute the PoD/PoFD using the probability threshold to determine whether the event occurred
                 //according to the probability on the RHS
-                ListOfMetricOutput<DoubleScoreOutput> out =
+                ListOfStatistics<DoubleScoreStatistic> out =
                         roc.apply( Slicer.toDichotomousPairs( s,
                                                               in -> DichotomousPair.of( Double.compare( in.getLeft(),
                                                                                                         1.0 ) == 0,
@@ -117,14 +117,14 @@ public class RelativeOperatingCharacteristicDiagram extends Diagram<DiscreteProb
         Map<MetricDimension, double[]> output = new EnumMap<>( MetricDimension.class );
         output.put( MetricDimension.PROBABILITY_OF_DETECTION, pOD );
         output.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, pOFD );
-        final MetricOutputMetadata metOut =
-                MetricOutputMetadata.of( s.getMetadata(),
+        final StatisticMetadata metOut =
+                StatisticMetadata.of( s.getMetadata(),
                                          this.getID(),
                                          MetricConstants.MAIN,
                                          this.hasRealUnits(),
                                          s.getRawData().size(),
                                          null );
-        return MultiVectorOutput.ofMultiVectorOutput( output, metOut );
+        return MultiVectorStatistic.ofMultiVectorOutput( output, metOut );
     }
 
     @Override

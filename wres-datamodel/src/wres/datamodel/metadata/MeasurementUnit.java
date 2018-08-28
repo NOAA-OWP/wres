@@ -2,11 +2,11 @@ package wres.datamodel.metadata;
 
 import java.util.Objects;
 
-import wres.datamodel.inputs.MetricInput;
-import wres.datamodel.outputs.MetricOutput;
+import wres.datamodel.sampledata.SampleData;
+import wres.datamodel.statistics.Statistic;
 
 /**
- * A class that stores the measurement unit associated with a {@link MetricInput} or a {@link MetricOutput}. Examples 
+ * A class that stores the measurement unit associated with a {@link SampleData} or a {@link Statistic}. Examples 
  * of measurement units include "millimeter", and "cubic feet per second".
  * 
  * TODO: replace this simplistic abstraction with a more sophisticated representation, probably based on javax.measure,

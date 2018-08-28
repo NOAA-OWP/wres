@@ -11,14 +11,15 @@ import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.inputs.pairs.DichotomousPairs;
-import wres.datamodel.inputs.pairs.MulticategoryPairs;
 import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
-import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.MatrixOutput;
+import wres.datamodel.metadata.MeasurementUnit;
+import wres.datamodel.metadata.SampleMetadata;
+import wres.datamodel.metadata.StatisticMetadata;
+import wres.datamodel.sampledata.SampleDataException;
+import wres.datamodel.sampledata.pairs.DichotomousPairs;
+import wres.datamodel.sampledata.pairs.MulticategoryPairs;
+import wres.datamodel.statistics.MatrixStatistic;
 import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
@@ -47,7 +48,7 @@ public final class ContingencyTableTest
     }
 
     /**
-     * Compares the output from {@link Metric#apply(wres.datamodel.inputs.MetricInput)} against expected output.
+     * Compares the output from {@link Metric#apply(wres.datamodel.sampledata.MetricInput)} against expected output.
      */
 
     @Test
@@ -57,19 +58,19 @@ public final class ContingencyTableTest
         final DichotomousPairs input = MetricTestDataFactory.getDichotomousPairsOne();
 
         //Metadata for the output
-        final MetricOutputMetadata meta =
-                MetricOutputMetadata.of( input.getRawData().size(),
-                                                   MeasurementUnit.of(),
-                                                   MeasurementUnit.of(),
-                                                   MetricConstants.CONTINGENCY_TABLE,
-                                                   MetricConstants.MAIN,
-                                                   DatasetIdentifier.of( Location.of( "DRRC2" ),
-                                                                                         "SQIN",
-                                                                                         "HEFS" ) );
+        final StatisticMetadata meta =
+                StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of(),
+                                                         DatasetIdentifier.of( Location.of( "DRRC2" ),
+                                                                               "SQIN",
+                                                                               "HEFS" ) ),
+                                      input.getRawData().size(),
+                                      MeasurementUnit.of(),
+                                      MetricConstants.CONTINGENCY_TABLE,
+                                      MetricConstants.MAIN );
 
         final double[][] benchmark = new double[][] { { 82.0, 38.0 }, { 23.0, 222.0 } };
-        final MatrixOutput actual = table.apply( input );
-        final MatrixOutput expected = MatrixOutput.of( benchmark,
+        final MatrixStatistic actual = table.apply( input );
+        final MatrixStatistic expected = MatrixStatistic.of( benchmark,
                                                                   Arrays.asList( MetricDimension.TRUE_POSITIVES,
                                                                                  MetricDimension.FALSE_POSITIVES,
                                                                                  MetricDimension.FALSE_NEGATIVES,
@@ -92,13 +93,13 @@ public final class ContingencyTableTest
     }
 
     /**
-     * Checks for an expected exception on null input to {@link ContingencyTable#apply(wres.datamodel.inputs.MetricInput)}.
+     * Checks for an expected exception on null input to {@link ContingencyTable#apply(wres.datamodel.sampledata.MetricInput)}.
      */
 
     @Test
     public void testExceptionOnNullInput()
     {
-        exception.expect( MetricInputException.class );
+        exception.expect( SampleDataException.class );
         exception.expectMessage( "Specify non-null input to the 'CONTINGENCY TABLE'." );
         table.apply( (DichotomousPairs) null );
     }

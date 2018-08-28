@@ -5,8 +5,8 @@ import java.time.Instant;
 import java.util.Objects;
 import java.util.Random;
 
-import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
-import wres.datamodel.outputs.PairedOutput;
+import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
+import wres.datamodel.statistics.PairedStatistic;
 import wres.engine.statistics.metric.Metric;
 
 /**
@@ -14,7 +14,7 @@ import wres.engine.statistics.metric.Metric;
  * 
  * @author james.brown@hydrosolved.com
  */
-public abstract class TimingError implements Metric<TimeSeriesOfSingleValuedPairs, PairedOutput<Instant, Duration>>
+public abstract class TimingError implements Metric<TimeSeriesOfSingleValuedPairs, PairedStatistic<Instant, Duration>>
 {
 
     /**

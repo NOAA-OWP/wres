@@ -11,15 +11,15 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.ScoreOutputGroup;
-import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
+import wres.datamodel.MetricConstants.ScoreGroup;
 import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
-import wres.datamodel.metadata.Metadata;
-import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.DoubleScoreOutput;
+import wres.datamodel.metadata.MeasurementUnit;
+import wres.datamodel.metadata.SampleMetadata;
+import wres.datamodel.metadata.StatisticMetadata;
+import wres.datamodel.sampledata.SampleDataException;
+import wres.datamodel.sampledata.pairs.DiscreteProbabilityPairs;
+import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 
@@ -58,17 +58,20 @@ public final class BrierSkillScoreTest
         DiscreteProbabilityPairs input = MetricTestDataFactory.getDiscreteProbabilityPairsTwo();
 
         // Metadata for the output
-        MetricOutputMetadata m1 =
-                MetricOutputMetadata.of( input.getRawData().size(),
-                                                   MeasurementUnit.of(),
-                                                   MeasurementUnit.of(),
-                                                   MetricConstants.BRIER_SKILL_SCORE,
-                                                   MetricConstants.MAIN,
-                                                   DatasetIdentifier.of( Location.of( "DRRC2" ), "SQIN", "HEFS", "ESP" ) );
+        StatisticMetadata m1 =
+                StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of(),
+                                                         DatasetIdentifier.of( Location.of( "DRRC2" ),
+                                                                               "SQIN",
+                                                                               "HEFS",
+                                                                               "ESP") ),
+                                      input.getRawData().size(),
+                                      MeasurementUnit.of(),
+                                      MetricConstants.BRIER_SKILL_SCORE,
+                                      MetricConstants.MAIN );
 
         // Check the results       
-        final DoubleScoreOutput actual = brierSkillScore.apply( input );
-        final DoubleScoreOutput expected = DoubleScoreOutput.of( 0.11363636363636376, m1 );
+        final DoubleScoreStatistic actual = brierSkillScore.apply( input );
+        final DoubleScoreStatistic expected = DoubleScoreStatistic.of( 0.11363636363636376, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -88,19 +91,19 @@ public final class BrierSkillScoreTest
         DiscreteProbabilityPairs input = MetricTestDataFactory.getDiscreteProbabilityPairsOne();
 
         // Metadata for the output
-        MetricOutputMetadata m1 =
-                MetricOutputMetadata.of( input.getRawData().size(),
-                                                   MeasurementUnit.of(),
-                                                   MeasurementUnit.of(),
-                                                   MetricConstants.BRIER_SKILL_SCORE,
-                                                   MetricConstants.MAIN,
-                                                   DatasetIdentifier.of( Location.of( "DRRC2" ),
-                                                                                         "SQIN",
-                                                                                         "HEFS" ) );
+        StatisticMetadata m1 =
+                StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of(),
+                                                         DatasetIdentifier.of( Location.of( "DRRC2" ),
+                                                                               "SQIN",
+                                                                               "HEFS" ) ),
+                                      input.getRawData().size(),
+                                      MeasurementUnit.of(),
+                                      MetricConstants.BRIER_SKILL_SCORE,
+                                      MetricConstants.MAIN );
 
         // Check the results       
-        final DoubleScoreOutput actual = brierSkillScore.apply( input );
-        final DoubleScoreOutput expected = DoubleScoreOutput.of( -0.040000000000000036, m1 );
+        final DoubleScoreStatistic actual = brierSkillScore.apply( input );
+        final DoubleScoreStatistic expected = DoubleScoreStatistic.of( -0.040000000000000036, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -118,9 +121,9 @@ public final class BrierSkillScoreTest
     {
         // Generate empty data
         DiscreteProbabilityPairs input =
-                DiscreteProbabilityPairs.of( Arrays.asList(), Metadata.of() );
+                DiscreteProbabilityPairs.of( Arrays.asList(), SampleMetadata.of() );
 
-        DoubleScoreOutput actual = brierSkillScore.apply( input );
+        DoubleScoreStatistic actual = brierSkillScore.apply( input );
 
         assertTrue( actual.getData().isNaN() );
     }
@@ -162,7 +165,7 @@ public final class BrierSkillScoreTest
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( brierSkillScore.getScoreOutputGroup() == ScoreOutputGroup.NONE );
+        assertTrue( brierSkillScore.getScoreOutputGroup() == ScoreGroup.NONE );
     }
 
     /**
@@ -193,7 +196,7 @@ public final class BrierSkillScoreTest
     @Test
     public void testApplyExceptionOnNullInput()
     {
-        exception.expect( MetricInputException.class );
+        exception.expect( SampleDataException.class );
         exception.expectMessage( "Specify non-null input to the 'BRIER SKILL SCORE'." );
 
         brierSkillScore.apply( null );

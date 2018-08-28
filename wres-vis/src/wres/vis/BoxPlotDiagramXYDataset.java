@@ -2,7 +2,7 @@ package wres.vis;
 
 import org.jfree.data.xy.XYDataset;
 
-import wres.datamodel.outputs.BoxPlotOutput;
+import wres.datamodel.statistics.BoxPlotStatistic;
 
 /**
  * The {@link XYDataset} for use in building the reliability diagram portion of the reliability diagram plot (the other
@@ -11,17 +11,17 @@ import wres.datamodel.outputs.BoxPlotOutput;
  * @author Hank.Herr
  */
 public class BoxPlotDiagramXYDataset extends
-        WRESAbstractXYDataset<BoxPlotOutput, BoxPlotOutput>
+        WRESAbstractXYDataset<BoxPlotStatistic, BoxPlotStatistic>
 {
     private static final long serialVersionUID = 4254109136599641286L;
 
-    public BoxPlotDiagramXYDataset( final BoxPlotOutput input)
+    public BoxPlotDiagramXYDataset( final BoxPlotStatistic input)
     {
         super( input );
     }
 
     @Override
-    protected void preparePlotData( BoxPlotOutput rawData )
+    protected void preparePlotData( BoxPlotStatistic rawData )
     {
         //This check should not be necessary, since the conditions should be impossible.  I'll do it anyway just to be sure.
         if (rawData.getData().isEmpty())

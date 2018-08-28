@@ -11,15 +11,15 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.ScoreOutputGroup;
-import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
+import wres.datamodel.MetricConstants.ScoreGroup;
 import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
-import wres.datamodel.metadata.Metadata;
-import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.DoubleScoreOutput;
+import wres.datamodel.metadata.MeasurementUnit;
+import wres.datamodel.metadata.SampleMetadata;
+import wres.datamodel.metadata.StatisticMetadata;
+import wres.datamodel.sampledata.SampleDataException;
+import wres.datamodel.sampledata.pairs.DiscreteProbabilityPairs;
+import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 
@@ -33,7 +33,7 @@ public final class BrierScoreTest
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
-    
+
     /**
      * Default instance of a {@link BrierScore}.
      */
@@ -57,17 +57,19 @@ public final class BrierScoreTest
         DiscreteProbabilityPairs input = MetricTestDataFactory.getDiscreteProbabilityPairsOne();
 
         // Metadata for the output
-        MetricOutputMetadata m1 =
-                MetricOutputMetadata.of( input.getRawData().size(),
-                                           MeasurementUnit.of(),
-                                           MeasurementUnit.of(),
-                                           MetricConstants.BRIER_SCORE,
-                                           MetricConstants.MAIN,
-                                           DatasetIdentifier.of( Location.of("DRRC2"), "SQIN", "HEFS" ) );
+        StatisticMetadata m1 =
+                StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of(),
+                                                         DatasetIdentifier.of( Location.of( "DRRC2" ),
+                                                                               "SQIN",
+                                                                               "HEFS" ) ),
+                                      input.getRawData().size(),
+                                      MeasurementUnit.of(),
+                                      MetricConstants.BRIER_SCORE,
+                                      MetricConstants.MAIN );
 
         // Check the results       
-        DoubleScoreOutput actual = brierScore.apply( input );
-        DoubleScoreOutput expected = DoubleScoreOutput.of( 0.26, m1 );
+        DoubleScoreStatistic actual = brierScore.apply( input );
+        DoubleScoreStatistic expected = DoubleScoreStatistic.of( 0.26, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -84,9 +86,9 @@ public final class BrierScoreTest
     {
         // Generate empty data
         DiscreteProbabilityPairs input =
-                DiscreteProbabilityPairs.of( Arrays.asList(), Metadata.of() );
- 
-        DoubleScoreOutput actual = brierScore.apply( input );
+                DiscreteProbabilityPairs.of( Arrays.asList(), SampleMetadata.of() );
+
+        DoubleScoreStatistic actual = brierScore.apply( input );
 
         assertTrue( actual.getData().isNaN() );
     }
@@ -128,7 +130,7 @@ public final class BrierScoreTest
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( brierScore.getScoreOutputGroup() == ScoreOutputGroup.NONE );
+        assertTrue( brierScore.getScoreOutputGroup() == ScoreGroup.NONE );
     }
 
     /**
@@ -150,7 +152,7 @@ public final class BrierScoreTest
     {
         assertTrue( brierScore.isStrictlyProper() );
     }
-    
+
     /**
      * Tests for an expected exception on calling {@link BrierScore#apply(DiscreteProbabilityPairs)} with null 
      * input.
@@ -159,9 +161,9 @@ public final class BrierScoreTest
     @Test
     public void testApplyExceptionOnNullInput()
     {
-        exception.expect( MetricInputException.class );
+        exception.expect( SampleDataException.class );
         exception.expectMessage( "Specify non-null input to the 'BRIER SCORE'." );
-        
+
         brierScore.apply( null );
     }
 

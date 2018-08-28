@@ -11,13 +11,13 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.ScoreOutputGroup;
-import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.inputs.pairs.SingleValuedPairs;
+import wres.datamodel.MetricConstants.ScoreGroup;
 import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.Metadata;
-import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.DoubleScoreOutput;
+import wres.datamodel.metadata.SampleMetadata;
+import wres.datamodel.metadata.StatisticMetadata;
+import wres.datamodel.sampledata.SampleDataException;
+import wres.datamodel.sampledata.pairs.SingleValuedPairs;
+import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 
@@ -31,7 +31,7 @@ public final class BiasFractionTest
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
-    
+
     /**
      * Default instance of a {@link BiasFraction}.
      */
@@ -55,14 +55,15 @@ public final class BiasFractionTest
         SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Metadata for the output
-        MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getRawData().size(),
-                                                                   MeasurementUnit.of(),
-                                                                   MeasurementUnit.of(),
-                                                                   MetricConstants.BIAS_FRACTION,
-                                                                   MetricConstants.MAIN );
+        StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
+                                                     input.getRawData().size(),
+                                                     MeasurementUnit.of(),
+                                                     MetricConstants.BIAS_FRACTION,
+                                                     MetricConstants.MAIN );
+
         //Check the results
-        DoubleScoreOutput actual = biasFraction.apply( input );
-        DoubleScoreOutput expected = DoubleScoreOutput.of( 0.056796297974534414, m1 );
+        DoubleScoreStatistic actual = biasFraction.apply( input );
+        DoubleScoreStatistic expected = DoubleScoreStatistic.of( 0.056796297974534414, m1 );
         assertTrue( "Actual: " + actual.getData().doubleValue()
                     + ". Expected: "
                     + expected.getData().doubleValue()
@@ -79,9 +80,9 @@ public final class BiasFractionTest
     {
         // Generate empty data
         SingleValuedPairs input =
-                SingleValuedPairs.of( Arrays.asList(), Metadata.of() );
- 
-        DoubleScoreOutput actual = biasFraction.apply( input );
+                SingleValuedPairs.of( Arrays.asList(), SampleMetadata.of() );
+
+        DoubleScoreStatistic actual = biasFraction.apply( input );
 
         assertTrue( actual.getData().isNaN() );
     }
@@ -123,7 +124,7 @@ public final class BiasFractionTest
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( biasFraction.getScoreOutputGroup() == ScoreOutputGroup.NONE );
+        assertTrue( biasFraction.getScoreOutputGroup() == ScoreGroup.NONE );
     }
 
     /**
@@ -134,9 +135,9 @@ public final class BiasFractionTest
     @Test
     public void testApplyExceptionOnNullInput()
     {
-        exception.expect( MetricInputException.class );
+        exception.expect( SampleDataException.class );
         exception.expectMessage( "Specify non-null input to the 'BIAS FRACTION'." );
-        
+
         biasFraction.apply( null );
     }
 

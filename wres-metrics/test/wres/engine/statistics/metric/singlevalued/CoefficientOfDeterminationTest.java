@@ -11,13 +11,13 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.ScoreOutputGroup;
-import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.inputs.pairs.SingleValuedPairs;
+import wres.datamodel.MetricConstants.ScoreGroup;
 import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.Metadata;
-import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.DoubleScoreOutput;
+import wres.datamodel.metadata.SampleMetadata;
+import wres.datamodel.metadata.StatisticMetadata;
+import wres.datamodel.sampledata.SampleDataException;
+import wres.datamodel.sampledata.pairs.SingleValuedPairs;
+import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 
@@ -52,15 +52,15 @@ public final class CoefficientOfDeterminationTest
     public void testApply()
     {
         SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
-        MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getRawData().size(),
-                                                                   MeasurementUnit.of(),
-                                                                   MeasurementUnit.of(),
-                                                                   MetricConstants.COEFFICIENT_OF_DETERMINATION,
-                                                                   MetricConstants.MAIN );
+        StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
+                                                     input.getRawData().size(),
+                                                     MeasurementUnit.of(),
+                                                     MetricConstants.COEFFICIENT_OF_DETERMINATION,
+                                                     MetricConstants.MAIN );
 
         //Compute normally
-        DoubleScoreOutput actual = cod.apply( input );
-        DoubleScoreOutput expected = DoubleScoreOutput.of( Math.pow( 0.9999999910148981, 2 ), m1 );
+        DoubleScoreStatistic actual = cod.apply( input );
+        DoubleScoreStatistic expected = DoubleScoreStatistic.of( Math.pow( 0.9999999910148981, 2 ), m1 );
         assertTrue( "Actual: " + actual.getData().doubleValue()
                     + ". Expected: "
                     + expected.getData().doubleValue()
@@ -77,9 +77,9 @@ public final class CoefficientOfDeterminationTest
     {
         // Generate empty data
         SingleValuedPairs input =
-                SingleValuedPairs.of( Arrays.asList(), Metadata.of() );
+                SingleValuedPairs.of( Arrays.asList(), SampleMetadata.of() );
  
-        DoubleScoreOutput actual = cod.apply( input );
+        DoubleScoreStatistic actual = cod.apply( input );
 
         assertTrue( actual.getData().isNaN() );
     }
@@ -122,7 +122,7 @@ public final class CoefficientOfDeterminationTest
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( cod.getScoreOutputGroup() == ScoreOutputGroup.NONE );
+        assertTrue( cod.getScoreOutputGroup() == ScoreGroup.NONE );
     }
 
     /**
@@ -144,21 +144,21 @@ public final class CoefficientOfDeterminationTest
     @Test
     public void testApplyExceptionOnNullInput()
     {
-        exception.expect( MetricInputException.class );
+        exception.expect( SampleDataException.class );
         exception.expectMessage( "Specify non-null input to the 'COEFFICIENT OF DETERMINATION'." );
         
         cod.apply( null );
     }    
     
     /**
-     * Tests for an expected exception on calling {@link CoefficientOfDetermination#aggregate(DoubleScoreOutput)} with 
+     * Tests for an expected exception on calling {@link CoefficientOfDetermination#aggregate(DoubleScoreStatistic)} with 
      * null input.
      */
 
     @Test
     public void testAggregateExceptionOnNullInput()
     {
-        exception.expect( MetricInputException.class );
+        exception.expect( SampleDataException.class );
         exception.expectMessage( "Specify non-null input to the 'COEFFICIENT OF DETERMINATION'." );
         
         cod.aggregate( null );

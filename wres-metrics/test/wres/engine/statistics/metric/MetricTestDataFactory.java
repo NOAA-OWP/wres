@@ -14,24 +14,25 @@ import java.util.List;
 import java.util.Objects;
 
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.inputs.pairs.DichotomousPair;
-import wres.datamodel.inputs.pairs.DichotomousPairs;
-import wres.datamodel.inputs.pairs.DiscreteProbabilityPair;
-import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
-import wres.datamodel.inputs.pairs.EnsemblePairs;
-import wres.datamodel.inputs.pairs.MulticategoryPair;
-import wres.datamodel.inputs.pairs.MulticategoryPairs;
-import wres.datamodel.inputs.pairs.EnsemblePair;
-import wres.datamodel.inputs.pairs.SingleValuedPair;
-import wres.datamodel.inputs.pairs.SingleValuedPairs;
-import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
-import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs.TimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
-import wres.datamodel.metadata.Metadata;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.ReferenceTime;
+import wres.datamodel.metadata.SampleMetadata;
+import wres.datamodel.metadata.SampleMetadata.SampleMetadataBuilder;
 import wres.datamodel.metadata.TimeWindow;
+import wres.datamodel.sampledata.pairs.DichotomousPair;
+import wres.datamodel.sampledata.pairs.DichotomousPairs;
+import wres.datamodel.sampledata.pairs.DiscreteProbabilityPair;
+import wres.datamodel.sampledata.pairs.DiscreteProbabilityPairs;
+import wres.datamodel.sampledata.pairs.EnsemblePair;
+import wres.datamodel.sampledata.pairs.EnsemblePairs;
+import wres.datamodel.sampledata.pairs.MulticategoryPair;
+import wres.datamodel.sampledata.pairs.MulticategoryPairs;
+import wres.datamodel.sampledata.pairs.SingleValuedPair;
+import wres.datamodel.sampledata.pairs.SingleValuedPairs;
+import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
+import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs.TimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.time.Event;
 
 /**
@@ -63,7 +64,7 @@ public final class MetricTestDataFactory
         values.add( SingleValuedPair.of( 12, 12 ) );
         values.add( SingleValuedPair.of( 93, 94 ) );
 
-        return SingleValuedPairs.of( values, Metadata.of() );
+        return SingleValuedPairs.of( values, SampleMetadata.of() );
     }
 
     /**
@@ -98,14 +99,14 @@ public final class MetricTestDataFactory
         baseline.add( SingleValuedPair.of( 12.1, 13 ) );
         baseline.add( SingleValuedPair.of( 93.2, 94.8 ) );
 
-        final Metadata main = Metadata.of( MeasurementUnit.of( "CMS" ),
-                                                           DatasetIdentifier.of( getLocation( "DRRC2" ),
-                                                                                                 "SQIN",
-                                                                                                 "HEFS" ) );
-        final Metadata base = Metadata.of( MeasurementUnit.of( "CMS" ),
-                                                           DatasetIdentifier.of( getLocation( "DRRC2" ),
-                                                                                                 "SQIN",
-                                                                                                 "ESP" ) );
+        final SampleMetadata main = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                       DatasetIdentifier.of( getLocation( "DRRC2" ),
+                                                                             "SQIN",
+                                                                             "HEFS" ) );
+        final SampleMetadata base = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                       DatasetIdentifier.of( getLocation( "DRRC2" ),
+                                                                             "SQIN",
+                                                                             "ESP" ) );
         return SingleValuedPairs.of( values, baseline, main, base );
     }
 
@@ -130,10 +131,10 @@ public final class MetricTestDataFactory
             values.add( SingleValuedPair.of( 5, 10 ) );
         }
 
-        final Metadata meta = Metadata.of( MeasurementUnit.of( "CMS" ),
-                                                           DatasetIdentifier.of( getLocation( "DRRC2" ),
-                                                                                                 "SQIN",
-                                                                                                 "HEFS" ) );
+        final SampleMetadata meta = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                       DatasetIdentifier.of( getLocation( "DRRC2" ),
+                                                                             "SQIN",
+                                                                             "HEFS" ) );
         return SingleValuedPairs.of( values, meta );
     }
 
@@ -162,11 +163,12 @@ public final class MetricTestDataFactory
                                                  Instant.parse( "2010-12-31T11:59:59Z" ),
                                                  ReferenceTime.VALID_TIME,
                                                  Duration.ofHours( 1 ) );
-        final Metadata meta = Metadata.of( MeasurementUnit.of( "CMS" ),
-                                                           DatasetIdentifier.of( getLocation( "DRRC2" ),
-                                                                                                 "SQIN",
-                                                                                                 "HEFS" ),
-                                                           window );
+        final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
+                                                               .setIdentifier( DatasetIdentifier.of( getLocation( "DRRC2" ),
+                                                                                                     "SQIN",
+                                                                                                     "HEFS" ) )
+                                                               .setTimeWindow( window )
+                                                               .build();
         return SingleValuedPairs.of( values, meta );
     }
 
@@ -209,11 +211,12 @@ public final class MetricTestDataFactory
                                                  Instant.parse( "2010-12-31T11:59:59Z" ),
                                                  ReferenceTime.VALID_TIME,
                                                  Duration.ofHours( 24 ) );
-        final Metadata meta = Metadata.of( MeasurementUnit.of( "MM/DAY" ),
-                                                           DatasetIdentifier.of( getLocation( "103.1" ),
-                                                                                                 "QME",
-                                                                                                 "NVE" ),
-                                                           window );
+        final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "MM/DAY" ) )
+                                                               .setIdentifier( DatasetIdentifier.of( getLocation( "103.1" ),
+                                                                                                     "QME",
+                                                                                                     "NVE" ) )
+                                                               .setTimeWindow( window )
+                                                               .build();
         return SingleValuedPairs.of( values, meta );
     }
 
@@ -234,10 +237,11 @@ public final class MetricTestDataFactory
                                                  Instant.parse( "2010-12-31T11:59:59Z" ),
                                                  ReferenceTime.VALID_TIME,
                                                  Duration.ofHours( 24 ) );
-        final Metadata meta = Metadata.of( MeasurementUnit.of( "MM/DAY" ),
-                                                           DatasetIdentifier.of( getLocation( "A" ),
-                                                                                                 "MAP" ),
-                                                           window );
+        final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "MM/DAY" ) )
+                                                               .setIdentifier( DatasetIdentifier.of( getLocation( "A" ),
+                                                                                                     "MAP" ) )
+                                                               .setTimeWindow( window )
+                                                               .build();
         return SingleValuedPairs.of( values, meta );
     }
 
@@ -250,14 +254,14 @@ public final class MetricTestDataFactory
     public static SingleValuedPairs getSingleValuedPairsSeven()
     {
         //Construct some single-valued pairs
-        final Metadata main = Metadata.of( MeasurementUnit.of( "CMS" ),
-                                                           DatasetIdentifier.of( getLocation( "DRRC2" ),
-                                                                                                 "SQIN",
-                                                                                                 "HEFS" ) );
-        final Metadata base = Metadata.of( MeasurementUnit.of( "CMS" ),
-                                                           DatasetIdentifier.of( getLocation( "DRRC2" ),
-                                                                                                 "SQIN",
-                                                                                                 "ESP" ) );
+        final SampleMetadata main = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                       DatasetIdentifier.of( getLocation( "DRRC2" ),
+                                                                             "SQIN",
+                                                                             "HEFS" ) );
+        final SampleMetadata base = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                       DatasetIdentifier.of( getLocation( "DRRC2" ),
+                                                                             "SQIN",
+                                                                             "ESP" ) );
         return SingleValuedPairs.of( Collections.emptyList(), Collections.emptyList(), main, base );
     }
 
@@ -293,21 +297,23 @@ public final class MetricTestDataFactory
                                                  Instant.parse( "2010-12-31T11:59:59Z" ),
                                                  ReferenceTime.VALID_TIME,
                                                  Duration.ofHours( 24 ) );
-        final Metadata meta = Metadata.of( MeasurementUnit.of( "CMS" ),
-                                                           DatasetIdentifier.of( getLocation( "DRRC2" ),
-                                                                                                 "SQIN",
-                                                                                                 "HEFS" ),
-                                                           window );
-        final Metadata baseMeta = Metadata.of( MeasurementUnit.of( "CMS" ),
-                                                               DatasetIdentifier.of( getLocation( "DRRC2" ),
+        final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
+                                                               .setIdentifier( DatasetIdentifier.of( getLocation( "DRRC2" ),
                                                                                                      "SQIN",
-                                                                                                     "ESP" ),
-                                                               window );
+                                                                                                     "HEFS" ) )
+                                                               .setTimeWindow( window )
+                                                               .build();
+        final SampleMetadata baseMeta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
+                                                                   .setIdentifier( DatasetIdentifier.of( getLocation( "DRRC2" ),
+                                                                                                         "SQIN",
+                                                                                                         "ESP" ) )
+                                                                   .setTimeWindow( window )
+                                                                   .build();
         return EnsemblePairs.of( values,
-                                            values,
-                                            meta,
-                                            baseMeta,
-                                            VectorOfDoubles.of( climatology.toArray( new Double[climatology.size()] ) ) );
+                                 values,
+                                 meta,
+                                 baseMeta,
+                                 VectorOfDoubles.of( climatology.toArray( new Double[climatology.size()] ) ) );
     }
 
     /**
@@ -347,23 +353,25 @@ public final class MetricTestDataFactory
                                                  Instant.parse( "2010-12-31T11:59:59Z" ),
                                                  ReferenceTime.VALID_TIME,
                                                  Duration.ofHours( 24 ) );
-        final Metadata meta = Metadata.of( MeasurementUnit.of( "CMS" ),
-                                                           DatasetIdentifier.of( getLocation( "DRRC2" ),
-                                                                                                 "SQIN",
-                                                                                                 "HEFS" ),
-                                                           window );
-
-        final Metadata baseMeta = Metadata.of( MeasurementUnit.of( "CMS" ),
-                                                               DatasetIdentifier.of( getLocation( "DRRC2" ),
+        final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
+                                                               .setIdentifier( DatasetIdentifier.of( getLocation( "DRRC2" ),
                                                                                                      "SQIN",
-                                                                                                     "ESP" ),
-                                                               window );
+                                                                                                     "HEFS" ) )
+                                                               .setTimeWindow( window )
+                                                               .build();
+
+        final SampleMetadata baseMeta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
+                                                                   .setIdentifier( DatasetIdentifier.of( getLocation( "DRRC2" ),
+                                                                                                         "SQIN",
+                                                                                                         "ESP" ) )
+                                                                   .setTimeWindow( window )
+                                                                   .build();
 
         return EnsemblePairs.of( values,
-                                            values,
-                                            meta,
-                                            baseMeta,
-                                            VectorOfDoubles.of( climatology.toArray( new Double[climatology.size()] ) ) );
+                                 values,
+                                 meta,
+                                 baseMeta,
+                                 VectorOfDoubles.of( climatology.toArray( new Double[climatology.size()] ) ) );
     }
 
     /**
@@ -398,14 +406,15 @@ public final class MetricTestDataFactory
                                                  Instant.parse( "2010-12-31T11:59:59Z" ),
                                                  ReferenceTime.VALID_TIME,
                                                  Duration.ofHours( 24 ) );
-        final Metadata meta = Metadata.of( MeasurementUnit.of( "CMS" ),
-                                                           DatasetIdentifier.of( getLocation( "DRRC2" ),
-                                                                                                 "SQIN",
-                                                                                                 "HEFS" ),
-                                                           window );
+        final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
+                                                               .setIdentifier( DatasetIdentifier.of( getLocation( "DRRC2" ),
+                                                                                                     "SQIN",
+                                                                                                     "HEFS" ) )
+                                                               .setTimeWindow( window )
+                                                               .build();
         return EnsemblePairs.of( values,
-                                            meta,
-                                            VectorOfDoubles.of( climatology.toArray( new Double[climatology.size()] ) ) );
+                                 meta,
+                                 VectorOfDoubles.of( climatology.toArray( new Double[climatology.size()] ) ) );
     }
 
     /**
@@ -425,10 +434,11 @@ public final class MetricTestDataFactory
                                                  Instant.parse( "2010-12-31T11:59:59Z" ),
                                                  ReferenceTime.VALID_TIME,
                                                  Duration.ofHours( 24 ) );
-        final Metadata meta = Metadata.of( MeasurementUnit.of( "MM/DAY" ),
-                                                           DatasetIdentifier.of( getLocation( "DRRC2" ),
-                                                                                                 "MAP" ),
-                                                           window );
+        final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "MM/DAY" ) )
+                                                               .setIdentifier( DatasetIdentifier.of( getLocation( "DRRC2" ),
+                                                                                                     "MAP" ) )
+                                                               .setTimeWindow( window )
+                                                               .build();
         return EnsemblePairs.of( values, meta );
     }
 
@@ -445,10 +455,11 @@ public final class MetricTestDataFactory
                                                  Instant.parse( "2010-12-31T11:59:59Z" ),
                                                  ReferenceTime.VALID_TIME,
                                                  Duration.ofHours( 24 ) );
-        final Metadata meta = Metadata.of( MeasurementUnit.of( "MM/DAY" ),
-                                                           DatasetIdentifier.of( getLocation( "DRRC2" ),
-                                                                                                 "MAP" ),
-                                                           window );
+        final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "MM/DAY" ) )
+                                                               .setIdentifier( DatasetIdentifier.of( getLocation( "DRRC2" ),
+                                                                                                     "MAP" ) )
+                                                               .setTimeWindow( window )
+                                                               .build();
         return EnsemblePairs.of( Collections.emptyList(), Collections.emptyList(), meta, meta );
     }
 
@@ -484,10 +495,10 @@ public final class MetricTestDataFactory
             values.add( DichotomousPair.of( false, false ) );
         }
 
-        final Metadata meta = Metadata.of( MeasurementUnit.of(),
-                                                           DatasetIdentifier.of( getLocation( "DRRC2" ),
-                                                                                                 "SQIN",
-                                                                                                 "HEFS" ) );
+        final SampleMetadata meta = SampleMetadata.of( MeasurementUnit.of(),
+                                                       DatasetIdentifier.of( getLocation( "DRRC2" ),
+                                                                             "SQIN",
+                                                                             "HEFS" ) );
         return DichotomousPairs.ofDichotomousPairs( values, meta ); //Construct the pairs
     }
 
@@ -557,10 +568,10 @@ public final class MetricTestDataFactory
                                               new boolean[] { false, false, true } ) );
         }
 
-        final Metadata meta = Metadata.of( MeasurementUnit.of(),
-                                                           DatasetIdentifier.of( getLocation( "DRRC2" ),
-                                                                                                 "SQIN",
-                                                                                                 "HEFS" ) );
+        final SampleMetadata meta = SampleMetadata.of( MeasurementUnit.of(),
+                                                       DatasetIdentifier.of( getLocation( "DRRC2" ),
+                                                                             "SQIN",
+                                                                             "HEFS" ) );
         return MulticategoryPairs.ofMulticategoryPairs( values, meta ); //Construct the pairs
     }
 
@@ -581,10 +592,10 @@ public final class MetricTestDataFactory
         values.add( DiscreteProbabilityPair.of( 0, 0.0 / 5.0 ) );
         values.add( DiscreteProbabilityPair.of( 1, 1.0 / 5.0 ) );
 
-        final Metadata meta = Metadata.of( MeasurementUnit.of(),
-                                                           DatasetIdentifier.of( getLocation( "DRRC2" ),
-                                                                                                 "SQIN",
-                                                                                                 "HEFS" ) );
+        final SampleMetadata meta = SampleMetadata.of( MeasurementUnit.of(),
+                                                       DatasetIdentifier.of( getLocation( "DRRC2" ),
+                                                                             "SQIN",
+                                                                             "HEFS" ) );
         return DiscreteProbabilityPairs.of( values, meta );
     }
 
@@ -611,14 +622,14 @@ public final class MetricTestDataFactory
         baseline.add( DiscreteProbabilityPair.of( 1, 3.0 / 5.0 ) );
         baseline.add( DiscreteProbabilityPair.of( 0, 4.0 / 5.0 ) );
         baseline.add( DiscreteProbabilityPair.of( 1, 1.0 / 5.0 ) );
-        final Metadata main = Metadata.of( MeasurementUnit.of(),
-                                                           DatasetIdentifier.of( getLocation( "DRRC2" ),
-                                                                                                 "SQIN",
-                                                                                                 "HEFS" ) );
-        final Metadata base = Metadata.of( MeasurementUnit.of(),
-                                                           DatasetIdentifier.of( getLocation( "DRRC2" ),
-                                                                                                 "SQIN",
-                                                                                                 "ESP" ) );
+        final SampleMetadata main = SampleMetadata.of( MeasurementUnit.of(),
+                                                       DatasetIdentifier.of( getLocation( "DRRC2" ),
+                                                                             "SQIN",
+                                                                             "HEFS" ) );
+        final SampleMetadata base = SampleMetadata.of( MeasurementUnit.of(),
+                                                       DatasetIdentifier.of( getLocation( "DRRC2" ),
+                                                                             "SQIN",
+                                                                             "ESP" ) );
         return DiscreteProbabilityPairs.of( values, baseline, main, base );
     }
 
@@ -986,10 +997,10 @@ public final class MetricTestDataFactory
         values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
         values.add( DiscreteProbabilityPair.of( 0, 0.1 ) );
 
-        final Metadata main = Metadata.of( MeasurementUnit.of(),
-                                                           DatasetIdentifier.of( getLocation( "Tampere" ),
-                                                                                                 "MAP",
-                                                                                                 "FMI" ) );
+        final SampleMetadata main = SampleMetadata.of( MeasurementUnit.of(),
+                                                       DatasetIdentifier.of( getLocation( "Tampere" ),
+                                                                             "MAP",
+                                                                             "FMI" ) );
         return DiscreteProbabilityPairs.of( values, main );
     }
 
@@ -1009,10 +1020,10 @@ public final class MetricTestDataFactory
         values.add( DiscreteProbabilityPair.of( 0, 0.0 / 5.0 ) );
         values.add( DiscreteProbabilityPair.of( 0, 1.0 / 5.0 ) );
 
-        final Metadata meta = Metadata.of( MeasurementUnit.of(),
-                                                           DatasetIdentifier.of( getLocation( "DRRC2" ),
-                                                                                                 "SQIN",
-                                                                                                 "HEFS" ) );
+        final SampleMetadata meta = SampleMetadata.of( MeasurementUnit.of(),
+                                                       DatasetIdentifier.of( getLocation( "DRRC2" ),
+                                                                             "SQIN",
+                                                                             "HEFS" ) );
         return DiscreteProbabilityPairs.of( values, meta );
     }
 
@@ -1049,10 +1060,11 @@ public final class MetricTestDataFactory
                                                  ReferenceTime.ISSUE_TIME,
                                                  Duration.ofHours( 6 ),
                                                  Duration.ofHours( 18 ) );
-        final Metadata metaData = Metadata.of( MeasurementUnit.of( "CMS" ),
-                                                               DatasetIdentifier.of( getLocation( "A" ),
-                                                                                                     "Streamflow" ),
-                                                               window );
+        final SampleMetadata metaData = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
+                                                                   .setIdentifier( DatasetIdentifier.of( getLocation( "A" ),
+                                                                                                         "Streamflow" ) )
+                                                                   .setTimeWindow( window )
+                                                                   .build();
         // Build the time-series
         return (TimeSeriesOfSingleValuedPairs) builder.addTimeSeriesData( firstId, firstValues )
                                                       .addTimeSeriesData( secondId, secondValues )
@@ -1085,10 +1097,11 @@ public final class MetricTestDataFactory
                                                  ReferenceTime.ISSUE_TIME,
                                                  Duration.ofHours( 6 ),
                                                  Duration.ofHours( 18 ) );
-        final Metadata metaData = Metadata.of( MeasurementUnit.of( "CMS" ),
-                                                               DatasetIdentifier.of( getLocation( "A" ),
-                                                                                                     "Streamflow" ),
-                                                               window );
+        final SampleMetadata metaData = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
+                                                                   .setIdentifier( DatasetIdentifier.of( getLocation( "A" ),
+                                                                                                         "Streamflow" ) )
+                                                                   .setTimeWindow( window )
+                                                                   .build();
         // Build the time-series
         return (TimeSeriesOfSingleValuedPairs) builder.addTimeSeriesData( firstId, firstValues )
                                                       .setMetadata( metaData )
@@ -1122,10 +1135,11 @@ public final class MetricTestDataFactory
                                                  ReferenceTime.ISSUE_TIME,
                                                  Duration.ofHours( 6 ),
                                                  Duration.ofHours( 18 ) );
-        final Metadata metaData = Metadata.of( MeasurementUnit.of( "CMS" ),
-                                                               DatasetIdentifier.of( getLocation( "A" ),
-                                                                                                     "Streamflow" ),
-                                                               window );
+        final SampleMetadata metaData = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
+                                                                   .setIdentifier( DatasetIdentifier.of( getLocation( "A" ),
+                                                                                                         "Streamflow" ) )
+                                                                   .setTimeWindow( window )
+                                                                   .build();
         // Build the time-series
         return (TimeSeriesOfSingleValuedPairs) builder.addTimeSeriesData( secondId, secondValues )
                                                       .setMetadata( metaData )
@@ -1148,10 +1162,11 @@ public final class MetricTestDataFactory
         // Create some default metadata for the time-series
         final TimeWindow window = TimeWindow.of( Instant.MIN,
                                                  Instant.MAX );
-        final Metadata metaData = Metadata.of( MeasurementUnit.of( "CMS" ),
-                                                               DatasetIdentifier.of( getLocation( "A" ),
-                                                                                                     "Streamflow" ),
-                                                               window );
+        final SampleMetadata metaData = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
+                                                                   .setIdentifier( DatasetIdentifier.of( getLocation( "A" ),
+                                                                                                         "Streamflow" ) )
+                                                                   .setTimeWindow( window )
+                                                                   .build();
         // Build the time-series
         return (TimeSeriesOfSingleValuedPairs) builder.setMetadata( metaData )
                                                       .build();
@@ -1188,10 +1203,11 @@ public final class MetricTestDataFactory
                                                  ReferenceTime.ISSUE_TIME,
                                                  Duration.ofHours( 6 ),
                                                  Duration.ofHours( 30 ) );
-        final Metadata metaData = Metadata.of( MeasurementUnit.of( "CMS" ),
-                                                               DatasetIdentifier.of( getLocation( "A" ),
-                                                                                                     "Streamflow" ),
-                                                               window );
+        final SampleMetadata metaData = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
+                                                                   .setIdentifier( DatasetIdentifier.of( getLocation( "A" ),
+                                                                                                         "Streamflow" ) )
+                                                                   .setTimeWindow( window )
+                                                                   .build();
         // Build the time-series
         return (TimeSeriesOfSingleValuedPairs) builder.addTimeSeriesData( secondId, secondValues )
                                                       .setMetadata( metaData )

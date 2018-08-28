@@ -5,13 +5,13 @@ import java.util.Objects;
 import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.ScoreOutputGroup;
+import wres.datamodel.MetricConstants.ScoreGroup;
 import wres.datamodel.Slicer;
-import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.inputs.pairs.SingleValuedPairs;
-import wres.datamodel.metadata.Metadata;
-import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.DoubleScoreOutput;
+import wres.datamodel.metadata.SampleMetadata;
+import wres.datamodel.metadata.StatisticMetadata;
+import wres.datamodel.sampledata.SampleDataException;
+import wres.datamodel.sampledata.pairs.SingleValuedPairs;
+import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.engine.statistics.metric.Collectable;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricCollection;
@@ -24,8 +24,8 @@ import wres.engine.statistics.metric.OrdinaryScore;
  * 
  * @author james.brown@hydrosolved.com
  */
-public class CorrelationPearsons extends OrdinaryScore<SingleValuedPairs, DoubleScoreOutput>
-        implements Collectable<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput>
+public class CorrelationPearsons extends OrdinaryScore<SingleValuedPairs, DoubleScoreStatistic>
+        implements Collectable<SingleValuedPairs, DoubleScoreStatistic, DoubleScoreStatistic>
 {
 
     /**
@@ -46,16 +46,16 @@ public class CorrelationPearsons extends OrdinaryScore<SingleValuedPairs, Double
     }
 
     @Override
-    public DoubleScoreOutput apply( SingleValuedPairs s )
+    public DoubleScoreStatistic apply( SingleValuedPairs s )
     {
         if ( Objects.isNull( s ) )
         {
-            throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
+            throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
         }
         
         // Get the metadata
-        Metadata metIn = s.getMetadata();
-        MetricOutputMetadata meta = MetricOutputMetadata.of( metIn,
+        SampleMetadata metIn = s.getMetadata();
+        StatisticMetadata meta = StatisticMetadata.of( metIn,
                                                              MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
                                                              MetricConstants.MAIN,
                                                              this.hasRealUnits(),
@@ -71,7 +71,7 @@ public class CorrelationPearsons extends OrdinaryScore<SingleValuedPairs, Double
                                       .applyAsDouble( correlation.correlation( Slicer.getLeftSide( s ),
                                                                                Slicer.getRightSide( s ) ) );
         }
-        return DoubleScoreOutput.of( returnMe, meta );
+        return DoubleScoreStatistic.of( returnMe, meta );
     }
 
     @Override
@@ -93,9 +93,9 @@ public class CorrelationPearsons extends OrdinaryScore<SingleValuedPairs, Double
     }
 
     @Override
-    public ScoreOutputGroup getScoreOutputGroup()
+    public ScoreGroup getScoreOutputGroup()
     {
-        return ScoreOutputGroup.NONE;
+        return ScoreGroup.NONE;
     }
 
     @Override
@@ -105,17 +105,17 @@ public class CorrelationPearsons extends OrdinaryScore<SingleValuedPairs, Double
     }
 
     @Override
-    public DoubleScoreOutput aggregate( DoubleScoreOutput output )
+    public DoubleScoreStatistic aggregate( DoubleScoreStatistic output )
     {
         if ( Objects.isNull( output ) )
         {
-            throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
+            throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
         }
         return output;
     }
 
     @Override
-    public DoubleScoreOutput getInputForAggregation( SingleValuedPairs input )
+    public DoubleScoreStatistic getInputForAggregation( SingleValuedPairs input )
     {
         return apply( input );
     }

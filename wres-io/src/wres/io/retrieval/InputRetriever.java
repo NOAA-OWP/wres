@@ -29,18 +29,19 @@ import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.TimeScaleConfig;
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.inputs.MetricInput;
-import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.inputs.pairs.EnsemblePair;
-import wres.datamodel.inputs.pairs.EnsemblePairs;
-import wres.datamodel.inputs.pairs.SingleValuedPair;
-import wres.datamodel.inputs.pairs.SingleValuedPairs;
-import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs.TimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.Metadata;
+import wres.datamodel.metadata.SampleMetadata;
+import wres.datamodel.metadata.SampleMetadata.SampleMetadataBuilder;
 import wres.datamodel.metadata.TimeWindow;
+import wres.datamodel.sampledata.SampleData;
+import wres.datamodel.sampledata.SampleDataException;
+import wres.datamodel.sampledata.pairs.EnsemblePair;
+import wres.datamodel.sampledata.pairs.EnsemblePairs;
+import wres.datamodel.sampledata.pairs.SingleValuedPair;
+import wres.datamodel.sampledata.pairs.SingleValuedPairs;
+import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs.TimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.time.Event;
 import wres.grid.client.Fetcher;
 import wres.grid.client.Request;
@@ -88,7 +89,7 @@ class InputRetriever extends Retriever //WRESCallable<MetricInput<?>>
     }
 
     @Override
-    public MetricInput<?> execute() throws SQLException, IOException
+    public SampleData<?> execute() throws SQLException, IOException
     {
         if ( this.getProjectDetails().usesGriddedData( this.getProjectDetails().getRight() ))
         {
@@ -124,7 +125,7 @@ class InputRetriever extends Retriever //WRESCallable<MetricInput<?>>
             }
         }
 
-        MetricInput<?> input;
+        SampleData<?> input;
 
         try
         {
@@ -158,13 +159,13 @@ class InputRetriever extends Retriever //WRESCallable<MetricInput<?>>
      * @throws SQLException
      */
     @Override
-    protected MetricInput<?> createInput() throws IOException
+    protected SampleData<?> createInput() throws IOException
     {
-        MetricInput<?> input;
+        SampleData<?> input;
 
-        Metadata metadata =
+        SampleMetadata metadata =
                 this.buildMetadata( this.getProjectDetails().getProjectConfig(), false );
-        Metadata baselineMetadata = null;
+        SampleMetadata baselineMetadata = null;
 
         if (this.getPrimaryPairs().isEmpty())
         {
@@ -221,7 +222,7 @@ class InputRetriever extends Retriever //WRESCallable<MetricInput<?>>
                 }
             }
         }
-        catch ( MetricInputException mie )
+        catch ( SampleDataException mie )
         {
             String message = "A collection of pairs could not be created at"
                              + " window "
@@ -230,13 +231,13 @@ class InputRetriever extends Retriever //WRESCallable<MetricInput<?>>
                              + ConfigHelper.getFeatureDescription( this.getFeature() )
                              + "'.";
             // Decorating with more information in our message.
-            throw new MetricInputException( message, mie );
+            throw new SampleDataException( message, mie );
         }
 
         return input;
     }
 
-    private MetricInput createSingleValuedInput(Metadata rightMetadata, Metadata baselineMetadata)
+    private SampleData createSingleValuedInput(SampleMetadata rightMetadata, SampleMetadata baselineMetadata)
     {
         List<SingleValuedPair> primary = convertToPairOfDoubles( this.getPrimaryPairs() );
         List<SingleValuedPair> baseline = null;
@@ -253,7 +254,7 @@ class InputRetriever extends Retriever //WRESCallable<MetricInput<?>>
                                                 this.getClimatology() );
     }
 
-    private MetricInput createSingleValuedTimeSeriesInput(Metadata rightMetadata, Metadata baselineMetadata)
+    private SampleData createSingleValuedTimeSeriesInput(SampleMetadata rightMetadata, SampleMetadata baselineMetadata)
             throws RetrievalFailedException
     {
         TimeSeriesOfSingleValuedPairsBuilder builder = new TimeSeriesOfSingleValuedPairsBuilder();
@@ -274,7 +275,7 @@ class InputRetriever extends Retriever //WRESCallable<MetricInput<?>>
         return builder.build();
     }
 
-    private MetricInput createEnsembleTimeSeriesInput(Metadata rightMetadata, Metadata baselineMetadata)
+    private SampleData createEnsembleTimeSeriesInput(SampleMetadata rightMetadata, SampleMetadata baselineMetadata)
             throws RetrievalFailedException
     {
         throw new NotImplementedException( "Ensemble Time Series Inputs cannot be created yet." );
@@ -298,7 +299,7 @@ class InputRetriever extends Retriever //WRESCallable<MetricInput<?>>
         return builder.build();*/
     }
 
-    private MetricInput createEnsembleInput(Metadata rightMetadata, Metadata baselineMetadata)
+    private SampleData createEnsembleInput(SampleMetadata rightMetadata, SampleMetadata baselineMetadata)
     {
         List<EnsemblePair> primary =
                 InputRetriever.extractRawPairs( this.getPrimaryPairs() );
@@ -1099,7 +1100,7 @@ class InputRetriever extends Retriever //WRESCallable<MetricInput<?>>
      * @throws IOException
      */
     @Override
-    protected Metadata buildMetadata( ProjectConfig projectConfig,
+    protected SampleMetadata buildMetadata( ProjectConfig projectConfig,
                                     boolean isBaseline )
             throws IOException
     {
@@ -1277,10 +1278,11 @@ class InputRetriever extends Retriever //WRESCallable<MetricInput<?>>
                                                             lastLead,
                                                             this.issueDatesPool );
 
-        return Metadata.of( dim,
-                            datasetIdentifier,
-                            timeWindow,
-                            projectConfig );
+        return new SampleMetadataBuilder().setMeasurementUnit( dim )
+                                          .setIdentifier( datasetIdentifier )
+                                          .setTimeWindow( timeWindow )
+                                          .setProjectConfig( projectConfig )
+                                          .build();
     }
 
     /**

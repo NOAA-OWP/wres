@@ -35,20 +35,20 @@ import wres.config.generated.DestinationType;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
-import wres.datamodel.metadata.MetricOutputMetadata;
+import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.outputs.DoubleScoreOutput;
-import wres.datamodel.outputs.ListOfMetricOutput;
+import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
 import wres.io.writing.WriteException;
 
 /**
- * Consumes {@link DoubleScoreOutput} and writes one or more NetCDF files.
+ * Consumes {@link DoubleScoreStatistic} and writes one or more NetCDF files.
  * Only one expected to be used per project execution (as of 2018-03-13)
  */
 
-public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
+public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreStatistic>,
         Closeable
 {
     /** The Logger */
@@ -122,7 +122,7 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
 
 
     /**
-     * Returns a writer of {@link DoubleScoreOutput}. Assumes that the project
+     * Returns a writer of {@link DoubleScoreStatistic}. Assumes that the project
      * configuration has already been validated, so that validation is the
      * caller's responsibility.
      *
@@ -158,13 +158,13 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
 
 
     /**
-     * Consumes a map of {@link DoubleScoreOutput} into a NetCDF file.
+     * Consumes a map of {@link DoubleScoreStatistic} into a NetCDF file.
      *
      * @param output the score output for one metric at several time windows and thresholds
      */
 
     @Override
-    public void accept( ListOfMetricOutput<DoubleScoreOutput> output )
+    public void accept( ListOfStatistics<DoubleScoreStatistic> output )
     {
         Objects.requireNonNull( output );
 
@@ -654,7 +654,7 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
 
     private void writeMetric( NetcdfFileWriter writer,
                               MetricConstants id,
-                              ListOfMetricOutput<DoubleScoreOutput> output )
+                              ListOfStatistics<DoubleScoreStatistic> output )
             throws IOException
     {
         Objects.requireNonNull( writer );
@@ -679,7 +679,7 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
                                                                       "station_id" );
         
         // Find the metadata for the first element, which is sufficient here
-        MetricOutputMetadata meta = output.getData().get( 0 ).getMetadata();
+        SampleMetadata meta = output.getData().get( 0 ).getMetadata().getSampleMetadata();
 
         String featureName = meta.getIdentifier()
                                  .getGeospatialID()
@@ -712,7 +712,7 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
 
         // Discover the available thresholds
         SortedSet<OneOrTwoThresholds> setOfThresholds =
-                Slicer.discover( output, next -> next.getMetadata().getThresholds() );
+                Slicer.discover( output, next -> next.getMetadata().getSampleMetadata().getThresholds() );
 
         for ( OneOrTwoThresholds t : setOfThresholds )
         {
@@ -775,7 +775,8 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
                                                           "lead_seconds" );
 
         // Discover the time windows
-        SortedSet<TimeWindow> timeWindows = Slicer.discover( output, next -> next.getMetadata().getTimeWindow() );
+        SortedSet<TimeWindow> timeWindows =
+                Slicer.discover( output, next -> next.getMetadata().getSampleMetadata().getTimeWindow() );
 
         for ( TimeWindow window : timeWindows )
         {
@@ -879,21 +880,26 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
         // Discover the available pairs of time windows and thresholds
         SortedSet<Pair<TimeWindow, OneOrTwoThresholds>> pairsOfTimesAndThresholds =
                 Slicer.discover( output,
-                                 next -> Pair.of( next.getMetadata().getTimeWindow(),
-                                                  next.getMetadata().getThresholds() ) );
+                                 next -> Pair.of( next.getMetadata().getSampleMetadata().getTimeWindow(),
+                                                  next.getMetadata().getSampleMetadata().getThresholds() ) );
 
         for ( Pair<TimeWindow, OneOrTwoThresholds> wrappedKey : pairsOfTimesAndThresholds )
         {
             // Obtain the output for the next pair of time window and threshold
-            ListOfMetricOutput<DoubleScoreOutput> next =
+            ListOfStatistics<DoubleScoreStatistic> next =
                     Slicer.filter( output,
-                                   nextItem -> nextItem.getTimeWindow().equals( wrappedKey.getLeft() )
-                                               && nextItem.getThresholds().equals( wrappedKey.getRight() ) );
-            
+                                   nextItem -> nextItem.getSampleMetadata()
+                                                       .getTimeWindow()
+                                                       .equals( wrappedKey.getLeft() )
+                                               && nextItem.getSampleMetadata()
+                                                          .getThresholds()
+                                                          .equals( wrappedKey.getRight() ) );
+
             // One score per time and threshold
-            DoubleScoreOutput nextScore = next.getData().get( 0 );
+            DoubleScoreStatistic nextScore = next.getData().get( 0 );
 
             String stationName = nextScore.getMetadata()
+                                          .getSampleMetadata()
                                           .getIdentifier()
                                           .getGeospatialID()
                                           .getLocationName();
@@ -936,7 +942,7 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
                                    String stationName,
                                    Threshold threshold,
                                    TimeWindow pool,
-                                   DoubleScoreOutput scoreOutput )
+                                   DoubleScoreStatistic scoreOutput )
             throws IOException
     {
         Objects.requireNonNull( writer );

@@ -3,11 +3,9 @@ package wres.datamodel.metadata;
 import wres.datamodel.DataException;
 
 /**
- * A runtime exception associated with incorrect {@link Metadata}.
+ * A runtime exception associated with incorrect metadata.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.4
  */
 
 public final class MetadataException extends DataException

@@ -43,7 +43,7 @@ import wres.config.generated.TimeScaleConfig;
 import wres.config.generated.TimeScaleFunction;
 import wres.config.generated.TimeSeriesMetricConfig;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.MetricOutputGroup;
+import wres.datamodel.MetricConstants.StatisticGroup;
 import wres.engine.statistics.metric.config.MetricConfigHelper;
 import wres.io.config.ConfigHelper;
 import wres.system.SystemSettings;
@@ -386,8 +386,8 @@ public class Validation
                     // Check that the named metric is consistent with any pooling window configuration
                     if ( projectConfigPlus.getProjectConfig().getPair().getIssuedDatesPoolingWindow() != null
                          && checkMe != null
-                         && ! ( checkMe.isInGroup( MetricOutputGroup.DOUBLE_SCORE )
-                                || checkMe.isInGroup( MetricOutputGroup.DURATION_SCORE ) ) )
+                         && ! ( checkMe.isInGroup( StatisticGroup.DOUBLE_SCORE )
+                                || checkMe.isInGroup( StatisticGroup.DURATION_SCORE ) ) )
                     {
                         result = false;
                         if ( LOGGER.isWarnEnabled() )

@@ -66,8 +66,8 @@ import wres.config.generated.TimeScaleConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
+import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
@@ -1388,7 +1388,7 @@ public class ConfigHelper
     }
 
     /**
-     * Returns a path to write from a combination of the {@link DestinationConfig} and the {@link MetricOutputMetadata}.
+     * Returns a path to write from a combination of the {@link DestinationConfig} and the {@link StatisticMetadata}.
      * 
      * @param destinationConfig the destination configuration
      * @param meta the metadata
@@ -1398,14 +1398,14 @@ public class ConfigHelper
      */
 
     public static Path getOutputPathToWrite( DestinationConfig destinationConfig,
-                                             MetricOutputMetadata meta )
+                                             StatisticMetadata meta )
             throws IOException
     {
         return ConfigHelper.getOutputPathToWrite( destinationConfig, meta, (String) null );
     }
 
     /**
-     * Returns a path to write from a combination of the {@link DestinationConfig}, the {@link MetricOutputMetadata} 
+     * Returns a path to write from a combination of the {@link DestinationConfig}, the {@link StatisticMetadata} 
      * associated with the results and a {@link TimeWindow}.
      * 
      * @param destinationConfig the destination configuration
@@ -1417,7 +1417,7 @@ public class ConfigHelper
      */
 
     public static Path getOutputPathToWrite( DestinationConfig destinationConfig,
-                                             MetricOutputMetadata meta,
+                                             StatisticMetadata meta,
                                              TimeWindow timeWindow )
             throws IOException
     {
@@ -1429,7 +1429,7 @@ public class ConfigHelper
     }
 
     /**
-     * Returns a path to write from a combination of the {@link DestinationConfig}, the {@link MetricOutputMetadata} 
+     * Returns a path to write from a combination of the {@link DestinationConfig}, the {@link StatisticMetadata} 
      * associated with the results and a {@link OneOrTwoThresholds}.
      * 
      * @param destinationConfig the destination configuration
@@ -1441,7 +1441,7 @@ public class ConfigHelper
      */
 
     public static Path getOutputPathToWrite( DestinationConfig destinationConfig,
-                                             MetricOutputMetadata meta,
+                                             StatisticMetadata meta,
                                              OneOrTwoThresholds threshold )
             throws IOException
     {
@@ -1461,36 +1461,38 @@ public class ConfigHelper
      * @param append an optional string to append to the end of the path, may be null
      * @return a path to write
      * @throws NullPointerException if any required input is null, including the identifier associated 
-     *            with the metadata
+     *            with the sample metadata
      * @throws IOException if the path cannot be produced
      * @throws ProjectConfigException when the destination configuration is invalid
      */
 
     public static Path getOutputPathToWrite( DestinationConfig destinationConfig,
-                                             MetricOutputMetadata meta,
+                                             StatisticMetadata meta,
                                              String append )
             throws IOException
     {
-        Objects.requireNonNull( destinationConfig, "Enter non-null destination configuration to establish "
+        Objects.requireNonNull( destinationConfig,
+                                "Enter non-null destination configuration to establish "
                                                    + "a path for writing." );
 
         Objects.requireNonNull( meta, "Enter non-null metadata to establish a path for writing." );
 
-        Objects.requireNonNull( meta.getIdentifier(), "Enter a non-null identifier for the metadata to establish "
-                                                      + "a path for writing." );
+        Objects.requireNonNull( meta.getSampleMetadata().getIdentifier(),
+                                "Enter a non-null identifier for the metadata to establish "
+                                                                          + "a path for writing." );
 
         // Determine the directory
         File outputDirectory = getDirectoryFromDestinationConfig( destinationConfig );
 
         // Build the path 
         StringJoiner joinElements = new StringJoiner( "_" );
-        joinElements.add( meta.getIdentifier().getGeospatialID().toString() )
-                    .add( meta.getIdentifier().getVariableID() );
+        joinElements.add( meta.getSampleMetadata().getIdentifier().getGeospatialID().toString() )
+                    .add( meta.getSampleMetadata().getIdentifier().getVariableID() );
 
         // Add optional scenario identifier
-        if ( meta.getIdentifier().hasScenarioID() )
+        if ( meta.getSampleMetadata().getIdentifier().hasScenarioID() )
         {
-            joinElements.add( meta.getIdentifier().getScenarioID() );
+            joinElements.add( meta.getSampleMetadata().getIdentifier().getScenarioID() );
         }
 
         // Add the metric name()
@@ -1688,14 +1690,14 @@ public class ConfigHelper
         ThresholdConstants.ThresholdDataType dataType = ThresholdConstants.ThresholdDataType.LEFT;
         if ( Objects.nonNull( threshold.getApplyTo() ) )
         {
-            dataType = DataFactory.getThresholdDataType( threshold );
+            dataType = DataFactory.getThresholdDataType( threshold.getApplyTo() );
         }
         
         // Threshold type: default to probability
         ThresholdConstants.ThresholdGroup thresholdType = ThresholdConstants.ThresholdGroup.PROBABILITY;
         if ( Objects.nonNull( threshold.getType() ) )
         {
-            thresholdType = DataFactory.getThresholdGroup( threshold );
+            thresholdType = DataFactory.getThresholdGroup( threshold.getType() );
         }
 
         // Default to probability

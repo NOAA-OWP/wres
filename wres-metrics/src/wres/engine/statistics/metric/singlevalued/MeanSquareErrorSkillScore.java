@@ -3,15 +3,15 @@ package wres.engine.statistics.metric.singlevalued;
 import java.util.Objects;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.ScoreOutputGroup;
+import wres.datamodel.MetricConstants.ScoreGroup;
 import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.inputs.pairs.SingleValuedPair;
-import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.DoubleScoreOutput;
+import wres.datamodel.metadata.StatisticMetadata;
+import wres.datamodel.sampledata.SampleDataException;
+import wres.datamodel.sampledata.pairs.SingleValuedPair;
+import wres.datamodel.sampledata.pairs.SingleValuedPairs;
+import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.engine.statistics.metric.DecomposableScore;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricCalculationException;
@@ -44,14 +44,14 @@ public class MeanSquareErrorSkillScore extends DecomposableScore<SingleValuedPai
     private final SumOfSquareError sse;
 
     @Override
-    public DoubleScoreOutput apply( final SingleValuedPairs s )
+    public DoubleScoreStatistic apply( final SingleValuedPairs s )
     {
         if ( Objects.isNull( s ) )
         {
-            throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
+            throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
         }
 
-        if ( this.getScoreOutputGroup() != ScoreOutputGroup.NONE )
+        if ( this.getScoreOutputGroup() != ScoreGroup.NONE )
         {
             throw new MetricCalculationException( "Decomposition is not currently implemented for the '" + this
                                                   + "'." );
@@ -87,15 +87,15 @@ public class MeanSquareErrorSkillScore extends DecomposableScore<SingleValuedPai
         DatasetIdentifier baselineIdentifier = null;
         if ( s.hasBaseline() )
         {
-            baselineIdentifier = s.getMetadataForBaseline().getIdentifier();
+            baselineIdentifier = s.getBaselineData().getMetadata().getIdentifier();
         }
-        final MetricOutputMetadata metOut = MetricOutputMetadata.of( s.getMetadata(),
+        final StatisticMetadata metOut = StatisticMetadata.of( s.getMetadata(),
                                                                      this.getID(),
                                                                      MetricConstants.MAIN,
                                                                      this.hasRealUnits(),
                                                                      s.getRawData().size(),
                                                                      baselineIdentifier );
-        return DoubleScoreOutput.of( result, metOut );
+        return DoubleScoreStatistic.of( result, metOut );
     }
 
     @Override
@@ -133,7 +133,7 @@ public class MeanSquareErrorSkillScore extends DecomposableScore<SingleValuedPai
      * @throws MetricParameterException if one or more parameters is invalid 
      */
 
-    private MeanSquareErrorSkillScore( ScoreOutputGroup decompositionId ) throws MetricParameterException
+    private MeanSquareErrorSkillScore( ScoreGroup decompositionId ) throws MetricParameterException
     {
         super( decompositionId );
         sse = SumOfSquareError.of();

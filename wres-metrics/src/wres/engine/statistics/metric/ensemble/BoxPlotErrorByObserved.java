@@ -4,9 +4,9 @@ import java.util.Arrays;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
+import wres.datamodel.sampledata.pairs.EnsemblePair;
 import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.inputs.pairs.EnsemblePair;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricParameterException;
 

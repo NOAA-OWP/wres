@@ -20,23 +20,23 @@ import java.util.function.Predicate;
 import java.util.function.ToDoubleFunction;
 import java.util.stream.Collectors;
 
-import wres.datamodel.inputs.pairs.DichotomousPair;
-import wres.datamodel.inputs.pairs.DichotomousPairs;
-import wres.datamodel.inputs.pairs.DiscreteProbabilityPair;
-import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
-import wres.datamodel.inputs.pairs.EnsemblePair;
-import wres.datamodel.inputs.pairs.EnsemblePairs;
-import wres.datamodel.inputs.pairs.SingleValuedPair;
-import wres.datamodel.inputs.pairs.SingleValuedPairs;
-import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairs;
-import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairs.TimeSeriesOfEnsemblePairsBuilder;
-import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
-import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs.TimeSeriesOfSingleValuedPairsBuilder;
-import wres.datamodel.metadata.MetricOutputMetadata;
+import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.outputs.ListOfMetricOutput;
-import wres.datamodel.outputs.MetricOutput;
-import wres.datamodel.outputs.ScoreOutput;
+import wres.datamodel.sampledata.pairs.DichotomousPair;
+import wres.datamodel.sampledata.pairs.DichotomousPairs;
+import wres.datamodel.sampledata.pairs.DiscreteProbabilityPair;
+import wres.datamodel.sampledata.pairs.DiscreteProbabilityPairs;
+import wres.datamodel.sampledata.pairs.EnsemblePair;
+import wres.datamodel.sampledata.pairs.EnsemblePairs;
+import wres.datamodel.sampledata.pairs.SingleValuedPair;
+import wres.datamodel.sampledata.pairs.SingleValuedPairs;
+import wres.datamodel.sampledata.pairs.TimeSeriesOfEnsemblePairs;
+import wres.datamodel.sampledata.pairs.TimeSeriesOfEnsemblePairs.TimeSeriesOfEnsemblePairsBuilder;
+import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
+import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs.TimeSeriesOfSingleValuedPairsBuilder;
+import wres.datamodel.statistics.ListOfStatistics;
+import wres.datamodel.statistics.ScoreStatistic;
+import wres.datamodel.statistics.Statistic;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdType;
@@ -535,14 +535,14 @@ public final class Slicer
         //Filter baseline as required
         if ( input.hasBaseline() )
         {
-            List<SingleValuedPair> basePairs = input.getRawDataForBaseline();
+            List<SingleValuedPair> basePairs = input.getBaselineData().getRawData();
             List<SingleValuedPair> basePairsSubset =
                     basePairs.stream().filter( condition ).collect( Collectors.toList() );
 
             return SingleValuedPairs.of( mainPairsSubset,
                                          basePairsSubset,
                                          input.getMetadata(),
-                                         input.getMetadataForBaseline(),
+                                         input.getBaselineData().getMetadata(),
                                          climatology );
         }
 
@@ -583,14 +583,14 @@ public final class Slicer
         //Filter baseline as required
         if ( input.hasBaseline() )
         {
-            List<EnsemblePair> basePairs = input.getRawDataForBaseline();
+            List<EnsemblePair> basePairs = input.getBaselineData().getRawData();
             List<EnsemblePair> basePairsSubset =
                     basePairs.stream().filter( condition ).collect( Collectors.toList() );
 
             return EnsemblePairs.of( mainPairsSubset,
                                      basePairsSubset,
                                      input.getMetadata(),
-                                     input.getMetadataForBaseline(),
+                                     input.getBaselineData().getMetadata(),
                                      climatology );
         }
 
@@ -639,7 +639,7 @@ public final class Slicer
 
         if ( input.hasBaseline() )
         {
-            List<EnsemblePair> basePairs = input.getRawDataForBaseline();
+            List<EnsemblePair> basePairs = input.getBaselineData().getRawData();
             List<EnsemblePair> basePairsSubset = new ArrayList<>();
 
             for ( EnsemblePair next : basePairs )
@@ -654,7 +654,7 @@ public final class Slicer
             return EnsemblePairs.of( mainPairsSubset,
                                      basePairsSubset,
                                      input.getMetadata(),
-                                     input.getMetadataForBaseline(),
+                                     input.getBaselineData().getMetadata(),
                                      climatology );
         }
         return EnsemblePairs.of( mainPairsSubset, input.getMetadata(), climatology );
@@ -705,7 +705,7 @@ public final class Slicer
         //Filter baseline pairs as required
         if ( input.hasBaseline() )
         {
-            builder.setMetadataForBaseline( input.getMetadataForBaseline() );
+            builder.setMetadataForBaseline( input.getBaselineData().getMetadata() );
 
             for ( TimeSeries<SingleValuedPair> next : input.getBaselineData().basisTimeIterator() )
             {
@@ -947,12 +947,12 @@ public final class Slicer
     }
 
     /**
-     * <p>Returns a subset of metric outputs whose {@link MetricOutputMetadata} matches the supplied predicate. For 
+     * <p>Returns a subset of metric outputs whose {@link StatisticMetadata} matches the supplied predicate. For 
      * example, to filter by a particular {@link TimeWindow} and {@link OneOrTwoThresholds} associated with the 
      * output metadata:</p>
      * 
-     * <p><code>Slicer.filter( list, a {@literal ->} a.getTimeWindow().equals( someWindow ) {@literal &&} 
-     *              a.getThresholds().equals( someThreshold ) );</code></p>
+     * <p><code>Slicer.filter( list, a {@literal ->} a.getSampleMetadata().getTimeWindow().equals( someWindow ) 
+     *                      {@literal &&} a.getSampleMetadata().getThresholds().equals( someThreshold ) );</code></p>
      *              
      * @param <T> the output type
      * @param outputs the outputs to filter
@@ -961,13 +961,13 @@ public final class Slicer
      * @throws NullPointerException if the input list is null or the predicate is null
      */
 
-    public static <T extends MetricOutput<?>> ListOfMetricOutput<T> filter( ListOfMetricOutput<T> outputs,
-                                                                            Predicate<MetricOutputMetadata> predicate )
+    public static <T extends Statistic<?>> ListOfStatistics<T> filter( ListOfStatistics<T> outputs,
+                                                                       Predicate<StatisticMetadata> predicate )
     {
         Objects.requireNonNull( outputs, NULL_INPUT_EXCEPTION );
 
         Objects.requireNonNull( predicate, NULL_INPUT_EXCEPTION );
-        
+
         List<T> results = new ArrayList<>();
 
         // Filter
@@ -979,25 +979,27 @@ public final class Slicer
             }
         }
 
-        return ListOfMetricOutput.of( Collections.unmodifiableList( results ) );
+        return ListOfStatistics.of( Collections.unmodifiableList( results ) );
     }
 
     /**
-     * <p>Discovers the unique instances of a given type associated with a {@link ListOfMetricOutput}. The mapper 
+     * <p>Discovers the unique instances of a given type associated with a {@link ListOfStatistics}. The mapper 
      * function identifies the type to discover. For example, to discover the unique thresholds contained in the list of
      * outputs:</p>
      * 
-     * <p><code>Slicer.discover( outputs, next {@literal ->} next.getMetadata().getThresholds() );</code></p>
+     * <p><code>Slicer.discover( outputs, next {@literal ->} 
+     *                                         next.getMetadata().getSampleMetadata().getThresholds() );</code></p>
      * 
      * <p>To discover the unique metrics contained in the list of outputs:</p>
      * 
-     * <p><code>Slicer.discover( outputs, next {@literal ->} next.getMetadata().getMetricID() );</code></p>
+     * <p><code>Slicer.discover( outputs, next {@literal ->}
+     *                                         next.getSampleMetadata().getMetadata().getMetricID() );</code></p>
      * 
      * <p>To discover the unique pairs of lead times in the list of outputs:</p>
      * 
      * <p><code>Slicer.discover( outputs, next {@literal ->} 
-     * Pair.of( next.getMetadata().getTimeWindow().getEarliestLeadTime(), 
-     * next.getMetadata().getTimeWindow().getLatestLeadTime() );</code></p>
+     * Pair.of( next.getMetadata().getSampleMetadata().getTimeWindow().getEarliestLeadTime(), 
+     * next.getMetadata().getSampleMetadata().getTimeWindow().getLatestLeadTime() );</code></p>
      * 
      * <p>Returns the empty set if no elements are mapped.</p>
      * 
@@ -1009,13 +1011,13 @@ public final class Slicer
      * @throws NullPointerException if the input list is null or the mapper is null
      */
 
-    public static <S extends MetricOutput<?>, T extends Object> SortedSet<T> discover( ListOfMetricOutput<S> outputs,
-                                                                                       Function<S, T> mapper )
+    public static <S extends Statistic<?>, T extends Object> SortedSet<T> discover( ListOfStatistics<S> outputs,
+                                                                                    Function<S, T> mapper )
     {
         Objects.requireNonNull( outputs, NULL_INPUT_EXCEPTION );
-        
+
         Objects.requireNonNull( mapper, NULL_INPUT_EXCEPTION );
-        
+
         return Collections.unmodifiableSortedSet( outputs.getData()
                                                          .stream()
                                                          .map( mapper )
@@ -1036,8 +1038,8 @@ public final class Slicer
      * @return the first available output that matches the input identifier or null if no such output is available
      */
 
-    public static <T extends MetricOutput<?>> ListOfMetricOutput<T> filter( ListOfMetricOutput<T> outputs,
-                                                                            MetricConstants metricIdentifier )
+    public static <T extends Statistic<?>> ListOfStatistics<T> filter( ListOfStatistics<T> outputs,
+                                                                       MetricConstants metricIdentifier )
     {
         Objects.requireNonNull( outputs, NULL_INPUT_EXCEPTION );
 
@@ -1066,7 +1068,7 @@ public final class Slicer
     }
 
     /**
-     * Returns a map of {@link ScoreOutput} for each component in the input map of {@link ScoreOutput}. The slices are 
+     * Returns a map of {@link ScoreStatistic} for each component in the input map of {@link ScoreStatistic}. The slices are 
      * mapped to their {@link MetricConstants} component identifier.
      * 
      * @param <T> the score component type
@@ -1075,30 +1077,30 @@ public final class Slicer
      * @throws NullPointerException if the input is null
      */
 
-    public static <T extends ScoreOutput<?, T>> Map<MetricConstants, ListOfMetricOutput<T>>
-            filterByMetricComponent( ListOfMetricOutput<T> input )
+    public static <T extends ScoreStatistic<?, T>> Map<MetricConstants, ListOfStatistics<T>>
+            filterByMetricComponent( ListOfStatistics<T> input )
     {
         Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
 
-        Map<MetricConstants, ListOfMetricOutput<T>> returnMe = new EnumMap<>( MetricConstants.class );
-        
+        Map<MetricConstants, ListOfStatistics<T>> returnMe = new EnumMap<>( MetricConstants.class );
+
         // Find the components
         SortedSet<MetricConstants> components = new TreeSet<>();
         input.forEach( next -> components.addAll( next.getComponents() ) );
-        
+
         // Loop the components
         for ( MetricConstants nextComponent : components )
         {
             List<T> listOfComponent = new ArrayList<>();
             // Loop the entries
-            for( T nextItem : input )
+            for ( T nextItem : input )
             {
-                if( nextItem.hasComponent( nextComponent ) )
+                if ( nextItem.hasComponent( nextComponent ) )
                 {
                     listOfComponent.add( nextItem.getComponent( nextComponent ) );
                 }
             }
-            returnMe.put( nextComponent, ListOfMetricOutput.of( listOfComponent ) );
+            returnMe.put( nextComponent, ListOfStatistics.of( listOfComponent ) );
         }
 
         return Collections.unmodifiableMap( returnMe );
@@ -1147,13 +1149,13 @@ public final class Slicer
         mainPairs.stream().map( mapper ).forEach( mainPairsTransformed::add );
         if ( input.hasBaseline() )
         {
-            List<SingleValuedPair> basePairs = input.getRawDataForBaseline();
+            List<SingleValuedPair> basePairs = input.getBaselineData().getRawData();
             List<DichotomousPair> basePairsTransformed = new ArrayList<>();
             basePairs.stream().map( mapper ).forEach( basePairsTransformed::add );
             return DichotomousPairs.ofDichotomousPairs( mainPairsTransformed,
                                                         basePairsTransformed,
                                                         input.getMetadata(),
-                                                        input.getMetadataForBaseline(),
+                                                        input.getBaselineData().getMetadata(),
                                                         input.getClimatology() );
         }
         return DichotomousPairs.ofDichotomousPairs( mainPairsTransformed,
@@ -1183,13 +1185,13 @@ public final class Slicer
         mainPairs.stream().map( mapper ).forEach( mainPairsTransformed::add );
         if ( input.hasBaseline() )
         {
-            List<DiscreteProbabilityPair> basePairs = input.getRawDataForBaseline();
+            List<DiscreteProbabilityPair> basePairs = input.getBaselineData().getRawData();
             List<DichotomousPair> basePairsTransformed = new ArrayList<>();
             basePairs.stream().map( mapper ).forEach( basePairsTransformed::add );
             return DichotomousPairs.ofDichotomousPairs( mainPairsTransformed,
                                                         basePairsTransformed,
                                                         input.getMetadata(),
-                                                        input.getMetadataForBaseline(),
+                                                        input.getBaselineData().getMetadata(),
                                                         input.getClimatology() );
         }
         return DichotomousPairs.ofDichotomousPairs( mainPairsTransformed,
@@ -1216,11 +1218,12 @@ public final class Slicer
         List<SingleValuedPair> mainPairsTransformed = toSingleValuedPairs( input.getRawData(), mapper );
         if ( input.hasBaseline() )
         {
-            List<SingleValuedPair> basePairsTransformed = toSingleValuedPairs( input.getRawDataForBaseline(), mapper );
+            List<SingleValuedPair> basePairsTransformed =
+                    toSingleValuedPairs( input.getBaselineData().getRawData(), mapper );
             return SingleValuedPairs.of( mainPairsTransformed,
                                          basePairsTransformed,
                                          input.getMetadata(),
-                                         input.getMetadataForBaseline(),
+                                         input.getBaselineData().getMetadata(),
                                          input.getClimatology() );
         }
         return SingleValuedPairs.of( mainPairsTransformed, input.getMetadata(), input.getClimatology() );
@@ -1241,9 +1244,9 @@ public final class Slicer
         if ( input.hasBaseline() )
         {
             return SingleValuedPairs.of( new ArrayList<SingleValuedPair>( input.getRawData() ),
-                                         new ArrayList<SingleValuedPair>( input.getRawDataForBaseline() ),
+                                         new ArrayList<SingleValuedPair>( input.getBaselineData().getRawData() ),
                                          input.getMetadata(),
-                                         input.getMetadataForBaseline(),
+                                         input.getBaselineData().getMetadata(),
                                          input.getClimatology() );
         }
         return SingleValuedPairs.of( new ArrayList<SingleValuedPair>( input.getRawData() ),
@@ -1276,13 +1279,13 @@ public final class Slicer
         mainPairs.forEach( pair -> mainPairsTransformed.add( mapper.apply( pair, threshold ) ) );
         if ( input.hasBaseline() )
         {
-            List<EnsemblePair> basePairs = input.getRawDataForBaseline();
+            List<EnsemblePair> basePairs = input.getBaselineData().getRawData();
             List<DiscreteProbabilityPair> basePairsTransformed = new ArrayList<>();
             basePairs.forEach( pair -> basePairsTransformed.add( mapper.apply( pair, threshold ) ) );
             return DiscreteProbabilityPairs.of( mainPairsTransformed,
                                                 basePairsTransformed,
                                                 input.getMetadata(),
-                                                input.getMetadataForBaseline(),
+                                                input.getBaselineData().getMetadata(),
                                                 input.getClimatology() );
         }
         return DiscreteProbabilityPairs.of( mainPairsTransformed,

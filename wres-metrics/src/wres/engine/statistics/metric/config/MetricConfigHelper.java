@@ -25,8 +25,8 @@ import wres.config.generated.TimeSeriesMetricConfig;
 import wres.config.generated.TimeSeriesMetricConfigName;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.MetricInputGroup;
-import wres.datamodel.MetricConstants.MetricOutputGroup;
+import wres.datamodel.MetricConstants.SampleDataGroup;
+import wres.datamodel.MetricConstants.StatisticGroup;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.thresholds.Threshold;
@@ -295,13 +295,13 @@ public final class MetricConfigHelper
      * 
      * @param projectConfig the project configuration
      * @param outGroup the output group to test
-     * @return true if the input configuration requires outputs of the {@link MetricOutputGroup#MULTIVECTOR} 
+     * @return true if the input configuration requires outputs of the {@link StatisticGroup#MULTIVECTOR} 
      *            type whose output type is {@link OutputTypeSelection#THRESHOLD_LEAD}, false otherwise
      * @throws MetricConfigException if the configuration is invalid
      * @throws NullPointerException if the input is null
      */
 
-    public static boolean hasTheseOutputsByThresholdLead( ProjectConfig projectConfig, MetricOutputGroup outGroup )
+    public static boolean hasTheseOutputsByThresholdLead( ProjectConfig projectConfig, StatisticGroup outGroup )
     {
         Objects.requireNonNull( projectConfig, NULL_CONFIGURATION_ERROR );
 
@@ -326,7 +326,7 @@ public final class MetricConfigHelper
     }
 
     /**
-     * Helper that interprets the input configuration and returns a list of {@link MetricOutputGroup} whose results 
+     * Helper that interprets the input configuration and returns a list of {@link StatisticGroup} whose results 
      * should be cached when computing metrics incrementally.
      * 
      * @param projectConfig the project configuration
@@ -335,16 +335,16 @@ public final class MetricConfigHelper
      * @throws NullPointerException if the input is null
      */
 
-    public static Set<MetricOutputGroup> getCacheListFromProjectConfig( ProjectConfig projectConfig )
+    public static Set<StatisticGroup> getCacheListFromProjectConfig( ProjectConfig projectConfig )
     {
         // Always cache ordinary scores and paired output for timing error metrics 
-        Set<MetricOutputGroup> returnMe = new TreeSet<>();
-        returnMe.add( MetricOutputGroup.DOUBLE_SCORE );
-        returnMe.add( MetricOutputGroup.PAIRED );
+        Set<StatisticGroup> returnMe = new TreeSet<>();
+        returnMe.add( StatisticGroup.DOUBLE_SCORE );
+        returnMe.add( StatisticGroup.PAIRED );
 
         // Cache other outputs as required
-        MetricOutputGroup[] options = MetricOutputGroup.values();
-        for ( MetricOutputGroup next : options )
+        StatisticGroup[] options = StatisticGroup.values();
+        for ( StatisticGroup next : options )
         {
             if ( !returnMe.contains( next )
                  && MetricConfigHelper.hasTheseOutputsByThresholdLead( projectConfig, next ) )
@@ -354,11 +354,11 @@ public final class MetricConfigHelper
         }
 
         // Never cache box plot output, as it does not apply to thresholds
-        returnMe.remove( MetricOutputGroup.BOXPLOT );
+        returnMe.remove( StatisticGroup.BOXPLOT );
 
         // Never cache duration score output as timing error summary statistics are computed once all data 
         // is available
-        returnMe.remove( MetricOutputGroup.DURATION_SCORE );
+        returnMe.remove( StatisticGroup.DURATION_SCORE );
 
         return Collections.unmodifiableSet( returnMe );
     }
@@ -480,7 +480,7 @@ public final class MetricConfigHelper
                                          ThresholdConstants.ThresholdDataType.LEFT_AND_RIGHT );
 
         // All data only
-        if ( metric.getMetricOutputGroup() == MetricOutputGroup.BOXPLOT
+        if ( metric.getMetricOutputGroup() == StatisticGroup.BOXPLOT
              || metric == MetricConstants.QUANTILE_QUANTILE_DIAGRAM )
         {
             return Collections.unmodifiableSet( new HashSet<>( Arrays.asList( allData ) ) );
@@ -490,8 +490,8 @@ public final class MetricConfigHelper
         returnMe.addAll( thresholds );
 
         // Add all data for appropriate types
-        if ( metric.isInGroup( MetricInputGroup.ENSEMBLE ) || metric.isInGroup( MetricInputGroup.SINGLE_VALUED )
-             || metric.isInGroup( MetricInputGroup.SINGLE_VALUED_TIME_SERIES ) )
+        if ( metric.isInGroup( SampleDataGroup.ENSEMBLE ) || metric.isInGroup( SampleDataGroup.SINGLE_VALUED )
+             || metric.isInGroup( SampleDataGroup.SINGLE_VALUED_TIME_SERIES ) )
         {
             returnMe.add( allData );
         }
@@ -629,7 +629,7 @@ public final class MetricConfigHelper
             ThresholdConstants.ThresholdGroup thresholdType = ThresholdConstants.ThresholdGroup.PROBABILITY;
             if ( Objects.nonNull( nextThresholds.getType() ) )
             {
-                thresholdType = DataFactory.getThresholdGroup( nextThresholds );
+                thresholdType = DataFactory.getThresholdGroup( nextThresholds.getType() );
             }
 
             // Adjust the thresholds, adding "all data" where required, then append
@@ -678,7 +678,7 @@ public final class MetricConfigHelper
         // Operator specified
         if ( Objects.nonNull( thresholds.getApplyTo() ) )
         {
-            dataType = DataFactory.getThresholdDataType( thresholds );
+            dataType = DataFactory.getThresholdDataType( thresholds.getApplyTo() );
         }
 
         // Must be internally sourced: thresholds with global scope should be provided directly 

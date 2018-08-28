@@ -3,10 +3,10 @@ package wres.engine.statistics.metric.singlevalued;
 import java.util.Objects;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.inputs.pairs.SingleValuedPairs;
-import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.DoubleScoreOutput;
+import wres.datamodel.metadata.StatisticMetadata;
+import wres.datamodel.sampledata.SampleDataException;
+import wres.datamodel.sampledata.pairs.SingleValuedPairs;
+import wres.datamodel.statistics.DoubleScoreStatistic;
 
 /**
  * Computes the square of Pearson's product-moment correlation coefficient between the left and right sides of the
@@ -22,16 +22,16 @@ public class CoefficientOfDetermination extends CorrelationPearsons
      * 
      * @return an instance
      */
-    
+
     public static CoefficientOfDetermination of()
     {
         return new CoefficientOfDetermination();
     }
-    
+
     @Override
-    public DoubleScoreOutput apply(SingleValuedPairs s)
+    public DoubleScoreStatistic apply( SingleValuedPairs s )
     {
-        return aggregate(getInputForAggregation(s));
+        return aggregate( getInputForAggregation( s ) );
     }
 
     @Override
@@ -41,32 +41,31 @@ public class CoefficientOfDetermination extends CorrelationPearsons
     }
 
     @Override
-    public DoubleScoreOutput aggregate(DoubleScoreOutput output)
+    public DoubleScoreStatistic aggregate( DoubleScoreStatistic output )
     {
         if ( Objects.isNull( output ) )
         {
-            throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
+            throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
         }
 
-        MetricOutputMetadata metIn = output.getMetadata();
-        MetricOutputMetadata meta = MetricOutputMetadata.of( metIn,
-                                                             MetricConstants.COEFFICIENT_OF_DETERMINATION,
-                                                             MetricConstants.MAIN,
-                                                             this.hasRealUnits(),
-                                                             metIn.getSampleSize(),
-                                                             null );
+        StatisticMetadata meta = StatisticMetadata.of( output.getMetadata().getSampleMetadata(),
+                                                       MetricConstants.COEFFICIENT_OF_DETERMINATION,
+                                                       MetricConstants.MAIN,
+                                                       this.hasRealUnits(),
+                                                       output.getMetadata().getSampleSize(),
+                                                       null );
 
-        return DoubleScoreOutput.of( Math.pow(output.getData(), 2), meta );
+        return DoubleScoreStatistic.of( Math.pow( output.getData(), 2 ), meta );
     }
 
     @Override
-    public DoubleScoreOutput getInputForAggregation(SingleValuedPairs input)
+    public DoubleScoreStatistic getInputForAggregation( SingleValuedPairs input )
     {
-        if(Objects.isNull(input))
+        if ( Objects.isNull( input ) )
         {
-            throw new MetricInputException("Specify non-null input to the '"+this+"'.");
+            throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
         }
-        return super.apply(input);
+        return super.apply( input );
     }
 
     @Override
@@ -82,6 +81,6 @@ public class CoefficientOfDetermination extends CorrelationPearsons
     private CoefficientOfDetermination()
     {
         super();
-    }    
-    
+    }
+
 }

@@ -22,25 +22,25 @@ import wres.config.generated.DestinationConfig;
 import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.MetricOutputGroup;
+import wres.datamodel.MetricConstants.StatisticGroup;
 import wres.datamodel.Slicer;
-import wres.datamodel.metadata.MetricOutputMetadata;
+import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.outputs.ListOfMetricOutput;
-import wres.datamodel.outputs.ScoreOutput;
+import wres.datamodel.statistics.ListOfStatistics;
+import wres.datamodel.statistics.ScoreStatistic;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
 import wres.io.config.ConfigHelper;
 
 /**
- * Helps write scores comprising {@link ScoreOutput} to a file of Comma Separated Values (CSV).
+ * Helps write scores comprising {@link ScoreStatistic} to a file of Comma Separated Values (CSV).
  * 
  * @param <T> the score component type
  * @author james.brown@hydrosolved.com
  */
 
-public class CommaSeparatedScoreWriter<T extends ScoreOutput<?, T>> extends CommaSeparatedWriter
-        implements Consumer<ListOfMetricOutput<T>>, Supplier<Set<Path>>
+public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends CommaSeparatedWriter
+        implements Consumer<ListOfStatistics<T>>, Supplier<Set<Path>>
 {
     /**
      * Set of paths that this writer actually wrote to
@@ -57,7 +57,7 @@ public class CommaSeparatedScoreWriter<T extends ScoreOutput<?, T>> extends Comm
      * @throws ProjectConfigException if the project configuration is not valid for writing
      */
 
-    public static <T extends ScoreOutput<?, T>> CommaSeparatedScoreWriter<T> of( final ProjectConfig projectConfig )
+    public static <T extends ScoreStatistic<?, T>> CommaSeparatedScoreWriter<T> of( final ProjectConfig projectConfig )
     {
         return new CommaSeparatedScoreWriter<>( projectConfig );
     }
@@ -71,7 +71,7 @@ public class CommaSeparatedScoreWriter<T extends ScoreOutput<?, T>> extends Comm
      */
 
     @Override
-    public void accept( final ListOfMetricOutput<T> output )
+    public void accept( final ListOfStatistics<T> output )
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing box plot outputs." );
 
@@ -89,7 +89,7 @@ public class CommaSeparatedScoreWriter<T extends ScoreOutput<?, T>> extends Comm
                           .get( 0 )
                           .getMetadata()
                           .getMetricID()
-                          .isInGroup( MetricOutputGroup.DOUBLE_SCORE ) )
+                          .isInGroup( StatisticGroup.DOUBLE_SCORE ) )
             {
                 formatter = ConfigHelper.getDecimalFormatter( destinationConfig );
             }
@@ -122,8 +122,8 @@ public class CommaSeparatedScoreWriter<T extends ScoreOutput<?, T>> extends Comm
      * @return set of paths actually written to
      */
 
-    private static <T extends ScoreOutput<?, T>> Set<Path> writeOneScoreOutputType( DestinationConfig destinationConfig,
-                                                                                    ListOfMetricOutput<T> output,
+    private static <T extends ScoreStatistic<?, T>> Set<Path> writeOneScoreOutputType( DestinationConfig destinationConfig,
+                                                                                    ListOfStatistics<T> output,
                                                                                     Format formatter )
             throws IOException
     {
@@ -133,20 +133,22 @@ public class CommaSeparatedScoreWriter<T extends ScoreOutput<?, T>> extends Comm
         SortedSet<MetricConstants> metrics = Slicer.discover( output, next -> next.getMetadata().getMetricID() );
         for ( MetricConstants m : metrics )
         {
-            ListOfMetricOutput<T> nextMetric = Slicer.filter( output, m );
+            ListOfStatistics<T> nextMetric = Slicer.filter( output, m );
 
             SortedSet<Threshold> secondThreshold =
-                    Slicer.discover( nextMetric, next -> next.getMetadata().getThresholds().second() );
+                    Slicer.discover( nextMetric,
+                                     next -> next.getMetadata().getSampleMetadata().getThresholds().second() );
 
             // As many outputs as secondary thresholds if secondary thresholds are defined
             // and the output type is OutputTypeSelection.THRESHOLD_LEAD.
-            List<ListOfMetricOutput<T>> allOutputs = new ArrayList<>();
+            List<ListOfStatistics<T>> allOutputs = new ArrayList<>();
             if ( destinationConfig.getOutputType() == OutputTypeSelection.THRESHOLD_LEAD
                  && !secondThreshold.isEmpty() )
             {
                 // Slice by threshold two
                 secondThreshold.forEach( next -> allOutputs.add( Slicer.filter( nextMetric,
-                                                                                data -> data.getThresholds()
+                                                                                data -> data.getSampleMetadata()
+                                                                                            .getThresholds()
                                                                                             .second()
                                                                                             .equals( next ) ) ) );
             }
@@ -157,7 +159,7 @@ public class CommaSeparatedScoreWriter<T extends ScoreOutput<?, T>> extends Comm
             }
 
             // Process each output
-            for ( ListOfMetricOutput<T> nextOutput : allOutputs )
+            for ( ListOfStatistics<T> nextOutput : allOutputs )
             {
                 StringJoiner headerRow = new StringJoiner( "," );
                 headerRow.merge( HEADER_DEFAULT );
@@ -175,12 +177,13 @@ public class CommaSeparatedScoreWriter<T extends ScoreOutput<?, T>> extends Comm
 
                 // Secondary threshold? If yes, only one, as this was sliced above
                 SortedSet<Threshold> secondThresholds =
-                        Slicer.discover( nextOutput, next -> next.getMetadata().getThresholds().second() );
+                        Slicer.discover( nextOutput,
+                                         next -> next.getMetadata().getSampleMetadata().getThresholds().second() );
                 if ( !secondThresholds.isEmpty() )
                 {
                     append = secondThresholds.iterator().next().toStringSafe();
                 }
-                MetricOutputMetadata meta = nextOutput.getData().get( 0 ).getMetadata();
+                StatisticMetadata meta = nextOutput.getData().get( 0 ).getMetadata();
                 Path outputPath = ConfigHelper.getOutputPathToWrite( destinationConfig, meta, append );
 
                 CommaSeparatedWriter.writeTabularOutputToFile( rows, outputPath );
@@ -206,19 +209,19 @@ public class CommaSeparatedScoreWriter<T extends ScoreOutput<?, T>> extends Comm
      * @return the rows to write
      */
 
-    private static <T extends ScoreOutput<?, T>> List<RowCompareByLeft>
+    private static <T extends ScoreStatistic<?, T>> List<RowCompareByLeft>
             getRowsForOneScore( MetricConstants scoreName,
-                                ListOfMetricOutput<T> output,
+                                ListOfStatistics<T> output,
                                 StringJoiner headerRow,
                                 Format formatter )
     {
         // Slice score by components
-        Map<MetricConstants, ListOfMetricOutput<T>> helper = Slicer.filterByMetricComponent( output );
+        Map<MetricConstants, ListOfStatistics<T>> helper = Slicer.filterByMetricComponent( output );
 
         String outerName = scoreName.toString();
         List<RowCompareByLeft> returnMe = new ArrayList<>();
         // Loop across components
-        for ( Entry<MetricConstants, ListOfMetricOutput<T>> e : helper.entrySet() )
+        for ( Entry<MetricConstants, ListOfStatistics<T>> e : helper.entrySet() )
         {
             // Add the component name unless there is only one component named "MAIN"
             String name = outerName;
@@ -242,8 +245,8 @@ public class CommaSeparatedScoreWriter<T extends ScoreOutput<?, T>> extends Comm
      * @param formatter optional formatter, can be null
      */
 
-    private static <T extends ScoreOutput<?, T>> void addRowsForOneScoreComponent( String name,
-                                                                                   ListOfMetricOutput<T> component,
+    private static <T extends ScoreStatistic<?, T>> void addRowsForOneScoreComponent( String name,
+                                                                                   ListOfStatistics<T> component,
                                                                                    StringJoiner headerRow,
                                                                                    List<RowCompareByLeft> rows,
                                                                                    Format formatter )
@@ -251,8 +254,9 @@ public class CommaSeparatedScoreWriter<T extends ScoreOutput<?, T>> extends Comm
 
         // Discover the time windows and thresholds
         SortedSet<OneOrTwoThresholds> thresholds =
-                Slicer.discover( component, meta -> meta.getMetadata().getThresholds() );
-        SortedSet<TimeWindow> timeWindows = Slicer.discover( component, meta -> meta.getMetadata().getTimeWindow() );
+                Slicer.discover( component, meta -> meta.getMetadata().getSampleMetadata().getThresholds() );
+        SortedSet<TimeWindow> timeWindows =
+                Slicer.discover( component, meta -> meta.getMetadata().getSampleMetadata().getTimeWindow() );
 
         // Loop across the thresholds
         for ( OneOrTwoThresholds t : thresholds )
@@ -263,9 +267,13 @@ public class CommaSeparatedScoreWriter<T extends ScoreOutput<?, T>> extends Comm
             for ( TimeWindow timeWindow : timeWindows )
             {
                 // Find the next score
-                ListOfMetricOutput<T> nextScore = Slicer.filter( component,
-                                                                 next -> next.getThresholds().equals( t )
-                                                                         && next.getTimeWindow().equals( timeWindow ) );
+                ListOfStatistics<T> nextScore = Slicer.filter( component,
+                                                               next -> next.getSampleMetadata()
+                                                                           .getThresholds()
+                                                                           .equals( t )
+                                                                       && next.getSampleMetadata()
+                                                                              .getTimeWindow()
+                                                                              .equals( timeWindow ) );
                 if ( !nextScore.getData().isEmpty() )
                 {
                     CommaSeparatedWriter.addRowToInput( rows,

@@ -20,15 +20,15 @@ import org.slf4j.LoggerFactory;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
-import wres.datamodel.inputs.MetricInput;
-import wres.datamodel.outputs.ListOfMetricOutput;
-import wres.datamodel.outputs.MetricOutput;
+import wres.datamodel.sampledata.SampleData;
+import wres.datamodel.statistics.ListOfStatistics;
+import wres.datamodel.statistics.Statistic;
 import wres.engine.statistics.metric.categorical.ContingencyTable;
 
 /**
  * <p>
- * An immutable collection of {@link Metric} that consume a common class of {@link MetricInput} and return a common
- * class of {@link MetricOutput}. Multiple instances of the same metric are allowed (e.g. with different parameter
+ * An immutable collection of {@link Metric} that consume a common class of {@link SampleData} and return a common
+ * class of {@link Statistic}. Multiple instances of the same metric are allowed (e.g. with different parameter
  * values).
  * </p>
  * <p>
@@ -53,8 +53,8 @@ import wres.engine.statistics.metric.categorical.ContingencyTable;
  * @author james.brown@hydrosolved.com
  */
 
-public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?>, U extends MetricOutput<?>>
-        implements BiFunction<S, Set<MetricConstants>, ListOfMetricOutput<U>>
+public class MetricCollection<S extends SampleData<?>, T extends Statistic<?>, U extends Statistic<?>>
+        implements BiFunction<S, Set<MetricConstants>, ListOfStatistics<U>>
 {
 
     /**
@@ -90,7 +90,7 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
      * @throws MetricCalculationException if the calculation fails for any reason
      */
 
-    public ListOfMetricOutput<U> apply( final S input )
+    public ListOfStatistics<U> apply( final S input )
     {
         return this.apply( input, Collections.emptySet() );
     }
@@ -104,7 +104,7 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
      */
 
     @Override
-    public ListOfMetricOutput<U> apply( final S input, final Set<MetricConstants> ignoreTheseMetrics )
+    public ListOfStatistics<U> apply( final S input, final Set<MetricConstants> ignoreTheseMetrics )
     {
         try
         {
@@ -131,7 +131,7 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
      * @param <U> the output type
      */
 
-    protected static class MetricCollectionBuilder<S extends MetricInput<?>, T extends MetricOutput<?>, U extends MetricOutput<?>>
+    protected static class MetricCollectionBuilder<S extends SampleData<?>, T extends Statistic<?>, U extends Statistic<?>>
     {
 
         /**
@@ -162,7 +162,7 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
          * @return a builder
          */
 
-        protected static <P extends MetricInput<?>, Q extends MetricOutput<?>, R extends MetricOutput<?>>
+        protected static <P extends SampleData<?>, Q extends Statistic<?>, R extends Statistic<?>>
                 MetricCollectionBuilder<P, Q, R> of()
         {
             return new MetricCollectionBuilder<>();
@@ -235,7 +235,7 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
      * @throws MetricCalculationException if one or more of the inputs is invalid
      */
 
-    private ListOfMetricOutput<U> applyInternal( final S input, final Set<MetricConstants> ignoreTheseMetrics )
+    private ListOfStatistics<U> applyInternal( final S input, final Set<MetricConstants> ignoreTheseMetrics )
             throws InterruptedException, ExecutionException
     {
         //Bounds checks
@@ -300,7 +300,7 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
             unpacked.add( nextResult.get() ); //This is blocking
         }
         
-        ListOfMetricOutput<U> returnMe = ListOfMetricOutput.of( Collections.unmodifiableList( unpacked ) );
+        ListOfStatistics<U> returnMe = ListOfStatistics.of( Collections.unmodifiableList( unpacked ) );
 
         this.logEndOfCalculation( LOGGER, returnMe );
 
@@ -389,7 +389,7 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
      * @param results the results to log
      */
 
-    private void logEndOfCalculation( Logger logger, ListOfMetricOutput<U> results )
+    private void logEndOfCalculation( Logger logger, ListOfStatistics<U> results )
     {
         if ( logger.isTraceEnabled() )
         {

@@ -57,7 +57,6 @@ import wres.io.utilities.NoDataException;
 import wres.io.utilities.ScriptBuilder;
 import wres.io.writing.PairWriter;
 import wres.io.writing.netcdf.NetCDFCopier;
-import wres.io.writing.netcdf.NetcdfOutputWriter;
 import wres.system.ProgressMonitor;
 import wres.util.CalculationException;
 
@@ -533,7 +532,6 @@ public final class Operations {
         }
 
         Executor.complete();
-        NetcdfOutputWriter.close();
         Database.shutdown();
         PairWriter.flushAndCloseAllWriters();
     }

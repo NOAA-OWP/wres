@@ -2,12 +2,16 @@ package wres.io.writing.png;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartEngineException;
@@ -16,23 +20,25 @@ import wres.config.ProjectConfigPlus;
 import wres.config.generated.DestinationConfig;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
-import wres.datamodel.metadata.MetricOutputMetadata;
+import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.outputs.ListOfMetricOutput;
-import wres.datamodel.outputs.MultiVectorOutput;
+import wres.datamodel.statistics.ListOfStatistics;
+import wres.datamodel.statistics.MultiVectorStatistic;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.io.config.ConfigHelper;
 import wres.vis.ChartEngineFactory;
 
 /**
- * Helps write charts comprising {@link MultiVectorOutput} to a file in Portable Network Graphics (PNG) format.
+ * Helps write charts comprising {@link MultiVectorStatistic} to a file in Portable Network Graphics (PNG) format.
  * 
  * @author james.brown@hydrosolved.com
  */
 
 public class PNGDiagramWriter extends PNGWriter
-        implements Consumer<ListOfMetricOutput<MultiVectorOutput>>
+        implements Consumer<ListOfStatistics<MultiVectorStatistic>>,
+                   Supplier<Set<Path>>
 {
+    private Set<Path> pathsWrittenTo = new HashSet<>();
 
     /**
      * Returns an instance of a writer.
@@ -57,7 +63,7 @@ public class PNGDiagramWriter extends PNGWriter
      */
 
     @Override
-    public void accept( final ListOfMetricOutput<MultiVectorOutput> output )
+    public void accept( final ListOfStatistics<MultiVectorStatistic> output )
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing diagram outputs." );
 
@@ -68,38 +74,52 @@ public class PNGDiagramWriter extends PNGWriter
         // Iterate through destinations
         for ( DestinationConfig destinationConfig : destinations )
         {
-
             // Iterate through each metric 
             SortedSet<MetricConstants> metrics = Slicer.discover( output, meta -> meta.getMetadata().getMetricID() );
             for ( MetricConstants next : metrics )
             {
-                PNGDiagramWriter.writeMultiVectorCharts( projectConfigPlus,
-                                                         destinationConfig,
-                                                         Slicer.filter( output, next ) );
+                Set<Path> innerPathsWrittenTo =
+                        PNGDiagramWriter.writeMultiVectorCharts( projectConfigPlus,
+                                                                 destinationConfig,
+                                                                 Slicer.filter( output, next ) );
+                this.pathsWrittenTo.addAll( innerPathsWrittenTo );
             }
-
         }
+    }
 
+
+    /**
+     *
+     * @return paths written to *so far*
+     */
+
+    @Override
+    public Set<Path> get()
+    {
+        return Collections.unmodifiableSet( this.pathsWrittenTo );
     }
 
     /**
-     * Writes a set of charts associated with {@link MultiVectorOutput} for a single metric and time window, 
-     * stored in a {@link ListOfMetricOutput}.
+     * Writes a set of charts associated with {@link MultiVectorStatistic} for a single metric and time window,
+     * stored in a {@link ListOfStatistics}.
      *
      * @param projectConfigPlus the project configuration
      * @param destinationConfig the destination configuration for the written output
      * @param output the metric results
      * @throws PNGWriteException when an error occurs during writing
+     * @return the paths actually written to
      */
 
-    private static void writeMultiVectorCharts( ProjectConfigPlus projectConfigPlus,
-                                                DestinationConfig destinationConfig,
-                                                ListOfMetricOutput<MultiVectorOutput> output )
+    private static Set<Path> writeMultiVectorCharts( ProjectConfigPlus projectConfigPlus,
+                                                     DestinationConfig destinationConfig,
+                                                     ListOfStatistics<MultiVectorStatistic> output )
     {
+        Set<Path> pathsWrittenTo = new HashSet<>();
+
         // Build charts
         try
         {
-            MetricOutputMetadata meta = output.getData().get( 0 ).getMetadata();
+            StatisticMetadata meta = output.getData().get( 0 ).getMetadata();
 
             GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, destinationConfig, meta.getMetricID() );
 
@@ -128,8 +148,14 @@ public class PNGDiagramWriter extends PNGWriter
                                                                      meta,
                                                                      (OneOrTwoThresholds) append );
                 }
+                else
+                {
+                    throw new UnsupportedOperationException( "Unexpected situation where WRES could not create outputImage path" );
+                }
 
                 PNGWriter.writeChart( outputImage, nextEntry.getValue(), destinationConfig );
+                // Only if writeChart succeeded do we assume that it was written
+                pathsWrittenTo.add( outputImage );
             }
         }
         catch ( ChartEngineException | IOException e )
@@ -137,6 +163,7 @@ public class PNGDiagramWriter extends PNGWriter
             throw new PNGWriteException( "Error while generating multi-vector charts: ", e );
         }
 
+        return Collections.unmodifiableSet( pathsWrittenTo );
     }
 
     /**

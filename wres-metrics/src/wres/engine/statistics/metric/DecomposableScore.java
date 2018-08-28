@@ -2,9 +2,9 @@ package wres.engine.statistics.metric;
 
 import java.util.Objects;
 
-import wres.datamodel.MetricConstants.ScoreOutputGroup;
-import wres.datamodel.inputs.MetricInput;
-import wres.datamodel.outputs.DoubleScoreOutput;
+import wres.datamodel.MetricConstants.ScoreGroup;
+import wres.datamodel.sampledata.SampleData;
+import wres.datamodel.statistics.DoubleScoreStatistic;
 
 /**
  * A generic implementation of an error score that is decomposable.
@@ -12,14 +12,14 @@ import wres.datamodel.outputs.DoubleScoreOutput;
  * @author james.brown@hydrosolved.com
  */
 
-public abstract class DecomposableScore<S extends MetricInput<?>> extends OrdinaryScore<S, DoubleScoreOutput>
+public abstract class DecomposableScore<S extends SampleData<?>> extends OrdinaryScore<S, DoubleScoreStatistic>
 {
 
     /**
      * The decomposition identifier.
      */
 
-    private final ScoreOutputGroup decompositionId;
+    private final ScoreGroup decompositionId;
 
     @Override
     public boolean isDecomposable()
@@ -28,20 +28,20 @@ public abstract class DecomposableScore<S extends MetricInput<?>> extends Ordina
     }
 
     @Override
-    public ScoreOutputGroup getScoreOutputGroup()
+    public ScoreGroup getScoreOutputGroup()
     {
         return decompositionId;
     }
 
     /**
-     * Hidden constructor for a score with no decomposition, i.e. {@link ScoreOutputGroup#NONE}.
+     * Hidden constructor for a score with no decomposition, i.e. {@link ScoreGroup#NONE}.
      */
 
     protected DecomposableScore()
     {
         super();
         
-        this.decompositionId = ScoreOutputGroup.NONE;        
+        this.decompositionId = ScoreGroup.NONE;        
     }
     
     /**
@@ -51,7 +51,7 @@ public abstract class DecomposableScore<S extends MetricInput<?>> extends Ordina
      * @throws MetricParameterException if one or more parameters is invalid
      */
 
-    protected DecomposableScore( ScoreOutputGroup decompositionId ) throws MetricParameterException
+    protected DecomposableScore( ScoreGroup decompositionId ) throws MetricParameterException
     {
         super();
 
