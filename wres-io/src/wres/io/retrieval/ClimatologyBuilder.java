@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
@@ -592,7 +593,7 @@ class ClimatologyBuilder
 
         // Determine how many entries in a time slot indicates a full range of values
         int expectedNumberToAggregate = 0;
-        for (Map.Entry<DateRange, List<Double>> convertedValues : this.values.entrySet())
+        for (Entry<DateRange, List<Double>> convertedValues : this.values.entrySet())
         {
             expectedNumberToAggregate = Math.max( expectedNumberToAggregate, convertedValues.getValue().size() );
         }
@@ -600,7 +601,7 @@ class ClimatologyBuilder
         // Find all ranges that don't have all of their necessary values
         List<DateRange> partialRanges = new ArrayList<>(  );
 
-        for (Map.Entry<DateRange, List<Double>> entry : this.values.entrySet())
+        for (Entry<DateRange, List<Double>> entry : this.values.entrySet())
         {
             if (entry.getValue().size() < expectedNumberToAggregate)
             {

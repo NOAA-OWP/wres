@@ -14,6 +14,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.TreeMap;
 import java.util.function.BinaryOperator;
 
@@ -913,7 +914,7 @@ class InputRetriever extends Retriever //WRESCallable<MetricInput<?>>
 
         int countOfValuesInAGoodWindow = Integer.MIN_VALUE;
 
-        for ( Map.Entry<Integer,Integer> entry : countOfWindowsByCountInside.entrySet() )
+        for ( Entry<Integer,Integer> entry : countOfWindowsByCountInside.entrySet() )
         {
             // Simple majority decision ("more than half")
             if ( entry.getValue() > totalWindowsCounted / 2 )

@@ -2,6 +2,7 @@ package wres.io.utilities;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.function.Consumer;
 
 /**
@@ -20,7 +21,7 @@ public class LRUMap<K, U> extends LinkedHashMap<K, U>
     /**
      * An optional method to call upon an entry's expiration
      */
-    private Consumer<Map.Entry<K, U>> expireAction;
+    private Consumer<Entry<K, U>> expireAction;
 
     /**
      * Creates the map with the given number of entries
@@ -40,7 +41,7 @@ public class LRUMap<K, U> extends LinkedHashMap<K, U>
      *                       the map until the least recently used entry is removed
      * @param expireAction An action to perform when an entry is removed
      */
-    public LRUMap(int maximumEntries, Consumer<Map.Entry<K, U>> expireAction)
+    public LRUMap(int maximumEntries, Consumer<Entry<K, U>> expireAction)
     {
         super();
         this.maximumEntries = maximumEntries;
@@ -69,7 +70,7 @@ public class LRUMap<K, U> extends LinkedHashMap<K, U>
      * @param otherMap A map with data that will be added to the new LRUMap
      * @param expireAction An action to perform when an entry is removed
      */
-    public LRUMap(int maximumEntries, Map<K, U> otherMap, Consumer<Map.Entry<K, U>> expireAction)
+    public LRUMap(int maximumEntries, Map<K, U> otherMap, Consumer<Entry<K, U>> expireAction)
     {
         super();
         this.maximumEntries = maximumEntries;
@@ -78,7 +79,7 @@ public class LRUMap<K, U> extends LinkedHashMap<K, U>
     }
 
     @Override
-    protected boolean removeEldestEntry( Map.Entry<K, U> eldest )
+    protected boolean removeEldestEntry( Entry<K, U> eldest )
     {
         boolean remove = this.size() > this.maximumEntries;
 

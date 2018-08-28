@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.generated.EnsembleCondition;
 import wres.config.generated.Feature;
-import wres.datamodel.inputs.MetricInput;
+import wres.datamodel.sampledata.SampleData;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.details.ProjectDetails;
@@ -158,7 +158,7 @@ public class ByForecastMetricInputIterator extends MetricInputIterator
     }
 
     @Override
-    Callable<MetricInput<?>> createRetriever() throws IOException
+    Callable<SampleData<?>> createRetriever() throws IOException
     {
         Retriever retriever = new TimeSeriesRetriever(
                 this.getProjectDetails(),
