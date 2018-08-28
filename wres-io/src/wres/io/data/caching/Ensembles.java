@@ -90,7 +90,7 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
             throws SQLException
     {
 		return Ensembles.getEnsembleID( ensemble.getName(),
-                                           String.valueOf( ensemble.getTMinus()),
+                                           String.valueOf( ensemble.getMember()),
                                            ensemble.getQualifier() );
 	}
 

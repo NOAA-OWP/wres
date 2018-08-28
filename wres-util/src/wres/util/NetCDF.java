@@ -46,16 +46,16 @@ public final class NetCDF {
 
     public static class Ensemble
     {
-        public Ensemble(String name, String qualifier, String tMinus)
+        public Ensemble(String name, String qualifier, String member)
         {
             this.name = name;
             this.qualifier = qualifier;
-            this.tMinus = tMinus;
+            this.member = member;
         }
 
         private final String name;
         private final String qualifier;
-        private final String tMinus;
+        private final String member;
 
         public String getName()
         {
@@ -67,15 +67,15 @@ public final class NetCDF {
             return this.qualifier;
         }
 
-        public String getTMinus()
+        public String getMember()
         {
-            return this.tMinus;
+            return this.member;
         }
 
         @Override
         public int hashCode()
         {
-            return Objects.hash( this.name, this.qualifier, this.tMinus);
+            return Objects.hash( this.name, this.qualifier, this.member);
         }
 
         @Override
@@ -254,17 +254,41 @@ public final class NetCDF {
     public static Ensemble getEnsemble(NetcdfFile file)
     {
         String name = "Unknown";
-        String tMinus = "0";
+        String qualifier = "";
+        String member = "0";
 
-        if (NetCDF.isNWMData( file ))
+        Attribute modelConfiguration = file.findGlobalAttributeIgnoreCase( "model_configuration" );
+        Attribute modelOutputType = file.findGlobalAttributeIgnoreCase( "model_output_type" );
+        Attribute ensembleMemberNumber = file.findGlobalAttributeIgnoreCase( "ensemble_member_number" );
+
+        if (modelConfiguration != null)
+        {
+            name = modelConfiguration.getStringValue();
+        }
+
+        if (modelOutputType != null)
+        {
+            qualifier = modelOutputType.getStringValue();
+        }
+
+        if (ensembleMemberNumber != null)
+        {
+            member = ensembleMemberNumber.getStringValue();
+        }
+
+        if (NetCDF.isNWMData( file ) && (ensembleMemberNumber == null || modelConfiguration == null))
         {
             String[] parts = NetCDF.getNWMFilenameParts( file );
-            name = Collections.find( parts, possibility ->
-                    Strings.hasValue( possibility ) &&
-                    ( possibility.endsWith( "range" ) || possibility.endsWith(
-                            "assim" ) ) );
 
-            if (name.endsWith( "assim" ))
+            if (modelConfiguration == null)
+            {
+                name = Collections.find( parts, possibility ->
+                        Strings.hasValue( possibility ) &&
+                        ( possibility.endsWith( "range" ) || possibility.endsWith(
+                                "assim" ) ) );
+            }
+
+            if (ensembleMemberNumber == null && name.endsWith( "assim" ))
             {
                 String minus = Collections.find(parts,
                                                 possibility ->
@@ -274,38 +298,40 @@ public final class NetCDF {
 
                 if (Strings.hasValue( minus ))
                 {
-                    tMinus = Strings.extractWord( minus, "\\d\\d" );
+                    member = Strings.extractWord( minus, "\\d\\d" );
                 }
             }
         }
 
-        Path location = Paths.get( file.getLocation());
-        String qualifier = "";
-        ArrayList<String> partList = new ArrayList<>(  );
-
-        for (int part = 0; part < 3; ++part)
+        if (modelOutputType == null)
         {
-            if (location.getParent() == null)
+            Path location = Paths.get( file.getLocation() );
+            ArrayList<String> partList = new ArrayList<>();
+
+            for ( int part = 0; part < 3; ++part )
             {
-                break;
+                if ( location.getParent() == null )
+                {
+                    break;
+                }
+
+                location = location.getParent();
+
+                // If this portion of the path isn't something like "nwm.20180411", we append it
+                // We can't vouch for any other patterns, but anything containing
+                // a pattern like that is bound to be hyper unique where it really shouldn't be
+                if ( !NetCDF.SHORT_DATE_PATTERN.matcher( location.getFileName().toString() ).matches() )
+                {
+                    partList.add( 0, location.getFileName().toString() );
+                }
             }
 
-            location = location.getParent();
+            partList.add( NetCDF.getNWMCategory( file ) );
 
-            // If this portion of the path isn't something like "nwm.20180411", we append it
-            // We can't vouch for any other patterns, but anything containing
-            // a pattern like that is bound to be hyper unique where it really shouldn't be
-            if (!NetCDF.SHORT_DATE_PATTERN.matcher( location.getFileName().toString() ).matches())
-            {
-                partList.add( 0, location.getFileName().toString() );
-            }
+            qualifier = String.join( ":", partList );
         }
 
-        partList.add(NetCDF.getNWMCategory( file ));
-
-        qualifier = String.join( ":", partList );
-
-        return new Ensemble( name, qualifier, tMinus );
+        return new Ensemble( name, qualifier, member );
     }
 
     public static Integer getXLength(Variable var)
