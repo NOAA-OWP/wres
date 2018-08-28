@@ -178,7 +178,7 @@ public final class TimeScale
     @Override
     public String toString()
     {
-        return "[" + period + ", " + function + "]";
+        return "[" + period + "," + function + "]";
     }
 
     /**
