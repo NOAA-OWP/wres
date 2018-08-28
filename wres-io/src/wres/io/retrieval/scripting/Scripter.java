@@ -44,6 +44,10 @@ public abstract class Scripter extends ScriptBuilder
 
         switch ( projectDetails.getPairingMode() )
         {
+            case BY_TIMESERIES:
+                // TODO: Set up process where the timeseries id isn't passed via the progress field
+                loadScripter = new SingleTimeSeriesScripter( projectDetails, dataSourceConfig, feature, progress );
+                break;
             case BACK_TO_BACK:
                 if (isForecast)
                 {

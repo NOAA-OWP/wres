@@ -9,6 +9,7 @@ import wres.config.generated.Feature;
 import wres.datamodel.inputs.MetricInput;
 import wres.io.config.ConfigHelper;
 import wres.io.data.details.ProjectDetails;
+import wres.util.CalculationException;
 import wres.util.NotImplementedException;
 
 /**
@@ -48,19 +49,23 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>>
                     iterator = new TimeSeriesMetricInputIterator( this.feature,
                                                                   this.projectDetails );
                     break;
+                case BY_TIMESERIES:
+                    iterator = new ByForecastMetricInputIterator( this.feature, this.projectDetails );
+                    break;
                 default:
                     throw new NotImplementedException( "The aggregation mode of '" +
                                                        this.projectDetails.getPairingMode() +
                                                        "' has not been implemented." );
             }
         }
-        catch (SQLException | IOException e)
+        catch (IOException e)
         {
             String message = "A MetricInputIterator could not be created for '"
                              + ConfigHelper.getFeatureDescription( this.feature )
                              + "'.";
             throw new IterationFailedException( message, e );
         }
+
         return iterator;
     }
 

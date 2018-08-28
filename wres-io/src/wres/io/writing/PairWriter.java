@@ -23,6 +23,7 @@ import wres.datamodel.inputs.pairs.EnsemblePair;
 import wres.io.concurrency.WRESCallable;
 import wres.io.config.ConfigHelper;
 import wres.io.data.details.ProjectDetails;
+import wres.util.CalculationException;
 
 public class PairWriter extends WRESCallable<Boolean>
 {
@@ -251,7 +252,8 @@ public class PairWriter extends WRESCallable<Boolean>
                 errorJoiner.add("No pair was added to record.");
             }
 
-            if (this.poolingStep == Integer.MIN_VALUE)
+            if ( this.projectDetails.getPairingMode() == ProjectDetails.PairingMode.ROLLING &&
+                 this.poolingStep == Integer.MIN_VALUE)
             {
                 errorCount += 1;
                 errorJoiner.add("No pooling step was configured.");
@@ -369,7 +371,7 @@ public class PairWriter extends WRESCallable<Boolean>
                 writer.write( line.toString() );
                 writer.newLine();
             }
-            catch ( SQLException e )
+            catch ( CalculationException e )
             {
                  throw new IOException( "Pairs could not be written for " +
                                         ConfigHelper.getFeatureDescription( this.feature ),
@@ -423,7 +425,7 @@ public class PairWriter extends WRESCallable<Boolean>
         return this.feature;
     }
 
-    private String getWindow() throws SQLException
+    private String getWindow() throws CalculationException
     {
 
         int window = this.getWindowNum();

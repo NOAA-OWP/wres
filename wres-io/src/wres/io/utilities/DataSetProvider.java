@@ -1,6 +1,7 @@
 package wres.io.utilities;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -14,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+import wres.util.TimeHelper;
 import wres.util.functional.ExceptionalFunction;
 
 /**
@@ -795,6 +797,34 @@ public class DataSetProvider implements DataProvider
             throw new IllegalArgumentException( "The type for the column named '" +
                                                 columnName +
                                                 " cannot be converted into an Instant.");
+        }
+
+        return result;
+    }
+
+    public Duration getDuration(String columnName)
+    {
+        Duration result;
+
+        Object value = this.getObject( columnName );
+
+        if (value == null)
+        {
+            return null;
+        }
+        else if (value instanceof Number)
+        {
+            result = Duration.of( this.getLong( columnName ), TimeHelper.LEAD_RESOLUTION );
+        }
+        else if (value instanceof String)
+        {
+            result = Duration.parse( value.toString() );
+        }
+        else
+        {
+            throw new IllegalArgumentException( "The type for the column named '" +
+                                                columnName +
+                                                "' cannot be converted into a Duration." );
         }
 
         return result;

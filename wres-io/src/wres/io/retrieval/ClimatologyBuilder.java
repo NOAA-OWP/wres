@@ -12,6 +12,7 @@ import wres.io.reading.usgs.USGSReader;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.Database;
 import wres.io.utilities.ScriptBuilder;
+import wres.util.CalculationException;
 
 import java.io.IOException;
 import java.sql.Connection;
@@ -268,7 +269,7 @@ class ClimatologyBuilder
 
         @Override
         protected SortedMap<DateRange, List<Double>> execute()
-                throws SQLException, IOException
+                throws CalculationException
         {
             ScriptBuilder script = new ScriptBuilder();
             script.addLine("SELECT");
@@ -308,21 +309,35 @@ class ClimatologyBuilder
                            this.projectDetails.getScale().getUnit(),
                            "')::INTERVAL)::TEXT AS end_date");
 
-            script.add("FROM generate_series(0, ",
-                       ConfigHelper.getValueCount(this.projectDetails,
-                                                  this.dataSourceConfig,
-                                                  this.feature),
-                       " * ",
-                       this.projectDetails.getScale().getPeriod(),
-                       ", ",
-                       this.projectDetails.getScale().getPeriod(),
-                       ") AS member_number;");
+            try
+            {
+                script.add("FROM generate_series(0, ",
+                           ConfigHelper.getValueCount(this.projectDetails,
+                                                      this.dataSourceConfig,
+                                                      this.feature),
+                           " * ",
+                           this.projectDetails.getScale().getPeriod(),
+                           ", ",
+                           this.projectDetails.getScale().getPeriod(),
+                           ") AS member_number;");
+            }
+            catch ( SQLException e )
+            {
+                throw new CalculationException( "The number of values to load could not be calculated.", e );
+            }
 
             SortedMap<DateRange, List<Double>> returnValues = new TreeMap<>();
 
-            script.consume(
-                    range -> returnValues.put( new DateRange(range), new ArrayList<>())
-            );
+            try
+            {
+                script.consume(
+                        range -> returnValues.put( new DateRange(range), new ArrayList<>())
+                );
+            }
+            catch ( SQLException e )
+            {
+                throw new CalculationException( "The dates that contain values could not be calculated.", e );
+            }
 
             return Collections.unmodifiableSortedMap( returnValues );
         }
@@ -334,43 +349,44 @@ class ClimatologyBuilder
         }
     }
 
-    VectorOfDoubles getClimatology() throws IOException
+    VectorOfDoubles getClimatology() throws CalculationException
     {
-        LOGGER.debug( "getClimatology called" );
-
         if (this.climatology == null)
         {
-            this.setupDates();
-            this.addValues();
+            try
+            {
+                this.setupDates();
+                this.addValues();
+            }
+            catch ( IOException e )
+            {
+                throw new CalculationException(
+                        "The dates that will contain values and "
+                        + "the values themselves could not be calculated.",
+                        e );
+            }
 
             List<Double> aggregatedValues = new ArrayList<>();
 
-            try
+            for ( List<Double> valuesToAggregate : this.getValues()
+                                                       .values() )
             {
-                for ( List<Double> valuesToAggregate : this.getValues()
-                                                           .values() )
+                if ( this.projectDetails.shouldScale() )
                 {
-                    if ( this.projectDetails.shouldScale() )
+                    Double aggregation = wres.util.Collections.aggregate(
+                            valuesToAggregate,
+                            this.projectDetails.getScale()
+                                               .getFunction()
+                                               .value() );
+                    if ( !Double.isNaN( aggregation ) )
                     {
-                        Double aggregation = wres.util.Collections.aggregate(
-                                valuesToAggregate,
-                                this.projectDetails.getScale()
-                                                   .getFunction()
-                                                   .value() );
-                        if ( !Double.isNaN( aggregation ) )
-                        {
-                            aggregatedValues.add( aggregation );
-                        }
-                    }
-                    else
-                    {
-                        aggregatedValues.addAll( valuesToAggregate );
+                        aggregatedValues.add( aggregation );
                     }
                 }
-            }
-            catch ( SQLException se )
-            {
-                throw new IOException( "Failed to get scale information.", se );
+                else
+                {
+                    aggregatedValues.addAll( valuesToAggregate );
+                }
             }
 
             this.climatology = VectorOfDoubles.of( aggregatedValues.toArray( new Double[aggregatedValues.size()] ) );
@@ -407,7 +423,7 @@ class ClimatologyBuilder
 
     private void addValues() throws IOException
     {
-
+        // TODO: Convert to using a ScriptBuilder
         StringBuilder script = new StringBuilder();
 
         script.append("SELECT O.observed_value,").append(NEWLINE);

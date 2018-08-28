@@ -10,6 +10,7 @@ import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
 import wres.io.config.ConfigHelper;
 import wres.io.data.details.ProjectDetails;
+import wres.util.CalculationException;
 import wres.util.TimeHelper;
 
 class PoolingForecastScripter extends Scripter
@@ -80,7 +81,21 @@ class PoolingForecastScripter extends Scripter
         }
 
         this.addLine("WHERE TS.", this.getVariableFeatureClause());
-        this.addTab().addLine("AND ", this.getProjectDetails().getLeadQualifier( this.getFeature(), this.getProgress(), "TSV" ));
+
+        try
+        {
+            this.addTab().addLine("AND ",
+                                  this.getProjectDetails().getLeadQualifier(
+                                          this.getFeature(),
+                                          this.getProgress(),
+                                          "TSV"
+                                  )
+            );
+        }
+        catch ( CalculationException e )
+        {
+            throw new IOException( "Logic used to retrieve values based on leads could not be formed.", e );
+        }
 
         this.applyEnsembleConstraint();
 
