@@ -12,6 +12,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.StringJoiner;
 import java.util.concurrent.Future;
 
@@ -238,7 +239,7 @@ public interface DataProvider extends AutoCloseable
 
         Map<K, DataProvider> providers = new HashMap<>(  );
 
-        for (Map.Entry<K, DataBuilder> groupBuilder : builders.entrySet())
+        for (Entry<K, DataBuilder> groupBuilder : builders.entrySet())
         {
             providers.put(groupBuilder.getKey(), groupBuilder.getValue().build());
         }

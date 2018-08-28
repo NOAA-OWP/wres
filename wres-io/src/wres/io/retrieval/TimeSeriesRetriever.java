@@ -18,15 +18,16 @@ import org.slf4j.LoggerFactory;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.inputs.MetricInput;
-import wres.datamodel.inputs.pairs.EnsemblePair;
-import wres.datamodel.inputs.pairs.SingleValuedPair;
-import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs.TimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.ReferenceTime;
+import wres.datamodel.metadata.SampleMetadata;
+import wres.datamodel.metadata.SampleMetadata.SampleMetadataBuilder;
 import wres.datamodel.metadata.TimeWindow;
+import wres.datamodel.sampledata.SampleData;
+import wres.datamodel.sampledata.pairs.EnsemblePair;
+import wres.datamodel.sampledata.pairs.SingleValuedPair;
+import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs.TimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.time.Event;
 import wres.io.concurrency.Executor;
 import wres.io.config.ConfigHelper;
@@ -77,7 +78,7 @@ public class TimeSeriesRetriever extends Retriever
     }
 
     @Override
-    protected Metadata buildMetadata( ProjectConfig projectConfig, boolean isBaseline ) throws IOException
+    protected SampleMetadata buildMetadata( ProjectConfig projectConfig, boolean isBaseline ) throws IOException
     {
         MeasurementUnit dim = MeasurementUnit.of( this.getProjectDetails().getDesiredMeasurementUnit() );
         String variableIdentifier = ConfigHelper.getVariableIdFromProjectConfig( projectConfig, isBaseline );
@@ -98,11 +99,15 @@ public class TimeSeriesRetriever extends Retriever
                 Duration.of(this.timeSeries.getHighestLead(), TimeHelper.LEAD_RESOLUTION)
         );
 
-        return Metadata.of(dim, datasetIdentifier, window, projectConfig);
+        return new SampleMetadataBuilder().setMeasurementUnit( dim )
+                                          .setIdentifier( datasetIdentifier )
+                                          .setTimeWindow( window )
+                                          .setProjectConfig( projectConfig )
+                                          .build();
     }
 
     @Override
-    protected MetricInput<?> createInput() throws IOException
+    protected SampleData<?> createInput() throws IOException
     {
         TimeSeriesOfSingleValuedPairsBuilder builder = new TimeSeriesOfSingleValuedPairsBuilder();
         builder.setMetadata( this.metadata );
@@ -136,7 +141,7 @@ public class TimeSeriesRetriever extends Retriever
     }
 
     @Override
-    protected MetricInput<?> execute() throws IOException
+    protected SampleData<?> execute() throws IOException
     {
         try
         {
@@ -268,7 +273,7 @@ public class TimeSeriesRetriever extends Retriever
     }
 
     private String script;
-    private Metadata metadata;
+    private SampleMetadata metadata;
     private TimeSeries timeSeries;
     private final int timeSeriesID;
 }

@@ -18,11 +18,13 @@ import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.TimeScaleConfig;
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.inputs.MetricInput;
-import wres.datamodel.inputs.pairs.EnsemblePair;
-import wres.datamodel.inputs.pairs.SingleValuedPair;
+import wres.datamodel.sampledata.pairs.EnsemblePair;
+import wres.datamodel.sampledata.pairs.EnsemblePairs;
+import wres.datamodel.sampledata.pairs.SingleValuedPair;
+import wres.datamodel.sampledata.pairs.SingleValuedPairs;
+import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.metadata.Location;
-import wres.datamodel.metadata.Metadata;
+import wres.datamodel.metadata.SampleMetadata;
 import wres.io.concurrency.WRESCallable;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.UnitConversions;
@@ -31,7 +33,7 @@ import wres.util.CalculationException;
 import wres.util.TimeHelper;
 import wres.util.functional.ExceptionalTriFunction;
 
-abstract class Retriever extends WRESCallable<MetricInput<?>>
+abstract class Retriever extends WRESCallable<SampleData<?>>
 {
     interface CacheRetriever
             extends ExceptionalTriFunction<Feature, LocalDateTime, LocalDateTime, Collection<Double>, IOException>{}
@@ -292,7 +294,7 @@ abstract class Retriever extends WRESCallable<MetricInput<?>>
                                        + "values." );
         }
 
-        Double leftAggregation = null;
+        Double leftAggregation;
         try
         {
             leftAggregation = this.getLeftAggregation( condensedIngestedValue.validTime );
@@ -472,8 +474,8 @@ abstract class Retriever extends WRESCallable<MetricInput<?>>
                             ForecastedPair pair,
                             DataSourceConfig dataSourceConfig );
 
-    protected abstract Metadata buildMetadata( final ProjectConfig projectConfig, final boolean isBaseline) throws IOException;
-    protected abstract  MetricInput<?> createInput() throws IOException;
+    protected abstract SampleMetadata buildMetadata( final ProjectConfig projectConfig, final boolean isBaseline) throws IOException;
+    protected abstract SampleData<?> createInput() throws IOException;
     protected abstract String getLoadScript( final DataSourceConfig dataSourceConfig) throws SQLException, IOException;
 
 
@@ -490,16 +492,6 @@ abstract class Retriever extends WRESCallable<MetricInput<?>>
         {
             this.basisTime = basisTime;
             this.validTime = validTime;
-            this.values = values;
-        }
-
-        ForecastedPair( Instant basisTime,
-                        int leadHours,
-                        EnsemblePair values )
-        {
-            this.basisTime = basisTime;
-            Duration leadTime = Duration.ofHours( leadHours );
-            this.validTime = basisTime.plus( leadTime );
             this.values = values;
         }
 
@@ -554,9 +546,10 @@ abstract class Retriever extends WRESCallable<MetricInput<?>>
             return getLeadDuration().toHours();
         }
 
-        public long getLeadSeconds()
-        {
-            return getLeadDuration().getSeconds();
-        }
+        // TODO: Add function to get lead to print
+        // Leads are saved and passed in TimeHelper.LEAD_RESOLUTION (minutes, currently)
+        // We want to display in hours. What if a set doesn't have leads that are expressed in hours?
+        // AHPS data has data in both hours and minutes. In order to print that correctly, there
+        // needs to be a function to determine a) are the leads in terms of hours, if not, display minutes
     }
 }

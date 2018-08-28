@@ -15,6 +15,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.TreeMap;
 
 import javax.xml.stream.XMLStreamException;
@@ -457,7 +458,7 @@ public final class PIXMLReader extends XMLReader
     {
         synchronized (groupLock)
         {
-            for ( Map.Entry<Integer, StringBuilder> builderPair
+            for ( Entry<Integer, StringBuilder> builderPair
                     : PIXMLReader.builderMap.entrySet() )
             {
                 Integer key = builderPair.getKey();

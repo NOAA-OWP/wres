@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.TreeMap;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -341,7 +342,7 @@ public class NetCDFCopier implements Closeable
 
         }
 
-        for (Map.Entry<String, Object> keyValue : attributes.entrySet())
+        for (Entry<String, Object> keyValue : attributes.entrySet())
         {
             if (keyValue.getValue() instanceof Number)
             {

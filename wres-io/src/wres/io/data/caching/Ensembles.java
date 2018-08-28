@@ -7,6 +7,7 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.function.BiPredicate;
 
 import org.slf4j.Logger;
@@ -124,7 +125,7 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
             return !compareQualifiers || condition.getQualifier().equals( key.getQualifierID() );
         };
 
-	    for (Map.Entry<EnsembleKey, Integer> key : Ensembles.getCache().getKeyIndex().entrySet())
+	    for (Entry<EnsembleKey, Integer> key : Ensembles.getCache().getKeyIndex().entrySet())
         {
             EnsembleKey ensembleKey = key.getKey();
 

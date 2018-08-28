@@ -192,7 +192,7 @@ public final class Collections
     {
         K key = null;
 
-        for (Map.Entry<K, V> entry : map.entrySet())
+        for (Entry<K, V> entry : map.entrySet())
         {
             if (key == null || comparisonFunction.test( entry.getValue(), map.get(key) ))
             {
@@ -422,7 +422,7 @@ public final class Collections
 
         map = map.subMap( minimum, false, maximum, true );
 
-        for (Map.Entry<U, V> entry : map.entrySet())
+        for (Entry<U, V> entry : map.entrySet())
         {
             values.add( entry.getValue() );
         }
