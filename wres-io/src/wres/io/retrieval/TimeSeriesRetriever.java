@@ -10,6 +10,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TreeMap;
 
 import org.slf4j.Logger;
@@ -23,6 +24,7 @@ import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.SampleMetadata.SampleMetadataBuilder;
+import wres.datamodel.metadata.TimeScale;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.pairs.EnsemblePair;
@@ -99,11 +101,25 @@ public class TimeSeriesRetriever extends Retriever
                 Duration.of(this.timeSeries.getHighestLead(), TimeHelper.LEAD_RESOLUTION)
         );
 
-        return new SampleMetadataBuilder().setMeasurementUnit( dim )
-                                          .setIdentifier( datasetIdentifier )
-                                          .setTimeWindow( window )
-                                          .setProjectConfig( projectConfig )
-                                          .build();
+        // Build the metadata
+        SampleMetadataBuilder builder = new SampleMetadataBuilder().setMeasurementUnit( dim )
+                                                                   .setIdentifier( datasetIdentifier )
+                                                                   .setTimeWindow( window )
+                                                                   .setProjectConfig( projectConfig );
+
+        // Add the time-scale information to the metadata.
+        // Initially, this comes from the desiredTimeScale.
+        // TODO: when the project declaration is undefined,
+        // determine the Least Common Scale and populate the
+        // metadata with that - that relies on #54415.
+        // See #44539 for an overview.
+        if ( Objects.nonNull( projectConfig.getPair() )
+             && Objects.nonNull( projectConfig.getPair().getDesiredTimeScale() ) )
+        {
+            builder.setTimeScale( TimeScale.of( projectConfig.getPair().getDesiredTimeScale() ) );
+        }
+
+        return builder.build();
     }
 
     @Override

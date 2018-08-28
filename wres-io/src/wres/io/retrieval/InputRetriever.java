@@ -1252,7 +1252,7 @@ class InputRetriever extends Retriever //WRESCallable<MetricInput<?>>
                                                         + "could not be determined for this project.", e );
                 }
 
-                Duration leadFrequency = null;
+                Duration leadFrequency;
                 try
                 {
                     leadFrequency = Duration.of( this.getProjectDetails().getLeadFrequency(), leadTemporalUnit );
