@@ -33,6 +33,7 @@ import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.SampleMetadata;
+import wres.datamodel.metadata.SampleMetadata.SampleMetadataBuilder;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
@@ -1260,10 +1261,11 @@ class InputRetriever extends WRESCallable<SampleData<?>>
                                                             lastLead,
                                                             this.issueDatesPool );
 
-        return SampleMetadata.of( dim,
-                            datasetIdentifier,
-                            timeWindow,
-                            projectConfig );
+        return new SampleMetadataBuilder().setMeasurementUnit( dim )
+                                          .setIdentifier( datasetIdentifier )
+                                          .setTimeWindow( timeWindow )
+                                          .setProjectConfig( projectConfig )
+                                          .build();
     }
 
     private EnsemblePair getPair(CondensedIngestedValue condensedIngestedValue)

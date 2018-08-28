@@ -19,6 +19,7 @@ import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.SampleMetadata;
+import wres.datamodel.metadata.SampleMetadata.SampleMetadataBuilder;
 import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.sampledata.SampleDataException;
@@ -99,16 +100,19 @@ public final class MeanSquareErrorSkillScoreTest
                                            Instant.parse( "2010-12-31T11:59:59Z" ),
                                            ReferenceTime.VALID_TIME,
                                            Duration.ofHours( 24 ) );
+        final TimeWindow timeWindow = window;
 
-        final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "MM/DAY" ),
-                                                                              DatasetIdentifier.of( Location.of( "103.1" ),
-                                                                                                    "QME",
-                                                                                                    "NVE" ),
-                                                                              window ),
-                                                           input.getRawData().size(),
-                                                           MeasurementUnit.of(),
-                                                           MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE,
-                                                           MetricConstants.MAIN );
+        final StatisticMetadata m1 =
+                StatisticMetadata.of( new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "MM/DAY" ) )
+                                                                 .setIdentifier( DatasetIdentifier.of( Location.of( "103.1" ),
+                                                                                                       "QME",
+                                                                                                       "NVE" ) )
+                                                                 .setTimeWindow( timeWindow )
+                                                                 .build(),
+                                      input.getRawData().size(),
+                                      MeasurementUnit.of(),
+                                      MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE,
+                                      MetricConstants.MAIN );
 
         //Check the results
         DoubleScoreStatistic actual = msess.apply( input );

@@ -19,7 +19,7 @@ import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.ReferenceTime;
-import wres.datamodel.metadata.SampleMetadata;
+import wres.datamodel.metadata.SampleMetadata.SampleMetadataBuilder;
 import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.sampledata.SampleDataException;
@@ -70,15 +70,18 @@ public final class TimeToPeakErrorTest
                                            ReferenceTime.ISSUE_TIME,
                                            Duration.ofHours( 6 ),
                                            Duration.ofHours( 18 ) );
+        final TimeWindow timeWindow = window;
 
-        StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                                        DatasetIdentifier.of( Location.of( "A" ),
-                                                                                              "Streamflow" ),
-                                                                        window ),
-                                                     input.getBasisTimes().size(),
-                                                     MeasurementUnit.of( "DURATION" ),
-                                                     MetricConstants.TIME_TO_PEAK_ERROR,
-                                                     MetricConstants.MAIN );
+        StatisticMetadata m1 =
+                StatisticMetadata.of( new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
+                                                                 .setIdentifier( DatasetIdentifier.of( Location.of( "A" ),
+                                                                                                       "Streamflow" ) )
+                                                                 .setTimeWindow( timeWindow )
+                                                                 .build(),
+                                      input.getBasisTimes().size(),
+                                      MeasurementUnit.of( "DURATION" ),
+                                      MetricConstants.TIME_TO_PEAK_ERROR,
+                                      MetricConstants.MAIN );
 
         // Check the parameters
         assertTrue( "Unexpected name for the Time-to-Peak Error.",

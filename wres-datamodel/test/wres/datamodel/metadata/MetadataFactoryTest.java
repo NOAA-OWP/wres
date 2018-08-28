@@ -8,11 +8,7 @@ import java.util.Arrays;
 
 import org.junit.Test;
 
-import wres.datamodel.metadata.Location;
-import wres.datamodel.metadata.SampleMetadata;
-import wres.datamodel.metadata.MetadataException;
-import wres.datamodel.metadata.MetadataFactory;
-import wres.datamodel.metadata.ReferenceTime;
+import wres.datamodel.metadata.SampleMetadata.SampleMetadataBuilder;
 
 /**
  * Tests the {@link DefaultMetadataFactory}.
@@ -29,29 +25,35 @@ public final class MetadataFactoryTest
     public void unionOf()
     {
         Location l1 = Location.of( "DRRC2" );
-        SampleMetadata m1 = SampleMetadata.of( MeasurementUnit.of(),
-                                           DatasetIdentifier.of( l1, "SQIN", "HEFS" ),
-                                           TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                                 Instant.parse( "1985-12-31T23:59:59Z" ),
-                                                                 ReferenceTime.ISSUE_TIME ) );
+        SampleMetadata m1 = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of() )
+                                                       .setIdentifier( DatasetIdentifier.of( l1, "SQIN", "HEFS" ) )
+                                                       .setTimeWindow( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                                                      Instant.parse( "1985-12-31T23:59:59Z" ),
+                                                                                      ReferenceTime.ISSUE_TIME ) )
+                                                       .build();
         Location l2 = Location.of( "DRRC2" );
-        SampleMetadata m2 = SampleMetadata.of( MeasurementUnit.of(),
-                                           DatasetIdentifier.of( l2, "SQIN", "HEFS" ),
-                                           TimeWindow.of( Instant.parse( "1986-01-01T00:00:00Z" ),
-                                                                 Instant.parse( "1986-12-31T23:59:59Z" ),
-                                                                 ReferenceTime.ISSUE_TIME ) );
+        SampleMetadata m2 = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of() )
+                                                       .setIdentifier( DatasetIdentifier.of( l2, "SQIN", "HEFS" ) )
+                                                       .setTimeWindow( TimeWindow.of( Instant.parse( "1986-01-01T00:00:00Z" ),
+                                                                                      Instant.parse( "1986-12-31T23:59:59Z" ),
+                                                                                      ReferenceTime.ISSUE_TIME ) )
+                                                       .build();
         Location l3 = Location.of( "DRRC2" );
-        SampleMetadata m3 = SampleMetadata.of( MeasurementUnit.of(),
-                                           DatasetIdentifier.of( l3, "SQIN", "HEFS" ),
-                                           TimeWindow.of( Instant.parse( "1987-01-01T00:00:00Z" ),
-                                                                 Instant.parse( "1988-01-01T00:00:00Z" ),
-                                                                 ReferenceTime.ISSUE_TIME ) );
+        SampleMetadata m3 = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of() )
+                                                       .setIdentifier( DatasetIdentifier.of( l3, "SQIN", "HEFS" ) )
+                                                       .setTimeWindow( TimeWindow.of( Instant.parse( "1987-01-01T00:00:00Z" ),
+                                                                                      Instant.parse( "1988-01-01T00:00:00Z" ),
+                                                                                      ReferenceTime.ISSUE_TIME ) )
+                                                       .build();
         Location benchmarkLocation = Location.of( "DRRC2" );
-        SampleMetadata benchmark = SampleMetadata.of( MeasurementUnit.of(),
-                                                  DatasetIdentifier.of( benchmarkLocation, "SQIN", "HEFS" ),
-                                                          TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                                        Instant.parse( "1988-01-01T00:00:00Z" ),
-                                                                        ReferenceTime.ISSUE_TIME ) );
+        SampleMetadata benchmark = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of() )
+                                                              .setIdentifier( DatasetIdentifier.of( benchmarkLocation,
+                                                                                                    "SQIN",
+                                                                                                    "HEFS" ) )
+                                                              .setTimeWindow( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                                                             Instant.parse( "1988-01-01T00:00:00Z" ),
+                                                                                             ReferenceTime.ISSUE_TIME ) )
+                                                              .build();
         assertTrue( "Unexpected difference between union of metadata and benchmark.",
                     benchmark.equals( MetadataFactory.unionOf( Arrays.asList( m1, m2, m3 ) ) ) );
         //Checked exception
@@ -59,7 +61,7 @@ public final class MetadataFactoryTest
         {
             Location failLocation = Location.of( "DRRC3" );
             SampleMetadata fail = SampleMetadata.of( MeasurementUnit.of(),
-                                                 DatasetIdentifier.of( failLocation, "SQIN", "HEFS" ) );
+                                                     DatasetIdentifier.of( failLocation, "SQIN", "HEFS" ) );
             MetadataFactory.unionOf( Arrays.asList( m1, m2, m3, fail ) );
             fail( "Expected a checked exception on building the union of metadata for unequal inputs." );
         }

@@ -20,6 +20,7 @@ import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.SampleMetadata;
+import wres.datamodel.metadata.SampleMetadata.SampleMetadataBuilder;
 import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.sampledata.SampleDataException;
@@ -66,16 +67,19 @@ public final class KlingGuptaEfficiencyTest
                                            Instant.parse( "2010-12-31T11:59:59Z" ),
                                            ReferenceTime.VALID_TIME,
                                            Duration.ofHours( 24 ) );
+        final TimeWindow timeWindow = window;
 
-        final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "MM/DAY" ),
-                                                                              DatasetIdentifier.of( Location.of( "103.1" ),
-                                                                                                    "QME",
-                                                                                                    "NVE" ),
-                                                                              window ),
-                                                           input.getRawData().size(),
-                                                           MeasurementUnit.of(),
-                                                           MetricConstants.KLING_GUPTA_EFFICIENCY,
-                                                           MetricConstants.MAIN );
+        final StatisticMetadata m1 =
+                StatisticMetadata.of( new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "MM/DAY" ) )
+                                                                 .setIdentifier( DatasetIdentifier.of( Location.of( "103.1" ),
+                                                                                                       "QME",
+                                                                                                       "NVE" ) )
+                                                                 .setTimeWindow( timeWindow )
+                                                                 .build(),
+                                      input.getRawData().size(),
+                                      MeasurementUnit.of(),
+                                      MetricConstants.KLING_GUPTA_EFFICIENCY,
+                                      MetricConstants.MAIN );
 
         //Check the results
         DoubleScoreStatistic actual = kge.apply( input );

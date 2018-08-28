@@ -32,6 +32,7 @@ import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.SampleMetadata;
+import wres.datamodel.metadata.SampleMetadata.SampleMetadataBuilder;
 import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.sampledata.pairs.EnsemblePair;
@@ -589,11 +590,13 @@ public abstract class Chart2DTestDataGenerator
         final TimeWindow timeWindow = windowMeta;
         
         //Source metadata
-        final SampleMetadata source = SampleMetadata.of( MeasurementUnit.of( "MILLIMETER" ),
-                                                         DatasetIdentifier.of( Location.of( "WGCM8" ),
-                                                                               "PRECIPITATION",
-                                                                               "HEFS" ),
-                                                         timeWindow );
+        final SampleMetadata source =
+                new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "MILLIMETER" ) )
+                                           .setIdentifier( DatasetIdentifier.of( Location.of( "WGCM8" ),
+                                                                                 "PRECIPITATION",
+                                                                                 "HEFS" ) )
+                                           .setTimeWindow( timeWindow )
+                                           .build();
 
         //Single threshold
         final OneOrTwoThresholds threshold =
