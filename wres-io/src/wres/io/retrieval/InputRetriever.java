@@ -14,6 +14,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TreeMap;
 import java.util.function.BinaryOperator;
 
@@ -34,6 +35,7 @@ import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.SampleMetadata.SampleMetadataBuilder;
+import wres.datamodel.metadata.TimeScale;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
@@ -1260,12 +1262,25 @@ class InputRetriever extends WRESCallable<SampleData<?>>
                                                             firstLead,
                                                             lastLead,
                                                             this.issueDatesPool );
+        // Build the metadata
+        SampleMetadataBuilder builder = new SampleMetadataBuilder().setMeasurementUnit( dim )
+                                                                   .setIdentifier( datasetIdentifier )
+                                                                   .setTimeWindow( timeWindow )
+                                                                   .setProjectConfig( projectConfig );
+        
+        // Add the time-scale information to the metadata. 
+        // Initially, this comes from the desiredTimeScale. 
+        // TODO: when the project declaration is undefined, 
+        // determine the Least Common Scale and populate the
+        // metadata with that - that relies on #54415. 
+        // See #44539 for an overview.        
+        if ( Objects.nonNull( projectConfig.getPair() )
+             && Objects.nonNull( projectConfig.getPair().getDesiredTimeScale() ) )
+        {
+            builder.setTimeScale( TimeScale.of( projectConfig.getPair().getDesiredTimeScale() ) );
+        }
 
-        return new SampleMetadataBuilder().setMeasurementUnit( dim )
-                                          .setIdentifier( datasetIdentifier )
-                                          .setTimeWindow( timeWindow )
-                                          .setProjectConfig( projectConfig )
-                                          .build();
+        return builder.build();                                          
     }
 
     private EnsemblePair getPair(CondensedIngestedValue condensedIngestedValue)
