@@ -44,6 +44,7 @@ import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.SampleMetadata;
+import wres.datamodel.metadata.SampleMetadata.SampleMetadataBuilder;
 import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
@@ -167,11 +168,12 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                      Instant.MAX,
                                                      ReferenceTime.VALID_TIME,
                                                      Duration.ofHours( i ) );
-            final SampleMetadata meta = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                           DatasetIdentifier.of( Location.of( "DRRC2" ),
-                                                                                 "SQIN",
-                                                                                 "HEFS" ),
-                                                           window );
+            final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
+                                                                   .setIdentifier( DatasetIdentifier.of( Location.of( "DRRC2" ),
+                                                                                                         "SQIN",
+                                                                                                         "HEFS" ) )
+                                                                   .setTimeWindow( window )
+                                                                   .build();
             processor.apply( SingleValuedPairs.of( pairs.getRawData(), meta ) );
         }
 
@@ -611,11 +613,12 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                      Instant.MAX,
                                                      ReferenceTime.VALID_TIME,
                                                      Duration.ofHours( i ) );
-            final SampleMetadata meta = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                           DatasetIdentifier.of( Location.of( "DRRC2" ),
-                                                                                 "SQIN",
-                                                                                 "HEFS" ),
-                                                           window );
+            final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
+                                                                   .setIdentifier( DatasetIdentifier.of( Location.of( "DRRC2" ),
+                                                                                                         "SQIN",
+                                                                                                         "HEFS" ) )
+                                                                   .setTimeWindow( window )
+                                                                   .build();
             processor.apply( SingleValuedPairs.of( pairs.getRawData(), meta ) );
         }
 
@@ -702,11 +705,12 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                      Instant.MAX,
                                                      ReferenceTime.VALID_TIME,
                                                      Duration.ofHours( i ) );
-            final SampleMetadata meta = SampleMetadata.of( MeasurementUnit.of( "CMS" ),
-                                                           DatasetIdentifier.of( Location.of( "DRRC2" ),
-                                                                                 "SQIN",
-                                                                                 "HEFS" ),
-                                                           window );
+            final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
+                                                                   .setIdentifier( DatasetIdentifier.of( Location.of( "DRRC2" ),
+                                                                                                         "SQIN",
+                                                                                                         "HEFS" ) )
+                                                                   .setTimeWindow( window )
+                                                                   .build();
             processor.apply( SingleValuedPairs.of( pairs.getRawData(), meta ) );
         }
 

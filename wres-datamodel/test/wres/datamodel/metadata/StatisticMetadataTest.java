@@ -9,6 +9,7 @@ import org.junit.Test;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.OneOrTwoDoubles;
+import wres.datamodel.metadata.SampleMetadata.SampleMetadataBuilder;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
@@ -102,15 +103,18 @@ public class StatisticMetadataTest
         assertFalse( "Unexpected equality between two metadata instances.", first.equals( sixth ) );
         // Unequal input dimensions
         Location seventhLocation = Location.of( "DRRC3" );
-        StatisticMetadata seventh = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "OTHER_DIM" ),
-                                                                             DatasetIdentifier.of( seventhLocation,
-                                                                                                   "SQIN",
-                                                                                                   "HEFS" ),
-                                                                             firstWindow ),
-                                                          2,
-                                                          MeasurementUnit.of( "CMS" ),
-                                                          MetricConstants.BIAS_FRACTION,
-                                                          null );
+        final TimeWindow timeWindow = firstWindow;
+        StatisticMetadata seventh =
+                StatisticMetadata.of( new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "OTHER_DIM" ) )
+                                                                 .setIdentifier( DatasetIdentifier.of( seventhLocation,
+                                                                                                       "SQIN",
+                                                                                                       "HEFS" ) )
+                                                                 .setTimeWindow( timeWindow )
+                                                                 .build(),
+                                      2,
+                                      MeasurementUnit.of( "CMS" ),
+                                      MetricConstants.BIAS_FRACTION,
+                                      null );
         assertFalse( "Unexpected equality between two metadata instances.", third.equals( seventh ) );
         // Null check
         assertFalse( "Unexpected equality between two metadata instances.", first.equals( null ) );
@@ -267,15 +271,18 @@ public class StatisticMetadataTest
         assertFalse( "Unexpected equality between two metadata hashcodes.", first.hashCode() == sixth.hashCode() );
         // Unequal input dimensions
         Location seventhLocation = Location.of( "DRRC3" );
-        StatisticMetadata seventh = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "OTHER_DIM" ),
-                                                                             DatasetIdentifier.of( seventhLocation,
-                                                                                                   "SQIN",
-                                                                                                   "HEFS" ),
-                                                                             firstWindow ),
-                                                          2,
-                                                          MeasurementUnit.of( "CMS" ),
-                                                          MetricConstants.BIAS_FRACTION,
-                                                          null );
+        final TimeWindow timeWindow = firstWindow;
+        StatisticMetadata seventh =
+                StatisticMetadata.of( new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "OTHER_DIM" ) )
+                                                                 .setIdentifier( DatasetIdentifier.of( seventhLocation,
+                                                                                                       "SQIN",
+                                                                                                       "HEFS" ) )
+                                                                 .setTimeWindow( timeWindow )
+                                                                 .build(),
+                                      2,
+                                      MeasurementUnit.of( "CMS" ),
+                                      MetricConstants.BIAS_FRACTION,
+                                      null );
         assertFalse( "Unexpected equality between two metadata hashcodes.", third.hashCode() == seventh.hashCode() );
         // Other type check
         assertFalse( "Unexpected equality between two metadata hashcodes.",

@@ -20,6 +20,7 @@ import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.SampleMetadata;
+import wres.datamodel.metadata.SampleMetadata.SampleMetadataBuilder;
 import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.sampledata.SampleDataException;
@@ -68,15 +69,17 @@ public final class VolumetricEfficiencyTest
                                                  ReferenceTime.VALID_TIME,
                                                  Duration.ofHours( 24 ) );
 
-        final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "MM/DAY" ),
-                                                                              DatasetIdentifier.of( Location.of( "103.1" ),
-                                                                                                    "QME",
-                                                                                                    "NVE" ),
-                                                                              window ),
-                                                           input.getRawData().size(),
-                                                           MeasurementUnit.of(),
-                                                           MetricConstants.VOLUMETRIC_EFFICIENCY,
-                                                           MetricConstants.MAIN );
+        final StatisticMetadata m1 =
+                StatisticMetadata.of( new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "MM/DAY" ) )
+                                                                 .setIdentifier( DatasetIdentifier.of( Location.of( "103.1" ),
+                                                                                                       "QME",
+                                                                                                       "NVE" ) )
+                                                                 .setTimeWindow( window )
+                                                                 .build(),
+                                      input.getRawData().size(),
+                                      MeasurementUnit.of(),
+                                      MetricConstants.VOLUMETRIC_EFFICIENCY,
+                                      MetricConstants.MAIN );
         //Check the results
         DoubleScoreStatistic actual = ve.apply( input );
         DoubleScoreStatistic expected = DoubleScoreStatistic.of( 0.657420176533252, m1 );

@@ -4,11 +4,13 @@ import java.util.Comparator;
 import java.util.Objects;
 
 import wres.datamodel.MetricConstants;
+import wres.datamodel.metadata.SampleMetadata.SampleMetadataBuilder;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.statistics.Statistic;
 
 /**
- * An immutable store of metadata associated with a {@link Statistic}.
+ * An immutable store of metadata associated with a {@link Statistic}. Includes a {@link StatisticMetadataBuilder} for 
+ * incremental construction.
  * 
  * @author james.brown@hydrosolved.com
  */
@@ -51,16 +53,15 @@ public class StatisticMetadata implements Comparable<StatisticMetadata>
      * @param source the input source
      * @param sampleSize the sample size
      * @return a {@link StatisticMetadata} object
+     * @throws NullPointerException if the source is null
      */
 
     public static StatisticMetadata of( final StatisticMetadata source,
                                         final int sampleSize )
     {
-        return StatisticMetadata.of( source.getSampleMetadata(),
-                                     sampleSize,
-                                     source.getMeasurementUnit(),
-                                     source.getMetricID(),
-                                     source.getMetricComponentID() );
+        return new StatisticMetadataBuilder().setFromExistingInstance( source )
+                                             .setSampleSize( sampleSize )
+                                             .build();
     }
 
     /**
@@ -70,17 +71,17 @@ public class StatisticMetadata implements Comparable<StatisticMetadata>
      * @param metricID the metric identifier
      * @param componentID the metric component identifier or decomposition template
      * @return a {@link StatisticMetadata} object
+     * @throws NullPointerException if the source is null
      */
 
     public static StatisticMetadata of( final StatisticMetadata source,
                                         final MetricConstants metricID,
                                         final MetricConstants componentID )
     {
-        return StatisticMetadata.of( source.getSampleMetadata(),
-                                     source.getSampleSize(),
-                                     source.getMeasurementUnit(),
-                                     metricID,
-                                     componentID );
+        return new StatisticMetadataBuilder().setFromExistingInstance( source )
+                                             .setMetricID( metricID )
+                                             .setMetricComponentID( componentID )
+                                             .build();
     }
 
     /**
@@ -93,6 +94,7 @@ public class StatisticMetadata implements Comparable<StatisticMetadata>
      * @param sampleSize the sample size
      * @param baselineID the baseline identifier or null
      * @return the output metadata
+     * @throws NullPointerException if the source is null
      */
 
     public static StatisticMetadata of( final SampleMetadata source,
@@ -123,7 +125,9 @@ public class StatisticMetadata implements Comparable<StatisticMetadata>
                     DatasetIdentifier.of( identifier, baselineID.getScenarioID() );
         }
 
-        return StatisticMetadata.of( SampleMetadata.of( source, identifier ),
+        return StatisticMetadata.of( new SampleMetadataBuilder().setFromExistingInstance( source )
+                                                                .setIdentifier( identifier )
+                                                                .build(),
                                      sampleSize,
                                      statisticUnit,
                                      metricID,
@@ -133,26 +137,27 @@ public class StatisticMetadata implements Comparable<StatisticMetadata>
     /**
      * Returns an instance from the inputs.
      * 
-     * @param sampleMetadata the sample metadata
+     * @param source the sample metadata
      * @param sampleSize the sample size
      * @param statisticUnit the required output dimension
      * @param metricID the optional metric identifier
      * @param componentID the optional metric component identifier or decomposition template
      * @return a {@link StatisticMetadata} object
-     * @throws NullPointerException if the sampleMetadata is null or the statisticUnit is null
+     * @throws NullPointerException if the source is null or the statisticUnit is null
      */
 
-    public static StatisticMetadata of( final SampleMetadata sampleMetadata,
+    public static StatisticMetadata of( final SampleMetadata source,
                                         final int sampleSize,
                                         final MeasurementUnit statisticUnit,
                                         final MetricConstants metricID,
                                         final MetricConstants componentID )
     {
-        return new StatisticMetadata( sampleMetadata,
-                                      statisticUnit,
-                                      sampleSize,
-                                      metricID,
-                                      componentID );
+        return new StatisticMetadataBuilder().setSampleMetadata( source )
+                                             .setSampleSize( sampleSize )
+                                             .setMeasurementUnit( statisticUnit )
+                                             .setMetricID( metricID )
+                                             .setMetricComponentID( componentID )
+                                             .build();
     }
 
     /**
@@ -337,32 +342,161 @@ public class StatisticMetadata implements Comparable<StatisticMetadata>
     }
 
     /**
+     * Builder.
+     */
+
+    public static class StatisticMetadataBuilder
+    {
+
+        /**
+         * The {@link SampleMetadata} associated with the {@link SampleData} from which the {@link Statistic} was computed.
+         */
+
+        private SampleMetadata sampleMetadata;
+
+        /**
+         * The sample size.
+         */
+
+        private int sampleSize;
+
+        /**
+         * The {@link MeasurementUnit} associated with the {@link Statistic}.
+         */
+
+        private MeasurementUnit statisticUnit;
+
+        /**
+         * The metric identifier.
+         */
+
+        private MetricConstants metricID;
+
+        /**
+         * The metric component identifier.
+         */
+
+        private MetricConstants componentID;
+
+        /**
+         * Sets the sample metadata.
+         * 
+         * @param sampleMetadata the sample metadata
+         * @return the builder
+         */
+
+        public StatisticMetadataBuilder setSampleMetadata( SampleMetadata sampleMetadata )
+        {
+            this.sampleMetadata = sampleMetadata;
+            return this;
+        }
+
+        /**
+         * Sets the sample size.
+         * 
+         * @param sampleSize the sample size
+         * @return the builder
+         */
+
+        public StatisticMetadataBuilder setSampleSize( int sampleSize )
+        {
+            this.sampleSize = sampleSize;
+            return this;
+        }
+
+        /**
+         * Sets the measurement unit.
+         * 
+         * @param statisticUnit the measurement unit
+         * @return the builder
+         */
+
+        public StatisticMetadataBuilder setMeasurementUnit( MeasurementUnit statisticUnit )
+        {
+            this.statisticUnit = statisticUnit;
+            return this;
+        }
+
+        /**
+         * Sets the metric identifier.
+         * 
+         * @param metricID the metric identifier
+         * @return the builder
+         */
+
+        public StatisticMetadataBuilder setMetricID( MetricConstants metricID )
+        {
+            this.metricID = metricID;
+            return this;
+        }
+
+        /**
+         * Sets the metric component identifier.
+         * 
+         * @param componentID the metric component identifier
+         * @return the builder
+         */
+
+        public StatisticMetadataBuilder setMetricComponentID( MetricConstants componentID )
+        {
+            this.componentID = componentID;
+            return this;
+        }
+
+        /**
+         * Sets the contents from an existing metadata instance.
+         * 
+         * @param statisticMetadata the source metadata
+         * @throws NullPointerException if the input is null
+         * @return the builder
+         */
+
+        public StatisticMetadataBuilder setFromExistingInstance( StatisticMetadata statisticMetadata )
+        {
+            Objects.requireNonNull( statisticMetadata, "Specify non-null source metadata." );
+
+            this.sampleMetadata = statisticMetadata.sampleMetadata;
+            this.sampleSize = statisticMetadata.sampleSize;
+            this.statisticUnit = statisticMetadata.statisticUnit;
+            this.metricID = statisticMetadata.metricID;
+            this.componentID = statisticMetadata.componentID;
+
+            return this;
+        }
+
+        /**
+         * Build the metadata.
+         * 
+         * @return the metadata instance
+         */
+
+        public StatisticMetadata build()
+        {
+            return new StatisticMetadata( this );
+        }
+
+    }
+
+    /**
      * Hidden constructor.
      * 
-     * @param sampleMetadata the sample metadata
-     * @param sampleSize the sample size
-     * @param statisticUnit the required output dimension
-     * @param metricID the optional metric identifier
-     * @param componentID the optional metric component identifier or decomposition template
-     * @return a {@link StatisticMetadata} object
+     * @param builder the builder
      * @throws NullPointerException if the sampleMetadata is null or the statisticUnit is null
      */
 
-    private StatisticMetadata( final SampleMetadata sampleMetadata,
-                               final MeasurementUnit statisticUnit,
-                               final int sampleSize,
-                               final MetricConstants metricID,
-                               final MetricConstants componentID )
+    private StatisticMetadata( StatisticMetadataBuilder builder )
     {
-        Objects.requireNonNull( sampleMetadata, "Specify non-null sample metadata." );
+        // Set then validate
+        this.sampleMetadata = builder.sampleMetadata;
+        this.sampleSize = builder.sampleSize;
+        this.statisticUnit = builder.statisticUnit;
+        this.componentID = builder.componentID;
+        this.metricID = builder.metricID;
 
-        Objects.requireNonNull( statisticUnit, "Specify a non-null measurement unit for the statistic" );
+        Objects.requireNonNull( this.sampleMetadata, "Specify non-null sample metadata." );
 
-        this.sampleMetadata = sampleMetadata;
-        this.sampleSize = sampleSize;
-        this.statisticUnit = statisticUnit;
-        this.componentID = componentID;
-        this.metricID = metricID;
+        Objects.requireNonNull( this.statisticUnit, "Specify a non-null measurement unit for the statistic" );
+
     }
 
 }

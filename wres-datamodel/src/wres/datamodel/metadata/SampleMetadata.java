@@ -8,18 +8,13 @@ import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 
 /**
- * An immutable store of metadata associated with {@link SampleData}.
+ * An immutable store of metadata associated with {@link SampleData}. Includes a {@link SampleMetadataBuilder} for 
+ * incremental construction.
  * 
  * @author james.brown@hydrosolved.com
  */
 public class SampleMetadata implements Comparable<SampleMetadata>
 {
-
-    /**
-     * Error message for null input.
-     */
-
-    private static final String NULL_INPUT_ERROR = "Specify non-null input from which to build the metadata.";
 
     /**
      * The measurement unit associated with the data.
@@ -59,7 +54,7 @@ public class SampleMetadata implements Comparable<SampleMetadata>
 
     public static SampleMetadata of()
     {
-        return SampleMetadata.of( MeasurementUnit.of() );
+        return new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of() ).build();
     }
 
     /**
@@ -68,10 +63,10 @@ public class SampleMetadata implements Comparable<SampleMetadata>
      * @param unit the required measurement unit
      * @return a {@link SampleMetadata} object
      */
-
+    
     public static SampleMetadata of( final MeasurementUnit unit )
     {
-        return SampleMetadata.of( unit, null );
+        return new SampleMetadataBuilder().setMeasurementUnit( unit ).build();
     }
 
     /**
@@ -84,42 +79,7 @@ public class SampleMetadata implements Comparable<SampleMetadata>
 
     public static SampleMetadata of( final MeasurementUnit unit, final DatasetIdentifier identifier )
     {
-        return SampleMetadata.of( unit, identifier, null );
-    }
-
-    /**
-     * Returns an instance from the inputs.
-     * 
-     * @param unit the required measurement unit
-     * @param identifier an optional dataset identifier
-     * @param timeWindow an optional time window
-     * @throws NullPointerException if the dimension is null
-     * @return a metadata instance
-     */
-
-    public static SampleMetadata
-            of( final MeasurementUnit unit, final DatasetIdentifier identifier, final TimeWindow timeWindow )
-    {
-        return SampleMetadata.of( unit, identifier, timeWindow, null, null );
-    }
-
-    /**
-     * Returns an instance from the inputs.
-     * 
-     * @param unit the required measurement unit
-     * @param identifier an optional dataset identifier
-     * @param timeWindow an optional time window
-     * @param projectConfig the optional project configuration
-     * @throws NullPointerException if the dimension is null
-     * @return a metadata instance
-     */
-
-    public static SampleMetadata of( final MeasurementUnit unit,
-                                     final DatasetIdentifier identifier,
-                                     final TimeWindow timeWindow,
-                                     final ProjectConfig projectConfig )
-    {
-        return SampleMetadata.of( unit, identifier, timeWindow, null, projectConfig );
+        return new SampleMetadataBuilder().setMeasurementUnit( unit ).setIdentifier( identifier ).build();
     }
 
     /**
@@ -138,70 +98,13 @@ public class SampleMetadata implements Comparable<SampleMetadata>
                                      final TimeWindow timeWindow,
                                      final OneOrTwoThresholds thresholds )
     {
-        return new SampleMetadata( unit, identifier, timeWindow, thresholds, null );
+        return new SampleMetadataBuilder().setMeasurementUnit( unit )
+                                          .setIdentifier( identifier )
+                                          .setTimeWindow( timeWindow )
+                                          .setThresholds( thresholds )
+                                          .build();
     }
 
-    /**
-     * Returns an instance from the inputs.
-     * 
-     * @param unit the required measurement unit
-     * @param identifier an optional dataset identifier
-     * @param timeWindow an optional time window
-     * @param thresholds an optional set of thresholds
-     * @param projectConfig the optional project configuration
-     * @throws NullPointerException if the dimension is null
-     * @return a metadata instance
-     */
-
-    public static SampleMetadata of( final MeasurementUnit unit,
-                                     final DatasetIdentifier identifier,
-                                     final TimeWindow timeWindow,
-                                     final OneOrTwoThresholds thresholds,
-                                     final ProjectConfig projectConfig )
-    {
-        return new SampleMetadata( unit, identifier, timeWindow, thresholds, projectConfig );
-    }
-
-    /**
-     * Builds a {@link SampleMetadata} from a prescribed input source and an override {@link MeasurementUnit}.
-     * 
-     * @param input the source metadata
-     * @param unit the required measurement unit
-     * @return a {@link SampleMetadata} object
-     * @throws NullPointerException if the input is null
-     */
-
-    public static SampleMetadata of( final SampleMetadata input, final MeasurementUnit unit )
-    {
-        Objects.requireNonNull( input, NULL_INPUT_ERROR );
-
-        return SampleMetadata.of( unit,
-                                  input.getIdentifier(),
-                                  input.getTimeWindow(),
-                                  input.getThresholds(),
-                                  input.getProjectConfig() );
-    }
-
-    /**
-     * Builds a {@link SampleMetadata} from a prescribed input source and an override {@link DatasetIdentifier}.
-     * 
-     * @param input the source metadata
-     * @param identifier the required dataset identifier
-     * @return a {@link SampleMetadata} object
-     * @throws NullPointerException if the input is null
-     */
-
-    public static SampleMetadata of( final SampleMetadata input, final DatasetIdentifier identifier )
-    {
-        Objects.requireNonNull( input, NULL_INPUT_ERROR );
-
-        return SampleMetadata.of( input.getMeasurementUnit(),
-                                  identifier,
-                                  input.getTimeWindow(),
-                                  input.getThresholds(),
-                                  input.getProjectConfig() );
-    }
-    
     /**
      * Builds a {@link SampleMetadata} from a prescribed input source and an override {@link OneOrTwoThresholds}.
      * 
@@ -213,13 +116,7 @@ public class SampleMetadata implements Comparable<SampleMetadata>
 
     public static SampleMetadata of( final SampleMetadata input, final OneOrTwoThresholds thresholds )
     {
-        Objects.requireNonNull( input, NULL_INPUT_ERROR );
-
-        return SampleMetadata.of( input.getMeasurementUnit(),
-                                  input.getIdentifier(),
-                                  input.getTimeWindow(),
-                                  thresholds,
-                                  input.getProjectConfig() );
+        return new SampleMetadataBuilder().setFromExistingInstance( input ).setThresholds( thresholds ).build();
     }
 
     /**
@@ -233,13 +130,7 @@ public class SampleMetadata implements Comparable<SampleMetadata>
 
     public static SampleMetadata of( final SampleMetadata input, final TimeWindow timeWindow )
     {
-        Objects.requireNonNull( input, NULL_INPUT_ERROR );
-
-        return SampleMetadata.of( input.getMeasurementUnit(),
-                                  input.getIdentifier(),
-                                  timeWindow,
-                                  input.getThresholds(),
-                                  input.getProjectConfig() );
+        return new SampleMetadataBuilder().setFromExistingInstance( input ).setTimeWindow( timeWindow ).build();
     }
 
     /**
@@ -256,13 +147,9 @@ public class SampleMetadata implements Comparable<SampleMetadata>
     public static SampleMetadata
             of( final SampleMetadata input, final TimeWindow timeWindow, final OneOrTwoThresholds thresholds )
     {
-        Objects.requireNonNull( input, NULL_INPUT_ERROR );
-
-        return SampleMetadata.of( input.getMeasurementUnit(),
-                                  input.getIdentifier(),
-                                  timeWindow,
-                                  thresholds,
-                                  input.getProjectConfig() );
+        return new SampleMetadataBuilder().setFromExistingInstance( input )
+                                          .setThresholds( thresholds )
+                                          .setTimeWindow( timeWindow ).build();
     }
 
     @Override
@@ -303,8 +190,8 @@ public class SampleMetadata implements Comparable<SampleMetadata>
         // Check the project configuration
         Comparator<ProjectConfig> compareProjects = Comparator.nullsFirst( Comparator.naturalOrder() );
         return Objects.compare( this.getProjectConfig(), input.getProjectConfig(), compareProjects );
-    }    
-    
+    }
+
     @Override
     public boolean equals( final Object o )
     {
@@ -501,29 +388,167 @@ public class SampleMetadata implements Comparable<SampleMetadata>
     }
 
     /**
-     * A hidden constructor.
-     * 
-     * @param unit the required measurement unit
-     * @param identifier an optional dataset identifier
-     * @param timeWindow an optional time window
-     * @param thresholds an optional set of thresholds
-     * @param projectConfig the optional project configuration
-     * @throws NullPointerException if the dimension is null
+     * Builder.
      */
 
-    SampleMetadata( final MeasurementUnit unit,
-                    final DatasetIdentifier identifier,
-                    final TimeWindow timeWindow,
-                    final OneOrTwoThresholds thresholds,
-                    final ProjectConfig projectConfig )
+    public static class SampleMetadataBuilder
     {
-        Objects.requireNonNull( "Specify a non-null measurement unit from which to construct the metadata." );
 
-        this.unit = unit;
-        this.identifier = identifier;
-        this.timeWindow = timeWindow;
-        this.thresholds = thresholds;
-        this.projectConfig = projectConfig;
+        /**
+         * Error message for null input.
+         */
+
+        private static final String NULL_INPUT_ERROR = "Specify a non-null source from which to build the metadata.";
+        
+        /**
+         * The measurement unit associated with the data.
+         */
+
+        private MeasurementUnit unit;
+
+        /**
+         * An optional dataset identifier, may be null.
+         */
+
+        private DatasetIdentifier identifier;
+
+        /**
+         * An optional time window associated with the data, may be null.
+         */
+
+        private TimeWindow timeWindow;
+
+        /**
+         * An optional set of thresholds associated with the data, may be null.
+         */
+
+        private OneOrTwoThresholds thresholds;
+
+        /**
+         * The optional {@link ProjectConfig} associated with the metadata, may be null.
+         */
+
+        private ProjectConfig projectConfig;
+
+        /**
+         * Sets the measurement unit.
+         * 
+         * @param unit the measurement unit
+         * @return the builder
+         */
+
+        public SampleMetadataBuilder setMeasurementUnit( MeasurementUnit unit )
+        {
+            this.unit = unit;
+            return this;
+        }
+
+        /**
+         * Sets the identifier.
+         * 
+         * @param identifier the identifier
+         * @return the builder
+         */
+
+        public SampleMetadataBuilder setIdentifier( DatasetIdentifier identifier )
+        {
+            this.identifier = identifier;
+            return this;
+        }
+
+        /**
+         * Sets the time window.
+         * 
+         * @param timeWindow the time window
+         * @return the builder
+         */
+
+        public SampleMetadataBuilder setTimeWindow( TimeWindow timeWindow )
+        {
+            this.timeWindow = timeWindow;
+            return this;
+        }
+
+        /**
+         * Sets the thresholds.
+         * 
+         * @param thresholds the thresholds
+         * @return the builder
+         */
+
+        public SampleMetadataBuilder setThresholds( OneOrTwoThresholds thresholds )
+        {
+            this.thresholds = thresholds;
+            return this;
+        }
+
+        /**
+         * Sets the project declaration.
+         * 
+         * @param projectConfig the project declaration
+         * @return the builder
+         */
+
+        public SampleMetadataBuilder setProjectConfig( ProjectConfig projectConfig )
+        {
+            this.projectConfig = projectConfig;
+            return this;
+        }
+        
+        /**
+         * Sets the contents from an existing metadata instance.
+         * 
+         * @param sampleMetadata the source metadata
+         * @return the builder
+         * @throws NullPointerException if the input is null
+         */
+
+        public SampleMetadataBuilder setFromExistingInstance( SampleMetadata sampleMetadata )
+        {
+            Objects.requireNonNull( sampleMetadata, NULL_INPUT_ERROR );
+            
+            this.unit = sampleMetadata.unit;
+            this.identifier = sampleMetadata.identifier;
+            this.timeWindow = sampleMetadata.timeWindow;
+            this.thresholds = sampleMetadata.thresholds;
+            this.projectConfig = sampleMetadata.projectConfig;
+            
+            return this;
+        }
+        
+        /**
+         * Build the metadata.
+         * 
+         * @return the metadata instance
+         */
+        
+        public SampleMetadata build()
+        {
+            return new SampleMetadata( this );
+        }
+        
+    }
+
+    /**
+     * Hidden constructor.
+     * 
+     * @param builder the builder
+     * @throws NullPointerException if the measurement unit has not been set
+     */
+
+    private SampleMetadata( SampleMetadataBuilder builder )
+    {
+        // Set then validate
+        this.unit = builder.unit;
+        this.identifier = builder.identifier;
+        this.timeWindow = builder.timeWindow;
+        this.thresholds = builder.thresholds;
+        this.projectConfig = builder.projectConfig;
+
+        Objects.requireNonNull( this.unit,
+                                "Specify a non-null measurement unit from which to build "
+                                           + "the metadata." );
+
     }
 
 }
