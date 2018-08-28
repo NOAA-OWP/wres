@@ -1,8 +1,8 @@
 package wres.engine.statistics.metric;
 
-import wres.datamodel.MetricConstants.ScoreOutputGroup;
-import wres.datamodel.inputs.MetricInput;
-import wres.datamodel.outputs.ScoreOutput;
+import wres.datamodel.MetricConstants.ScoreGroup;
+import wres.datamodel.sampledata.SampleData;
+import wres.datamodel.statistics.ScoreStatistic;
 
 /**
  * Identifies a scoring rule. A score may be an absolute or relative measure. An absolute score is dimensioned, whereas
@@ -13,12 +13,12 @@ import wres.datamodel.outputs.ScoreOutput;
  * @author james.brown@hydrosolved.com
  */
 
-public interface Score<S extends MetricInput<?>, T extends ScoreOutput<?,T>> extends Metric<S,T>
+public interface Score<S extends SampleData<?>, T extends ScoreStatistic<?,T>> extends Metric<S,T>
 {
 
     /**
      * Returns <code>true</code> if the score is decomposable in principle, false otherwise. In practice, the output 
-     * may not be decomposed. For example {@link #getScoreOutputGroup()} may return {@link ScoreOutputGroup#NONE} when 
+     * may not be decomposed. For example {@link #getScoreOutputGroup()} may return {@link ScoreGroup#NONE} when 
      * this method returns <code>true</code>.
      * 
      * @return true if the score is decomposable, false otherwise
@@ -35,12 +35,12 @@ public interface Score<S extends MetricInput<?>, T extends ScoreOutput<?,T>> ext
     boolean isSkillScore();
 
     /**
-     * Returns the group to which the score output belongs or {@link ScoreOutputGroup#NONE} if the score output does 
+     * Returns the group to which the score output belongs or {@link ScoreGroup#NONE} if the score output does 
      * not belong to a group.
      * 
-     * @return the {@link ScoreOutputGroup}
+     * @return the {@link ScoreGroup}
      */
 
-    ScoreOutputGroup getScoreOutputGroup();
+    ScoreGroup getScoreOutputGroup();
     
 }

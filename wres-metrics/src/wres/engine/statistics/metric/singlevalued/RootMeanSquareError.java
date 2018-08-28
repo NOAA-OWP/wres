@@ -3,10 +3,10 @@ package wres.engine.statistics.metric.singlevalued;
 import java.util.Objects;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.inputs.pairs.SingleValuedPairs;
-import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.DoubleScoreOutput;
+import wres.datamodel.metadata.StatisticMetadata;
+import wres.datamodel.sampledata.SampleDataException;
+import wres.datamodel.sampledata.pairs.SingleValuedPairs;
+import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.engine.statistics.metric.Collectable;
 import wres.engine.statistics.metric.FunctionFactory;
 
@@ -18,7 +18,7 @@ import wres.engine.statistics.metric.FunctionFactory;
  * @author james.brown@hydrosolved.com
  */
 public class RootMeanSquareError extends DoubleErrorScore<SingleValuedPairs>
-        implements Collectable<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput>
+        implements Collectable<SingleValuedPairs, DoubleScoreStatistic, DoubleScoreStatistic>
 {
 
     /**
@@ -39,7 +39,7 @@ public class RootMeanSquareError extends DoubleErrorScore<SingleValuedPairs>
     private final SumOfSquareError sse;
 
     @Override
-    public DoubleScoreOutput apply( final SingleValuedPairs t )
+    public DoubleScoreStatistic apply( final SingleValuedPairs t )
     {
         return this.aggregate( this.getInputForAggregation( t ) );
     }
@@ -63,27 +63,25 @@ public class RootMeanSquareError extends DoubleErrorScore<SingleValuedPairs>
     }
 
     @Override
-    public DoubleScoreOutput aggregate( DoubleScoreOutput output )
+    public DoubleScoreStatistic aggregate( DoubleScoreStatistic output )
     {
-        final MetricOutputMetadata metIn = output.getMetadata();
-
         // Set the output dimension
-        MetricOutputMetadata meta = MetricOutputMetadata.of( metIn,
-                                                             this.getID(),
-                                                             MetricConstants.MAIN,
-                                                             this.hasRealUnits(),
-                                                             metIn.getSampleSize(),
-                                                             null );
+        StatisticMetadata meta = StatisticMetadata.of( output.getMetadata().getSampleMetadata(),
+                                                       this.getID(),
+                                                       MetricConstants.MAIN,
+                                                       this.hasRealUnits(),
+                                                       output.getMetadata().getSampleSize(),
+                                                       null );
         
-        return DoubleScoreOutput.of( Math.sqrt( output.getData() / metIn.getSampleSize() ), meta );
+        return DoubleScoreStatistic.of( Math.sqrt( output.getData() / output.getMetadata().getSampleSize() ), meta );
     }
 
     @Override
-    public DoubleScoreOutput getInputForAggregation( SingleValuedPairs input )
+    public DoubleScoreStatistic getInputForAggregation( SingleValuedPairs input )
     {
         if ( Objects.isNull( input ) )
         {
-            throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
+            throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
         }
         return sse.apply( input );
     }

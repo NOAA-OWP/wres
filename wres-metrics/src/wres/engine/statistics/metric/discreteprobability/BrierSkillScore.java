@@ -4,11 +4,11 @@ import java.util.Objects;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
-import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.DoubleScoreOutput;
+import wres.datamodel.metadata.StatisticMetadata;
+import wres.datamodel.sampledata.SampleDataException;
+import wres.datamodel.sampledata.pairs.DiscreteProbabilityPairs;
+import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.engine.statistics.metric.singlevalued.MeanSquareErrorSkillScore;
 
 /**
@@ -41,28 +41,28 @@ public class BrierSkillScore extends BrierScore
     }
 
     @Override
-    public DoubleScoreOutput apply( DiscreteProbabilityPairs s )
+    public DoubleScoreStatistic apply( DiscreteProbabilityPairs s )
     {
         if ( Objects.isNull( s ) )
         {
-            throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
+            throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
         }
 
         DatasetIdentifier baselineIdentifier = null;
         if ( s.hasBaseline() )
         {
-            baselineIdentifier = s.getMetadataForBaseline().getIdentifier();
+            baselineIdentifier = s.getBaselineData().getMetadata().getIdentifier();
         }
 
-        MetricOutputMetadata metOut =
-                MetricOutputMetadata.of( s.getMetadata(),
+        StatisticMetadata metOut =
+                StatisticMetadata.of( s.getMetadata(),
                                     this.getID(),
                                     MetricConstants.MAIN,
                                     this.hasRealUnits(),
                                     s.getRawData().size(),
                                     baselineIdentifier );
 
-        return DoubleScoreOutput.of( msess.apply( Slicer.toSingleValuedPairs( s ) ).getData(), metOut );
+        return DoubleScoreStatistic.of( msess.apply( Slicer.toSingleValuedPairs( s ) ).getData(), metOut );
     }
 
     @Override

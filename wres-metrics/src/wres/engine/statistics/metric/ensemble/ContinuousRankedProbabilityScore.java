@@ -7,13 +7,13 @@ import java.util.Objects;
 import java.util.function.BiConsumer;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.ScoreOutputGroup;
+import wres.datamodel.MetricConstants.ScoreGroup;
 import wres.datamodel.Slicer;
-import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.inputs.pairs.EnsemblePair;
-import wres.datamodel.inputs.pairs.EnsemblePairs;
-import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.DoubleScoreOutput;
+import wres.datamodel.metadata.StatisticMetadata;
+import wres.datamodel.sampledata.SampleDataException;
+import wres.datamodel.sampledata.pairs.EnsemblePair;
+import wres.datamodel.sampledata.pairs.EnsemblePairs;
+import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.engine.statistics.metric.DecomposableScore;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricParameterException;
@@ -24,7 +24,7 @@ import wres.engine.statistics.metric.ProbabilityScore;
  * The Continuous Ranked Probability Score (CRPS) is the square difference between the empirical distribution function
  * of an ensemble forecast and the step function associated with a single-valued observation, integrated over the unit
  * interval. By convention, the CRPS is then averaged over each pair of ensemble forecasts and observations. Optionally,
- * the CRPS may be factored into a three-component decomposition, {@link ScoreOutputGroup#CR}.
+ * the CRPS may be factored into a three-component decomposition, {@link ScoreGroup#CR}.
  * </p>
  * <p>
  * Uses the procedure outlined in Hersbach, H. (2000) Decomposition of the Continuous Ranked Probability Score for
@@ -36,7 +36,7 @@ import wres.engine.statistics.metric.ProbabilityScore;
  * @author james.brown@hydrosolved.com
  */
 public class ContinuousRankedProbabilityScore extends DecomposableScore<EnsemblePairs>
-        implements ProbabilityScore<EnsemblePairs, DoubleScoreOutput>
+        implements ProbabilityScore<EnsemblePairs, DoubleScoreStatistic>
 {
 
     /**
@@ -58,18 +58,18 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<Ensemble
      * @throws MetricParameterException if one or more parameters is invalid 
      */
 
-    public static ContinuousRankedProbabilityScore of( ScoreOutputGroup decompositionId )
+    public static ContinuousRankedProbabilityScore of( ScoreGroup decompositionId )
             throws MetricParameterException
     {
         return new ContinuousRankedProbabilityScore( decompositionId );
     }
 
     @Override
-    public DoubleScoreOutput apply( EnsemblePairs s )
+    public DoubleScoreStatistic apply( EnsemblePairs s )
     {
         if ( Objects.isNull( s ) )
         {
-            throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
+            throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
         }
         //Slice the data into groups with an equal number of ensemble members
         Map<Integer, List<EnsemblePair>> sliced =
@@ -84,14 +84,14 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<Ensemble
         //Compute the average (implicitly weighted by the number of pairs in each group)
         crps[0] = FunctionFactory.finiteOrMissing().applyAsDouble( crps[0] / s.getRawData().size() );
         //Metadata
-        final MetricOutputMetadata metOut =
-                MetricOutputMetadata.of( s.getMetadata(),
+        final StatisticMetadata metOut =
+                StatisticMetadata.of( s.getMetadata(),
                                     this.getID(),
                                     MetricConstants.MAIN,
                                     this.hasRealUnits(),
                                     s.getRawData().size(),
                                     null );
-        return DoubleScoreOutput.of( crps[0], metOut );
+        return DoubleScoreStatistic.of( crps[0], metOut );
     }
 
     @Override
@@ -140,7 +140,7 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<Ensemble
      * @throws MetricParameterException if one or more parameters is invalid 
      */
 
-    ContinuousRankedProbabilityScore( ScoreOutputGroup decompositionId ) throws MetricParameterException
+    ContinuousRankedProbabilityScore( ScoreGroup decompositionId ) throws MetricParameterException
     {
         super( decompositionId );
 

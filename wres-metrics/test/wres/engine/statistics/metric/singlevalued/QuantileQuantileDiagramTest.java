@@ -14,11 +14,11 @@ import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.inputs.pairs.SingleValuedPair;
-import wres.datamodel.inputs.pairs.SingleValuedPairs;
-import wres.datamodel.metadata.Metadata;
-import wres.datamodel.outputs.MultiVectorOutput;
+import wres.datamodel.metadata.SampleMetadata;
+import wres.datamodel.sampledata.SampleDataException;
+import wres.datamodel.sampledata.pairs.SingleValuedPair;
+import wres.datamodel.sampledata.pairs.SingleValuedPairs;
+import wres.datamodel.statistics.MultiVectorStatistic;
 import wres.engine.statistics.metric.MetricParameterException;
 
 /**
@@ -60,10 +60,10 @@ public final class QuantileQuantileDiagramTest
             values.add( SingleValuedPair.of( left, right ) );
         }
 
-        final SingleValuedPairs input = SingleValuedPairs.of( values, Metadata.of() );
+        final SingleValuedPairs input = SingleValuedPairs.of( values, SampleMetadata.of() );
 
         //Check the results       
-        final MultiVectorOutput actual = qqd.apply( input );
+        final MultiVectorStatistic actual = qqd.apply( input );
         double[] actualObs = actual.get( MetricDimension.OBSERVED_QUANTILES ).getDoubles();
         double[] actualPred = actual.get( MetricDimension.PREDICTED_QUANTILES ).getDoubles();
 
@@ -108,9 +108,9 @@ public final class QuantileQuantileDiagramTest
     {
         // Generate empty data
         SingleValuedPairs input =
-                SingleValuedPairs.of( Arrays.asList(), Metadata.of() );
+                SingleValuedPairs.of( Arrays.asList(), SampleMetadata.of() );
 
-        MultiVectorOutput actual = qqd.apply( input );
+        MultiVectorStatistic actual = qqd.apply( input );
 
         double[] source = new double[1000];
 
@@ -140,7 +140,7 @@ public final class QuantileQuantileDiagramTest
     @Test
     public void testApplyExceptionOnNullInput()
     {
-        exception.expect( MetricInputException.class );
+        exception.expect( SampleDataException.class );
         exception.expectMessage( "Specify non-null input to the 'QUANTILE QUANTILE DIAGRAM'." );
 
         qqd.apply( null );

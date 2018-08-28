@@ -1,9 +1,9 @@
 package wres.engine.statistics.metric.categorical;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.inputs.pairs.DichotomousPairs;
-import wres.datamodel.outputs.DoubleScoreOutput;
-import wres.datamodel.outputs.MatrixOutput;
+import wres.datamodel.sampledata.pairs.DichotomousPairs;
+import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.MatrixStatistic;
 import wres.engine.statistics.metric.FunctionFactory;
 
 /**
@@ -27,22 +27,22 @@ public class EquitableThreatScore extends ContingencyTableScore<DichotomousPairs
     }
     
     @Override
-    public DoubleScoreOutput apply( final DichotomousPairs s )
+    public DoubleScoreStatistic apply( final DichotomousPairs s )
     {
         return aggregate( this.getInputForAggregation( s ) );
     }
 
     @Override
-    public DoubleScoreOutput aggregate( final MatrixOutput output )
+    public DoubleScoreStatistic aggregate( final MatrixStatistic output )
     {
         this.is2x2ContingencyTable( output, this );
-        final MatrixOutput v = output;
+        final MatrixStatistic v = output;
         final double[][] cm = v.getData().getDoubles();
         final double t = cm[0][0] + cm[0][1] + cm[1][0];
         final double hitsRandom = ( ( cm[0][0] + cm[1][0] ) * ( cm[0][0] + cm[0][1] ) ) / ( t + cm[1][1] );
         double result =
                 FunctionFactory.finiteOrMissing().applyAsDouble( ( cm[0][0] - hitsRandom ) / ( t - hitsRandom ) );
-        return DoubleScoreOutput.of( result, getMetadata( output ) );
+        return DoubleScoreStatistic.of( result, getMetadata( output ) );
     }
 
     @Override

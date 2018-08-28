@@ -8,11 +8,11 @@ import java.util.stream.IntStream;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.inputs.pairs.MulticategoryPair;
-import wres.datamodel.inputs.pairs.MulticategoryPairs;
-import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.MatrixOutput;
+import wres.datamodel.metadata.StatisticMetadata;
+import wres.datamodel.sampledata.SampleDataException;
+import wres.datamodel.sampledata.pairs.MulticategoryPair;
+import wres.datamodel.sampledata.pairs.MulticategoryPairs;
+import wres.datamodel.statistics.MatrixStatistic;
 import wres.engine.statistics.metric.Metric;
 
 /**
@@ -25,7 +25,7 @@ import wres.engine.statistics.metric.Metric;
  * @author james.brown@hydrosolved.com
  */
 
-public class ContingencyTable<S extends MulticategoryPairs> implements Metric<S, MatrixOutput>
+public class ContingencyTable<S extends MulticategoryPairs> implements Metric<S, MatrixStatistic>
 {
 
     /**
@@ -41,11 +41,11 @@ public class ContingencyTable<S extends MulticategoryPairs> implements Metric<S,
     }
 
     @Override
-    public MatrixOutput apply( final MulticategoryPairs s )
+    public MatrixStatistic apply( final MulticategoryPairs s )
     {
         if ( Objects.isNull( s ) )
         {
-            throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
+            throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
         }
         final int outcomes = s.getCategoryCount();
         final double[][] returnMe = new double[outcomes][outcomes];
@@ -80,14 +80,14 @@ public class ContingencyTable<S extends MulticategoryPairs> implements Metric<S,
                                             MetricDimension.FALSE_NEGATIVES,
                                             MetricDimension.TRUE_NEGATIVES );
         }
-        final MetricOutputMetadata metOut =
-                MetricOutputMetadata.of( s.getMetadata(),
+        final StatisticMetadata metOut =
+                StatisticMetadata.of( s.getMetadata(),
                                     this.getID(),
                                     MetricConstants.MAIN,
                                     this.hasRealUnits(),
                                     s.getRawData().size(),
                                     null );
-        return MatrixOutput.of( returnMe, componentNames, metOut );
+        return MatrixStatistic.of( returnMe, componentNames, metOut );
     }
 
     @Override

@@ -12,7 +12,7 @@ import wres.config.ProjectConfigPlus;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.MetricOutputGroup;
+import wres.datamodel.MetricConstants.StatisticGroup;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.engine.statistics.metric.config.MetricConfigHelper;
 
@@ -157,7 +157,7 @@ class ResolvedProject
      *            thresholds is incorrect
      */
     
-    int getThresholdCount( MetricOutputGroup outGroup )
+    int getThresholdCount( StatisticGroup outGroup )
     {
         // Obtain the union of internal and external thresholds
         ThresholdsByMetric thresholds =
@@ -185,7 +185,7 @@ class ResolvedProject
     {
         Set<MetricConstants> result = new HashSet<>();
         Set<MetricConstants> doubleScoreMetricOutputs = MetricConstants.getMetrics(
-                MetricConstants.MetricOutputGroup.DOUBLE_SCORE );
+                MetricConstants.StatisticGroup.DOUBLE_SCORE );
 
         Set<MetricConstants> allMetrics = MetricConfigHelper.getMetricsFromConfig( this.getProjectConfig() );
 

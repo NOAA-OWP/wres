@@ -12,14 +12,15 @@ import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.MetricConstants.ScoreOutputGroup;
-import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.inputs.pairs.DichotomousPairs;
+import wres.datamodel.MetricConstants.ScoreGroup;
 import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
-import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.MatrixOutput;
+import wres.datamodel.metadata.MeasurementUnit;
+import wres.datamodel.metadata.SampleMetadata;
+import wres.datamodel.metadata.StatisticMetadata;
+import wres.datamodel.sampledata.SampleDataException;
+import wres.datamodel.sampledata.pairs.DichotomousPairs;
+import wres.datamodel.statistics.MatrixStatistic;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 
@@ -44,23 +45,23 @@ public final class ContingencyTableScoreTest
      * Metadata used for testing.
      */
 
-    private MetricOutputMetadata meta;
+    private StatisticMetadata meta;
 
     @Before
     public void setupBeforeEachTest() throws MetricParameterException
     {
         cs = ThreatScore.of();
-        meta = MetricOutputMetadata.of( 365,
-                                                  MeasurementUnit.of(),
-                                                  MeasurementUnit.of(),
-                                                  MetricConstants.CONTINGENCY_TABLE,
-                                                  MetricConstants.MAIN );
+        meta = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
+                              365,
+                              MeasurementUnit.of(),
+                              MetricConstants.CONTINGENCY_TABLE,
+                              MetricConstants.MAIN );        
     }
 
     /**
      * Checks that a {@link ContingencyTableScore#hasRealUnits()} returns <code>false</code> and that input with the 
      * correct shape is accepted.
-     * @throws MetricInputException if the input is not accepted
+     * @throws SampleDataException if the input is not accepted
      */
 
     @Test
@@ -71,28 +72,28 @@ public final class ContingencyTableScoreTest
 
     /**
      * Checks that a {@link ContingencyTableScore} accepts input with the correct shape.
-     * @throws MetricInputException if the input is not accepted
+     * @throws SampleDataException if the input is not accepted
      */
 
     @Test
     public void testContingencyTableScoreAcceptsCorrectInput()
     {
         final double[][] benchmark = new double[][] { { 82.0, 38.0 }, { 23.0, 222.0 } };
-        final MatrixOutput expected = MatrixOutput.of( benchmark, meta );
+        final MatrixStatistic expected = MatrixStatistic.of( benchmark, meta );
 
         cs.is2x2ContingencyTable( expected, cs );
     }
 
     /**
      * Checks that input with the correct shape is accepted for a table of arbitrary size.
-     * @throws MetricInputException if the input is not accepted
+     * @throws SampleDataException if the input is not accepted
      */
 
     @Test
     public void testContingencyTableScoreAcceptsCorrectInputForLargeTable()
     {
         final double[][] benchmark = new double[][] { { 82.0, 38.0 }, { 23.0, 222.0 } };
-        final MatrixOutput expected = MatrixOutput.of( benchmark, meta );
+        final MatrixStatistic expected = MatrixStatistic.of( benchmark, meta );
 
         cs.isContingencyTable( expected, cs );
     }
@@ -108,7 +109,7 @@ public final class ContingencyTableScoreTest
     }
 
     /**
-     * Compares the output from {@link ContingencyTableScore#getInputForAggregation(wres.datamodel.inputs.pairs.MulticategoryPairs)} 
+     * Compares the output from {@link ContingencyTableScore#getInputForAggregation(wres.datamodel.sampledata.pairs.MulticategoryPairs)} 
      * against a benchmark.
      */
 
@@ -118,26 +119,25 @@ public final class ContingencyTableScoreTest
         final DichotomousPairs input = MetricTestDataFactory.getDichotomousPairsOne();
 
         //Metadata for the output
-        final MetricOutputMetadata m1 =
-                MetricOutputMetadata.of( input.getRawData().size(),
-                                                   MeasurementUnit.of(),
-                                                   MeasurementUnit.of(),
-                                                   MetricConstants.CONTINGENCY_TABLE,
-                                                   MetricConstants.MAIN,
-                                                   DatasetIdentifier.of( Location.of( "DRRC2" ),
-                                                                                         "SQIN",
-                                                                                         "HEFS" ) );
-
+        final StatisticMetadata m1 =
+                StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of(),
+                                                         DatasetIdentifier.of( Location.of( "DRRC2" ),
+                                                                               "SQIN",
+                                                                               "HEFS" ) ),
+                                      input.getRawData().size(),
+                                      MeasurementUnit.of(),
+                                      MetricConstants.CONTINGENCY_TABLE,
+                                      MetricConstants.MAIN );
 
         final double[][] benchmark = new double[][] { { 82.0, 38.0 }, { 23.0, 222.0 } };
-        final MatrixOutput expected = MatrixOutput.of( benchmark,
+        final MatrixStatistic expected = MatrixStatistic.of( benchmark,
                                                                   Arrays.asList( MetricDimension.TRUE_POSITIVES,
                                                                                  MetricDimension.FALSE_POSITIVES,
                                                                                  MetricDimension.FALSE_NEGATIVES,
                                                                                  MetricDimension.TRUE_NEGATIVES ),
                                                                   m1 );
 
-        final MatrixOutput actual = cs.getInputForAggregation( input );
+        final MatrixStatistic actual = cs.getInputForAggregation( input );
 
         assertTrue( "Unexpected result for the contingency table.", actual.equals( expected ) );
     }
@@ -153,17 +153,17 @@ public final class ContingencyTableScoreTest
     }
 
     /**
-     * Checks that {@link ContingencyTableScore#getScoreOutputGroup()} returns {@link ScoreOutputGroup#NONE}.
+     * Checks that {@link ContingencyTableScore#getScoreOutputGroup()} returns {@link ScoreGroup#NONE}.
      */
 
     @Test
     public void testGetScoreOutputGroupReturnsNone()
     {
-        assertTrue( cs.getScoreOutputGroup() == ScoreOutputGroup.NONE );
+        assertTrue( cs.getScoreOutputGroup() == ScoreGroup.NONE );
     }
 
     /**
-     * Checks the output from {@link ContingencyTableScore#getMetadata(MatrixOutput)} against a benchmark.
+     * Checks the output from {@link ContingencyTableScore#getMetadata(MatrixStatistic)} against a benchmark.
      */
 
     @Test
@@ -171,15 +171,15 @@ public final class ContingencyTableScoreTest
     {
         final DichotomousPairs input = MetricTestDataFactory.getDichotomousPairsOne();
 
-        final MetricOutputMetadata expected =
-                MetricOutputMetadata.of( input.getRawData().size(),
-                                                   MeasurementUnit.of(),
-                                                   MeasurementUnit.of(),
-                                                   MetricConstants.THREAT_SCORE,
-                                                   MetricConstants.MAIN,
-                                                   DatasetIdentifier.of( Location.of( "DRRC2" ),
-                                                                                         "SQIN",
-                                                                                         "HEFS" ) );
+        final StatisticMetadata expected =
+                StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of(),
+                                                         DatasetIdentifier.of( Location.of( "DRRC2" ),
+                                                                               "SQIN",
+                                                                               "HEFS" ) ),
+                                      input.getRawData().size(),
+                                      MeasurementUnit.of(),
+                                      MetricConstants.THREAT_SCORE,
+                                      MetricConstants.MAIN );
 
         assertTrue( cs.getMetadata( cs.getInputForAggregation( input ) ).equals( expected ) );
     }
@@ -191,7 +191,7 @@ public final class ContingencyTableScoreTest
     @Test
     public void testExceptionOnNullInput()
     {
-        exception.expect( MetricInputException.class );
+        exception.expect( SampleDataException.class );
         exception.expectMessage( "Specify non-null input to the 'THREAT SCORE'." );
 
         cs.apply( (DichotomousPairs) null );
@@ -204,10 +204,10 @@ public final class ContingencyTableScoreTest
     @Test
     public void testExceptionOnNullInputInternal()
     {
-        exception.expect( MetricInputException.class );
+        exception.expect( SampleDataException.class );
         exception.expectMessage( "Specify non-null input to the 'THREAT SCORE'." );
 
-        cs.is2x2ContingencyTable( (MatrixOutput) null, cs );
+        cs.is2x2ContingencyTable( (MatrixStatistic) null, cs );
     }
 
     /**
@@ -218,10 +218,10 @@ public final class ContingencyTableScoreTest
     @Test
     public void testExceptionOnNullInputInternalForLargeTable()
     {
-        exception.expect( MetricInputException.class );
+        exception.expect( SampleDataException.class );
         exception.expectMessage( "Specify non-null input to the 'THREAT SCORE'." );
 
-        cs.isContingencyTable( (MatrixOutput) null, cs );
+        cs.isContingencyTable( (MatrixStatistic) null, cs );
     }
 
     /**
@@ -231,11 +231,11 @@ public final class ContingencyTableScoreTest
     @Test
     public void testExceptionOnInputThatIsTooSmall()
     {
-        exception.expect( MetricInputException.class );
+        exception.expect( SampleDataException.class );
         exception.expectMessage( "Expected an intermediate result with a 2x2 square matrix when computing the "
                                  + "'THREAT SCORE': [1, 1]." );
 
-        cs.is2x2ContingencyTable( MatrixOutput.of( new double[][] { { 1.0 } }, meta ), cs );
+        cs.is2x2ContingencyTable( MatrixStatistic.of( new double[][] { { 1.0 } }, meta ), cs );
     }
 
     /**
@@ -245,11 +245,11 @@ public final class ContingencyTableScoreTest
     @Test
     public void testExceptionOnInputThatIsWrongShape()
     {
-        exception.expect( MetricInputException.class );
+        exception.expect( SampleDataException.class );
         exception.expectMessage( "Expected an intermediate result with a 2x2 square matrix when computing the "
                                  + "'THREAT SCORE': [2, 3]." );
 
-        cs.is2x2ContingencyTable( MatrixOutput.of( new double[][] { { 1.0, 1.0, 1.0 }, { 1.0, 1.0, 1.0 } },
+        cs.is2x2ContingencyTable( MatrixStatistic.of( new double[][] { { 1.0, 1.0, 1.0 }, { 1.0, 1.0, 1.0 } },
                                                               meta ),
                                   cs );
     }
@@ -261,11 +261,11 @@ public final class ContingencyTableScoreTest
     @Test
     public void testExceptionOnInputThatIsWrongShapeForLargeTable()
     {
-        exception.expect( MetricInputException.class );
+        exception.expect( SampleDataException.class );
         exception.expectMessage( "Expected an intermediate result with a square matrix when computing the "
                                  + "'THREAT SCORE': [2, 3]." );
 
-        cs.isContingencyTable( MatrixOutput.of( new double[][] { { 1.0, 1.0, 1.0 }, { 1.0, 1.0, 1.0 } },
+        cs.isContingencyTable( MatrixStatistic.of( new double[][] { { 1.0, 1.0, 1.0 }, { 1.0, 1.0, 1.0 } },
                                                            meta ),
                                cs );
     }
@@ -277,10 +277,10 @@ public final class ContingencyTableScoreTest
     @Test
     public void testExceptionOnNullMetric()
     {
-        exception.expect( MetricInputException.class );
+        exception.expect( SampleDataException.class );
         exception.expectMessage( "Specify non-null input to the 'THREAT SCORE'." );
 
-        cs.is2x2ContingencyTable( MatrixOutput.of( new double[][] { { 1.0 } }, meta ), null );
+        cs.is2x2ContingencyTable( MatrixStatistic.of( new double[][] { { 1.0 } }, meta ), null );
     }
 
     /**
@@ -290,10 +290,10 @@ public final class ContingencyTableScoreTest
     @Test
     public void testExceptionOnNullMetricForLargeTable()
     {
-        exception.expect( MetricInputException.class );
+        exception.expect( SampleDataException.class );
         exception.expectMessage( "Specify non-null input to the 'THREAT SCORE'." );
 
-        cs.isContingencyTable( MatrixOutput.of( new double[][] { { 1.0, 1.0 }, { 1.0, 1.0 } }, meta ),
+        cs.isContingencyTable( MatrixStatistic.of( new double[][] { { 1.0, 1.0 }, { 1.0, 1.0 } }, meta ),
                                null );
     }
 

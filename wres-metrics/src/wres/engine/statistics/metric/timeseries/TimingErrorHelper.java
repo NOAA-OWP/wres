@@ -8,7 +8,7 @@ import java.util.Random;
 
 import org.apache.commons.lang3.tuple.Pair;
 
-import wres.datamodel.inputs.pairs.SingleValuedPair;
+import wres.datamodel.sampledata.pairs.SingleValuedPair;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 

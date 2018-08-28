@@ -3,11 +3,11 @@ package wres.datamodel.metadata;
 import java.util.Objects;
 import java.util.StringJoiner;
 
-import wres.datamodel.inputs.MetricInput;
-import wres.datamodel.outputs.MetricOutput;
+import wres.datamodel.sampledata.SampleData;
+import wres.datamodel.statistics.Statistic;
 
 /**
- * A class that uniquely identifies a {@link MetricInput} or a {@link MetricOutput} to a user.
+ * A class that uniquely identifies a {@link SampleData} or a {@link Statistic} to a user.
  * 
  * @author james.brown@hydrosolved.com
  */

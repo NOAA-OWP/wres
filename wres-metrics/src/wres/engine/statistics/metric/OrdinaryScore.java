@@ -1,8 +1,8 @@
 package wres.engine.statistics.metric;
 
 
-import wres.datamodel.inputs.MetricInput;
-import wres.datamodel.outputs.ScoreOutput;
+import wres.datamodel.sampledata.SampleData;
+import wres.datamodel.statistics.ScoreStatistic;
 
 /**
  * An abstract score.
@@ -10,7 +10,7 @@ import wres.datamodel.outputs.ScoreOutput;
  * @author james.brown@hydrosolved.com
  */
 
-public abstract class OrdinaryScore<S extends MetricInput<?>, T extends ScoreOutput<?,T>> implements Score<S, T>
+public abstract class OrdinaryScore<S extends SampleData<?>, T extends ScoreStatistic<?,T>> implements Score<S, T>
 {
 
     @Override

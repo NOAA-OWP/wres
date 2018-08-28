@@ -14,14 +14,14 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.ScoreOutputGroup;
-import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.inputs.pairs.EnsemblePairs;
-import wres.datamodel.inputs.pairs.EnsemblePair;
+import wres.datamodel.MetricConstants.ScoreGroup;
 import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.Metadata;
-import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.DoubleScoreOutput;
+import wres.datamodel.metadata.SampleMetadata;
+import wres.datamodel.metadata.StatisticMetadata;
+import wres.datamodel.sampledata.SampleDataException;
+import wres.datamodel.sampledata.pairs.EnsemblePair;
+import wres.datamodel.sampledata.pairs.EnsemblePairs;
+import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 
@@ -72,20 +72,19 @@ public final class ContinousRankedProbabilitySkillScoreTest
         basePairs.add( EnsemblePair.of( 12.1, new double[] { 9, 18, 5, 6, 12 } ) );
         basePairs.add( EnsemblePair.of( 43, new double[] { 23, 12, 12, 39, 10 } ) );
         EnsemblePairs input = EnsemblePairs.of( pairs,
-                                                           basePairs,
-                                                           Metadata.of(),
-                                                           Metadata.of() );
+                                                basePairs,
+                                                SampleMetadata.of(),
+                                                SampleMetadata.of() );
 
         //Metadata for the output
-        MetricOutputMetadata m1 =
-                MetricOutputMetadata.of( input.getRawData().size(),
-                                                   MeasurementUnit.of(),
-                                                   MeasurementUnit.of(),
-                                                   MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
-                                                   MetricConstants.MAIN );
+        final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
+                                                           input.getRawData().size(),
+                                                           MeasurementUnit.of(),
+                                                           MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
+                                                           MetricConstants.MAIN );
         //Check the results       
-        DoubleScoreOutput actual = crpss.apply( input );
-        DoubleScoreOutput expected = DoubleScoreOutput.of( 0.0779168348809044, m1 );
+        DoubleScoreStatistic actual = crpss.apply( input );
+        DoubleScoreStatistic expected = DoubleScoreStatistic.of( 0.0779168348809044, m1 );
 
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
@@ -105,11 +104,11 @@ public final class ContinousRankedProbabilitySkillScoreTest
         // Generate empty data
         EnsemblePairs input =
                 EnsemblePairs.of( Arrays.asList(),
-                                             Arrays.asList(),
-                                             Metadata.of(),
-                                             Metadata.of() );
+                                  Arrays.asList(),
+                                  SampleMetadata.of(),
+                                  SampleMetadata.of() );
 
-        DoubleScoreOutput actual = crpss.apply( input );
+        DoubleScoreStatistic actual = crpss.apply( input );
 
         assertTrue( actual.getData().isNaN() );
     }
@@ -153,7 +152,7 @@ public final class ContinousRankedProbabilitySkillScoreTest
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( crpss.getScoreOutputGroup() == ScoreOutputGroup.NONE );
+        assertTrue( crpss.getScoreOutputGroup() == ScoreGroup.NONE );
     }
 
     /**
@@ -186,7 +185,12 @@ public final class ContinousRankedProbabilitySkillScoreTest
     {
         EnsemblePairs pairs = MetricTestDataFactory.getEnsemblePairsOne();
 
-        assertTrue( crpss.apply( pairs ).getMetadata().getIdentifier().getScenarioIDForBaseline().equals( "ESP" ) );
+        assertTrue( crpss.apply( pairs )
+                         .getMetadata()
+                         .getSampleMetadata()
+                         .getIdentifier()
+                         .getScenarioIDForBaseline()
+                         .equals( "ESP" ) );
     }
 
     /**
@@ -197,7 +201,7 @@ public final class ContinousRankedProbabilitySkillScoreTest
     @Test
     public void testApplyExceptionOnNullInput()
     {
-        exception.expect( MetricInputException.class );
+        exception.expect( SampleDataException.class );
         exception.expectMessage( "Specify non-null input to the 'CONTINUOUS RANKED PROBABILITY SKILL SCORE'." );
 
         crpss.apply( null );
@@ -214,8 +218,8 @@ public final class ContinousRankedProbabilitySkillScoreTest
     {
         exception.expect( MetricParameterException.class );
         exception.expectMessage( "Unsupported decomposition identifier 'LBR'." );
-        
-        ContinuousRankedProbabilitySkillScore.of( ScoreOutputGroup.LBR );
+
+        ContinuousRankedProbabilitySkillScore.of( ScoreGroup.LBR );
     }
 
     /**
@@ -225,11 +229,11 @@ public final class ContinousRankedProbabilitySkillScoreTest
     @Test
     public void testExceptionOnInputWithMissingBaseline()
     {
-        exception.expect( MetricInputException.class );
+        exception.expect( SampleDataException.class );
         exception.expectMessage( "Specify a non-null baseline for the 'CONTINUOUS RANKED PROBABILITY SKILL SCORE'." );
         List<EnsemblePair> pairs = new ArrayList<>();
         pairs.add( EnsemblePair.of( 25.7, new double[] { 23, 43, 45, 23, 54 } ) );
-        EnsemblePairs input = EnsemblePairs.of( pairs, Metadata.of() );
+        EnsemblePairs input = EnsemblePairs.of( pairs, SampleMetadata.of() );
         crpss.apply( input );
     }
 

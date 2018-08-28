@@ -4,12 +4,12 @@ import java.util.Objects;
 
 import wres.datamodel.MatrixOfDoubles;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.ScoreOutputGroup;
-import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.inputs.pairs.MulticategoryPairs;
-import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.DoubleScoreOutput;
-import wres.datamodel.outputs.MatrixOutput;
+import wres.datamodel.MetricConstants.ScoreGroup;
+import wres.datamodel.metadata.StatisticMetadata;
+import wres.datamodel.sampledata.SampleDataException;
+import wres.datamodel.sampledata.pairs.MulticategoryPairs;
+import wres.datamodel.statistics.DoubleScoreStatistic;
+import wres.datamodel.statistics.MatrixStatistic;
 import wres.engine.statistics.metric.Collectable;
 import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.OrdinaryScore;
@@ -20,8 +20,8 @@ import wres.engine.statistics.metric.OrdinaryScore;
  * @author james.brown@hydrosolved.com
  */
 
-abstract class ContingencyTableScore<S extends MulticategoryPairs> extends OrdinaryScore<S, DoubleScoreOutput>
-        implements Collectable<S, MatrixOutput, DoubleScoreOutput>
+abstract class ContingencyTableScore<S extends MulticategoryPairs> extends OrdinaryScore<S, DoubleScoreStatistic>
+        implements Collectable<S, MatrixStatistic, DoubleScoreStatistic>
 {
 
     /**
@@ -43,11 +43,11 @@ abstract class ContingencyTableScore<S extends MulticategoryPairs> extends Ordin
     }
 
     @Override
-    public MatrixOutput getInputForAggregation( final S s )
+    public MatrixStatistic getInputForAggregation( final S s )
     {
         if ( Objects.isNull( s ) )
         {
-            throw new MetricInputException( nullString );
+            throw new SampleDataException( nullString );
         }
         return table.apply( s );
     }
@@ -59,9 +59,9 @@ abstract class ContingencyTableScore<S extends MulticategoryPairs> extends Ordin
     }
 
     @Override
-    public ScoreOutputGroup getScoreOutputGroup()
+    public ScoreGroup getScoreOutputGroup()
     {
-        return ScoreOutputGroup.NONE;
+        return ScoreGroup.NONE;
     }
 
     @Override
@@ -71,22 +71,20 @@ abstract class ContingencyTableScore<S extends MulticategoryPairs> extends Ordin
     }
 
     /**
-     * Returns the {@link MetricOutputMetadata} for a {ContingencyTableScore}.
+     * Returns the {@link StatisticMetadata} for a {ContingencyTableScore}.
      * 
-     * @param output the output from which the {@link MetricOutputMetadata} is built
-     * @return the {@link MetricOutputMetadata}
+     * @param output the output from which the {@link StatisticMetadata} is built
+     * @return the {@link StatisticMetadata}
      */
 
-    MetricOutputMetadata getMetadata( final MatrixOutput output )
+    StatisticMetadata getMetadata( final MatrixStatistic output )
     {    
-        final MetricOutputMetadata metIn = output.getMetadata();
-
-        return MetricOutputMetadata.of( output.getMetadata(),
-                                        this.getID(),
-                                        MetricConstants.MAIN,
-                                        this.hasRealUnits(),
-                                        metIn.getSampleSize(),
-                                        null );
+        return StatisticMetadata.of( output.getMetadata().getSampleMetadata(),
+                                     this.getID(),
+                                     MetricConstants.MAIN,
+                                     this.hasRealUnits(),
+                                     output.getMetadata().getSampleSize(),
+                                     null );
     }
 
     /**
@@ -95,23 +93,23 @@ abstract class ContingencyTableScore<S extends MulticategoryPairs> extends Ordin
      * 
      * @param output the output to check
      * @param metric the metric to use when throwing an informative exception
-     * @throws MetricInputException if the output is not a valid input for an intermediate calculation
+     * @throws SampleDataException if the output is not a valid input for an intermediate calculation
      */
 
-    void isContingencyTable( final MatrixOutput output, final Metric<?, ?> metric )
+    void isContingencyTable( final MatrixStatistic output, final Metric<?, ?> metric )
     {
         if ( Objects.isNull( output ) )
         {
-            throw new MetricInputException( nullString );
+            throw new SampleDataException( nullString );
         }
         if ( Objects.isNull( metric ) )
         {
-            throw new MetricInputException( nullString );
+            throw new SampleDataException( nullString );
         }
         final MatrixOfDoubles v = output.getData();
         if ( !v.isSquare() )
         {
-            throw new MetricInputException( "Expected an intermediate result with a square matrix when "
+            throw new SampleDataException( "Expected an intermediate result with a square matrix when "
                                             + "computing the '"
                                             + metric
                                             + "': ["
@@ -128,23 +126,23 @@ abstract class ContingencyTableScore<S extends MulticategoryPairs> extends Ordin
      * 
      * @param output the output to check
      * @param metric the metric to use when throwing an informative exception
-     * @throws MetricInputException if the output is not a valid input for an intermediate calculation
+     * @throws SampleDataException if the output is not a valid input for an intermediate calculation
      */
 
-    void is2x2ContingencyTable( final MatrixOutput output, final Metric<?, ?> metric )
+    void is2x2ContingencyTable( final MatrixStatistic output, final Metric<?, ?> metric )
     {
         if ( Objects.isNull( output ) )
         {
-            throw new MetricInputException( nullString );
+            throw new SampleDataException( nullString );
         }
         if ( Objects.isNull( metric ) )
         {
-            throw new MetricInputException( nullString );
+            throw new SampleDataException( nullString );
         }
         final MatrixOfDoubles v = output.getData();
         if ( v.rows() != 2 || v.columns() != 2 )
         {
-            throw new MetricInputException( "Expected an intermediate result with a 2x2 square matrix when computing the '"
+            throw new SampleDataException( "Expected an intermediate result with a 2x2 square matrix when computing the '"
                                             + metric
                                             + "': ["
                                             + v.rows()

@@ -2,12 +2,16 @@ package wres.io.writing.png;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -18,23 +22,25 @@ import wres.config.ProjectConfigPlus;
 import wres.config.generated.DestinationConfig;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
-import wres.datamodel.metadata.MetricOutputMetadata;
+import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.outputs.BoxPlotOutput;
-import wres.datamodel.outputs.ListOfMetricOutput;
+import wres.datamodel.statistics.BoxPlotStatistic;
+import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.io.config.ConfigHelper;
 import wres.vis.ChartEngineFactory;
 
 /**
- * Helps write charts comprising {@link BoxPlotOutput} to a file in Portable Network Graphics (PNG) format.
+ * Helps write charts comprising {@link BoxPlotStatistic} to a file in Portable Network Graphics (PNG) format.
  * 
  * @author james.brown@hydrosolved.com
  */
 
 public class PNGBoxPlotWriter extends PNGWriter
-        implements Consumer<ListOfMetricOutput<BoxPlotOutput>>
+        implements Consumer<ListOfStatistics<BoxPlotStatistic>>,
+                   Supplier<Set<Path>>
 {
+    private Set<Path> pathsWrittenTo = new HashSet<>();
 
     /**
      * Returns an instance of a writer.
@@ -59,7 +65,7 @@ public class PNGBoxPlotWriter extends PNGWriter
      */
 
     @Override
-    public void accept( final ListOfMetricOutput<BoxPlotOutput> output )
+    public void accept( final ListOfStatistics<BoxPlotStatistic> output )
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing diagram outputs." );
 
@@ -74,31 +80,48 @@ public class PNGBoxPlotWriter extends PNGWriter
             SortedSet<MetricConstants> metrics = Slicer.discover( output, meta -> meta.getMetadata().getMetricID() );
             for ( MetricConstants next : metrics )
             {
-                PNGBoxPlotWriter.writeBoxPlotCharts( projectConfigPlus,
-                                                     destinationConfig,
-                                                     Slicer.filter( output, next ) );
+                Set<Path> innerPathsWrittenTo =
+                        PNGBoxPlotWriter.writeBoxPlotCharts( projectConfigPlus,
+                                                             destinationConfig,
+                                                             Slicer.filter( output, next ) );
+                this.pathsWrittenTo.addAll( innerPathsWrittenTo );
             }
         }
     }
 
+
     /**
-     * Writes a set of charts associated with {@link BoxPlotOutput} for a single metric and time window, 
-     * stored in a {@link ListOfMetricOutput}.
+     *
+     * @return paths written to *so far*
+     */
+
+    @Override
+    public Set<Path> get()
+    {
+        return Collections.unmodifiableSet( this.pathsWrittenTo );
+    }
+
+    /**
+     * Writes a set of charts associated with {@link BoxPlotStatistic} for a single metric and time window,
+     * stored in a {@link ListOfStatistics}.
      *
      * @param projectConfigPlus the project configuration
      * @param destinationConfig the destination configuration for the written output
      * @param output the metric results
      * @throws PNGWriteException when an error occurs during writing
+     * @return the paths actually written to
      */
 
-    private static void writeBoxPlotCharts( ProjectConfigPlus projectConfigPlus,
-                                            DestinationConfig destinationConfig,
-                                            ListOfMetricOutput<BoxPlotOutput> output )
+    private static Set<Path> writeBoxPlotCharts( ProjectConfigPlus projectConfigPlus,
+                                                 DestinationConfig destinationConfig,
+                                                 ListOfStatistics<BoxPlotStatistic> output )
     {
+        Set<Path> pathsWrittenTo = new HashSet<>();
+
         // Build charts
         try
         {
-            MetricOutputMetadata meta = output.getData().get( 0 ).getMetadata();
+            StatisticMetadata meta = output.getData().get( 0 ).getMetadata();
 
             GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, destinationConfig, meta.getMetricID() );
 
@@ -117,13 +140,16 @@ public class PNGBoxPlotWriter extends PNGWriter
                                                                       nextEntry.getKey().getLeft() );
 
                 PNGWriter.writeChart( outputImage, nextEntry.getValue(), destinationConfig );
+                // Only if writeChart succeeded do we assume that it was written
+                pathsWrittenTo.add( outputImage );
             }
-
         }
         catch ( ChartEngineException | IOException e )
         {
             throw new PNGWriteException( "Error while generating box plot charts: ", e );
         }
+
+        return Collections.unmodifiableSet( pathsWrittenTo );
     }
 
     /**

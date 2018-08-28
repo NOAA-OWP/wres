@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.Feature;
-import wres.datamodel.inputs.pairs.EnsemblePair;
+import wres.datamodel.sampledata.pairs.EnsemblePair;
 import wres.io.concurrency.WRESCallable;
 import wres.io.config.ConfigHelper;
 import wres.io.data.details.ProjectDetails;

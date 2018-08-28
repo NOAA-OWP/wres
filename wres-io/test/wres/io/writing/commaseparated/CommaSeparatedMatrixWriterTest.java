@@ -27,13 +27,14 @@ import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
+import wres.datamodel.metadata.SampleMetadata;
+import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.outputs.ListOfMetricOutput;
-import wres.datamodel.outputs.MatrixOutput;
-import wres.datamodel.outputs.MetricOutputAccessException;
-import wres.datamodel.outputs.MetricOutputForProject;
+import wres.datamodel.statistics.ListOfStatistics;
+import wres.datamodel.statistics.MatrixStatistic;
+import wres.datamodel.statistics.StatisticAccessException;
+import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
@@ -47,26 +48,26 @@ public class CommaSeparatedMatrixWriterTest extends CommaSeparatedWriterTestHelp
 {
 
     /**
-     * Tests the writing of {@link MatrixOutput} to file.
+     * Tests the writing of {@link MatrixStatistic} to file.
      * 
      * @throws ProjectConfigException if the project configuration is incorrect
      * @throws IOException if the output could not be written
      * @throws InterruptedException if the process is interrupted
      * @throws ExecutionException if the execution fails
-     * @throws MetricOutputAccessException if the metric output could not be accessed
+     * @throws StatisticAccessException if the metric output could not be accessed
      */
 
     @Test
     public void writeMatrixOutput()
             throws IOException, InterruptedException,
-            ExecutionException, MetricOutputAccessException
+            ExecutionException, StatisticAccessException
     {
 
         // location id
         final String LID = "BDAC1";
 
         // Create fake outputs
-        MetricOutputForProject.MetricOutputForProjectBuilder outputBuilder =
+        StatisticsForProject.StatisticsForProjectBuilder outputBuilder =
                 DataFactory.ofMetricOutputForProjectByTimeAndThreshold();
 
         TimeWindow timeOne =
@@ -91,42 +92,40 @@ public class CommaSeparatedMatrixWriterTest extends CommaSeparatedWriterTestHelp
         DatasetIdentifier datasetIdentifier =
                 DatasetIdentifier.of( geospatialID, "SQIN", "HEFS", "ESP" );
 
-        MetricOutputMetadata fakeMetadata =
-                MetricOutputMetadata.of( 1000,
-                                         MeasurementUnit.of(),
-                                         MeasurementUnit.of( "CMS" ),
-                                         MetricConstants.CONTINGENCY_TABLE,
-                                         null,
-                                         datasetIdentifier,
-                                         timeOne,
-                                         threshold,
-                                         null  );
+        StatisticMetadata fakeMetadata = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                                                  datasetIdentifier,
+                                                                                  timeOne,
+                                                                                  threshold ),
+                                                               1000,
+                                                               MeasurementUnit.of(),
+                                                               MetricConstants.CONTINGENCY_TABLE,
+                                                               null );
 
         double[][] fakeOutputs = new double[][] { { 23, 79 }, { 56, 342 } };
 
 
         // Fake output wrapper.
-        ListOfMetricOutput<MatrixOutput> fakeOutputData =
-                ListOfMetricOutput.of( Collections.singletonList( MatrixOutput.of( fakeOutputs,
+        ListOfStatistics<MatrixStatistic> fakeOutputData =
+                ListOfStatistics.of( Collections.singletonList( MatrixStatistic.of( fakeOutputs,
                                                                                    Arrays.asList( MetricDimension.TRUE_POSITIVES,
                                                                                                   MetricDimension.FALSE_POSITIVES,
                                                                                                   MetricDimension.FALSE_NEGATIVES,
                                                                                                   MetricDimension.TRUE_NEGATIVES ),
                                                                                    fakeMetadata ) ) );
         // wrap outputs in future
-        Future<ListOfMetricOutput<MatrixOutput>> outputMapByMetricFuture =
+        Future<ListOfStatistics<MatrixStatistic>> outputMapByMetricFuture =
                 CompletableFuture.completedFuture( fakeOutputData );
 
-        outputBuilder.addMatrixOutput( outputMapByMetricFuture );
+        outputBuilder.addMatrixStatistics( outputMapByMetricFuture );
 
-        MetricOutputForProject output = outputBuilder.build();
+        StatisticsForProject output = outputBuilder.build();
 
         // Construct a fake configuration file.
         Feature feature = getMockedFeature( LID );
         ProjectConfig projectConfig = getMockedProjectConfig( feature );
 
         // Begin the actual test now that we have constructed dependencies.
-        CommaSeparatedMatrixWriter.of( projectConfig ).accept( output.getMatrixOutput() );
+        CommaSeparatedMatrixWriter.of( projectConfig ).accept( output.getMatrixStatistics() );
 
         // read the file, verify it has what we wanted:
         Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ),

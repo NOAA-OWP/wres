@@ -7,18 +7,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-import wres.datamodel.metadata.MetricOutputMetadata;
+import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.outputs.DoubleScoreOutput;
+import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 
 class MetricVariable
 {
-    static Collection<MetricVariable> getAll( Iterable<DoubleScoreOutput> metricResults)
+    static Collection<MetricVariable> getAll( Iterable<DoubleScoreStatistic> metricResults)
     {
         List<MetricVariable> variables = new ArrayList<>();
 
-        for (DoubleScoreOutput output : metricResults)
+        for (DoubleScoreStatistic output : metricResults)
         {
             variables.add( new MetricVariable( output ) );
         }
@@ -26,12 +26,12 @@ class MetricVariable
         return variables;
     }
 
-    private MetricVariable (final DoubleScoreOutput output)
+    private MetricVariable (final DoubleScoreStatistic output)
     {
-        MetricOutputMetadata metadata = output.getMetadata();
+        StatisticMetadata metadata = output.getMetadata();
         String metric = metadata.getMetricID().toString();
-        OneOrTwoThresholds thresholds = metadata.getThresholds();
-        TimeWindow timeWindow = metadata.getTimeWindow();
+        OneOrTwoThresholds thresholds = metadata.getSampleMetadata().getThresholds();
+        TimeWindow timeWindow = metadata.getSampleMetadata().getTimeWindow();
 
         this.name = MetricVariable.getName( output );
         this.longName = metric + " " + thresholds;
@@ -80,20 +80,21 @@ class MetricVariable
         }
     }
 
-    static String getName(final DoubleScoreOutput output)
+    static String getName(final DoubleScoreStatistic output)
     {
-        MetricOutputMetadata metadata = output.getMetadata();
+        StatisticMetadata metadata = output.getMetadata();
         // We start with the raw name of the metric
         String name = metadata.getMetricID().toString().replace(" ", "_");
 
         // If the calling metric is associated with a threshold, combine
         // threshold information with it
-        if ( metadata.getThresholds() != null &&
-             metadata.getThresholds().first() != null &&
-             metadata.getThresholds().first().hasProbabilities())
+        if ( metadata.getSampleMetadata().getThresholds() != null &&
+             metadata.getSampleMetadata().getThresholds().first() != null &&
+             metadata.getSampleMetadata().getThresholds().first().hasProbabilities())
         {
             // We first get the probability in raw percentage, i.e., 0.95 becomes 95
-            Double probability = metadata.getThresholds().first().getProbabilities().first() * 100.0;
+            Double probability =
+                    metadata.getSampleMetadata().getThresholds().first().getProbabilities().first() * 100.0;
 
             // We now want to indicate that it is a probability and attach
             // the integer representation. If the probability ended up

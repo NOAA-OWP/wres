@@ -1,7 +1,7 @@
 package wres.engine.statistics.metric.singlevalued;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.inputs.pairs.SingleValuedPairs;
+import wres.datamodel.sampledata.pairs.SingleValuedPairs;
 import wres.engine.statistics.metric.FunctionFactory;
 
 /**

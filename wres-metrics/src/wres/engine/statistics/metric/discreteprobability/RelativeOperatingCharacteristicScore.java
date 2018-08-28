@@ -8,13 +8,13 @@ import java.util.stream.Collectors;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.ScoreOutputGroup;
-import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
-import wres.datamodel.inputs.pairs.SingleValuedPair;
+import wres.datamodel.MetricConstants.ScoreGroup;
 import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.DoubleScoreOutput;
+import wres.datamodel.metadata.StatisticMetadata;
+import wres.datamodel.sampledata.SampleDataException;
+import wres.datamodel.sampledata.pairs.DiscreteProbabilityPairs;
+import wres.datamodel.sampledata.pairs.SingleValuedPair;
+import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.OrdinaryScore;
 import wres.engine.statistics.metric.ProbabilityScore;
@@ -41,8 +41,8 @@ import wres.engine.statistics.metric.ProbabilityScore;
  * @author james.brown@hydrosolved.com
  */
 
-public class RelativeOperatingCharacteristicScore extends OrdinaryScore<DiscreteProbabilityPairs, DoubleScoreOutput>
-        implements ProbabilityScore<DiscreteProbabilityPairs, DoubleScoreOutput>
+public class RelativeOperatingCharacteristicScore extends OrdinaryScore<DiscreteProbabilityPairs, DoubleScoreStatistic>
+        implements ProbabilityScore<DiscreteProbabilityPairs, DoubleScoreStatistic>
 {
 
     /**
@@ -57,11 +57,11 @@ public class RelativeOperatingCharacteristicScore extends OrdinaryScore<Discrete
     }
 
     @Override
-    public DoubleScoreOutput apply( final DiscreteProbabilityPairs s )
+    public DoubleScoreStatistic apply( final DiscreteProbabilityPairs s )
     {
         if ( Objects.isNull( s ) )
         {
-            throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
+            throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
         }
         //Obtain the AUC for the main prediction and, if available, the baseline.
         double rocScore;
@@ -71,20 +71,20 @@ public class RelativeOperatingCharacteristicScore extends OrdinaryScore<Discrete
             double rocMain = getAUCMasonGraham( s );
             double rocBase = getAUCMasonGraham( s.getBaselineData() );
             rocScore = ( rocMain - rocBase ) / ( 1.0 - rocBase );
-            baselineIdentifier = s.getMetadataForBaseline().getIdentifier();
+            baselineIdentifier = s.getBaselineData().getMetadata().getIdentifier();
         }
         else
         {
             rocScore = 2.0 * getAUCMasonGraham( s ) - 1.0;
         }
-        final MetricOutputMetadata metOut =
-                MetricOutputMetadata.of( s.getMetadata(),
+        final StatisticMetadata metOut =
+                StatisticMetadata.of( s.getMetadata(),
                                     this.getID(),
                                     MetricConstants.MAIN,
                                     this.hasRealUnits(),
                                     s.getRawData().size(),
                                     baselineIdentifier );
-        return DoubleScoreOutput.of( rocScore, metOut );
+        return DoubleScoreStatistic.of( rocScore, metOut );
     }
 
     @Override
@@ -125,9 +125,9 @@ public class RelativeOperatingCharacteristicScore extends OrdinaryScore<Discrete
     }
 
     @Override
-    public ScoreOutputGroup getScoreOutputGroup()
+    public ScoreGroup getScoreOutputGroup()
     {
-        return ScoreOutputGroup.NONE;
+        return ScoreGroup.NONE;
     }
 
     /**

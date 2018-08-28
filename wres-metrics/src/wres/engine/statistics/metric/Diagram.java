@@ -1,7 +1,7 @@
 package wres.engine.statistics.metric;
 
-import wres.datamodel.inputs.MetricInput;
-import wres.datamodel.outputs.MetricOutput;
+import wres.datamodel.sampledata.SampleData;
+import wres.datamodel.statistics.Statistic;
 
 /**
  * An abstract diagram.
@@ -9,7 +9,7 @@ import wres.datamodel.outputs.MetricOutput;
  * @author james.brown@hydrosolved.com
  */
 
-public abstract class Diagram<S extends MetricInput<?>, T extends MetricOutput<?>> implements Metric<S, T>
+public abstract class Diagram<S extends SampleData<?>, T extends Statistic<?>> implements Metric<S, T>
 {
     
     @Override

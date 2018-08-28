@@ -9,11 +9,11 @@ import java.util.Set;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.inputs.pairs.EnsemblePair;
-import wres.datamodel.inputs.pairs.EnsemblePairs;
-import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.BoxPlotOutput;
+import wres.datamodel.metadata.StatisticMetadata;
+import wres.datamodel.sampledata.SampleDataException;
+import wres.datamodel.sampledata.pairs.EnsemblePair;
+import wres.datamodel.sampledata.pairs.EnsemblePairs;
+import wres.datamodel.statistics.BoxPlotStatistic;
 import wres.engine.statistics.metric.Diagram;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricParameterException;
@@ -30,7 +30,7 @@ import wres.engine.statistics.metric.MetricParameterException;
 
 abstract class BoxPlot
         extends
-        Diagram<EnsemblePairs, BoxPlotOutput>
+        Diagram<EnsemblePairs, BoxPlotStatistic>
 {
 
     /**
@@ -75,11 +75,11 @@ abstract class BoxPlot
     abstract MetricDimension getRangeAxisDimension();
 
     @Override
-    public BoxPlotOutput apply( final EnsemblePairs s )
+    public BoxPlotStatistic apply( final EnsemblePairs s )
     {
         if ( Objects.isNull( s ) )
         {
-            throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
+            throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
         }
         List<EnsemblePair> boxes = new ArrayList<>();
         //Create each box
@@ -87,13 +87,13 @@ abstract class BoxPlot
         {
             boxes.add( getBox( next ) );
         }
-        MetricOutputMetadata metOut = MetricOutputMetadata.of( s.getMetadata(),
+        StatisticMetadata metOut = StatisticMetadata.of( s.getMetadata(),
                                                           this.getID(),
                                                           MetricConstants.MAIN,
                                                           this.hasRealUnits(),
                                                           s.getRawData().size(),
                                                           null );
-        return BoxPlotOutput.of( boxes, probabilities, metOut, getDomainAxisDimension(), getRangeAxisDimension() );
+        return BoxPlotStatistic.of( boxes, probabilities, metOut, getDomainAxisDimension(), getRangeAxisDimension() );
     }
 
     @Override

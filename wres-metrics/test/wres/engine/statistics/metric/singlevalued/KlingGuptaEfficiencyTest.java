@@ -14,17 +14,18 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.ScoreOutputGroup;
-import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.inputs.pairs.SingleValuedPairs;
+import wres.datamodel.MetricConstants.ScoreGroup;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.Metadata;
-import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
+import wres.datamodel.metadata.SampleMetadata;
+import wres.datamodel.metadata.SampleMetadata.SampleMetadataBuilder;
+import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.outputs.DoubleScoreOutput;
+import wres.datamodel.sampledata.SampleDataException;
+import wres.datamodel.sampledata.pairs.SingleValuedPairs;
+import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 
@@ -68,22 +69,22 @@ public final class KlingGuptaEfficiencyTest
                                            Duration.ofHours( 24 ) );
         final TimeWindow timeWindow = window;
 
-        MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getRawData().size(),
-                                                           MeasurementUnit.of(),
-                                                           MeasurementUnit.of( "MM/DAY" ),
-                                                           MetricConstants.KLING_GUPTA_EFFICIENCY,
-                                                           MetricConstants.MAIN,
-                                                           DatasetIdentifier.of( Location.of( "103.1" ),
-                                                                                 "QME",
-                                                                                 "NVE" ),
-                                                           timeWindow,
-                                                           null,
-                                                           null  );
+        final StatisticMetadata m1 =
+                StatisticMetadata.of( new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "MM/DAY" ) )
+                                                                 .setIdentifier( DatasetIdentifier.of( Location.of( "103.1" ),
+                                                                                                       "QME",
+                                                                                                       "NVE" ) )
+                                                                 .setTimeWindow( timeWindow )
+                                                                 .build(),
+                                      input.getRawData().size(),
+                                      MeasurementUnit.of(),
+                                      MetricConstants.KLING_GUPTA_EFFICIENCY,
+                                      MetricConstants.MAIN );
 
         //Check the results
-        DoubleScoreOutput actual = kge.apply( input );
+        DoubleScoreStatistic actual = kge.apply( input );
 
-        DoubleScoreOutput expected = DoubleScoreOutput.of( 0.8921704394462281, m1 );
+        DoubleScoreStatistic expected = DoubleScoreStatistic.of( 0.8921704394462281, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -100,16 +101,16 @@ public final class KlingGuptaEfficiencyTest
     {
         SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
-        MetricOutputMetadata m1 = MetricOutputMetadata.of( input.getRawData().size(),
-                                                           MeasurementUnit.of(),
+        final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
+                                                           input.getRawData().size(),
                                                            MeasurementUnit.of(),
                                                            MetricConstants.KLING_GUPTA_EFFICIENCY,
                                                            MetricConstants.MAIN );
 
         //Check the results
-        DoubleScoreOutput actual = kge.apply( input );
+        DoubleScoreStatistic actual = kge.apply( input );
 
-        DoubleScoreOutput expected = DoubleScoreOutput.of( 0.9432025316651065, m1 );
+        DoubleScoreStatistic expected = DoubleScoreStatistic.of( 0.9432025316651065, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -126,9 +127,9 @@ public final class KlingGuptaEfficiencyTest
     {
         // Generate empty data
         SingleValuedPairs input =
-                SingleValuedPairs.of( Arrays.asList(), Metadata.of() );
+                SingleValuedPairs.of( Arrays.asList(), SampleMetadata.of() );
 
-        DoubleScoreOutput actual = kge.apply( input );
+        DoubleScoreStatistic actual = kge.apply( input );
 
         assertTrue( actual.getData().isNaN() );
     }
@@ -181,7 +182,7 @@ public final class KlingGuptaEfficiencyTest
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( kge.getScoreOutputGroup() == ScoreOutputGroup.NONE );
+        assertTrue( kge.getScoreOutputGroup() == ScoreGroup.NONE );
     }
 
     /**
@@ -192,7 +193,7 @@ public final class KlingGuptaEfficiencyTest
     @Test
     public void testApplyExceptionOnNullInput()
     {
-        exception.expect( MetricInputException.class );
+        exception.expect( SampleDataException.class );
         exception.expectMessage( "Specify non-null input to the 'KLING GUPTA EFFICIENCY'." );
 
         kge.apply( null );

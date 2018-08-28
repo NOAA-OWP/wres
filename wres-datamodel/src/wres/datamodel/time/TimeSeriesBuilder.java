@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import wres.datamodel.inputs.MetricInputException;
+import wres.datamodel.sampledata.SampleDataException;
 
 /**
  * <p>A builder for a possibly irregular {@link TimeSeries}.
@@ -37,7 +37,7 @@ public interface TimeSeriesBuilder<T>
      * 
      * @param timeSeries the time-series
      * @return the builder
-     * @throws MetricInputException if the specified input is inconsistent with any existing input
+     * @throws SampleDataException if the specified input is inconsistent with any existing input
      * @throws NullPointerException if the input is null
      */
 

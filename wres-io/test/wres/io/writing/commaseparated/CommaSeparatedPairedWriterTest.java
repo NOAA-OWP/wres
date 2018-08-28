@@ -27,13 +27,14 @@ import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
+import wres.datamodel.metadata.SampleMetadata;
+import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.outputs.ListOfMetricOutput;
-import wres.datamodel.outputs.MetricOutputAccessException;
-import wres.datamodel.outputs.MetricOutputForProject;
-import wres.datamodel.outputs.PairedOutput;
+import wres.datamodel.statistics.ListOfStatistics;
+import wres.datamodel.statistics.PairedStatistic;
+import wres.datamodel.statistics.StatisticAccessException;
+import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
@@ -47,27 +48,27 @@ public class CommaSeparatedPairedWriterTest extends CommaSeparatedWriterTestHelp
 {
 
     /**
-     * Tests the writing of {@link PairedOutput} to file, where the left pair comprises an {@link Instant} and the
+     * Tests the writing of {@link PairedStatistic} to file, where the left pair comprises an {@link Instant} and the
      * right pair comprises an (@link Duration).
      * 
      * @throws ProjectConfigException if the project configuration is incorrect
      * @throws IOException if the output could not be written
      * @throws InterruptedException if the process is interrupted
      * @throws ExecutionException if the execution fails
-     * @throws MetricOutputAccessException if the metric output could not be accessed
+     * @throws StatisticAccessException if the metric output could not be accessed
      */
 
     @Test
     public void writePairedOutputForTimeSeriesMetrics()
             throws IOException, InterruptedException,
-            ExecutionException, MetricOutputAccessException
+            ExecutionException, StatisticAccessException
     {
 
         // location id
         final String LID = "FTSC1";
 
         // Create fake outputs
-        MetricOutputForProject.MetricOutputForProjectBuilder outputBuilder =
+        StatisticsForProject.StatisticsForProjectBuilder outputBuilder =
                 DataFactory.ofMetricOutputForProjectByTimeAndThreshold();
 
         TimeWindow timeOne =
@@ -88,16 +89,15 @@ public class CommaSeparatedPairedWriterTest extends CommaSeparatedWriterTestHelp
         DatasetIdentifier datasetIdentifier =
                 DatasetIdentifier.of( Location.of( LID ), "SQIN", "HEFS", "ESP" );
 
-        MetricOutputMetadata fakeMetadata =
-                MetricOutputMetadata.of( 1000,
-                                         MeasurementUnit.of(),
-                                         MeasurementUnit.of( "CMS" ),
-                                         MetricConstants.TIME_TO_PEAK_ERROR,
-                                         null,
-                                         datasetIdentifier,
-                                         timeOne,
-                                         threshold,
-                                         null  );
+        StatisticMetadata fakeMetadata =
+                StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
+                                                         datasetIdentifier,
+                                                         timeOne,
+                                                         threshold ),
+                                      1000,
+                                      MeasurementUnit.of(),
+                                      MetricConstants.TIME_TO_PEAK_ERROR,
+                                      null );
 
         List<Pair<Instant, Duration>> fakeOutputs = new ArrayList<>();
         fakeOutputs.add( Pair.of( Instant.parse( "1985-01-01T00:00:00Z" ), Duration.ofHours( 1 ) ) );
@@ -105,16 +105,16 @@ public class CommaSeparatedPairedWriterTest extends CommaSeparatedWriterTestHelp
         fakeOutputs.add( Pair.of( Instant.parse( "1985-01-03T00:00:00Z" ), Duration.ofHours( 3 ) ) );
 
         // Fake output wrapper.
-        ListOfMetricOutput<PairedOutput<Instant, Duration>> fakeOutputData =
-                ListOfMetricOutput.of( Collections.singletonList( PairedOutput.of( fakeOutputs, fakeMetadata ) ) );
+        ListOfStatistics<PairedStatistic<Instant, Duration>> fakeOutputData =
+                ListOfStatistics.of( Collections.singletonList( PairedStatistic.of( fakeOutputs, fakeMetadata ) ) );
 
         // wrap outputs in future
-        Future<ListOfMetricOutput<PairedOutput<Instant, Duration>>> outputMapByMetricFuture =
+        Future<ListOfStatistics<PairedStatistic<Instant, Duration>>> outputMapByMetricFuture =
                 CompletableFuture.completedFuture( fakeOutputData );
 
-        outputBuilder.addPairedOutput( outputMapByMetricFuture );
+        outputBuilder.addPairedStatistics( outputMapByMetricFuture );
 
-        MetricOutputForProject output = outputBuilder.build();
+        StatisticsForProject output = outputBuilder.build();
 
         // Construct a fake configuration file.
         Feature feature = getMockedFeature( LID );
@@ -122,7 +122,7 @@ public class CommaSeparatedPairedWriterTest extends CommaSeparatedWriterTestHelp
 
         // Begin the actual test now that we have constructed dependencies.
         CommaSeparatedPairedWriter<Instant, Duration> writer = CommaSeparatedPairedWriter.of( projectConfig );
-        writer.accept( output.getPairedOutput() );
+        writer.accept( output.getPairedStatistics() );
 
         // read the file, verify it has what we wanted:
         Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ),

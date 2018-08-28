@@ -10,12 +10,12 @@ import java.util.Random;
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.inputs.pairs.SingleValuedPair;
-import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.PairedOutput;
+import wres.datamodel.metadata.StatisticMetadata;
+import wres.datamodel.sampledata.SampleDataException;
+import wres.datamodel.sampledata.pairs.SingleValuedPair;
+import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
+import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.time.TimeSeries;
 import wres.engine.statistics.metric.Metric;
 
@@ -54,11 +54,11 @@ public class TimeToPeakError extends TimingError
     }
 
     @Override
-    public PairedOutput<Instant, Duration> apply( TimeSeriesOfSingleValuedPairs s )
+    public PairedStatistic<Instant, Duration> apply( TimeSeriesOfSingleValuedPairs s )
     {
         if ( Objects.isNull( s ) )
         {
-            throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
+            throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
         }
 
         // Iterate through the time-series by basis time, and find the peaks in left and right
@@ -75,13 +75,13 @@ public class TimeToPeakError extends TimingError
         }
 
         // Create output metadata
-        MetricOutputMetadata meta = MetricOutputMetadata.of( s.getMetadata(),
+        StatisticMetadata meta = StatisticMetadata.of( s.getMetadata(),
                                                              s.getBasisTimes().size(),
                                                              MeasurementUnit.of( "DURATION" ),
                                                              this.getID(),
                                                              MetricConstants.MAIN );
 
-        return PairedOutput.of( returnMe, meta );
+        return PairedStatistic.of( returnMe, meta );
     }
 
     @Override

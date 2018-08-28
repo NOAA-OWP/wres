@@ -3,11 +3,11 @@ package wres.engine.statistics.metric.singlevalued;
 import java.util.Objects;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.inputs.pairs.SingleValuedPair;
-import wres.datamodel.inputs.pairs.SingleValuedPairs;
-import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.DoubleScoreOutput;
+import wres.datamodel.metadata.StatisticMetadata;
+import wres.datamodel.sampledata.SampleDataException;
+import wres.datamodel.sampledata.pairs.SingleValuedPair;
+import wres.datamodel.sampledata.pairs.SingleValuedPairs;
+import wres.datamodel.statistics.DoubleScoreStatistic;
 
 /**
  * <p>The {@link VolumetricEfficiency} (VE) accumulates the absolute observations (VO) and, separately, it accumulates 
@@ -34,11 +34,11 @@ public class VolumetricEfficiency extends DoubleErrorScore<SingleValuedPairs>
     }
 
     @Override
-    public DoubleScoreOutput apply( final SingleValuedPairs s )
+    public DoubleScoreStatistic apply( final SingleValuedPairs s )
     {
         if ( Objects.isNull( s ) )
         {
-            throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
+            throw new SampleDataException( "Specify non-null input to the '" + this + "'." );
         }
         Double vO = 0.0;
         double vP = 0.0;
@@ -49,8 +49,8 @@ public class VolumetricEfficiency extends DoubleErrorScore<SingleValuedPairs>
         }
 
         //Metadata
-        final MetricOutputMetadata metOut =
-                MetricOutputMetadata.of( s.getMetadata(),
+        final StatisticMetadata metOut =
+                StatisticMetadata.of( s.getMetadata(),
                                     this.getID(),
                                     MetricConstants.MAIN,
                                     this.hasRealUnits(),
@@ -59,9 +59,9 @@ public class VolumetricEfficiency extends DoubleErrorScore<SingleValuedPairs>
         //Compute the atomic errors in a stream
         if ( vO.equals( 0.0 ) )
         {
-            return DoubleScoreOutput.of( Double.NaN, metOut );
+            return DoubleScoreStatistic.of( Double.NaN, metOut );
         }
-        return DoubleScoreOutput.of( ( vO - vP ) / vO, metOut );
+        return DoubleScoreStatistic.of( ( vO - vP ) / vO, metOut );
     }
 
     @Override

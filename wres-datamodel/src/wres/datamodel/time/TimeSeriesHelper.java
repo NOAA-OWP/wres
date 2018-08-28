@@ -9,9 +9,9 @@ import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.TreeSet;
 
-import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.metadata.Metadata;
+import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.TimeWindow;
+import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 
@@ -31,7 +31,7 @@ public class TimeSeriesHelper
 
     /**
      * Helper method that adjusts the earliest and latest basis times of the {@link TimeWindow} associated with the 
-     * input {@link Metadata} when iterating over the atomic time-series by basis time.
+     * input {@link SampleMetadata} when iterating over the atomic time-series by basis time.
      * 
      * @param input the input metadata
      * @param earliestTime the earliest basis time for the new metadata
@@ -40,15 +40,15 @@ public class TimeSeriesHelper
      * @throws NullPointerException if any of the inputs are null
      */
 
-    static Metadata getBasisTimeAdjustedMetadata( Metadata input, Instant earliestTime, Instant latestTime )
+    static SampleMetadata getBasisTimeAdjustedMetadata( SampleMetadata input, Instant earliestTime, Instant latestTime )
     {
         //Test the input only, as the others are tested on construction
         Objects.requireNonNull( "Specify non-null input for the current metadata." );
-        Metadata returnMe = input;
+        SampleMetadata returnMe = input;
         if ( input.hasTimeWindow() )
         {
             TimeWindow current = input.getTimeWindow();
-            returnMe = Metadata.of( returnMe,
+            returnMe = SampleMetadata.of( returnMe,
                                                     TimeWindow.of( earliestTime,
                                                                    latestTime,
                                                                    current.getReferenceTime(),
@@ -60,7 +60,7 @@ public class TimeSeriesHelper
 
     /**
      * Helper method that adjusts the earliest and latest durations of the {@link TimeWindow} associated with the input
-     * {@link Metadata} when iterating over the atomic time-series by duration.
+     * {@link SampleMetadata} when iterating over the atomic time-series by duration.
      * 
      * @param input the input metadata
      * @param earliestDuration the earliest duration for the new metadata
@@ -69,15 +69,15 @@ public class TimeSeriesHelper
      * @throws NullPointerException if any of the inputs are null
      */
 
-    static Metadata getDurationAdjustedMetadata( Metadata input, Duration earliestDuration, Duration latestDuration )
+    static SampleMetadata getDurationAdjustedMetadata( SampleMetadata input, Duration earliestDuration, Duration latestDuration )
     {
         //Test the input only, as the others are tested on construction
         Objects.requireNonNull( "Specify non-null input for the current metadata." );
-        Metadata returnMe = input;
+        SampleMetadata returnMe = input;
         if ( input.hasTimeWindow() )
         {
             TimeWindow current = input.getTimeWindow();
-            returnMe = Metadata.of( returnMe,
+            returnMe = SampleMetadata.of( returnMe,
                                                     TimeWindow.of( current.getEarliestTime(),
                                                                    current.getLatestTime(),
                                                                    current.getReferenceTime(),
@@ -187,27 +187,27 @@ public class TimeSeriesHelper
      * @param <T> the event type
      * @param input the input with possibly mutable lists
      * @return the input with immutable lists
-     * @throws MetricInputException if the input is null or any items in the list are null
+     * @throws SampleDataException if the input is null or any items in the list are null
      */
 
     static <T> List<Event<List<Event<T>>>> getImmutableTimeSeries( List<Event<List<Event<T>>>> input )
     {
         if ( Objects.isNull( input ) )
         {
-            throw new MetricInputException( "Specify a non-null list of pairs to render immutable." );
+            throw new SampleDataException( "Specify a non-null list of pairs to render immutable." );
         }
         List<Event<List<Event<T>>>> returnMe = new ArrayList<>();
         for ( Event<List<Event<T>>> nextSeries : input )
         {
             if ( Objects.isNull( nextSeries ) )
             {
-                throw new MetricInputException( "Cannot build a time-series with one or more null time-series." );
+                throw new SampleDataException( "Cannot build a time-series with one or more null time-series." );
             }
             List<Event<T>> nextList = new ArrayList<>();
             nextList.addAll( nextSeries.getValue() );
             if ( nextList.stream().anyMatch( Objects::isNull ) )
             {
-                throw new MetricInputException( "Cannot build a time-series with one or more null events." );
+                throw new SampleDataException( "Cannot build a time-series with one or more null events." );
             }
             returnMe.add( Event.of( nextSeries.getTime(), Collections.unmodifiableList( nextList ) ) );
         }
@@ -220,27 +220,27 @@ public class TimeSeriesHelper
      * @param <T> the event type
      * @param input the unsorted input
      * @return the sorted input in time order
-     * @throws MetricInputException if the input is null or any items in the list are null
+     * @throws SampleDataException if the input is null or any items in the list are null
      */
 
     public static <T> List<Event<List<Event<T>>>> sort( List<Event<List<Event<T>>>> input )
     {
         if ( Objects.isNull( input ) )
         {
-            throw new MetricInputException( "Specify a non-null list of pairs to sort." );
+            throw new SampleDataException( "Specify a non-null list of pairs to sort." );
         }
         List<Event<List<Event<T>>>> returnMe = new ArrayList<>();
         for ( Event<List<Event<T>>> nextSeries : input )
         {
             if ( Objects.isNull( nextSeries ) )
             {
-                throw new MetricInputException( "Cannot sort a time-series with one or more null time-series." );
+                throw new SampleDataException( "Cannot sort a time-series with one or more null time-series." );
             }
             List<Event<T>> nextList = new ArrayList<>();
             nextList.addAll( nextSeries.getValue() );
             if ( nextList.stream().anyMatch( Objects::isNull ) )
             {
-                throw new MetricInputException( "Cannot sort a time-series with one or more null events." );
+                throw new SampleDataException( "Cannot sort a time-series with one or more null events." );
             }
             // Sort by inner time
             nextList.sort( TimeSeriesHelper::compareByTime );

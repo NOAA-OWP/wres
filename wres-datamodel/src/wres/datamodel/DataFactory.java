@@ -3,7 +3,6 @@ package wres.datamodel;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -26,19 +25,21 @@ import wres.config.generated.ThresholdType;
 import wres.config.generated.ThresholdsConfig;
 import wres.config.generated.TimeSeriesMetricConfig;
 import wres.config.generated.TimeSeriesMetricConfigName;
-import wres.datamodel.MetricConstants.MetricInputGroup;
-import wres.datamodel.MetricConstants.MetricOutputGroup;
-import wres.datamodel.metadata.MetricOutputMetadata;
+import wres.datamodel.MetricConstants.SampleDataGroup;
+import wres.datamodel.MetricConstants.StatisticGroup;
+import wres.datamodel.metadata.SampleMetadata;
+import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.outputs.MetricOutputForProject;
-import wres.datamodel.outputs.MetricOutputForProject.MetricOutputForProjectBuilder;
-import wres.datamodel.outputs.PairedOutput;
+import wres.datamodel.statistics.PairedStatistic;
+import wres.datamodel.statistics.StatisticsForProject;
+import wres.datamodel.statistics.StatisticsForProject.StatisticsForProjectBuilder;
 import wres.datamodel.thresholds.ThresholdConstants;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
-import wres.datamodel.thresholds.ThresholdsByMetric;
 
 /**
  * A factory class for producing datasets associated with verification metrics.
+ * 
+ * TODO: improve unit test coverage.
  * 
  * @author james.brown@hydrosolved.com
  */
@@ -58,34 +59,6 @@ public final class DataFactory
 
     private static final String NULL_CONFIGURATION_NAME_ERROR = "Specify input configuration with a "
                                                                 + "non-null identifier to map.";
-
-    /**
-     * Map between {@link MetricConfigName} and {@link MetricConstants}.
-     */
-
-    private static final EnumMap<MetricConfigName, MetricConstants> METRIC_CONFIG_NAME_MAP =
-            new EnumMap<>( MetricConfigName.class );
-
-    /**
-     * Map between {@link TimeSeriesMetricConfigName} and {@link MetricConstants}.
-     */
-
-    private static final EnumMap<TimeSeriesMetricConfigName, MetricConstants> TIME_SERIES_METRIC_CONFIG_NAME_MAP =
-            new EnumMap<>( TimeSeriesMetricConfigName.class );
-
-    /**
-     * Map between {@link ThresholdDataType} and {@link ThresholdConstants.ThresholdDataType}.
-     */
-
-    private static final EnumMap<ThresholdDataType, ThresholdConstants.ThresholdDataType> THRESHOLD_APPLICATION_TYPE_MAP =
-            new EnumMap<>( ThresholdDataType.class );
-
-    /**
-     * Map between {@link ThresholdType} and {@link ThresholdConstants.ThresholdGroup}.
-     */
-
-    private static final EnumMap<ThresholdType, ThresholdConstants.ThresholdGroup> THRESHOLD_TYPE_MAP =
-            new EnumMap<>( ThresholdType.class );
 
     /**
      * Returns a set of {@link MetricConstants} for a specific group of metrics contained in a {@link MetricsConfig}. 
@@ -147,13 +120,13 @@ public final class DataFactory
             if ( next.getName() == TimeSeriesMetricConfigName.ALL_VALID )
             {
                 Set<MetricConstants> allValid = null;
-                MetricInputGroup inGroup = DataFactory.getMetricInputGroup( projectConfig.getInputs().getRight() );
+                SampleDataGroup inGroup = DataFactory.getMetricInputGroup( projectConfig.getInputs().getRight() );
 
                 // Single-valued input source
-                if ( inGroup == MetricInputGroup.SINGLE_VALUED )
+                if ( inGroup == SampleDataGroup.SINGLE_VALUED )
                 {
                     allValid = DataFactory.getAllValidMetricsForSingleValuedTimeSeriesInput( projectConfig,
-                                                                                                metricsConfig );
+                                                                                             metricsConfig );
                 }
                 // Unrecognized type
                 else
@@ -171,7 +144,7 @@ public final class DataFactory
             }
             else
             {
-                returnMe.add( DataFactory.getMetricName( next ) );
+                returnMe.add( DataFactory.getMetricName( next.getName() ) );
             }
         }
 
@@ -203,16 +176,16 @@ public final class DataFactory
             if ( next.getName() == MetricConfigName.ALL_VALID )
             {
                 Set<MetricConstants> allValid = null;
-                MetricInputGroup inGroup = DataFactory.getMetricInputGroup( projectConfig.getInputs().getRight() );
+                SampleDataGroup inGroup = DataFactory.getMetricInputGroup( projectConfig.getInputs().getRight() );
 
                 // Single-valued metrics
-                if ( inGroup == MetricInputGroup.SINGLE_VALUED )
+                if ( inGroup == SampleDataGroup.SINGLE_VALUED )
                 {
                     allValid =
                             DataFactory.getAllValidMetricsForSingleValuedInput( projectConfig, metricsConfig );
                 }
                 // Ensemble metrics
-                else if ( inGroup == MetricInputGroup.ENSEMBLE )
+                else if ( inGroup == SampleDataGroup.ENSEMBLE )
                 {
                     allValid = DataFactory.getAllValidMetricsForEnsembleInput( projectConfig, metricsConfig );
                 }
@@ -231,7 +204,7 @@ public final class DataFactory
             }
             else
             {
-                returnMe.add( DataFactory.getMetricName( next ) );
+                returnMe.add( DataFactory.getMetricName( next.getName() ) );
             }
         }
 
@@ -240,138 +213,90 @@ public final class DataFactory
 
     /**
      * Returns the {@link MetricConstants} that corresponds to the {@link MetricConfigName} in the input 
-     * configuration or null if the input is {@link MetricConfigName#ALL_VALID}.
+     * configuration or null if the input is {@link MetricConfigName#ALL_VALID}. Matches the enumerations by 
+     * {@link Enum#name()}.
      * 
-     * @param metricConfig the metric configuration
+     * @param metricConfigName the metric name
      * @return the mapped name
-     * @throws MetricConfigException if the input name is not mapped
-     * @throws NullPointerException if the input is null or the input name is null
+     * @throws IllegalArgumentException if the input name is not mapped
+     * @throws NullPointerException if the input is null
      */
 
-    public static MetricConstants getMetricName( MetricConfig metricConfig )
+    public static MetricConstants getMetricName( MetricConfigName metricConfigName )
     {
-        Objects.requireNonNull( metricConfig, NULL_CONFIGURATION_ERROR );
-
-        Objects.requireNonNull( metricConfig.getName(), NULL_CONFIGURATION_NAME_ERROR );
+        Objects.requireNonNull( metricConfigName, NULL_CONFIGURATION_NAME_ERROR );
 
         //All valid metrics
-        if ( metricConfig.getName() == MetricConfigName.ALL_VALID )
+        if ( metricConfigName == MetricConfigName.ALL_VALID )
         {
             return null;
         }
 
-        // Lazy build the mapping
-        buildMetricConfigNameMap();
-
-        if ( !METRIC_CONFIG_NAME_MAP.containsKey( metricConfig.getName() ) )
-        {
-            throw new MetricConfigException( metricConfig,
-                                             " Unable to find a metric with a configured identifier of "
-                                                           + "'"
-                                                           + metricConfig.getName()
-                                                           + "'." );
-        }
-
-        return METRIC_CONFIG_NAME_MAP.get( metricConfig.getName() );
+        return MetricConstants.valueOf( metricConfigName.name() );
     }
 
     /**
      * Returns the {@link MetricConstants} that corresponds to the {@link MetricConfigName} in the input 
-     * configuration or null if the input is {@link MetricConfigName#ALL_VALID}.
+     * configuration or null if the input is {@link MetricConfigName#ALL_VALID}. Matches the enumerations by 
+     * {@link Enum#name()}.
      * 
-     * @param timeSeriesMetricConfig the metric configuration
+     * @param timeSeriesMetricConfigName the metric name
      * @return the mapped name
-     * @throws MetricConfigException if the input name is not mapped
-     * @throws NullPointerException if the input is null or the input name is null
+     * @throws IllegalArgumentException if the input name is not mapped
+     * @throws NullPointerException if the input name is null
      */
 
-    public static MetricConstants getMetricName( TimeSeriesMetricConfig timeSeriesMetricConfig )
+    public static MetricConstants getMetricName( TimeSeriesMetricConfigName timeSeriesMetricConfigName )
     {
-        Objects.requireNonNull( timeSeriesMetricConfig, NULL_CONFIGURATION_ERROR );
-
-        Objects.requireNonNull( timeSeriesMetricConfig.getName(), NULL_CONFIGURATION_NAME_ERROR );
+        Objects.requireNonNull( timeSeriesMetricConfigName, NULL_CONFIGURATION_NAME_ERROR );
 
         //All valid metrics
-        if ( timeSeriesMetricConfig.getName() == TimeSeriesMetricConfigName.ALL_VALID )
+        if ( timeSeriesMetricConfigName == TimeSeriesMetricConfigName.ALL_VALID )
         {
             return null;
         }
 
-        // Lazy build the mapping
-        buildTimeSeriesMetricConfigNameMap();
-
-        if ( !TIME_SERIES_METRIC_CONFIG_NAME_MAP.containsKey( timeSeriesMetricConfig.getName() ) )
-        {
-            throw new MetricConfigException( timeSeriesMetricConfig,
-                                             " Unable to find a metric with a configured "
-                                                                     + "identifier of '"
-                                                                     + timeSeriesMetricConfig.getName()
-                                                                     + "'." );
-        }
-
-        return TIME_SERIES_METRIC_CONFIG_NAME_MAP.get( timeSeriesMetricConfig.getName() );
+        return MetricConstants.valueOf( timeSeriesMetricConfigName.name() );
     }
 
     /**
      * Returns the {@link ThresholdConstants.ThresholdDataType} that corresponds to the {@link ThresholdDataType}
-     * associated with the input configuration.
+     * associated with the input configuration. Matches the enumerations by {@link Enum#name()}.
      * 
-     * @param thresholdsConfig the thresholds configuration
+     * @param thresholdDataType the threshold data type
      * @return the mapped threshold data type
-     * @throws MetricConfigException if the data type is not mapped
-     * @throws NullPointerException if the input is null or the {@link ThresholdsConfig#getApplyTo()} returns null
+     * @throws IllegalArgumentException if the data type is not mapped
+     * @throws NullPointerException if the input is null
      */
 
-    public static ThresholdConstants.ThresholdDataType getThresholdDataType( ThresholdsConfig thresholdsConfig )
+    public static ThresholdConstants.ThresholdDataType getThresholdDataType( ThresholdDataType thresholdDataType )
     {
-        Objects.requireNonNull( thresholdsConfig, NULL_CONFIGURATION_ERROR );
+        Objects.requireNonNull( thresholdDataType, NULL_CONFIGURATION_NAME_ERROR );
 
-        Objects.requireNonNull( thresholdsConfig.getApplyTo(), NULL_CONFIGURATION_NAME_ERROR );
-
-        buildThresholdDataTypeMap();
-
-        if ( !THRESHOLD_APPLICATION_TYPE_MAP.containsKey( thresholdsConfig.getApplyTo() ) )
-        {
-            throw new MetricConfigException( thresholdsConfig,
-                                             " Unable to find a threshold application type with a configured "
-                                                               + "identifier of '"
-                                                               + thresholdsConfig.getApplyTo()
-                                                               + "'." );
-        }
-        return THRESHOLD_APPLICATION_TYPE_MAP.get( thresholdsConfig.getApplyTo() );
+        return ThresholdConstants.ThresholdDataType.valueOf( thresholdDataType.name() );
     }
 
     /**
      * Returns the {@link ThresholdConstants.ThresholdGroup} that corresponds to the {@link ThresholdType}
-     * associated with the input configuration. 
+     * associated with the input configuration. Matches the enumerations by {@link Enum#name()}.
      * 
-     * @param thresholdsConfig the thresholds configuration
+     * @param thresholdType the threshold type
      * @return the mapped threshold group
-     * @throws MetricConfigException if the threshold group is not mapped
-     * @throws NullPointerException if the input is null or the {@link ThresholdsConfig#getType()} returns null
+     * @throws IllegalArgumentException if the threshold group is not mapped
+     * @throws NullPointerException if the input is null
      */
 
-    public static ThresholdConstants.ThresholdGroup getThresholdGroup( ThresholdsConfig thresholdsConfig )
+    public static ThresholdConstants.ThresholdGroup getThresholdGroup( ThresholdType thresholdType )
     {
-        Objects.requireNonNull( thresholdsConfig, NULL_CONFIGURATION_ERROR );
+        Objects.requireNonNull( thresholdType, NULL_CONFIGURATION_NAME_ERROR );
 
-        Objects.requireNonNull( thresholdsConfig.getType(), NULL_CONFIGURATION_NAME_ERROR );
-
-        buildThresholdTypeMap();
-
-        if ( !THRESHOLD_TYPE_MAP.containsKey( thresholdsConfig.getType() ) )
-        {
-            throw new MetricConfigException( thresholdsConfig,
-                                             " Unable to find a threshold type with a configured identifier "
-                                                               + "of '"
-                                                               + thresholdsConfig.getType()
-                                                               + "'." );
-        }
-        return THRESHOLD_TYPE_MAP.get( thresholdsConfig.getType() );
+        return ThresholdConstants.ThresholdGroup.valueOf( thresholdType.name() );
     }
 
     /**
      * Maps between threshold operators in {@link ThresholdOperator} and those in {@link Operator}.
+     * 
+     * TODO: make these enumerations match on name to reduce brittleness.
      * 
      * @param thresholdsConfig the threshold configuration
      * @return the mapped operator
@@ -408,13 +333,15 @@ public final class DataFactory
     /**
      * Returns the metric data input type from the {@link DatasourceType}.
      * 
+     * TODO: make these enumerations match on name to reduce brittleness.
+     * 
      * @param dataSourceConfig the data source configuration
      * @return the metric input group
      * @throws MetricConfigException if the input type is not mapped
      * @throws NullPointerException if the input is null or the {@link DataSourceConfig#getType()} returns null 
      */
 
-    public static MetricInputGroup getMetricInputGroup( DataSourceConfig dataSourceConfig )
+    public static SampleDataGroup getMetricInputGroup( DataSourceConfig dataSourceConfig )
     {
         Objects.requireNonNull( dataSourceConfig, NULL_CONFIGURATION_ERROR );
 
@@ -423,42 +350,49 @@ public final class DataFactory
         switch ( dataSourceConfig.getType() )
         {
             case ENSEMBLE_FORECASTS:
-                return MetricInputGroup.ENSEMBLE;
+                return SampleDataGroup.ENSEMBLE;
             case SINGLE_VALUED_FORECASTS:
             case SIMULATIONS:
-                return MetricInputGroup.SINGLE_VALUED;
+                return SampleDataGroup.SINGLE_VALUED;
             default:
                 throw new MetricConfigException( dataSourceConfig,
                                                  "Unable to interpret the input type '" + dataSourceConfig.getType()
                                                                    + "'." );
         }
-    }   
+    }
 
     /**
-     * Forms the union of the {@link PairedOutput}, returning a {@link PairedOutput} that contains all of the pairs in 
-     * the inputs.
+     * Forms the union of the {@link PairedStatistic}, returning a {@link PairedStatistic} that contains all of the 
+     * pairs in the inputs.
      * 
      * @param <S> the left side of the paired output
      * @param <T> the right side of the paired output
      * @param collection the list of inputs
-     * @return a combined {@link PairedOutput}
+     * @return a combined {@link PairedStatistic}
      * @throws NullPointerException if the input is null
+     * @throws IllegalArgumentException if the input is empty
      */
 
-    public static <S, T> PairedOutput<S, T> unionOf( Collection<PairedOutput<S, T>> collection )
+    public static <S, T> PairedStatistic<S, T> unionOf( Collection<PairedStatistic<S, T>> collection )
     {
         Objects.requireNonNull( collection );
+        
+        if( collection.isEmpty() )
+        {
+            throw new IllegalArgumentException( "Specify one or more sets of pairs to combine." );
+        }
+        
         List<Pair<S, T>> combined = new ArrayList<>();
         List<TimeWindow> combinedWindows = new ArrayList<>();
-        MetricOutputMetadata sourceMeta = null;
-        for ( PairedOutput<S, T> next : collection )
+        StatisticMetadata sourceMeta = null;
+        for ( PairedStatistic<S, T> next : collection )
         {
             combined.addAll( next.getData() );
             if ( Objects.isNull( sourceMeta ) )
             {
                 sourceMeta = next.getMetadata();
             }
-            combinedWindows.add( next.getMetadata().getTimeWindow() );
+            combinedWindows.add( next.getMetadata().getSampleMetadata().getTimeWindow() );
         }
         TimeWindow unionWindow = null;
         if ( !combinedWindows.isEmpty() )
@@ -466,11 +400,14 @@ public final class DataFactory
             unionWindow = TimeWindow.unionOf( combinedWindows );
         }
 
-        MetricOutputMetadata combinedMeta =
-                MetricOutputMetadata.of( MetricOutputMetadata.of( sourceMeta, combined.size() ),
-                                         unionWindow,
-                                         sourceMeta.getThresholds() );
-        return PairedOutput.of( combined, combinedMeta );
+        StatisticMetadata combinedMeta =
+                StatisticMetadata.of( SampleMetadata.of( sourceMeta.getSampleMetadata(), unionWindow ),
+                                      combined.size(),
+                                      sourceMeta.getMeasurementUnit(),
+                                      sourceMeta.getMetricID(),
+                                      sourceMeta.getMetricComponentID() );
+        
+        return PairedStatistic.of( combined, combinedMeta );
     }
 
     /**
@@ -509,15 +446,15 @@ public final class DataFactory
     }
 
     /**
-     * Returns a builder for a {@link MetricOutputForProject}.
+     * Returns a builder for a {@link StatisticsForProject}.
      * 
-     * @return a {@link MetricOutputForProjectBuilder} for a map of metric outputs by time window and
+     * @return a {@link StatisticsForProjectBuilder} for a map of metric outputs by time window and
      *         threshold
      */
 
-    public static MetricOutputForProjectBuilder ofMetricOutputForProjectByTimeAndThreshold()
+    public static StatisticsForProjectBuilder ofMetricOutputForProjectByTimeAndThreshold()
     {
-        return new MetricOutputForProject.MetricOutputForProjectBuilder();
+        return new StatisticsForProject.StatisticsForProjectBuilder();
     }
 
     /**
@@ -577,11 +514,11 @@ public final class DataFactory
     }
 
     /**
-     * Returns valid metrics for {@link MetricInputGroup#ENSEMBLE}
+     * Returns valid metrics for {@link SampleDataGroup#ENSEMBLE}
      * 
      * @param projectConfig the project configuration
      * @param metricsConfig the metrics configuration
-     * @return the valid metrics for {@link MetricInputGroup#ENSEMBLE}
+     * @return the valid metrics for {@link SampleDataGroup#ENSEMBLE}
      * @throws NullPointerException if the input is null
      */
 
@@ -594,19 +531,19 @@ public final class DataFactory
 
         if ( !metricsConfig.getMetric().isEmpty() )
         {
-            returnMe.addAll( MetricInputGroup.ENSEMBLE.getMetrics() );
-            returnMe.addAll( MetricInputGroup.SINGLE_VALUED.getMetrics() );
+            returnMe.addAll( SampleDataGroup.ENSEMBLE.getMetrics() );
+            returnMe.addAll( SampleDataGroup.SINGLE_VALUED.getMetrics() );
 
             if ( DataFactory.hasThresholds( metricsConfig, ThresholdType.PROBABILITY )
                  || DataFactory.hasThresholds( metricsConfig, ThresholdType.VALUE ) )
             {
-                returnMe.addAll( MetricInputGroup.DISCRETE_PROBABILITY.getMetrics() );
+                returnMe.addAll( SampleDataGroup.DISCRETE_PROBABILITY.getMetrics() );
             }
 
             // Allow dichotomous metrics when probability classifiers are defined
             if ( DataFactory.hasThresholds( metricsConfig, ThresholdType.PROBABILITY_CLASSIFIER ) )
             {
-                returnMe.addAll( MetricInputGroup.DICHOTOMOUS.getMetrics() );
+                returnMe.addAll( SampleDataGroup.DICHOTOMOUS.getMetrics() );
             }
         }
 
@@ -614,12 +551,12 @@ public final class DataFactory
     }
 
     /**
-     * Returns valid ordinary metrics for {@link MetricInputGroup#SINGLE_VALUED}. Also see:
+     * Returns valid ordinary metrics for {@link SampleDataGroup#SINGLE_VALUED}. Also see:
      * {@link #getValidMetricsForSingleValuedInput(ProjectConfig, MetricsConfig)}
      * 
      * @param projectConfig the project configuration
      * @param metricsConfig the metrics configuration
-     * @return the valid metrics for {@link MetricInputGroup#SINGLE_VALUED}
+     * @return the valid metrics for {@link SampleDataGroup#SINGLE_VALUED}
      * @throws NullPointerException if the input is null
      */
 
@@ -632,12 +569,12 @@ public final class DataFactory
 
         if ( !metricsConfig.getMetric().isEmpty() )
         {
-            returnMe.addAll( MetricInputGroup.SINGLE_VALUED.getMetrics() );
+            returnMe.addAll( SampleDataGroup.SINGLE_VALUED.getMetrics() );
 
             if ( DataFactory.hasThresholds( metricsConfig, ThresholdType.PROBABILITY )
                  || DataFactory.hasThresholds( metricsConfig, ThresholdType.VALUE ) )
             {
-                returnMe.addAll( MetricInputGroup.DICHOTOMOUS.getMetrics() );
+                returnMe.addAll( SampleDataGroup.DICHOTOMOUS.getMetrics() );
             }
         }
 
@@ -645,11 +582,11 @@ public final class DataFactory
     }
 
     /**
-     * Returns valid metrics for {@link MetricInputGroup#SINGLE_VALUED_TIME_SERIES}
+     * Returns valid metrics for {@link SampleDataGroup#SINGLE_VALUED_TIME_SERIES}
      * 
      * @param projectConfig the project configuration
      * @param metricsConfig the metrics configuration
-     * @return the valid metrics for {@link MetricInputGroup#SINGLE_VALUED_TIME_SERIES}
+     * @return the valid metrics for {@link SampleDataGroup#SINGLE_VALUED_TIME_SERIES}
      * @throws NullPointerException if the input is null
      */
 
@@ -663,7 +600,7 @@ public final class DataFactory
         //Add time-series metrics if required
         if ( !metricsConfig.getTimeSeriesMetric().isEmpty() )
         {
-            returnMe.addAll( MetricInputGroup.SINGLE_VALUED_TIME_SERIES.getMetrics() );
+            returnMe.addAll( SampleDataGroup.SINGLE_VALUED_TIME_SERIES.getMetrics() );
         }
 
         return removeMetricsDisallowedByOtherConfig( projectConfig, returnMe );
@@ -692,8 +629,8 @@ public final class DataFactory
         PoolingWindowConfig windows = projectConfig.getPair().getIssuedDatesPoolingWindow();
         if ( Objects.nonNull( windows ) )
         {
-            returnMe.removeIf( a -> ! ( a.isInGroup( MetricOutputGroup.DOUBLE_SCORE )
-                                        || a.isInGroup( MetricOutputGroup.DURATION_SCORE ) ) );
+            returnMe.removeIf( a -> ! ( a.isInGroup( StatisticGroup.DOUBLE_SCORE )
+                                        || a.isInGroup( StatisticGroup.DURATION_SCORE ) ) );
         }
 
         //Remove CRPSS if no baseline is available
@@ -736,104 +673,6 @@ public final class DataFactory
                                             || ( Objects.isNull( testType.getType() ) && type == defaultType ) );
     }
 
-    /**
-     * Builds the mapping between the {@link MetricConstants} and the {@link MetricConfigName} 
-     */
-
-    private static void buildMetricConfigNameMap()
-    {
-        //Lazy population
-        if ( METRIC_CONFIG_NAME_MAP.isEmpty() )
-        {
-            //Match on enumerated name
-            for ( MetricConfigName nextConfig : MetricConfigName.values() )
-            {
-                for ( MetricConstants nextMetric : MetricConstants.values() )
-                {
-                    if ( nextConfig.name().equals( nextMetric.name() ) )
-                    {
-                        METRIC_CONFIG_NAME_MAP.put( nextConfig, nextMetric );
-                        break;
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * Builds the mapping between the {@link MetricConstants} and the {@link TimeSeriesMetricConfigName}.
-     */
-
-    private static void buildTimeSeriesMetricConfigNameMap()
-    {
-        //Lazy population
-        if ( TIME_SERIES_METRIC_CONFIG_NAME_MAP.isEmpty() )
-        {
-            //Match on name
-            for ( TimeSeriesMetricConfigName nextConfig : TimeSeriesMetricConfigName.values() )
-            {
-                for ( MetricConstants nextMetric : MetricConstants.values() )
-                {
-                    if ( nextConfig.name().equals( nextMetric.name() ) )
-                    {
-                        TIME_SERIES_METRIC_CONFIG_NAME_MAP.put( nextConfig, nextMetric );
-                        break;
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * Builds the mapping between the {@link ThresholdsByMetric.ThresholdDataType} and the {@link ThresholdDataType}. 
-     */
-
-    private static void buildThresholdDataTypeMap()
-    {
-        // Lazy population
-        if ( THRESHOLD_APPLICATION_TYPE_MAP.isEmpty() )
-        {
-            // Iterate the external types
-            for ( ThresholdDataType nextExternalType : ThresholdDataType.values() )
-            {
-                // Iterate the internal types
-                for ( ThresholdConstants.ThresholdDataType nextInternalType : ThresholdConstants.ThresholdDataType.values() )
-                {
-                    if ( nextExternalType.name().equals( nextInternalType.name() ) )
-                    {
-                        THRESHOLD_APPLICATION_TYPE_MAP.put( nextExternalType, nextInternalType );
-                        break;
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * Builds the mapping between the {@link ThresholdConstants.ThresholdGroup} and the {@link ThresholdType}.
-     */
-
-    private static void buildThresholdTypeMap()
-    {
-        // Lazy population
-        if ( THRESHOLD_TYPE_MAP.isEmpty() )
-        {
-            // Iterate the external types
-            for ( ThresholdType nextExternalType : ThresholdType.values() )
-            {
-                // Iterate the internal types
-                for ( ThresholdConstants.ThresholdGroup nextInternalType : ThresholdConstants.ThresholdGroup.values() )
-                {
-                    if ( nextExternalType.name().equals( nextInternalType.name() ) )
-                    {
-                        THRESHOLD_TYPE_MAP.put( nextExternalType, nextInternalType );
-                        break;
-                    }
-                }
-            }
-        }
-    }
-    
     /**
      * Prevent construction.
      */
