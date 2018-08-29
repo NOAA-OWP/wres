@@ -1,7 +1,6 @@
 package wres.io.retrieval;
 
 import java.io.IOException;
-import java.sql.SQLException;
 import java.util.Iterator;
 import java.util.concurrent.Future;
 
@@ -9,7 +8,7 @@ import wres.config.generated.Feature;
 import wres.datamodel.sampledata.SampleData;
 import wres.io.config.ConfigHelper;
 import wres.io.data.details.ProjectDetails;
-import wres.util.CalculationException;
+import wres.io.writing.pair.SharedWriterManager;
 import wres.util.NotImplementedException;
 
 /**
@@ -17,16 +16,18 @@ import wres.util.NotImplementedException;
  */
 public class InputGenerator implements Iterable<Future<SampleData<?>>>
 {
+    private final Feature feature;
+    private final ProjectDetails projectDetails;
+    private final SharedWriterManager sharedWriterManager;
 
     public InputGenerator( Feature feature,
-                           ProjectDetails projectDetails )
+                           ProjectDetails projectDetails,
+                           SharedWriterManager sharedWriterManager )
     {
         this.feature = feature;
         this.projectDetails = projectDetails;
+        this.sharedWriterManager = sharedWriterManager;
     }
-
-    private final Feature feature;
-    private final ProjectDetails projectDetails;
 
     @Override
     public Iterator<Future<SampleData<?>>> iterator()
@@ -38,19 +39,19 @@ public class InputGenerator implements Iterable<Future<SampleData<?>>>
             {
                 case ROLLING:
                     iterator = new PoolingMetricInputIterator( this.feature,
-                                                               this.projectDetails );
+                                                               this.projectDetails,
+                                                               this.sharedWriterManager );
                     break;
                 // TODO: Merge back to back and rolling logic
                 case BACK_TO_BACK:
                     iterator =  new BackToBackMetricInputIterator( this.feature,
-                                                                   this.projectDetails );
+                                                                   this.projectDetails,
+                                                                   this.sharedWriterManager );
                     break;
                 case TIME_SERIES:
                     iterator = new TimeSeriesMetricInputIterator( this.feature,
-                                                                  this.projectDetails );
-                    break;
-                case BY_TIMESERIES:
-                    iterator = new ByForecastMetricInputIterator( this.feature, this.projectDetails );
+                                                                  this.projectDetails,
+                                                                  this.sharedWriterManager );
                     break;
                 default:
                     throw new NotImplementedException( "The aggregation mode of '" +

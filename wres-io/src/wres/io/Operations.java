@@ -55,8 +55,8 @@ import wres.io.retrieval.InputGenerator;
 import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
 import wres.io.utilities.ScriptBuilder;
-import wres.io.writing.PairWriter;
 import wres.io.writing.netcdf.NetCDFCopier;
+import wres.io.writing.pair.SharedWriterManager;
 import wres.system.ProgressMonitor;
 import wres.util.CalculationException;
 
@@ -505,9 +505,11 @@ public final class Operations {
 
 
     public static InputGenerator getInputs( ProjectDetails projectDetails,
-                                            Feature feature )
+                                            Feature feature,
+                                            SharedWriterManager sharedWriterManager )
     {
-        return new InputGenerator( feature, projectDetails );
+        return new InputGenerator( feature, projectDetails,
+                                   sharedWriterManager );
     }
 
     /**
@@ -533,7 +535,6 @@ public final class Operations {
 
         Executor.complete();
         Database.shutdown();
-        PairWriter.flushAndCloseAllWriters();
     }
 
     /**
@@ -572,7 +573,6 @@ public final class Operations {
                          executorTasks.size(),
                          databaseTasks.size() );
         }
-        PairWriter.flushAndCloseAllWriters();
     }
 
     /**

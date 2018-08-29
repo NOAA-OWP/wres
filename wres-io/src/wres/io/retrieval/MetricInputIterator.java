@@ -2,7 +2,6 @@ package wres.io.retrieval;
 
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
@@ -20,6 +19,7 @@ import wres.io.data.details.ProjectDetails;
 import wres.io.retrieval.left.LeftHandCache;
 import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
+import wres.io.writing.pair.SharedWriterManager;
 import wres.system.ProgressMonitor;
 import wres.util.CalculationException;
 
@@ -39,6 +39,7 @@ abstract class MetricInputIterator implements Iterator<Future<SampleData<?>>>
     private int poolingStep;
     private Integer finalPoolingStep;
     private int iterationCount = 0;
+    private SharedWriterManager sharedWriterManager;
 
     protected int getWindowNumber()
     {
@@ -136,13 +137,15 @@ abstract class MetricInputIterator implements Iterator<Future<SampleData<?>>>
         return this.climatology;
     }
 
-    MetricInputIterator( final Feature feature, final ProjectDetails projectDetails )
+    MetricInputIterator( Feature feature,
+                         ProjectDetails projectDetails,
+                         SharedWriterManager sharedWriterManager )
             throws IOException
     {
 
         this.projectDetails = projectDetails;
-
         this.feature = feature;
+        this.sharedWriterManager = sharedWriterManager;
 
         try
         {
@@ -271,6 +274,11 @@ abstract class MetricInputIterator implements Iterator<Future<SampleData<?>>>
         return nextInput;
     }
 
+    protected SharedWriterManager getSharedWriterManager()
+    {
+        return this.sharedWriterManager;
+    }
+
     /**
      * Creates the object that will retrieve the data in another thread
      * @return A callable object that will create a Metric Input
@@ -280,7 +288,8 @@ abstract class MetricInputIterator implements Iterator<Future<SampleData<?>>>
     {
         InputRetriever retriever = new InputRetriever(
                 this.getProjectDetails(),
-                this.leftCache::getLeftValues
+                this.leftCache::getLeftValues,
+                this.sharedWriterManager
         );
         retriever.setFeature(feature);
         retriever.setClimatology( this.getClimatology() );

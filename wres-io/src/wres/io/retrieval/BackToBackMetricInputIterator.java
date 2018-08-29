@@ -1,7 +1,6 @@
 package wres.io.retrieval;
 
 import java.io.IOException;
-import java.sql.SQLException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,7 +8,7 @@ import org.slf4j.LoggerFactory;
 import wres.config.generated.Feature;
 import wres.io.config.ConfigHelper;
 import wres.io.data.details.ProjectDetails;
-import wres.io.utilities.NoDataException;
+import wres.io.writing.pair.SharedWriterManager;
 import wres.util.CalculationException;
 
 final class BackToBackMetricInputIterator extends MetricInputIterator
@@ -24,10 +23,11 @@ final class BackToBackMetricInputIterator extends MetricInputIterator
     }
 
     BackToBackMetricInputIterator( Feature feature,
-                                   ProjectDetails projectDetails )
+                                   ProjectDetails projectDetails,
+                                   SharedWriterManager sharedWriterManager )
             throws IOException
     {
-        super( feature, projectDetails );
+        super( feature, projectDetails, sharedWriterManager );
     }
 
     @Override
