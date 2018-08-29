@@ -18,6 +18,7 @@ import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.details.ProjectDetails;
 import wres.io.utilities.ScriptBuilder;
+import wres.io.writing.pair.SharedWriterManager;
 import wres.util.CalculationException;
 
 public class ByForecastMetricInputIterator extends MetricInputIterator
@@ -25,10 +26,11 @@ public class ByForecastMetricInputIterator extends MetricInputIterator
     private static final Logger LOGGER = LoggerFactory.getLogger( ByForecastMetricInputIterator.class );
 
     ByForecastMetricInputIterator( Feature feature,
-                                   ProjectDetails projectDetails )
+                                   ProjectDetails projectDetails,
+                                   SharedWriterManager sharedWriterManager )
             throws IOException
     {
-        super( feature, projectDetails );
+        super( feature, projectDetails, sharedWriterManager );
     }
 
     @Override
@@ -163,7 +165,8 @@ public class ByForecastMetricInputIterator extends MetricInputIterator
         Retriever retriever = new TimeSeriesRetriever(
                 this.getProjectDetails(),
                 this.leftCache::getLeftValues,
-                this.timeSeries.get(this.getWindowNumber())
+                this.timeSeries.get(this.getWindowNumber()),
+                this.getSharedWriterManager()
         );
         retriever.setFeature( this.getFeature() );
         retriever.setClimatology( this.getClimatology() );

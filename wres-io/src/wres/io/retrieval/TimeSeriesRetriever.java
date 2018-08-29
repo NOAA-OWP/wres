@@ -31,7 +31,6 @@ import wres.datamodel.sampledata.pairs.EnsemblePair;
 import wres.datamodel.sampledata.pairs.SingleValuedPair;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs.TimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.time.Event;
-import wres.io.concurrency.Executor;
 import wres.io.config.ConfigHelper;
 import wres.io.data.details.ProjectDetails;
 import wres.io.data.details.TimeSeries;
@@ -40,7 +39,8 @@ import wres.io.utilities.DataProvider;
 import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
 import wres.io.utilities.ScriptBuilder;
-import wres.io.writing.PairWriter;
+import wres.io.writing.pair.PairWriter;
+import wres.io.writing.pair.SharedWriterManager;
 import wres.util.TimeHelper;
 
 // TODO: Come up with handling for gridded data
@@ -51,15 +51,19 @@ public class TimeSeriesRetriever extends Retriever
     TimeSeriesRetriever (
             final ProjectDetails projectDetails,
             final CacheRetriever getLeftValues,
-            final int timeSeriesID
+            final int timeSeriesID,
+            SharedWriterManager sharedWriterManager
     )
     {
-        super(projectDetails, getLeftValues);
+        super( projectDetails, getLeftValues, sharedWriterManager );
         this.timeSeriesID = timeSeriesID;
     }
 
     @Override
-    void writePair( Instant date, ForecastedPair pair, DataSourceConfig dataSourceConfig )
+    void writePair( SharedWriterManager sharedWriterManager,
+                    Instant date,
+                    ForecastedPair pair,
+                    DataSourceConfig dataSourceConfig )
     {
         List<DestinationConfig> destinationConfigs = this.getProjectDetails().getPairDestinations();
 
@@ -75,7 +79,7 @@ public class TimeSeriesRetriever extends Retriever
                     .setLead( (int)pair.getLeadHours() )
                     .build();
 
-            Executor.submit( writer );
+            sharedWriterManager.accept( writer );
         }
     }
 
@@ -257,7 +261,10 @@ public class TimeSeriesRetriever extends Retriever
                     ForecastedPair pair = new ForecastedPair( lead,
                                                               condensedIngestedValue.validTime,
                                                               ensemblePair);
-                    this.writePair( pair.getValidTime(), pair, this.getProjectDetails().getRight() );
+                    this.writePair( this.getSharedWriterManager(),
+                                    pair.getValidTime(),
+                                    pair,
+                                    this.getProjectDetails().getRight() );
                     this.addPrimaryPair( pair );
                 }
             }

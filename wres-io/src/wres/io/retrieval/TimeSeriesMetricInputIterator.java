@@ -13,6 +13,7 @@ import wres.io.concurrency.Executor;
 import wres.io.config.ConfigHelper;
 import wres.io.data.details.ProjectDetails;
 import wres.io.utilities.ScriptBuilder;
+import wres.io.writing.pair.SharedWriterManager;
 import wres.util.CalculationException;
 
 public class TimeSeriesMetricInputIterator extends MetricInputIterator
@@ -21,10 +22,11 @@ public class TimeSeriesMetricInputIterator extends MetricInputIterator
             LoggerFactory.getLogger(TimeSeriesMetricInputIterator.class);
 
     TimeSeriesMetricInputIterator( Feature feature,
-                                   ProjectDetails projectDetails )
+                                   ProjectDetails projectDetails,
+                                   SharedWriterManager sharedWriterManager )
             throws IOException
     {
-        super( feature, projectDetails );
+        super( feature, projectDetails, sharedWriterManager );
     }
 
     @Override

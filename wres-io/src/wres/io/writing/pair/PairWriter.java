@@ -1,46 +1,37 @@
-package wres.io.writing;
+package wres.io.writing.pair;
 
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.sql.SQLException;
 import java.text.DecimalFormat;
 import java.time.Instant;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map.Entry;
 import java.util.StringJoiner;
+import java.util.function.Supplier;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.Feature;
 import wres.datamodel.sampledata.pairs.EnsemblePair;
-import wres.io.concurrency.WRESCallable;
+import wres.io.concurrency.WRESRunnableException;
 import wres.io.config.ConfigHelper;
 import wres.io.data.details.ProjectDetails;
 import wres.util.CalculationException;
 
-public class PairWriter extends WRESCallable<Boolean>
+/**
+ * Returns a string to be written to a pairs file.
+ */
+public class PairWriter implements Supplier<Pair<Path,String>>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( PairWriter.class );
-    private static final Object PAIR_OUTPUT_LOCK = new Object();
-    private static final String OUTPUT_HEADER = "Feature,Date,Lead,Window,Left,Right";
+    private static final String NEWLINE = System.lineSeparator();
     private static final String DELIMITER = ",";
     private static final String PAIR_FILENAME = "/pairs.csv";
     private static final String BASELINE_FILENAME = "/baseline_pairs.csv";
-
-    /**
-     * Stores a map of open writers so we don't have to constantly reopen the files.
-     */
-    private static final HashMap<String, BufferedWriter> PATH_NAME_TO_WRITER_MAP = new HashMap<>();
-
-    private static boolean headerHasBeenWritten;
-    private static boolean baselineHeaderHasBeenWritten;
 
     private final DestinationConfig destinationConfig;
     private final Instant date;
@@ -252,11 +243,16 @@ public class PairWriter extends WRESCallable<Boolean>
                 errorJoiner.add("No pair was added to record.");
             }
 
-            if ( this.projectDetails.getPairingMode() == ProjectDetails.PairingMode.ROLLING &&
-                 this.poolingStep == Integer.MIN_VALUE)
+            if (this.poolingStep == Integer.MIN_VALUE)
             {
                 errorCount += 1;
                 errorJoiner.add("No pooling step was configured.");
+            }
+
+            if (this.projectDetails == null)
+            {
+                errorCount += 1;
+                errorJoiner.add("No details about the project were passed.");
             }
 
             if (errorCount > 0)
@@ -279,14 +275,14 @@ public class PairWriter extends WRESCallable<Boolean>
     }
 
     private PairWriter( DestinationConfig destinationConfig,
-                       Instant date,
-                       Feature feature,
-                       int windowNum,
-                       EnsemblePair pair,
-                       boolean isBaseline,
-                       int poolingStep,
-                       ProjectDetails projectDetails,
-                       int lead)
+                        Instant date,
+                        Feature feature,
+                        int windowNum,
+                        EnsemblePair pair,
+                        boolean isBaseline,
+                        int poolingStep,
+                        ProjectDetails projectDetails,
+                        int lead )
     {
         this.destinationConfig = destinationConfig;
         this.date = date;
@@ -300,12 +296,24 @@ public class PairWriter extends WRESCallable<Boolean>
     }
 
     @Override
-    protected Boolean execute() throws IOException
+    public Pair<Path,String> get()
     {
         File directoryFromDestinationConfig =
                 ConfigHelper.getDirectoryFromDestinationConfig( this.getDestinationConfig() );
 
-        String actualFileDestination = directoryFromDestinationConfig.getCanonicalPath();
+        String actualFileDestination = directoryFromDestinationConfig.toString();
+
+        try
+        {
+            actualFileDestination =
+                    directoryFromDestinationConfig.getCanonicalPath();
+        }
+        catch ( IOException ioe )
+        {
+            // Not critical to get the full path, keep the original and keep going.
+            LOGGER.warn( "Could not get canonical path for {}",
+                         directoryFromDestinationConfig );
+        }
 
         if (this.isBaseline)
         {
@@ -316,92 +324,39 @@ public class PairWriter extends WRESCallable<Boolean>
             actualFileDestination += PAIR_FILENAME;
         }
 
-        synchronized ( PAIR_OUTPUT_LOCK )
+        Path destination = Paths.get( actualFileDestination );
+
+        StringJoiner line = new StringJoiner( DELIMITER );
+
+        line.add( ConfigHelper.getFeatureDescription( this.getFeature() ) );
+
+        // Avoid changing date format to iso format because benchmarks
+        line.add( this.date.toString()
+                           .replace( "T", " " )
+                           .replace( "Z", "" ) );
+
+        // But above could be as simple as this (and be more precise):
+        //line.add( this.date.toString() );
+
+        line.add(String.valueOf(this.lead));
+
+        try
         {
-            if ( (!this.isBaseline && !PairWriter.headerHasBeenWritten) ||
-                 (this.isBaseline && !PairWriter.baselineHeaderHasBeenWritten) )
-            {
-                Files.deleteIfExists( Paths.get( actualFileDestination) );
-            }
-
-            try
-            {
-                BufferedWriter writer = obtainWriter( actualFileDestination );
-                if ( this.isBaseline && !PairWriter.baselineHeaderHasBeenWritten)
-                {
-                    writer.write( OUTPUT_HEADER );
-                    writer.newLine();
-
-                    PairWriter.baselineHeaderHasBeenWritten = true;
-                }
-                else if ( !this.isBaseline && !PairWriter.headerHasBeenWritten )
-                {
-                    writer.write( OUTPUT_HEADER );
-                    writer.newLine();
-
-                    PairWriter.headerHasBeenWritten = true;
-                }
-
-                StringJoiner line = new StringJoiner( DELIMITER );
-
-                line.add( ConfigHelper.getFeatureDescription( this.getFeature() ) );
-
-                // Avoid changing date format to iso format because benchmarks
-                line.add( this.date.toString()
-                                   .replace( "T", " " )
-                                   .replace( "Z", "" ) );
-
-                // But above could be as simple as this (and be more precise):
-                //line.add( this.date.toString() );
-
-                line.add(String.valueOf(this.lead));
-
-                line.add( this.getWindow() );
-
-                line.add(this.getLeftValue());
-
-                line.add(this.getRightValues());
-
-                writer.write( line.toString() );
-                writer.newLine();
-            }
-            catch ( CalculationException e )
-            {
-                 throw new IOException( "Pairs could not be written for " +
-                                        ConfigHelper.getFeatureDescription( this.feature ),
-                                        e );
-            }
+            line.add( this.getWindow() );
+        }
+        catch ( CalculationException e )
+        {
+            throw new WRESRunnableException( "Pairs could not be gotten for " +
+                                             ConfigHelper.getFeatureDescription( this.feature ),
+                                             e );
         }
 
-        return true;
-    }
+        line.add(this.getLeftValue());
+        line.add(this.getRightValues());
 
-    @Override
-    protected void validate()
-    {
-        if ( this.getDestinationConfig() == null )
-        {
-            throw new IllegalArgumentException(
-                    "The PairWriter does not have a destination to write to." );
-        }
-        else if ( this.getFeature() == null )
-        {
-            throw new IllegalArgumentException(
-                    "No feature was specified for where pairs belong to." );
-        }
-        else if ( this.getDate() == null )
-        {
-            throw new IllegalArgumentException(
-                    "No date was specified for when the paired data occurred." );
-        }
+        String toWrite = line.toString();
 
-        ConfigHelper.getDirectoryFromDestinationConfig( this.getDestinationConfig() );
-    }
-
-    @Override
-    protected Logger getLogger()
-    {
-        return LOGGER;
+        return Pair.of( destination, toWrite );
     }
 
     private DestinationConfig getDestinationConfig()
@@ -510,43 +465,5 @@ public class PairWriter extends WRESCallable<Boolean>
         return this.formatter;
     }
 
-    /**
-     * @param absPathName
-     * @return Either an already open writer or creates a new one.
-     * @throws IOException
-     */
-    private static BufferedWriter obtainWriter(String absPathName) throws IOException
-    {
-        if (PATH_NAME_TO_WRITER_MAP.containsKey( absPathName ))
-        {
-            return PATH_NAME_TO_WRITER_MAP.get( absPathName );
-        }
-        FileWriter fileWriter = new FileWriter( absPathName,
-                                                true );
-        BufferedWriter bufferedWriter = new BufferedWriter( fileWriter );
-        PATH_NAME_TO_WRITER_MAP.put(absPathName, bufferedWriter);
-        return bufferedWriter;
-    }
 
-    /**
-     * Close all of the writers in the map.
-     */
-    public static void flushAndCloseAllWriters()
-    {
-        for (Entry<String, BufferedWriter> entry : PATH_NAME_TO_WRITER_MAP.entrySet())
-        {
-            try
-            {
-                entry.getValue().flush();
-                entry.getValue().close();
-            }
-            catch ( IOException e )
-            {
-                // Failure to close should not affect primary outputs, still
-                // should also attempt to close other writers that may succeed.
-                LOGGER.warn( "Failed to flush and close pairs file, " + entry.getKey() + ".", e);
-            }
-        }
-        PATH_NAME_TO_WRITER_MAP.clear();
-    }
 }
