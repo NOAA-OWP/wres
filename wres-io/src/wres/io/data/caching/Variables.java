@@ -318,6 +318,7 @@ public final class Variables extends Cache<VariableDetails, String>
 		return MAX_DETAILS;
 	}
 
+	// TODO: Return Variables, don't implicitly set
 	private static void initialize()
     {
         try

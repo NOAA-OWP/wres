@@ -193,6 +193,7 @@ public class ScriptBuilder
      */
     public void execute() throws SQLException
     {
+        // TODO: Add support for high priority connections
         if (this.arguments.isEmpty())
         {
             Database.execute( this.toString() );
@@ -211,6 +212,7 @@ public class ScriptBuilder
      */
     public void executeInTransaction() throws SQLException
     {
+        // TODO: Add support for high priority connections
         Database.execute( this.toString(), true );
     }
 
@@ -220,6 +222,7 @@ public class ScriptBuilder
      */
     public Future issue()
     {
+        // TODO: Add support for high priority connections
         SQLExecutor executor = new SQLExecutor( this.toString() );
         return Database.execute( executor );
     }
@@ -230,6 +233,7 @@ public class ScriptBuilder
      */
     public Future issueTransaction()
     {
+        // TODO: Add support for high priority connections
         SQLExecutor executor = new SQLExecutor( this.toString(), true );
         return Database.execute( executor );
     }
@@ -266,6 +270,7 @@ public class ScriptBuilder
      */
     public Future issue(List<Object[]> parameters)
     {
+        // SQLExecutor needs support for high priority connections, although it isn't being used
         SQLExecutor executor = new SQLExecutor( this.toString() );
         executor.addBatchArguments( parameters );
         return Database.execute( executor );
@@ -280,7 +285,7 @@ public class ScriptBuilder
      */
     public <V> V retrieve(String label) throws SQLException
     {
-        return Database.getResult( this.toString(), label );
+        return Database.getResult( this.toString(), label, this.isHighPriority );
     }
 
     /**
@@ -326,6 +331,7 @@ public class ScriptBuilder
      */
     public <V> Future<V> submit(String label)
     {
+        // ValueRetriever needs support for high priority connections
         ValueRetriever<V> retriever = new ValueRetriever<>( this.toString(), label );
         return Database.submit( retriever );
     }

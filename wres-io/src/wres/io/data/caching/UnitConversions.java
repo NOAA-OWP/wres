@@ -96,6 +96,7 @@ public final class UnitConversions
 
     /**
      * Loads all unit conversions for later use
+     * TODO: return a UnitConversions, don't implicitly set it
      */
     public static void initialize()
     {

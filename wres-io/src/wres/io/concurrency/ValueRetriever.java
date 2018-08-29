@@ -16,6 +16,7 @@ public class ValueRetriever<V> extends WRESCallable<V>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(ValueRetriever.class);
 
+    // TODO: Add support for high priority connections
 	/**
 	 * Creates the thread with the passed in SQL script
 	 * @param script The script to execute

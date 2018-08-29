@@ -622,11 +622,8 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
                 {
                     dateTime = dateTime.plus(1L, ChronoUnit.HOURS);
                 }
-                this.endDate = TimeHelper.convertDateToString( dateTime );
 
-                // The space inbetween the date and time needs to be split with a T
-                this.endDate = this.endDate.replaceAll( " ", "T" );
-                this.endDate += "Z";
+                this.endDate = TimeHelper.convertDateToString( dateTime );;
             }
         }
         return this.endDate;

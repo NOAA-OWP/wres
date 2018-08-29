@@ -164,6 +164,7 @@ public class USGSParameters
         }
     }
 
+    // TODO: Return USGSParameters, don't implicitly set
     private static void initialize() throws SQLException
     {
         ScriptBuilder script = new ScriptBuilder(  );

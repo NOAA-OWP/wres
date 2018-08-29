@@ -345,12 +345,14 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
 		return MAX_DETAILS;
 	}
 
+	// TODO: Return a DataSources, not implicitly add one
 	private static void initialize()
     {
         Connection connection = null;
 
         try
         {
+            // TODO: Convert to using a ScriptBuilder
             connection = Database.getHighPriorityConnection();
             String loadScript = "SELECT source_id, path, CAST(output_time AS TEXT) AS output_time, hash, is_point_data" + System.lineSeparator();
             loadScript += "FROM wres.Source" + System.lineSeparator();
