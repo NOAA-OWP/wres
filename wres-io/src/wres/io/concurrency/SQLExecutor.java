@@ -17,6 +17,7 @@ import wres.io.utilities.Database;
  */
 public class SQLExecutor extends WRESRunnable
 {
+    // TODO: Add support for high priority connections
     private static final Logger LOGGER = LoggerFactory.getLogger(SQLExecutor.class);
 
 	/**

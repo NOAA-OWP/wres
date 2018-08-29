@@ -99,6 +99,7 @@ public class MeasurementUnits extends Cache<MeasurementDetails, String>
 	
 	/**
 	 * Loads all pre-existing data into the instance cache
+     * TODO: Return MeasurementUnits, don't implicitly set it
 	 */
     private static synchronized void initialize()
 	{

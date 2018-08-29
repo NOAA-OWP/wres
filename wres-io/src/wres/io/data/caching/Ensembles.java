@@ -194,6 +194,8 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
 	
 	/**
 	 * Loads all pre-existing Ensembles into the instanced cache
+     *
+     * TODO: Return Ensembles, not set implicitly
 	 */
     private static synchronized void initialize()
 	{

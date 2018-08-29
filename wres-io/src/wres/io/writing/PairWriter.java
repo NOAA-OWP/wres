@@ -259,12 +259,6 @@ public class PairWriter extends WRESCallable<Boolean>
                 errorJoiner.add("No pooling step was configured.");
             }
 
-            if (this.projectDetails == null)
-            {
-                errorCount += 1;
-                errorJoiner.add("No details about the project were passed.");
-            }
-
             if (errorCount > 0)
             {
                 throw new IllegalArgumentException( "A PairWriter could not be "

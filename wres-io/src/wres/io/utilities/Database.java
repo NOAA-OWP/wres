@@ -848,24 +848,57 @@ public final class Database {
     public static <T> T getResult( final String query, final String label )
             throws SQLException
 	{
-	    Connection connection = null;
-	    T result;
+	    return Database.getResult( query, label, false );
+	}
 
-	    try
+    /**
+     * Returns the first value in the labeled column from the query
+     * @param query The query used to select the value
+     * @param label The name of the column containing the data to retrieve
+     * @param isHighPriority Whether or not to use a high priority connection
+     * @param <T> The type of data that should exist within the indicated column
+     * @return The value in the indicated column from the first row of data.
+     * Null is returned if no data was found.
+     * @throws SQLException Thrown if communication with the database was
+     * unsuccessful.
+     */
+    @SuppressWarnings("unchecked")
+    static <T> T getResult( final String query, final String label, final boolean isHighPriority )
+            throws SQLException
+    {
+        Connection connection = null;
+        T result;
+
+        try
         {
-            connection = Database.getConnection();
+            if (isHighPriority)
+            {
+                connection = Database.getHighPriorityConnection();
+            }
+            else
+            {
+                connection = Database.getConnection();
+            }
+
             result = Database.getResult( connection, query, label );
         }
         finally
         {
             if (connection != null)
             {
-                Database.returnConnection( connection );
+                if (isHighPriority)
+                {
+                    Database.returnHighPriorityConnection( connection );
+                }
+                else
+                {
+                    Database.returnConnection( connection );
+                }
             }
         }
 
         return result;
-	}
+    }
 
 
 	@SuppressWarnings("unchecked")

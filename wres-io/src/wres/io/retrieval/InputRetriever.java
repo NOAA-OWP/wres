@@ -680,35 +680,36 @@ class InputRetriever extends Retriever //WRESCallable<MetricInput<?>>
 
         try
         {
+            int minimumLead;
+            try
+            {
+                minimumLead =
+                        this.getProjectDetails().getLeadRange( this.getFeature(), this.getLeadIteration() ).getLeft();
+            }
+            catch ( CalculationException e )
+            {
+                throw new RetrievalFailedException(
+                        "Values could not be retrieved because the minimum lead"
+                        + "used to collect them could not be calculated.", e );
+            }
+
+
+            int period = this.getCommonScale().getPeriod();
+            int frequency = this.getCommonScale().getFrequency();
+
+            period = ( int ) TimeHelper.unitsToLeadUnits(
+                    this.getCommonScale().getUnit().value(),
+                    period
+            );
+
+            frequency = ( int ) TimeHelper.unitsToLeadUnits(
+                    this.getCommonScale().getUnit().value(),
+                    frequency
+            );
+
             connection = Database.getConnection();
             try (DataProvider data = Database.getResults(connection, loadScript))
             {
-                int minimumLead;
-                try
-                {
-                    minimumLead =
-                            this.getProjectDetails().getLeadRange( this.getFeature(), this.getLeadIteration() ).getLeft();
-                }
-                catch ( CalculationException e )
-                {
-                    throw new RetrievalFailedException(
-                            "Values could not be retrieved because the minimum lead"
-                            + "used to collect them could not be calculated.", e );
-                }
-
-
-                int period = this.getCommonScale().getPeriod();
-                int frequency = this.getCommonScale().getFrequency();
-
-                period = ( int ) TimeHelper.unitsToLeadUnits(
-                        this.getCommonScale().getUnit().value(),
-                        period
-                );
-
-                frequency = ( int ) TimeHelper.unitsToLeadUnits(
-                        this.getCommonScale().getUnit().value(),
-                        frequency
-                );
 
                 while ( data.next() )
                 {
