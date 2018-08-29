@@ -106,7 +106,8 @@ public final class TimeScale
     }
 
     /**
-     * Constructs a {@link TimeScale} from a {@link TimeScaleConfig}.
+     * Constructs a {@link TimeScale} from a {@link TimeScaleConfig}. If the {@link TimeScaleConfig#getFunction()}
+     * is null, the {@link TimeScaleFunction} is set to {@link TimeScaleFunction#UNKNOWN}.
      * 
      * @param config the configuration
      * @return a time scale
@@ -123,7 +124,9 @@ public final class TimeScale
 
         TimeScaleFunction function = null;
 
-        if ( Objects.isNull( config.getFunction() ) )
+        // TODO: NONE will be removed by #48232
+        if ( Objects.isNull( config.getFunction() ) ||
+             config.getFunction() == wres.config.generated.TimeScaleFunction.NONE )
         {
             function = TimeScaleFunction.UNKNOWN;
         }
