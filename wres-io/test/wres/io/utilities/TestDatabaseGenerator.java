@@ -95,16 +95,39 @@ public abstract class TestDatabaseGenerator
         dataSource.setPassword( PASSWORD );
         dataSource.setJdbcUrl(jdbcURL);
 
-        // Create the tables needed for this test
-        try ( Connection con = dataSource.getConnection())
+        DatabaseSchema schema;
+
+        // Mock the function that gets the url to the changelog
+        try
         {
-            DatabaseSchema schema = PowerMockito.spy( new DatabaseSchema(name) );
+            schema = PowerMockito.spy( new DatabaseSchema(name) );
             PowerMockito.doReturn( "../dist/lib/conf/database/db.changelog-master.xml" ).when( schema, "getChangelogURL" );
-            schema.applySchema( con );
         }
         catch ( Exception e )
         {
             throw new SQLException("The function used to find liquibase scripts could not be mocked.", e);
+        }
+
+        // Create the tables needed for this test
+        try (Connection con = dataSource.getConnection())
+        {
+            schema.applySchema( con );
+        }
+        catch(SQLException e)
+        {
+            if (instance.getProcess().isPresent())
+            {
+                if (!instance.getProcess().get().isProcessReady())
+                {
+                    LOGGER.error("The embedded postgres server never actually started.");
+                }
+            }
+            else
+            {
+                LOGGER.error("The postgres instance never actually started.");
+            }
+
+            throw e;
         }
 
         // Because SystemSettings is static, and parses XML in constructor,
