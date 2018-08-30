@@ -30,6 +30,7 @@ import wres.io.utilities.NoDataException;
 import wres.io.writing.SharedWriters;
 import wres.io.writing.SharedWriters.SharedWritersBuilder;
 import wres.io.writing.netcdf.NetcdfOutputWriter;
+import wres.io.writing.pair.SharedWriterManager;
 import wres.system.ProgressMonitor;
 
 /**
@@ -128,6 +129,8 @@ class ProcessorHelper
             sharedWritersBuilder.setNetcdfOutputWriter( NetcdfOutputWriter.of( projectConfig ) );
         }
 
+        SharedWriterManager sharedWriterManager = new SharedWriterManager();
+
         Set<Path> pathsWrittenTo = new HashSet<>();
 
         // Iterate the features, closing any shared writers on completion
@@ -152,7 +155,8 @@ class ProcessorHelper
                                                                                                            resolvedProject,
                                                                                                            projectDetails,
                                                                                                            executors,
-                                                                                                           sharedWriters ),
+                                                                                                           sharedWriters,
+                                                                                                           sharedWriterManager ),
                                                                                      executors.getFeatureExecutor() )
                                                                        .thenAccept( featureReport );
 
@@ -179,10 +183,12 @@ class ProcessorHelper
         finally
         {
             sharedWriters.close();
+            sharedWriterManager.close();
         }
 
         // Find the paths written to by shared writers.
         pathsWrittenTo.addAll( sharedWriters.get() );
+        pathsWrittenTo.addAll( sharedWriterManager.get() );
         return Collections.unmodifiableSet( pathsWrittenTo );
     }
 

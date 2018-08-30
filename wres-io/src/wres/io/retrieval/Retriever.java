@@ -19,9 +19,7 @@ import wres.config.generated.ProjectConfig;
 import wres.config.generated.TimeScaleConfig;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.pairs.EnsemblePair;
-import wres.datamodel.sampledata.pairs.EnsemblePairs;
 import wres.datamodel.sampledata.pairs.SingleValuedPair;
-import wres.datamodel.sampledata.pairs.SingleValuedPairs;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.SampleMetadata;
@@ -29,6 +27,7 @@ import wres.io.concurrency.WRESCallable;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.UnitConversions;
 import wres.io.data.details.ProjectDetails;
+import wres.io.writing.pair.SharedWriterManager;
 import wres.util.CalculationException;
 import wres.util.TimeHelper;
 import wres.util.functional.ExceptionalTriFunction;
@@ -49,11 +48,20 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
     private Boolean shouldThisScale;
     private TimeScaleConfig commonScale;
 
-    Retriever( final ProjectDetails projectDetails,
-               final CacheRetriever getLeftValues)
+    private final SharedWriterManager sharedWriterManager;
+
+    Retriever( ProjectDetails projectDetails,
+               CacheRetriever getLeftValues,
+               SharedWriterManager sharedWriterManager )
     {
         this.projectDetails = projectDetails;
         this.getLeftValues = getLeftValues;
+        this.sharedWriterManager = sharedWriterManager;
+    }
+
+    protected SharedWriterManager getSharedWriterManager()
+    {
+        return this.sharedWriterManager;
     }
 
     /**
@@ -278,7 +286,10 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
                         pair
                 );
 
-                writePair( condensedIngestedValue.validTime, packagedPair, dataSourceConfig );
+                writePair( this.sharedWriterManager,
+                           condensedIngestedValue.validTime,
+                           packagedPair,
+                           dataSourceConfig );
                 pairs.add( packagedPair );
             }
         }
@@ -470,9 +481,10 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
      * @param pair Pair data that will be written
      * @param dataSourceConfig The configuration that led to the creation of the pairs
      */
-    abstract void writePair( Instant date,
-                            ForecastedPair pair,
-                            DataSourceConfig dataSourceConfig );
+    abstract void writePair( SharedWriterManager sharedWriterManager,
+                             Instant date,
+                             ForecastedPair pair,
+                             DataSourceConfig dataSourceConfig );
 
     protected abstract SampleMetadata buildMetadata( final ProjectConfig projectConfig, final boolean isBaseline) throws IOException;
     protected abstract SampleData<?> createInput() throws IOException;
