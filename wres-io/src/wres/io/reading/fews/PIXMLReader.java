@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 import wres.config.ProjectConfigException;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
+import wres.datamodel.metadata.TimeScale;
 import wres.io.concurrency.CopyExecutor;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.DataSources;
@@ -513,6 +514,9 @@ public final class PIXMLReader extends XMLReader
 		String localName;
 		creationDate = null;
 		creationTime = null;
+		this.scalePeriod = null;
+		this.scaleFunction = TimeScale.TimeScaleFunction.UNKNOWN;
+		this.timeStep = null;
 
 		//	Scrape all pertinent information from the header
 		while (reader.hasNext())
@@ -588,6 +592,27 @@ public final class PIXMLReader extends XMLReader
 					}
 					this.forecastDate = PIXMLReader.parseDateTime( reader );
 				}
+				else if ( localName.equalsIgnoreCase( "type" ))
+                {
+                    if (XMLHelper.getXMLText( reader ).equalsIgnoreCase( "accumulative" ))
+                    {
+                        this.scaleFunction = TimeScale.TimeScaleFunction.SUM;
+                    }
+                    else
+                    {
+                        this.scalePeriod = 1;
+                    }
+                    // TODO: Record the type. The options are "accumulative" or "instantaneous"
+                }
+                else if ( localName.equalsIgnoreCase( "timeStep" ))
+                {
+                    String unit = XMLHelper.getAttributeValue( reader, "unit" ) + "s";
+                    unit = unit.toUpperCase();
+
+                    Integer amount = Integer.parseInt( XMLHelper.getAttributeValue( reader, "multiplier" ) );
+
+                    this.timeStep = (int)TimeHelper.unitsToLeadUnits( unit, amount );
+                }
 
 			}
 			reader.next();
@@ -742,6 +767,22 @@ public final class PIXMLReader extends XMLReader
             this.currentTimeSeries =
                     new TimeSeries( this.getSourceID(),
                                     forecastFullDateTime.format( FORMATTER ) );
+
+            this.currentTimeSeries.setTimeStep( this.timeStep );
+            this.currentTimeSeries.setScaleFunction( this.scaleFunction );
+
+            if (this.scalePeriod != null)
+            {
+                this.currentTimeSeries.setScalePeriod( this.scalePeriod );
+            }
+            else if ( this.scaleFunction == TimeScale.TimeScaleFunction.SUM)
+            {
+                this.currentTimeSeries.setScalePeriod( this.timeStep );
+            }
+            else
+            {
+                this.currentTimeSeries.setScalePeriod( 1 );
+            }
 
             LOGGER.trace( "Created time series {} in reader of {} because currentTimeSeries was null.",
                           this.currentTimeSeries,
@@ -1040,6 +1081,10 @@ public final class PIXMLReader extends XMLReader
 	 * The name of the variable whose values are currently being parsed 
 	 */
 	private String currentVariableName = null;
+
+	private Integer timeStep;
+	private Integer scalePeriod;
+	private TimeScale.TimeScaleFunction scaleFunction;
 
     /**
      * The hash code for the source file

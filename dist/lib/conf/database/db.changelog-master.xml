@@ -34,4 +34,5 @@
     <include file="keys_v1.0.xml" relativeToChangelogFile="true" />
     <include file="add_measurementunit_kcfs.xml" relativeToChangelogFile="true" />
     <include file="wres.source_v2.xml" relativeToChangelogFile="true" />
+    <include file="wres.timeseries_v2.xml" relativeToChangelogFile="true" />
 </databaseChangeLog>
