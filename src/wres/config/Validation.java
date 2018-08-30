@@ -46,7 +46,6 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.StatisticGroup;
 import wres.engine.statistics.metric.config.MetricConfigHelper;
 import wres.io.config.ConfigHelper;
-import wres.system.SystemSettings;
 import wres.util.Collections;
 import wres.util.Strings;
 
@@ -1184,7 +1183,7 @@ public class Validation
         TimeScaleFunction desired = pairConfig.getDesiredTimeScale().getFunction();
         Inputs inputConfig = projectConfigPlus.getProjectConfig().getInputs();
         // Time aggregation is a sum
-        if ( desired.equals( TimeScaleFunction.SUM ) )
+        if ( desired.equals( TimeScaleFunction.TOTAL ) )
         {
             returnMe = isDesiredTimeScaleSumValid( projectConfigPlus, inputConfig );
         }
@@ -1249,7 +1248,7 @@ public class Validation
         {
             returnMe = false;
             String message = " When using a desired time aggregation of "
-                             + TimeScaleFunction.SUM
+                             + TimeScaleFunction.TOTAL
                              + ", the existing time aggregation on the {} cannot be instantaneous.";
             if ( LOGGER.isWarnEnabled() )
             {
@@ -1264,13 +1263,13 @@ public class Validation
         
         // Existing function must be a sum
         if ( !inputConfig.getFunction()
-                            .equals( TimeScaleFunction.SUM ) )
+                            .equals( TimeScaleFunction.TOTAL ) )
         {
             returnMe = false;
             String message = " When using a desired time aggregation of "
-                    + TimeScaleFunction.SUM
+                    + TimeScaleFunction.TOTAL
                     + ", the existing time aggregation on the {} must also be a "
-                    + TimeScaleFunction.SUM
+                    + TimeScaleFunction.TOTAL
                     + ".";
             if ( LOGGER.isWarnEnabled() )
             {

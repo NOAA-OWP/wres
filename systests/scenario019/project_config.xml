@@ -20,7 +20,7 @@
         <leadHours minimum="1" maximum="24" />
         <issuedDates earliest="1985-06-01T12:00:00Z" latest="1985-06-30T12:00:00Z" />
         <desiredTimeScale>
-            <function>avg</function>
+            <function>mean</function>
             <period>3</period>
             <frequency>6</frequency>
             <unit>hours</unit>

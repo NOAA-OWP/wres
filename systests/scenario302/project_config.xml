@@ -22,7 +22,7 @@
         <leadHours minimum="1" maximum="48" />
         <values minimum="0.00001"/><!-- I think this results in only positive values for both obs and fcst-->
         <desiredTimeScale>
-            <function>sum</function>
+            <function>total</function>
             <period>6</period>
             <unit>hours</unit>
         </desiredTimeScale>

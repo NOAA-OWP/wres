@@ -6,6 +6,7 @@ import java.util.Objects;
 import java.util.SortedSet;
 import java.util.TimeZone;
 
+import org.apache.commons.lang3.time.DurationFormatUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -149,6 +150,8 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
 
         recordIdentifierArguments( meta.getSampleMetadata() );
 
+        // Add conditional arguments
+        
         //I could create a helper method to handle this wrapping, but I don't think this will be used outside of this context,
         //so why bother?  (This relates to an email James wrote.)
         if ( ! meta.hasMetricComponentID() || meta.getMetricComponentID().equals( MetricConstants.MAIN ) )
@@ -159,6 +162,9 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         {
             addArgument( "metricComponentNameSuffix", meta.getMetricComponentID().toString() );
         }
+        
+        // Time scale arguments, where defined
+        this.addTimeScaleArguments( meta );       
     }
 
     /**
@@ -334,7 +340,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         addArgument( "legendTitle", "Threshold " );
         addArgument( "legendUnitsText", "[" + meta.getSampleMetadata().getMeasurementUnit() + "]" );
     }
-
+    
     /**
      * Adds arguments related to the baseline forecasts for skill scores.
      * @param meta the output metadata
@@ -350,6 +356,35 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         addArgument( "baselineLabelSuffix", baselineSuffix );
     }
 
+    /**
+     * Adds the arguments relating to the {@TimeScale} of the pairs from which the verification metrics were
+     * computed.
+     * 
+     * @param meta the statistics metadata
+     */
+    
+    private void addTimeScaleArguments( StatisticMetadata meta )
+    {
+        Objects.requireNonNull( "Specify non-null metadata from which to obtain the time scale." );
+
+        String timeScale = "";
+        if ( meta.getSampleMetadata().hasTimeScale() )
+        {
+            String period = DurationFormatUtils.formatDurationWords( meta.getSampleMetadata()
+                                                                         .getTimeScale()
+                                                                         .getPeriod()
+                                                                         .toMillis(),
+                                                                     true,
+                                                                     true )
+                                               .toUpperCase();
+
+            timeScale =
+                    " with time scale [" + period + ", " + meta.getSampleMetadata().getTimeScale().getFunction() + "] ";
+        }
+
+        addArgument( "timeScale", timeScale );
+    }
+    
     private void initializeFunctionInformation()
     {
         this.addFunctionName( EARLIEST_DATE_TO_TEXT );
