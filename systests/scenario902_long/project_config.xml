@@ -9,7 +9,7 @@
             <source format="PI-XML">../data/abrfcExample/LGNN5_QME.xml</source>
             <variable>QME</variable>
             <existingTimeScale>
-                <function>avg</function>
+                <function>mean</function>
                 <period>24</period>
                 <unit>hours</unit>
             </existingTimeScale>
@@ -19,7 +19,7 @@
             <source format="PI-XML">../data/archive/baselineValidationExample/LGNN5_Streamflow_hefs-mefp_Baseline_Validation_19850101_20160106.tgz</source>
             <variable>QINE</variable>
             <existingTimeScale>
-                <function>avg</function>
+                <function>mean</function>
                 <period>1</period>
                 <unit>nanos</unit>
             </existingTimeScale>
@@ -31,7 +31,7 @@
         <feature locationId="LGNN5" />
 
         <desiredTimeScale>
-            <function>avg</function>
+            <function>mean</function>
             <period>24</period>
             <unit>hours</unit>
         </desiredTimeScale>

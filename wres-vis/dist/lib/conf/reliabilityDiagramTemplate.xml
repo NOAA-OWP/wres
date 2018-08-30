@@ -5,7 +5,7 @@
 	<plotTitle>
         <font family="Dialog" size="12" style="1"/>
 		<text>@metricName@ for Various Event @plotTitleVariable@ (Upper) and Sample Counts (Lower)
-@locationName@.@variableName@.@primaryScenario@ @diagramInstanceDescription@
+@locationName@.@variableName@.@primaryScenario@@timeScale@@diagramInstanceDescription@
 @referenceTime@ Evaluation Period: @dataPoolingWindow(yyyy-MM-dd;GMT)@</text>
 	</plotTitle>
 	

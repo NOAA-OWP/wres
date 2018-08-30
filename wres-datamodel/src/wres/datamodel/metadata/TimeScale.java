@@ -57,25 +57,25 @@ public final class TimeScale
          * The time scale function is a mean average over the period.
          */
 
-        AVG,
+        MEAN,
 
         /**
          * The time scale function is the minimum value recorded within the period.
          */
 
-        MIN,
+        MINIMUM,
 
         /**
          * The time scale function is the maximum value recorded within the period.
          */
 
-        MAX,
+        MAXIMUM,
 
         /**
          * The time scale function is the accumulated value over the period.
          */
 
-        SUM;
+        TOTAL;
 
     }
 
@@ -91,6 +91,19 @@ public final class TimeScale
 
     private final TimeScaleFunction function;
 
+    /**
+     * Constructs a {@link TimeScale} from a period and a function that is {@link TimeScaleFunction#UNKNOWN}.
+     * 
+     * @param period the period
+     * @return a time scale
+     * @throws NullPointerException if the input is null
+     */
+    
+    public static TimeScale of( Duration period )
+    {
+        return new TimeScale( period, TimeScaleFunction.UNKNOWN );
+    }    
+    
     /**
      * Constructs a {@link TimeScale} with a period and a function.
      * 
@@ -187,8 +200,9 @@ public final class TimeScale
     /**
      * Hidden constructor.
      * 
-     * @param period the period
+     * @param period the positive period
      * @param function the function
+     * @throws IllegalArgumentException if the period is zero or negative
      * @throws NullPointerException if either input is null
      */
 
@@ -199,6 +213,16 @@ public final class TimeScale
 
         Objects.requireNonNull( function, "Specify a non-null function for the time scale." );
 
+        if( period.isZero() )
+        {
+            throw new IllegalArgumentException( "Cannot build a time scale with a period of zero." );
+        }
+        
+        if( period.isNegative() )
+        {
+            throw new IllegalArgumentException( "Cannot build a time scale with a negative period." );
+        }
+        
         this.period = period;
         this.function = function;
     }
