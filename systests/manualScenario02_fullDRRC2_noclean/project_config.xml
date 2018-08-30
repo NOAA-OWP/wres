@@ -21,7 +21,7 @@
         <!-- All lead times --> 
 
         <desiredTimeScale>
-            <function>avg</function>
+            <function>mean</function>
             <period>1</period>
             <unit>hours</unit>
         </desiredTimeScale>

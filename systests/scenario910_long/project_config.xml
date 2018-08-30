@@ -9,7 +9,7 @@
             <source format="PI-XML">../data/archive/baselineValidationExample/AMCK1_QME.xml</source>
             <variable>QME</variable>
             <existingTimeScale>
-                <function>avg</function>
+                <function>mean</function>
                 <period>24</period>
                 <unit>hours</unit>
             </existingTimeScale>
@@ -19,7 +19,7 @@
             <source format="PI-XML">../data/archive/baselineValidationExample/AMCK1_Streamflow_hefs_Baseline_Validation.tgz</source>
             <variable>QINE</variable>
             <existingTimeScale>
-                <function>avg</function>
+                <function>mean</function>
                 <period>1</period>
                 <unit>nanos</unit>
             </existingTimeScale>
@@ -31,7 +31,7 @@
         <feature locationId="AMCK1" />
 
         <desiredTimeScale>
-            <function>avg</function>
+            <function>mean</function>
             <period>24</period>
             <unit>hours</unit>
         </desiredTimeScale>

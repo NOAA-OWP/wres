@@ -22,7 +22,7 @@
         <values minimum="0.0" maximum="8.0"/>  <!--Restricts the data, both obs and fcst, to range. -->
 
         <desiredTimeScale>
-            <function>avg</function>
+            <function>mean</function>
             <period>1</period>
             <unit>hours</unit>
         </desiredTimeScale>

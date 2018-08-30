@@ -21,7 +21,7 @@
         <unit>FT</unit>
         <leadHours minimum="48" maximum="144" />
         <desiredTimeScale>
-            <function>max</function>
+            <function>maximum</function>
             <period>96</period>
             <unit>hours</unit>
         </desiredTimeScale>
