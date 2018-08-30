@@ -5,11 +5,8 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -27,12 +24,9 @@ import wres.config.ProjectConfigs;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.DestinationConfig;
-import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.TimeScaleConfig;
-import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.SampleMetadata.SampleMetadataBuilder;
@@ -49,22 +43,19 @@ import wres.datamodel.time.Event;
 import wres.grid.client.Fetcher;
 import wres.grid.client.Request;
 import wres.grid.client.Response;
-import wres.io.concurrency.Executor;
-import wres.io.concurrency.WRESCallable;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.DataSources;
 import wres.io.data.caching.MeasurementUnits;
-import wres.io.data.caching.UnitConversions;
 import wres.io.data.details.ProjectDetails;
 import wres.io.retrieval.scripting.Scripter;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
-import wres.io.writing.PairWriter;
+import wres.io.writing.pair.PairWriter;
+import wres.io.writing.pair.SharedWriterManager;
 import wres.util.CalculationException;
 import wres.util.NotImplementedException;
 import wres.util.TimeHelper;
-import wres.util.functional.ExceptionalTriFunction;
 
 /**
  * Created by ctubbs on 7/17/17.
@@ -81,9 +72,10 @@ class InputRetriever extends Retriever //WRESCallable<MetricInput<?>>
     private String rightScript;
 
     InputRetriever ( final ProjectDetails projectDetails,
-                     final CacheRetriever getLeftValues )
+                     final CacheRetriever getLeftValues,
+                     SharedWriterManager sharedWriterManager )
     {
-        super(projectDetails, getLeftValues);
+        super( projectDetails, getLeftValues, sharedWriterManager );
     }
 
     void setIssueDatesPool( int issueDatesPool )
@@ -110,7 +102,8 @@ class InputRetriever extends Retriever //WRESCallable<MetricInput<?>>
             {
                 this.setBaselinePairs(
                         this.createPersistencePairs( this.getProjectDetails().getBaseline(),
-                                                     this.getPrimaryPairs() )
+                                                     this.getPrimaryPairs(),
+                                                     this.getSharedWriterManager() )
                 );
             }
             else
@@ -815,7 +808,8 @@ class InputRetriever extends Retriever //WRESCallable<MetricInput<?>>
      * @throws IOException
      */
     private List<ForecastedPair> createPersistencePairs( DataSourceConfig dataSourceConfig,
-                                                         List<ForecastedPair> primaryPairs )
+                                                         List<ForecastedPair> primaryPairs,
+                                                         SharedWriterManager sharedWriterManager )
             throws RetrievalFailedException
     {
         List<ForecastedPair> pairs = new ArrayList<>( primaryPairs.size() );
@@ -962,7 +956,10 @@ class InputRetriever extends Retriever //WRESCallable<MetricInput<?>>
                                                              rawPersistenceValues );
             }
 
-            this.writePair( persistencePair.getValidTime(), persistencePair, dataSourceConfig );
+            this.writePair( sharedWriterManager,
+                            persistencePair.getValidTime(),
+                            persistencePair,
+                            dataSourceConfig );
             pairs.add( persistencePair );
         }
 
@@ -1021,6 +1018,7 @@ class InputRetriever extends Retriever //WRESCallable<MetricInput<?>>
      * @param countOfValuesInAGoodWindow the count of values in a valid window
      * @return a persistence forecasted pair
      */
+
     private ForecastedPair getAggregatedPairFromRawPairs( ForecastedPair primaryPair,
                                                           List<RawPersistenceRow> rawPersistenceValues,
                                                           long aggDurationMillis,
@@ -1109,7 +1107,6 @@ class InputRetriever extends Retriever //WRESCallable<MetricInput<?>>
             throws IOException
     {
         DataSourceConfig sourceConfig;
-
         if( isBaseline )
         {
             sourceConfig = projectConfig.getInputs().getBaseline();
@@ -1309,9 +1306,10 @@ class InputRetriever extends Retriever //WRESCallable<MetricInput<?>>
      * @param dataSourceConfig The configuration that led to the creation of the pairs
      */
     @Override
-    protected void writePair( Instant date,
-                            ForecastedPair pair,
-                            DataSourceConfig dataSourceConfig )
+    protected void writePair( SharedWriterManager sharedWriterManager,
+                              Instant date,
+                              ForecastedPair pair,
+                              DataSourceConfig dataSourceConfig )
     {
         boolean isBaseline = dataSourceConfig.equals( this.getProjectDetails().getBaseline() );
         List<DestinationConfig> destinationConfigs = this.getProjectDetails().getPairDestinations();
@@ -1321,18 +1319,19 @@ class InputRetriever extends Retriever //WRESCallable<MetricInput<?>>
             // TODO: Since we are passing the ForecastedPair object and the ProjectDetails,
             // we can probably eliminate a lot of the arguments
 
-            PairWriter.Builder builder = new PairWriter.Builder();
-            builder = builder.setDestinationConfig( dest );
-            builder = builder.setDate( date );
-            builder = builder.setFeature( this.getFeature() );
-            builder = builder.setLeadIteration( this.getLeadIteration() );
-            builder = builder.setPair( pair.getValues() );
-            builder = builder.setIsBaseline( isBaseline );
-            builder = builder.setPoolingStep( this.issueDatesPool );
-            builder = builder.setProjectDetails( this.getProjectDetails() );
-            builder = builder.setLead( (int) pair.getLeadHours() );
+            PairWriter pairWriter = new PairWriter.Builder()
+                    .setDestinationConfig( dest )
+                    .setDate( date )
+                    .setFeature( this.getFeature() )
+                    .setLeadIteration( this.getLeadIteration() )
+                    .setPair( pair.getValues() )
+                    .setIsBaseline( isBaseline )
+                    .setPoolingStep( this.issueDatesPool )
+                    .setProjectDetails( this.getProjectDetails() )
+                    .setLead( (int) pair.getLeadHours() )
+                    .build();
 
-            Executor.submitHighPriorityTask( builder.build() );
+            sharedWriterManager.accept( pairWriter );
         }
     }
 

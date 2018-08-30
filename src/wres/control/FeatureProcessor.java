@@ -31,9 +31,10 @@ import wres.io.data.details.ProjectDetails;
 import wres.io.retrieval.InputGenerator;
 import wres.io.retrieval.IterationFailedException;
 import wres.io.writing.SharedWriters;
+import wres.io.writing.pair.SharedWriterManager;
 
 /**
- * Encapsulates a task (with subtasks) for processing all verification results associated with one {@link Feature}.
+ * Encapsulates a task (with subtasks) for processing all verification results associated with one {@link FeaturePlus}.
  * 
  * @author james.brown@hydrosolved.com
  */
@@ -78,6 +79,11 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
     private final SharedWriters sharedWriters;
 
     /**
+     * Pairs writers shared state. May need to be reconciled with sharedWriters.
+     */
+    private final SharedWriterManager sharedWriterManager;
+
+    /**
      * Error message.
      */
 
@@ -90,21 +96,22 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
      * @param resolvedProject the resolved project
      * @param projectDetails the project details to use
      * @param executors the executors for pairs, thresholds, and metrics
-     * @param sharedWriters writers that are shared across features 
-     * @return a feature result
+     * @param sharedWriters writers that are shared across features
      */
 
-    FeatureProcessor( final FeaturePlus feature,
-                      final ResolvedProject resolvedProject,
-                      final ProjectDetails projectDetails,
-                      final ExecutorServices executors,
-                      final SharedWriters sharedWriters )
+    FeatureProcessor( FeaturePlus feature,
+                      ResolvedProject resolvedProject,
+                      ProjectDetails projectDetails,
+                      ExecutorServices executors,
+                      SharedWriters sharedWriters,
+                      SharedWriterManager sharedWriterManager )
     {
         this.feature = feature;
         this.resolvedProject = resolvedProject;
         this.projectDetails = projectDetails;
         this.executors = executors;
         this.sharedWriters = sharedWriters;
+        this.sharedWriterManager = sharedWriterManager;
 
         // Error message
         String featureDescription = ConfigHelper.getFeatureDescription( this.feature );
@@ -143,7 +150,8 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
 
         // Build an InputGenerator for the next feature
         InputGenerator metricInputs = Operations.getInputs( this.projectDetails,
-                                                            this.feature.getFeature() );
+                                                            this.feature.getFeature(),
+                                                            this.sharedWriterManager );
 
         // Queue the various tasks by time window (time window is the pooling dimension for metric calculation here)
         final List<CompletableFuture<Set<Path>>> listOfFutures = new ArrayList<>(); //List of futures to test for completion
