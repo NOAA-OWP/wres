@@ -134,7 +134,20 @@ public class DatabaseSchema
         }
         catch (LiquibaseException e)
         {
-            throw new SQLException( "The WRES could not be properly initialized.");
+            throw new SQLException( "The WRES could not be properly initialized.", e);
+        }
+
+        // Allow other users to apply liquibase changes...
+        try (Statement statement = connection.createStatement())
+        {
+            statement.execute( "ALTER TABLE public.databasechangelog OWNER TO wres;" );
+            connection.commit();
+        }
+
+        try (Statement statement = connection.createStatement())
+        {
+            statement.execute( "ALTER TABLE public.databasechangeloglock OWNER TO wres;" );
+            connection.commit();
         }
     }
 
