@@ -596,13 +596,12 @@ public final class PIXMLReader extends XMLReader
                 {
                     if (XMLHelper.getXMLText( reader ).equalsIgnoreCase( "accumulative" ))
                     {
-                        this.scaleFunction = TimeScale.TimeScaleFunction.SUM;
+                        this.scaleFunction = TimeScale.TimeScaleFunction.TOTAL;
                     }
                     else
                     {
                         this.scalePeriod = 1;
                     }
-                    // TODO: Record the type. The options are "accumulative" or "instantaneous"
                 }
                 else if ( localName.equalsIgnoreCase( "timeStep" ))
                 {
@@ -775,7 +774,7 @@ public final class PIXMLReader extends XMLReader
             {
                 this.currentTimeSeries.setScalePeriod( this.scalePeriod );
             }
-            else if ( this.scaleFunction == TimeScale.TimeScaleFunction.SUM)
+            else if ( this.scaleFunction == TimeScale.TimeScaleFunction.TOTAL)
             {
                 this.currentTimeSeries.setScalePeriod( this.timeStep );
             }

@@ -29,7 +29,7 @@
             </sqlCheck>
         </preConditions>
         <sql>
-            CREATE TYPE scale_function AS ENUM('UNKNOWN', 'AVG', 'MIN', 'MAX', 'SUM');
+            CREATE TYPE scale_function AS ENUM('UNKNOWN', 'MEAN', 'MINIMUM', 'MAXIMUM', 'TOTAL');
         </sql>
         <comment>
             Added the scale_function data type.
