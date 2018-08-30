@@ -24,7 +24,7 @@
         <dates earliest="2017-08-08T00:00:00Z" latest="2017-08-09T00:00:00Z" />
 
         <desiredTimeScale>
-            <function>avg</function>
+            <function>mean</function>
             <period>1</period>
             <unit>hours</unit>
         </desiredTimeScale>

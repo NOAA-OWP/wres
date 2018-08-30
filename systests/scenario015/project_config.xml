@@ -23,7 +23,7 @@
         <issuedDates latest="1985-06-07T12:00:00Z" />
 
         <desiredTimeScale>
-            <function>avg</function>
+            <function>mean</function>
             <period>6</period>
             <frequency>3</frequency>
             <unit>hours</unit>

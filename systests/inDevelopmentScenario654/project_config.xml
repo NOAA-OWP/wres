@@ -6,7 +6,7 @@
             <source format="netCDF">../data/griddedExamples/precip_ellicott_city/analysis_assim/</source>
             <variable>RAINRATE</variable>
             <existingTimeScale>
-                <function>avg</function>
+                <function>mean</function>
                 <period>1</period>
                 <unit>hours</unit>
             </existingTimeScale>
@@ -16,7 +16,7 @@
             <source format="netCDF">../data/griddedExamples/precip_ellicott_city/medium_range_ens/</source>
             <variable>RAINRATE</variable>
             <existingTimeScale>
-                <function>avg</function>
+                <function>mean</function>
                 <period>3</period>
                 <unit>hours</unit>
             </existingTimeScale>

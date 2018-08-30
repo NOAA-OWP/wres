@@ -78,7 +78,7 @@ public class SampleMetadataTest
                                                   .setThresholds( thresholds )
                                                   .setTimeWindow( timeWindow )
                                                   .setTimeScale( TimeScale.of( Duration.ofDays( 1 ),
-                                                                               TimeScaleFunction.AVG ) )
+                                                                               TimeScaleFunction.MEAN ) )
                                                   .build() );
     }
 
@@ -253,17 +253,17 @@ public class SampleMetadataTest
         // Add a time scale
         SampleMetadata m13 =
                 new SampleMetadataBuilder().setFromExistingInstance( m12 )
-                                           .setTimeScale( TimeScale.of( Duration.ofDays( 1 ), TimeScaleFunction.AVG ) )
+                                           .setTimeScale( TimeScale.of( Duration.ofDays( 1 ), TimeScaleFunction.MEAN ) )
                                            .build();
 
         SampleMetadata m14 =
                 new SampleMetadataBuilder().setFromExistingInstance( m12 )
-                                           .setTimeScale( TimeScale.of( Duration.ofDays( 1 ), TimeScaleFunction.AVG ) )
+                                           .setTimeScale( TimeScale.of( Duration.ofDays( 1 ), TimeScaleFunction.MEAN ) )
                                            .build();
 
         SampleMetadata m15 =
                 new SampleMetadataBuilder().setFromExistingInstance( m12 )
-                                           .setTimeScale( TimeScale.of( Duration.ofDays( 2 ), TimeScaleFunction.AVG ) )
+                                           .setTimeScale( TimeScale.of( Duration.ofDays( 2 ), TimeScaleFunction.MEAN ) )
                                            .build();
 
         assertEquals( m13, m14 );
@@ -299,7 +299,7 @@ public class SampleMetadataTest
                                                                                                   null,
                                                                                                   null ) )
                                                             .setTimeScale( TimeScale.of( Duration.ofDays( 1 ),
-                                                                                         TimeScaleFunction.MAX ) )
+                                                                                         TimeScaleFunction.MAXIMUM ) )
                                                             .build();
 
         SampleMetadata metaTwo = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of() )
@@ -313,7 +313,7 @@ public class SampleMetadataTest
                                                                                                     null,
                                                                                                     "A" ) )
                                                               .setTimeScale( TimeScale.of( Duration.ofDays( 1 ),
-                                                                                           TimeScaleFunction.MAX ) )
+                                                                                           TimeScaleFunction.MAXIMUM ) )
                                                               .build();
 
         assertTrue( metaOne.equalsWithoutTimeWindowOrThresholds( metaOne ) );
@@ -324,12 +324,12 @@ public class SampleMetadataTest
         
         SampleMetadata metaFour = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of() )
                                                              .setTimeScale( TimeScale.of( Duration.ofDays( 1 ),
-                                                                                          TimeScaleFunction.AVG ) )
+                                                                                          TimeScaleFunction.MEAN ) )
                                                              .build();
 
         SampleMetadata metaFive = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of() )
                                                              .setTimeScale( TimeScale.of( Duration.ofDays( 1 ),
-                                                                                          TimeScaleFunction.MAX ) )
+                                                                                          TimeScaleFunction.MAXIMUM ) )
                                                              .build();
         
         SampleMetadata metaSix = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of() )
@@ -525,12 +525,12 @@ public class SampleMetadataTest
                                                          .setThresholds( thresholds )
                                                          .setTimeWindow( timeWindow )
                                                          .setTimeScale( TimeScale.of( Duration.ofDays( 1 ),
-                                                                                      TimeScaleFunction.AVG ) )
+                                                                                      TimeScaleFunction.MEAN ) )
                                                          .build();
 
         assertEquals( meta.toString(),
                       "(A,B,[2000-02-02T00:00:00Z,2000-02-02T00:00:00Z,VALID TIME,PT0S,PT0S],"
-                                       + "= 1.0,[PT24H,AVG],DIMENSIONLESS)" );
+                                       + "= 1.0,[PT24H,MEAN],DIMENSIONLESS)" );
 
     }
 

@@ -22,7 +22,7 @@
         <feature locationId="FAKE2" />
         <issuedDates earliest="2551-03-17T00:00:00Z" latest="2551-03-20T00:00:00Z" />
         <desiredTimeScale>
-            <function>avg</function>
+            <function>mean</function>
             <period>3</period>
             <unit>hours</unit>
         </desiredTimeScale>

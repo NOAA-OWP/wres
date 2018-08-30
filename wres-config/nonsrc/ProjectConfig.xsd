@@ -492,10 +492,10 @@
     <xs:simpleType name="timeScaleFunction">
         <xs:restriction base="xs:string">
             <xs:enumeration value="none" />
-            <xs:enumeration value="sum" />
-            <xs:enumeration value="avg" />
-            <xs:enumeration value="max" />
-            <xs:enumeration value="min" />
+            <xs:enumeration value="total" />
+            <xs:enumeration value="mean" />
+            <xs:enumeration value="maximum" />
+            <xs:enumeration value="minimum" />
         </xs:restriction>
     </xs:simpleType>
 
@@ -533,7 +533,7 @@
         </xs:annotation>
 
         <xs:sequence>
-            <xs:element name="function" type="timeScaleFunction" default="avg" minOccurs="1" maxOccurs="1"/>
+            <xs:element name="function" type="timeScaleFunction" default="mean" minOccurs="1" maxOccurs="1"/>
             <xs:element name="period" type="duration" minOccurs="1" maxOccurs="1"/>
             <xs:element name="frequency" type="duration" minOccurs="0" maxOccurs="1"/>
             <xs:element name="unit" type="durationUnit" />

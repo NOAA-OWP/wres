@@ -8,7 +8,7 @@
             <source format="usgs"></source>
             <variable unit="ft3/s">streamflow</variable>
             <existingTimeScale>
-                <function>none</function>
+                <function>mean</function>
                 <period>1</period>
                 <unit>hours</unit>
             </existingTimeScale>
@@ -19,7 +19,7 @@
             <source format="netCDF" pattern="**/*.nc">/wres_share/testing/data/sr1.perftest/medium_range.6hrsold.fctlen234hrs/</source>
             <variable>streamflow</variable>
             <existingTimeScale>
-                <function>avg</function>
+                <function>mean</function>
                 <period>3</period>
                 <unit>hours</unit>
             </existingTimeScale>
