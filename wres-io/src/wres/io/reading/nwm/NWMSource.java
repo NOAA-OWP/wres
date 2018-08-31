@@ -40,7 +40,7 @@ public class NWMSource extends BasicSource
     {
         super( projectConfig );
 		this.setFilename(filename);
-		this.setHash();
+		//this.setHash();
 	}
 
 	@Override

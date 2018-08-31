@@ -56,12 +56,6 @@ public final class Executor {
 
 	private static ThreadPoolExecutor createHighPriorityService()
 	{
-		if (HIGH_PRIORITY_TASKS != null)
-		{
-			HIGH_PRIORITY_TASKS.shutdown();
-			while (!HIGH_PRIORITY_TASKS.isTerminated());
-		}
-
 		ThreadFactory factory = runnable -> new Thread(runnable, "High Priority Database Thread");
 		return (ThreadPoolExecutor) Executors.newFixedThreadPool(10, factory);
 	}

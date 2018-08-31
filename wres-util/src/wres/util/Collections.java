@@ -365,6 +365,7 @@ public final class Collections
                 operation = new Min();
                 break;
             case "sum":
+            case "total":
                 operation = new Sum(  );
                 break;
             default:
