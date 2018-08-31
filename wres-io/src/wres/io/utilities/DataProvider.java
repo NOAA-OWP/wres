@@ -1,5 +1,10 @@
 package wres.io.utilities;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
@@ -15,6 +20,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.StringJoiner;
 import java.util.concurrent.Future;
+
+import org.apache.commons.lang3.StringUtils;
 
 import wres.io.concurrency.CopyExecutor;
 import wres.io.concurrency.WRESRunnable;
@@ -545,5 +552,52 @@ public interface DataProvider extends AutoCloseable
                 delimiter
         );
         return Database.execute( copier );
+    }
+
+    static DataProvider fromCSV(final String fileName, final boolean hasHeader, final String... columnNames) throws IOException
+    {
+        String[] columns;
+        DataProvider provider = null;
+
+        try ( BufferedReader reader = new BufferedReader( new FileReader( fileName ) ))
+        {
+            String line = reader.readLine();
+
+            if (columnNames != null && columnNames.length > 0)
+            {
+                columns = columnNames;
+            }
+            else if (hasHeader)
+            {
+                columns = StringUtils.split( line, "," );
+            }
+            else
+            {
+                columns = new String[StringUtils.countMatches( line, "," ) + 1];
+
+                for (int column = 0; column < columns.length; ++column)
+                {
+                    columns[column] = String.valueOf( column );
+                }
+            }
+
+            DataBuilder data = DataBuilder.with( columns );
+
+            if (hasHeader)
+            {
+                line = reader.readLine();
+            }
+
+            while (line != null)
+            {
+                Object[] values = StringUtils.split( line, "," );
+                data.addRow( values );
+                line = reader.readLine();
+            }
+
+            provider = data.build();
+        }
+
+        return provider;
     }
 }

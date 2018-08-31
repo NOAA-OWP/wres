@@ -5,6 +5,7 @@ import java.nio.file.Paths;
 
 import wres.config.generated.Format;
 import wres.config.generated.ProjectConfig;
+import wres.io.reading.commaseparated.CSVSource;
 import wres.io.reading.datacard.DatacardSource;
 import wres.io.reading.fews.FEWSSource;
 import wres.io.reading.nwm.NWMSource;
@@ -27,7 +28,7 @@ public class ReaderFactory {
 	{
         Format typeOfFile = getFiletype( filename );
 
-		BasicSource source = null;
+		BasicSource source;
 
 		switch (typeOfFile)
         {
@@ -56,6 +57,9 @@ public class ReaderFactory {
             case WRDS:
                 source = new WRDSSource(projectConfig, filename );
                 break;
+            case CSV:
+                source = new CSVSource( projectConfig, filename );
+                break;
 			default:
 				String message = "The file '%s' is not a valid data file.";
 				throw new IOException(String.format(message, filename));
@@ -64,21 +68,21 @@ public class ReaderFactory {
 		return source;
 	}
 	
-    static Format getFiletype( String filename )
+    static Format getFiletype( final String filename )
 	{
         Format type;
 
-		filename = Paths.get(filename).getFileName().toString().toLowerCase();
+		String pathName = Paths.get(filename).getFileName().toString().toLowerCase();
 
 		// Can't do switch because of the PIXML logic
 
-		if (filename.endsWith("tar.gz") || filename.endsWith(".tgz"))
+		if (pathName.endsWith("tar.gz") || pathName.endsWith(".tgz"))
 		{
             type = Format.ARCHIVE;
 		}
-		else if ( filename.endsWith(".xml") ||
-				  (filename.endsWith(".xml.gz")) ||
-				  Strings.contains(filename, ".+\\.\\d+$"))
+		else if ( pathName.endsWith(".xml") ||
+				  (pathName.endsWith(".xml.gz")) ||
+				  Strings.contains(pathName, ".+\\.\\d+$"))
 		{
             type = Format.PI_XML;
 		}
@@ -90,13 +94,17 @@ public class ReaderFactory {
         {
             type = Format.S_3;
         }
-        else if ( NetCDF.isNetCDFFile(filename ) )
+        else if ( NetCDF.isNetCDFFile(pathName ) )
         {
             type = Format.NET_CDF;
         }
-        else if(filename.toLowerCase().endsWith( ".json" ) || filename.contains( "***REMOVED***eds-app1" ))
+        else if(pathName.endsWith( ".json" ) || filename.contains( "***REMOVED***eds-app1" ))
         {
             type = Format.WRDS;
+        }
+        else if (pathName.endsWith( ".csv" ))
+        {
+            type = Format.CSV;
         }
 		else
 		{

@@ -44,6 +44,7 @@
                  section of the config. -Jesse -->
             <xs:enumeration value="archive" />
             <xs:enumeration value="wrds" />
+            <xs:enumeration value="csv" />
         </xs:restriction>
     </xs:simpleType>
 
@@ -149,6 +150,7 @@
                             <!-- missingValue may have multiple comma delimited values like "-999, -996"-->
                             <xs:attribute name="missingValue" type="xs:string" default="-999.0" />
                             <xs:attribute name="pattern" type="xs:string" default="" />
+                            <xs:attribute name="has_header" type="xs:boolean" default="false" />
                         </xs:extension>
                     </xs:simpleContent>
                 </xs:complexType>

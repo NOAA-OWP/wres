@@ -67,7 +67,7 @@ public abstract class BasicSource
      * @return the ingest results
      * @throws IOException always, because this is not implemented
      */
-    private List<IngestResult> saveForecast() throws IOException
+    protected List<IngestResult> saveForecast() throws IOException
 	{
 		throw new IOException("Forecasts may not be saved using this type of source.");
 	}

@@ -636,6 +636,7 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
             if (id == null)
             {
                 ScriptBuilder script = new ScriptBuilder(  );
+                script.setHighPriority( true );
 
                 script.addLine("WITH new_variablefeature_id AS");
                 script.addLine("(");
