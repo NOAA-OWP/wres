@@ -635,8 +635,10 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
 
             if (id == null)
             {
+                LOGGER.info("The ID for variable {} at {} wasn't found in memory. Now looking in the database.", variableId, featureDetails);
+
                 ScriptBuilder script = new ScriptBuilder(  );
-                script.setHighPriority( true );
+                //script.setHighPriority( true );
 
                 script.addLine("WITH new_variablefeature_id AS");
                 script.addLine("(");
