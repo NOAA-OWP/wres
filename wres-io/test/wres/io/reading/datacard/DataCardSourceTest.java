@@ -117,7 +117,8 @@ public class DataCardSourceTest
                                                         "DRRC2",
                                                         "EST",
                                                         "-999.0",
-                                                        "");
+                                                        "",
+                                                        null);
 
         sourceList.add(confSource);
 
@@ -206,7 +207,8 @@ public class DataCardSourceTest
                                                         "DRRC2",
                                                         "EST",
                                                         "-997",
-                                                        "");
+                                                        "",
+                                                        null);
 
         sourceList.add(confSource);
 
