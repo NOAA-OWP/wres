@@ -32,7 +32,7 @@ public class FEWSSource extends BasicSource
     {
         super( projectConfig );
 		this.setFilename(filename);
-		this.setHash();
+		//this.setHash();
 	}
 
     @Override
