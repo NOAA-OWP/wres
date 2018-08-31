@@ -29,6 +29,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.io.concurrency.Executor;
 import wres.io.concurrency.WRESRunnableException;
 
 /**
@@ -71,17 +72,10 @@ public class SharedWriterManager implements Closeable,
             runnable -> new Thread( runnable, "Pair Pre-Writing Thread" );
 
     /**
-     * Executor with bounded queue for pair-building information-gathering
+     * Executor with unbounded queue for pair-building information-gathering
      * string-operations tasks that prepare strings for writing to file.
-     * Pushes this work back out to caller if queue is full.
      */
-    private final ExecutorService pairBuildingExecutor =
-            new ThreadPoolExecutor( 1,
-                                    2,
-                                    1, TimeUnit.MINUTES,
-                                    this.pairBuildingQueue,
-                                    this.pairBuildingThreadFactory,
-                                    new ThreadPoolExecutor.CallerRunsPolicy() );
+    private final ExecutorService pairBuildingExecutor = Executors.newSingleThreadExecutor( pairBuildingThreadFactory );
 
     /**
      * Single thread executor with unbounded queue to reduce write contention

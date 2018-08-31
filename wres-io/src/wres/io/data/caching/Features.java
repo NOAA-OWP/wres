@@ -631,14 +631,17 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
     {
         synchronized ( Features.POSITION_LOCK )
         {
+            if (!Features.getCache().getKeyIndex().containsKey( featureDetails.getKey() ))
+            {
+                Features.getCache().add( featureDetails );
+            }
+
             Integer id = featureDetails.getVariableFeatureID( variableId );
 
             if (id == null)
             {
-                LOGGER.info("The ID for variable {} at {} wasn't found in memory. Now looking in the database.", variableId, featureDetails);
-
                 ScriptBuilder script = new ScriptBuilder(  );
-                //script.setHighPriority( true );
+                script.setHighPriority( true );
 
                 script.addLine("WITH new_variablefeature_id AS");
                 script.addLine("(");
