@@ -45,8 +45,7 @@ public class WRDSSource extends BasicSource
 
         ForecastReader reader = new ForecastReader( this.getProjectConfig(),
                                                     this.getDataSourceConfig(),
-                                                    dataPath,
-                                                    this.getIsRemote());
+                                                    dataPath);
 
         return reader.save();
     }

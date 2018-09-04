@@ -186,6 +186,11 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
 	public static Integer getEnsembleID(String name, String memberID, String qualifierID) throws SQLException {
 		return Ensembles.getCache().getID( new EnsembleDetails( name, memberID, qualifierID ) );
 	}
+
+	public static Integer getDefaultEnsembleID() throws SQLException
+    {
+        return Ensembles.getEnsembleID( "default", null, null );
+    }
 	
 	@Override
 	protected int getMaxDetails() {

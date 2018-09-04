@@ -315,7 +315,7 @@ public class DataSetProvider implements DataProvider
     }
 
     @Override
-    public byte getByte( String columnName )
+    public Byte getByte( String columnName )
     {
         if (this.isClosed())
         {
@@ -327,7 +327,7 @@ public class DataSetProvider implements DataProvider
         if (value == null)
         {
             // Return the default byte
-            return 0;
+            return null;
         }
         else if (value instanceof Byte)
         {
@@ -356,7 +356,7 @@ public class DataSetProvider implements DataProvider
     }
 
     @Override
-    public int getInt(String columnName)
+    public Integer getInt(String columnName)
     {
         if (this.isClosed())
         {
@@ -367,7 +367,7 @@ public class DataSetProvider implements DataProvider
 
         if (value == null)
         {
-            return 0;
+            return null;
         }
         else if (value instanceof Integer)
         {
@@ -395,7 +395,7 @@ public class DataSetProvider implements DataProvider
     }
 
     @Override
-    public short getShort(String columnName)
+    public Short getShort(String columnName)
     {
         if (this.isClosed())
         {
@@ -406,7 +406,7 @@ public class DataSetProvider implements DataProvider
 
         if (value == null)
         {
-            return 0;
+            return null;
         }
         else if (value instanceof Short)
         {
@@ -434,7 +434,7 @@ public class DataSetProvider implements DataProvider
     }
 
     @Override
-    public long getLong(String columnName)
+    public Long getLong(String columnName)
     {
         if (this.isClosed())
         {
@@ -445,7 +445,7 @@ public class DataSetProvider implements DataProvider
 
         if (value == null)
         {
-            return 0L;
+            return null;
         }
         else if (value instanceof Long)
         {
@@ -473,7 +473,7 @@ public class DataSetProvider implements DataProvider
     }
 
     @Override
-    public float getFloat(String columnName)
+    public Float getFloat(String columnName)
     {
         if (this.isClosed())
         {
@@ -484,7 +484,7 @@ public class DataSetProvider implements DataProvider
 
         if (value == null)
         {
-            return 0.0F;
+            return null;
         }
         else if (value instanceof Float)
         {
@@ -512,7 +512,7 @@ public class DataSetProvider implements DataProvider
     }
 
     @Override
-    public double getDouble(String columnName)
+    public Double getDouble(String columnName)
     {
         if (this.isClosed())
         {
@@ -523,7 +523,7 @@ public class DataSetProvider implements DataProvider
 
         if (value == null)
         {
-            return 0.0;
+            return null;
         }
         else if (value instanceof Double)
         {
