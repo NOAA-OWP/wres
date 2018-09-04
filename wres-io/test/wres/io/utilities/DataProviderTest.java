@@ -41,11 +41,11 @@ public class DataProviderTest
     public void typeRetrieveTests()
     {
         String testString = "testString";
-        short testShort = Short.MAX_VALUE;
-        int testInt = Integer.MAX_VALUE;
-        long testLong = Long.MAX_VALUE;
-        float testFloat = Float.MAX_VALUE;
-        double testDouble = Double.MAX_VALUE;
+        Short testShort = Short.MAX_VALUE;
+        Integer testInt = Integer.MAX_VALUE;
+        Long testLong = Long.MAX_VALUE;
+        Float testFloat = Float.MAX_VALUE;
+        Double testDouble = Double.MAX_VALUE;
         Double[] testDoubles = {1.0, 2.0, 3.0};
         BigDecimal testDecimal = BigDecimal.TEN;
         boolean testBoolean = true;
@@ -266,10 +266,10 @@ public class DataProviderTest
 
         // "byte" column conversions
         String column = "byte";
-        Assert.assertEquals( (byte)0, data.getByte( column ) );
-        Assert.assertEquals( (short)0, data.getShort( column ) );
-        Assert.assertEquals( 0, data.getInt( column ) );
-        Assert.assertEquals( (long)0, data.getLong( column ) );
+        Assert.assertEquals( (Byte)(byte)0, data.getByte( column ) );
+        Assert.assertEquals( (Short)(short)0, data.getShort( column ) );
+        Assert.assertEquals( (Integer)0, data.getInt( column ) );
+        Assert.assertEquals( (Long)(long)0, data.getLong( column ) );
         Assert.assertEquals( (float)0, data.getFloat( column ), 0.00001 );
         Assert.assertEquals( (double)0, data.getDouble( column ), 0.00001 );
         Assert.assertEquals( new BigDecimal( 0 ), data.getBigDecimal( column ) );
@@ -277,10 +277,10 @@ public class DataProviderTest
 
         // "short" column conversions
         column = "short";
-        Assert.assertEquals( (byte)1, data.getByte( column ) );
-        Assert.assertEquals( (short)1, data.getShort( column ) );
-        Assert.assertEquals( 1, data.getInt( column ) );
-        Assert.assertEquals( (long)1, data.getLong( column ) );
+        Assert.assertEquals( (Byte)(byte)1, data.getByte( column ) );
+        Assert.assertEquals( (Short)(short)1, data.getShort( column ) );
+        Assert.assertEquals( (Integer)1, data.getInt( column ) );
+        Assert.assertEquals( (Long)(long)1, data.getLong( column ) );
         Assert.assertEquals( (float)1, data.getFloat( column ), 0.00001 );
         Assert.assertEquals( (double)1, data.getDouble( column ), 0.00001 );
         Assert.assertEquals( new BigDecimal( 1 ), data.getBigDecimal( column ) );
@@ -288,10 +288,10 @@ public class DataProviderTest
 
         // "int" column conversions
         column = "int";
-        Assert.assertEquals( (byte)2, data.getByte( column ) );
-        Assert.assertEquals( (short)2, data.getShort( column ) );
-        Assert.assertEquals( 2, data.getInt( column ) );
-        Assert.assertEquals( (long)2, data.getLong( column ) );
+        Assert.assertEquals( (Byte)(byte)2, data.getByte( column ) );
+        Assert.assertEquals( (Short)(short)2, data.getShort( column ) );
+        Assert.assertEquals( (Integer)2, data.getInt( column ) );
+        Assert.assertEquals( (Long)(long)2, data.getLong( column ) );
         Assert.assertEquals( (float)2, data.getFloat( column ), 0.00001 );
         Assert.assertEquals( (double)2, data.getDouble( column ), 0.00001 );
         Assert.assertEquals( new BigDecimal( 2 ), data.getBigDecimal( column ) );
@@ -299,10 +299,10 @@ public class DataProviderTest
 
         // "long" column conversions
         column = "long";
-        Assert.assertEquals( (byte)3, data.getByte( column ) );
-        Assert.assertEquals( (short)3, data.getShort( column ) );
-        Assert.assertEquals( 3, data.getInt( column ) );
-        Assert.assertEquals( (long)3, data.getLong( column ) );
+        Assert.assertEquals( (Byte)(byte)3, data.getByte( column ) );
+        Assert.assertEquals( (Short)(short)3, data.getShort( column ) );
+        Assert.assertEquals( (Integer)3, data.getInt( column ) );
+        Assert.assertEquals( (Long)(long)3, data.getLong( column ) );
         Assert.assertEquals( (float)3, data.getFloat( column ), 0.00001 );
         Assert.assertEquals( (double)3, data.getDouble( column ), 0.00001 );
         Assert.assertEquals( new BigDecimal( 3 ), data.getBigDecimal( column ) );
@@ -310,10 +310,10 @@ public class DataProviderTest
 
         // "float" column conversions
         column = "float";
-        Assert.assertEquals( (byte)4, data.getByte( column ) );
-        Assert.assertEquals( (short)4, data.getShort( column ) );
-        Assert.assertEquals( 4, data.getInt( column ) );
-        Assert.assertEquals( (long)4, data.getLong( column ) );
+        Assert.assertEquals( (Byte)(byte)4, data.getByte( column ) );
+        Assert.assertEquals( (Short)(short)4, data.getShort( column ) );
+        Assert.assertEquals( (Integer)4, data.getInt( column ) );
+        Assert.assertEquals( (Long)(long)4, data.getLong( column ) );
         Assert.assertEquals( (float)4, data.getFloat( column ), 0.00001 );
         Assert.assertEquals( (double)4, data.getDouble( column ), 0.00001 );
         Assert.assertEquals( new BigDecimal( 4 ), data.getBigDecimal( column ) );
@@ -321,10 +321,10 @@ public class DataProviderTest
 
         // "double" column conversions
         column = "double";
-        Assert.assertEquals( (byte)5, data.getByte( column ) );
-        Assert.assertEquals( (short)5, data.getShort( column ) );
-        Assert.assertEquals( 5, data.getInt( column ) );
-        Assert.assertEquals( (long)5, data.getLong( column ) );
+        Assert.assertEquals( (Byte)(byte)5, data.getByte( column ) );
+        Assert.assertEquals( (Short)(short)5, data.getShort( column ) );
+        Assert.assertEquals( (Integer)5, data.getInt( column ) );
+        Assert.assertEquals( (Long)(long)5, data.getLong( column ) );
         Assert.assertEquals( (float)5, data.getFloat( column ), 0.00001 );
         Assert.assertEquals( (double)5, data.getDouble( column ), 0.00001 );
         Assert.assertEquals( new BigDecimal( 5 ), data.getBigDecimal( column ) );
@@ -332,10 +332,10 @@ public class DataProviderTest
 
         // "String" column conversions
         column = "string";
-        Assert.assertEquals( (byte)6, data.getByte( column ) );
-        Assert.assertEquals( (short)6, data.getShort( column ) );
-        Assert.assertEquals( 6, data.getInt( column ) );
-        Assert.assertEquals( (long)6, data.getLong( column ) );
+        Assert.assertEquals( (Byte)(byte)6, data.getByte( column ) );
+        Assert.assertEquals( (Short)(short)6, data.getShort( column ) );
+        Assert.assertEquals( (Integer)6, data.getInt( column ) );
+        Assert.assertEquals( (Long)(long)6, data.getLong( column ) );
         Assert.assertEquals( 6.0F, data.getFloat( column ), 0.00001 );
         Assert.assertEquals( 6.0, data.getDouble( column ), 0.00001 );
         Assert.assertEquals( new BigDecimal( 6 ), data.getBigDecimal( column ) );
