@@ -314,7 +314,7 @@ public class SQLDataProvider implements DataProvider
     }
 
     @Override
-    public byte getByte( String columnName )
+    public Byte getByte( String columnName )
     {
         try
         {
@@ -333,7 +333,7 @@ public class SQLDataProvider implements DataProvider
     }
 
     @Override
-    public int getInt( String columnName )
+    public Integer getInt( String columnName )
     {
         try
         {
@@ -351,7 +351,7 @@ public class SQLDataProvider implements DataProvider
     }
 
     @Override
-    public short getShort( String columnName )
+    public Short getShort( String columnName )
     {
         try
         {
@@ -369,7 +369,7 @@ public class SQLDataProvider implements DataProvider
     }
 
     @Override
-    public long getLong( String columnName )
+    public Long getLong( String columnName )
     {
         try
         {
@@ -387,7 +387,7 @@ public class SQLDataProvider implements DataProvider
     }
 
     @Override
-    public float getFloat( String columnName )
+    public Float getFloat( String columnName )
     {
         try
         {
@@ -405,7 +405,7 @@ public class SQLDataProvider implements DataProvider
     }
 
     @Override
-    public double getDouble( String columnName )
+    public Double getDouble( String columnName )
     {
         try
         {

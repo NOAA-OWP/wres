@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.generated.ProjectConfig;
+import wres.io.config.ConfigHelper;
 import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
@@ -20,6 +21,7 @@ import wres.io.data.caching.Variables;
 import wres.io.data.details.SourceDetails;
 import wres.io.data.details.TimeSeries;
 import wres.io.reading.BasicSource;
+import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
 import wres.io.reading.TimeSeriesValues;
 import wres.io.utilities.DataProvider;
@@ -88,6 +90,8 @@ public class CSVSource extends BasicSource
         {
             try
             {
+                this.validateDataProvider( data );
+
                 Instant start = data.getInstant( "start_date" );
                 Instant valueDate = data.getInstant( "value_date" );
                 String variable = data.getString( "variable_name" );
@@ -102,8 +106,9 @@ public class CSVSource extends BasicSource
                     currentTimeSeries = new TimeSeries( this.sourceDetails.getId(), start.toString() );
 
                     currentTimeSeries.setEnsembleID(
-                            Ensembles.getEnsembleID( "default", null, null )
+                            Ensembles.getDefaultEnsembleID()
                     );
+
                     currentTimeSeries.setMeasurementUnitID(
                             MeasurementUnits.getMeasurementUnitID(measurementUnit)
                     );
@@ -123,17 +128,28 @@ public class CSVSource extends BasicSource
             }
             catch (SQLException e)
             {
-                throw new IOException( "", e );
+                throw new IOException( "Metadata needed to save time series values could not be loaded.", e );
             }
         }
     }
 
-    private void validateDataProvider(final DataProvider dataProvider, final boolean isForecast)
+    private void validateDataProvider(final DataProvider dataProvider) throws IngestException
     {
-        StringJoiner errorJoiner = new StringJoiner( System.lineSeparator() );
+        String prefix = "Validation error(s) on line " +
+                        (dataProvider.getRowIndex() + 1) +
+                        " in '" +
+                        this.getFilename() +
+                        "'" +
+                        System.lineSeparator();
+        String suffix = System.lineSeparator() + "'" + this.getFilename() + "' cannot be ingested.";
+        StringJoiner errorJoiner = new StringJoiner(
+                System.lineSeparator(),
+                prefix,
+                suffix
+        );
         boolean valid = true;
         boolean hasColumn;
-        if (isForecast)
+        if ( ConfigHelper.isForecast( this.getDataSourceConfig() ))
         {
             hasColumn = dataProvider.hasColumn( "start_date" );
 
@@ -151,9 +167,9 @@ public class CSVSource extends BasicSource
             {
                 try
                 {
-                    Instant valueDate = dataProvider.getInstant( "start_date" );
+                    dataProvider.getInstant( "start_date" );
                 }
-                catch ( DateTimeParseException e )
+                catch ( DateTimeParseException | ClassCastException e )
                 {
                     errorJoiner.add("The provided csv has invalid data within the 'start_date' column.");
                 }
@@ -161,6 +177,104 @@ public class CSVSource extends BasicSource
         }
 
         hasColumn = dataProvider.hasColumn( "value_date" );
+
+        if (!hasColumn)
+        {
+            valid = false;
+            errorJoiner.add( "The provided csv is missing a 'value_date' column." );
+        }
+        else if (!Strings.hasValue( dataProvider.getString( "value_date" ) ))
+        {
+            errorJoiner.add("The provided csv is missing valid 'value_date' data.");
+            valid = false;
+        }
+        else
+        {
+            try
+            {
+                dataProvider.getInstant( "value_date" );
+            }
+            catch ( DateTimeParseException | ClassCastException e )
+            {
+                errorJoiner.add("The provided csv has invalid data within the 'value_date' column.");
+            }
+        }
+
+        hasColumn = dataProvider.hasColumn( "variable_name" );
+
+
+        if (!hasColumn)
+        {
+            valid = false;
+            errorJoiner.add( "The provided csv is missing a 'variable_name' column." );
+        }
+        else if (!Strings.hasValue( dataProvider.getString( "variable_name" ) ))
+        {
+            errorJoiner.add("The provided csv is missing valid 'variable_name' data.");
+            valid = false;
+        }
+        else if (!dataProvider.getString( "variable_name" )
+                              .equalsIgnoreCase( this.getDataSourceConfig().getVariable().getValue() ))
+        {
+            valid = false;
+            String foundVariable = dataProvider.getString( "variable_name" );
+            errorJoiner.add( "The variable in the provided csv ('" +
+                             foundVariable +
+                             "') doesn't match the configured variable ('" +
+                             this.getDataSourceConfig().getVariable().getValue() +
+                             "')" );
+        }
+
+        hasColumn = dataProvider.hasColumn( "location" );
+
+
+        if (!hasColumn)
+        {
+            valid = false;
+            errorJoiner.add( "The provided csv is missing a 'location' column." );
+        }
+        else if (!Strings.hasValue( dataProvider.getString( "location" ) ))
+        {
+            errorJoiner.add("The provided csv is missing valid 'location' data.");
+            valid = false;
+        }
+
+        hasColumn = dataProvider.hasColumn( "measurement_unit" );
+
+        if (!hasColumn)
+        {
+            valid = false;
+            errorJoiner.add( "The provided csv is missing a 'measurement_unit' column." );
+        }
+        else if (!Strings.hasValue( dataProvider.getString( "measurement_unit" ) ))
+        {
+            errorJoiner.add("The provided csv is missing valid 'measurement_unit' data.");
+            valid = false;
+        }
+
+        hasColumn = dataProvider.hasColumn( "value" );
+
+        if (!hasColumn)
+        {
+            valid = false;
+            errorJoiner.add( "The provided csv is missing a 'value' column." );
+        }
+        else
+        {
+            try
+            {
+                dataProvider.getDouble( "value" );
+            }
+            catch ( ClassCastException e )
+            {
+                errorJoiner.add("The provided csv has invalid data within the 'value' column.");
+            }
+        }
+
+        if (!valid)
+        {
+            throw new IngestException( errorJoiner.toString() );
+        }
     }
 
     private SourceDetails sourceDetails;

@@ -34,13 +34,11 @@ public class ForecastReader
 
     ForecastReader( final ProjectConfig projectConfig,
                     final DataSourceConfig datasourceConfig,
-                    final URL location,
-                    final boolean isRemote )
+                    final URL location )
     {
         this.location = location;
         this.projectConfig = projectConfig;
         this.dataSourceConfig = datasourceConfig;
-        this.isRemote = isRemote;
     }
 
     public List<IngestResult> save() throws IOException
@@ -147,7 +145,7 @@ public class ForecastReader
         String startTime = TimeHelper.convertDateToString( this.getStartTime( forecast ) );
 
         TimeSeries timeSeries = new TimeSeries( sourceId, startTime);
-        timeSeries.setEnsembleID( Ensembles.getEnsembleID("default", null, null) );
+        timeSeries.setEnsembleID( Ensembles.getDefaultEnsembleID() );
         timeSeries.setMeasurementUnitID( this.getMeasurementUnitId( forecast ) );
         timeSeries.setVariableFeatureID( this.getVariableFeatureId( forecast ) );
 
@@ -172,5 +170,4 @@ public class ForecastReader
     private final URL location;
     private final ProjectConfig projectConfig;
     private final DataSourceConfig dataSourceConfig;
-    private final boolean isRemote;
 }

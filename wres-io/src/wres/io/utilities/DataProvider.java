@@ -331,69 +331,69 @@ public interface DataProvider extends AutoCloseable
     /**
      * @param columnName The name of the column containing the desired value
      * @return The <code>byte</code> value contained within the desired column.
-     * If the value is <code>null</code>, the returned value is <code>0</code>
+     * If the value is <code>null</code>, the returned value is <code>null</code>
      * @throws IllegalStateException Thrown if the data has been closed down
      * or the column name doesn't exist
      * @throws IndexOutOfBoundsException Thrown if the data is empty
      */
-    byte getByte(final String columnName);
+    Byte getByte(final String columnName);
 
     /**
      * @param columnName The name of the column containing the desired value
      * @return The <code>short</code> value contained within the desired
      * column. If the value is <code>null</code>, the returned value is
-     * <code>0</code>
+     * <code>null</code>
      * @throws IllegalStateException Thrown if the data has been closed down
      * or the column name doesn't exist
      * @throws IndexOutOfBoundsException Thrown if the data is empty
      */
-    short getShort(final String columnName);
+    Short getShort(final String columnName);
 
     /**
      * @param columnName The name of the column containing the desired value
      * @return The <code>int</code> value contained within the desired
      * column. If the value is <code>null</code>, the returned value is
-     * <code>0</code>.
+     * <code>null</code>.
      * @throws IllegalStateException Thrown if the data has been closed down
      * or the column name doesn't exist
      * @throws IndexOutOfBoundsException Thrown if the data is empty
      */
-    int getInt(final String columnName);
+    Integer getInt(final String columnName);
 
     /**
      * @param columnName The name of the column containing the desired
      *                   <code>long</code>
      * @return The <code>long</code> value contained within the desired
      * column. If the value is <code>null</code>, the returned value is
-     * <code>0</code>.
+     * <code>null</code>.
      * @throws IllegalStateException Thrown if the data has been closed down
      * or the column name doesn't exist
      * @throws IndexOutOfBoundsException Thrown if the data is empty
      */
-    long getLong(final String columnName);
+    Long getLong(final String columnName);
 
     /**
      * @param columnName The name of the column containing the desired
      *                   <code>float</code>
      * @return The <code>float</code> value contained within the desired
      * column. If the value is <code>null</code>, the returned value is
-     * <code>0</code>.
+     * <code>null</code>.
      * @throws IllegalStateException Thrown if the data has been closed down
      * or the column name doesn't exist
      * @throws IndexOutOfBoundsException Thrown if the data is empty
      */
-    float getFloat(final String columnName);
+    Float getFloat(final String columnName);
 
     /**
      * @param columnName The name of the column containing the desired
      *                   <code>double</code>
      * @return The <code>double</code> value contained within the desired
-     * column. If the value is <code>null</code>, the returned value is 0
+     * column. If the value is <code>null</code>, the returned value is null
      * @throws IllegalStateException Thrown if the data has been closed down
      * or the column name doesn't exist
      * @throws IndexOutOfBoundsException Thrown if the data is empty
      */
-    double getDouble(final String columnName);
+    Double getDouble(final String columnName);
 
     /**
      * @param columnName The name of the column containing the desired
@@ -590,7 +590,7 @@ public interface DataProvider extends AutoCloseable
 
             while (line != null)
             {
-                Object[] values = StringUtils.split( line, "," );
+                Object[] values = line.split( "," );
                 data.addRow( values );
                 line = reader.readLine();
             }
