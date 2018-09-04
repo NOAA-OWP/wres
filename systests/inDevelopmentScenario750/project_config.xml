@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project label="IOEP Short Ranged Wide Area Example" name="scenario703">
+    <inputs>
+        <left label="USGS">
+            <type>simulations</type>
+            <source format="usgs"></source>
+            <variable unit="ft3/s">streamflow</variable>
+            <existingTimeScale>
+                <function>none</function>
+                <period>1</period>
+                <unit>hours</unit>
+            </existingTimeScale>
+        </left>
+        <right label="NWM v2.0 Medium Range Ensemble">
+            <type>ensemble forecasts</type>
+            <source format="netCDF">/wres_share/testing/userdata/xia/nwm.20180827</source>
+            <source format="netCDF">/wres_share/testing/userdata/xia/nwm.20180828</source>
+            <variable>streamflow</variable>
+        </right>
+    </inputs>
+    <pair label="Pairs by location and lead time"> <!-- required for unit -->
+        <unit>CMS</unit>
+        <!--<feature rfc="ABRFC" />-->
+        <feature locationId="DRRC2" />
+        <leadHours minimum="1" maximum="48" />
+        <dates earliest="2018-08-26T00:00:00Z" latest="2018-09-04T00:00:00Z" />
+        <desiredTimeScale>
+            <function>mean</function>
+            <period>1</period>
+            <unit>hours</unit>
+        </desiredTimeScale>
+    </pair>
+    <metrics>
+        <metric> <name>sample size</name> </metric>
+    </metrics>
+    <outputs>
+        <destination type="pairs" decimalFormat="0.000000">
+            <path>output/</path>
+        </destination>
+        <destination type="numeric" decimalFormat="0.000000">
+            <path>output/</path>
+        </destination>
+        <destination type="netcdf">
+            <path>output</path>
+            <netcdf vectorVariable="feature_id">
+            </netcdf>
+        </destination>
+    </outputs>
+</project>
+
