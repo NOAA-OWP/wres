@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project label="ExampleProject" name="AHPS">
+    <inputs>
+        <left label="USGS">
+            <type>simulations</type>
+            <source format="usgs"></source>
+            <variable>00060</variable>
+        </left>
+        <right label="AHPS">
+            <type>single valued forecasts</type>
+            <source format="wrds">../smalldata/wrds_json/ahps/</source>
+            <variable>flow</variable>
+        </right>
+    </inputs>
+    <pair label="Pairs by location and lead time"> <!-- required for unit -->
+        <unit>kcfs</unit>
+        <feature locationId="KCDM7"/>
+        <!--byTimeSeries>true</byTimeSeries>-->
+        <dates earliest="2018-08-16T12:00:00Z" latest="2018-08-28T12:00:00Z" />
+        <desiredTimeScale>
+            <function>mean</function>
+            <period>6</period>
+            <unit>hours</unit>
+        </desiredTimeScale>
+    </pair>
+    <metrics>
+        <metric> <name>mean error</name> </metric>
+        <metric> <name>sample size</name> </metric>
+    </metrics>
+    <outputs>
+        <destination type="pairs" decimalFormat="0.000000">
+            <path>output/</path>
+        </destination>
+        <destination type="numeric">
+            <path>output/</path>
+        </destination>
+    </outputs>
+</project>
