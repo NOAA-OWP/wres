@@ -604,9 +604,9 @@ public class ConfigHelper
         else
         {
             String messageId = "no_latest_date";
-            if ( LOGGER.isInfoEnabled() && ConfigHelper.messageSendPutIfAbsent( config, messageId ) )
+            if ( LOGGER.isTraceEnabled() && ConfigHelper.messageSendPutIfAbsent( config, messageId ) )
             {
-                LOGGER.info( "No \"latest\" date found in project. Use <dates earliest=\"2017-06-27T16:14:00Z\" latest=\"2017-07-06T11:35:00Z\" />  under <pair> (near line {} col {} of project file) to specify a latest date.",
+                LOGGER.trace( "No \"latest\" date found in project. Use <dates earliest=\"2017-06-27T16:14:00Z\" latest=\"2017-07-06T11:35:00Z\" />  under <pair> (near line {} col {} of project file) to specify a latest date.",
                              config.getPair()
                                    .sourceLocation()
                                    .getLineNumber(),

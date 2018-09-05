@@ -72,12 +72,12 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
     /**
      * The listing of all pairs between left and right data
      */
-    private List<ForecastedPair> primaryPairs;
+    private final List<ForecastedPair> primaryPairs = new ArrayList<>();
 
     /**
      * The Listing of all pairs between left and baseline data
      */
-    private List<ForecastedPair> baselinePairs;
+    private final List<ForecastedPair> baselinePairs = new ArrayList<>(  );
 
     /**
      * The total set of climatology data to group with the pairs
@@ -128,32 +128,22 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
     @Deprecated
     protected void setPrimaryPairs(final List<ForecastedPair> pairs)
     {
-        this.primaryPairs = pairs;
+        this.primaryPairs.addAll(pairs);
     }
 
     protected void addPrimaryPair(final ForecastedPair pair)
     {
-        if (this.primaryPairs == null)
-        {
-            this.primaryPairs = new ArrayList<>(  );
-        }
-
         this.primaryPairs.add(pair);
     }
 
     @Deprecated
     protected void setBaselinePairs(final List<ForecastedPair> pairs)
     {
-        this.baselinePairs = pairs;
+        this.baselinePairs.addAll(pairs);
     }
 
     protected void addBaselinePair(final ForecastedPair pair)
     {
-        if (this.baselinePairs == null)
-        {
-            this.baselinePairs = new ArrayList<>(  );
-        }
-
         this.baselinePairs.add(pair);
     }
 
@@ -233,7 +223,7 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
      * @param measurementUnitID The unit of measurement that the unit is in
      * @return The measurement that fits the constraint of the measurement
      */
-    protected Double convertMeasurement(Double value, int measurementUnitID)
+    Double convertMeasurement(Double value, int measurementUnitID)
     {
         Double convertedMeasurement;
         UnitConversions.Conversion conversion = this.getConversion( measurementUnitID );
@@ -256,7 +246,7 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
         return convertedMeasurement;
     }
 
-    protected void addPair(
+    void addPair(
             final List<ForecastedPair> pairs,
             final CondensedIngestedValue condensedIngestedValue,
             final DataSourceConfig dataSourceConfig
@@ -295,7 +285,7 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
         }
     }
 
-    protected EnsemblePair getPair(CondensedIngestedValue condensedIngestedValue)
+    EnsemblePair getPair(CondensedIngestedValue condensedIngestedValue)
             throws RetrievalFailedException
     {
         if (condensedIngestedValue.isEmpty())
@@ -342,7 +332,7 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
      * @return The scaled left hand value.
      * @throws CalculationException Thrown if the left aggregated value could not be calculated
      */
-    protected Double getLeftAggregation(Instant end) throws CalculationException
+    private Double getLeftAggregation(Instant end) throws CalculationException
     {
         Instant firstDate;
 
@@ -415,7 +405,7 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
                 this.getFeature().getGageId() );
     }
 
-    protected final Collection<Double> getControlValues(final LocalDateTime start, final LocalDateTime end)
+    private final Collection<Double> getControlValues(final LocalDateTime start, final LocalDateTime end)
             throws RetrievalFailedException
     {
         try
@@ -437,7 +427,7 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
         }
     }
 
-    protected final boolean shouldScale() throws RetrievalFailedException
+    private boolean shouldScale() throws RetrievalFailedException
     {
         if (shouldThisScale == null)
         {
@@ -456,7 +446,7 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
         return shouldThisScale;
     }
 
-    protected final TimeScaleConfig getCommonScale() throws RetrievalFailedException
+    final TimeScaleConfig getCommonScale() throws RetrievalFailedException
     {
         if (this.commonScale == null)
         {
@@ -512,7 +502,6 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
                         EnsemblePair values )
         {
             Duration leadTime = Duration.ofMinutes( leadMinutes );
-            //Duration leadTime = Duration.ofHours( leadHours );
             this.basisTime = validTime.minus( leadTime );
             this.validTime = validTime;
             this.values = values;

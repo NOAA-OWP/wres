@@ -284,71 +284,10 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
         Response usgsResponse;
         WebResponse response = null;
 
-        String gageStatement;
-        String earliestDate;
-        String latestDate;
-        String parameterCode;
-
-        try
-        {
-            gageStatement = this.getGageIdParameter( this.region );
-        }
-        catch ( NoDataException e )
-        {
-            throw new IngestException( "Locations to request from USGS could not be determined.", e );
-        }
-
-        try
-        {
-            earliestDate = this.getStartDate();
-        }
-        catch ( IOException e )
-        {
-            throw new IngestException( "The date for the earliest data to ask "
-                                       + "USGS for could not be determined.", e );
-        }
-
-        try
-        {
-            latestDate = this.getEndDate();
-        }
-        catch ( IOException e )
-        {
-            throw new IngestException( "The date of the latest data to ask "
-                                       + "USGS for could not be determined.", e );
-        }
-
-        try
-        {
-            parameterCode = this.getParameterCode();
-        }
-        catch ( SQLException e )
-        {
-            throw new IngestException( "The USGS parameter code could not be "
-                                       + "determined.", e );
-        }
-
         try
         {
             client = ClientBuilder.newClient();
-            webTarget = client.target( USGS_URL );
-            // Determines if we use the daily REST service or the instantaenous REST service
-            webTarget = webTarget.path( this.getValueType() );
-
-            // Not necessary, but aids with debugging
-            webTarget = webTarget.queryParam( "indent", "on" );
-
-            // The current object tree supports JSON; additional work will
-            // need to be done to support XML.
-            webTarget = webTarget.queryParam( "format", "json" );
-            webTarget = webTarget.queryParam( "sites", gageStatement );
-            webTarget = webTarget.queryParam( "startDT", earliestDate );
-            webTarget = webTarget.queryParam( "endDT", latestDate );
-
-            // We use "all" because we could theoretically need historical data
-            // from now defunct sites
-            webTarget = webTarget.queryParam( "siteStatus", "all" );
-            webTarget = webTarget.queryParam( "parameterCd", parameterCode);
+            webTarget = this.buildWebTarget( client );
 
             requestURL = webTarget.getUri().toURL().toString();
             String hash = Strings.getMD5Checksum( requestURL.getBytes());
@@ -435,6 +374,74 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
         }
         
         return response;
+    }
+
+    private WebTarget buildWebTarget(final Client client) throws IngestException
+    {
+        String gageStatement;
+        String earliestDate;
+        String latestDate;
+        String parameterCode;
+
+        try
+        {
+            gageStatement = this.getGageIdParameter( this.region );
+        }
+        catch ( NoDataException e )
+        {
+            throw new IngestException( "Locations to request from USGS could not be determined.", e );
+        }
+
+        try
+        {
+            earliestDate = this.getStartDate();
+        }
+        catch ( IOException e )
+        {
+            throw new IngestException( "The date for the earliest data to ask "
+                                       + "USGS for could not be determined.", e );
+        }
+
+        try
+        {
+            latestDate = this.getEndDate();
+        }
+        catch ( IOException e )
+        {
+            throw new IngestException( "The date of the latest data to ask "
+                                       + "USGS for could not be determined.", e );
+        }
+
+        try
+        {
+            parameterCode = this.getParameterCode();
+        }
+        catch ( SQLException e )
+        {
+            throw new IngestException( "The USGS parameter code could not be "
+                                       + "determined.", e );
+        }
+
+        WebTarget webTarget = client.target( USGS_URL );
+        // Determines if we use the daily REST service or the instantaenous REST service
+        webTarget = webTarget.path( this.getValueType() );
+
+        // Not necessary, but aids with debugging
+        webTarget = webTarget.queryParam( "indent", "on" );
+
+        // The current object tree supports JSON; additional work will
+        // need to be done to support XML.
+        webTarget = webTarget.queryParam( "format", "json" );
+        webTarget = webTarget.queryParam( "sites", gageStatement );
+        webTarget = webTarget.queryParam( "startDT", earliestDate );
+        webTarget = webTarget.queryParam( "endDT", latestDate );
+
+        // We use "all" because we could theoretically need historical data
+        // from now defunct sites
+        webTarget = webTarget.queryParam( "siteStatus", "all" );
+        webTarget = webTarget.queryParam( "parameterCd", parameterCode);
+
+        return webTarget;
     }
 
 
