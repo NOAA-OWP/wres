@@ -35,4 +35,6 @@
     <include file="add_measurementunit_kcfs.xml" relativeToChangelogFile="true" />
     <include file="wres.source_v2.xml" relativeToChangelogFile="true" />
     <include file="wres.timeseries_v2.xml" relativeToChangelogFile="true" />
+    <include file="wres.forecasts_v2.xml" relativeToChangelogFile="true" />
+    <include file="variablefeature_pk_set.xml" relativeToChangelogFile="true" />
 </databaseChangeLog>

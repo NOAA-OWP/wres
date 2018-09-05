@@ -243,12 +243,6 @@ public class PairWriter implements Supplier<Pair<Path,String>>
                 errorJoiner.add("No pair was added to record.");
             }
 
-            if (this.poolingStep == Integer.MIN_VALUE)
-            {
-                errorCount += 1;
-                errorJoiner.add("No pooling step was configured.");
-            }
-
             if (this.projectDetails == null)
             {
                 errorCount += 1;

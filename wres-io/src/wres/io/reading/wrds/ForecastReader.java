@@ -97,7 +97,7 @@ public class ForecastReader
 
     private void read(final Forecast forecast, final int sourceId) throws SQLException
     {
-        int timeSeriesId = this.getTimeSeriesId( forecast, sourceId );
+        TimeSeries timeSeries = this.getTimeSeries( forecast, sourceId );
         OffsetDateTime startTime = this.getStartTime( forecast );
 
         DataPoint[] dataPointsList;
@@ -116,11 +116,17 @@ public class ForecastReader
             return;
         }
 
+        long timeStep = TimeHelper.durationToLeadUnits(
+                Duration.between( dataPointsList[0].getTime(), dataPointsList[1].getTime() )
+        );
+
+        timeSeries.setTimeStep( (int)timeStep );
+
         for (DataPoint dataPoint : dataPointsList)
         {
             Duration between = Duration.between( startTime, dataPoint.getTime());
             int lead = ( int ) TimeHelper.durationToLeadUnits( between );
-            TimeSeriesValues.add( timeSeriesId, lead, dataPoint.getValue() );
+            TimeSeriesValues.add( timeSeries.getTimeSeriesID(), lead, dataPoint.getValue() );
         }
     }
 
@@ -140,7 +146,7 @@ public class ForecastReader
         return Features.getVariableFeatureByFeature( details, variableId );
     }
 
-    private int getTimeSeriesId(final Forecast forecast, final int sourceId) throws SQLException
+    private TimeSeries getTimeSeries(final Forecast forecast, final int sourceId) throws SQLException
     {
         String startTime = TimeHelper.convertDateToString( this.getStartTime( forecast ) );
 
@@ -149,7 +155,7 @@ public class ForecastReader
         timeSeries.setMeasurementUnitID( this.getMeasurementUnitId( forecast ) );
         timeSeries.setVariableFeatureID( this.getVariableFeatureId( forecast ) );
 
-        return timeSeries.getTimeSeriesID();
+        return timeSeries;
     }
 
     private OffsetDateTime getStartTime(final Forecast forecast)

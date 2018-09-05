@@ -53,8 +53,13 @@ public class InputGenerator implements Iterable<Future<SampleData<?>>>
                                                                   this.projectDetails,
                                                                   this.sharedWriterManager );
                     break;
+                case BY_TIMESERIES:
+                    iterator = new ByForecastMetricInputIterator( this.feature,
+                                                                  this.projectDetails,
+                                                                  this.sharedWriterManager );
+                    break;
                 default:
-                    throw new NotImplementedException( "The aggregation mode of '" +
+                    throw new NotImplementedException( "The pairing mode of '" +
                                                        this.projectDetails.getPairingMode() +
                                                        "' has not been implemented." );
             }

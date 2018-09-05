@@ -19,7 +19,7 @@ public abstract class WRESCallable<V> extends WRESTask implements Callable<V>
         }
         catch (RuntimeException e)
         {
-            this.getLogger().error( "Callable task failed: {}", e);
+            this.getLogger().error( "Callable task failed", e);
             throw new WRESRunnableException( "Callable task failed", e );
         }
     }

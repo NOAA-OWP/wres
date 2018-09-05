@@ -76,9 +76,22 @@ public final class TimeSeries
             timeSeries.setEnsembleID( data.getInt( "ensemble_id" ) );
             timeSeries.setHighestLead( data.getInt("highest_lead") );
             timeSeries.setLowestLead( data.getInt("lowest_lead") );
-            timeSeries.setScalePeriod( data.getInt( "scale_period" ) );
-            timeSeries.setTimeStep( data.getInt( "time_step" ) );
-            timeSeries.setScaleFunction( data.getString( "scale_function" ) );
+
+            if (!data.isNull( "scale_period" ))
+            {
+                timeSeries.setScalePeriod( data.getInt( "scale_period" ) );
+            }
+
+            if (!data.isNull( "time_step" ) )
+            {
+                timeSeries.setTimeStep( data.getInt( "time_step" ) );
+            }
+
+            if (data.hasColumn( "scale_function" ))
+            {
+                timeSeries.setScaleFunction( data.getString( "scale_function" ) );
+            }
+
             timeSeries.timeSeriesID = timeSeriesID;
 
             return timeSeries;
@@ -106,7 +119,8 @@ public final class TimeSeries
      */
 	private Integer timeSeriesID = null;
 
-	private Integer scalePeriod = null;
+	// 1 represents instantaneous
+	private Integer scalePeriod = 1;
 
 	private Integer timeStep = null;
 

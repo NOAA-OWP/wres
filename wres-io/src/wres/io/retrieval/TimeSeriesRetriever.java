@@ -177,7 +177,7 @@ public class TimeSeriesRetriever extends Retriever
         this.createPairs();
         this.metadata = this.buildMetadata( this.getProjectDetails().getProjectConfig(), false );
 
-        if (this.getPrimaryPairs().isEmpty())
+        if ( this.getPrimaryPairs().isEmpty())
         {
             LOGGER.debug( "Data could not be loaded for {}", metadata.getTimeWindow() );
             LOGGER.debug( "The script used was:" );
@@ -258,6 +258,13 @@ public class TimeSeriesRetriever extends Retriever
 
                     CondensedIngestedValue condensedIngestedValue = this.formIngestedValue( validSeconds, lead, measurements );
                     EnsemblePair ensemblePair = this.getPair( condensedIngestedValue );
+
+                    if (ensemblePair == null)
+                    {
+                        LOGGER.trace("A pair of values could not be created.");
+                        continue;
+                    }
+                    
                     ForecastedPair pair = new ForecastedPair( lead,
                                                               condensedIngestedValue.validTime,
                                                               ensemblePair);
