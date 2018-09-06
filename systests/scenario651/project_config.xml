@@ -46,7 +46,7 @@
         </feature>
 
         <desiredTimeScale>
-            <function>avg</function>
+            <function>mean</function>
             <period>2</period>
             <unit>hours</unit>
         </desiredTimeScale>
