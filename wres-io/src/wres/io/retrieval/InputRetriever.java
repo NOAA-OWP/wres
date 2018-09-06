@@ -238,7 +238,7 @@ class InputRetriever extends Retriever //WRESCallable<MetricInput<?>>
         List<SingleValuedPair> primary = convertToPairOfDoubles( this.getPrimaryPairs() );
         List<SingleValuedPair> baseline = null;
 
-        if ( this.getBaselinePairs() != null && !this.getBaselinePairs().isEmpty() )
+        if ( !this.getBaselinePairs().isEmpty() )
         {
             baseline = convertToPairOfDoubles( this.getBaselinePairs() );
         }
@@ -259,7 +259,7 @@ class InputRetriever extends Retriever //WRESCallable<MetricInput<?>>
         events.forEach( builder::addTimeSeriesData );
         builder.setMetadata( rightMetadata );
 
-        if (this.getBaselinePairs() != null)
+        if (!this.getBaselinePairs().isEmpty())
         {
             events = this.getSingleValuedEvents( this.getBaselinePairs() );
             events.forEach( builder::addTimeSeriesDataForBaseline );
@@ -303,7 +303,7 @@ class InputRetriever extends Retriever //WRESCallable<MetricInput<?>>
 
         List<EnsemblePair> baseline = null;
 
-        if ( this.getBaselinePairs() != null )
+        if ( !this.getBaselinePairs().isEmpty() )
         {
             baseline = InputRetriever.extractRawPairs( this.getBaselinePairs() );
         }
