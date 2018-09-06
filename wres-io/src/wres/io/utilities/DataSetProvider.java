@@ -848,7 +848,15 @@ public class DataSetProvider implements DataProvider
         {
             throw new IllegalStateException( "The data set is inaccessible." );
         }
-        return String.valueOf(this.getObject( columnName ));
+
+        Object value = this.getObject(columnName);
+        
+        if (value == null)
+        {
+            return null;
+        }
+
+        return String.valueOf(value);
     }
 
     @Override

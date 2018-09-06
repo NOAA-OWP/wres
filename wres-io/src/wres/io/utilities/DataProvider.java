@@ -21,6 +21,11 @@ import java.util.Map.Entry;
 import java.util.StringJoiner;
 import java.util.concurrent.Future;
 
+import javax.json.Json;
+import javax.json.JsonArray;
+import javax.json.JsonArrayBuilder;
+import javax.json.JsonObjectBuilder;
+
 import org.apache.commons.lang3.StringUtils;
 
 import wres.io.concurrency.CopyExecutor;
@@ -599,5 +604,25 @@ public interface DataProvider extends AutoCloseable
         }
 
         return provider;
+    }
+
+    default String toJSON()
+    {
+        JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
+
+        do
+        {
+            JsonObjectBuilder row = Json.createObjectBuilder();
+
+            for (String column : this.getColumnNames())
+            {
+                row.add( column, this.getString( column ) );
+            }
+
+            arrayBuilder.add( row );
+
+        } while (this.next());
+
+        return arrayBuilder.build().toString();
     }
 }

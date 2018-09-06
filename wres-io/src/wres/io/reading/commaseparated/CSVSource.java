@@ -67,7 +67,15 @@ public class CSVSource extends BasicSource
             DataProvider data = DataProvider.fromCSV(
                     this.filename,
                     true,
-                    "start_date", "value_date", "variable_name", "location", "measurement_unit", "value"
+                    "start_date",
+                    "value_date",
+                    "variable_name",
+                    "location",
+                    "measurement_unit",
+                    "value",
+                    "ensemble_name",
+                    "qualifier_id",
+                    "ensemblemember_id"
             );
 
             parseTimeSeries( data );
@@ -94,33 +102,13 @@ public class CSVSource extends BasicSource
 
                 Instant start = data.getInstant( "start_date" );
                 Instant valueDate = data.getInstant( "value_date" );
-                String variable = data.getString( "variable_name" );
-                String location = data.getString( "location" );
-                String measurementUnit = data.getString( "measurement_unit" );
                 Double value = data.getDouble( "value" );
                 int lead = (int)TimeHelper.durationToLeadUnits( Duration.between( start, valueDate ) );
 
                 if ( currentTimeSeries == null ||
                      !currentTimeSeries.getInitializationDate().equals( start.toString() ) )
                 {
-                    currentTimeSeries = new TimeSeries( this.sourceDetails.getId(), start.toString() );
-
-                    currentTimeSeries.setEnsembleID(
-                            Ensembles.getDefaultEnsembleID()
-                    );
-
-                    currentTimeSeries.setMeasurementUnitID(
-                            MeasurementUnits.getMeasurementUnitID(measurementUnit)
-                    );
-
-                    Integer variableFeatureId = Features.getVariableFeatureIDByLID(
-                            location,
-                            Variables.getVariableID(variable)
-                    );
-
-                    currentTimeSeries.setVariableFeatureID( variableFeatureId );
-                    currentTimeSeries.setScalePeriod( 1 );
-                    currentTimeSeries.setTimeStep( lead );
+                    currentTimeSeries = formTimeSeries( data, lead );
                 }
 
 
@@ -275,6 +263,56 @@ public class CSVSource extends BasicSource
         {
             throw new IngestException( errorJoiner.toString() );
         }
+    }
+
+    private TimeSeries formTimeSeries(final DataProvider data, final int timeStep) throws SQLException
+    {
+        TimeSeries timeseries = new TimeSeries(
+                this.sourceDetails.getId(),
+                data.getInstant( "start_date" ).toString()
+        );
+
+        String variable = data.getString( "variable_name" );
+        String location = data.getString( "location" );
+        String measurementUnit = data.getString( "measurement_unit" );
+
+        String ensembleName = "default";
+        String qualifierID = null;
+        String ensembleMemberID = null;
+
+        if (data.hasColumn("ensemble_name"))
+        {
+            ensembleName = data.getString("ensemble_name");
+        }
+
+        if (data.hasColumn("qualifier_id"))
+        {
+            qualifierID = data.getString("qualifier_id");
+        }
+
+        if (data.hasColumn("ensemblemember_id"))
+        {
+            ensembleMemberID = data.getString("ensemblemember_id");
+        }
+
+        Integer ensembleID = Ensembles.getEnsembleID(ensembleName, ensembleMemberID, qualifierID);
+
+        timeseries.setEnsembleID(ensembleID);
+
+        timeseries.setMeasurementUnitID(
+                MeasurementUnits.getMeasurementUnitID(measurementUnit)
+        );
+
+        Integer variableFeatureId = Features.getVariableFeatureIDByLID(
+                location,
+                Variables.getVariableID(variable)
+        );
+
+        timeseries.setVariableFeatureID( variableFeatureId );
+        timeseries.setScalePeriod( 1 );
+        timeseries.setTimeStep( timeStep );
+
+        return timeseries;
     }
 
     private SourceDetails sourceDetails;
