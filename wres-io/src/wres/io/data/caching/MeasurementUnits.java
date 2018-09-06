@@ -87,7 +87,7 @@ public class MeasurementUnits extends Cache<MeasurementDetails, String>
 	    return id;
 	}
 
-	public static String getNameByID(Integer id)
+	static String getNameByID(Integer id)
     {
         return Collections.getKeyByValue(MeasurementUnits.getCache().getKeyIndex(), id);
     }
