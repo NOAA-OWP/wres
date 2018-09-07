@@ -116,12 +116,12 @@ public abstract class BasicPairs<T> implements SampleData<T>
         /**
          * Pairs.
          */
-        List<T> mainInput = new ArrayList<>();
+        List<T> sampleData = new ArrayList<>();
 
         /**
          * Pairs for baseline.
          */
-        List<T> baselineInput = null;
+        List<T> baselineSampleData = null;
 
         /**
          * Climatology.
@@ -185,7 +185,7 @@ public abstract class BasicPairs<T> implements SampleData<T>
         {
             if ( Objects.nonNull( mainInput ) )
             {
-                this.mainInput.addAll( mainInput );
+                this.sampleData.addAll( mainInput );
             }
             return this;
         }
@@ -195,11 +195,11 @@ public abstract class BasicPairs<T> implements SampleData<T>
         {
             if ( Objects.nonNull( baselineInput ) )
             {
-                if ( Objects.isNull( this.baselineInput ) )
+                if ( Objects.isNull( this.baselineSampleData ) )
                 {
-                    this.baselineInput = new ArrayList<>();
+                    this.baselineSampleData = new ArrayList<>();
                 }
-                this.baselineInput.addAll( baselineInput );
+                this.baselineSampleData.addAll( baselineInput );
             }
             return this;
         }
@@ -248,14 +248,14 @@ public abstract class BasicPairs<T> implements SampleData<T>
     BasicPairs( final BasicPairsBuilder<T> b )
     {
         //Ensure safe types
-        this.sampleData = Collections.unmodifiableList( b.mainInput );
+        this.sampleData = Collections.unmodifiableList( b.sampleData );
         this.mainMeta = b.mainMeta;
         this.climatology = b.climatology;
 
         // Baseline data?
-        if ( Objects.nonNull( b.baselineInput ) )
+        if ( Objects.nonNull( b.baselineSampleData ) )
         {
-            this.baselineSampleData = Collections.unmodifiableList( b.baselineInput );
+            this.baselineSampleData = Collections.unmodifiableList( b.baselineSampleData );
         }
         else
         {
