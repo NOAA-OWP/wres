@@ -8,7 +8,7 @@
         </left>
         <right label="">
             <type>ensemble forecasts</type>
-            <source format="csv" >../smalldata/DRRC2_SQIN_ENSEMBLE_FAKE.csv</source>
+            <source format="csv" has_header="true">../smalldata/DRRC2_SQIN_ENSEMBLE_FAKE.csv</source>
             <variable>SQIN</variable>
         </right>
     </inputs>
