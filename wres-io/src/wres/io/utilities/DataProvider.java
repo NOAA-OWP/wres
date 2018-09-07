@@ -1,8 +1,6 @@
 package wres.io.utilities;
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -22,9 +20,9 @@ import java.util.StringJoiner;
 import java.util.concurrent.Future;
 
 import javax.json.Json;
-import javax.json.JsonArray;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObjectBuilder;
+import javax.json.JsonValue;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -559,10 +557,71 @@ public interface DataProvider extends AutoCloseable
         return Database.execute( copier );
     }
 
-    static DataProvider fromCSV(final String fileName, final boolean hasHeader, final String... columnNames) throws IOException
+    /**
+     * Converts a CSV file to a DataProvider with the top line being the header
+     * @param fileName The path to the csv file
+     * @return A DataProvider containing the provided CSV data
+     * @throws IOException Thrown if the file could not be read
+     */
+    static DataProvider fromCSV(final String fileName) throws IOException
     {
         String[] columns;
-        DataProvider provider = null;
+        DataProvider provider;
+
+        try ( BufferedReader reader = new BufferedReader( new FileReader( fileName ) ))
+        {
+            String line = reader.readLine();
+
+            columns = StringUtils.split( line, "," );
+
+            line = reader.readLine();
+            int lineNumber = 2;
+
+            DataBuilder data = DataBuilder.with( columns );
+
+            while (line != null)
+            {
+                data.addRow();
+                Object[] values = line.split( "," );
+
+                if (values.length > columns.length)
+                {
+                    throw new IOException(
+                            "Line " + lineNumber + " of '" + fileName + "' has " + values.length +
+                            " columns worth of data where the document only has " + columns.length +
+                            " columns."
+                    );
+                }
+
+                for (int column = 0; column < values.length; ++column)
+                {
+                    data.set( columns[column], values[column]);
+                }
+
+                line = reader.readLine();
+                lineNumber++;
+            }
+
+            provider = data.build();
+        }
+
+        return provider;
+    }
+
+    /**
+     * Converts a CSV file to a DataProvider with the provided column names
+     * @param fileName The path to the csv file
+     * @param columnNames The names of each column
+     * @return A DataProvider containing the provided CSV data
+     * @throws IOException Thrown if the file could not be read
+     */
+    static DataProvider fromCSV(
+            final String fileName,
+            final String... columnNames)
+            throws IOException
+    {
+        String[] columns;
+        DataProvider provider;
 
         try ( BufferedReader reader = new BufferedReader( new FileReader( fileName ) ))
         {
@@ -571,10 +630,6 @@ public interface DataProvider extends AutoCloseable
             if (columnNames != null && columnNames.length > 0)
             {
                 columns = columnNames;
-            }
-            else if (hasHeader)
-            {
-                columns = StringUtils.split( line, "," );
             }
             else
             {
@@ -587,11 +642,6 @@ public interface DataProvider extends AutoCloseable
             }
 
             DataBuilder data = DataBuilder.with( columns );
-
-            if (hasHeader)
-            {
-                line = reader.readLine();
-            }
 
             while (line != null)
             {
@@ -606,7 +656,28 @@ public interface DataProvider extends AutoCloseable
         return provider;
     }
 
-    default String toJSON()
+    /**
+     * Creates a JSON String representation of the DataProvider
+     * <br>
+     * <b>Warning:</b> The DataProvider will move to the end of the
+     * data as a result of JSON creation. Buffered implementations
+     * will not be able to return to the beginning of their data
+     * @return The DataProvider represented as a JSON String
+     */
+    default String toJSONString()
+    {
+        return this.toJSON().toString();
+    }
+
+    /**
+     * Creates a JSON representation of the DataProvider
+     * <br>
+     * <b>Warning:</b> The DataProvider will move to the end of the
+     * data as a result of JSON creation. Buffered implementations
+     * will not be able to return to the beginning of their data
+     * @return The DataProvider represented as JSON
+     */
+    default JsonValue toJSON()
     {
         JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
 
@@ -623,6 +694,6 @@ public interface DataProvider extends AutoCloseable
 
         } while (this.next());
 
-        return arrayBuilder.build().toString();
+        return arrayBuilder.build();
     }
 }

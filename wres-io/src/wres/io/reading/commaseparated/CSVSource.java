@@ -11,6 +11,7 @@ import java.util.StringJoiner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.generated.DataSourceConfig;
 import wres.config.generated.ProjectConfig;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.DataSources;
@@ -64,19 +65,27 @@ public class CSVSource extends BasicSource
 
         if (sourceDetails.performedInsert())
         {
-            DataProvider data = DataProvider.fromCSV(
-                    this.filename,
-                    true,
-                    "start_date",
-                    "value_date",
-                    "variable_name",
-                    "location",
-                    "measurement_unit",
-                    "value",
-                    "ensemble_name",
-                    "qualifier_id",
-                    "ensemblemember_id"
-            );
+            DataProvider data;
+
+            if (this.getSourceConfig().isHasHeader())
+            {
+                data = DataProvider.fromCSV( this.getFilename() );
+            }
+            else
+            {
+                data = DataProvider.fromCSV(
+                        this.filename,
+                        "start_date",
+                        "value_date",
+                        "variable_name",
+                        "location",
+                        "measurement_unit",
+                        "value",
+                        "ensemble_name",
+                        "qualifier_id",
+                        "ensemblemember_id"
+                );
+            }
 
             parseTimeSeries( data );
         }

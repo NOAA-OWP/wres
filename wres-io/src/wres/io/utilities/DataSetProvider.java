@@ -850,7 +850,7 @@ public class DataSetProvider implements DataProvider
         }
 
         Object value = this.getObject(columnName);
-        
+
         if (value == null)
         {
             return null;

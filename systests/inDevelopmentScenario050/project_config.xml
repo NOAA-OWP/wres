@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project label="ExampleProject" name="inDevelopmentScenario050">
+<project label="Single Valued CSV" name="inDevelopmentScenario050">
     <inputs>
         <left label="">
             <type>simulations</type>
@@ -8,7 +8,7 @@
         </left>
         <right label="">
             <type>single valued forecasts</type>
-            <source format="csv" >../smalldata/DRRC2_SQIN_FAKE.csv</source>
+            <source format="csv" has_header="true">../smalldata/DRRC2_SQIN_FAKE.csv</source>
             <variable>SQIN</variable>
         </right>
     </inputs>
