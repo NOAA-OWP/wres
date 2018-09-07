@@ -78,6 +78,20 @@ class MetricVariable
         {
             this.latestTime = "ALL";
         }
+        
+        // Add the time scale information if available
+        if( metadata.getSampleMetadata().hasTimeScale() )
+        {
+            this.timeScalePeriod = metadata.getSampleMetadata().getTimeScale().getPeriod().toString();
+            // Use the enum name()
+            this.timeScaleFunction = metadata.getSampleMetadata().getTimeScale().getFunction().name();            
+        }
+        else
+        {
+            this.timeScalePeriod = "UNKNOWN";
+            this.timeScaleFunction = "UNKNOWN";
+        }
+        
     }
 
     static String getName(final DoubleScoreStatistic output)
@@ -128,6 +142,9 @@ class MetricVariable
         attributes.put("first_condition", this.firstCondition);
         attributes.put("second_condition", this.secondCondition);
         attributes.put("sample_size", this.sampleSize);
+        attributes.put("time_scale_period", this.timeScalePeriod);
+        attributes.put("time_scale_function", this.timeScaleFunction);
+        
 
         return attributes;
     }
@@ -147,6 +164,9 @@ class MetricVariable
 
     private final String earliestTime;
     private final String latestTime;
+    
+    private final String timeScalePeriod;
+    private final String timeScaleFunction;
 
     private final int earliestLead;
     private final int latestLead;
