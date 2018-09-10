@@ -97,8 +97,6 @@ public class ForecastReader
 
     private void read(final Forecast forecast, final int sourceId) throws SQLException
     {
-        TimeSeries timeSeries = this.getTimeSeries( forecast, sourceId );
-        OffsetDateTime startTime = this.getStartTime( forecast );
 
         DataPoint[] dataPointsList;
 
@@ -116,9 +114,14 @@ public class ForecastReader
             return;
         }
 
+        Duration timeDuration = Duration.between( dataPointsList[0].getTime(), dataPointsList[1].getTime() );
+
         long timeStep = TimeHelper.durationToLeadUnits(
-                Duration.between( dataPointsList[0].getTime(), dataPointsList[1].getTime() )
+                timeDuration
         );
+
+        OffsetDateTime startTime = this.getStartTime( forecast, timeDuration );
+        TimeSeries timeSeries = this.getTimeSeries( forecast, sourceId, startTime );
 
         timeSeries.setTimeStep( (int)timeStep );
 
@@ -146,9 +149,13 @@ public class ForecastReader
         return Features.getVariableFeatureByFeature( details, variableId );
     }
 
-    private TimeSeries getTimeSeries(final Forecast forecast, final int sourceId) throws SQLException
+    private TimeSeries getTimeSeries(
+            final Forecast forecast,
+            final int sourceId,
+            final OffsetDateTime startDate
+    ) throws SQLException
     {
-        String startTime = TimeHelper.convertDateToString( this.getStartTime( forecast ) );
+        String startTime = TimeHelper.convertDateToString( startDate );
 
         TimeSeries timeSeries = new TimeSeries( sourceId, startTime);
         timeSeries.setEnsembleID( Ensembles.getDefaultEnsembleID() );
@@ -158,11 +165,11 @@ public class ForecastReader
         return timeSeries;
     }
 
-    private OffsetDateTime getStartTime(final Forecast forecast)
+    private OffsetDateTime getStartTime(final Forecast forecast, Duration timeStep)
     {
         if (forecast.getBasisTime() != null)
         {
-            return forecast.getBasisTime();
+            return forecast.getBasisTime().minus( timeStep );
         }
 
         return forecast.getIssuedTime();

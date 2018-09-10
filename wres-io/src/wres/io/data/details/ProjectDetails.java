@@ -6,8 +6,10 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.MonthDay;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -1153,13 +1155,64 @@ public class ProjectDetails
                 "Dynamic Scale" );
     }
 
+    /*private Duration getCommonTimeStep() throws CalculationException
+    {
+        Long timeStep;
+
+        try
+        {
+            long left = this.getLeftTimeStep();
+            long right = this.getRightTimeStep();
+
+            long maxScale = Math.max(left, right);
+            long minScale = Math.min(left, right);
+
+            if (left == right)
+            {
+                timeStep = left;
+            }
+            // This logic will attempt to reconcile the two to find a possible
+            // desired scale; i.e. if the left is in a scale of 4 hours and the
+            // right in 3, the needed scale would be 12 hours.
+            else if (minScale != 0 && maxScale % minScale == 0)
+            {
+                timeStep = maxScale;
+            }
+            else if (!(minScale == 0 || maxScale == 0))
+            {
+
+                BigInteger bigLeft = BigInteger.valueOf( left );
+
+                Integer greatestCommonFactor =
+                        bigLeft.gcd( BigInteger.valueOf( right ) )
+                               .intValue();
+
+                timeStep = left * right / greatestCommonFactor;
+            }
+            else
+            {
+                throw new NoDataException( "Not enough data was supplied to "
+                                           + "evaluate a common time step between "
+                                           + "data sources." );
+            }
+        }
+        catch ( NoDataException e )
+        {
+            throw new CalculationException( "A common time step between left and "
+                                            + "right inputs could not be evaluated.",
+                                            e );
+        }
+
+        return Duration.of(timeStep, TimeHelper.LEAD_RESOLUTION);
+    }*/
+
     /**
      * Determines the time step of the data
      * <p>
      *     If no desired scale has been configured, one is dynamically generated
      * </p>
      *
-     * TODO: A unified common scale is not guaranteed; Left hand data from USGS can range
+     * TODO: A unified common time step is not guaranteed; Left hand data from USGS can range
      * from a couple minutes between values to a single value per day, while AHPS data
      * could be all over the place.
      * <br><br>
@@ -2210,8 +2263,40 @@ public class ProjectDetails
 
         synchronized ( POOL_LOCK )
         {
+
             if (!this.poolCounts.containsKey( feature ))
             {
+                // TODO: Uncomment and remove feature parameter. Will break current system tests
+                /*Instant beginning = Instant.parse( this.getEarliestIssueDate());
+                Instant end = Instant.parse( this.getLatestIssueDate() );
+
+                Duration jump = Duration.of(
+                        this.getIssuePoolingWindowFrequency(),
+                        ChronoUnit.valueOf( this.getIssuePoolingWindowUnit().toUpperCase())
+                );
+                Duration period = Duration.of(
+                        this.getIssuePoolingWindowPeriod(),
+                        ChronoUnit.valueOf(this.getIssuePoolingWindowUnit().toUpperCase())
+                );
+
+                Integer count = 0;
+
+
+                while (beginning.isBefore( end ) || beginning.equals( end ))
+                {
+                    LOGGER.info("");
+                    LOGGER.info("");
+                    LOGGER.info("");
+                    LOGGER.info("Pool #{}: {} through {}", count, beginning, beginning.plus( period ));
+                    LOGGER.info("");
+                    LOGGER.info("");
+                    LOGGER.info("");
+                    count++;
+                    beginning = beginning.plus( jump );
+                }
+
+                this.poolCounts.put( feature, count );*/
+
                 try
                 {
                     this.addIssuePoolCount( feature );

@@ -28,7 +28,7 @@ class PoolingForecastScripter extends Scripter
     String formScript() throws SQLException, IOException
     {
         boolean usesNetcdf = ConfigHelper.usesNetCDFData( this.getProjectDetails().getProjectConfig() );
-
+        this.addLine("-- iteration #", this.getProgress(), ", pool #", this.getSequenceStep());
         // TODO: Split out into other functions
         this.add("SELECT (EXTRACT(epoch FROM TS.initialization_date");
 
