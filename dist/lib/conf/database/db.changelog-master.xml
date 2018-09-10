@@ -37,4 +37,6 @@
     <include file="wres.timeseries_v2.xml" relativeToChangelogFile="true" />
     <include file="wres.forecasts_v2.xml" relativeToChangelogFile="true" />
     <include file="variablefeature_pk_set.xml" relativeToChangelogFile="true" />
+    <include file="add_identity_conversions.xml" relativeToChangelogFile="true" />
+    <include file="variablefeature_pk_set_2.xml" relativeToChangelogFile="true" />
 </databaseChangeLog>
