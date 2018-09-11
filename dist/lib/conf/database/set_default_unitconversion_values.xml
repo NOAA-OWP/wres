@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="Set Default Factor" author="Christopher Tubbs" dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="f">
+                SELECT column_default IS NOT NULL AND column_default::int = 1
+                FROM information_schema.columns
+                WHERE (table_schema, table_name) = ('wres', 'unitconversion')
+                    AND column_name = 'factor'
+            </sqlCheck>
+        </preConditions>
+        <addDefaultValue schemaName="wres" tableName="UnitConversion" columnName="factor" defaultValue="1" />
+    </changeSet>
+    <changeSet id="Set Default Initial Offset" author="Christopher Tubbs" dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="f">
+                SELECT column_default IS NOT NULL AND column_default::int = 0
+                FROM information_schema.columns
+                WHERE (table_schema, table_name) = ('wres', 'unitconversion')
+                    AND column_name = 'initial_offset'
+            </sqlCheck>
+        </preConditions>
+        <addDefaultValue schemaName="wres" tableName="UnitConversion" columnName="initial_offset" defaultValue="0" />
+    </changeSet>
+    <changeSet id="Set Default Final Offset" author="Christopher Tubbs" dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="f">
+                SELECT column_default IS NOT NULL AND column_default::int = 0
+                FROM information_schema.columns
+                WHERE (table_schema, table_name) = ('wres', 'unitconversion')
+                    AND column_name = 'final_offset'
+            </sqlCheck>
+        </preConditions>
+        <addDefaultValue schemaName="wres" tableName="UnitConversion" columnName="final_offset" defaultValue="0" />
+    </changeSet>
+</databaseChangeLog>
