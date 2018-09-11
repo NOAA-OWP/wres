@@ -40,7 +40,6 @@ public class NWMSource extends BasicSource
     {
         super( projectConfig );
 		this.setFilename(filename);
-		//this.setHash();
 	}
 
 	@Override
@@ -84,8 +83,7 @@ public class NWMSource extends BasicSource
                 }*/
 			    // TODO: We aren't guaranteed to have a physical file.
                 // If we don't we need to save it for later use
-				saver = new GriddedNWMValueSaver( this.getFilename(),
-												  this.getFutureHash());
+				saver = new GriddedNWMValueSaver( this.getFilename(), this.getHash());
 			}
 			else if(NetCDF.isGridded( var ))
             {

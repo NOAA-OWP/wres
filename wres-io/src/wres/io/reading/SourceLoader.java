@@ -32,6 +32,7 @@ import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Features;
 import wres.io.data.details.FeatureDetails;
 import wres.system.SystemSettings;
+import wres.util.NetCDF;
 import wres.util.Strings;
 
 /**
@@ -414,7 +415,16 @@ public class SourceLoader
         {
             try
             {
-                hash = Strings.getMD5Checksum( filePath );
+                // If the format is Netcdf, we want to possibly bypass traditional hashing
+                if (pathFormat == Format.NET_CDF)
+                {
+                    hash = NetCDF.getUniqueIdentifier(filePath);
+                }
+                else
+                {
+                    hash = Strings.getMD5Checksum( filePath );
+                }
+
                 ingest = !dataExists( hash );
             }
             catch ( IOException | SQLException e )
