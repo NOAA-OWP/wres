@@ -174,7 +174,8 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
 
         if (ConfigHelper.usesUSGSData( projectConfig ))
         {
-            script.addTab(  ).addLine("AND character_length(gage_id) >= 0");
+            script.addTab(  ).addLine("AND character_length(gage_id) >= 8");
+            script.addTab(  ).addLine("AND gage_id ~ '^\\d+$'");
         }
 
         script.addLine("ORDER BY feature_id");
