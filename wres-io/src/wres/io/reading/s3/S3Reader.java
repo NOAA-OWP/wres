@@ -62,15 +62,14 @@ public abstract class S3Reader extends BasicSource
         {
             try
             {
-                Integer sourceId = DataSources.getActiveSourceID( tagAndKey.getEtag() );
-
                 // TODO: This needs to check if it needs to be stored locally, not if it is gridded
                 boolean isVector = true;
-                boolean fileExists = sourceId != null;
 
-                if (sourceId != null)
+                SourceDetails source = DataSources.getExistingSource( tagAndKey.getEtag() );
+                boolean fileExists = source != null;
+
+                if (source != null)
                 {
-                    SourceDetails source = DataSources.getById( sourceId );
                     isVector = source.getIsPointData();
                 }
 

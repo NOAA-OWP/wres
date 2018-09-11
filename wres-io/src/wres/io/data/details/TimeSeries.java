@@ -87,7 +87,7 @@ public final class TimeSeries
                 timeSeries.setTimeStep( data.getInt( "time_step" ) );
             }
 
-            if (data.hasColumn( "scale_function" ))
+            if (!data.isNull( "scale_function" ))
             {
                 timeSeries.setScaleFunction( data.getString( "scale_function" ) );
             }

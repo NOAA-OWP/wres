@@ -104,20 +104,15 @@ class BackToBackForecastScripter extends Scripter
 
     private void applyProjectConstraint()
     {
-        this.addLine( "    AND PS.project_id = ", this.getProjectDetails().getId() );
-        this.addLine( "    AND PS.member = ", this.getMember());
+        this.addTab().addLine( "AND PS.project_id = ", this.getProjectDetails().getId() );
+        this.addTab().addLine( "AND PS.member = ", this.getMember());
     }
 
     private void applySourceConstraint()
     {
         this.addLine( "INNER JOIN wres.TimeSeriesSource AS TSS" );
         this.addTab().addLine( "ON TSS.timeseries_id = TS.timeseries_id" );
-
-        if (ConfigHelper.usesNetCDFData( this.getProjectDetails().getProjectConfig() ))
-        {
-            this.addTab(  2  ).addLine("AND TSS.lead = TSV.lead");
-        }
-
+        this.addTab(  2  ).addLine("AND (TSS.lead IS NULL OR TSS.lead = TSV.lead)");
         this.addLine( "INNER JOIN wres.ProjectSource AS PS" );
         this.addTab().addLine( "ON PS.source_id = TSS.source_id" );
     }
@@ -126,7 +121,8 @@ class BackToBackForecastScripter extends Scripter
     {
         this.add( "GROUP BY ", this.getBaseDateName(), ", TSV.lead, TS.measurementunit_id" );
 
-        if (ConfigHelper.usesNetCDFData( this.getProjectDetails().getProjectConfig() ))
+        if (ConfigHelper.usesNetCDFData( this.getProjectDetails().getProjectConfig() ) ||
+                ConfigHelper.usesS3Data( this.getProjectDetails().getProjectConfig() ))
         {
             this.addLine();
         }
@@ -144,7 +140,8 @@ class BackToBackForecastScripter extends Scripter
         // we do so by grouping by source id. All ensembles for NetCDF data
         // will always be in separate files, however, so we need to exclude
         // this logic for NetCDF data
-        if (!ConfigHelper.usesNetCDFData( this.getProjectDetails().getProjectConfig() ))
+        if (!ConfigHelper.usesNetCDFData( this.getProjectDetails().getProjectConfig() ) &&
+            !ConfigHelper.usesS3Data( this.getProjectDetails().getProjectConfig() ))
         {
             this.add(", TSS.source_id");
         }

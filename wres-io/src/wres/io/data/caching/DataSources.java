@@ -142,6 +142,52 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
         return hash;
     }
 
+    public static SourceDetails getExistingSource(final String hash) throws SQLException
+    {
+        Objects.requireNonNull(hash, "A nonexistent hash was passed to DataSources#getActiveSourceID");
+
+        SourceDetails sourceDetails = null;
+
+        SourceKey key = new SourceKey( null, null, null, hash );
+
+        if (DataSources.getCache().hasID( key ))
+        {
+            sourceDetails = DataSources.getCache().get(
+                    DataSources.getCache().getID( key )
+            );
+        }
+
+        if (sourceDetails == null)
+        {
+            ScriptBuilder script = new ScriptBuilder(  );
+            script.setHighPriority( true );
+
+            script.addLine("SELECT source_id, path, output_time::text, lead, hash, is_point_data");
+            script.addLine("FROM wres.Source");
+            script.addLine("WHERE hash = ?;");
+
+            script.addArgument( hash );
+
+            try (DataProvider data = script.getData())
+            {
+                while(data.next())
+                {
+                    sourceDetails = new SourceDetails();
+                    sourceDetails.setHash( hash );
+                    sourceDetails.setLead( data.getInt( "lead" ) );
+                    sourceDetails.setOutputTime( data.getString( "output_time" ) );
+                    sourceDetails.setSourcePath( data.getString( "path" ) );
+                    sourceDetails.setID( data.getInt( "source_id" ) );
+                    sourceDetails.setIsPointData( data.getBoolean( "is_point_data" ) );
+
+                    DataSources.getCache().addElement( sourceDetails );
+                }
+            }
+        }
+
+        return sourceDetails;
+    }
+
     public static Integer getActiveSourceID(String hash)
             throws SQLException
     {

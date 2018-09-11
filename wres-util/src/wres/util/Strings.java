@@ -98,24 +98,6 @@ public final class Strings
 		return "\r" + formattedLine;
 	}
 
-	public static String formatForLine(final String first, final String last)
-	{
-		String formattedLine = first;
-		String formattedLast = last;
-		formattedLine += " ";
-		//return "\r" + formattedLine + formattedLast;
-		int left = LINE_LENGTH - formattedLine.length();
-
-		if (formattedLast.length() > left)
-		{
-			formattedLast = "..." + formattedLast.substring( formattedLast.length() - left - 3 );
-		}
-
-		formattedLine += formattedLast;
-
-		return formatForLine(formattedLine);
-	}
-
 	/**
 	 * Extracts the first grouping of characters in the source string that matches the pattern
 	 * @param source The string to extract the word from

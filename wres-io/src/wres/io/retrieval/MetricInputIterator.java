@@ -214,6 +214,7 @@ abstract class MetricInputIterator implements Iterator<Future<SampleData<?>>>
 
                     int lastLead = this.getProjectDetails().getLastLead( this.getFeature() );
 
+                    // TODO: Remove "range.getRight() <= lastLead" to make sure lead time windows aren't forced within existing lead ranges
                     next = range.getLeft() < lastLead &&
                            range.getRight() >= this.getProjectDetails().getMinimumLead() &&
                            range.getRight() <= lastLead;

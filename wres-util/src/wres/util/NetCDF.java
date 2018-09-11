@@ -10,7 +10,11 @@ import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
 
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -19,6 +23,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.StringJoiner;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.nio.file.Paths;
@@ -334,22 +339,53 @@ public final class NetCDF {
         return new Ensemble( name, qualifier, member );
     }
 
-    public static Integer getXLength(Variable var)
+    public static String getUniqueIdentifier(final String filepath) throws IOException
     {
-        int length = 0;
+        String uniqueIdentifier;
 
-        switch (var.getDimensions().size())
+        if (NetCDF.isGridded( filepath ))
         {
-            case 1:
-            case 2:
-                length = var.getDimension(0).getLength();
-                break;
-            case 3:
-                length = var.getDimension(1).getLength();
-                break;
+            uniqueIdentifier = NetCDF.getGriddedUniqueIdentifier( filepath );
+        }
+        else
+        {
+            uniqueIdentifier = Strings.getMD5Checksum( filepath );
         }
 
-        return length;
+        return uniqueIdentifier;
+    }
+
+    public static String getGriddedUniqueIdentifier(final String filepath) throws IOException
+    {
+        String uniqueIdentifier;
+        StringJoiner identityJoiner = new StringJoiner( "::" );
+
+        identityJoiner.add( InetAddress.getLocalHost().getHostName());
+        identityJoiner.add( InetAddress.getLocalHost().getHostAddress() );
+        identityJoiner.add( Paths.get(filepath).toAbsolutePath().toUri().toURL().toString() );
+
+        try ( NetcdfFile file = NetcdfFile.open( filepath ) )
+        {
+            NetCDF.addNetcdfIdentifiers( file, identityJoiner );
+
+            uniqueIdentifier = identityJoiner.toString();
+            uniqueIdentifier = Strings.getMD5Checksum( uniqueIdentifier.getBytes() );
+        }
+
+        return uniqueIdentifier;
+    }
+
+    public static void addNetcdfIdentifiers(final NetcdfFile file, StringJoiner joiner)
+    {
+        for ( Variable var : file.getVariables() )
+        {
+            joiner.add( var.getNameAndDimensions() );
+        }
+
+        for ( Attribute attr : file.getGlobalAttributes() )
+        {
+            joiner.add( attr.toString() );
+        }
     }
 
     public static Integer getYLength(Variable var)
@@ -377,6 +413,22 @@ public final class NetCDF {
         Integer length = NetCDF.getYLength(var);
 
         return length != null && length > 0;
+    }
+
+    public static boolean isGridded(final String filename) throws IOException
+    {
+        try (NetcdfFile file = NetcdfFile.open( filename ))
+        {
+            for ( Variable var : file.getVariables() )
+            {
+                if ( !var.isCoordinateVariable() && var.getDimensions().size() > 2 )
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     public static double getScaleFactor(Variable var)
