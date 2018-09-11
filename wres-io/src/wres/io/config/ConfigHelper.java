@@ -224,70 +224,56 @@ public class ConfigHelper
 
     public static boolean usesS3Data(ProjectConfig projectConfig)
     {
-        for ( DataSourceConfig.Source source : projectConfig.getInputs().getLeft().getSource() )
+        boolean usesS3 = wres.util.Collections.exists(
+                projectConfig.getInputs().getLeft().getSource(),
+                source -> source.getFormat() != null &&
+                          source.getFormat().equals( Format.S_3 )
+        );
+
+        usesS3 = usesS3 || wres.util.Collections.exists(
+                projectConfig.getInputs().getRight().getSource(),
+                source -> source.getFormat() != null &&
+                          source.getFormat().equals( Format.S_3 )
+        );
+
+        if (!usesS3 && projectConfig.getInputs().getBaseline() != null)
         {
-            if (source.getFormat().equals( Format.S_3 ))
-            {
-                return true;
-            }
+            usesS3 = wres.util.Collections.exists(
+                    projectConfig.getInputs().getBaseline().getSource(),
+                    source -> source.getFormat() != null &&
+                              source.getFormat().equals( Format.S_3 )
+            );
         }
 
-        for (DataSourceConfig.Source source : projectConfig.getInputs().getRight().getSource())
-        {
-            if (source.getFormat().equals( Format.S_3 ))
-            {
-                return true;
-            }
-        }
-
-        if (projectConfig.getInputs().getBaseline() != null)
-        {
-            for ( DataSourceConfig.Source source : projectConfig.getInputs().getBaseline().getSource() )
-            {
-                if ( source.getFormat().equals( Format.S_3 ) )
-                {
-                    return true;
-                }
-            }
-        }
-
-        return false;
+        return usesS3;
     }
 
     // TODO: Move to Project Details
     // ... or wres-config if useful outside of wres-io
     public static boolean usesNetCDFData( ProjectConfig projectConfig )
     {
-        for ( DataSourceConfig.Source source : projectConfig.getInputs().getLeft().getSource() )
+        boolean usesNetcdf = wres.util.Collections.exists(
+                projectConfig.getInputs().getLeft().getSource(),
+                source -> source.getFormat() != null &&
+                          source.getFormat().equals( Format.NET_CDF )
+        );
+
+        usesNetcdf = usesNetcdf || wres.util.Collections.exists(
+                projectConfig.getInputs().getRight().getSource(),
+                source -> source.getFormat() != null &&
+                          source.getFormat().equals( Format.NET_CDF )
+        );
+
+        if (!usesNetcdf && projectConfig.getInputs().getBaseline() != null)
         {
-            if ( source.getFormat() == Format.NET_CDF )
-            {
-                return true;
-            }
+            usesNetcdf = wres.util.Collections.exists(
+                    projectConfig.getInputs().getBaseline().getSource(),
+                    source -> source.getFormat() != null &&
+                              source.getFormat().equals( Format.NET_CDF )
+            );
         }
 
-        for ( DataSourceConfig.Source source : projectConfig.getInputs().getRight().getSource() )
-        {
-            if ( source.getFormat() == Format.NET_CDF )
-            {
-                return true;
-            }
-        }
-
-        if ( projectConfig.getInputs().getBaseline() != null )
-        {
-            for ( DataSourceConfig.Source source : projectConfig.getInputs()
-                                                                .getBaseline()
-                                                                .getSource() )
-            {
-                if ( source.getFormat() == Format.NET_CDF )
-                {
-                    return true;
-                }
-            }
-        }
-
-        return false;
+        return usesNetcdf;
     }
 
     public static String getVariableFeatureClause( Feature feature, int variableId, String alias )
