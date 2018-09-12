@@ -41,4 +41,5 @@
     <include file="variablefeature_pk_set_2.xml" relativeToChangelogFile="true" />
     <include file="fix_null_conversions.xml" relativeToChangelogFile="true" />
     <include file="set_default_unitconversion_values.xml" relativeToChangelogFile="true" />
+    <include file="wres.netcdfcoordinate_add_grid_projection.xml" relativeToChangelogFile="true" />
 </databaseChangeLog>
