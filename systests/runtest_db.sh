@@ -144,7 +144,7 @@ for scenarioName in $scenarios; do
     # Do the clean if CLEAN is found in the scenario directory.
     if [ -z "$WRES_DB_NAME" ]
     then
-    	export WRES_DB_NAME=wrestest2
+    	export WRES_DB_NAME=wres5
     fi
     if [ -f CLEAN ]; then
         echo "$echoPrefix Cleaning the database: ../wres_override.sh cleandatabase ..."
