@@ -18,6 +18,10 @@ import wres.messages.generated.Job;
 /**
  * The concrete class that does the work of taking a job message and creating
  * a WRES process to fulfil the job message's request.
+ *
+ * Uses environment variable JAVA_OPTS to set database details for a run,
+ * appends environment variable INNER_JAVA_OPTS to JAVA_OPTS to set additional
+ * -D parameters such as those related to logging.
  */
 
 class JobReceiver extends DefaultConsumer
@@ -123,6 +127,15 @@ class JobReceiver extends DefaultConsumer
         result.add( projectConfig );
 
         ProcessBuilder processBuilder = new ProcessBuilder( result );
+
+        // Pass through additional java options set in the environment for this
+        // inner worker process, as distinct from this shim process.
+        String innerJavaOpts = System.getenv( "INNER_JAVA_OPTS" );
+
+        if ( innerJavaOpts != null && innerJavaOpts.length() > 0 )
+        {
+            javaOpts = javaOpts + " " + innerJavaOpts;
+        }
 
         // Cause process builder to get java options
         processBuilder.environment().put( "JAVA_OPTS", javaOpts );
