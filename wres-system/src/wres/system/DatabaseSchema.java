@@ -83,11 +83,7 @@ public class DatabaseSchema
                                             + "administrator to add it." );
                 }
 
-                try (  PreparedStatement preparedStatement = connection.prepareStatement( "CREATE DATABASE ?;" ))
-                {
-                    preparedStatement.setString( 1, this.databaseName );
-                    preparedStatement.execute();
-                }
+                statement.execute("CREATE DATABASE " + this.databaseName + ";"  );
             }
         }
     }
