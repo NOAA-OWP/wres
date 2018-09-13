@@ -99,7 +99,7 @@ for scenarioName in $*; do
     # Do the clean if CLEAN is found in the scenario directory.
     if [ -z "$WRES_DB_NAME" ]
     then
-    	export WRES_DB_NAME=wrestest1
+    	export WRES_DB_NAME=wres4
     fi
     if [ -f CLEAN ]; then
         echo "$echoPrefix Cleaning the database: ../wres.sh cleandatabase ..."
