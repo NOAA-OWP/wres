@@ -36,6 +36,7 @@ import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
 import wres.io.data.details.SourceDetails;
 import wres.io.data.details.TimeSeries;
+import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
 import wres.io.utilities.ScriptBuilder;
 import wres.system.ProgressMonitor;
@@ -361,7 +362,7 @@ class VectorNWMValueSaver extends WRESRunnable
 
     private void addTimeSeriesSource() throws IOException, SQLException
     {
-        ScriptBuilder script = new ScriptBuilder(  );
+        DataScripter script = new DataScripter(  );
 
         script.addLine("INSERT INTO wres.TimeSeriesSource (timeseries_id, source_id, lead)");
         script.addLine("SELECT TS.timeseries_id, ", this.sourceID, ", ", this.getLead());
@@ -690,7 +691,7 @@ class VectorNWMValueSaver extends WRESRunnable
     {
         // Build a script that creates a new time series for each valid vector
         // position that doesn't already exist
-        ScriptBuilder script = new ScriptBuilder(  );
+        DataScripter script = new DataScripter(  );
         script.addLine("INSERT INTO wres.TimeSeries (");
         script.addTab().addLine("variablefeature_id,");
         script.addTab().addLine("ensemble_id,");
@@ -804,7 +805,7 @@ class VectorNWMValueSaver extends WRESRunnable
 
                     String keyLabel = "comid";
                     String valueLabel;
-                    ScriptBuilder script = new ScriptBuilder(  );
+                    DataScripter script = new DataScripter(  );
 
                     if ( this.isForecast() )
                     {

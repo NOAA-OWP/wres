@@ -5,6 +5,7 @@ import java.util.HashMap;
 
 import wres.datamodel.metadata.TimeScale.TimeScaleFunction;
 import wres.io.utilities.DataProvider;
+import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
 import wres.io.utilities.ScriptBuilder;
 
@@ -34,7 +35,7 @@ public final class TimeSeries
 
     public static TimeSeries getByID(final int timeSeriesID) throws SQLException
     {
-        ScriptBuilder script = new ScriptBuilder(  );
+        DataScripter script = new DataScripter(  );
 
         script.addLine("SELECT TS.timeseries_id,");
         script.addTab().addLine("TS.variablefeature_id,");
@@ -276,7 +277,7 @@ public final class TimeSeries
 	 */
     private void save() throws SQLException
 	{
-	    ScriptBuilder script = new ScriptBuilder(  );
+        DataScripter script = new DataScripter(  );
 
 		script.addLine("WITH new_timeseries AS");
         script.addLine("(");

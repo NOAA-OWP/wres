@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.io.data.details.SourceDetails.SourceKey;
 import wres.io.utilities.DataProvider;
+import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
 import wres.io.utilities.ScriptBuilder;
 
@@ -142,11 +143,11 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
 	}
 
 	@Override
-	protected ScriptBuilder getInsertSelect()
+	protected DataScripter getInsertSelect()
 			throws SQLException
 	{
 	    List<Object> args = new ArrayList<>();
-	    ScriptBuilder script = new ScriptBuilder(  );
+        DataScripter script = new DataScripter(  );
 
 	    script.addLine("WITH new_source AS");
 	    script.addLine("(");

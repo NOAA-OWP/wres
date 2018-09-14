@@ -12,6 +12,7 @@ import wres.datamodel.sampledata.SampleData;
 import wres.io.concurrency.Executor;
 import wres.io.config.ConfigHelper;
 import wres.io.data.details.ProjectDetails;
+import wres.io.utilities.DataScripter;
 import wres.io.utilities.ScriptBuilder;
 import wres.io.writing.pair.SharedWriterManager;
 import wres.util.CalculationException;
@@ -97,7 +98,7 @@ public class TimeSeriesMetricInputIterator extends MetricInputIterator
         // upper bound of the number of times that our "lag * seriesToRetrieve"
         // fits within the amount of time between our initial date and the
         // absolute last time series
-        ScriptBuilder script = new ScriptBuilder(  );
+        DataScripter script = new DataScripter(  );
         script.addLine("SELECT CEILING(");
         script.addTab().addLine("EXTRACT( epoch FROM AGE(MAX(TS.initialization_date), ", minimumDate, "::timestamp without time zone)) /");
         script.addTab().addLine("EXTRACT( epoch FROM (INTERVAL '", lag * seriesToRetrieve, " MINUTE'))");

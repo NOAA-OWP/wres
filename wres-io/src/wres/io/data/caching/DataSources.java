@@ -19,6 +19,7 @@ import wres.io.data.details.ProjectDetails;
 import wres.io.data.details.SourceDetails;
 import wres.io.data.details.SourceDetails.SourceKey;
 import wres.io.utilities.DataProvider;
+import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
 import wres.io.utilities.ScriptBuilder;
 import wres.util.Collections;
@@ -159,7 +160,7 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
 
         if (sourceDetails == null)
         {
-            ScriptBuilder script = new ScriptBuilder(  );
+            DataScripter script = new DataScripter(  );
             script.setHighPriority( true );
 
             script.addLine("SELECT source_id, path, output_time::text, lead, hash, is_point_data");
@@ -289,7 +290,7 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
 
         boolean isForecast = ConfigHelper.isForecast( dataSourceConfig );
 
-        ScriptBuilder script = new ScriptBuilder();
+        DataScripter script = new DataScripter();
         script.addLine("SELECT path");
         script.addLine("FROM wres.Source S");
         script.addLine("WHERE S.is_point_data = FALSE");

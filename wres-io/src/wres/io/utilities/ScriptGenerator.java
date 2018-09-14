@@ -489,7 +489,7 @@ public final class ScriptGenerator
         return script.toString();
     }
 
-    public static ScriptBuilder formIssuePoolCounter(
+    public static DataScripter formIssuePoolCounter(
             ProjectDetails projectDetails,
             Feature feature)
             throws SQLException
@@ -513,7 +513,7 @@ public final class ScriptGenerator
             distanceBetween = period - frequency;
         }
 
-        ScriptBuilder script = new ScriptBuilder(  );
+        DataScripter script = new DataScripter(  );
         script.setHighPriority( true );
 
         if (projectDetails.usesGriddedData( projectDetails.getRight() ))

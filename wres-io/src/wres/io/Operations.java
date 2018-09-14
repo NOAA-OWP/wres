@@ -52,6 +52,7 @@ import wres.io.reading.SourceLoader;
 import wres.io.reading.TimeSeriesValues;
 import wres.io.reading.fews.PIXMLReader;
 import wres.io.retrieval.InputGenerator;
+import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
 import wres.io.utilities.ScriptBuilder;
@@ -671,7 +672,7 @@ public final class Operations {
                 }
             }
 
-            ScriptBuilder script = new ScriptBuilder(  );
+            DataScripter script = new DataScripter(  );
 
             script.addLine("INSERT INTO ExecutionLog (");
             script.addTab().addLine("arguments,");

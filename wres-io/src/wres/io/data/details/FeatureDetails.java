@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import wres.config.generated.CoordinateSelection;
 import wres.config.generated.Feature;
 import wres.io.utilities.DataProvider;
+import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
 import wres.io.utilities.ScriptBuilder;
 import wres.util.Strings;
@@ -381,10 +382,10 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
     }
 
     @Override
-    protected ScriptBuilder getInsertSelect()
+    protected DataScripter getInsertSelect()
             throws SQLException
     {
-        ScriptBuilder script = new ScriptBuilder(  );
+        DataScripter script = new DataScripter(  );
         this.addInsert( script );
         script.addLine();
         script.addLine("UNION");
@@ -394,7 +395,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
         return script;
     }
 
-    private ScriptBuilder addInsert(final ScriptBuilder script)
+    private void addInsert(final DataScripter script)
     {
         // Keeps track of whether or not a field has been added.
         // When true, there needs to be a comma to separate the upcoming field
@@ -751,11 +752,9 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
         script.addLine(")");
         script.addLine("SELECT *");
         script.add("FROM new_feature");
-
-        return script;
     }
 
-    private ScriptBuilder addSelect(final ScriptBuilder script)
+    private void addSelect(final DataScripter script)
     {
         script.addLine("SELECT feature_id,");
         script.addTab().addLine("comid,");
@@ -815,8 +814,6 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
 
         script.addLine();
         script.add("LIMIT 1;");
-
-        return script;
     }
 
     @Override

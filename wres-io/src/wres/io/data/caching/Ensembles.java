@@ -17,6 +17,7 @@ import wres.config.generated.EnsembleCondition;
 import wres.io.data.details.EnsembleDetails;
 import wres.io.data.details.EnsembleDetails.EnsembleKey;
 import wres.io.utilities.DataProvider;
+import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
 import wres.io.utilities.ScriptBuilder;
 import wres.util.NetCDF;
@@ -151,7 +152,7 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
 	public static Integer getSingleEnsembleID(Integer projectId, Integer variableFeatureId)
             throws SQLException
     {
-        ScriptBuilder script = new ScriptBuilder(  );
+        DataScripter script = new DataScripter(  );
 
         script.addLine("SELECT E.ensemble_id");
         script.addLine("FROM wres.Ensemble E");

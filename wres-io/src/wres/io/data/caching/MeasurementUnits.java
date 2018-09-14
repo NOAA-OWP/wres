@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.io.data.details.MeasurementDetails;
 import wres.io.utilities.DataProvider;
+import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
 import wres.io.utilities.ScriptBuilder;
 import wres.util.Collections;
@@ -105,7 +106,7 @@ public class MeasurementUnits extends Cache<MeasurementDetails, String>
 	{
         try
         {
-            ScriptBuilder script = new ScriptBuilder(  );
+            DataScripter script = new DataScripter(  );
             script.setHighPriority( true );
 
             script.addLine("SELECT measurementunit_id, unit_name");

@@ -10,6 +10,7 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import org.apache.commons.lang3.StringUtils;
 
 import wres.io.utilities.DataProvider;
+import wres.io.utilities.DataScripter;
 import wres.io.utilities.ScriptBuilder;
 
 public class USGSParameters
@@ -167,7 +168,7 @@ public class USGSParameters
     // TODO: Return USGSParameters, don't implicitly set
     private static void initialize() throws SQLException
     {
-        ScriptBuilder script = new ScriptBuilder(  );
+        DataScripter script = new DataScripter(  );
         script.setHighPriority( true );
 
         script.add("SELECT * FROM wres.USGSParameter;");
@@ -271,7 +272,7 @@ public class USGSParameters
             int measurementUnitId =
                     MeasurementUnits.getMeasurementUnitID( measurementUnit );
 
-            ScriptBuilder script = new ScriptBuilder();
+            DataScripter script = new DataScripter();
             script.addLine( "INSERT INTO wres.USGSParameter(" );
             script.addTab().addLine( "name," );
             script.addTab().addLine( "description," );

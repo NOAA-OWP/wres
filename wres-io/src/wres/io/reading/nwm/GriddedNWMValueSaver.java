@@ -1,6 +1,12 @@
 package wres.io.reading.nwm;
 
 import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.util.concurrent.ExecutionException;
@@ -10,8 +16,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ucar.nc2.NetcdfFile;
 
+import wres.io.concurrency.Downloader;
 import wres.io.concurrency.WRESRunnable;
 import wres.io.data.details.SourceDetails;
+import wres.system.SystemSettings;
 import wres.util.NetCDF;
 import wres.util.NotImplementedException;
 
@@ -23,16 +31,10 @@ class GriddedNWMValueSaver extends WRESRunnable
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(GriddedNWMValueSaver.class);
 
-    private final String fileName;
+    private String fileName;
     private NetcdfFile source;
     private String hash;
     private final Future<String> futureHash;
-
-    GriddedNWMValueSaver( String fileName, Future<String> futureHash)
-	{
-		this.fileName = fileName;
-		this.futureHash = futureHash;
-	}
 
 	GriddedNWMValueSaver(String fileName, String hash)
     {
@@ -94,6 +96,66 @@ class GriddedNWMValueSaver extends WRESRunnable
             }
         }
 	}
+
+	private boolean ensureFileIsLocal() throws IOException
+    {
+        boolean isLocal = false;
+
+        Path path = Paths.get( this.fileName);
+
+        try
+        {
+            URL url = new URL(this.fileName);
+            HttpURLConnection huc = (HttpURLConnection)url.openConnection();
+            huc.setRequestMethod( "HEAD" );
+            huc.setInstanceFollowRedirects( false );
+
+            if (huc.getResponseCode() == HttpURLConnection.HTTP_OK)
+            {
+                this.retrieveFile( path );
+
+                isLocal = true;
+            }
+        }
+        catch ( MalformedURLException e )
+        {
+            LOGGER.trace("It was determined that {} is not remote data.", this.fileName);
+
+            isLocal = Files.exists( path );
+        }
+
+        return isLocal;
+    }
+
+    private void retrieveFile(final Path path) throws IOException
+    {
+        Integer nameCount = path.getNameCount();
+        Integer firstNameIndex = 0;
+
+        if (nameCount > 3)
+        {
+            firstNameIndex = nameCount - 3;
+        }
+
+        final String originalPath = this.fileName;
+
+        this.fileName = Paths.get(
+                SystemSettings.getNetCDFStorePath(),
+                path.subpath( firstNameIndex, nameCount - 1 ).toString()
+        ).toString();
+
+        if ( !Paths.get( this.fileName ).toFile().exists())
+        {
+            Downloader downloader = new Downloader(path, this.fileName);
+            downloader.setDisplayOutput( false );
+            downloader.execute();
+
+            if (!downloader.fileHasBeenDownloaded())
+            {
+                throw new IOException( "The file at '" + originalPath + "' could not be downloaded." );
+            }
+        }
+    }
 
 	private NetcdfFile getFile() throws IOException
     {

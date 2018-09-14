@@ -50,6 +50,7 @@ import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.Variables;
 import wres.io.utilities.DataProvider;
+import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
 import wres.io.utilities.LRUMap;
 import wres.io.utilities.NoDataException;
@@ -449,7 +450,7 @@ public class ProjectDetails
             {
                 this.features = new HashSet<>();
 
-                ScriptBuilder script = new ScriptBuilder();
+                DataScripter script = new DataScripter();
 
                 // TODO: it is most likely safe to assume the left will be observations
 
@@ -1364,7 +1365,7 @@ public class ProjectDetails
 
             if ( !this.calculateLeads )
             {
-                ScriptBuilder script = new ScriptBuilder();
+                DataScripter script = new DataScripter();
 
                 script.addLine( "WITH unique_leads AS" );
                 script.addLine( "(" );
@@ -1445,7 +1446,7 @@ public class ProjectDetails
             if ( this.numberOfSeriesToRetrieve == null )
             {
 
-                ScriptBuilder script = new ScriptBuilder();
+                DataScripter script = new DataScripter();
                 script.addLine( "SELECT (" );
                 script.addTab().addLine( "(" );
                 script.addTab(  2  ).addLine("(COUNT(E.ensemble_id) * 8 + 24) * -- This determines the size of a single row" );
@@ -1574,7 +1575,7 @@ public class ProjectDetails
 
         if (usesGriddedData == null)
         {
-            ScriptBuilder script = new ScriptBuilder(  );
+            DataScripter script = new DataScripter(  );
             script.addLine("SELECT EXISTS (");
             script.addTab().addLine("SELECT 1");
             script.addTab().addLine("FROM wres.ProjectSource PS");
@@ -2133,7 +2134,7 @@ public class ProjectDetails
 
                 while (data.next())
                 {
-                    ScriptBuilder finalScript = new ScriptBuilder( );
+                    DataScripter finalScript = new DataScripter( );
                     finalScript.add(beginning);
                     finalScript.addLine( data.getInt("forecast_feature" ) );
                     finalScript.add(middle);
@@ -2325,7 +2326,7 @@ public class ProjectDetails
      */
     private void addIssuePoolCount( Feature feature) throws SQLException
     {
-        ScriptBuilder counter = ScriptGenerator.formIssuePoolCounter(this, feature);
+        DataScripter counter = ScriptGenerator.formIssuePoolCounter(this, feature);
 
         Integer windowCount = counter.retrieve( "window_count" );
 
@@ -2491,7 +2492,7 @@ public class ProjectDetails
     {
         // TODO: Forecasts between locations might not be unified.
         // Generalizing the scale for all locations based on a single one could cause miscalculations
-        ScriptBuilder script = new ScriptBuilder(  );
+        DataScripter script = new DataScripter(  );
 
         script.addLine("WITH differences AS");
         script.addLine("(");
@@ -2613,7 +2614,7 @@ public class ProjectDetails
     {
         // TODO: Observations between locations are often not unified.
         // Generalizing the scale for all locations based on a single one could cause miscalculations
-        ScriptBuilder script = new ScriptBuilder(  );
+        DataScripter script = new DataScripter(  );
 
         script.addLine("WITH differences AS");
         script.addLine("(");
@@ -2715,7 +2716,7 @@ public class ProjectDetails
             throws SQLException
     {
         List<Object> args = new ArrayList<>();
-        ScriptBuilder script = new ScriptBuilder(  );
+        DataScripter script = new DataScripter(  );
 
         script.addLine("WITH new_project AS");
         script.addLine("(");
@@ -2876,7 +2877,7 @@ public class ProjectDetails
 
         if (leadIsMissing && usesGriddedData)
         {
-            ScriptBuilder script = new ScriptBuilder(  );
+            DataScripter script = new DataScripter(  );
 
             script.addLine("SELECT MAX(S.lead) AS last_lead");
             script.addLine("FROM (");
@@ -2982,7 +2983,7 @@ public class ProjectDetails
         }
         else if (leadIsMissing)
         {
-            ScriptBuilder script = new ScriptBuilder();
+            DataScripter script = new DataScripter();
 
             if ( ConfigHelper.isForecast( this.getRight() ) )
             {
@@ -3263,7 +3264,7 @@ public class ProjectDetails
                 // 6 hours, we'll encounter an error because we're aren't
                 // accounting for that weird gap. By going with the maximum, we
                 // ensure that we will always cover that gap.
-                ScriptBuilder script = new ScriptBuilder();
+                DataScripter script = new DataScripter();
                 script.addLine("WITH initialization_lag AS");
                 script.addLine("(");
                 script.addTab().addLine("SELECT (");

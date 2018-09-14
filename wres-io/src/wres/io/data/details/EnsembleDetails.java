@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.io.data.details.EnsembleDetails.EnsembleKey;
 import wres.io.utilities.DataProvider;
+import wres.io.utilities.DataScripter;
 import wres.io.utilities.ScriptBuilder;
 
 /**
@@ -157,10 +158,10 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
 	}
 
 	@Override
-	protected ScriptBuilder getInsertSelect()
+	protected DataScripter getInsertSelect()
 			throws SQLException
 	{
-		ScriptBuilder script = new ScriptBuilder(  );
+		DataScripter script = new DataScripter(  );
 
 		script.addLine("WITH new_ensemble AS");
 		script.addLine("(");

@@ -8,6 +8,7 @@ import java.sql.SQLException;
 import org.slf4j.Logger;
 
 import wres.io.utilities.DataProvider;
+import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
 import wres.io.utilities.ScriptBuilder;
 
@@ -47,7 +48,7 @@ public abstract class CachedDetail<U, V extends Comparable<V>> implements Compar
      * @throws SQLException Thrown if the connection and query cannot be used
      * to create the statement
      */
-	protected abstract ScriptBuilder getInsertSelect() throws SQLException;
+	protected abstract DataScripter getInsertSelect() throws SQLException;
 
 	protected abstract Object getSaveLock();
 

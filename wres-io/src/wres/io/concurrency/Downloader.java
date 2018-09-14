@@ -39,13 +39,14 @@ public final class Downloader extends WRESRunnable {
             final URL fileURL = new URL(address);
             HttpURLConnection connection = (HttpURLConnection) fileURL.openConnection();
 
-            if (displayOutput && connection.getResponseCode() >= 400)
+            if (connection.getResponseCode() >= 400)
             {
                 message += "Cannot be accessed\t|\t";
             }
-            else if (displayOutput)
+            else
             {
                 message += "Exists\t\t\t|\t";
+                this.fileDownloaded = true;
             }
 
             message += copy( fileURL );
@@ -87,8 +88,14 @@ public final class Downloader extends WRESRunnable {
         }
     }
 
+    public boolean fileHasBeenDownloaded()
+    {
+        return this.fileDownloaded;
+    }
+
     private final Path targetPath;
     private final String address;
+    private boolean fileDownloaded = false;
 
     @Override
     protected Logger getLogger () {

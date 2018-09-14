@@ -67,7 +67,6 @@ public class NetCDFCopier implements Closeable
 
     private NetcdfFile source;
     private NetcdfFileWriter writer;
-    private final List<Pair<String, String>> unitOverrides = new ArrayList<>();
 
     public NetCDFCopier( final String fromFilename, final String targetFileName, final ZonedDateTime analysisTime )
             throws IOException
@@ -216,11 +215,6 @@ public class NetCDFCopier implements Closeable
                                            "minutes from " + NetCDF.getStandardDateFormat().format( this.analysisTime )
                             )
                     );
-                }
-                else if (Collections.in(originalAttribute.getDataType(), NUMERIC_ATTRIBUTE_TYPES))
-                {
-                    Attribute new_attribute = new Attribute( originalAttribute.getShortName(), originalAttribute );
-                    newVariable.addAttribute( new_attribute );
                 }
                 else
                 {
