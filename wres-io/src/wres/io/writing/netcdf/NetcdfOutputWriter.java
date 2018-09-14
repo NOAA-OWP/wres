@@ -7,6 +7,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -60,6 +61,12 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
                                            Supplier<Set<Path>>,
                                            Closeable
 {
+    /**
+     * Default resolution for writing duration outputs. To change the resolution, change this default.
+     */
+
+    static final ChronoUnit DEFAULT_DURATION_UNITS = ChronoUnit.SECONDS;
+    
     private static final Logger LOGGER = LoggerFactory.getLogger( NetcdfOutputWriter.class );
 
     private static final String DEFAULT_VECTOR_TEMPLATE = "legend_and_nhdplusv2_template.nc";

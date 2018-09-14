@@ -156,8 +156,8 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedWriter
 
             StatisticMetadata meta = next.getData().get( 0 ).getMetadata();
 
-            StringJoiner headerRow = new StringJoiner( "," );
-            headerRow.merge( HEADER_DEFAULT );
+            StringJoiner headerRow =
+                    CommaSeparatedWriter.getDefaultHeaderFromSampleMetadata( meta.getSampleMetadata() );
             List<RowCompareByLeft> rows = CommaSeparatedBoxPlotWriter.getRowsForOneBoxPlot( next, formatter );
 
             // Add the header row

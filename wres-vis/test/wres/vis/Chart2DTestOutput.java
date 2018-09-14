@@ -140,7 +140,7 @@ public class Chart2DTestOutput
         //Generate the output file.
         for ( final Object lead : engineMap.keySet() )
         {
-            Object key = ( ( TimeWindow ) lead ).getLatestLeadTimeInHours();
+            Object key = ( ( TimeWindow ) lead ).getLatestLeadTime().toHours();
             ChartTools.generateOutputImageFile( new File( "testoutput/chart2DTest/" + key
                                                           + "h."
                                                           + outputImageFileSuffix ),
@@ -250,7 +250,7 @@ public class Chart2DTestOutput
         //Generate the output file.
         for ( final Object lead : engineMap.keySet() )
         {
-            Object key = ( ( TimeWindow ) lead ).getLatestLeadTimeInHours();
+            Object key = ( ( TimeWindow ) lead ).getLatestLeadTime().toHours();
             ChartTools.generateOutputImageFile( new File( "testoutput/chart2DTest/" + key
                                                           + "h."
                                                           + outputImageFileSuffix ),
@@ -321,7 +321,7 @@ public class Chart2DTestOutput
         //Generate the output file.
         for ( final Object lead : engineMap.keySet() )
         {
-            Object key = ( ( TimeWindow ) lead ).getLatestLeadTimeInHours();
+            Object key = ( ( TimeWindow ) lead ).getLatestLeadTime().toHours();
             ChartTools.generateOutputImageFile( new File( "testoutput/chart2DTest/" + key
                                                           + "h."
                                                           + outputImageFileSuffix ),
@@ -390,7 +390,7 @@ public class Chart2DTestOutput
         //Generate the output file.
         for ( final Object lead : engineMap.keySet() )
         {
-            Object key = ( ( TimeWindow ) lead ).getLatestLeadTimeInHours();
+            Object key = ( ( TimeWindow ) lead ).getLatestLeadTime().toHours();
             ChartTools.generateOutputImageFile( new File( "testoutput/chart2DTest/" + key
                                                           + "h."
                                                           + outputImageFileSuffix ),
@@ -472,7 +472,7 @@ public class Chart2DTestOutput
         for ( final Pair<TimeWindow, OneOrTwoThresholds> key : engineMap.keySet() )
         {
 
-            long lead = key.getLeft().getEarliestLeadTimeInHours();
+            long lead = key.getLeft().getEarliestLeadTime().toHours();
             OneOrTwoThresholds thresh = key.getRight();
 
             String thresholdString = ( thresh.first().getValues().first() ).toString();
@@ -521,7 +521,7 @@ public class Chart2DTestOutput
         //Generate the output file.
         for ( final Pair<TimeWindow, OneOrTwoThresholds> key : engineMap.keySet() )
         {
-            long lead = key.getLeft().getLatestLeadTimeInHours();
+            long lead = key.getLeft().getLatestLeadTime().toHours();
             OneOrTwoThresholds thresh = key.getRight();
 
             String thresholdString = ( thresh.first().getValues().first() ).toString();

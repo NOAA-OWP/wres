@@ -780,8 +780,8 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreStatisti
 
         for ( TimeWindow window : timeWindows )
         {
-            long earliestLeadTime = window.getEarliestLeadTimeInSeconds();
-            long latestLeadTime = window.getLatestLeadTimeInSeconds();
+            long earliestLeadTime = window.getEarliestLeadTime().getSeconds();
+            long latestLeadTime = window.getLatestLeadTime().getSeconds();
 
             if ( earliestLeadTime < Integer.MIN_VALUE
                  || earliestLeadTime > Integer.MAX_VALUE )
@@ -1047,7 +1047,7 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreStatisti
                         {
                             int currentStartLeadSeconds =
                                     allLeadSeconds.getInt( startLeadIndex );
-                            int targetStartLeadSeconds = (int) pool.getEarliestLeadTimeInSeconds();
+                            int targetStartLeadSeconds = (int) pool.getEarliestLeadTime().getSeconds();
                             LOGGER.debug( "currentStartLeadSeconds: {}, targetStartLeadSeconds: {}",
                                           currentStartLeadSeconds,
                                           targetStartLeadSeconds );
@@ -1059,7 +1059,7 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreStatisti
                             {
                                 int currentEndLeadSeconds =
                                         allLeadSeconds.getInt( endLeadIndex );
-                                int targetEndLeadSeconds = (int) pool.getLatestLeadTimeInSeconds();
+                                int targetEndLeadSeconds = (int) pool.getLatestLeadTime().getSeconds();
                                 LOGGER.debug( "currentEndLeadSeconds: {}, targetEndLeadSeconds: {}",
                                               currentEndLeadSeconds,
                                               targetEndLeadSeconds );

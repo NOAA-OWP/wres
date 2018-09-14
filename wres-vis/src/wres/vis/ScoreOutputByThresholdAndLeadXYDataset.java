@@ -37,7 +37,7 @@ public class ScoreOutputByThresholdAndLeadXYDataset extends
                 Slicer.discover( input, next -> next.getMetadata().getSampleMetadata().getTimeWindow() );
         for ( final TimeWindow lead : timeWindows )
         {
-            setOverrideLegendName( seriesIndex, Long.toString( lead.getLatestLeadTimeInHours() ) );
+            setOverrideLegendName( seriesIndex, Long.toString( lead.getLatestLeadTime().toHours() ) );
             seriesIndex++;
         }
     }

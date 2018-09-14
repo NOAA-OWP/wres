@@ -122,8 +122,10 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
         for ( MetricConstants m : metrics )
         {
 
-            StringJoiner headerRow = new StringJoiner( "," );
-            headerRow.merge( HEADER_DEFAULT );
+            StringJoiner headerRow = CommaSeparatedWriter.getDefaultHeaderFromSampleMetadata( output.getData()
+                                                                                                    .get( 0 )
+                                                                                                    .getMetadata()
+                                                                                                    .getSampleMetadata() );
 
             Set<Path> innerPathsWrittenTo = Collections.emptySet();
 
@@ -180,7 +182,7 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
                     Slicer.filter( output, data -> data.getSampleMetadata().getTimeWindow().equals( timeWindow ) );
 
             StatisticMetadata meta = next.getData().get( 0 ).getMetadata();
-            
+
             List<RowCompareByLeft> rows = CommaSeparatedMatrixWriter.getRowsForOneMatrixOutput( next, formatter );
 
             // Add the header row
@@ -227,9 +229,9 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
         {
             ListOfStatistics<MatrixStatistic> next =
                     Slicer.filter( output, data -> data.getSampleMetadata().getThresholds().equals( threshold ) );
-            
+
             StatisticMetadata meta = next.getData().get( 0 ).getMetadata();
-            
+
             List<RowCompareByLeft> rows = CommaSeparatedMatrixWriter.getRowsForOneMatrixOutput( next, formatter );
 
             // Add the header row

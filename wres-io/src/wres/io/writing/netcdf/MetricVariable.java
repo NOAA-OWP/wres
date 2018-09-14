@@ -58,8 +58,9 @@ class MetricVariable
         }
 
         // We only add timing information until we get a lead variable in
-        this.earliestLead = (int)timeWindow.getEarliestLeadTimeInHours();
-        this.latestLead = (int)timeWindow.getLatestLeadTimeInHours();
+        // Use the default duration units 
+        this.earliestLead = (int)timeWindow.getEarliestLeadTime().get( NetcdfOutputWriter.DEFAULT_DURATION_UNITS );
+        this.latestLead = (int)timeWindow.getLatestLeadTime().get( NetcdfOutputWriter.DEFAULT_DURATION_UNITS );
 
         if (!timeWindow.getEarliestTime().equals( Instant.MIN ))
         {
@@ -82,9 +83,13 @@ class MetricVariable
         // Add the time scale information if available
         if( metadata.getSampleMetadata().hasTimeScale() )
         {
-            this.timeScalePeriod = metadata.getSampleMetadata().getTimeScale().getPeriod().toString();
+            // Use the default duration units
+            this.timeScalePeriod = Long.toString( metadata.getSampleMetadata()
+                                                          .getTimeScale()
+                                                          .getPeriod()
+                                                          .get( NetcdfOutputWriter.DEFAULT_DURATION_UNITS ) );
             // Use the enum name()
-            this.timeScaleFunction = metadata.getSampleMetadata().getTimeScale().getFunction().name();            
+            this.timeScaleFunction = metadata.getSampleMetadata().getTimeScale().getFunction().name();
         }
         else
         {
@@ -129,22 +134,26 @@ class MetricVariable
 
         Map<String, Object> attributes = new TreeMap<>(  );
 
-        attributes.put("latest_time", this.latestTime);
-        attributes.put("earliest_time", this.earliestTime);
-        attributes.put( "earliest_lead", this.earliestLead );
-        attributes.put("latest_lead", this.latestLead);
-        attributes.put("first_data_type", this.firstDataType);
-        attributes.put("second_data_type", this.secondDataType);
-        attributes.put("first_bound", this.firstBound);
-        attributes.put("second_bound", this.secondBound);
-        attributes.put("unit", this.measurementUnit);
-        attributes.put("long_name", this.longName);
+        attributes.put( "latest_time", this.latestTime );
+        attributes.put( "earliest_time", this.earliestTime );
+        // Add the default duration units to qualify
+        attributes.put( "earliest_lead_" + NetcdfOutputWriter.DEFAULT_DURATION_UNITS.name().toLowerCase(),
+                        this.earliestLead );
+        attributes.put( "latest_lead_" + NetcdfOutputWriter.DEFAULT_DURATION_UNITS.name().toLowerCase(),
+                        this.latestLead );
+        attributes.put( "first_data_type", this.firstDataType );
+        attributes.put( "second_data_type", this.secondDataType );
+        attributes.put( "first_bound", this.firstBound );
+        attributes.put( "second_bound", this.secondBound );
+        attributes.put( "unit", this.measurementUnit );
+        attributes.put( "long_name", this.longName );
         attributes.put("first_condition", this.firstCondition);
         attributes.put("second_condition", this.secondCondition);
         attributes.put("sample_size", this.sampleSize);
-        attributes.put("time_scale_period", this.timeScalePeriod);
+        // Add the default duration units to qualify
+        attributes.put( "time_scale_period_" + NetcdfOutputWriter.DEFAULT_DURATION_UNITS.name().toLowerCase(),
+                        this.timeScalePeriod );
         attributes.put("time_scale_function", this.timeScaleFunction);
-        
 
         return attributes;
     }
@@ -168,6 +177,7 @@ class MetricVariable
     private final String timeScalePeriod;
     private final String timeScaleFunction;
 
+    // TODO: make these longs
     private final int earliestLead;
     private final int latestLead;
     private final int sampleSize;
