@@ -115,8 +115,10 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedWriter
         SortedSet<MetricConstants> metrics = Slicer.discover( output, next -> next.getMetadata().getMetricID() );
         for ( MetricConstants m : metrics )
         {
-            StringJoiner headerRow = new StringJoiner( "," );
-            headerRow.merge( HEADER_DEFAULT );
+            StringJoiner headerRow = CommaSeparatedWriter.getDefaultHeaderFromSampleMetadata( output.getData()
+                                                                                              .get( 0 )
+                                                                                              .getMetadata()
+                                                                                              .getSampleMetadata() );
             
             ListOfStatistics<PairedStatistic<S, T>> nextOutput = Slicer.filter( output, m );
             

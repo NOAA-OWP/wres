@@ -1162,8 +1162,8 @@ public class Validation
     }
 
     /**
-     * Returns true if the time aggregation function associated with the desiredTimeScaleis valid given the time
-     * aggregation functions associated with the existingTimeScalefor each source.
+     * Returns true if the time aggregation function associated with the desiredTimeScale is valid given the time
+     * aggregation functions associated with the existingTimeScale for each source.
      * 
      * See Redmine issue 40389.
      * 
@@ -1180,13 +1180,16 @@ public class Validation
                                                                   PairConfig pairConfig )
     {
         boolean returnMe = true;
+        
         TimeScaleFunction desired = pairConfig.getDesiredTimeScale().getFunction();
         Inputs inputConfig = projectConfigPlus.getProjectConfig().getInputs();
+        
         // Time aggregation is a sum
-        if ( desired.equals( TimeScaleFunction.TOTAL ) )
+        if ( TimeScaleFunction.TOTAL.equals( desired ) )
         {
             returnMe = isDesiredTimeScaleSumValid( projectConfigPlus, inputConfig );
         }
+        
         return returnMe;
     }
 
