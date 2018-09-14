@@ -6,7 +6,6 @@ import java.util.Objects;
 import java.util.SortedSet;
 import java.util.TimeZone;
 
-import org.apache.commons.lang3.time.DurationFormatUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -89,7 +88,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         recordWindowingArguments( meta.getSampleMetadata() );
 
         addArgument( "diagramInstanceDescription",
-                     "at Lead Hour " + meta.getSampleMetadata().getTimeWindow().getLatestLeadTimeInHours()
+                     "at Lead Hour " + meta.getSampleMetadata().getTimeWindow().getLatestLeadTime().toHours()
                                                    + " for "
                                                    + meta.getSampleMetadata().getThresholds() );
         addArgument( "probabilities",
@@ -122,8 +121,8 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
                                      next -> next.getMetadata().getSampleMetadata().getTimeWindow() );
             recordWindowingArguments( timeWindows.first().getEarliestTime(),
                                       timeWindows.last().getLatestTime(),
-                                      timeWindows.first().getEarliestLeadTimeInHours(),
-                                      timeWindows.last().getLatestLeadTimeInHours(),
+                                      timeWindows.first().getEarliestLeadTime().toHours(),
+                                      timeWindows.last().getLatestLeadTime().toHours(),
                                       timeWindows.first().getReferenceTime() );
         }
         else
@@ -195,14 +194,14 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         {
             earliestInstant = meta.getTimeWindow().getEarliestTime();
             latestInstant = meta.getTimeWindow().getLatestTime();
-            addArgument( "earliestLeadTimeHours", Long.toString( meta.getTimeWindow().getEarliestLeadTimeInHours() ) );
-            addArgument( "latestLeadTimeHours", Long.toString( meta.getTimeWindow().getLatestLeadTimeInHours() ) );
+            addArgument( "earliestLeadTimeHours", Long.toString( meta.getTimeWindow().getEarliestLeadTime().toHours() ) );
+            addArgument( "latestLeadTimeHours", Long.toString( meta.getTimeWindow().getLatestLeadTime().toHours() ) );
             addArgument( "referenceTime", meta.getTimeWindow().getReferenceTime().toString() ); //#44873
 
             recordWindowingArguments( meta.getTimeWindow().getEarliestTime(),
                                       meta.getTimeWindow().getLatestTime(),
-                                      meta.getTimeWindow().getEarliestLeadTimeInHours(),
-                                      meta.getTimeWindow().getLatestLeadTimeInHours(),
+                                      meta.getTimeWindow().getEarliestLeadTime().toHours(),
+                                      meta.getTimeWindow().getLatestLeadTime().toHours(),
                                       meta.getTimeWindow().getReferenceTime() );
         }
         else
@@ -260,7 +259,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         addArgument( "legendUnitsText", legendUnitsText );
         if ( plotTimeWindow != null )
         {
-            Object key = plotTimeWindow.getLatestLeadTimeInHours();
+            Object key = plotTimeWindow.getLatestLeadTime().toHours();
             addArgument( "diagramInstanceDescription", "at Lead Hour " + key );
             addArgument( "plotTitleVariable", "Thresholds" );
         }
@@ -370,13 +369,8 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         String timeScale = "";
         if ( meta.getSampleMetadata().hasTimeScale() )
         {
-            String period = DurationFormatUtils.formatDurationWords( meta.getSampleMetadata()
-                                                                         .getTimeScale()
-                                                                         .getPeriod()
-                                                                         .toMillis(),
-                                                                     true,
-                                                                     true )
-                                               .toUpperCase();
+            String period =
+                    Long.toString( meta.getSampleMetadata().getTimeScale().getPeriod().getSeconds() ) + " SECONDS";
 
             timeScale =
                     " with time scale [" + period + ", " + meta.getSampleMetadata().getTimeScale().getFunction() + "] ";
@@ -384,7 +378,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
 
         addArgument( "timeScale", timeScale );
     }
-    
+
     private void initializeFunctionInformation()
     {
         this.addFunctionName( EARLIEST_DATE_TO_TEXT );

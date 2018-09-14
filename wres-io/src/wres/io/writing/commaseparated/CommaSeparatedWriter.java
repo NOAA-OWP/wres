@@ -9,6 +9,7 @@ import java.nio.file.StandardOpenOption;
 import java.text.Format;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -18,6 +19,8 @@ import java.util.StringJoiner;
 import wres.config.ProjectConfigException;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.metadata.ReferenceTime;
+import wres.datamodel.metadata.SampleMetadata;
+import wres.datamodel.metadata.TimeScale;
 import wres.datamodel.metadata.TimeWindow;
 import wres.io.config.ConfigHelper;
 
@@ -46,20 +49,10 @@ abstract class CommaSeparatedWriter
                                                           Duration.ofSeconds( Long.MIN_VALUE ) );
 
     /**
-     * Default information for the header.
+     * Default resolution for writing duration outputs. To change the resolution, change this default.
      */
 
-    static final StringJoiner HEADER_DEFAULT =
-            new StringJoiner( "," ).add( "EARLIEST" + HEADER_DELIMITER + "TIME" )
-                                   .add( "LATEST" + HEADER_DELIMITER + "TIME" )
-                                   .add( "EARLIEST" + HEADER_DELIMITER
-                                         + "LEAD"
-                                         + HEADER_DELIMITER
-                                         + "HOUR" )
-                                   .add( "LATEST" + HEADER_DELIMITER
-                                         + "LEAD"
-                                         + HEADER_DELIMITER
-                                         + "HOUR" );
+    static final ChronoUnit DEFAULT_DURATION_UNITS = ChronoUnit.SECONDS;
 
     /**
      * The project configuration to write.
@@ -158,8 +151,8 @@ abstract class CommaSeparatedWriter
             row = new StringJoiner( "," );
             row.add( timeWindow.getEarliestTime().toString() );
             row.add( timeWindow.getLatestTime().toString() );
-            row.add( Long.toString( timeWindow.getEarliestLeadTimeInHours() ) );
-            row.add( Long.toString( timeWindow.getLatestLeadTimeInHours() ) );
+            row.add( Long.toString( timeWindow.getEarliestLeadTime().get( DEFAULT_DURATION_UNITS ) ) );
+            row.add( Long.toString( timeWindow.getLatestLeadTime().get( DEFAULT_DURATION_UNITS ) ) );
             rows.add( RowCompareByLeft.of( timeWindow, row, additionalComparators ) );
         }
 
@@ -182,6 +175,73 @@ abstract class CommaSeparatedWriter
             }
             row.add( toWrite );
         }
+    }
+
+    /**
+     * Returns default header from the {@link SampleMetadata} to which additional information may be appended.
+     * 
+     * @param sampleMetadata the sample metadata
+     * @return default header information
+     * @throws NullPointerException if the sampleMetadata is null
+     */
+
+    static StringJoiner getDefaultHeaderFromSampleMetadata( SampleMetadata sampleMetadata )
+    {
+        Objects.requireNonNull( sampleMetadata, "Cannot determine the default CSV header from null metadata." );
+
+        StringJoiner joiner = new StringJoiner( "," );
+
+        String referenceTime = "TIME";
+        String timeScale = "";
+
+        // Set the reference time string
+        if ( sampleMetadata.hasTimeWindow() )
+        {
+            referenceTime = sampleMetadata.getTimeWindow().getReferenceTime().name();
+            referenceTime = referenceTime.replaceAll( "_", HEADER_DELIMITER );
+        }
+
+        // Set the time scale string
+        if ( sampleMetadata.hasTimeScale() )
+        {
+            TimeScale s = sampleMetadata.getTimeScale();
+
+            timeScale = HEADER_DELIMITER
+                        + "["
+                        + s.getFunction()
+                        + HEADER_DELIMITER
+                        + "OVER"
+                        + HEADER_DELIMITER
+                        + "PAST"
+                        + HEADER_DELIMITER
+                        + s.getPeriod().get( DEFAULT_DURATION_UNITS )
+                        + HEADER_DELIMITER
+                        + DEFAULT_DURATION_UNITS.name()
+                        + "]";
+        }
+
+        joiner.add( "EARLIEST" + HEADER_DELIMITER + referenceTime )
+              .add( "LATEST" + HEADER_DELIMITER + referenceTime )
+              .add( "EARLIEST" + HEADER_DELIMITER
+                    + "LEAD"
+                    + HEADER_DELIMITER
+                    + "TIME"
+                    + HEADER_DELIMITER
+                    + "IN"
+                    + HEADER_DELIMITER
+                    + DEFAULT_DURATION_UNITS.name()
+                    + timeScale )
+              .add( "LATEST" + HEADER_DELIMITER
+                    + "LEAD"
+                    + HEADER_DELIMITER
+                    + "TIME"
+                    + HEADER_DELIMITER
+                    + "IN"
+                    + HEADER_DELIMITER
+                    + DEFAULT_DURATION_UNITS.name()
+                    + timeScale );
+
+        return joiner;
     }
 
     /**

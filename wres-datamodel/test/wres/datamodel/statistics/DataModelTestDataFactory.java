@@ -77,7 +77,7 @@ public final class DataModelTestDataFactory
                                                              ReferenceTime.VALID_TIME,
                                                              Duration.ofHours( (int) leadTime ) );
                 final MetricResultByThreshold t =
-                        (MetricResultByThreshold) data.getResult( timeWindow.getLatestLeadTimeInHours() );
+                        (MetricResultByThreshold) data.getResult( timeWindow.getLatestLeadTime().toHours() );
                 final Iterator<MetricResultKey> e = t.getIterator();
                 //Iterate through the thresholds
                 while ( e.hasNext() )
@@ -249,7 +249,7 @@ public final class DataModelTestDataFactory
                                                              ReferenceTime.VALID_TIME,
                                                              Duration.ofHours( (int) leadTime ) );
                 final MetricResultByThreshold t =
-                        (MetricResultByThreshold) data.getResult( timeWindow.getLatestLeadTimeInHours() );
+                        (MetricResultByThreshold) data.getResult( timeWindow.getLatestLeadTime().toHours() );
                 final Iterator<MetricResultKey> e = t.getIterator();
                 //Iterate through the thresholds
                 while ( e.hasNext() )

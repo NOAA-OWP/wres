@@ -358,7 +358,7 @@ public abstract class XYChartDataSourceFactory
                             next.add( new FixedMillisecond( nextDouble.getMetadata()
                                                                       .getSampleMetadata()
                                                                       .getTimeWindow()
-                                                                      .getMidPointTime()
+                                                                      .getMidPointBetweenEarliestAndLatestTimes()
                                                                       .toEpochMilli() ),
                                       nextDouble.getData() );
                         }
