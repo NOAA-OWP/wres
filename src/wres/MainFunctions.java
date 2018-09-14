@@ -50,6 +50,7 @@ import wres.io.concurrency.WRESRunnable;
 import wres.io.config.ConfigHelper;
 import wres.io.reading.usgs.USGSParameterReader;
 import wres.io.utilities.DataProvider;
+import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
 import wres.io.utilities.ScriptBuilder;
 import wres.system.ProgressMonitor;
@@ -122,56 +123,49 @@ final class MainFunctions
 		final Map<String, Function<String[], Integer>> functions = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
 		functions.put("connecttodb", connectToDB());
-		functions.put("commands", printCommands());
-		functions.put("--help", printCommands());
-		functions.put("-h", printCommands());
+		functions.put("commands", MainFunctions::printCommands);
+		functions.put("--help", MainFunctions::printCommands);
+		functions.put("-h", MainFunctions::printCommands);
 		functions.put("cleandatabase", cleanDatabase());
 		functions.put("execute", new Control());
 		functions.put("downloadtestdata", refreshTestData());
 		functions.put("refreshdatabase", refreshDatabase());
 		functions.put("loadcoordinates", loadCoordinates());
-		functions.put("install", MainFunctions::install);
 		functions.put("ingest", MainFunctions::ingest);
-		functions.put( "loadusgsparameters", loadUSGSParameters());
-		functions.put( "latestprojecterror", getLatestProjectError() );
-		functions.put( "getexecutions", getExecutions() );
-		functions.put("viewruns", viewRuns());
+		functions.put( "loadusgsparameters", MainFunctions::loadUSGSParameters);
 		functions.put("createnetcdftemplate", MainFunctions::createNetCDFTemplate);
 		functions.put("validate", MainFunctions::validate);
 		functions.put("validategrid", MainFunctions::validateNetcdfGrid);
-		functions.put("s3test", MainFunctions::s3Test);
 		functions.put("readheader", MainFunctions::readHeader);
 
 		return functions;
 	}
 
-	private static Function<String[], Integer> loadUSGSParameters()
+	private static Integer loadUSGSParameters(final String[] args)
     {
-        return (final String[] args) -> {
-            Integer result = FAILURE;
+        Integer result = FAILURE;
 
-            if (args.length >= 1)
+        if (args.length >= 1)
+        {
+            USGSParameterReader reader = new USGSParameterReader( args[0] );
+            try
             {
-                USGSParameterReader reader = new USGSParameterReader( args[0] );
-                try
-                {
-                    reader.read();
-                    result = SUCCESS;
-                }
-                catch ( IOException e )
-                {
-                    MainFunctions.addException( e );
-                    LOGGER.error( Strings.getStackTrace( e ) );
-                }
+                reader.read();
+                result = SUCCESS;
             }
-            else
+            catch ( IOException e )
             {
-                LOGGER.error("The path to the USGS parameter definition CSV is required.");
-                LOGGER.error("usage: loadUSGSParameters parameters.csv");
+                MainFunctions.addException( e );
+                LOGGER.error( Strings.getStackTrace( e ) );
             }
+        }
+        else
+        {
+            LOGGER.error("The path to the USGS parameter definition CSV is required.");
+            LOGGER.error("usage: loadUSGSParameters parameters.csv");
+        }
 
-            return result;
-        };
+        return result;
     }
 
 	/**
@@ -179,16 +173,14 @@ final class MainFunctions
 	 *
 	 * @return Method that prints all available commands by name
 	 */
-	private static Function<String[], Integer> printCommands()
+	private static Integer printCommands(final String[] args)
 	{
-		return (final String[] args) -> {
-			LOGGER.info("Available commands are:");
-			for (final String command : FUNCTIONS.keySet())
-			{
-				LOGGER.info("\t{}", command);
-			}
-			return SUCCESS;
-		};
+		LOGGER.info("Available commands are:");
+        for (final String command : FUNCTIONS.keySet())
+        {
+            LOGGER.info("\t{}", command);
+        }
+        return SUCCESS;
 	}
 
 	/**
@@ -941,7 +933,7 @@ final class MainFunctions
                     String xType = xCoordinates.findAttValueIgnoreCase( "_CoordinateAxisType", "GeoX" );
                     String yType = yCoordinates.findAttValueIgnoreCase( "_CoordinateAxisType", "GeoY" );
 
-                    ScriptBuilder script = new ScriptBuilder(  );
+                    DataScripter script = new DataScripter(  );
                     script.addLine("WITH new_projection AS");
                     script.addLine("(");
                     script.addTab().addLine("INSERT INTO wres.GridProjection (");
@@ -1019,7 +1011,7 @@ final class MainFunctions
                     }
 
                     LOGGER.info("Removing any preexisting data that may have been present for this projection.");
-                    script = new ScriptBuilder(  );
+                    script = new DataScripter(  );
                     script.addLine("DELETE FROM wres.NetCDFCoordinate");
                     script.addLine("WHERE gridprojection_id = ", gridProjectionID, ";");
                     script.execute();
@@ -1092,72 +1084,11 @@ final class MainFunctions
                         copyTask = copyTasks.poll();
                     }
 
-                    script = new ScriptBuilder(  );
+                    script = new DataScripter(  );
 					script.addLine("UPDATE wres.GridProjection");
 					script.addTab().addLine("SET load_complete = true");
 					script.addLine("WHERE gridprojection_id = ", gridProjectionID, ";");
 					script.execute();
-
-					/*List<Future> copyOperations = new ArrayList<>();
-
-					int xLength = xCoordinates.getDimension(0).getLength();
-					int yLength = yCoordinates.getDimension(0).getLength();
-
-					Array xValues = xCoordinates.read();
-					Array yValues = yCoordinates.read();
-
-					int currentXIndex = 0;
-					int currentYIndex;
-					for (; currentXIndex < xLength; ++currentXIndex) {
-						currentYIndex = 0;
-
-						for (; currentYIndex < yLength; ++currentYIndex) {
-
-							if (copyCount > 0)
-							{
-								builder.append(", ");
-							}
-
-							builder.append("(");
-							builder.append(currentXIndex).append(", ");
-							builder.append(currentYIndex).append(", ");
-							builder.append("ST_Transform(ST_SetSRID(ST_MakePoint(").
-									append(xValues.getDouble(currentXIndex)).
-										   append(",").
-										   append(yValues.getDouble(currentYIndex)).
-										   append("), ").
-										   append(customSRID).append("), 4326)::point")
-								   .append(", ");
-							builder.append(tempResolution).append(")");
-
-							copyCount++;
-
-							if (copyCount >= SystemSettings.getMaximumCopies())
-							{
-								LOGGER.trace("The copy count now exceeds the maximum allowable copies, so the values are being sent to save.");
-								SQLExecutor sqlExecutor = new SQLExecutor(builder.toString());
-								sqlExecutor.setOnRun(ProgressMonitor.onThreadStartHandler());
-								sqlExecutor.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
-								LOGGER.trace("Sending coordinate values to the database executor to copy...");
-								copyOperations.add(Database.execute(sqlExecutor));
-								builder = new StringBuilder(insertHeader);
-								copyCount = 0;
-							}
-						}
-					}
-
-					if (copyCount > 0)
-                    {
-                        SQLExecutor sqlExecutor = new SQLExecutor(builder.toString());
-                        sqlExecutor.setOnRun(ProgressMonitor.onThreadStartHandler());
-                        sqlExecutor.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
-                        LOGGER.trace("Sending the last coordinate values to the database executor to copy...");
-                        copyOperations.add(Database.execute(sqlExecutor));
-                    }
-
-					for (Future copy : copyOperations) {
-						copy.get();
-					}*/
 
                     // Execute a query inserting all coordinates by using PostGIS to convert coordinates from the indicated
                     //      projection to the one WGS84 (ESPG:4326)
@@ -1195,223 +1126,6 @@ final class MainFunctions
 			return result;
 		};
 	}
-
-	private static Integer s3Test(String[] args) {
-	    Integer status = FAILURE;
-
-	    try
-        {
-            Operations.s3Test();
-            status = SUCCESS;
-        }
-        catch ( IOException e )
-        {
-            LOGGER.error( "Could not find S3 data.", e );
-        }
-
-	    return status;
-    }
-
-	private static Integer install(String[] args) {
-        Integer status = FAILURE;
-        try
-        {
-            LOGGER.info("Updating the WRES installation...");
-            Operations.install();
-            status = SUCCESS;
-            LOGGER.info("Installation Complete!");
-            LOGGER.info("The WRES is ready for use.");
-        }
-        catch ( SQLException e )
-        {
-            LOGGER.error("The WRES install could not be updated.");
-            MainFunctions.addException( e );
-        }
-
-        return status;
-	}
-
-	private static Function<String[], Integer> getLatestProjectError()
-    {
-        return args -> {
-            Integer result = FAILURE;
-
-            try
-            {
-                ScriptBuilder script = new ScriptBuilder();
-
-                script.addLine( "SELECT username, address, arguments, run_time, error" );
-                script.addLine( "FROM ExecutionLog" );
-                script.addLine( "WHERE failed = true" );
-                script.addTab()
-                      .addLine( "AND LOWER(arguments) LIKE 'execute%'" );
-                script.addLine( "ORDER BY log_id" );
-                script.addLine( "LIMIT 1;" );
-
-                try (DataProvider errorData = script.getData())
-                {
-                    String arguments = errorData.getString( "arguments" );
-                    String userIdentifier = errorData.getString( "username" ) +
-                                            ":" +
-                                            errorData.getString( "address" );
-                    String runTime = errorData.getString( "run_time" );
-                    String errors = errorData.getString( "error" );
-
-                    String newline = System.lineSeparator();
-
-                    LOGGER.info( "{}"
-                                 + "User: {}{}"
-                                 + "Arguments: {}{}"
-                                 + "Run Time: {}{}"
-                                 + "Errors:{}{}"
-                                 + "{}",
-                                 newline,
-                                 userIdentifier, newline,
-                                 arguments, newline,
-                                 runTime, newline,
-                                 newline, newline,
-                                 errors );
-
-                    result = SUCCESS;
-                }
-            }
-            catch ( SQLException e )
-            {
-                MainFunctions.addException( e );
-                LOGGER.error(
-                        "Information about the most recently failed project"
-                        + "could not be loaded.",
-                        e );
-            }
-
-            return result;
-        };
-    }
-
-    private static Function<String[], Integer> getExecutions()
-    {
-        return args -> {
-            Integer result = SUCCESS;
-
-            Integer valueCount = 10;
-            boolean includeFailures = true;
-            String projectName = null;
-
-            ScriptBuilder script = new ScriptBuilder(  );
-            script.addLine("SELECT 'Arguments: ' || arguments || '");
-            script.addLine("User: ' || username || ':' || address || '");
-            script.addLine("Run Time: ' || run_time::text || '");
-            script.addLine("Errors:' ||");
-            script.addTab().addLine("CASE");
-            script.addTab(  2  ).addLine("WHEN (error IS NULL || error = '') THEN 'None'");
-            script.addTab(  2  ).addLine("ELSE '");
-            script.addLine("' || error || '");
-            script.addLine("'");
-            script.addTab().addLine("END AS execution");
-
-            if (args.length > 0)
-            {
-                valueCount = Integer.parseInt( args[0] );
-            }
-
-            if (args.length > 1)
-            {
-                projectName = args[1];
-            }
-
-            if (args.length > 2)
-            {
-                includeFailures = Boolean.valueOf( args[2] );
-            }
-
-            script.addLine("FROM ExecutionLog");
-
-            if (projectName == null)
-            {
-                script.addLine( "WHERE LOWER(arguments) LIKE LOWER('execute%')" );
-            }
-            else
-            {
-                script.addLine( "WHERE LOWER(arguments) LIKE LOWER('execute%", projectName, "%')");
-            }
-
-            if (!includeFailures)
-            {
-                script.addTab().addLine("AND failed = false");
-            }
-
-            script.addLine("ORDER BY log_id DESC");
-            script.addLine("LIMIT ", valueCount);
-
-            try (DataProvider executions = script.getData())
-            {
-                executions.consume( execution -> LOGGER.info(execution.getString( "execution" )) );
-            }
-            catch ( SQLException e )
-            {
-                MainFunctions.addException( e );
-                LOGGER.error( Strings.getStackTrace( e ));
-                result = FAILURE;
-            }
-
-            return result;
-        };
-    }
-
-    private static Function<String[], Integer> viewRuns()
-    {
-        return args -> {
-            Integer result = SUCCESS;
-
-            if (args.length == 0)
-            {
-                LOGGER.info("Please provide the name of a project to check.");
-                LOGGER.info("usage: viewruns <project name> [<maximum row count>]");
-            }
-            else
-            {
-                String newline = System.lineSeparator();
-
-                String projectName = "LOWER('execute%" + args[0] + "%')";
-                Integer valueCount = 10;
-
-                if (args.length > 1)
-                {
-                    valueCount = Integer.parseInt( args[1] );
-                }
-
-                ScriptBuilder script = new ScriptBuilder(  );
-
-                script.addLine("SELECT rpad('Run Time: ' || run_time::text, 25) || ' | '  || ");
-                script.addTab().addLine("lpad('Start Time: ' || start_time::text, 36) || ' | '  || ");
-                script.addTab().addLine("lpad('User: ' || username || ':' || address, 35) || ' | ' || ");
-                script.addTab().addLine("CASE");
-                script.addTab(  2  ).addLine("WHEN failed = true THEN lpad('Failed', 10)");
-                script.addTab(  2  ).addLine("ELSE lpad('Succeeded', 10)");
-                script.addTab().addLine("END || '" + newline + "' || ");
-                script.addTab().addLine("repeat('-', 115) AS run");
-                script.addLine("FROM ExecutionLog");
-                script.addLine("WHERE LOWER(arguments) LIKE ", projectName);
-                script.addLine("ORDER BY log_id DESC");
-                script.addLine("LIMIT ", valueCount);
-
-                try (DataProvider runs = script.getData())
-                {
-                    LOGGER.info(newline);
-                    runs.consume( run ->LOGGER.info(run.getString("run")));
-                    LOGGER.info( newline );
-                }
-                catch ( SQLException e )
-                {
-                    result = FAILURE;
-                    MainFunctions.addException( e );
-                    LOGGER.error( Strings.getStackTrace( e ));
-                }
-            }
-
-            return result;
-        };
-    }
 
     private static Integer readHeader(String[] args)
     {

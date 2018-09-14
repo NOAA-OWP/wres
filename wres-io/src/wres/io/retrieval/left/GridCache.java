@@ -21,6 +21,7 @@ import wres.io.config.ConfigHelper;
 import wres.io.data.caching.UnitConversions;
 import wres.io.data.details.ProjectDetails;
 import wres.io.utilities.DataProvider;
+import wres.io.utilities.DataScripter;
 import wres.io.utilities.NoDataException;
 import wres.io.utilities.ScriptBuilder;
 import wres.util.Collections;
@@ -135,7 +136,7 @@ class GridCache implements LeftHandCache
 
     private void loadSourceCache() throws SQLException, NoDataException
     {
-        ScriptBuilder script = new ScriptBuilder();
+        DataScripter script = new DataScripter();
         script.addLine("SELECT S.path, S.output_time + INTERVAL '1 ", TimeHelper.LEAD_RESOLUTION, "' * S.lead AS output_time");
         script.addLine("FROM wres.Source S");
         script.addLine("WHERE S.is_point_data = FALSE");

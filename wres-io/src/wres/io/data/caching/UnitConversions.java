@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.io.utilities.DataProvider;
+import wres.io.utilities.DataScripter;
 import wres.io.utilities.ScriptBuilder;
 import wres.util.NotImplementedException;
 
@@ -104,7 +105,7 @@ public final class UnitConversions
         {
             if (UnitConversions.instance == null)
             {
-                ScriptBuilder script = new ScriptBuilder(  );
+                DataScripter script = new DataScripter(  );
                 script.setHighPriority( true );
 
                 script.addLine("SELECT UC.*, M.unit_name");

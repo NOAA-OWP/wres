@@ -36,6 +36,7 @@ import wres.io.data.details.ProjectDetails;
 import wres.io.data.details.TimeSeries;
 import wres.io.retrieval.scripting.Scripter;
 import wres.io.utilities.DataProvider;
+import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
 import wres.io.utilities.ScriptBuilder;
@@ -204,11 +205,11 @@ public class TimeSeriesRetriever extends Retriever
     {
         Connection connection = null;
 
-        ScriptBuilder script;
+        DataScripter script;
 
         try
         {
-            script = new ScriptBuilder( this.getLoadScript( this.getProjectDetails().getRight() ) );
+            script = new DataScripter( this.getLoadScript( this.getProjectDetails().getRight() ) );
         }
         catch ( SQLException | IOException e )
         {

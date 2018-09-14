@@ -10,6 +10,7 @@ import wres.io.data.caching.Variables;
 import wres.io.data.details.ProjectDetails;
 import wres.io.reading.usgs.USGSReader;
 import wres.io.utilities.DataProvider;
+import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
 import wres.io.utilities.ScriptBuilder;
 import wres.util.CalculationException;
@@ -272,7 +273,7 @@ class ClimatologyBuilder
         protected SortedMap<DateRange, List<Double>> execute()
                 throws CalculationException
         {
-            ScriptBuilder script = new ScriptBuilder();
+            DataScripter script = new DataScripter();
             script.addLine("SELECT");
 
             script.addTab().add("(", this.earliestDate, "::timestamp without time zone");

@@ -17,6 +17,7 @@ import wres.config.generated.ProjectConfig;
 import wres.io.config.ConfigHelper;
 import wres.io.data.details.FeatureDetails;
 import wres.io.data.details.ProjectDetails;
+import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
 import wres.io.utilities.ScriptBuilder;
 import wres.util.NotImplementedException;
@@ -157,10 +158,8 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
     private static Set<FeatureDetails> getUnspecifiedDetails( ProjectConfig projectConfig )
             throws SQLException
     {
-        // A set is used to avoid duplications
-        Set<FeatureDetails> features = new HashSet<>(  );
 
-        ScriptBuilder script = new ScriptBuilder(  );
+        DataScripter script = new DataScripter(  );
         script.addLine("SELECT *");
         script.addLine("FROM wres.Feature");
         script.addLine("WHERE lid != ''");
@@ -180,6 +179,8 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
 
         script.addLine("ORDER BY feature_id");
 
+        // A set is used to avoid duplications
+        Set<FeatureDetails> features = new HashSet<>(  );
         script.consume( featureRow -> features.add( new FeatureDetails(  featureRow  )) );
 
         return features;
@@ -386,7 +387,7 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
      */
     private static List<FeatureDetails> getSpecifiedGriddedFeatures(ProjectConfig projectConfig) throws SQLException
     {
-        ScriptBuilder script = new ScriptBuilder(  );
+        DataScripter script = new DataScripter(  );
 
         script.addLine("SELECT geographic_coordinate[0]::real AS longitude,");
         script.addTab().addLine("geographic_coordinate[1]::real AS latitude,");
@@ -495,7 +496,7 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         // spot on.
         Double rangeInDegrees = Math.max( range / distanceOfOneDegree, 0.00005);
 
-        ScriptBuilder script = new ScriptBuilder(  );
+        DataScripter script = new DataScripter(  );
         script.addLine("WITH feature_and_distance AS");
         script.addLine("(");
         script.addTab().addLine("SELECT SQRT((", latitude, " - latitude)^2 + (", longitude, " - longitude)^2) AS distance");
@@ -514,7 +515,7 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
 
     private static List<FeatureDetails> getDetailsByGeometry( Feature feature ) throws SQLException
     {
-        ScriptBuilder script = new ScriptBuilder(  );
+        DataScripter script = new DataScripter(  );
 
         script.addLine("SELECT *");
         script.addLine("FROM wres.Feature F");
@@ -572,7 +573,7 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
     private static List<FeatureDetails> getDetailsByHUC(String huc)
             throws SQLException
     {
-        ScriptBuilder script = new ScriptBuilder(  );
+        DataScripter script = new DataScripter(  );
         script.addLine("SELECT *");
         script.addLine("FROM wres.Feature");
         script.addLine("WHERE huc LIKE '", huc, "%'");
@@ -584,7 +585,7 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
     private static List<FeatureDetails> getDetailsByRegion( String region)
             throws SQLException
     {
-        ScriptBuilder script = new ScriptBuilder(  );
+        DataScripter script = new DataScripter(  );
         script.addLine("SELECT *");
         script.addLine("FROM wres.Feature");
         script.addLine("WHERE region = '", region, "'");
@@ -596,7 +597,7 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
     private static List<FeatureDetails> getDetailsByState(String state)
             throws SQLException
     {
-        ScriptBuilder script = new ScriptBuilder(  );
+        DataScripter script = new DataScripter(  );
         script.addLine("SELECT *");
         script.addLine("FROM wres.Feature");
         script.addLine("WHERE state = '", state, "'");
@@ -605,7 +606,7 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         return Features.getDetailsFromDatabase( script );
     }
 
-    private static List<FeatureDetails> getDetailsFromDatabase(ScriptBuilder script) throws SQLException
+    private static List<FeatureDetails> getDetailsFromDatabase(DataScripter script) throws SQLException
     {
         List<FeatureDetails> features = script.interpret( FeatureDetails::new );
 
@@ -641,7 +642,7 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
 
             if (id == null)
             {
-                ScriptBuilder script = new ScriptBuilder(  );
+                DataScripter script = new DataScripter(  );
                 script.setHighPriority( true );
 
                 script.addLine("WITH new_variablefeature_id AS");
@@ -680,7 +681,7 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
     {
         synchronized ( Features.POSITION_LOCK )
         {
-            ScriptBuilder script = new ScriptBuilder(  );
+            DataScripter script = new DataScripter(  );
             script.addLine("INSERT INTO wres.VariableFeature (variable_id, feature_id)");
             script.addLine("SELECT ", variableId, ", F.feature_id");
             script.addLine("FROM wres.Feature F");

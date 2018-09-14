@@ -15,8 +15,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -62,6 +60,9 @@ public final class Database {
 	// The ingest lock key kind of resembles word INGEST, doesn't it?
 	private static final long MUTATION_LOCK_KEY = 126357;
 	private static final long MUTATION_LOCK_WAIT_MS = 32000;
+
+	// The length of an acceptable query; arbitrarily set to 5 minutes
+	private static final int QUERY_TIMEOUT = 60 * 5;
 
 	/**
 	 * An advisory lock only lasts for the duration of a connection. If we
@@ -196,7 +197,7 @@ public final class Database {
             script.addTab().addLine("WHERE LOWER(T.table_schema || '.' || T.table_name) = LOWER(IQ.table_name)");
             script.addLine(");");
 
-            script.execute();
+            Database.execute( script.toString() );
         }
         catch ( SQLException e )
         {
@@ -618,6 +619,7 @@ public final class Database {
             connection = getConnection();
             connection.setAutoCommit( !forceTransaction );
             statement = connection.createStatement();
+            statement.setQueryTimeout( QUERY_TIMEOUT );
             statement.execute(query);
 
             if (forceTransaction)
@@ -688,6 +690,7 @@ public final class Database {
 
             connection = getConnection();
             statement = connection.prepareStatement(query);
+            statement.setQueryTimeout( QUERY_TIMEOUT );
 
             for (Object[] statementValues : parameters)
             {
@@ -904,7 +907,8 @@ public final class Database {
 	@SuppressWarnings("unchecked")
 	private static <T> T getResult(final Connection connection,
 								   final String query,
-								   final String label) throws SQLException
+								   final String label
+    ) throws SQLException
 	{
 		Statement statement = null;
 		ResultSet results = null;
@@ -919,6 +923,7 @@ public final class Database {
 			}
 
 			statement = connection.createStatement();
+			statement.setQueryTimeout( QUERY_TIMEOUT );
 			statement.setFetchSize(1);
 
 			Timer scriptTimer = null;
@@ -1296,7 +1301,10 @@ public final class Database {
                 script.addTab().addLine( "AND C.relname LIKE 'timeseriesvalue_lead%'" );
                 script.addTab().addLine( "AND relkind = 'r';" );
 
-                script.consume( tableRow -> partitionTables.add(tableRow.getString( "table_name" )) );
+                Database.consume(
+                        script.toString(),
+                        tableRow -> partitionTables.add(tableRow.getString( "table_name" ))
+                );
             }
             catch ( SQLException databaseError )
             {
@@ -1375,7 +1383,7 @@ public final class Database {
             // Async would be neat, but not really possible. MVCC might make it
             // possible though; probably worth exploring since this can take a
             // while
-            script.executeInTransaction();
+            Database.execute( script.toString(), true );
 
             LOGGER.info("Incomplete data has been removed from the system.");
         }
@@ -1401,7 +1409,7 @@ public final class Database {
         scriptBuilder.addTab().addLine(")");
         scriptBuilder.addLine(") AS orphans_exist;");
 
-        return scriptBuilder.retrieve( "orphans_exist" );
+        return Database.getResult(scriptBuilder.toString(), "orphans_exist");
     }
     
     /**
@@ -1412,7 +1420,7 @@ public final class Database {
      * @return The results of the query
      * @throws SQLException Any issue caused by running the query in the database
      */
-    public static DataProvider getResults(final Connection connection, String query) throws SQLException
+    public static DataProvider getResults(final Connection connection, final String query) throws SQLException
     {
         if (LOGGER.isTraceEnabled())
         {
@@ -1421,46 +1429,15 @@ public final class Database {
             LOGGER.trace("");
         }
 
-        DataProvider results;
-        Statement statement = connection.createStatement();
-		statement.setFetchSize(SystemSettings.fetchSize());
+        Statement fetcher = connection.createStatement();
+        fetcher.setQueryTimeout( QUERY_TIMEOUT );
+        fetcher.setFetchSize(SystemSettings.fetchSize());
 
-		try
-		{
-			Timer timer = null;
-
-			if (LOGGER.isDebugEnabled())
-			{
-				timer = Database.createScriptTimer( query );
-			}
-
-			results = new SQLDataProvider( statement.executeQuery( query) );
-
-			if (LOGGER.isDebugEnabled() && timer != null)
-			{
-				timer.cancel();
-			}
-
-		}
-		catch (SQLException error)
-		{
-		    if (!statement.isClosed())
-            {
-                try
-                {
-                    statement.close();
-                }
-                catch ( SQLException se )
-                {
-                    // Exception on close should not affect primary outputs.
-                    LOGGER.warn( "Failed to close statement {}.", statement, se );
-                }
-            }
-            LOGGER.error( "The following SQL query failed:{}{}", NEWLINE, query, error );
-			throw error;
-		}
-
-        return results;
+		return executeStatement(
+		        fetcher,
+                query,
+                statement -> statement.executeQuery( query )
+        );
     }
 
     /**
@@ -1481,63 +1458,89 @@ public final class Database {
             LOGGER.trace("");
         }
 
-        DataProvider results;
-        PreparedStatement statement = null;
+        // Don't close the statement; it will close the result set.
+        // Closing the data provider will also kill the statement
+        PreparedStatement preparedStatement = connection.prepareStatement( query );
+        preparedStatement.setQueryTimeout( QUERY_TIMEOUT );
 
-        try
+        int addedParameters = 0;
+        for (; addedParameters < parameters.length; ++addedParameters)
         {
-            // Don't close the statement; it will close the result set.
-            // Closing the data provider will also kill the statement
-            statement = connection.prepareStatement( query );
-
-            int addedParameters = 0;
-            for (; addedParameters < parameters.length; ++addedParameters)
-            {
-                statement.setObject( addedParameters + 1, parameters[addedParameters] );
-            }
-
-            while (addedParameters < statement.getParameterMetaData().getParameterCount())
-            {
-                statement.setObject( addedParameters + 1, null );
-                addedParameters++;
-            }
-
-            Timer timer = null;
-
-            if (LOGGER.isDebugEnabled())
-            {
-                timer = Database.createScriptTimer( query );
-            }
-
-            // Don't close the statement; it will close the result set.
-            // Closing the data provider will also kill the statement
-            results = new SQLDataProvider( statement.executeQuery() );
-
-            if (LOGGER.isDebugEnabled() && timer != null)
-            {
-                timer.cancel();
-            }
-
+            preparedStatement.setObject( addedParameters + 1, parameters[addedParameters] );
         }
-        catch (SQLException error)
+
+        while (addedParameters < preparedStatement.getParameterMetaData().getParameterCount())
         {
-            // Only attempt to close the statement here because
-            // we're going to bubble up the error
-            if (statement != null && !statement.isClosed())
+            preparedStatement.setObject( addedParameters + 1, null );
+            addedParameters++;
+        }
+
+        return executeStatement(
+                preparedStatement,
+                query,
+                statement -> ((PreparedStatement)statement).executeQuery()
+        );
+    }
+
+    private static DataProvider executeStatement(
+            final Statement statement,
+            final String script,
+            final ExceptionalFunction<Statement, ResultSet, SQLException> query
+    ) throws SQLException
+    {
+        DataProvider results = null;
+        boolean retry = false;
+
+        do
+        {
+            try
             {
-                try
+                Timer timer = null;
+
+                if ( LOGGER.isDebugEnabled() )
                 {
-                    statement.close();
+                    timer = Database.createScriptTimer( script );
                 }
-                catch ( SQLException se )
+
+                results = new SQLDataProvider( query.call( statement ) );
+
+                if ( LOGGER.isDebugEnabled() && timer != null )
                 {
-                    // Exception on close should not affect primary outputs.
-                    LOGGER.warn( "Failed to close statement {}.", statement, se );
+                    timer.cancel();
+                }
+
+                retry = false;
+            }
+            catch ( SQLException error )
+            {
+                // If we hit the error indicating a random cancel AND we haven't retried...
+                if ( error.getMessage().contains( "ERROR: canceling statement due to user request" ) &&
+                     !retry )
+                {
+                    LOGGER.debug( "A statement was randomly canceled. Trying again." );
+                    // Set retry to true in order to try again
+                    retry = true;
+                }
+                else
+                {
+                    // Shut down resources and throw an error
+                    if ( !statement.isClosed() )
+                    {
+                        try
+                        {
+                            statement.close();
+                        }
+                        catch ( SQLException se )
+                        {
+                            // Exception on close should not affect primary outputs.
+                            LOGGER.warn( "Failed to close statement {}.", statement, se );
+                        }
+                    }
+                    LOGGER.error( "The following SQL query failed:{}{}", NEWLINE, query, error );
+                    throw error;
                 }
             }
-            LOGGER.error( "The following SQL query failed:{}{}", NEWLINE, query, error );
-            throw error;
-        }
+        } while (retry);
 
         return results;
     }
@@ -1561,7 +1564,7 @@ public final class Database {
         }
 
         Connection connection = null;
-        DataProvider output = null;
+        DataProvider output;
 
         try
         {
@@ -1667,7 +1670,7 @@ public final class Database {
     /**
      * @return A reference to the standard connection pool
      */
-    public static ComboPooledDataSource getPool()
+    static ComboPooledDataSource getPool()
     {
         return Database.CONNECTION_POOL;
     }
@@ -1699,6 +1702,7 @@ public final class Database {
         try
         {
             statement = connection.createStatement();
+            statement.setQueryTimeout( QUERY_TIMEOUT );
             statement.execute( query );
         }
         catch (SQLException e)
@@ -1812,7 +1816,6 @@ public final class Database {
 
     public static void releaseLockForMutation() throws IOException
     {
-
         // We instead need to release the connection
         synchronized ( Database.ADVISORY_LOCK )
         {

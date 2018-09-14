@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.io.utilities.DataProvider;
+import wres.io.utilities.DataScripter;
 import wres.io.utilities.ScriptBuilder;
 import wres.util.Strings;
 
@@ -78,10 +79,10 @@ public final class MeasurementDetails extends CachedDetail<MeasurementDetails, S
     }
 
 	@Override
-	protected ScriptBuilder getInsertSelect()
+	protected DataScripter getInsertSelect()
 			throws SQLException
 	{
-		ScriptBuilder script = new ScriptBuilder(  );
+        DataScripter script = new DataScripter(  );
 		script.addLine("SELECT measurementunit_id");
 		script.addLine("FROM wres.MeasurementUnit");
 		script.addLine("WHERE LOWER(unit_name) = LOWER(?);");

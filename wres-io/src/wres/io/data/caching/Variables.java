@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import wres.config.generated.DataSourceConfig;
 import wres.io.data.details.VariableDetails;
 import wres.io.utilities.DataProvider;
+import wres.io.utilities.DataScripter;
 import wres.io.utilities.ScriptBuilder;
 
 /**
@@ -82,7 +83,7 @@ public final class Variables extends Cache<VariableDetails, String>
             member += "'";
         }
 
-        ScriptBuilder script = new ScriptBuilder(  );
+        DataScripter script = new DataScripter(  );
 
         script.addLine("SELECT variable_name");
         script.addLine("FROM wres.Variable V");
@@ -130,7 +131,7 @@ public final class Variables extends Cache<VariableDetails, String>
             member += "'";
         }
 
-        ScriptBuilder script = new ScriptBuilder();
+        DataScripter script = new DataScripter();
 
         script.addLine("SELECT variable_name");
         script.addLine("FROM wres.Variable V");
@@ -181,7 +182,7 @@ public final class Variables extends Cache<VariableDetails, String>
 			member += "'";
 		}
 
-		ScriptBuilder script = new ScriptBuilder(  );
+        DataScripter script = new DataScripter(  );
 
 		script.addLine("SELECT EXISTS (");
 		script.addTab().addLine("SELECT 1");
@@ -242,7 +243,7 @@ public final class Variables extends Cache<VariableDetails, String>
 			member += "'";
 		}
 
-		ScriptBuilder script = new ScriptBuilder();
+        DataScripter script = new DataScripter();
 
 		script.addLine("SELECT EXISTS (");
 		script.addTab().addLine("SELECT 1");
@@ -323,7 +324,7 @@ public final class Variables extends Cache<VariableDetails, String>
     {
         try
         {
-            ScriptBuilder script = new ScriptBuilder(  );
+            DataScripter script = new DataScripter(  );
             script.setHighPriority( true );
 
             script.addLine("SELECT variable_id, variable_name");

@@ -17,6 +17,7 @@ import wres.datamodel.sampledata.SampleData;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.details.ProjectDetails;
+import wres.io.utilities.DataScripter;
 import wres.io.utilities.ScriptBuilder;
 import wres.io.writing.pair.SharedWriterManager;
 import wres.util.CalculationException;
@@ -59,7 +60,7 @@ public class ByForecastMetricInputIterator extends MetricInputIterator
                                                 + "to evaluate but could not be found.", e );
             }
 
-            ScriptBuilder script = new ScriptBuilder(  );
+            DataScripter script = new DataScripter(  );
             script.addLine("SELECT TS.timeseries_id");
             script.addLine("FROM wres.TimeSeries TS");
             script.addLine("WHERE EXISTS (");
