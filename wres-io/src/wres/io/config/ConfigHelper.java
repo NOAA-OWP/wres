@@ -871,13 +871,11 @@ public class ConfigHelper
         Duration beginningLead;
 
         // Default reference time
-        ReferenceTime referenceTime = ReferenceTime.VALID_TIME;
+        ReferenceTime referenceTime = ReferenceTime.ISSUE_TIME;
 
         if ( ProjectConfigs.hasTimeSeriesMetrics( projectDetails.getProjectConfig() ) )
         {
             beginningLead = firstLead;
-
-            referenceTime = ReferenceTime.ISSUE_TIME;
         }
         else if ( projectDetails.getProjectConfig().getPair().getLeadTimesPoolingWindow() != null )
         {
@@ -913,23 +911,21 @@ public class ConfigHelper
                 latestTime = earliestTime;
             }
 
-            referenceTime = ReferenceTime.ISSUE_TIME;
-
         }
         //Valid dates available
         else if ( projectDetails.getEarliestDate() != null && projectDetails.getLatestDate() != null )
         {
             earliestTime = Instant.parse( projectDetails.getEarliestDate() );
             latestTime = Instant.parse( projectDetails.getLatestDate() );
+            
+            referenceTime = ReferenceTime.VALID_TIME;
+            
         }
         //Issue dates available
         else if ( projectDetails.getEarliestIssueDate() != null && projectDetails.getLatestIssueDate() != null )
         {
             earliestTime = Instant.parse( projectDetails.getEarliestIssueDate() );
             latestTime = Instant.parse( projectDetails.getLatestIssueDate() );
-
-            referenceTime = ReferenceTime.ISSUE_TIME;
-
         }
         //No dates available
         else
@@ -1411,7 +1407,7 @@ public class ConfigHelper
 
         return ConfigHelper.getOutputPathToWrite( destinationConfig,
                                                   meta,
-                                                  timeWindow.getLatestLeadTimeInHours() + "_HOUR" );
+                                                  timeWindow.getLatestLeadTime().toHours() + "_HOUR" );
     }
 
     /**

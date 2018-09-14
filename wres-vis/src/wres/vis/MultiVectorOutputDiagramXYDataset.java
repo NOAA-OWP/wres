@@ -101,7 +101,7 @@ public class MultiVectorOutputDiagramXYDataset extends WRESAbstractXYDataset<Lis
                                                .getMetadata()
                                                .getSampleMetadata()
                                                .getTimeWindow()
-                                               .getLatestLeadTimeInHours() );
+                                               .getLatestLeadTime().toHours() );
         }
         else
         {

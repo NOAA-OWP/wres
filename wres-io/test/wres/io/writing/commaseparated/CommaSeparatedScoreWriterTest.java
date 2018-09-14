@@ -145,7 +145,7 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTestHelpe
         assertTrue( firstResult.get( 0 ).contains( "," ) );
         assertTrue( firstResult.get( 0 ).contains( "ERROR" ) );
         assertTrue( firstResult.get( 1 )
-                               .equals( "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,1,1,"
+                               .equals( "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,3600,3600,"
                                         + "1.0" ) );
         Path pathToSecondFile = Paths.get( System.getProperty( "java.io.tmpdir" ),
                                            "DRRC2_SQIN_HEFS_MEAN_ERROR.csv" );
@@ -154,7 +154,7 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTestHelpe
         assertTrue( secondResult.get( 0 ).contains( "," ) );
         assertTrue( secondResult.get( 0 ).contains( "ERROR" ) );
         assertTrue( secondResult.get( 1 )
-                                .equals( "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,1,1,"
+                                .equals( "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,3600,3600,"
                                          + "2.0" ) );
         Path pathToThirdFile = Paths.get( System.getProperty( "java.io.tmpdir" ),
                                           "DRRC2_SQIN_HEFS_MEAN_ABSOLUTE_ERROR.csv" );
@@ -163,7 +163,7 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTestHelpe
         assertTrue( thirdResult.get( 0 ).contains( "," ) );
         assertTrue( thirdResult.get( 0 ).contains( "ERROR" ) );
         assertTrue( thirdResult.get( 1 )
-                               .equals( "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,1,1,"
+                               .equals( "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,3600,3600,"
                                         + "3.0" ) );
 
         // If all succeeded, remove the file, otherwise leave to help debugging.
@@ -257,7 +257,7 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTestHelpe
         assertTrue( result.get( 0 ).contains( "," ) );
         assertTrue( result.get( 0 ).contains( "ERROR" ) );
         assertTrue( result.get( 1 )
-                          .equals( "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,1,18,"
+                          .equals( "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,3600,64800,"
                                    + "PT1H,PT2H,PT3H" ) );
         // If all succeeded, remove the file, otherwise leave to help debugging.
         Files.deleteIfExists( pathToFile );
@@ -390,13 +390,17 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTestHelpe
 
         List<String> firstResult = Files.readAllLines( pathToFirstFile );
 
-        assertTrue( firstResult.get( 0 ).equals( "EARLIEST TIME,LATEST TIME,EARLIEST LEAD HOUR,LATEST "
-                                                 + "LEAD HOUR,MEAN SQUARE ERROR All data,MEAN SQUARE ERROR > 23.0" ) );
+        System.out.println( firstResult.get( 0 ) );
+
+        assertTrue( firstResult.get( 0 ).equals( "EARLIEST VALID TIME,LATEST VALID TIME,EARLIEST LEAD TIME IN SECONDS,"
+                                                 + "LATEST LEAD TIME IN SECONDS,MEAN SQUARE ERROR All data,"
+                                                 + "MEAN SQUARE ERROR > 23.0" ) );
         assertTrue( firstResult.get( 1 )
                                .equals( "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
-                                        + "1,1,1.0,1.0" ) );
+                                        + "3600,3600,1.0,1.0" ) );
         assertTrue( firstResult.get( 2 )
-                               .equals( "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,2,2,1.0,NA" ) );
+                               .equals( "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,7200,"
+                                        + "7200,1.0,NA" ) );
 
         // If all succeeded, remove the file, otherwise leave to help debugging.
         Files.deleteIfExists( pathToFirstFile );

@@ -140,13 +140,13 @@ public class CommaSeparatedBoxPlotWriterTest extends CommaSeparatedWriterTestHel
         assertTrue( result.get( 0 ).contains( "FORECAST ERROR" ) );
 
         assertTrue( result.get( 1 )
-                          .equals( "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,24,24,"
+                          .equals( "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,86400,86400,"
                                    + "1.0,2.0,3.0,4.0,5.0,6.0" ) );
         assertTrue( result.get( 2 )
-                          .equals( "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,24,24,"
+                          .equals( "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,86400,86400,"
                                    + "3.0,7.0,9.0,11.0,13.0,15.0" ) );
         assertTrue( result.get( 3 )
-                          .equals( "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,24,24,"
+                          .equals( "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,86400,86400,"
                                    + "5.0,21.0,24.0,27.0,30.0,33.0" ) );
         // If all succeeded, remove the file, otherwise leave to help debugging.
         Files.deleteIfExists( pathToFile );

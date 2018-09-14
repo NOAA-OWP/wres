@@ -58,8 +58,8 @@ class MetricVariable
         }
 
         // We only add timing information until we get a lead variable in
-        this.earliestLead = (int)timeWindow.getEarliestLeadTimeInHours();
-        this.latestLead = (int)timeWindow.getLatestLeadTimeInHours();
+        this.earliestLead = (int)timeWindow.getEarliestLeadTime().toHours();
+        this.latestLead = (int)timeWindow.getLatestLeadTime().toHours();
 
         if (!timeWindow.getEarliestTime().equals( Instant.MIN ))
         {

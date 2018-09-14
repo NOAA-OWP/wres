@@ -122,10 +122,11 @@ public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends C
      * @return set of paths actually written to
      */
 
-    private static <T extends ScoreStatistic<?, T>> Set<Path> writeOneScoreOutputType( DestinationConfig destinationConfig,
-                                                                                    ListOfStatistics<T> output,
-                                                                                    Format formatter )
-            throws IOException
+    private static <T extends ScoreStatistic<?, T>> Set<Path>
+            writeOneScoreOutputType( DestinationConfig destinationConfig,
+                                     ListOfStatistics<T> output,
+                                     Format formatter )
+                    throws IOException
     {
         Set<Path> pathsWrittenTo = new HashSet<>( 1 );
 
@@ -161,8 +162,10 @@ public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends C
             // Process each output
             for ( ListOfStatistics<T> nextOutput : allOutputs )
             {
-                StringJoiner headerRow = new StringJoiner( "," );
-                headerRow.merge( HEADER_DEFAULT );
+                StringJoiner headerRow = CommaSeparatedWriter.getDefaultHeaderFromSampleMetadata( nextOutput.getData()
+                                                                                                            .get( 0 )
+                                                                                                            .getMetadata()
+                                                                                                            .getSampleMetadata() );
                 List<RowCompareByLeft> rows =
                         CommaSeparatedScoreWriter.getRowsForOneScore( m,
                                                                       nextOutput,
@@ -246,10 +249,10 @@ public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends C
      */
 
     private static <T extends ScoreStatistic<?, T>> void addRowsForOneScoreComponent( String name,
-                                                                                   ListOfStatistics<T> component,
-                                                                                   StringJoiner headerRow,
-                                                                                   List<RowCompareByLeft> rows,
-                                                                                   Format formatter )
+                                                                                      ListOfStatistics<T> component,
+                                                                                      StringJoiner headerRow,
+                                                                                      List<RowCompareByLeft> rows,
+                                                                                      Format formatter )
     {
 
         // Discover the time windows and thresholds
