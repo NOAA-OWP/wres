@@ -24,7 +24,7 @@ public class MeasurementUnits extends Cache<MeasurementDetails, String>
     /**
      *  Internal, Global cache of measurement details
      */
-	private static  MeasurementUnits instance = null;
+	private static  MeasurementUnits instance = new MeasurementUnits();
 	private static final Object CACHE_LOCK = new Object();
 
     private static final Object DETAIL_LOCK = new Object();
@@ -42,7 +42,7 @@ public class MeasurementUnits extends Cache<MeasurementDetails, String>
         return MeasurementUnits.KEY_LOCK;
     }
 
-    private MeasurementUnits(DataProvider data)
+    private void populate(DataProvider data)
     {
         while (data.next())
         {
@@ -57,7 +57,7 @@ public class MeasurementUnits extends Cache<MeasurementDetails, String>
     {
         synchronized (CACHE_LOCK)
         {
-            if ( instance == null)
+            if ( instance.isEmpty() )
             {
                 MeasurementUnits.initialize();
             }
@@ -100,7 +100,6 @@ public class MeasurementUnits extends Cache<MeasurementDetails, String>
 	
 	/**
 	 * Loads all pre-existing data into the instance cache
-     * TODO: Return MeasurementUnits, don't implicitly set it
 	 */
     private static synchronized void initialize()
 	{
@@ -113,7 +112,10 @@ public class MeasurementUnits extends Cache<MeasurementDetails, String>
             script.addLine("FROM wres.MeasurementUnit");
             script.add("LIMIT ", MAX_DETAILS, ";");
 
-            MeasurementUnits.instance = new MeasurementUnits( script.getData() );
+            try (DataProvider data = script.getData())
+            {
+                instance.populate( data );
+            }
         }
         catch (SQLException error)
         {

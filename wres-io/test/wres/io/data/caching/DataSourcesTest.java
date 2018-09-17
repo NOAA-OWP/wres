@@ -39,7 +39,7 @@ public class DataSourcesTest
     private static TestDatabaseGenerator.DatabaseAndConnections databaseAndConnections;
 
     @BeforeClass
-    public static void setup() throws SQLException, IOException, PropertyVetoException
+    public static void setup() throws Exception
     {
         DataSourcesTest.databaseAndConnections = TestDatabaseGenerator.createDatabase();
         DataSourcesTest.initializeDataSources();
@@ -47,7 +47,7 @@ public class DataSourcesTest
         LOGGER.trace("setup ended");
     }
 
-    private static void initializeDataSources()
+    private static void initializeDataSources() throws Exception
     {
         DataProvider data = DataBuilder.with( "output_time", "path", "hash", "is_point_data", "source_id" )
                                        .addRow( "2018-08-08T00:00:00Z",
@@ -66,8 +66,10 @@ public class DataSourcesTest
                                                 false,
                                                 3 )
                                        .build();
+        DataSources dataSources = new DataSources();
+        Whitebox.invokeMethod( dataSources, "populate", data );
 
-        Whitebox.setInternalState( DataSources.class, "instance", new DataSources(data) );
+        Whitebox.setInternalState( DataSources.class, "instance", dataSources );
     }
 
     @Test
@@ -111,14 +113,14 @@ public class DataSourcesTest
         LOGGER.trace("initializeCacheWithExistingData began");
 
         // Create one cache that inserts data to set us up for 2nd cache init.
-        DataSources sc = new DataSources(null);
+        DataSources sc = new DataSources();
 
         final String path = "/this/is/just/a/test";
         final String time = "2017-06-20 16:55:00";
         Integer firstId = sc.getID(path, time, null, "test");
 
         // Initialize a second cache, it should find the same data already present
-        DataSources scTwo = new DataSources(null);
+        DataSources scTwo = new DataSources();
 
         Integer secondId = scTwo.getID(path, time, null, "test");
 

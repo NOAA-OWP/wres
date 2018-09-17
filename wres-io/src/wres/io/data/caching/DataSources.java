@@ -53,14 +53,18 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
     /**
      * Global Cache of basic source data
      */
-	private static DataSources instance = null;
+	private static final DataSources instance = new DataSources();
 
-	public DataSources(final DataProvider data)
+	public DataSources()
     {
         this.initializeDetails();
+    }
+
+    private void populate(final DataProvider data)
+    {
         if (data == null)
         {
-            LOGGER.warn("The DataSources cache was created with no data.");
+            LOGGER.warn("The DataSources cache was populated with no data.");
             return;
         }
 
@@ -84,7 +88,7 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
     {
         synchronized (CACHE_LOCK)
         {
-            if ( instance == null)
+            if ( instance.isEmpty())
             {
                 DataSources.initialize();
             }
@@ -392,22 +396,23 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
 		return MAX_DETAILS;
 	}
 
-	// TODO: Return a DataSources, not implicitly add one
 	private static void initialize()
     {
-        Connection connection = null;
-
         try
         {
-            // TODO: Convert to using a ScriptBuilder
-            connection = Database.getHighPriorityConnection();
-            String loadScript = "SELECT source_id, path, CAST(output_time AS TEXT) AS output_time, hash, is_point_data" + System.lineSeparator();
-            loadScript += "FROM wres.Source" + System.lineSeparator();
-            loadScript += "LIMIT " + MAX_DETAILS;
+            DataScripter script = new DataScripter(  );
 
-            try (DataProvider sources = Database.getResults(connection, loadScript))
+            script.addLine("SELECT source_id,");
+            script.addTab().addLine("path,");
+            script.addTab().addLine("CAST(output_time AS TEXT) AS output_time,");
+            script.addTab().addLine("hash,");
+            script.addTab().addLine("is_point_data");
+            script.addLine("FROM wres.Source");
+            script.addLine("LIMIT ", MAX_DETAILS, ";");
+
+            try (DataProvider sources = script.getData())
             {
-                DataSources.instance = new DataSources(sources);
+                instance.populate( sources );
             }
         }
         catch (SQLException error)
@@ -415,13 +420,6 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
             // Failure to pre-populate cache should not affect primary outputs.
             LOGGER.warn( "An error was encountered when trying to populate the Source cache.",
                          error );
-        }
-        finally
-        {
-            if (connection != null)
-            {
-                Database.returnHighPriorityConnection(connection);
-            }
         }
     }
 }

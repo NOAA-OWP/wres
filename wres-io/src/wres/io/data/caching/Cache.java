@@ -36,9 +36,9 @@ abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
 					}
 				} );
 			}
-		}
 
-        return this.keyIndex;
+            return this.keyIndex;
+		}
     }
 
 	final ConcurrentMap<Integer, T> getDetails()
@@ -155,4 +155,9 @@ abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
 	        this.getKeyIndex().put(key, id);
 	    }
 	}
+
+	boolean isEmpty()
+    {
+        return this.getKeyIndex().isEmpty();
+    }
 }

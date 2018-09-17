@@ -179,7 +179,7 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
 		    script.addArgument( this.getQualifierID() );
 		}
 
-		if (this.getEnsembleMemberID() == null)
+		if (this.ensembleMemberID == null)
 		{
 		    script.addArgument( null );
 		}
@@ -197,7 +197,7 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
 
 		script.addTab(   3   ).add("AND ensemblemember_id ");
 
-        if (this.getEnsembleMemberID() == null)
+        if (this.ensembleMemberID == null)
         {
             script.addLine("IS NULL");
         }
@@ -235,7 +235,7 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
 
 		script.addTab().add("AND ensemblemember_id ");
 
-        if (this.getEnsembleMemberID() == null)
+        if (this.ensembleMemberID == null)
         {
             script.addLine("IS NULL");
         }
