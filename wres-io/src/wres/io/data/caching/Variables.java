@@ -22,14 +22,15 @@ public final class Variables extends Cache<VariableDetails, String>
     private static final int MAX_DETAILS = 30;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Variables.class);
-    /**
-     * The global cache of variables whose details may be accessed through static methods
-     */
-	private static Variables instance = new Variables();
 	private static final Object CACHE_LOCK = new Object();
 
 	private static final Object DETAIL_LOCK = new Object();
 	private static final Object KEY_LOCK = new Object();
+
+    /**
+     * The global cache of variables whose details may be accessed through static methods
+     */
+    private static Variables instance = new Variables();
 
 	@Override
 	protected Object getDetailLock()

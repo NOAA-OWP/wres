@@ -70,9 +70,10 @@ public final class UnitConversions
         }
     }
 
-    private static UnitConversions instance = new UnitConversions();
     private static final Object CACHE_LOCK = new Object();
     private final Map<ConversionKey, Conversion> conversionMap;
+
+    private static UnitConversions instance = new UnitConversions();
 
     private static UnitConversions getCache ()
     {
