@@ -6,10 +6,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.time.Duration;
 import java.time.Instant;
 import java.time.MonthDay;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -1047,18 +1045,16 @@ public class ProjectDetails
     }
 
     /**
-     * Generates a dynamic scale based on both left and right data in the database
+     * Finds a common time step based on both left and right data in the database
      *
      * <p>
-     * The least common scale is used. If the left handed data is scaled to
-     * 6 hours, but the right is 9, the common scale is determined to be 18
-     * hours. If both sides are of the same scale, no scaling aggregation will
-     * be performed. Otherwise, the scale is achieved via the mean
+     * The lowest time step is used. If the left handed data has a time step of
+     * 6 hours, but the right is 9, the common time step is determined to be 18
+     * hours.
      * </p>
      * <br><br>
-     * TODO: Change documentation and names to indicate that this doesn't really involve scale; just the time between values
-     * @return A dynamically generated scale between the left and right handed
-     * data
+     *
+     * @return A common time step between the left and right side of the data
      * @throws CalculationException Thrown if the scale of the left hand data
      * could not be calculated
      * @throws CalculationException Thrown if the scale of the right hand data
@@ -1066,37 +1062,34 @@ public class ProjectDetails
      * @throws CalculationException Thrown if a scale that was compatible with
      * left and right hand data could not be calculated
      */
-    private TimeScaleConfig getCommonScale() throws CalculationException
+    private TimeScaleConfig getCommonTimeStep() throws CalculationException
     {
         Long commonScale;
 
-        // We're assuming we'll be scaling, so we'll need a default function
-        // used to aggregate our values. For the time being, we're going to
-        // roll with the average
-        TimeScaleFunction scaleFunction;
+        // TODO: Adjust function based on scale in data
+        // Since we don't have enough information, we're assuming we aren't going to
+        // do any extra operations on the data
+        TimeScaleFunction scaleFunction = TimeScaleFunction.NONE;
 
         try
         {
-            long left = this.getLeftScale();
-            long right = this.getRightScale();
+            long leftStep = this.getLeftScale();
+            long rightStep = this.getRightScale();
 
-            long maxScale = Math.max(left, right);
-            long minScale = Math.min(left, right);
+            long highestStep = Math.max(leftStep, rightStep);
+            long lowestStep = Math.min(leftStep, rightStep);
 
-            if (left == right)
+            if (leftStep == rightStep)
             {
-                commonScale = left;
-
-                // Since the scales are actually the same, we're not going to
-                // do any aggregation at all
-                scaleFunction = TimeScaleFunction.NONE;
+                commonScale = leftStep;
             }
             // This logic will attempt to reconcile the two to find a possible
             // desired scale; i.e. if the left is in a scale of 4 hours and the
             // right in 3, the needed scale would be 12 hours.
-            else if (minScale != 0 && maxScale % minScale == 0)
+            else if (lowestStep != 0 && highestStep % lowestStep == 0)
             {
-                String message = "The temporal scales of the left and right hand data "
+                commonScale = highestStep;
+                /*String message = "The temporal scales of the left and right hand data "
                                  + "don't match. The left hand data is in a "
                                  + "scale of %d %s and the scale on the "
                                  + "right is in %d minutes. If the data is "
@@ -1105,26 +1098,25 @@ public class ProjectDetails
                 throw new NoDataException(
                         String.format(
                                 message,
-                                left,
+                                leftStep,
                                 TimeHelper.LEAD_RESOLUTION.toString().toLowerCase(),
-                                right,
-                                maxScale
+                                rightStep,
+                                highestStep
                         )
-                );
+                );*/
             }
-            else if (!(minScale == 0 || maxScale == 0))
+            else if (!(lowestStep == 0 || highestStep == 0))
             {
 
-                BigInteger bigLeft = BigInteger.valueOf( left );
+                BigInteger bigLeft = BigInteger.valueOf( leftStep );
 
                 Integer greatestCommonFactor =
-                        bigLeft.gcd( BigInteger.valueOf( right ) )
+                        bigLeft.gcd( BigInteger.valueOf( rightStep ) )
                                .intValue();
 
-                commonScale =
-                        left * right / greatestCommonFactor;
+                commonScale = leftStep * rightStep / greatestCommonFactor;
 
-                String message = "The temporal scales of the left (%d minutes) "
+                /*String message = "The temporal scales of the left (%d minutes) "
                                  + "and right (%d minutes) hand data are in "
                                  + "different temporal scales and more "
                                  + "information is needed in order to pair "
@@ -1132,7 +1124,7 @@ public class ProjectDetails
                                  + "scale. A scale of %d minutes should work if "
                                  + "there is enough data and an appropriate "
                                  + "scaling function is supplied.";
-                throw new NoDataException( String.format( message, left, right, commonScale ) );
+                throw new NoDataException( String.format( message, leftStep, rightStep, commonScale ) );*/
             }
             else
             {
@@ -1245,7 +1237,7 @@ public class ProjectDetails
 
         if (this.desiredTimeScale == null && ConfigHelper.isForecast( this.getRight() ))
         {
-            this.desiredTimeScale = this.getCommonScale();
+            this.desiredTimeScale = this.getCommonTimeStep();
         }
         else if(this.desiredTimeScale == null)
         {

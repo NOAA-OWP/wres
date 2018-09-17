@@ -70,7 +70,7 @@ public final class UnitConversions
         }
     }
 
-    private static UnitConversions instance = null;
+    private static UnitConversions instance = new UnitConversions();
     private static final Object CACHE_LOCK = new Object();
     private final Map<ConversionKey, Conversion> conversionMap;
 
@@ -78,7 +78,7 @@ public final class UnitConversions
     {
         synchronized (CACHE_LOCK)
         {
-            if ( instance == null)
+            if ( instance.conversionMap.isEmpty())
             {
                 UnitConversions.initialize();
             }
@@ -86,9 +86,13 @@ public final class UnitConversions
         }
     }
 
-    private UnitConversions(DataProvider data)
+    private UnitConversions()
     {
         this.conversionMap = new ConcurrentHashMap<>(  );
+    }
+
+    private void populate(DataProvider data)
+    {
         data.consume(
                 row -> this.conversionMap.put(new ConversionKey( row ),
                                               new Conversion( row ))
@@ -97,32 +101,25 @@ public final class UnitConversions
 
     /**
      * Loads all unit conversions for later use
-     * TODO: return a UnitConversions, don't implicitly set it
      */
     public static void initialize()
     {
-        synchronized ( UnitConversions.CACHE_LOCK )
+        DataScripter script = new DataScripter(  );
+        script.setHighPriority( true );
+
+        script.addLine("SELECT UC.*, M.unit_name");
+        script.addLine("FROM wres.UnitConversion UC");
+        script.addLine("INNER JOIN wres.MeasurementUnit M");
+        script.addTab().add("ON M.measurementunit_id = UC.to_unit;");
+
+        try(DataProvider data = script.getData())
         {
-            if (UnitConversions.instance == null)
-            {
-                DataScripter script = new DataScripter(  );
-                script.setHighPriority( true );
-
-                script.addLine("SELECT UC.*, M.unit_name");
-                script.addLine("FROM wres.UnitConversion UC");
-                script.addLine("INNER JOIN wres.MeasurementUnit M");
-                script.addTab().add("ON M.measurementunit_id = UC.to_unit;");
-
-                try
-                {
-                    UnitConversions.instance = new UnitConversions( script.getData() );
-                }
-                catch ( SQLException e )
-                {
-                    // Failure to pre-populate cache should not affect primary outputs.
-                    LOGGER.warn( "Failed to pre-populate unit conversions cache.", e );
-                }
-            }
+            instance.populate( data );
+        }
+        catch ( SQLException e )
+        {
+            // Failure to pre-populate cache should not affect primary outputs.
+            LOGGER.warn( "Failed to pre-populate unit conversions cache.", e );
         }
     }
 

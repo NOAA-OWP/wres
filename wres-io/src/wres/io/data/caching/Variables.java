@@ -25,7 +25,7 @@ public final class Variables extends Cache<VariableDetails, String>
     /**
      * The global cache of variables whose details may be accessed through static methods
      */
-	private static Variables instance = null;
+	private static Variables instance = new Variables();
 	private static final Object CACHE_LOCK = new Object();
 
 	private static final Object DETAIL_LOCK = new Object();
@@ -47,7 +47,7 @@ public final class Variables extends Cache<VariableDetails, String>
 	{
 		synchronized (CACHE_LOCK)
 		{
-			if ( instance == null)
+			if ( instance.isEmpty())
 			{
 			    Variables.initialize();
 			}
@@ -55,9 +55,13 @@ public final class Variables extends Cache<VariableDetails, String>
 		}
 	}
 
-	private Variables(DataProvider data)
+	private Variables()
     {
         this.initializeDetails();
+    }
+
+    private void populate(DataProvider data)
+    {
         if (data == null)
         {
             LOGGER.warn("The Variables cache was created with no data.");
@@ -319,7 +323,6 @@ public final class Variables extends Cache<VariableDetails, String>
 		return MAX_DETAILS;
 	}
 
-	// TODO: Return Variables, don't implicitly set
 	private static void initialize()
     {
         try
@@ -330,7 +333,10 @@ public final class Variables extends Cache<VariableDetails, String>
             script.addLine("SELECT variable_id, variable_name");
             script.add("FROM wres.Variable;");
 
-            Variables.instance = new Variables(script.getData());
+            try (DataProvider data = script.getData())
+            {
+                instance.populate( script.getData() );
+            }
         }
         catch ( SQLException sqlException )
         {

@@ -51,9 +51,9 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
     /**
      *  Internal cache that will store a global collection of details whose details may be accessed through static methods
      */
-	private static Ensembles instance = null;
+	private static Ensembles instance = new Ensembles();
 
-	private Ensembles(DataProvider data)
+	private void populate(DataProvider data)
     {
         EnsembleDetails detail;
 
@@ -72,7 +72,7 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
 	{
 		synchronized (CACHE_LOCK)
 		{
-			if ( instance == null)
+			if ( instance.isEmpty())
 			{
 			    Ensembles.initialize();
 			}
@@ -200,37 +200,25 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
 	
 	/**
 	 * Loads all pre-existing Ensembles into the instanced cache
-     *
-     * TODO: Return Ensembles, not set implicitly
 	 */
     private static synchronized void initialize()
 	{
-        Connection connection = null;
-
         try
         {
-            connection = Database.getHighPriorityConnection();
-            
-            String loadScript = "SELECT ensemble_id, ensemble_name, qualifier_id, ensemblemember_id" + NEWLINE;
-            loadScript += "FROM wres.ensemble" + NEWLINE;
-            loadScript += "LIMIT " + MAX_DETAILS;
+            DataScripter script = new DataScripter(  );
+            script.addLine("SELECT ensemble_id, ensemble_name, qualifier_id, ensemblemember_id");
+            script.addLine("FROM wres.Ensemble");
+            script.addLine("LIMIT ", MAX_DETAILS, ";");
 
-            try (DataProvider data = Database.getResults( connection, loadScript ))
+            try (DataProvider data = script.getData())
             {
-                Ensembles.instance = new Ensembles( data );
+                instance.populate( data );
             }
         }
         catch (SQLException error)
         {
             // Failure to pre-populate cache should not affect primary outputs.
             LOGGER.warn( "An error was encountered when trying to populate the Ensemble cache.", error);
-        }
-        finally
-        {
-            if (connection != null)
-            {
-                Database.returnHighPriorityConnection(connection);
-            }
         }
 	}
 }
