@@ -45,19 +45,20 @@ public class Main {
             LOGGER.info( Main.getVerboseRuntimeDescription() );
         }
 
-        final String operation = ((Supplier<String>) () -> {
-            String op = "-h";
-            if (args.length > 0 && MainFunctions.hasOperation(args[0])) {
-                op = args[0];
-            }
-            else if (args.length > 0) {
-                LOGGER.info(String.format("Running \"%s\" is not currently supported.", args[0]));
-                LOGGER.info("Custom handling needs to be added to prototyping.Prototype.main ");
-                LOGGER.info("to test the indicated prototype.");
-            }
-            return op;
-        }).get();
+        String operation = "-h";
 
+        if (args.length > 0 && MainFunctions.hasOperation(args[0]))
+        {
+            operation = args[0];
+        }
+        else if (args.length > 0)
+        {
+            LOGGER.info(String.format("Running \"%s\" is not currently supported.", args[0]));
+            LOGGER.info("Custom handling needs to be added to prototyping.Prototype.main ");
+            LOGGER.info("to test the indicated prototype.");
+        }
+
+        final String finalOperation = operation;
 
         FormattedStopwatch watch = new FormattedStopwatch();
 
@@ -72,7 +73,7 @@ public class Main {
             {
                 MainFunctions.forceShutdown( 6, TimeUnit.SECONDS );
             }
-            LOGGER.info("The function '{}' took {}", operation, watch.getFormattedDuration());
+            LOGGER.info("The function '{}' took {}", finalOperation, watch.getFormattedDuration());
         }));
 
         String[] cutArgs = Collections.removeIndexFromArray(args, 0);
@@ -80,11 +81,9 @@ public class Main {
         process += processId;
         LOGGER.info(process);
 
-        LOGGER.info( "Beginning operation: '" +
-                     operation +
-                     "' at " +
-                     TimeHelper.convertDateToString( OffsetDateTime.now()) +
-                     "...");
+        LOGGER.info( "Beginning operation: '{}' at {}...",
+                     operation,
+                     TimeHelper.convertDateToString( OffsetDateTime.now() ));
         watch.start();
 
         // The following two are for logging run information to the database.
@@ -158,7 +157,7 @@ public class Main {
                            "------------------------------------------------------------------------" +
                            System.lineSeparator();
 
-        if (encounteredExceptions.size() > 0)
+        if (!encounteredExceptions.isEmpty())
         {
             for ( Exception exception : encounteredExceptions )
             {

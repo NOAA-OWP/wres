@@ -137,7 +137,7 @@ final class DatabaseSettings
 		final String NEWLINE = System.lineSeparator();
 
 		String script = "";
-		script += "SELECT pg_cancel_backend(PT.pid)" + NEWLINE;
+		script += "SELECT pg_terminate_backend(PT.pid)" + NEWLINE;
 		script += "FROM pg_locks L" + NEWLINE;
 		script += "INNER JOIN pg_stat_all_tables T" + NEWLINE;
 		script += "    ON L.relation = t.relid" + NEWLINE;
@@ -361,8 +361,12 @@ final class DatabaseSettings
 	 * Sets the name of the database to connect to
 	 * @param databaseName The name of the database to access
 	 */
-    private void setDatabaseName (String databaseName)
-	{
+    private void setDatabaseName (String databaseName) throws IOException
+    {
+	    if (databaseName.contains( ";" ) || databaseName.contains( "\"" ) || databaseName.contains( "'" ))
+        {
+            throw new IOException( String.format("%s is not a valid database name.", databaseName) );
+        }
 		this.databaseName = databaseName;
 	}
 
@@ -412,48 +416,55 @@ final class DatabaseSettings
     private void parseElement( XMLStreamReader reader )
             throws XMLStreamException
 	{
-		if (reader.isStartElement())
-		{
-			String tagName = reader.getLocalName();
-			reader.next();
-			if (reader.isCharacters())
-			{
-				int beginIndex = reader.getTextStart();
-				int endIndex = reader.getTextLength();
-				String value = new String(reader.getTextCharacters(), beginIndex, endIndex).trim();
-				
-				switch(tagName)
-				{
-				case "database_type":
-					setDatabaseType(value);
-					break;
-				case "port":
-					setPort(value);
-					break;
-				case "name":
-					setDatabaseName(value);
-					break;
-				case "password":
-					setPassword(value);
-					break;
-				case "url":
-					setUrl(value);
-					break;
-				case "username":
-					setUsername(value);
-					break;
-				case "max_pool_size":
-                    maxPoolSize = Integer.parseInt( value);
-					break;
-				case "max_idle_time":
-                    maxIdleTime = Integer.parseInt( value);
-					break;
-				default:
-					LOGGER.error("Tag of type: '{}' is not valid for database configuration.",
-                                 tagName);
-				}
-			}
-		}
+	    try
+        {
+            if ( reader.isStartElement() )
+            {
+                String tagName = reader.getLocalName();
+                reader.next();
+                if ( reader.isCharacters() )
+                {
+                    int beginIndex = reader.getTextStart();
+                    int endIndex = reader.getTextLength();
+                    String value = new String( reader.getTextCharacters(), beginIndex, endIndex ).trim();
+
+                    switch ( tagName )
+                    {
+                        case "database_type":
+                            setDatabaseType( value );
+                            break;
+                        case "port":
+                            setPort( value );
+                            break;
+                        case "name":
+                            setDatabaseName( value );
+                            break;
+                        case "password":
+                            setPassword( value );
+                            break;
+                        case "url":
+                            setUrl( value );
+                            break;
+                        case "username":
+                            setUsername( value );
+                            break;
+                        case "max_pool_size":
+                            maxPoolSize = Integer.parseInt( value );
+                            break;
+                        case "max_idle_time":
+                            maxIdleTime = Integer.parseInt( value );
+                            break;
+                        default:
+                            LOGGER.error( "Tag of type: '{}' is not valid for database configuration.",
+                                          tagName );
+                    }
+                }
+            }
+        }
+        catch ( IOException e )
+        {
+            throw new XMLStreamException( "Invalid settings were found within the system configuration.", e );
+        }
 	}
 	
 	public String getDatabaseType()

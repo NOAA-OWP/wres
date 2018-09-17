@@ -49,10 +49,8 @@ import wres.io.concurrency.Executor;
 import wres.io.concurrency.WRESRunnable;
 import wres.io.config.ConfigHelper;
 import wres.io.reading.usgs.USGSParameterReader;
-import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
-import wres.io.utilities.ScriptBuilder;
 import wres.system.ProgressMonitor;
 import wres.system.SystemSettings;
 import wres.util.NetCDF;
@@ -67,6 +65,8 @@ final class MainFunctions
 	static final Integer FAILURE = -1;
 	static final Integer SUCCESS = 0;
     private static final Logger LOGGER = LoggerFactory.getLogger(MainFunctions.class);
+
+    private MainFunctions(){}
 
 	// Mapping of String names to corresponding methods
 	private static final Map<String, Function<String[], Integer>> FUNCTIONS = createMap();

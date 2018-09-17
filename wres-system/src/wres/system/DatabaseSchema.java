@@ -6,7 +6,6 @@ import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.net.URL;
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -24,15 +23,10 @@ import liquibase.database.DatabaseFactory;
 import liquibase.database.jvm.JdbcConnection;
 import liquibase.exception.DatabaseException;
 import liquibase.exception.LiquibaseException;
-import liquibase.resource.ClassLoaderResourceAccessor;
 import liquibase.resource.FileSystemResourceAccessor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class DatabaseSchema
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger( DatabaseSchema.class );
-
     public DatabaseSchema(final String databaseName)
     {
         this.databaseName = databaseName;
@@ -83,7 +77,8 @@ public class DatabaseSchema
                                             + "administrator to add it." );
                 }
 
-                statement.execute("CREATE DATABASE " + this.databaseName + ";"  );
+                String script = "CREATE DATABASE " + this.databaseName + ";";
+                statement.execute(script);
             }
         }
     }
