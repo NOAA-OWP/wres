@@ -173,6 +173,12 @@ public final class SystemSettings extends XMLReader
         {
             Strings.setFullHash( false );
         }
+
+        String storePath = System.getProperty( "wres.StorePath" );
+        if (storePath != null)
+        {
+            this.netcdfStorePath = storePath;
+        }
     }
 
 	private void setMinimumCachedNetcdf(XMLStreamReader reader)
@@ -456,12 +462,6 @@ public final class SystemSettings extends XMLReader
         }
 
         return name;
-    }
-
-    public static String getRawConfiguration()
-            throws IOException, XMLStreamException, TransformerException
-    {
-        return instance.getRawXML();
     }
 
     public static Connection getRawDatabaseConnection() throws SQLException

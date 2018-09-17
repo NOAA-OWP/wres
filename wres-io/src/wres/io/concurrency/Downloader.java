@@ -17,7 +17,7 @@ import java.nio.file.StandardCopyOption;
 public final class Downloader extends WRESRunnable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Downloader.class);
-    private boolean displayOutput;
+    private static final Object DIRECTORY_CREATION_LOCK = new Object();
 
     public Downloader(Path targetPath, String address)
     {
@@ -46,10 +46,9 @@ public final class Downloader extends WRESRunnable {
             else
             {
                 message += "Exists\t\t\t|\t";
-                this.fileDownloaded = true;
-            }
 
-            message += copy( fileURL );
+                message += copy( fileURL );
+            }
 
         }
         catch (java.io.IOException e)
@@ -73,7 +72,16 @@ public final class Downloader extends WRESRunnable {
     {
         try (InputStream fileStream = url.openStream())
         {
+            synchronized ( DIRECTORY_CREATION_LOCK )
+            {
+                if ( Files.notExists( this.targetPath.getParent() ) )
+                {
+                    Files.createDirectories( this.targetPath.getParent() );
+                }
+            }
+
             Files.copy(fileStream, this.targetPath, StandardCopyOption.REPLACE_EXISTING);
+            this.fileDownloaded = true;
 
             return "Downloaded";
         }
@@ -84,6 +92,7 @@ public final class Downloader extends WRESRunnable {
                                    this.address,
                                    NEWLINE,
                                    this.targetPath.toString());
+            this.getLogger().error( Strings.getStackTrace( saveError ) );
             return "Not Downloaded";
         }
     }
@@ -96,6 +105,7 @@ public final class Downloader extends WRESRunnable {
     private final Path targetPath;
     private final String address;
     private boolean fileDownloaded = false;
+    private boolean displayOutput;
 
     @Override
     protected Logger getLogger () {
