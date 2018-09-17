@@ -9,8 +9,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.time.Instant;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,49 +19,32 @@ import wres.io.concurrency.WRESRunnable;
 import wres.io.data.details.SourceDetails;
 import wres.system.SystemSettings;
 import wres.util.NetCDF;
-import wres.util.NotImplementedException;
 
 /**
  * Executes the database copy operation for every value in the passed in string
  * @author Christopher Tubbs
  */
-class GriddedNWMValueSaver extends WRESRunnable
+public class GriddedNWMValueSaver extends WRESRunnable
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(GriddedNWMValueSaver.class);
 
     private String fileName;
     private NetcdfFile source;
-    private String hash;
-    private final Future<String> futureHash;
+    private final String hash;
 
-	GriddedNWMValueSaver(String fileName, String hash)
+	public GriddedNWMValueSaver(String fileName, final String hash)
     {
         this.fileName = fileName;
         this.hash = hash;
-        this.futureHash = null;
     }
 
 	@Override
     public void execute() throws IOException, SQLException
     {
+        this.ensureFileIsLocal();
+
 		try
         {
-			String hash = null;
-
-            try
-            {
-                hash = this.getHash();
-            }
-            catch ( ExecutionException e )
-            {
-                throw new IOException( e );
-            }
-            catch ( InterruptedException e )
-            {
-                this.getLogger().warn( "Gridded Data Ingest was interrupted for: {}", this.fileName, e );
-                Thread.currentThread().interrupt();
-            }
-
             Instant outputTime = NetCDF.getReferenceTime( this.getFile() );
 			Integer lead = NetCDF.getLeadTime( this.getFile() );
 
@@ -72,7 +53,7 @@ class GriddedNWMValueSaver extends WRESRunnable
 
 			griddedSource.setOutputTime( outputTime.toString() );
 			griddedSource.setLead( lead );
-			griddedSource.setHash( hash );
+			griddedSource.setHash( this.hash );
 			griddedSource.setIsPointData( false );
 
 			griddedSource.save();
@@ -97,10 +78,8 @@ class GriddedNWMValueSaver extends WRESRunnable
         }
 	}
 
-	private boolean ensureFileIsLocal() throws IOException
+	private void ensureFileIsLocal() throws IOException
     {
-        boolean isLocal = false;
-
         Path path = Paths.get( this.fileName);
 
         try
@@ -113,18 +92,17 @@ class GriddedNWMValueSaver extends WRESRunnable
             if (huc.getResponseCode() == HttpURLConnection.HTTP_OK)
             {
                 this.retrieveFile( path );
-
-                isLocal = true;
             }
         }
         catch ( MalformedURLException e )
         {
             LOGGER.trace("It was determined that {} is not remote data.", this.fileName);
 
-            isLocal = Files.exists( path );
+            if(!Files.exists( path ))
+            {
+                throw new IOException( "Gridded data could not be found at: '" + this.fileName + "'" );
+            }
         }
-
-        return isLocal;
     }
 
     private void retrieveFile(final Path path) throws IOException
@@ -132,21 +110,21 @@ class GriddedNWMValueSaver extends WRESRunnable
         Integer nameCount = path.getNameCount();
         Integer firstNameIndex = 0;
 
-        if (nameCount > 3)
+        if (nameCount > 4)
         {
-            firstNameIndex = nameCount - 3;
+            firstNameIndex = nameCount - 4;
         }
 
         final String originalPath = this.fileName;
 
         this.fileName = Paths.get(
                 SystemSettings.getNetCDFStorePath(),
-                path.subpath( firstNameIndex, nameCount - 1 ).toString()
+                path.subpath( firstNameIndex, nameCount ).toString()
         ).toString();
 
-        if ( !Paths.get( this.fileName ).toFile().exists())
+        if ( !Paths.get( this.fileName, path.getFileName().toString() ).toFile().exists())
         {
-            Downloader downloader = new Downloader(path, this.fileName);
+            Downloader downloader = new Downloader(Paths.get(this.fileName), originalPath);
             downloader.setDisplayOutput( false );
             downloader.execute();
 
@@ -174,27 +152,6 @@ class GriddedNWMValueSaver extends WRESRunnable
             this.source.close();
             this.source = null;
         }
-    }
-
-    private String getHash() throws ExecutionException, InterruptedException
-    {
-        if (this.hash == null)
-        {
-            if (this.futureHash != null)
-            {
-                this.hash = this.futureHash.get();
-            }
-            else
-            {
-                String message = "No hash operation was set during ingestion. ";
-                message += "A hash for the source could not be determined.";
-                LOGGER.error( message );
-                throw new NotImplementedException( message );
-
-            }
-        }
-
-        return this.hash;
     }
 
     @Override

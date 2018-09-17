@@ -6,6 +6,8 @@ import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.sql.SQLException;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -17,6 +19,8 @@ import ucar.nc2.Variable;
 import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.WRESRunnable;
 import wres.io.config.ConfigHelper;
+import wres.io.data.caching.DataSources;
+import wres.io.data.details.SourceDetails;
 import wres.io.reading.BasicSource;
 import wres.io.reading.IngestResult;
 import wres.io.utilities.Database;
@@ -30,6 +34,8 @@ import wres.util.NetCDF;
 public class NWMSource extends BasicSource
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(NWMSource.class);
+
+    private boolean alreadyFound;
 
 	/**
      *
@@ -45,17 +51,18 @@ public class NWMSource extends BasicSource
 	@Override
 	public List<IngestResult> save() throws IOException
 	{
-        // TODO: Determine handling for the case where the "file" name is actually a URL
+	    String hash;
+
 		try ( NetcdfFile source = NetcdfFile.open(this.getFilename()) )
 		{
-			saveNetCDF( source );
+			hash = saveNetCDF( source );
 		}
 
 		return IngestResult.singleItemListFrom( this.getProjectConfig(),
 												this.getDataSourceConfig(),
-												this.getHash(),
+												hash,
 												this.getAbsoluteFilename(),
-												false );
+												this.alreadyFound );
 	}
 
 	@Override
@@ -64,38 +71,36 @@ public class NWMSource extends BasicSource
 		return NWMSource.LOGGER;
 	}
 
-    private void saveNetCDF( NetcdfFile source ) throws IOException
+    private String saveNetCDF( NetcdfFile source ) throws IOException
 	{
 		Variable var = NetCDF.getVariable(source, this.getSpecifiedVariableName());
+		String hash = this.getHash();
 
 		if (var != null)
         {
 			WRESRunnable saver;
-			if (NetCDF.isGridded(var) && this.getHash() == null)
-			{
-			    /*We can't use the file name as the key because that is the URL. If we can strip the domain from the url, maybe we can use that
-                   to form the actual file path. I'll need to consult the other code and make sure everything stays in line. */
-			    // TODO: Return to this once the object store can be used again
-			    /*if ( this.getIsRemote())
-                {
-                    URL sourcePath = new URL(source.getLocation());
-                    ReadableByteChannel channel = Channels.newChannel(sourcePath.openStream());
-                }*/
-			    // TODO: We aren't guaranteed to have a physical file.
-                // If we don't we need to save it for later use
-				saver = new GriddedNWMValueSaver( this.getFilename(), this.getHash());
-			}
-			else if(NetCDF.isGridded( var ))
+			if(NetCDF.isGridded( var ))
             {
-                saver = new GriddedNWMValueSaver( this.getFilename(),
-                                                  this.getHash());
+                hash = NetCDF.getGriddedUniqueIdentifier( source, this.filename );
+
+                try
+                {
+                    SourceDetails sourceDetails = DataSources.getExistingSource( hash );
+
+                    if(sourceDetails != null && Files.exists( Paths.get( sourceDetails.getSourcePath()) ))
+                    {
+                        this.setFilename( sourceDetails.getSourcePath() );
+                        this.alreadyFound = true;
+                        return hash;
+                    }
+                }
+                catch ( SQLException e )
+                {
+                    throw new IOException( "Could not check to see if gridded data is already present.", e );
+                }
+
+                saver = new GriddedNWMValueSaver( this.getFilename(), hash);
             }
-			else if (this.getHash() == null)
-			{
-				saver = new VectorNWMValueSaver( this.getFilename(),
-												 this.getFutureHash(),
-												 this.dataSourceConfig );
-			}
 			else
             {
                 saver = new VectorNWMValueSaver( this.getFilename(),
@@ -109,8 +114,12 @@ public class NWMSource extends BasicSource
         }
         else
         {
-            LOGGER.debug( "The NetCDF file at '{}' did not contain the "
-                          + "requested variable.", this.getFilename() );
+            throw new IOException( "The NetCDF file at '" +
+                                   this.getFilename() +
+                                   "' did not contain the " +
+                                   "requested variable.");
         }
+
+        return hash;
 	}
 }

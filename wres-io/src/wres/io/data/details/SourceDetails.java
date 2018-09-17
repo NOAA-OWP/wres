@@ -103,6 +103,11 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
         return this.isPointData;
     }
 
+    public String getSourcePath()
+    {
+        return this.sourcePath;
+    }
+
 	@Override
 	public int compareTo(SourceDetails other)
 	{

@@ -357,25 +357,30 @@ public final class NetCDF {
 
     public static String getGriddedUniqueIdentifier(final String filepath) throws IOException
     {
+        try (NetcdfFile file = NetcdfFile.open( filepath ))
+        {
+            return NetCDF.getGriddedUniqueIdentifier( file, filepath );
+        }
+    }
+
+    public static String getGriddedUniqueIdentifier(final NetcdfFile file, final String target) throws IOException
+    {
         String uniqueIdentifier;
         StringJoiner identityJoiner = new StringJoiner( "::" );
 
         identityJoiner.add( InetAddress.getLocalHost().getHostName());
         identityJoiner.add( InetAddress.getLocalHost().getHostAddress() );
-        identityJoiner.add( Paths.get(filepath).toAbsolutePath().toUri().toURL().toString() );
+        identityJoiner.add( Paths.get(target).toAbsolutePath().toUri().toURL().toString() );
 
-        try ( NetcdfFile file = NetcdfFile.open( filepath ) )
-        {
-            NetCDF.addNetcdfIdentifiers( file, identityJoiner );
+        NetCDF.addNetcdfIdentifiers( file, identityJoiner );
 
-            uniqueIdentifier = identityJoiner.toString();
-            uniqueIdentifier = Strings.getMD5Checksum( uniqueIdentifier.getBytes() );
-        }
+        uniqueIdentifier = identityJoiner.toString();
+        uniqueIdentifier = Strings.getMD5Checksum( uniqueIdentifier.getBytes() );
 
         return uniqueIdentifier;
     }
 
-    public static void addNetcdfIdentifiers(final NetcdfFile file, StringJoiner joiner)
+    public static void addNetcdfIdentifiers(final NetcdfFile file, final StringJoiner joiner)
     {
         for ( Variable var : file.getVariables() )
         {
