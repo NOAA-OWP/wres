@@ -21,14 +21,16 @@ public class MeasurementUnits extends Cache<MeasurementDetails, String>
     private static final int MAX_DETAILS = 100;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MeasurementUnits.class);
-    /**
-     *  Internal, Global cache of measurement details
-     */
-	private static  MeasurementUnits instance = new MeasurementUnits();
+
 	private static final Object CACHE_LOCK = new Object();
 
     private static final Object DETAIL_LOCK = new Object();
     private static final Object KEY_LOCK = new Object();
+
+    /**
+     *  Internal, Global cache of measurement details
+     */
+    private static  MeasurementUnits instance = new MeasurementUnits();
 
     @Override
     protected Object getDetailLock()
