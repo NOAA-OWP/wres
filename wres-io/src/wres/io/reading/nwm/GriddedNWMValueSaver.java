@@ -32,7 +32,7 @@ public class GriddedNWMValueSaver extends WRESRunnable
     private NetcdfFile source;
     private final String hash;
 
-	public GriddedNWMValueSaver(String fileName, final String hash)
+	GriddedNWMValueSaver(String fileName, final String hash)
     {
         this.fileName = fileName;
         this.hash = hash;

@@ -156,32 +156,27 @@ public class USGSParameters
     {
         synchronized ( PARAMETER_LOCK )
         {
-            if (USGSParameters.parameterStore == null || USGSParameters.parameterStore.isEmpty())
+            if (USGSParameters.parameterStore.isEmpty())
             {
-                USGSParameters.initialize();
+                USGSParameters.populate();
             }
 
             return USGSParameters.parameterStore;
         }
     }
 
-    // TODO: Return USGSParameters, don't implicitly set
-    private static void initialize() throws SQLException
+    private static void populate() throws SQLException
     {
-        DataScripter script = new DataScripter(  );
+        DataScripter script = new DataScripter( "SELECT * FROM wres.USGSParameter;" );
         script.setHighPriority( true );
 
-        script.add("SELECT * FROM wres.USGSParameter;");
-
-        USGSParameters.populate( script.getData() );
-    }
-
-    private static void populate(DataProvider data)
-    {
-        while (data.next())
+        try (DataProvider data = script.getData())
         {
-            USGSParameter parameter = new USGSParameter( data );
-            USGSParameters.parameterStore.putIfAbsent( parameter.getKey(), parameter );
+            while ( data.next() )
+            {
+                USGSParameter parameter = new USGSParameter( data );
+                USGSParameters.parameterStore.putIfAbsent( parameter.getKey(), parameter );
+            }
         }
     }
 
