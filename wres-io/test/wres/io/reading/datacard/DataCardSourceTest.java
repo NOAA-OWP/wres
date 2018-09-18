@@ -118,6 +118,7 @@ public class DataCardSourceTest
                                                         "EST",
                                                         "-999.0",
                                                         "",
+                                                        null,
                                                         null);
 
         sourceList.add(confSource);
@@ -208,6 +209,7 @@ public class DataCardSourceTest
                                                         "EST",
                                                         "-997",
                                                         "",
+                                                        null,
                                                         null);
 
         sourceList.add(confSource);
