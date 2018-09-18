@@ -199,7 +199,33 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
     @Override
     public void close()
     {
-        LOGGER.debug( "Closing writers..." );
+
+        LOGGER.debug( "About to wait for writing tasks to finish from {}", this );
+
+        try
+        {
+            // Figure out which paths were written to. These should all be
+            // complete by this point, right?
+            for ( Future<Set<Path>> writingTaskResult : this.writingTasksSubmitted )
+            {
+                Set<Path> oneSetOfPaths = writingTaskResult.get();
+                LOGGER.debug( "Some paths written to by {}: {}", this, oneSetOfPaths );
+                this.pathsWrittenTo.addAll( oneSetOfPaths );
+            }
+        }
+        catch ( InterruptedException ie )
+        {
+            LOGGER.warn( "Interrupted while getting paths from netcdf writers.", ie );
+            Thread.currentThread().interrupt();
+        }
+        catch ( ExecutionException ee )
+        {
+            String message = "Failed to get a path from netcdf writer for " + this.destinationConfig;
+            throw new RuntimeException( message, ee );
+        }
+
+        LOGGER.debug( "About to close writers from {}", this );
+
         synchronized ( NetcdfOutputWriter.WINDOW_LOCK )
         {
             if ( NetcdfOutputWriter.WRITERS.isEmpty() )
@@ -297,29 +323,8 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
             }
         }
 
-        LOGGER.debug( "Closing NetcdfOutputWriter {}", this );
+        LOGGER.debug( "Closed writers from {}", this );
 
-        try
-        {
-            // Figure out which paths were written to. These should all be
-            // complete by this point, right?
-            for ( Future<Set<Path>> writingTaskResult : this.writingTasksSubmitted )
-            {
-                Set<Path> oneSetOfPaths = writingTaskResult.get();
-                LOGGER.debug( "Some paths written to by {}: {}", this, oneSetOfPaths );
-                this.pathsWrittenTo.addAll( oneSetOfPaths );
-            }
-        }
-        catch ( InterruptedException ie )
-        {
-            LOGGER.warn( "Interrupted while getting paths from netcdf writers.", ie );
-            Thread.currentThread().interrupt();
-        }
-        catch ( ExecutionException ee )
-        {
-            String message = "Failed to get a path from netcdf writer for " + this.destinationConfig;
-            throw new RuntimeException( message, ee );
-        }
     }
 
 
