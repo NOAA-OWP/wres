@@ -151,6 +151,7 @@
                             <xs:attribute name="missingValue" type="xs:string" default="-999.0" />
                             <xs:attribute name="pattern" type="xs:string" default="" />
                             <xs:attribute name="has_header" type="xs:boolean" default="false" />
+                            <xs:attribute name="bucket" type="xs:string" />
                         </xs:extension>
                     </xs:simpleContent>
                 </xs:complexType>

@@ -23,13 +23,15 @@ import org.slf4j.LoggerFactory;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
 
+import wres.config.generated.DataSourceConfig;
 import wres.config.generated.ProjectConfig;
+import wres.io.config.ConfigHelper;
 import wres.util.TimeHelper;
 
 class NWCALReader extends S3Reader
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( NWCALReader.class );
-    private static final int MAX_KEY_COUNT = 9000;
+    private static final int MAX_KEY_COUNT = 900;
     private static final String ENDPOINT_URL = "http://***REMOVED***rgw.***REMOVED***.***REMOVED***:8080";
     private static final DateTimeFormatter DATE_PREFIX_FORMAT = DateTimeFormatter.ofPattern( "yyyyMMdd" );
 
@@ -221,6 +223,13 @@ class NWCALReader extends S3Reader
     @Override
     String getBucketName()
     {
+        DataSourceConfig.Source source = this.getSourceConfig();
+
+        if (source != null && source.getBucket() != null)
+        {
+            return source.getBucket();
+        }
+
         // The reader will be used to access National Water Model data that is
         // stored within the "nwm" bucket.
         return "nwm";
