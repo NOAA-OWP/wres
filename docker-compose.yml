@@ -38,6 +38,6 @@ services:
         environment:
          - JAVA_OPTS=-Dwres.broker=broker
          - PGPASSFILE=/wres_secrets/.pgpass
-         - INNER_JAVA_OPTS=-Dwres.logLevel=trace
+         #- INNER_JAVA_OPTS=-Dwres.logLevel=trace
         # Worker JVM should have 32m heap, wres should have 1628m heap
         mem_limit: 2048m
