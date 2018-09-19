@@ -28,7 +28,7 @@ services:
         # rabbitmq.conf should have 180m specified as high watermark
         mem_limit: 360m
     worker:
-        image: "96eec1945c47"
+        image: "3f775ea654f6"
         restart: always
         depends_on:
          - "broker"
@@ -38,5 +38,6 @@ services:
         environment:
          - JAVA_OPTS=-Dwres.broker=broker
          - PGPASSFILE=/wres_secrets/.pgpass
+         - INNER_JAVA_OPTS=-Dwres.logLevel=trace
         # Worker JVM should have 32m heap, wres should have 1628m heap
         mem_limit: 2048m
