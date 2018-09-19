@@ -3,12 +3,10 @@ package wres.io.writing.netcdf;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.Collection;
-import java.util.StringJoiner;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,7 +19,7 @@ import wres.config.generated.DestinationConfig;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
-import wres.io.utilities.NoDataException;
+import wres.io.config.ConfigHelper;
 
 class NetcdfOutputFileCreator
 {
@@ -44,14 +42,17 @@ class NetcdfOutputFileCreator
         // worth experimenting with no locking
         synchronized ( NetcdfOutputFileCreator.CREATION_LOCK )
         {
-            Path targetPath = getFileName( destinationConfig, window, output );
+            Path targetPath = ConfigHelper.getOutputPathToWriteForOneTimeWindow( destinationConfig,
+                                                                                 window,
+                                                                                 output,
+                                                                                 NetcdfOutputWriter.DEFAULT_DURATION_UNITS );
             if ( targetPath.toFile().exists())
             {
                 LOGGER.warn("The file '{}' will be overwritten.", targetPath);
                 Files.deleteIfExists( targetPath );
             }
 
-            LOGGER.debug("Opening a copier to create a new file at {} based off of {}.", targetPath.toString(), templatePath);
+            LOGGER.debug("Opening a copier to create a new file at {} based off of {}.", targetPath, templatePath);
 
             String location;
 
@@ -106,37 +107,6 @@ class NetcdfOutputFileCreator
             return location;
 
         }
-    }
-
-    private static Path getFileName(final DestinationConfig destinationConfig,
-                                      final TimeWindow timeWindow,
-                                      final Collection<DoubleScoreStatistic> output)
-            throws NoDataException
-    {
-        if( output.isEmpty() )
-        {
-            throw new NoDataException("No data available to write.");
-        }
-        
-        StringJoiner filename = new StringJoiner("_", "wres.", ".nc");
-        filename.add( output.iterator().next().getMetadata().getSampleMetadata().getIdentifier().getVariableID() );
-        filename.add("lead");
-        filename.add(timeWindow.getLatestLeadTime().toString());
-
-        if (!timeWindow.getLatestTime().equals( Instant.MAX ))
-        {
-            String lastTime = timeWindow.getLatestTime().toString();
-
-            // TODO: Format the last time in the style of "20180505T2046"
-            // instead of "2018-05-05 20:46:00.000-0000"
-            lastTime = lastTime.replaceAll( "-", "" )
-                               .replaceAll( ":", "" )
-                               .replace("Z$", "");
-
-            filename.add(lastTime);
-        }
-
-        return Paths.get( destinationConfig.getPath(), filename.toString());
     }
 
     static String getMetricVariableName( final String metricName,

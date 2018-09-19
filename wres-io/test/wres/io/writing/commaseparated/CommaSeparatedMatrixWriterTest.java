@@ -129,7 +129,7 @@ public class CommaSeparatedMatrixWriterTest extends CommaSeparatedWriterTestHelp
 
         // read the file, verify it has what we wanted:
         Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ),
-                                     "BDAC1_SQIN_HEFS_CONTINGENCY_TABLE_24_HOUR.csv" );
+                                     "BDAC1_SQIN_HEFS_CONTINGENCY_TABLE_86400_SECONDS.csv" );
         List<String> result = Files.readAllLines( pathToFile );
 
         assertTrue( result.get( 0 ).contains( "," ) );
