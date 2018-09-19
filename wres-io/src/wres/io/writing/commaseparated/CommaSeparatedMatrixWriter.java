@@ -190,7 +190,10 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
                                            CommaSeparatedMatrixWriter.getMatrixOutputHeader( next, headerRow ) ) );
 
             // Write the output
-            Path outputPath = ConfigHelper.getOutputPathToWrite( destinationConfig, meta, timeWindow );
+            Path outputPath = ConfigHelper.getOutputPathToWrite( destinationConfig,
+                                                                 meta,
+                                                                 timeWindow,
+                                                                 CommaSeparatedWriter.DEFAULT_DURATION_UNITS );
 
             CommaSeparatedWriter.writeTabularOutputToFile( rows, outputPath );
 

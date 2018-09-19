@@ -137,7 +137,8 @@ public class PNGBoxPlotWriter extends PNGWriter
 
                 Path outputImage = ConfigHelper.getOutputPathToWrite( destinationConfig,
                                                                       meta,
-                                                                      nextEntry.getKey().getLeft() );
+                                                                      nextEntry.getKey().getLeft(),
+                                                                      PNGWriter.DEFAULT_DURATION_UNITS );
 
                 PNGWriter.writeChart( outputImage, nextEntry.getValue(), destinationConfig );
                 // Only if writeChart succeeded do we assume that it was written

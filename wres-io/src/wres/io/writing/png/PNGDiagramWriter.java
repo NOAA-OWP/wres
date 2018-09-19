@@ -140,7 +140,8 @@ public class PNGDiagramWriter extends PNGWriter
                 {
                     outputImage = ConfigHelper.getOutputPathToWrite( destinationConfig,
                                                                      meta,
-                                                                     (TimeWindow) append );
+                                                                     (TimeWindow) append,
+                                                                     PNGWriter.DEFAULT_DURATION_UNITS );
                 }
                 else if ( append instanceof OneOrTwoThresholds )
                 {

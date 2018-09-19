@@ -129,7 +129,7 @@ public class CommaSeparatedDiagramOutputTest extends CommaSeparatedWriterTestHel
 
         // read the file, verify it has what we wanted:
         Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ),
-                                     "CREC1_SQIN_HEFS_RELIABILITY_DIAGRAM_24_HOUR.csv" );
+                                     "CREC1_SQIN_HEFS_RELIABILITY_DIAGRAM_86400_SECONDS.csv" );
         List<String> result = Files.readAllLines( pathToFile );
 
         assertTrue( result.get( 0 ).contains( "," ) );

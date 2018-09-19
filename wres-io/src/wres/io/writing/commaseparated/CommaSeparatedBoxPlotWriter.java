@@ -164,7 +164,10 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedWriter
             rows.add( RowCompareByLeft.of( HEADER_INDEX,
                                            CommaSeparatedBoxPlotWriter.getBoxPlotHeader( next, headerRow ) ) );
             // Write the output
-            Path outputPath = ConfigHelper.getOutputPathToWrite( destinationConfig, meta, nextWindow );
+            Path outputPath = ConfigHelper.getOutputPathToWrite( destinationConfig,
+                                                                 meta,
+                                                                 nextWindow,
+                                                                 CommaSeparatedWriter.DEFAULT_DURATION_UNITS );
 
             CommaSeparatedWriter.writeTabularOutputToFile( rows, outputPath );
             // If writeTabularOutputToFile did not throw an exception, assume

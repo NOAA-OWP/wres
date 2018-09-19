@@ -196,7 +196,10 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
             rows.add( RowCompareByLeft.of( HEADER_INDEX, getDiagramHeader( next, headerRow ) ) );
 
             // Write the output
-            Path outputPath = ConfigHelper.getOutputPathToWrite( destinationConfig, meta, timeWindow );
+            Path outputPath = ConfigHelper.getOutputPathToWrite( destinationConfig,
+                                                                 meta,
+                                                                 timeWindow,
+                                                                 CommaSeparatedWriter.DEFAULT_DURATION_UNITS );
 
             CommaSeparatedWriter.writeTabularOutputToFile( rows, outputPath );
 

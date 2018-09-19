@@ -3,6 +3,7 @@ package wres.io.writing.png;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -38,6 +39,12 @@ abstract class PNGWriter
      */
 
     static final Logger LOGGER = LoggerFactory.getLogger( PNGWriter.class );
+    
+    /**
+     * Default resolution for writing duration outputs. To change the resolution, change this default.
+     */
+
+    static final ChronoUnit DEFAULT_DURATION_UNITS = ChronoUnit.SECONDS;    
 
     /**
      * The project configuration to write.

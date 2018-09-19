@@ -19,6 +19,7 @@ import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumMap;
@@ -67,8 +68,10 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.ReferenceTime;
+import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.TimeWindow;
+import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants;
@@ -81,6 +84,7 @@ import wres.io.data.caching.Features;
 import wres.io.data.details.ProjectDetails;
 import wres.io.reading.commaseparated.CommaSeparatedReader;
 import wres.io.utilities.Database;
+import wres.io.utilities.NoDataException;
 import wres.io.writing.SharedWriters;
 import wres.io.writing.WriterHelper;
 import wres.io.writing.netcdf.NetcdfDoubleScoreWriter;
@@ -1393,6 +1397,7 @@ public class ConfigHelper
      * @param destinationConfig the destination configuration
      * @param meta the metadata
      * @param timeWindow the time window
+     * @param leadUnits the time units to use for the lead durations
      * @return a path to write
      * @throws NullPointerException if any input is null, including the identifier associated with the metadata
      * @throws IOException if the path cannot be produced
@@ -1400,14 +1405,23 @@ public class ConfigHelper
 
     public static Path getOutputPathToWrite( DestinationConfig destinationConfig,
                                              StatisticMetadata meta,
-                                             TimeWindow timeWindow )
+                                             TimeWindow timeWindow,
+                                             ChronoUnit leadUnits )
             throws IOException
     {
         Objects.requireNonNull( destinationConfig, "Enter non-null time window to establish a path for writing." );
 
+        Objects.requireNonNull( meta, "Enter non-null metadata to establish a path for writing." );
+
+        Objects.requireNonNull( timeWindow, "Enter a non-null time window  to establish a path for writing." );
+
+        Objects.requireNonNull( leadUnits,
+                                "Enter a non-null time unit for the lead durations to establish a path for writing." );
+
         return ConfigHelper.getOutputPathToWrite( destinationConfig,
                                                   meta,
-                                                  timeWindow.getLatestLeadTime().toHours() + "_HOUR" );
+                                                  timeWindow.getLatestLeadTime().get( leadUnits ) + "_"
+                                                        + leadUnits.name().toUpperCase() );
     }
 
     /**
@@ -1494,21 +1508,107 @@ public class ConfigHelper
 
         // Add extension
         String extension;
-        if ( destinationConfig.getType() == DestinationType.GRAPHIC )
+        
+        // Default graphic extension type
+        if( destinationConfig.getType( ) == DestinationType.GRAPHIC )
         {
             extension = ".png";
         }
-        else
+        // Default numeric extension type
+        else if( destinationConfig.getType( ) == DestinationType.NUMERIC )
         {
             extension = ".csv";
         }
-
+        // Specific type
+        else
+        {
+            extension = destinationConfig.getType().name().toLowerCase();
+        }
+        
         // Derive a sanitized name
         String safeName = URLEncoder.encode( joinElements.toString().replace( " ", "_" ) + extension, "UTF-8" );
 
         return Paths.get( outputDirectory.toString(), safeName );
     }
     
+    /**
+     * Returns a formatted file name for writing outputs to a specific time window using the destination 
+     * information and other hints provided.
+     * 
+     * @param destinationConfig the destination information
+     * @param timeWindow the time window
+     * @param output the output to write
+     * @param leadUnits the time units to use for the lead durations
+     * @return the file name
+     * @throws NoDataException if the output is empty
+     * @throws NullPointerException if any of the inputs is null
+     * @throws IOException if the path cannot be produced
+     */
+
+    public static Path getOutputPathToWriteForOneTimeWindow( final DestinationConfig destinationConfig,
+                                                             final TimeWindow timeWindow,
+                                                             final Collection<DoubleScoreStatistic> output,
+                                                             final ChronoUnit leadUnits )
+            throws NoDataException, IOException
+    {
+
+        Objects.requireNonNull( destinationConfig, "Enter non-null time window to establish a path for writing." );
+
+        Objects.requireNonNull( output, "Enter non-null output to establish a path for writing." );
+
+        Objects.requireNonNull( timeWindow, "Enter a non-null time window  to establish a path for writing." );
+
+        Objects.requireNonNull( leadUnits,
+                                "Enter a non-null time unit for the lead durations to establish a path for writing." );
+
+        if ( output.isEmpty() )
+        {
+            throw new NoDataException( "No data available to write." );
+        }
+
+        StringJoiner filename = new StringJoiner( "_" );
+
+        // Representative metadata for variable and scenario information
+        SampleMetadata meta = output.iterator().next().getMetadata().getSampleMetadata();
+
+        filename.add( meta.getIdentifier().getVariableID() );
+
+        // Add optional scenario identifier
+        if ( meta.getIdentifier().hasScenarioID() )
+        {
+            filename.add( meta.getIdentifier().getScenarioID() );
+        }
+
+        if ( !timeWindow.getLatestTime().equals( Instant.MAX ) )
+        {
+            String lastTime = timeWindow.getLatestTime().toString();
+
+            // TODO: Format the last time in the style of "20180505T2046"
+            // instead of "2018-05-05 20:46:00.000-0000"
+            lastTime = lastTime.replaceAll( "-", "" )
+                               .replaceAll( ":", "" )
+                               .replace( "Z$", "" );
+
+            filename.add( lastTime );
+        }
+
+        // Format the duration with the default format
+        filename.add( Long.toString( timeWindow.getLatestLeadTime()
+                                               .get( leadUnits ) ) );
+        filename.add( leadUnits.name().toUpperCase() );
+
+        String extension = "";
+        if ( destinationConfig.getType() == DestinationType.NETCDF )
+        {
+            extension = ".nc";
+        }
+
+        // Sanitize file name
+        String safeName = URLEncoder.encode( filename.toString().replace( " ", "_" ) + extension, "UTF-8" );
+
+        return Paths.get( destinationConfig.getPath(), safeName );
+    }
+
     /**
      * Reads all external sources of thresholds from the input configuration and returns a map containing a set of 
      * {@link Threshold} for each {@link FeaturePlus} in the source. If no source is provided, an empty map is
