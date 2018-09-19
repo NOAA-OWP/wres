@@ -21,6 +21,7 @@ import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
 import wres.io.utilities.ScriptBuilder;
 import wres.util.NetCDF;
+import wres.util.Strings;
 
 /**
  * Cached details about Ensembles from the database
@@ -184,7 +185,21 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
 	 * @return The ID of the Ensemble
 	 * @throws SQLException Thrown if the ID could not be retrieved from the database
 	 */
-	public static Integer getEnsembleID(String name, String memberID, String qualifierID) throws SQLException {
+	public static Integer getEnsembleID(String name, String memberID, String qualifierID) throws SQLException
+    {
+        // If there is no name, but there are either a member ID or a qualifier...
+	    if (name == null && ( Strings.hasValue(memberID) || Strings.hasValue( qualifierID )))
+        {
+            // just set the name as blank
+            name = "";
+        }
+        // If there are no identifiers...
+        else if (name == null)
+        {
+            // return the default ID
+            return Ensembles.getDefaultEnsembleID();
+        }
+
 		return Ensembles.getCache().getID( new EnsembleDetails( name, memberID, qualifierID ) );
 	}
 
