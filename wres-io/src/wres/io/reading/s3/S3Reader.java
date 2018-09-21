@@ -223,6 +223,11 @@ public abstract class S3Reader extends BasicSource
     abstract String getBucketName();
 
     /**
+     * @return The URL pointing at the endpoint to use
+     */
+    //abstract String getEndpointURL();
+
+    /**
      * Gets the required credentials needed to access a store with the required permissions.
      * <br></br><br></br>
      * Some stores that allow public reading don't require any sort of real credentials; you can get

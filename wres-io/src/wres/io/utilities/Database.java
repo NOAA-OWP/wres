@@ -1536,7 +1536,7 @@ public final class Database {
                             LOGGER.warn( "Failed to close statement {}.", statement, se );
                         }
                     }
-                    LOGGER.error( "The following SQL query failed:{}{}", NEWLINE, query, error );
+                    LOGGER.error( "The following SQL query failed:{}{}", NEWLINE, script, error );
                     throw error;
                 }
             }

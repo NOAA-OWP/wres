@@ -24,6 +24,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1967,13 +1968,16 @@ public class ProjectDetails
             throws IOException, SQLException, CalculationException
     {
         if (ConfigHelper.isSimulation( this.getRight() ) ||
-                ProjectConfigs.hasTimeSeriesMetrics( this.projectConfig ) ||
-            this.usesGriddedData( this.getRight() ))
+                ProjectConfigs.hasTimeSeriesMetrics( this.projectConfig ))
         {
             return 0;
         }
-
-        if (this.leadOffsets.isEmpty())
+        else if (this.usesGriddedData( this.getRight() ))
+        {
+            // We subtract by one since this returns an exclusive value where minimum lead is inclusive
+            return ObjectUtils.firstNonNull( this.getMinimumLead(), 1) - 1;
+        }
+        else if (this.leadOffsets.isEmpty())
         {
             this.populateLeadOffsets();
         }

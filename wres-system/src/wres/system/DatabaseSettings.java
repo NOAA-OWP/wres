@@ -272,7 +272,9 @@ final class DatabaseSettings
             datasource.setMaxPoolSize( maxPoolSize );
             datasource.setInitialPoolSize( maxPoolSize );
 			datasource.setPreferredTestQuery("SELECT 1");
-			datasource.setTestConnectionOnCheckout(false);
+            datasource.setTestConnectionOnCheckin( true );
+			datasource.setIdleConnectionTestPeriod( 5 );
+			datasource.setAcquireRetryAttempts( 10 );
 		} 
 		catch (PropertyVetoException e)
         {
@@ -296,7 +298,9 @@ final class DatabaseSettings
 			highPrioritySource.setMaxIdleTime(10);
 			highPrioritySource.setMaxPoolSize(5);
 			highPrioritySource.setPreferredTestQuery("SELECT 1");
-			highPrioritySource.setTestConnectionOnCheckout(false);
+			highPrioritySource.setTestConnectionOnCheckin( true );
+            highPrioritySource.setIdleConnectionTestPeriod( 5 );
+            highPrioritySource.setAcquireRetryAttempts( 5 );
 		}
 		catch (PropertyVetoException e)
 		{
@@ -573,208 +577,4 @@ final class DatabaseSettings
             }
         }
 	}
-
-    /**
-     * Executes the configured Liquibase scripts to keep the database up to date
-     */
-    private void buildInstance() throws SQLException, IOException
-    {
-        // Make sure that the database exists if the user has the authority to add one
-        this.addDatabase();
-
-        // If this machine already holds a lock on the database, liquibase will
-        // prevent this system from proceeding even though it already holds the lock.
-        // Thus, we need to make sure there aren't any prior locks assigned to it.
-        this.removePriorLocks();
-
-        Database database = null;
-        Liquibase liquibase;
-
-        try (Connection connection = this.getRawConnection( null ) )
-        {
-            database = DatabaseFactory.getInstance().findCorrectDatabaseImplementation( new JdbcConnection( connection));
-            URL changelogURL = this.getClass().getClassLoader().getResource( "database/db.changelog-master.xml" );
-
-            Objects.requireNonNull(changelogURL, "The definition for the WRES data model could not be found.");
-            liquibase = new Liquibase(
-                    "database/db.changelog-master.xml",
-                    new ClassLoaderResourceAccessor(),
-                    database
-            );
-
-            // Liquibase sends a lot of information to its own internal logging system that spits everything out to
-            // stdout at the 'info' level. Changing it to 'severe' (i.e. error) to prevent all of the diagnostic
-            // messaging.
-            liquibase.getLog().setLogLevel( "severe" );
-
-            Contexts contexts = new Contexts(  );
-            LabelExpression expression = new LabelExpression(  );
-            liquibase.update( contexts, expression );
-        }
-        catch (SQLException | LiquibaseException e)
-        {
-            throw new SQLException( "The WRES could not be properly initialized.", e );
-        }
-        finally
-        {
-            if (database != null)
-            {
-                try
-                {
-                    database.close();
-                }
-                catch ( DatabaseException e )
-                {
-                    LOGGER.debug( "The liquibase database class used to update the database could not be closed." );
-                }
-            }
-        }
-    }
-
-    private void addDatabase() throws SQLException
-    {
-        StringBuilder directConnectionString = new StringBuilder();
-        directConnectionString.append( "jdbc:" );
-        directConnectionString.append( this.getDatabaseType() );
-        directConnectionString.append( "://" );
-        directConnectionString.append( this.getUrl() );
-
-        if ( this.getPort() != null )
-        {
-            directConnectionString.append( ":" );
-            directConnectionString.append( this.getPort() );
-        }
-
-        directConnectionString.append( "/" );
-
-        // TODO: If we're in a postgresql instance, the default db is postgres. We'll need to add other
-        // defaults for other types
-        if (this.getDatabaseType().equalsIgnoreCase( "postgresql" ))
-        {
-            directConnectionString.append( "postgres" );
-        }
-
-        try (Connection connection = this.getRawConnection( directConnectionString.toString() ))
-        {
-            boolean databaseExists = false;
-            boolean canAddDatabase = false;
-
-            try (
-                    Statement statement = connection.createStatement();
-                    ResultSet results = statement.executeQuery( "SELECT * FROM pg_database;" )
-            )
-            {
-                while ( results.next() )
-                {
-                    String name = results.getString( 1 );
-                    if ( name.equalsIgnoreCase( this.getDatabaseName() ) )
-                    {
-                        databaseExists = true;
-                        break;
-                    }
-                }
-            }
-
-            if (!databaseExists)
-            {
-                // TODO: If we support another database, we'll need to modify this to handle the others as well
-                try (
-                        Statement statement = connection.createStatement();
-                        ResultSet results = statement.executeQuery(
-                            "SELECT rolcreatedb FROM pg_roles WHERE rolname = CURRENT_USER;"
-                        )
-                )
-                {
-
-                    while ( results.next() )
-                    {
-                        canAddDatabase = results.getBoolean( 1 );
-                    }
-
-                    if ( !canAddDatabase )
-                    {
-                        throw new SQLException( "The database '" + this.getDatabaseName() + "' does not exist on '" +
-                                                this.url +
-                                                "' and you do not have permission to create it. Please contact an "
-                                                + "administrator to add it." );
-                    }
-
-                    statement.execute( "CREATE DATABASE " + this.getDatabaseName() + ";" );
-                }
-            }
-        }
-    }
-
-    private void removePriorLocks() throws SQLException, IOException
-    {
-        try (Connection connection = this.getRawConnection(null))
-        {
-            // Determine whether or not the changeloglock exists in the database
-            String script = "SELECT EXISTS (" + System.lineSeparator();
-            script += "    SELECT 1" + System.lineSeparator();
-            script += "    FROM information_schema.tables" + System.lineSeparator();
-            script += "    WHERE table_catalog = '" + this.getDatabaseName() + "'" + System.lineSeparator();
-            script += "        AND table_name = 'databasechangeloglock'" + System.lineSeparator();
-            script += ");";
-
-            // Collect the address to every interface for the system. Liquibase keeps track of
-            // lock ownership by the address of different lock interfaces
-            ArrayList<String> addresses = new ArrayList<>();
-
-            try (
-                    Statement statement = connection.createStatement();
-                    ResultSet result = statement.executeQuery( script )
-            )
-            {
-
-                result.next();
-
-                // Get the result from the database to determine whether or not it exists
-                boolean changeLogLockExists = result.getBoolean( 1 );
-
-                // If the change log lock table exists
-                if ( changeLogLockExists )
-                {
-
-                    try
-                    {
-                        Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
-                        for ( NetworkInterface networkInterface : Collections.list( interfaces ) )
-                        {
-                            for ( InterfaceAddress interfaceAddress : networkInterface.getInterfaceAddresses() )
-                            {
-                                String address = interfaceAddress.getAddress().getHostAddress();
-                                addresses.add( "%(" + address + ")%" );
-                            }
-                        }
-                    }
-                    catch ( SocketException e )
-                    {
-                        throw new IOException( "Could not determine if this system already holds "
-                                               + "liquibase locks due to I/O miscommunication.", e );
-                    }
-                }
-            }
-
-            // If at least one address was determined...
-            if ( !addresses.isEmpty() )
-            {
-                try (Statement statement = connection.createStatement())
-                {
-                    // Forcibly remove any prior lock for this system.  Since we know that liquibase
-                    // stores ownership via address, we want to delete any locks that are associated
-                    // with this system, since any possible lock for this system will prevent this
-                    // system (the one that supposedly already owns the lock) from doing its work.
-                    StringJoiner builder = new StringJoiner(
-                            ",",
-                            "DELETE FROM databasechangeloglock WHERE lockedby LIKE ANY('{",
-                            "}');"
-                    );
-                    addresses.forEach( builder::add );
-                    statement.execute( builder.toString() );
-                }
-            }
-
-        }
-    }
 }

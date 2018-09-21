@@ -385,6 +385,10 @@ public class DataScripter extends ScriptBuilder
 
     /**
      * Runs a consumer function on each row of the result returned from the script
+     * <p>
+     *     <b>Arguments are not used.</b>
+     * </p>
+     * TODO: Implement the usage of arguments
      * @param consumer A function that will use each row of the result set
      * @throws SQLException Thrown if the consumer threw an error
      * @throws SQLException Thrown if the script failed to run properly
@@ -401,6 +405,18 @@ public class DataScripter extends ScriptBuilder
         }
     }
 
+    /**
+     * Transforms each row of the result of a script into an object
+     * <p>
+     *     <b>Arguments are not used</b>
+     * </p>
+     * TODO: Implement the usage of arguments
+     * @param interpretor The function that will convert a row into an object
+     * @param <U> The type of object that will be returned
+     * @return A list of transformed objects
+     * @throws SQLException Thrown if the script is not correctly formed
+     * @throws SQLException Thrown if the results cannot be correctly interpretted
+     */
     public <U> List<U> interpret( ExceptionalFunction<DataProvider, U, SQLException> interpretor) throws SQLException
     {
         return Database.interpret( this.toString(), interpretor, this.isHighPriority );
