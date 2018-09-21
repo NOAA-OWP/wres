@@ -31,11 +31,13 @@ public class GriddedNWMValueSaver extends WRESRunnable
     private String fileName;
     private NetcdfFile source;
     private final String hash;
+    private final int gridProjectionId;
 
-	GriddedNWMValueSaver(String fileName, final String hash)
+	GriddedNWMValueSaver(String fileName, final String hash, final int gridProjectionId)
     {
         this.fileName = fileName;
         this.hash = hash;
+        this.gridProjectionId = gridProjectionId;
     }
 
 	@Override
