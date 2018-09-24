@@ -8,9 +8,10 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.List;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.ProjectConfig;
@@ -116,8 +117,8 @@ public class ForecastReader
 
         Duration timeDuration = Duration.between( dataPointsList[0].getTime(), dataPointsList[1].getTime() );
 
-        long timeStep = TimeHelper.durationToLeadUnits(
-                timeDuration
+        long timeStep = TimeHelper.durationToLongUnits(
+                timeDuration, TimeHelper.LEAD_RESOLUTION
         );
 
         OffsetDateTime startTime = this.getStartTime( forecast, timeDuration );
@@ -128,7 +129,7 @@ public class ForecastReader
         for (DataPoint dataPoint : dataPointsList)
         {
             Duration between = Duration.between( startTime, dataPoint.getTime());
-            int lead = ( int ) TimeHelper.durationToLeadUnits( between );
+            int lead = ( int ) TimeHelper.durationToLongUnits( between, TimeHelper.LEAD_RESOLUTION );
             TimeSeriesValues.add( timeSeries.getTimeSeriesID(), lead, dataPoint.getValue() );
         }
     }

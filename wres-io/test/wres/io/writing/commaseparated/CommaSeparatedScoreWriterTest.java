@@ -8,6 +8,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -134,7 +135,8 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTestHelpe
         ProjectConfig projectConfig = this.getMockedProjectConfig( feature );
 
         // Begin the actual test now that we have constructed dependencies.
-        CommaSeparatedScoreWriter<DoubleScoreStatistic> writer = CommaSeparatedScoreWriter.of( projectConfig );
+        CommaSeparatedScoreWriter<DoubleScoreStatistic> writer =
+                CommaSeparatedScoreWriter.of( projectConfig, ChronoUnit.SECONDS );
         writer.accept( output.getDoubleScoreStatistics() );
 
         // Read the file, verify it has what we wanted:
@@ -246,7 +248,8 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTestHelpe
         ProjectConfig projectConfig = getMockedProjectConfig( feature );
 
         // Begin the actual test now that we have constructed dependencies.
-        CommaSeparatedScoreWriter<DurationScoreStatistic> writer = CommaSeparatedScoreWriter.of( projectConfig );
+        CommaSeparatedScoreWriter<DurationScoreStatistic> writer =
+                CommaSeparatedScoreWriter.of( projectConfig, ChronoUnit.SECONDS );
         writer.accept( output.getDurationScoreStatistics() );
 
         // read the file, verify it has what we wanted:
@@ -381,7 +384,8 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTestHelpe
         ProjectConfig projectConfig = getMockedProjectConfig( feature );
 
         // Begin the actual test now that we have constructed dependencies.
-        CommaSeparatedScoreWriter<DoubleScoreStatistic> writer = CommaSeparatedScoreWriter.of( projectConfig );
+        CommaSeparatedScoreWriter<DoubleScoreStatistic> writer =
+                CommaSeparatedScoreWriter.of( projectConfig, ChronoUnit.SECONDS );
         writer.accept( output.getDoubleScoreStatistics() );
 
         // read the file, verify it has what we wanted:

@@ -8,6 +8,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -121,7 +122,8 @@ public class CommaSeparatedPairedWriterTest extends CommaSeparatedWriterTestHelp
         ProjectConfig projectConfig = getMockedProjectConfig( feature );
 
         // Begin the actual test now that we have constructed dependencies.
-        CommaSeparatedPairedWriter<Instant, Duration> writer = CommaSeparatedPairedWriter.of( projectConfig );
+        CommaSeparatedPairedWriter<Instant, Duration> writer =
+                CommaSeparatedPairedWriter.of( projectConfig, ChronoUnit.SECONDS );
         writer.accept( output.getPairedStatistics() );
 
         // read the file, verify it has what we wanted:
@@ -131,7 +133,7 @@ public class CommaSeparatedPairedWriterTest extends CommaSeparatedWriterTestHelp
 
         assertTrue( result.get( 0 ).contains( "," ) );
         assertTrue( result.get( 0 ).contains( "ERROR" ) );
-        
+
         assertTrue( result.get( 1 )
                           .equals( "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,3600,64800,"
                                    + "1985-01-01T00:00:00Z,PT1H" ) );

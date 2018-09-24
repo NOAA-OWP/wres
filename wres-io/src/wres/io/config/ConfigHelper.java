@@ -1420,7 +1420,9 @@ public class ConfigHelper
 
         return ConfigHelper.getOutputPathToWrite( destinationConfig,
                                                   meta,
-                                                  timeWindow.getLatestLeadTime().get( leadUnits ) + "_"
+                                                  TimeHelper.durationToLongUnits( timeWindow.getLatestLeadTime(),
+                                                                                  leadUnits )
+                                                        + "_"
                                                         + leadUnits.name().toUpperCase() );
     }
 
@@ -1593,8 +1595,8 @@ public class ConfigHelper
         }
 
         // Format the duration with the default format
-        filename.add( Long.toString( timeWindow.getLatestLeadTime()
-                                               .get( leadUnits ) ) );
+        filename.add( Long.toString( TimeHelper.durationToLongUnits( timeWindow.getLatestLeadTime(),
+                                                                     leadUnits ) ) );
         filename.add( leadUnits.name().toUpperCase() );
 
         String extension = "";

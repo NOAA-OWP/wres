@@ -3,6 +3,7 @@ package wres.io.writing.commaseparated;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.text.Format;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -45,14 +46,16 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedWriter
      * @param <S> the left side of the paired output type
      * @param <T> the right side if the paired output type
      * @param projectConfig the project configuration
+     * @param durationUnits the time units for lead durations
      * @return a writer
-     * @throws NullPointerException if the input is null 
+     * @throws NullPointerException if either input is null 
      * @throws ProjectConfigException if the project configuration is not valid for writing
      */
 
-    public static <S, T> CommaSeparatedPairedWriter<S, T> of( final ProjectConfig projectConfig )
+    public static <S, T> CommaSeparatedPairedWriter<S, T> of( final ProjectConfig projectConfig,
+                                                              final ChronoUnit durationUnits )
     {
-        return new CommaSeparatedPairedWriter<>( projectConfig );
+        return new CommaSeparatedPairedWriter<>( projectConfig, durationUnits );
     }
 
     /**
@@ -71,7 +74,8 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedWriter
         // Write output
         // In principle, each destination could have a different formatter, so 
         // the output must be generated separately for each destination
-        List<DestinationConfig> numericalDestinations = ConfigHelper.getNumericalDestinations( projectConfig );
+        List<DestinationConfig> numericalDestinations =
+                ConfigHelper.getNumericalDestinations( this.getProjectConfig() );
         for ( DestinationConfig destinationConfig : numericalDestinations )
         {
 
@@ -81,7 +85,10 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedWriter
             // Write per time-window
             try
             {
-                CommaSeparatedPairedWriter.writeOnePairedOutputType( destinationConfig, output, formatter );
+                CommaSeparatedPairedWriter.writeOnePairedOutputType( destinationConfig,
+                                                                     output,
+                                                                     formatter,
+                                                                     this.getDurationUnits() );
             }
             catch ( IOException e )
             {
@@ -100,13 +107,15 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedWriter
      * @param destinationConfig the destination configuration    
      * @param output the paired output to iterate through
      * @param formatter optional formatter, can be null
+     * @param durationUnits the time units for lead durations
      * @throws IOException if the output cannot be written
      * @return set of paths actually written to
      */
 
     private static <S, T> Set<Path> writeOnePairedOutputType( DestinationConfig destinationConfig,
                                                               ListOfStatistics<PairedStatistic<S, T>> output,
-                                                              Format formatter )
+                                                              Format formatter,
+                                                              ChronoUnit durationUnits )
             throws IOException
     {
         Set<Path> pathsWrittenTo = new HashSet<>( 1 );
@@ -116,24 +125,26 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedWriter
         for ( MetricConstants m : metrics )
         {
             StringJoiner headerRow = CommaSeparatedWriter.getDefaultHeaderFromSampleMetadata( output.getData()
-                                                                                              .get( 0 )
-                                                                                              .getMetadata()
-                                                                                              .getSampleMetadata() );
-            
+                                                                                                    .get( 0 )
+                                                                                                    .getMetadata()
+                                                                                                    .getSampleMetadata(),
+                                                                                              durationUnits );
+
             ListOfStatistics<PairedStatistic<S, T>> nextOutput = Slicer.filter( output, m );
-            
+
             List<RowCompareByLeft> rows =
                     CommaSeparatedPairedWriter.getRowsForOnePairedOutput( m,
                                                                           nextOutput,
                                                                           headerRow,
-                                                                          formatter );
+                                                                          formatter,
+                                                                          durationUnits );
 
             // Add the header row
             rows.add( RowCompareByLeft.of( HEADER_INDEX, headerRow ) );
 
             // Write the output
             StatisticMetadata meta = nextOutput.getData().get( 0 ).getMetadata();
-            
+
             Path outputPath = ConfigHelper.getOutputPathToWrite( destinationConfig, meta );
 
             CommaSeparatedWriter.writeTabularOutputToFile( rows, outputPath );
@@ -157,6 +168,7 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedWriter
      * @param output the paired output
      * @param headerRow the header row
      * @param formatter optional formatter, can be null
+     * @param durationUnits the time units for lead durations
      * @return the rows to write
      */
 
@@ -164,7 +176,8 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedWriter
             getRowsForOnePairedOutput( MetricConstants metricName,
                                        ListOfStatistics<PairedStatistic<S, T>> output,
                                        StringJoiner headerRow,
-                                       Format formatter )
+                                       Format formatter,
+                                       ChronoUnit durationUnits )
     {
         String outerName = metricName.toString() + HEADER_DELIMITER;
         List<RowCompareByLeft> returnMe = new ArrayList<>();
@@ -197,6 +210,7 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedWriter
                                                         Arrays.asList( nextPair.getLeft(), nextPair.getRight() ),
                                                         formatter,
                                                         true,
+                                                        durationUnits,
                                                         nextPair.getLeft().toString() );
                 }
             }
@@ -209,12 +223,14 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedWriter
      * Hidden constructor.
      * 
      * @param projectConfig the project configuration
+     * @param durationUnits the time units for lead durations
+     * @throws NullPointerException if either input is null 
      * @throws ProjectConfigException if the project configuration is not valid for writing 
      */
 
-    private CommaSeparatedPairedWriter( ProjectConfig projectConfig )
+    private CommaSeparatedPairedWriter( ProjectConfig projectConfig, ChronoUnit durationUnits )
     {
-        super( projectConfig );
+        super( projectConfig, durationUnits );
     }
 
 }

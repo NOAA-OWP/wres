@@ -8,6 +8,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -125,7 +126,7 @@ public class CommaSeparatedMatrixWriterTest extends CommaSeparatedWriterTestHelp
         ProjectConfig projectConfig = getMockedProjectConfig( feature );
 
         // Begin the actual test now that we have constructed dependencies.
-        CommaSeparatedMatrixWriter.of( projectConfig ).accept( output.getMatrixStatistics() );
+        CommaSeparatedMatrixWriter.of( projectConfig, ChronoUnit.SECONDS ).accept( output.getMatrixStatistics() );
 
         // read the file, verify it has what we wanted:
         Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ),
