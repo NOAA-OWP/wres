@@ -2,6 +2,7 @@ package wres.io.writing.png;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -44,14 +45,15 @@ public class PNGDiagramWriter extends PNGWriter
      * Returns an instance of a writer.
      * 
      * @param projectConfigPlus the project configuration
+     * @param durationUnits the time units for lead durations
      * @return a writer
-     * @throws NullPointerException if the input is null 
+     * @throws NullPointerException if either input is null
      * @throws ProjectConfigException if the project configuration is not valid for writing
      */
 
-    public static PNGDiagramWriter of( final ProjectConfigPlus projectConfigPlus )
+    public static PNGDiagramWriter of( final ProjectConfigPlus projectConfigPlus, final ChronoUnit durationUnits )
     {
-        return new PNGDiagramWriter( projectConfigPlus );
+        return new PNGDiagramWriter( projectConfigPlus, durationUnits );
     }
 
     /**
@@ -69,7 +71,7 @@ public class PNGDiagramWriter extends PNGWriter
 
         // Write output
         List<DestinationConfig> destinations =
-                ConfigHelper.getGraphicalDestinations( projectConfigPlus.getProjectConfig() );
+                ConfigHelper.getGraphicalDestinations( this.getProjectConfigPlus().getProjectConfig() );
 
         // Iterate through destinations
         for ( DestinationConfig destinationConfig : destinations )
@@ -79,9 +81,10 @@ public class PNGDiagramWriter extends PNGWriter
             for ( MetricConstants next : metrics )
             {
                 Set<Path> innerPathsWrittenTo =
-                        PNGDiagramWriter.writeMultiVectorCharts( projectConfigPlus,
+                        PNGDiagramWriter.writeMultiVectorCharts( this.getProjectConfigPlus(),
                                                                  destinationConfig,
-                                                                 Slicer.filter( output, next ) );
+                                                                 Slicer.filter( output, next ),
+                                                                 this.getDurationUnits() );
                 this.pathsWrittenTo.addAll( innerPathsWrittenTo );
             }
         }
@@ -106,13 +109,15 @@ public class PNGDiagramWriter extends PNGWriter
      * @param projectConfigPlus the project configuration
      * @param destinationConfig the destination configuration for the written output
      * @param output the metric results
+     * @param durationUnits the time units for lead durations
      * @throws PNGWriteException when an error occurs during writing
      * @return the paths actually written to
      */
 
     private static Set<Path> writeMultiVectorCharts( ProjectConfigPlus projectConfigPlus,
                                                      DestinationConfig destinationConfig,
-                                                     ListOfStatistics<MultiVectorStatistic> output )
+                                                     ListOfStatistics<MultiVectorStatistic> output,
+                                                     ChronoUnit durationUnits )
     {
         Set<Path> pathsWrittenTo = new HashSet<>();
 
@@ -141,7 +146,7 @@ public class PNGDiagramWriter extends PNGWriter
                     outputImage = ConfigHelper.getOutputPathToWrite( destinationConfig,
                                                                      meta,
                                                                      (TimeWindow) append,
-                                                                     PNGWriter.DEFAULT_DURATION_UNITS );
+                                                                     durationUnits );
                 }
                 else if ( append instanceof OneOrTwoThresholds )
                 {
@@ -171,12 +176,14 @@ public class PNGDiagramWriter extends PNGWriter
      * Hidden constructor.
      * 
      * @param projectConfigPlus the project configuration
-     * @throws ProjectConfigException if the project configuration is not valid for writing 
+     * @param durationUnits the time units for lead durations
+     * @throws ProjectConfigException if the project configuration is not valid for writing
+     * @throws NullPointerException if either input is null
      */
 
-    private PNGDiagramWriter( ProjectConfigPlus projectConfigPlus )
+    private PNGDiagramWriter( ProjectConfigPlus projectConfigPlus, ChronoUnit durationUnits )
     {
-        super( projectConfigPlus );
+        super( projectConfigPlus, durationUnits );
     }
 
 }

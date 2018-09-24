@@ -8,7 +8,6 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAccessor;
 import java.time.temporal.TemporalQuery;
-import java.time.temporal.TemporalUnit;
 import java.util.Objects;
 import java.util.regex.Pattern;
 
@@ -26,7 +25,7 @@ public final class TimeHelper
     /**
      * The temporal unit that lead numbers in the database represent
      */
-    public static final TemporalUnit LEAD_RESOLUTION = ChronoUnit.MINUTES;
+    public static final ChronoUnit LEAD_RESOLUTION = ChronoUnit.MINUTES;
 
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern( DATE_FORMAT );
     private static final Pattern TIMESTAMP_PATTERN =
@@ -197,8 +196,8 @@ public final class TimeHelper
             unit += "S";
         }
 
-        return TimeHelper.durationToLeadUnits( Duration.of(count.longValue(),
-                                                           ChronoUnit.valueOf( unit)));
+        return TimeHelper.durationToLongUnits( Duration.of(count.longValue(),
+                                                           ChronoUnit.valueOf( unit)), TimeHelper.LEAD_RESOLUTION );
     }
 
     /**
@@ -218,8 +217,8 @@ public final class TimeHelper
         {
             unit += "S";
         }
-        return TimeHelper.durationToLeadUnits( Duration.of(count.longValue(),
-                                                           ChronoUnit.valueOf( unit)));
+        return TimeHelper.durationToLongUnits( Duration.of(count.longValue(),
+                                                           ChronoUnit.valueOf( unit)), TimeHelper.LEAD_RESOLUTION );
     }
 
     /**
@@ -240,31 +239,43 @@ public final class TimeHelper
             unit += "S";
         }
 
-        return TimeHelper.durationToLeadUnits( Duration.of(count,
-                                                           ChronoUnit.valueOf( unit)));
+        return TimeHelper.durationToLongUnits( Duration.of(count,
+                                                           ChronoUnit.valueOf( unit)), TimeHelper.LEAD_RESOLUTION );
     }
 
     /**
+     * Retrieves the specified number of time units from the input duration. Accepted units include:
+     * 
+     * <ol>
+     * <li>{@link ChronoUnit#HOURS}</li>
+     * <li>{@link ChronoUnit#MINUTES}</li>
+     * <li>{@link ChronoUnit#SECONDS}</li>
+     * <li>{@link ChronoUnit#MILLIS}</li>
+     * </ol>
+     * 
+     * TODO: from JDK9, the interface for obtaining durations as long is improved - consider updating.
+     * 
      * @param duration Retrieves the duration
+     * @param durationUnits the time units required
      * @return The length of the duration in terms of the project's lead resolution
+     * @throws IllegalArgumentException if the durationUnits is not one of the accepted units
      */
-    public static long durationToLeadUnits(Duration duration)
+    public static long durationToLongUnits( Duration duration, ChronoUnit durationUnits )
     {
-        long amount = 0;
-
-        if (TimeHelper.LEAD_RESOLUTION == ChronoUnit.HOURS)
+        switch ( durationUnits )
         {
-            amount = duration.toHours();
+            case HOURS:
+                return duration.toHours();
+            case MINUTES:
+                return duration.toMinutes();
+            case SECONDS:
+                return duration.getSeconds();
+            case MILLIS:
+                return duration.toMillis();
+            default:
+                throw new IllegalArgumentException( "The input time units '" + durationUnits
+                                                    + "' are not supported "
+                                                    + "in this context." );
         }
-        else if (TimeHelper.LEAD_RESOLUTION == ChronoUnit.MINUTES)
-        {
-            amount = duration.toMinutes();
-        }
-        else if (TimeHelper.LEAD_RESOLUTION == ChronoUnit.SECONDS)
-        {
-            amount = duration.getSeconds();
-        }
-
-        return amount;
     }
 }

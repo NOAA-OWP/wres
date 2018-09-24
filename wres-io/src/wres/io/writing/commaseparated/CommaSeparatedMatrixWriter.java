@@ -3,6 +3,7 @@ package wres.io.writing.commaseparated;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.text.Format;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -46,14 +47,15 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
      * Returns an instance of a writer.
      * 
      * @param projectConfig the project configuration
+     * @param durationUnits the time units for lead durations
      * @return a writer
-     * @throws NullPointerException if the input is null 
+     * @throws NullPointerException if either input is null 
      * @throws ProjectConfigException if the project configuration is not valid for writing
      */
 
-    public static CommaSeparatedMatrixWriter of( final ProjectConfig projectConfig )
+    public static CommaSeparatedMatrixWriter of( final ProjectConfig projectConfig, final ChronoUnit durationUnits )
     {
-        return new CommaSeparatedMatrixWriter( projectConfig );
+        return new CommaSeparatedMatrixWriter( projectConfig, durationUnits );
     }
 
     /**
@@ -72,7 +74,8 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
         // Write output
         // In principle, each destination could have a different formatter, so 
         // the output must be generated separately for each destination
-        List<DestinationConfig> numericalDestinations = ConfigHelper.getNumericalDestinations( projectConfig );
+        List<DestinationConfig> numericalDestinations =
+                ConfigHelper.getNumericalDestinations( this.getProjectConfig() );
         for ( DestinationConfig destinationConfig : numericalDestinations )
         {
 
@@ -83,10 +86,11 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
             try
             {
                 Set<Path> innerPathsWrittenTo =
-                        CommaSeparatedMatrixWriter.writeOneMatrixOutputType( projectConfig,
+                        CommaSeparatedMatrixWriter.writeOneMatrixOutputType( this.getProjectConfig(),
                                                                              destinationConfig,
                                                                              output,
-                                                                             formatter );
+                                                                             formatter,
+                                                                             this.getDurationUnits() );
                 this.pathsWrittenTo.addAll( innerPathsWrittenTo );
             }
             catch ( IOException e )
@@ -103,13 +107,15 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
      * @param destinationConfig the destination configuration    
      * @param output the matrix output
      * @param formatter optional formatter, can be null
+     * @param durationUnits the time units for lead durations
      * @throws IOException if the output cannot be written
      */
 
     private static Set<Path> writeOneMatrixOutputType( ProjectConfig projectConfig,
                                                        DestinationConfig destinationConfig,
                                                        ListOfStatistics<MatrixStatistic> output,
-                                                       Format formatter )
+                                                       Format formatter,
+                                                       ChronoUnit durationUnits )
             throws IOException
     {
         Set<Path> pathsWrittenTo = new HashSet<>( 1 );
@@ -125,7 +131,8 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
             StringJoiner headerRow = CommaSeparatedWriter.getDefaultHeaderFromSampleMetadata( output.getData()
                                                                                                     .get( 0 )
                                                                                                     .getMetadata()
-                                                                                                    .getSampleMetadata() );
+                                                                                                    .getSampleMetadata(),
+                                                                                              durationUnits );
 
             Set<Path> innerPathsWrittenTo = Collections.emptySet();
 
@@ -136,7 +143,8 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
                         CommaSeparatedMatrixWriter.writeOneMatrixOutputTypePerTimeWindow( destinationConfig,
                                                                                           Slicer.filter( output, m ),
                                                                                           headerRow,
-                                                                                          formatter );
+                                                                                          formatter,
+                                                                                          durationUnits );
             }
             // Per threshold
             else if ( diagramType == OutputTypeSelection.THRESHOLD_LEAD )
@@ -145,7 +153,8 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
                         CommaSeparatedMatrixWriter.writeOneMatrixOutputTypePerThreshold( destinationConfig,
                                                                                          Slicer.filter( output, m ),
                                                                                          headerRow,
-                                                                                         formatter );
+                                                                                         formatter,
+                                                                                         durationUnits );
             }
 
             pathsWrittenTo.addAll( innerPathsWrittenTo );
@@ -161,6 +170,7 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
      * @param output the matrix output
      * @param headerRow the header row
      * @param formatter optional formatter, can be null
+     * @param durationUnits the time units for lead durations
      * @throws IOException if the output cannot be written
      * @return set of paths actually written to
      */
@@ -168,7 +178,8 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
     private static Set<Path> writeOneMatrixOutputTypePerTimeWindow( DestinationConfig destinationConfig,
                                                                     ListOfStatistics<MatrixStatistic> output,
                                                                     StringJoiner headerRow,
-                                                                    Format formatter )
+                                                                    Format formatter,
+                                                                    ChronoUnit durationUnits )
             throws IOException
     {
         Set<Path> pathsWrittenTo = new HashSet<>( 1 );
@@ -183,7 +194,8 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
 
             StatisticMetadata meta = next.getData().get( 0 ).getMetadata();
 
-            List<RowCompareByLeft> rows = CommaSeparatedMatrixWriter.getRowsForOneMatrixOutput( next, formatter );
+            List<RowCompareByLeft> rows =
+                    CommaSeparatedMatrixWriter.getRowsForOneMatrixOutput( next, formatter, durationUnits );
 
             // Add the header row
             rows.add( RowCompareByLeft.of( HEADER_INDEX,
@@ -193,7 +205,7 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
             Path outputPath = ConfigHelper.getOutputPathToWrite( destinationConfig,
                                                                  meta,
                                                                  timeWindow,
-                                                                 CommaSeparatedWriter.DEFAULT_DURATION_UNITS );
+                                                                 durationUnits );
 
             CommaSeparatedWriter.writeTabularOutputToFile( rows, outputPath );
 
@@ -213,6 +225,7 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
      * @param output the matrix output
      * @param headerRow the header row
      * @param formatter optional formatter, can be null
+     * @param durationUnits the time units for lead durations
      * @throws IOException if the output cannot be written
      * @return set of paths actually written to
      */
@@ -220,7 +233,8 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
     private static Set<Path> writeOneMatrixOutputTypePerThreshold( DestinationConfig destinationConfig,
                                                                    ListOfStatistics<MatrixStatistic> output,
                                                                    StringJoiner headerRow,
-                                                                   Format formatter )
+                                                                   Format formatter,
+                                                                   ChronoUnit durationUnits )
             throws IOException
     {
         Set<Path> pathsWrittenTo = new HashSet<>( 1 );
@@ -235,7 +249,8 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
 
             StatisticMetadata meta = next.getData().get( 0 ).getMetadata();
 
-            List<RowCompareByLeft> rows = CommaSeparatedMatrixWriter.getRowsForOneMatrixOutput( next, formatter );
+            List<RowCompareByLeft> rows =
+                    CommaSeparatedMatrixWriter.getRowsForOneMatrixOutput( next, formatter, durationUnits );
 
             // Add the header row
             rows.add( RowCompareByLeft.of( HEADER_INDEX,
@@ -311,12 +326,14 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
      *
      * @param output the matrix output
      * @param formatter optional formatter, can be null
+     * @param durationUnits the time units for lead durations
      * @return the rows to write
      */
 
     private static List<RowCompareByLeft>
             getRowsForOneMatrixOutput( ListOfStatistics<MatrixStatistic> output,
-                                       Format formatter )
+                                       Format formatter,
+                                       ChronoUnit durationUnits )
     {
         List<RowCompareByLeft> returnMe = new ArrayList<>();
 
@@ -351,7 +368,8 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
                                                 timeWindow,
                                                 merge,
                                                 formatter,
-                                                false );
+                                                false,
+                                                durationUnits );
         }
 
         return returnMe;
@@ -380,12 +398,14 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
      * Hidden constructor.
      * 
      * @param projectConfig the project configuration
+     * @param durationUnits the time units for lead durations
+     * @throws NullPointerException if either input is null 
      * @throws ProjectConfigException if the project configuration is not valid for writing 
      */
 
-    private CommaSeparatedMatrixWriter( ProjectConfig projectConfig )
+    private CommaSeparatedMatrixWriter( ProjectConfig projectConfig, ChronoUnit durationUnits )
     {
-        super( projectConfig );
+        super( projectConfig, durationUnits );
     }
 
 }

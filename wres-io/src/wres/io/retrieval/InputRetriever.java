@@ -549,7 +549,7 @@ class InputRetriever extends Retriever //WRESCallable<MetricInput<?>>
                                 entry.getValidDate(),
                                 entry.getMeasurements(),
                                 MeasurementUnits.getMeasurementUnitID( entry.getMeasurementUnit()),
-                                ( int ) TimeHelper.durationToLeadUnits( entry.getLead() ),
+                                ( int ) TimeHelper.durationToLongUnits( entry.getLead(), TimeHelper.LEAD_RESOLUTION ),
                                 series.getIssuedDate().getEpochSecond(),
                                 this.getProjectDetails()
                         );

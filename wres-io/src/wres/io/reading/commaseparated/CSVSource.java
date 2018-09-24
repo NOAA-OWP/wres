@@ -11,7 +11,6 @@ import java.util.StringJoiner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.generated.DataSourceConfig;
 import wres.config.generated.ProjectConfig;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.DataSources;
@@ -113,7 +112,8 @@ public class CSVSource extends BasicSource
                 Instant start = data.getInstant( "start_date" );
                 Instant valueDate = data.getInstant( "value_date" );
                 Double value = data.getDouble( "value" );
-                int lead = (int)TimeHelper.durationToLeadUnits( Duration.between( start, valueDate ) );
+                int lead = (int) TimeHelper.durationToLongUnits( Duration.between( start, valueDate ),
+                                                                 TimeHelper.LEAD_RESOLUTION );
 
                 if ( currentTimeSeries == null ||
                      !currentTimeSeries.getInitializationDate().equals( start.toString() ) )

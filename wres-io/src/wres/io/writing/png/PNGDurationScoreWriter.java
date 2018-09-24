@@ -2,6 +2,7 @@ package wres.io.writing.png;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -32,7 +33,7 @@ import wres.vis.ChartEngineFactory;
 
 public class PNGDurationScoreWriter extends PNGWriter
         implements Consumer<ListOfStatistics<DurationScoreStatistic>>,
-                   Supplier<Set<Path>>
+        Supplier<Set<Path>>
 {
     private Set<Path> pathsWrittenTo = new HashSet<>();
 
@@ -40,14 +41,15 @@ public class PNGDurationScoreWriter extends PNGWriter
      * Returns an instance of a writer.
      * 
      * @param projectConfigPlus the project configuration
+     * @param durationUnits the time units for lead durations
      * @return a writer
-     * @throws NullPointerException if the input is null 
+     * @throws NullPointerException if either input is null
      * @throws ProjectConfigException if the project configuration is not valid for writing
      */
 
-    public static PNGDurationScoreWriter of( final ProjectConfigPlus projectConfigPlus )
+    public static PNGDurationScoreWriter of( final ProjectConfigPlus projectConfigPlus, final ChronoUnit durationUnits )
     {
-        return new PNGDurationScoreWriter( projectConfigPlus );
+        return new PNGDurationScoreWriter( projectConfigPlus, durationUnits );
     }
 
     /**
@@ -65,7 +67,7 @@ public class PNGDurationScoreWriter extends PNGWriter
 
         // Write output
         List<DestinationConfig> destinations =
-                ConfigHelper.getGraphicalDestinations( projectConfigPlus.getProjectConfig() );
+                ConfigHelper.getGraphicalDestinations( this.getProjectConfigPlus().getProjectConfig() );
 
         // Iterate through destinations
         for ( DestinationConfig destinationConfig : destinations )
@@ -75,7 +77,7 @@ public class PNGDurationScoreWriter extends PNGWriter
             for ( MetricConstants next : metrics )
             {
                 Set<Path> innerPathsWrittenTo =
-                        PNGDurationScoreWriter.writeScoreCharts( projectConfigPlus,
+                        PNGDurationScoreWriter.writeScoreCharts( this.getProjectConfigPlus(),
                                                                  destinationConfig,
                                                                  Slicer.filter( output, next ) );
                 this.pathsWrittenTo.addAll( innerPathsWrittenTo );
@@ -144,12 +146,14 @@ public class PNGDurationScoreWriter extends PNGWriter
      * Hidden constructor.
      * 
      * @param projectConfigPlus the project configuration
-     * @throws ProjectConfigException if the project configuration is not valid for writing 
+     * @param durationUnits the time units for lead durations
+     * @throws ProjectConfigException if the project configuration is not valid for writing
+     * @throws NullPointerException if either input is null
      */
 
-    private PNGDurationScoreWriter( ProjectConfigPlus projectConfigPlus )
+    private PNGDurationScoreWriter( ProjectConfigPlus projectConfigPlus, ChronoUnit durationUnits )
     {
-        super( projectConfigPlus );
+        super( projectConfigPlus, durationUnits );
     }
 
 }

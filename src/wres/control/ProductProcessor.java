@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -69,6 +70,13 @@ class ProductProcessor implements Consumer<StatisticsForProject>,
                                   Supplier<Set<Path>>
 {
 
+    /**
+     * Default resolution for writing outputs that contain durations, such as lead durations and time scales. To 
+     * change the resolution, change this default.
+     */
+
+    static final ChronoUnit DEFAULT_DURATION_UNITS = ChronoUnit.SECONDS;
+    
     /**
      * Logger.
      */
@@ -349,7 +357,7 @@ class ProductProcessor implements Consumer<StatisticsForProject>,
         if ( writeWhenTrue.test( StatisticGroup.MULTIVECTOR, DestinationType.CSV ) )
         {
             CommaSeparatedDiagramWriter diagramWriter =
-                    CommaSeparatedDiagramWriter.of( projectConfig );
+                    CommaSeparatedDiagramWriter.of( projectConfig, DEFAULT_DURATION_UNITS );
             diagramConsumers.put( DestinationType.CSV,
                                   diagramWriter );
             this.writersToPaths.add( diagramWriter );
@@ -358,7 +366,7 @@ class ProductProcessor implements Consumer<StatisticsForProject>,
         if ( writeWhenTrue.test( StatisticGroup.BOXPLOT, DestinationType.CSV ) )
         {
             CommaSeparatedBoxPlotWriter boxPlotWriter =
-                    CommaSeparatedBoxPlotWriter.of( projectConfig );
+                    CommaSeparatedBoxPlotWriter.of( projectConfig, DEFAULT_DURATION_UNITS );
             boxPlotConsumers.put( DestinationType.CSV,
                                   boxPlotWriter );
             this.writersToPaths.add( boxPlotWriter );
@@ -367,7 +375,7 @@ class ProductProcessor implements Consumer<StatisticsForProject>,
         if ( writeWhenTrue.test( StatisticGroup.MATRIX, DestinationType.CSV ) )
         {
             CommaSeparatedMatrixWriter matrixWriter =
-                    CommaSeparatedMatrixWriter.of( projectConfig );
+                    CommaSeparatedMatrixWriter.of( projectConfig, DEFAULT_DURATION_UNITS );
             matrixConsumers.put( DestinationType.CSV,
                                  matrixWriter );
             this.writersToPaths.add( matrixWriter );
@@ -376,13 +384,13 @@ class ProductProcessor implements Consumer<StatisticsForProject>,
         if ( writeWhenTrue.test( StatisticGroup.PAIRED, DestinationType.CSV ) )
         {
             pairedConsumers.put( DestinationType.CSV,
-                                 CommaSeparatedPairedWriter.of( projectConfig ) );
+                                 CommaSeparatedPairedWriter.of( projectConfig, DEFAULT_DURATION_UNITS ) );
         }
 
         if ( writeWhenTrue.test( StatisticGroup.DOUBLE_SCORE, DestinationType.CSV ) )
         {
             CommaSeparatedScoreWriter<DoubleScoreStatistic> doubleScoreWriter =
-                    CommaSeparatedScoreWriter.of( projectConfig );
+                    CommaSeparatedScoreWriter.of( projectConfig, DEFAULT_DURATION_UNITS );
             doubleScoreConsumers.put( DestinationType.CSV,
                                       doubleScoreWriter );
             this.writersToPaths.add( doubleScoreWriter );
@@ -391,7 +399,7 @@ class ProductProcessor implements Consumer<StatisticsForProject>,
         if ( writeWhenTrue.test( StatisticGroup.DURATION_SCORE, DestinationType.CSV ) )
         {
             CommaSeparatedScoreWriter<DurationScoreStatistic> durationScoreWriter =
-                    CommaSeparatedScoreWriter.of( projectConfig );
+                    CommaSeparatedScoreWriter.of( projectConfig, DEFAULT_DURATION_UNITS );
             durationScoreConsumers.put( DestinationType.CSV,
                                         durationScoreWriter );
             this.writersToPaths.add( durationScoreWriter );
@@ -411,7 +419,7 @@ class ProductProcessor implements Consumer<StatisticsForProject>,
         // Build the consumers conditionally
         if ( writeWhenTrue.test( StatisticGroup.MULTIVECTOR, DestinationType.PNG ) )
         {
-            PNGDiagramWriter diagramWriter = PNGDiagramWriter.of( projectConfigPlus );
+            PNGDiagramWriter diagramWriter = PNGDiagramWriter.of( projectConfigPlus, DEFAULT_DURATION_UNITS );
             diagramConsumers.put( DestinationType.PNG,
                                   diagramWriter );
             this.writersToPaths.add( diagramWriter );
@@ -419,7 +427,7 @@ class ProductProcessor implements Consumer<StatisticsForProject>,
 
         if ( writeWhenTrue.test( StatisticGroup.BOXPLOT, DestinationType.PNG ) )
         {
-            PNGBoxPlotWriter boxPlotWriter = PNGBoxPlotWriter.of( projectConfigPlus );
+            PNGBoxPlotWriter boxPlotWriter = PNGBoxPlotWriter.of( projectConfigPlus, DEFAULT_DURATION_UNITS );
             boxPlotConsumers.put( DestinationType.PNG,
                                   boxPlotWriter );
             this.writersToPaths.add( boxPlotWriter );
@@ -427,7 +435,7 @@ class ProductProcessor implements Consumer<StatisticsForProject>,
 
         if ( writeWhenTrue.test( StatisticGroup.PAIRED, DestinationType.PNG ) )
         {
-            PNGPairedWriter pairedWriter = PNGPairedWriter.of( projectConfigPlus );
+            PNGPairedWriter pairedWriter = PNGPairedWriter.of( projectConfigPlus, DEFAULT_DURATION_UNITS );
             pairedConsumers.put( DestinationType.PNG,
                                  pairedWriter );
             this.writersToPaths.add( pairedWriter );
@@ -435,7 +443,8 @@ class ProductProcessor implements Consumer<StatisticsForProject>,
 
         if ( writeWhenTrue.test( StatisticGroup.DOUBLE_SCORE, DestinationType.PNG ) )
         {
-            PNGDoubleScoreWriter doubleScoreWriter = PNGDoubleScoreWriter.of( projectConfigPlus );
+            PNGDoubleScoreWriter doubleScoreWriter =
+                    PNGDoubleScoreWriter.of( projectConfigPlus, DEFAULT_DURATION_UNITS );
             doubleScoreConsumers.put( DestinationType.PNG,
                                       doubleScoreWriter );
             this.writersToPaths.add( doubleScoreWriter );
@@ -443,7 +452,8 @@ class ProductProcessor implements Consumer<StatisticsForProject>,
 
         if ( writeWhenTrue.test( StatisticGroup.DURATION_SCORE, DestinationType.PNG ) )
         {
-            PNGDurationScoreWriter durationScoreWriter = PNGDurationScoreWriter.of( projectConfigPlus );
+            PNGDurationScoreWriter durationScoreWriter =
+                    PNGDurationScoreWriter.of( projectConfigPlus, DEFAULT_DURATION_UNITS );
             durationScoreConsumers.put( DestinationType.PNG,
                                         durationScoreWriter );
             this.writersToPaths.add( durationScoreWriter );
@@ -467,7 +477,7 @@ class ProductProcessor implements Consumer<StatisticsForProject>,
         else if ( writeWhenTrue.test( StatisticGroup.DOUBLE_SCORE, DestinationType.NETCDF ) )
         {
             LOGGER.debug( "There are netcdf consumers for {}", this );
-            NetcdfOutputWriter netcdfOutputWriter = NetcdfOutputWriter.of( projectConfig );
+            NetcdfOutputWriter netcdfOutputWriter = NetcdfOutputWriter.of( projectConfig, DEFAULT_DURATION_UNITS );
             doubleScoreConsumers.put( DestinationType.NETCDF,
                                       netcdfOutputWriter );
             this.writersToPaths.add( netcdfOutputWriter );

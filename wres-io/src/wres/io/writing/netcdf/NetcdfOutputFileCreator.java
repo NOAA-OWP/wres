@@ -6,6 +6,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 
 import org.slf4j.Logger;
@@ -34,7 +35,8 @@ class NetcdfOutputFileCreator
                                     final TimeWindow window,
                                     final ZonedDateTime analysisTime,
                                     final Collection<MetricVariable> metricVariables,
-                                    final Collection<DoubleScoreStatistic> output)
+                                    final Collection<DoubleScoreStatistic> output,
+                                    final ChronoUnit durationUnits )
             throws IOException
     {
         // We're locking because each created output will be using the same
@@ -45,7 +47,7 @@ class NetcdfOutputFileCreator
             Path targetPath = ConfigHelper.getOutputPathToWriteForOneTimeWindow( destinationConfig,
                                                                                  window,
                                                                                  output,
-                                                                                 NetcdfOutputWriter.DEFAULT_DURATION_UNITS );
+                                                                                 durationUnits );
             if ( targetPath.toFile().exists())
             {
                 LOGGER.warn("The file '{}' will be overwritten.", targetPath);
