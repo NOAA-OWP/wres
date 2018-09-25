@@ -1,7 +1,9 @@
 package wres.vis;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 import java.util.SortedSet;
 import java.util.TimeZone;
@@ -26,6 +28,7 @@ import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.Statistic;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
+import wres.util.TimeHelper;
 import wres.vis.ChartEngineFactory.ChartType;
 
 /**
@@ -50,16 +53,30 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
      * Basis for latestDateToText function.
      */
     private Instant latestInstant = null;
+    
+    /**
+     * The duration units.
+     */
+
+    private final ChronoUnit durationUnits;
 
     /**
      * An arguments processor intended for use in displaying single-valued pairs. It is assumed that there is 
      * only a single time window associated with the data, specified in the meta data for the displayed plot input.
      * @param meta The metadata corresponding to a SingleValuedPairs instance.
+     * @param durationUnits the time units for durations
+     * @throws NullPointerException if either input is null
      */
-    public WRESArgumentProcessor( final SampleMetadata meta )
+    public WRESArgumentProcessor( final SampleMetadata meta, final ChronoUnit durationUnits )
     {
         super();
 
+        Objects.requireNonNull( meta, "Specify non-null metadata." );
+        
+        Objects.requireNonNull( durationUnits, "Specify non-null duration units." );
+        
+        this.durationUnits = durationUnits;
+        
         //Setup fixed arguments.  This uses a special set since it is not metric output.
         addArgument( "rangeAxisLabelPrefix", "Forecast" );
         addArgument( "domainAxisLabelPrefix", "Observed" );
@@ -78,17 +95,33 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
      * only a single time window associated with the data, specified in the meta data for the displayed plot input.
      * 
      * @param displayPlotInput the input data
+     * @param durationUnits the time units for durations
+     * @throws NullPointerException if either input is null
      */
-    public WRESArgumentProcessor( BoxPlotStatistic displayPlotInput )
+    public WRESArgumentProcessor( final BoxPlotStatistic displayPlotInput, final ChronoUnit durationUnits )
     {
         super();
+
+        Objects.requireNonNull( displayPlotInput, "Specify a non-null box plot statistic." );
+        
+        Objects.requireNonNull( durationUnits, "Specify non-null duration units." );
+        
+        this.durationUnits = durationUnits;
+        
         StatisticMetadata meta = displayPlotInput.getMetadata();
         extractStandardArgumentsFromMetadata( meta );
 
         recordWindowingArguments( meta.getSampleMetadata() );
 
+        String durationString = Long.toString( TimeHelper.durationToLongUnits( meta.getSampleMetadata()
+                                                                                   .getTimeWindow()
+                                                                                   .getLatestLeadTime(),
+                                                                               this.getDurationUnits() ) )
+                                + " "
+                                + this.getDurationUnits().name().toUpperCase();
+
         addArgument( "diagramInstanceDescription",
-                     "at Lead Hour " + meta.getSampleMetadata().getTimeWindow().getLatestLeadTime().toHours()
+                     "at Lead Time " + durationString
                                                    + " for "
                                                    + meta.getSampleMetadata().getThresholds() );
         addArgument( "probabilities",
@@ -106,23 +139,33 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
      * @param displayedPlotInput the plot input
      * @param plotType the plot type; null is allowed, which will trigger recording arguments as if this were anything but
      *     a pooling window plot.
+     * @param durationUnits the time units for durations
+     * @throws NullPointerException if the displayedPlotInput or the durationUnits are null
      */
-    public <T extends Statistic<?>> WRESArgumentProcessor( ListOfStatistics<T> displayedPlotInput, ChartType plotType )
+    public <T extends Statistic<?>> WRESArgumentProcessor( final ListOfStatistics<T> displayedPlotInput,
+                                                           final ChartType plotType,
+                                                           final ChronoUnit durationUnits )
     {
         super();
+        
+        Objects.requireNonNull( displayedPlotInput, "Specify a non-null list of statistics." );
+        
+        Objects.requireNonNull( durationUnits, "Specify non-null duration units." );
+
+        this.durationUnits = durationUnits;
 
         StatisticMetadata meta = displayedPlotInput.getData().get( 0 ).getMetadata();
         extractStandardArgumentsFromMetadata( meta );
 
-        if ( plotType != null && plotType == ChartType.POOLING_WINDOW )
+        if ( plotType == ChartType.POOLING_WINDOW )
         {
             SortedSet<TimeWindow> timeWindows =
                     Slicer.discover( displayedPlotInput,
                                      next -> next.getMetadata().getSampleMetadata().getTimeWindow() );
             recordWindowingArguments( timeWindows.first().getEarliestTime(),
                                       timeWindows.last().getLatestTime(),
-                                      timeWindows.first().getEarliestLeadTime().toHours(),
-                                      timeWindows.last().getLatestLeadTime().toHours(),
+                                      timeWindows.first().getEarliestLeadTime(),
+                                      timeWindows.last().getLatestLeadTime(),
                                       timeWindows.first().getReferenceTime() );
         }
         else
@@ -132,7 +175,18 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
 
         initializeFunctionInformation();
     }
+    
+    /**
+     * Returns the duration units.
+     * 
+     * @return the duration units
+     */
 
+    private ChronoUnit getDurationUnits()
+    {
+        return this.durationUnits;
+    }
+    
     /**
      * Extracts the standard arguments that can be pulled from and interpreted consistently for any output meta data. 
      * @param meta the output metadata 
@@ -194,14 +248,18 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         {
             earliestInstant = meta.getTimeWindow().getEarliestTime();
             latestInstant = meta.getTimeWindow().getLatestTime();
-            addArgument( "earliestLeadTimeHours", Long.toString( meta.getTimeWindow().getEarliestLeadTime().toHours() ) );
-            addArgument( "latestLeadTimeHours", Long.toString( meta.getTimeWindow().getLatestLeadTime().toHours() ) );
+            addArgument( "earliestLeadTime",
+                         Long.toString( TimeHelper.durationToLongUnits( meta.getTimeWindow().getEarliestLeadTime(),
+                                                                        this.getDurationUnits() ) ) );
+            addArgument( "latestLeadTime",
+                         Long.toString( TimeHelper.durationToLongUnits( meta.getTimeWindow().getLatestLeadTime(),
+                                                         this.getDurationUnits() ) ) );
             addArgument( "referenceTime", meta.getTimeWindow().getReferenceTime().toString() ); //#44873
 
             recordWindowingArguments( meta.getTimeWindow().getEarliestTime(),
                                       meta.getTimeWindow().getLatestTime(),
-                                      meta.getTimeWindow().getEarliestLeadTime().toHours(),
-                                      meta.getTimeWindow().getLatestLeadTime().toHours(),
+                                      meta.getTimeWindow().getEarliestLeadTime(),
+                                      meta.getTimeWindow().getLatestLeadTime(),
                                       meta.getTimeWindow().getReferenceTime() );
         }
         else
@@ -215,21 +273,22 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
     //want to avoid using the same strings (argument names) repeatedly.  
     /**
      * Record the pooling window arguments and attributes from the meta data or provided overrides.  
-     * @param usedEarliestLeadTimeInHours Earliest lead time to use IN HOURS!
-     * @param usedLatestLeadTimeInHours Latest lead time to use IN HOURS!
+     * @param usedEarliestLeadTime Earliest lead time to use
+     * @param usedLatestLeadTime Latest lead time to use
      * @param usedReferenceTime The reference time system for the pooling windows.
      */
-    private void recordWindowingArguments(
-                                           Instant earliestTime,
+    private void recordWindowingArguments( Instant earliestTime,
                                            Instant latestTime,
-                                           long usedEarliestLeadTimeInHours,
-                                           long usedLatestLeadTimeInHours,
+                                           Duration usedEarliestLeadTime,
+                                           Duration usedLatestLeadTime,
                                            ReferenceTime usedReferenceTime )
     {
         earliestInstant = earliestTime;
         latestInstant = latestTime;
-        addArgument( "earliestLeadTimeHours", Long.toString( usedEarliestLeadTimeInHours ) );
-        addArgument( "latestLeadTimeHours", Long.toString( usedLatestLeadTimeInHours ) );
+        addArgument( "earliestLeadTime",
+                     Long.toString( TimeHelper.durationToLongUnits( usedEarliestLeadTime, this.getDurationUnits() ) ) );
+        addArgument( "latestLeadTime",
+                     Long.toString( TimeHelper.durationToLongUnits( usedLatestLeadTime, this.getDurationUnits() ) ) );
         addArgument( "referenceTime", usedReferenceTime.toString() ); //#44873
     }
 
@@ -259,8 +318,10 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         addArgument( "legendUnitsText", legendUnitsText );
         if ( plotTimeWindow != null )
         {
-            Object key = plotTimeWindow.getLatestLeadTime().toHours();
-            addArgument( "diagramInstanceDescription", "at Lead Hour " + key );
+            String durationString =
+                    TimeHelper.durationToLongUnits( plotTimeWindow.getLatestLeadTime(), this.getDurationUnits() ) + " "
+                              + this.getDurationUnits().name().toUpperCase();
+            addArgument( "diagramInstanceDescription", "at Lead Time " + durationString );
             addArgument( "plotTitleVariable", "Thresholds" );
         }
     }
@@ -287,9 +348,10 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
             String set = secondThresholds.toString();
             supplementary = " with occurrences defined as " + set;
         }
+        
         addArgument( "plotTitleSupplementary", supplementary );
         addArgument( "legendTitle",  "Lead Time" );
-        addArgument( "legendUnitsText", " [hours]" );
+        addArgument( "legendUnitsText", " [" + this.getDurationUnits().name().toUpperCase() + "]" );
         
         if ( threshold != null )
         {
@@ -308,21 +370,28 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
     public <T extends Statistic<?>> void addPoolingWindowArguments(ListOfStatistics<T> displayedPlotInput )
     {
         final StatisticMetadata meta = displayedPlotInput.getData().get( 0 ).getMetadata();
+        
+        String durationUnitsString = "[" + this.getDurationUnits().name().toUpperCase() + "]";
+        
         if ( !meta.getSampleMetadata()
                   .getTimeWindow()
                   .getEarliestLeadTime()
                   .equals( meta.getSampleMetadata().getTimeWindow().getLatestLeadTime() ) )
         {
-            addArgument( "legendTitle", "Lead time window [HOUR], Threshold " );
+            addArgument( "legendTitle", "Lead time window "+durationUnitsString+", Threshold " );
         }
         else
         {
 
-            addArgument( "legendTitle", "Lead time [HOUR], Threshold " );
+            addArgument( "legendTitle", "Lead time "+durationUnitsString+", Threshold " );
         }
         addArgument( "legendUnitsText", "[" + meta.getSampleMetadata().getMeasurementUnit() + "]" );
     }
 
+    /**
+     * Adds the arguments for metrics expressed with durations.
+     */
+    
     public void addDurationMetricArguments()
     {
         addArgument( "outputUnitsLabelSuffix", " [HOURS]" );
@@ -370,7 +439,10 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         if ( meta.getSampleMetadata().hasTimeScale() )
         {
             String period =
-                    Long.toString( meta.getSampleMetadata().getTimeScale().getPeriod().getSeconds() ) + " SECONDS";
+                    Long.toString( TimeHelper.durationToLongUnits( meta.getSampleMetadata().getTimeScale().getPeriod(),
+                                                                   this.getDurationUnits() ) )
+                            + " "
+                            + this.getDurationUnits().name().toUpperCase();
 
             timeScale =
                     " with time scale [" + period + ", " + meta.getSampleMetadata().getTimeScale().getFunction() + "] ";
@@ -429,7 +501,8 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         }
         else
         {
-            LOGGER.warn( "Incorrect number of parameters specified for argument {}; requires 2 arguments, the date format and time zone identifier.",
+            LOGGER.warn( "Incorrect number of parameters specified for argument {}; requires 2 arguments, "
+                         + "the date format and time zone identifier.",
                          argument );
             return null;
         }

@@ -46,7 +46,7 @@ public class PNGDoubleScoreWriter extends PNGWriter
      * Returns an instance of a writer.
      * 
      * @param projectConfigPlus the project configuration
-     * @param durationUnits the time units for lead durations
+     * @param durationUnits the time units for durations
      * @return a writer
      * @throws NullPointerException if either input is null
      * @throws ProjectConfigException if the project configuration is not valid for writing
@@ -85,16 +85,17 @@ public class PNGDoubleScoreWriter extends PNGWriter
                 Set<Path> innerPathsWrittenTo =
                         PNGDoubleScoreWriter.writeScoreCharts( this.getProjectConfigPlus(),
                                                                destinationConfig,
-                                                               Slicer.filter( output, next ) );
+                                                               Slicer.filter( output, next ),
+                                                               this.getDurationUnits() );
                 this.pathsWrittenTo.addAll( innerPathsWrittenTo );
             }
         }
     }
 
     /**
-     * Returns the set of paths written *so far*.
+     * Return a snapshot of the paths written to (so far)
      * 
-     * @return paths written to *so far*
+     * @return the paths written so far.
      */
 
     @Override
@@ -110,13 +111,15 @@ public class PNGDoubleScoreWriter extends PNGWriter
      * @param projectConfigPlus the project configuration
      * @param destinationConfig the destination configuration for the written output
      * @param output the metric output
+     * @param durationUnits the time units for durations
      * @throws PNGWriteException when an error occurs during writing
      * @return the paths actually written to
      */
 
     private static Set<Path> writeScoreCharts( ProjectConfigPlus projectConfigPlus,
                                                DestinationConfig destinationConfig,
-                                               ListOfStatistics<DoubleScoreStatistic> output )
+                                               ListOfStatistics<DoubleScoreStatistic> output,
+                                               ChronoUnit durationUnits )
     {
         Set<Path> pathsWrittenTo = new HashSet<>();
 
@@ -156,7 +159,8 @@ public class PNGDoubleScoreWriter extends PNGWriter
                                                                         nextOutput,
                                                                         helper.getOutputType(),
                                                                         helper.getTemplateResourceName(),
-                                                                        helper.getGraphicsString() );
+                                                                        helper.getGraphicsString(),
+                                                                        durationUnits );
 
                 String append = null;
 
@@ -195,7 +199,7 @@ public class PNGDoubleScoreWriter extends PNGWriter
      * Hidden constructor.
      * 
      * @param projectConfigPlus the project configuration
-     * @param durationUnits the time units for lead durations
+     * @param durationUnits the time units for durations
      * @throws ProjectConfigException if the project configuration is not valid for writing
      * @throws NullPointerException if either input is null
      */

@@ -49,7 +49,7 @@ public abstract class WRESAbstractXYDataset<T, U> extends AbstractIntervalXYData
      */
     private final List<String> overrideLegendNames = new ArrayList<>();
 
-    protected WRESAbstractXYDataset(final U rawData)
+    WRESAbstractXYDataset(final U rawData)
     {
         preparePlotData(rawData);
         for(int i = 0; i < getSeriesCount(); i++)
@@ -58,7 +58,7 @@ public abstract class WRESAbstractXYDataset<T, U> extends AbstractIntervalXYData
         }
     }
 
-    protected void setPlotData(final T plotData)
+    void setPlotData(final T plotData)
     {
         this.plotData = plotData;
     }
@@ -75,7 +75,7 @@ public abstract class WRESAbstractXYDataset<T, U> extends AbstractIntervalXYData
      * {@link #setPlotData(Object)} so that it is stored herein.
      * @param rawData the raw data 
      */
-    protected abstract void preparePlotData(U rawData);
+    abstract void preparePlotData(U rawData);
 
     public void setOverrideLegendName(final int seriesIndex, final String name)
     {

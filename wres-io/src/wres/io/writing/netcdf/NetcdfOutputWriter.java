@@ -95,7 +95,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
      * Returns an instance of the writer. 
      * 
      * @param projectConfig the project configuration
-     * @param durationUnits the time units for lead durations
+     * @param durationUnits the time units for durations
      * @return an instance of the writer
      */
     
