@@ -1,5 +1,7 @@
 package wres.vis;
 
+import java.time.temporal.ChronoUnit;
+
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.MultiVectorStatistic;
@@ -8,11 +10,22 @@ public class RankHistogramXYDataset extends MultiVectorOutputDiagramXYDataset
 {
     private static final long serialVersionUID = -798561678672865289L;
 
+    /**
+     * Build a new rank histogram.
+     * 
+     * @param input the list of inputs to plot
+     * @param xConstant the dimension for the domain axis
+     * @param yConstant the dimension for the range axis
+     * @param durationUnits the duration units
+     * @throws NullPointerException if any input is null
+     */
+
     public RankHistogramXYDataset( final ListOfStatistics<MultiVectorStatistic> input,
-                                          final MetricDimension xConstant,
-                                          final MetricDimension yConstant )
+                                   final MetricDimension xConstant,
+                                   final MetricDimension yConstant,
+                                   final ChronoUnit durationUnits )
     {
-        super( input, xConstant, yConstant );
+        super( input, xConstant, yConstant, durationUnits );
     }
 
     @Override

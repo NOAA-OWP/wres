@@ -1,7 +1,9 @@
 package wres.vis;
 
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.SortedSet;
 
 import org.jfree.data.xy.AbstractXYDataset;
@@ -11,6 +13,7 @@ import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.ScoreStatistic;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
+import wres.util.TimeHelper;
 
 /**
  * An {@link AbstractXYDataset} that wraps a {@link ListOfStatistics} which contains a set of
@@ -18,8 +21,6 @@ import wres.datamodel.thresholds.OneOrTwoThresholds;
  * by threshold to form plots by lead time on the domain axis.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 
 public class ScoreOutputByLeadAndThresholdXYDataset extends
@@ -27,9 +28,30 @@ public class ScoreOutputByLeadAndThresholdXYDataset extends
 {
     private static final long serialVersionUID = 2251263309545763140L;
 
-    public ScoreOutputByLeadAndThresholdXYDataset(final ListOfStatistics<DoubleScoreStatistic> input)
+    /**
+     * The duration units.
+     */
+    
+    private final ChronoUnit durationUnits;
+    
+    /**
+     * Build a new score output by lead duration and threshold.
+     * 
+     * @param input the list of inputs to plot
+     * @param durationUnits the duration units
+     * @throws NullPointerException if any input is null
+     */
+
+    public ScoreOutputByLeadAndThresholdXYDataset( final ListOfStatistics<DoubleScoreStatistic> input,
+                                                   final ChronoUnit durationUnits )
     {
-        super(input);
+        super( input );
+
+        Objects.requireNonNull( input, "Specify non-null input." );
+
+        Objects.requireNonNull( durationUnits, "Specify non-null duration units." );
+
+        this.durationUnits = durationUnits;
 
         //Handling the legend name in here because otherwise the key will be lost (I don't keep the raw data).
         //The data is processed into a list based on the key that must appear in the legend.
@@ -72,13 +94,14 @@ public class ScoreOutputByLeadAndThresholdXYDataset extends
     @Override
     public Number getX( final int series, final int item )
     {
-        return getPlotData().get( series )
-                            .getData()
-                            .get( item )
-                            .getMetadata()
-                            .getSampleMetadata()
-                            .getTimeWindow()
-                            .getLatestLeadTime().toHours();
+        return TimeHelper.durationToLongUnits( getPlotData().get( series )
+                                                            .getData()
+                                                            .get( item )
+                                                            .getMetadata()
+                                                            .getSampleMetadata()
+                                                            .getTimeWindow()
+                                                            .getLatestLeadTime(),
+                                               this.durationUnits );
     }
 
     @Override

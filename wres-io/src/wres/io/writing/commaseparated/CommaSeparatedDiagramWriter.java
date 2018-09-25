@@ -52,7 +52,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
      * Returns an instance of a writer.
      * 
      * @param projectConfig the project configuration
-     * @param durationUnits the time units for lead durations
+     * @param durationUnits the time units for durations
      * @return a writer
      * @throws NullPointerException if the input is null 
      * @throws ProjectConfigException if the project configuration is not valid for writing
@@ -105,6 +105,18 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
         }
 
     }
+    
+    /**
+     * Return a snapshot of the paths written to (so far)
+     * 
+     * @return the paths written so far.
+     */
+
+    @Override
+    public Set<Path> get()
+    {
+        return this.getPathsWrittenTo();
+    }    
 
     /**
      * Writes all output for one diagram type.
@@ -113,7 +125,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
      * @param destinationConfig the destination configuration    
      * @param output the diagram output
      * @param formatter optional formatter, can be null
-     * @param durationUnits the time units for lead durations
+     * @param durationUnits the time units for durations
      * @throws IOException if the output cannot be written
      */
 
@@ -177,7 +189,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
      * @param output the diagram output
      * @param headerRow the header row
      * @param formatter optional formatter, can be null
-     * @param durationUnits the time units for lead durations
+     * @param durationUnits the time units for durations
      * @throws IOException if the output cannot be written
      * @return set of paths actually written to
      */
@@ -231,7 +243,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
      * @param output the diagram output
      * @param headerRow the header row
      * @param formatter optional formatter, can be null
-     * @param durationUnits the time units for lead durations
+     * @param durationUnits the time units for durations
      * @throws IOException if the output cannot be written
      * @return set of paths actually written to
      */
@@ -282,7 +294,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
      *
      * @param output the diagram output
      * @param formatter optional formatter, can be null
-     * @param durationUnits the time units for lead durations
+     * @param durationUnits the time units for durations
      * @return the rows to write
      */
 
@@ -438,16 +450,8 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
 
     /**
      * Return a snapshot of the paths written to (so far)
-     */
-
-    @Override
-    public Set<Path> get()
-    {
-        return this.getPathsWrittenTo();
-    }
-
-    /**
-     * Return a snapshot of the paths written to (so far)
+     * 
+     * @return the paths written so far.
      */
 
     private Set<Path> getPathsWrittenTo()
@@ -459,7 +463,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
      * Hidden constructor.
      * 
      * @param projectConfig the project configuration
-     * @param durationUnits the time units for lead durations
+     * @param durationUnits the time units for durations
      * @throws NullPointerException if either input is null 
      * @throws ProjectConfigException if the project configuration is not valid for writing 
      */

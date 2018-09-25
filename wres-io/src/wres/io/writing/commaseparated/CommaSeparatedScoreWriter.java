@@ -53,7 +53,7 @@ public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends C
      * 
      * @param <T> the score component type
      * @param projectConfig the project configuration
-     * @param durationUnits the time units for lead durations
+     * @param durationUnits the time units for durations
      * @return a writer
      * @throws NullPointerException if either input is null 
      * @throws ProjectConfigException if the project configuration is not valid for writing
@@ -115,7 +115,18 @@ public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends C
         }
     }
 
+    /**
+     * Return a snapshot of the paths written to (so far)
+     * 
+     * @return the paths written so far.
+     */
 
+    @Override
+    public Set<Path> get()
+    {
+        return this.getPathsWrittenTo();
+    }
+    
     /**
      * Writes all output for one score type.
      *
@@ -123,7 +134,7 @@ public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends C
      * @param destinationConfig the destination configuration    
      * @param output the score output to iterate through
      * @param formatter optional formatter, can be null
-     * @param durationUnits the time units for lead durations
+     * @param durationUnits the time units for durations
      * @throws IOException if the output cannot be written
      * @return set of paths actually written to
      */
@@ -218,7 +229,7 @@ public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends C
      * @param output the score output
      * @param headerRow the header row
      * @param formatter optional formatter, can be null
-     * @param durationUnits the time units for lead durations
+     * @param durationUnits the time units for durations
      * @return the rows to write
      */
 
@@ -262,7 +273,7 @@ public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends C
      * @param headerRow the header row
      * @param rows the data rows
      * @param formatter optional formatter, can be null
-     * @param durationUnits the time units for lead durations
+     * @param durationUnits the time units for durations
      */
 
     private static <T extends ScoreStatistic<?, T>> void addRowsForOneScoreComponent( String name,
@@ -322,16 +333,6 @@ public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends C
      * Return a snapshot of the paths written to (so far)
      */
 
-    @Override
-    public Set<Path> get()
-    {
-        return this.getPathsWrittenTo();
-    }
-
-    /**
-     * Return a snapshot of the paths written to (so far)
-     */
-
     private Set<Path> getPathsWrittenTo()
     {
         return Collections.unmodifiableSet( this.pathsWrittenTo );
@@ -341,7 +342,7 @@ public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends C
      * Hidden constructor.
      * 
      * @param projectConfig the project configuration
-     * @param durationUnits the time units for lead durations
+     * @param durationUnits the time units for durations
      * @throws NullPointerException if either input is null 
      * @throws ProjectConfigException if the project configuration is not valid for writing 
      */

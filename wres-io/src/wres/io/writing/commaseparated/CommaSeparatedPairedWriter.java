@@ -46,7 +46,7 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedWriter
      * @param <S> the left side of the paired output type
      * @param <T> the right side if the paired output type
      * @param projectConfig the project configuration
-     * @param durationUnits the time units for lead durations
+     * @param durationUnits the time units for durations
      * @return a writer
      * @throws NullPointerException if either input is null 
      * @throws ProjectConfigException if the project configuration is not valid for writing
@@ -107,7 +107,7 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedWriter
      * @param destinationConfig the destination configuration    
      * @param output the paired output to iterate through
      * @param formatter optional formatter, can be null
-     * @param durationUnits the time units for lead durations
+     * @param durationUnits the time units for durations
      * @throws IOException if the output cannot be written
      * @return set of paths actually written to
      */
@@ -158,7 +158,6 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedWriter
         return Collections.unmodifiableSet( pathsWrittenTo );
     }
 
-
     /**
      * Returns the results for one paired output.
      *
@@ -168,7 +167,7 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedWriter
      * @param output the paired output
      * @param headerRow the header row
      * @param formatter optional formatter, can be null
-     * @param durationUnits the time units for lead durations
+     * @param durationUnits the time units for durations
      * @return the rows to write
      */
 
@@ -223,7 +222,7 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedWriter
      * Hidden constructor.
      * 
      * @param projectConfig the project configuration
-     * @param durationUnits the time units for lead durations
+     * @param durationUnits the time units for durations
      * @throws NullPointerException if either input is null 
      * @throws ProjectConfigException if the project configuration is not valid for writing 
      */

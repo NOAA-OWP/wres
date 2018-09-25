@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -37,6 +38,7 @@ import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.MultiVectorStatistic;
 import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
+import wres.util.TimeHelper;
 
 /**
  * Used to produce {@link XYChartDataSource} instances for use in constructing charts.  
@@ -217,8 +219,9 @@ public abstract class XYChartDataSourceFactory
      * @param domainTitle Title for the domain.
      * @param rangeTitle Title for the range.
      * @param subPlotIndex The subplot index to use.  If null or negative, zero is assumed.
-     * @param buildDataSetSupplier Supplies the {@link XYDataset} to be used in the data source.  If null, then a simple {@link MultiVectorOutputDiagramXYDataset}
-     * is used.
+     * @param buildDataSetSupplier Supplies the {@link XYDataset} to be used in the data source.  
+     *            If null, then a simple {@link MultiVectorOutputDiagramXYDataset} is used.
+     * @param durationUnits the duration units
      * @return A data source that can be used to draw the diagram.
      */
     public static DefaultXYChartDataSource ofMultiVectorOutputDiagram( final int orderIndex,
@@ -228,7 +231,8 @@ public abstract class XYChartDataSourceFactory
                                                                        final String domainTitle,
                                                                        final String rangeTitle,
                                                                        final Integer subPlotIndex,
-                                                                       Supplier<XYDataset> buildDataSetSupplier )
+                                                                       final Supplier<XYDataset> buildDataSetSupplier,
+                                                                       final ChronoUnit durationUnits )
     {
         DefaultXYChartDataSource source = new DefaultXYChartDataSource()
         {
@@ -242,7 +246,8 @@ public abstract class XYChartDataSourceFactory
                                                                                  domainTitle,
                                                                                  rangeTitle,
                                                                                  subPlotIndex,
-                                                                                 buildDataSetSupplier );
+                                                                                 buildDataSetSupplier,
+                                                                                 durationUnits );
                 this.copyTheseParametersIntoDataSource( newSource );
                 return newSource;
             }
@@ -256,7 +261,8 @@ public abstract class XYChartDataSourceFactory
                 }
                 return new MultiVectorOutputDiagramXYDataset( input,
                                                               xConstant,
-                                                              yConstant );
+                                                              yConstant,
+                                                              durationUnits );
             }
         };
 
@@ -277,18 +283,26 @@ public abstract class XYChartDataSourceFactory
      * Factory method for scalar output plotted by pooling window.
      * @param orderIndex Order index of the data source; lower index sources are drawn on top of higher index sources.
      * @param input The data to plot.
+     * @param durationUnits the duration units
      * @return A data source to be used to draw the plot.
+     * @throws NullPointerException if the input or durationUnits are null
      */
     public static DefaultXYChartDataSource
-            ofDoubleScoreOutputByPoolingWindow( int orderIndex,
-                                                final ListOfStatistics<DoubleScoreStatistic> input )
+            ofDoubleScoreOutputByPoolingWindow( final int orderIndex,
+                                                final ListOfStatistics<DoubleScoreStatistic> input,
+                                                final ChronoUnit durationUnits )
     {
+        Objects.requireNonNull( input, "Specify non-null input." );
+        
+        Objects.requireNonNull( durationUnits, "Specify non-null duration units." );
+        
         DefaultXYChartDataSource source = new DefaultXYChartDataSource()
         {
             @Override
             public XYChartDataSource returnNewInstanceWithCopyOfInitialParameters() throws XYChartDataSourceException
             {
-                DefaultXYChartDataSource newSource = ofDoubleScoreOutputByThresholdAndLead( orderIndex, input );
+                DefaultXYChartDataSource newSource =
+                        ofDoubleScoreOutputByThresholdAndLead( orderIndex, input, durationUnits );
                 this.copyTheseParametersIntoDataSource( newSource );
                 return newSource;
             }
@@ -339,12 +353,13 @@ public abstract class XYChartDataSourceFactory
 
                         // Create the time series with a label determined by whether the lead time is a 
                         // single value or window.
-                        String leadKey = Long.toString( nextTime.getRight().toHours() );
+                        String leadKey =
+                                Long.toString( TimeHelper.durationToLongUnits( nextTime.getRight(), durationUnits ) );
                         if ( !nextTime.getLeft().equals( nextTime.getRight() ) )
                         {
-                            leadKey = "(" + nextTime.getLeft().toHours()
+                            leadKey = "(" + TimeHelper.durationToLongUnits( nextTime.getLeft(), durationUnits )
                                       + ","
-                                      + nextTime.getRight().toHours()
+                                      + TimeHelper.durationToLongUnits( nextTime.getRight(), durationUnits )
                                       + "]";
                         }
                         TimeSeries next = new TimeSeries( leadKey + ", "
@@ -397,11 +412,13 @@ public abstract class XYChartDataSourceFactory
      * Factory method for scalar output plotted against threshold with lead time in the legend.
      * @param orderIndex Order index of the data source; lower index sources are drawn on top of higher index sources.
      * @param input The data to plot.
+     * @param durationUnits the duration units
      * @return A data source to be used to draw the plot.
      */
     public static DefaultXYChartDataSource
-            ofDoubleScoreOutputByThresholdAndLead( int orderIndex,
-                                                   final ListOfStatistics<DoubleScoreStatistic> input )
+            ofDoubleScoreOutputByThresholdAndLead( final int orderIndex,
+                                                   final ListOfStatistics<DoubleScoreStatistic> input,
+                                                   final ChronoUnit durationUnits )
     {
         DefaultXYChartDataSource source = new DefaultXYChartDataSource()
         {
@@ -409,7 +426,8 @@ public abstract class XYChartDataSourceFactory
             @Override
             public XYChartDataSource returnNewInstanceWithCopyOfInitialParameters() throws XYChartDataSourceException
             {
-                DefaultXYChartDataSource newSource = ofDoubleScoreOutputByThresholdAndLead( orderIndex, input );
+                DefaultXYChartDataSource newSource =
+                        ofDoubleScoreOutputByThresholdAndLead( orderIndex, input, durationUnits );
                 this.copyTheseParametersIntoDataSource( newSource );
                 return newSource;
             }
@@ -417,7 +435,7 @@ public abstract class XYChartDataSourceFactory
             @Override
             protected XYDataset buildXYDataset( DataSourceDrawingParameters arg0 ) throws XYChartDataSourceException
             {
-                return new ScoreOutputByThresholdAndLeadXYDataset( input );
+                return new ScoreOutputByThresholdAndLeadXYDataset( input, durationUnits );
             }
         };
 
@@ -438,19 +456,27 @@ public abstract class XYChartDataSourceFactory
      * Factory method for scalar output plotted against lead time with threshold in the legend.
      * @param orderIndex Order index of the data source; lower index sources are drawn on top of higher index sources.
      * @param input The data to plot.
+     * @param durationUnits the duration units
      * @return A data source to be used to draw the plot.
+     * @throws NullPointerException if the input or durationUnits are null
      */
     public static DefaultXYChartDataSource
-            ofDoubleScoreOutputByLeadAndThreshold( int orderIndex,
-                                                   final ListOfStatistics<DoubleScoreStatistic> input )
+            ofDoubleScoreOutputByLeadAndThreshold( final int orderIndex,
+                                                   final ListOfStatistics<DoubleScoreStatistic> input,
+                                                   final ChronoUnit durationUnits )
     {
+        Objects.requireNonNull( input, "Specify non-null input." );
+        
+        Objects.requireNonNull( durationUnits, "Specify non-null duration units." );
+        
         DefaultXYChartDataSource source = new DefaultXYChartDataSource()
         {
 
             @Override
             public XYChartDataSource returnNewInstanceWithCopyOfInitialParameters() throws XYChartDataSourceException
             {
-                DefaultXYChartDataSource newSource = ofDoubleScoreOutputByLeadAndThreshold( orderIndex, input );
+                DefaultXYChartDataSource newSource =
+                        ofDoubleScoreOutputByLeadAndThreshold( orderIndex, input, durationUnits );
                 this.copyTheseParametersIntoDataSource( newSource );
                 return newSource;
             }
@@ -458,7 +484,7 @@ public abstract class XYChartDataSourceFactory
             @Override
             protected XYDataset buildXYDataset( DataSourceDrawingParameters arg0 ) throws XYChartDataSourceException
             {
-                return new ScoreOutputByLeadAndThresholdXYDataset( input );
+                return new ScoreOutputByLeadAndThresholdXYDataset( input, durationUnits );
             }
         };
 
@@ -467,7 +493,7 @@ public abstract class XYChartDataSourceFactory
 
         buildInitialParameters( source, orderIndex, thresholds.size() );
         source.getDefaultFullySpecifiedDataSourceDrawingParameters()
-              .setDefaultDomainAxisTitle( "FORECAST LEAD TIME [HOUR]" );
+              .setDefaultDomainAxisTitle( "FORECAST LEAD TIME [" + durationUnits.name().toUpperCase() + "]" );
         source.getDefaultFullySpecifiedDataSourceDrawingParameters()
               .setDefaultRangeAxisTitle( "@metricShortName@@metricComponentNameSuffix@@outputUnitsLabelSuffix@" );
 

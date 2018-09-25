@@ -45,7 +45,7 @@ public class PNGDiagramWriter extends PNGWriter
      * Returns an instance of a writer.
      * 
      * @param projectConfigPlus the project configuration
-     * @param durationUnits the time units for lead durations
+     * @param durationUnits the time units for durations
      * @return a writer
      * @throws NullPointerException if either input is null
      * @throws ProjectConfigException if the project configuration is not valid for writing
@@ -90,10 +90,10 @@ public class PNGDiagramWriter extends PNGWriter
         }
     }
 
-
     /**
-     *
-     * @return paths written to *so far*
+     * Return a snapshot of the paths written to (so far)
+     * 
+     * @return the paths written so far.
      */
 
     @Override
@@ -109,7 +109,7 @@ public class PNGDiagramWriter extends PNGWriter
      * @param projectConfigPlus the project configuration
      * @param destinationConfig the destination configuration for the written output
      * @param output the metric results
-     * @param durationUnits the time units for lead durations
+     * @param durationUnits the time units for durations
      * @throws PNGWriteException when an error occurs during writing
      * @return the paths actually written to
      */
@@ -133,7 +133,8 @@ public class PNGDiagramWriter extends PNGWriter
                                                                           output,
                                                                           helper.getOutputType(),
                                                                           helper.getTemplateResourceName(),
-                                                                          helper.getGraphicsString() );
+                                                                          helper.getGraphicsString(),
+                                                                          durationUnits );
 
             // Build the outputs
             for ( final Entry<Object, ChartEngine> nextEntry : engines.entrySet() )
@@ -176,7 +177,7 @@ public class PNGDiagramWriter extends PNGWriter
      * Hidden constructor.
      * 
      * @param projectConfigPlus the project configuration
-     * @param durationUnits the time units for lead durations
+     * @param durationUnits the time units for durations
      * @throws ProjectConfigException if the project configuration is not valid for writing
      * @throws NullPointerException if either input is null
      */

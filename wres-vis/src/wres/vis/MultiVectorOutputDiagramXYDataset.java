@@ -1,5 +1,7 @@
 package wres.vis;
 
+import java.time.temporal.ChronoUnit;
+import java.util.Objects;
 import java.util.SortedSet;
 
 import org.jfree.data.xy.XYDataset;
@@ -10,27 +12,58 @@ import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.MultiVectorStatistic;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
+import wres.util.TimeHelper;
 
 /**
  * The {@link XYDataset} for use in building a chart that plots a {@link MultiVectorStatistic}.
  * 
  * @author Hank.Herr
  */
-public class MultiVectorOutputDiagramXYDataset extends WRESAbstractXYDataset<ListOfStatistics<MultiVectorStatistic>, ListOfStatistics<MultiVectorStatistic>>
+public class MultiVectorOutputDiagramXYDataset
+        extends WRESAbstractXYDataset<ListOfStatistics<MultiVectorStatistic>, ListOfStatistics<MultiVectorStatistic>>
 {
     private static final long serialVersionUID = 4254109136599641286L;
     private final MetricDimension xConstant;
     private final MetricDimension yConstant;
+    
+    /**
+     * The duration units.
+     */
+    
+    private final ChronoUnit durationUnits;
+    
+    /**
+     * Build a new diagram.
+     * 
+     * @param input the list of inputs to plot
+     * @param xConstant the dimension for the domain axis
+     * @param yConstant the dimension for the range axis
+     * @param durationUnits the duration units
+     * @throws NullPointerException if any input is null
+     */
 
-    public MultiVectorOutputDiagramXYDataset(final ListOfStatistics<MultiVectorStatistic> input, final MetricDimension xConstant, final MetricDimension yConstant)
+    public MultiVectorOutputDiagramXYDataset( final ListOfStatistics<MultiVectorStatistic> input,
+                                              final MetricDimension xConstant,
+                                              final MetricDimension yConstant,
+                                              final ChronoUnit durationUnits )
     {
-        super(input);
+        super( input );
+        
+        Objects.requireNonNull( input, "Specify non-null input." );
+        
+        Objects.requireNonNull( xConstant, "Specify a non-null domain axis dimension." );
+        
+        Objects.requireNonNull( yConstant, "Specify a non-null range axis dimension." );
+        
+        Objects.requireNonNull( durationUnits, "Specify non-null duration units." );
+        
         this.xConstant = xConstant;
         this.yConstant = yConstant;
+        this.durationUnits = durationUnits;
     }
 
     @Override
-    protected void preparePlotData(final ListOfStatistics<MultiVectorStatistic> rawData)
+    void preparePlotData(final ListOfStatistics<MultiVectorStatistic> rawData)
     {
         //This check should not be necessary, since the conditions should be impossible.  I'll do it anyway just to be sure.
         if ( rawData.getData().isEmpty() )
@@ -96,12 +129,13 @@ public class MultiVectorOutputDiagramXYDataset extends WRESAbstractXYDataset<Lis
         }
         else if ( ( !timeWindows.isEmpty() ) && ( thresholds.size() == 1 ) )
         {
-            return Long.toString( getPlotData().getData()
-                                               .get( series )
-                                               .getMetadata()
-                                               .getSampleMetadata()
-                                               .getTimeWindow()
-                                               .getLatestLeadTime().toHours() );
+            return Long.toString( TimeHelper.durationToLongUnits( getPlotData().getData()
+                                                                               .get( series )
+                                                                               .getMetadata()
+                                                                               .getSampleMetadata()
+                                                                               .getTimeWindow()
+                                                                               .getLatestLeadTime(),
+                                                                  this.durationUnits ) );
         }
         else
         {
