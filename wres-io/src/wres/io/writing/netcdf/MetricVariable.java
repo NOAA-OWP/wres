@@ -1,33 +1,52 @@
 package wres.io.writing.netcdf;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TreeMap;
 
 import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
+import wres.util.TimeHelper;
 
 class MetricVariable
 {
-    static Collection<MetricVariable> getAll( Iterable<DoubleScoreStatistic> metricResults)
+    /**
+     * Returns a {@link MetricVariable} for each metric result in the input, with times formatted according to the
+     * specified time units.
+     * @param metricResults
+     * @param durationUnits the time units for durations
+     * @return a collection of metric variables
+     * @throws NullPointerException if either input is null
+     */
+    
+    static Collection<MetricVariable> getAll( Iterable<DoubleScoreStatistic> metricResults, ChronoUnit durationUnits )
     {
+        Objects.requireNonNull( metricResults, "Specify non-null metric results." );
+        
+        Objects.requireNonNull( durationUnits, "Specify non-null duration units." );
+        
         List<MetricVariable> variables = new ArrayList<>();
 
         for (DoubleScoreStatistic output : metricResults)
         {
-            variables.add( new MetricVariable( output ) );
+            variables.add( new MetricVariable( output, durationUnits ) );
         }
 
-        return variables;
+        return Collections.unmodifiableCollection( variables );
     }
 
-    private MetricVariable (final DoubleScoreStatistic output)
+    private MetricVariable (final DoubleScoreStatistic output, ChronoUnit durationUnits )
     {
+        this.durationUnits = durationUnits;
+        
         StatisticMetadata metadata = output.getMetadata();
         String metric = metadata.getMetricID().toString();
         OneOrTwoThresholds thresholds = metadata.getSampleMetadata().getThresholds();
@@ -59,8 +78,10 @@ class MetricVariable
 
         // We only add timing information until we get a lead variable in
         // Use the default duration units 
-        this.earliestLead = (int)timeWindow.getEarliestLeadTime().get( NetcdfOutputWriter.DEFAULT_DURATION_UNITS );
-        this.latestLead = (int)timeWindow.getLatestLeadTime().get( NetcdfOutputWriter.DEFAULT_DURATION_UNITS );
+        this.earliestLead = (int) TimeHelper.durationToLongUnits( timeWindow.getEarliestLeadTime(),
+                                                                  this.getDurationUnits() );
+        this.latestLead = (int) TimeHelper.durationToLongUnits( timeWindow.getLatestLeadTime(),
+                                                                this.getDurationUnits() );
 
         if (!timeWindow.getEarliestTime().equals( Instant.MIN ))
         {
@@ -84,10 +105,10 @@ class MetricVariable
         if( metadata.getSampleMetadata().hasTimeScale() )
         {
             // Use the default duration units
-            this.timeScalePeriod = Long.toString( metadata.getSampleMetadata()
-                                                          .getTimeScale()
-                                                          .getPeriod()
-                                                          .get( NetcdfOutputWriter.DEFAULT_DURATION_UNITS ) );
+            this.timeScalePeriod = Long.toString( TimeHelper.durationToLongUnits( metadata.getSampleMetadata()
+                                                                                          .getTimeScale()
+                                                                                          .getPeriod(),
+                                                                                  this.getDurationUnits() ) );
             // Use the enum name()
             this.timeScaleFunction = metadata.getSampleMetadata().getTimeScale().getFunction().name();
         }
@@ -98,6 +119,17 @@ class MetricVariable
         }
         
     }
+    
+    /**
+     * Returns the duration units for writing lead durations.
+     * 
+     * @return the duration units
+     */
+    
+    private ChronoUnit getDurationUnits()
+    {
+        return this.durationUnits;
+    }    
 
     static String getName(final DoubleScoreStatistic output)
     {
@@ -137,9 +169,9 @@ class MetricVariable
         attributes.put( "latest_time", this.latestTime );
         attributes.put( "earliest_time", this.earliestTime );
         // Add the default duration units to qualify
-        attributes.put( "earliest_lead_" + NetcdfOutputWriter.DEFAULT_DURATION_UNITS.name().toLowerCase(),
+        attributes.put( "earliest_lead_" + this.getDurationUnits().name().toLowerCase(),
                         this.earliestLead );
-        attributes.put( "latest_lead_" + NetcdfOutputWriter.DEFAULT_DURATION_UNITS.name().toLowerCase(),
+        attributes.put( "latest_lead_" + this.getDurationUnits().name().toLowerCase(),
                         this.latestLead );
         attributes.put( "first_data_type", this.firstDataType );
         attributes.put( "second_data_type", this.secondDataType );
@@ -151,13 +183,19 @@ class MetricVariable
         attributes.put("second_condition", this.secondCondition);
         attributes.put("sample_size", this.sampleSize);
         // Add the default duration units to qualify
-        attributes.put( "time_scale_period_" + NetcdfOutputWriter.DEFAULT_DURATION_UNITS.name().toLowerCase(),
+        attributes.put( "time_scale_period_" + this.getDurationUnits().name().toLowerCase(),
                         this.timeScalePeriod );
         attributes.put("time_scale_function", this.timeScaleFunction);
 
         return attributes;
     }
 
+    /**
+     * The time units for lead durations.
+     */
+    
+    private final ChronoUnit durationUnits;
+    
     private final String name;
     private final String longName;
 

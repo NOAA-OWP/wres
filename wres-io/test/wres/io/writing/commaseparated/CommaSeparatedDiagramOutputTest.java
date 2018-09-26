@@ -8,6 +8,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -83,7 +84,7 @@ public class CommaSeparatedDiagramOutputTest extends CommaSeparatedWriterTestHel
                                                                       OneOrTwoDoubles.of( 0.9 ),
                                                                       Operator.GREATER_EQUAL,
                                                                       ThresholdDataType.LEFT ) );
-        
+
         // Output requires a future... which requires a metadata...
         // which requires a datasetidentifier..
 
@@ -99,7 +100,7 @@ public class CommaSeparatedDiagramOutputTest extends CommaSeparatedWriterTestHel
                                       MeasurementUnit.of(),
                                       MetricConstants.RELIABILITY_DIAGRAM,
                                       null );
-        
+
         Map<MetricDimension, double[]> fakeOutputs = new HashMap<>();
         fakeOutputs.put( MetricDimension.FORECAST_PROBABILITY,
                          new double[] { 0.08625, 0.2955, 0.50723, 0.70648, 0.92682 } );
@@ -110,7 +111,7 @@ public class CommaSeparatedDiagramOutputTest extends CommaSeparatedWriterTestHel
         // Fake output wrapper.
         ListOfStatistics<MultiVectorStatistic> fakeOutputData =
                 ListOfStatistics.of( Collections.singletonList( MultiVectorStatistic.ofMultiVectorOutput( fakeOutputs,
-                                                                                                         fakeMetadata ) ) );
+                                                                                                          fakeMetadata ) ) );
 
         // wrap outputs in future
         Future<ListOfStatistics<MultiVectorStatistic>> outputMapByMetricFuture =
@@ -125,11 +126,11 @@ public class CommaSeparatedDiagramOutputTest extends CommaSeparatedWriterTestHel
         ProjectConfig projectConfig = getMockedProjectConfig( feature );
 
         // Begin the actual test now that we have constructed dependencies.
-        CommaSeparatedDiagramWriter.of( projectConfig ).accept( output.getMultiVectorStatistics() );
+        CommaSeparatedDiagramWriter.of( projectConfig, ChronoUnit.SECONDS ).accept( output.getMultiVectorStatistics() );
 
         // read the file, verify it has what we wanted:
         Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ),
-                                     "CREC1_SQIN_HEFS_RELIABILITY_DIAGRAM_24_HOUR.csv" );
+                                     "CREC1_SQIN_HEFS_RELIABILITY_DIAGRAM_86400_SECONDS.csv" );
         List<String> result = Files.readAllLines( pathToFile );
 
         assertTrue( result.get( 0 ).contains( "," ) );

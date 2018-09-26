@@ -1,7 +1,9 @@
 package wres.vis;
 
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.SortedSet;
 
 import org.jfree.data.xy.AbstractXYDataset;
@@ -11,6 +13,7 @@ import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.ScoreStatistic;
+import wres.util.TimeHelper;
 
 /**
  * An {@link AbstractXYDataset} that wraps a {@link ListOfStatistics} which contains a set of
@@ -18,8 +21,6 @@ import wres.datamodel.statistics.ScoreStatistic;
  * by lead time to form plots by threshold on the domain axis.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 
 public class ScoreOutputByThresholdAndLeadXYDataset extends
@@ -27,17 +28,40 @@ public class ScoreOutputByThresholdAndLeadXYDataset extends
 {
     private static final long serialVersionUID = 1598160458133121056L;
 
-    public ScoreOutputByThresholdAndLeadXYDataset(final ListOfStatistics<DoubleScoreStatistic> input)
-    {
-        super(input);
+    /**
+     * The duration units.
+     */
+    
+    private final ChronoUnit durationUnits;
+    
+    /**
+     * Build a new score output by threshold and lead duration.
+     * 
+     * @param input the list of inputs to plot
+     * @param durationUnits the duration units
+     * @throws NullPointerException if any input is null
+     */
 
+    public ScoreOutputByThresholdAndLeadXYDataset( final ListOfStatistics<DoubleScoreStatistic> input,
+                                                   final ChronoUnit durationUnits )
+    {
+        super( input );
+
+        Objects.requireNonNull( input, "Specify non-null input." );
+
+        Objects.requireNonNull( durationUnits, "Specify non-null duration units." );
+
+        this.durationUnits = durationUnits;
+        
         //Handling the legend name in here because otherwise the key will be lost (I don't keep the raw data).
         int seriesIndex = 0;
         SortedSet<TimeWindow> timeWindows =
                 Slicer.discover( input, next -> next.getMetadata().getSampleMetadata().getTimeWindow() );
         for ( final TimeWindow lead : timeWindows )
         {
-            setOverrideLegendName( seriesIndex, Long.toString( lead.getLatestLeadTime().toHours() ) );
+            setOverrideLegendName( seriesIndex,
+                                   Long.toString( TimeHelper.durationToLongUnits( lead.getLatestLeadTime(),
+                                                                                  this.durationUnits ) ) );
             seriesIndex++;
         }
     }

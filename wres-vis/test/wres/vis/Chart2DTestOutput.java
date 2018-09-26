@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 
@@ -69,7 +70,8 @@ public class Chart2DTestOutput
                                                                                                          input,
                                                                                                          OutputTypeSelection.LEAD_THRESHOLD,
                                                                                                          null,
-                                                                                                         null );
+                                                                                                         null,
+                                                                                                         ChronoUnit.HOURS );
 
         //Generate the output file.
         ChartTools.generateOutputImageFile( outputImageFile,
@@ -98,7 +100,8 @@ public class Chart2DTestOutput
                                                                                                          input,
                                                                                                          OutputTypeSelection.THRESHOLD_LEAD,
                                                                                                          null,
-                                                                                                         null );
+                                                                                                         null,
+                                                                                                         ChronoUnit.HOURS );
 
         //Generate the output file.
         ChartTools.generateOutputImageFile( outputImageFile,
@@ -135,7 +138,8 @@ public class Chart2DTestOutput
                                                                                                          results,
                                                                                                          OutputTypeSelection.LEAD_THRESHOLD,
                                                                                                          null,
-                                                                                                         null );
+                                                                                                         null,
+                                                                                                         ChronoUnit.HOURS );
 
         //Generate the output file.
         for ( final Object lead : engineMap.keySet() )
@@ -171,7 +175,8 @@ public class Chart2DTestOutput
                                                                                                          results,
                                                                                                          OutputTypeSelection.THRESHOLD_LEAD,
                                                                                                          null,
-                                                                                                         null );
+                                                                                                         null,
+                                                                                                         ChronoUnit.HOURS );
 
         //Generate the output file.
         for ( final Object thresh : engineMap.keySet() )
@@ -210,7 +215,8 @@ public class Chart2DTestOutput
                                                                 input,
                                                                 OutputTypeSelection.LEAD_THRESHOLD,
                                                                 null,
-                                                                null );
+                                                                null,
+                                                                ChronoUnit.HOURS );
 
         //Generate the output file.
         for ( final Object key : engineMap.keySet() )
@@ -245,7 +251,8 @@ public class Chart2DTestOutput
                                                                                                          results,
                                                                                                          OutputTypeSelection.LEAD_THRESHOLD,
                                                                                                          null,
-                                                                                                         null );
+                                                                                                         null,
+                                                                                                         ChronoUnit.HOURS );
 
         //Generate the output file.
         for ( final Object lead : engineMap.keySet() )
@@ -281,7 +288,8 @@ public class Chart2DTestOutput
                                                                                                          results,
                                                                                                          OutputTypeSelection.THRESHOLD_LEAD,
                                                                                                          null,
-                                                                                                         null );
+                                                                                                         null,
+                                                                                                         ChronoUnit.HOURS );
 
         //Generate the output file.
         for ( final Object thresh : engineMap.keySet() )
@@ -316,7 +324,8 @@ public class Chart2DTestOutput
                                                                                                          results,
                                                                                                          OutputTypeSelection.LEAD_THRESHOLD,
                                                                                                          null,
-                                                                                                         null );
+                                                                                                         null,
+                                                                                                         ChronoUnit.HOURS );
 
         //Generate the output file.
         for ( final Object lead : engineMap.keySet() )
@@ -351,7 +360,8 @@ public class Chart2DTestOutput
                                                                                                          results,
                                                                                                          OutputTypeSelection.THRESHOLD_LEAD,
                                                                                                          null,
-                                                                                                         null );
+                                                                                                         null,
+                                                                                                         ChronoUnit.HOURS );
 
         //Generate the output file.
         for ( final Object thresh : engineMap.keySet() )
@@ -385,7 +395,8 @@ public class Chart2DTestOutput
                                                                                                          results,
                                                                                                          OutputTypeSelection.LEAD_THRESHOLD,
                                                                                                          null,
-                                                                                                         null );
+                                                                                                         null,
+                                                                                                         ChronoUnit.HOURS );
 
         //Generate the output file.
         for ( final Object lead : engineMap.keySet() )
@@ -422,7 +433,8 @@ public class Chart2DTestOutput
                                                                                                          results,
                                                                                                          OutputTypeSelection.THRESHOLD_LEAD,
                                                                                                          null,
-                                                                                                         null );
+                                                                                                         null,
+                                                                                                         ChronoUnit.HOURS );
 
         for ( final Object thresh : engineMap.keySet() )
         {
@@ -466,7 +478,8 @@ public class Chart2DTestOutput
                 ChartEngineFactory.buildBoxPlotChartEngine( null,
                                                             results,
                                                             null,
-                                                            null );
+                                                            null,
+                                                            ChronoUnit.HOURS );
 
         //Generate the output file.
         for ( final Pair<TimeWindow, OneOrTwoThresholds> key : engineMap.keySet() )
@@ -516,7 +529,8 @@ public class Chart2DTestOutput
                 ChartEngineFactory.buildBoxPlotChartEngine( null,
                                                             results,
                                                             null,
-                                                            null );
+                                                            null,
+                                                            ChronoUnit.HOURS );
 
         //Generate the output file.
         for ( final Pair<TimeWindow, OneOrTwoThresholds> key : engineMap.keySet() )
@@ -581,7 +595,8 @@ public class Chart2DTestOutput
                                                                 input,
                                                                 null,
                                                                 null,
-                                                                null );
+                                                                null,
+                                                                ChronoUnit.HOURS );
 
         //Generate the output file.
         ChartTools.generateOutputImageFile( outputImageFile,
@@ -609,7 +624,8 @@ public class Chart2DTestOutput
         final ChartEngine engine = ChartEngineFactory.buildPairedInstantDurationChartEngine( null,
                                                                                              input,
                                                                                              null,
-                                                                                             null );
+                                                                                             null,
+                                                                                             ChronoUnit.HOURS );
 
         //Generate the output file.
         ChartTools.generateOutputImageFile( new File( "testoutput/chart2DTest/" +
@@ -638,7 +654,8 @@ public class Chart2DTestOutput
         final ChartEngine engine = ChartEngineFactory.buildCategoricalDurationScoreChartEngine( null,
                                                                                                 input,
                                                                                                 null,
-                                                                                                null );
+                                                                                                null,
+                                                                                                ChronoUnit.HOURS );
 
         //Generate the output file.
         ChartTools.generateOutputImageFile( new File( "testoutput/chart2DTest/" +
@@ -689,7 +706,8 @@ public class Chart2DTestOutput
                                                                 input,
                                                                 null,
                                                                 null,
-                                                                null );
+                                                                null,
+                                                                ChronoUnit.HOURS );
 
         //Generate the output file.
         ChartTools.generateOutputImageFile( outputImageFile,

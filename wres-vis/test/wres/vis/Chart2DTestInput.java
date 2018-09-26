@@ -2,6 +2,7 @@ package wres.vis;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -16,8 +17,8 @@ import ohd.hseb.charter.ChartPanelTools;
 import ohd.hseb.charter.ChartTools;
 import ohd.hseb.charter.datasource.XYChartDataSourceException;
 import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.Location;
+import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.sampledata.pairs.SingleValuedPair;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
@@ -46,7 +47,8 @@ public class Chart2DTestInput extends TestCase
         //Build the ChartEngine instance.
         final ChartEngine engine = ChartEngineFactory.buildSingleValuedPairsChartEngine( pairs,
                                                                                          "singleValuedPairsTemplate.xml",
-                                                                                         null );
+                                                                                         null,
+                                                                                         ChronoUnit.HOURS );
 
         //Generate the output file.
         ChartTools.generateOutputImageFile( new File( "testoutput/chart2DTest/" + scenarioName + "_output.png" ),
@@ -85,7 +87,10 @@ public class Chart2DTestInput extends TestCase
                                                  DatasetIdentifier.of(Location.of("DRRC2"), "SQIN", "HEFS"));
         final SingleValuedPairs pairs = SingleValuedPairs.of(values, meta);
 
-        ChartEngine engine = ChartEngineFactory.buildSingleValuedPairsChartEngine( pairs, null, null );
+        ChartEngine engine = ChartEngineFactory.buildSingleValuedPairsChartEngine( pairs,
+                                                                                   null,
+                                                                                   null,
+                                                                                   ChronoUnit.HOURS );
 
         //Put chart in a frame.
         final JPanel panel = ChartPanelTools.buildPanelFromChartEngine(engine, false);
