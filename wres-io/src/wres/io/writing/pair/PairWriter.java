@@ -5,7 +5,9 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.DecimalFormat;
+import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.StringJoiner;
 import java.util.function.Supplier;
@@ -36,257 +38,260 @@ public class PairWriter implements Supplier<Pair<Path,String>>
     private final DestinationConfig destinationConfig;
     private final Instant date;
     private final Feature feature;
-    private final int windowNum;
+    private final int leadIteration;
     private final EnsemblePair pair;
     private final boolean isBaseline;
     private final int poolingStep;
     private final ProjectDetails projectDetails;
-    private final int lead;
+    private final Duration lead;
+    private final DecimalFormat formatter;
+    
+    /*
+     * TODO: currently writing of paired outputs is not coordinated by the ProductProcessor like all other outputs.
+     * The ProductProcessor coordinates the ChronoUnit resolution for writing outputs. Given the above, the near-term
+     * workaround is to specify a separate default here. The near-term solution is to remove this default by including
+     * the preferred units inline to the project declaration: see #55441.
+     * 
+     * Long term, we don't want to write paired outputs separately. These should be included inline to our other 
+     * outputs as diagnostic information, or products that use pairs (e.g. time-series progress plots) should be
+     * products in their own right. See #54942. Long-term, this class will disappear completely, subject to agreement.
+     */
+    
+    private final ChronoUnit durationUnits = ChronoUnit.SECONDS;
 
-    private DecimalFormat formatter;
-
+    /**
+     * Build a {@link PairWriter} with a mutable builder. 
+     */
+    
     public static class Builder
     {
-        private final DestinationConfig destinationConfig;
-        private final Instant date;
-        private final Feature feature;
-        private final int leadIteration;
-        private final EnsemblePair pair;
-        private final boolean isBaseline;
-        private final int poolingStep;
-        private final ProjectDetails projectDetails;
-        private final int lead;
-
-        public Builder()
-        {
-            this.destinationConfig = null;
-            this.date = null;
-            this.feature = null;
-            this.leadIteration = Integer.MIN_VALUE;
-            this.pair = null;
-            this.isBaseline = false;
-            this.poolingStep = Integer.MIN_VALUE;
-            this.projectDetails = null;
-            this.lead = 0;
-        }
-
-        private Builder( DestinationConfig destinationConfig,
-                         Instant date,
-                         Feature feature,
-                         Integer windowNum,
-                         EnsemblePair pair,
-                         Boolean isBaseline,
-                         Integer poolingStep,
-                         ProjectDetails projectDetails,
-                         Integer lead)
-        {
-            this.destinationConfig = destinationConfig;
-            this.date = date;
-            this.feature = feature;
-            this.leadIteration = windowNum;
-            this.pair = pair;
-            this.isBaseline = isBaseline;
-            this.poolingStep = poolingStep;
-            this.projectDetails = projectDetails;
-            this.lead = lead;
-        }
+        private DestinationConfig destinationConfig;
+        private Instant date;
+        private Feature feature;
+        private int leadIteration;
+        private EnsemblePair pair;
+        private boolean isBaseline;
+        private int poolingStep;
+        private ProjectDetails projectDetails;
+        private Duration lead;
+        private DecimalFormat formatter;
+        
+        /**
+         * Set the destination configuration
+         * @param destinationConfig the destination configuration
+         * @return the builder
+         */
 
         public Builder setDestinationConfig(DestinationConfig destinationConfig)
         {
-            return new Builder( destinationConfig,
-                                this.date,
-                                this.feature,
-                                this.leadIteration,
-                                this.pair,
-                                this.isBaseline,
-                                this.poolingStep,
-                                this.projectDetails,
-                                this.lead);
+            this.destinationConfig = destinationConfig;
+            return this;
         }
 
+        /**
+         * Sets the date.
+         * @param date the date
+         * @return the builder
+         */
+        
         public Builder setDate(Instant date)
         {
-            return new Builder( this.destinationConfig,
-                                date,
-                                this.feature,
-                                this.leadIteration,
-                                this.pair,
-                                this.isBaseline,
-                                this.poolingStep,
-                                this.projectDetails,
-                                this.lead);
+            this.date = date;
+            return this;
         }
 
+        /**
+         * Sets the feature.
+         * @param feature the feature
+         * @return the builder
+         */
         public Builder setFeature(Feature feature)
         {
-            return new Builder( this.destinationConfig,
-                                this.date,
-                                feature,
-                                this.leadIteration,
-                                this.pair,
-                                this.isBaseline,
-                                this.poolingStep,
-                                this.projectDetails,
-                                this.lead);
+            this.feature = feature;            
+            return this;
         }
 
+        /**
+         * Sets the lead time iteration.
+         * @param leadIteration the lead iteration
+         * @return the builder
+         */
+        
         public Builder setLeadIteration(Integer leadIteration)
         {
-            return new Builder( this.destinationConfig,
-                                this.date,
-                                this.feature,
-                                leadIteration,
-                                this.pair,
-                                this.isBaseline,
-                                this.poolingStep,
-                                this.projectDetails,
-                                this.lead);
+            this.leadIteration = leadIteration;
+            return this;
         }
 
+        /**
+         * Sets the pair
+         * @param pair the pair
+         * @return the builder
+         */
+        
         public Builder setPair(EnsemblePair pair)
         {
-            return new Builder( this.destinationConfig,
-                                this.date,
-                                this.feature,
-                                this.leadIteration,
-                                pair,
-                                this.isBaseline,
-                                this.poolingStep,
-                                this.projectDetails,
-                                this.lead);
+            this.pair = pair;
+            return this;
         }
 
+        /**
+         * Sets the baseline status as being present (<code>true</code>) or absent (<code>false</code>).
+         * @param isBaseline is true if the baseline is present, otherwise false
+         * @return the builder
+         */
+        
         public Builder setIsBaseline(boolean isBaseline)
         {
-            return new Builder( this.destinationConfig,
-                                this.date,
-                                this.feature,
-                                this.leadIteration,
-                                this.pair,
-                                isBaseline,
-                                this.poolingStep,
-                                this.projectDetails,
-                                this.lead);
+            this.isBaseline = isBaseline;
+            return this;
         }
 
+        /**
+         * Sets the pooling step.
+         * @param poolingStep the pooling step.
+         * @return the builder
+         */
+        
         public Builder setPoolingStep(Integer poolingStep)
         {
-            return new Builder( this.destinationConfig,
-                                this.date,
-                                this.feature,
-                                this.leadIteration,
-                                this.pair,
-                                this.isBaseline,
-                                poolingStep,
-                                this.projectDetails,
-                                this.lead);
+            this.poolingStep = poolingStep;
+            return this;
         }
 
+        /**
+         * Sets the project details.
+         * @param projectDetails the project details
+         * @return the builder
+         */
+        
         public Builder setProjectDetails(ProjectDetails projectDetails)
         {
-            return new Builder( this.destinationConfig,
-                                this.date,
-                                this.feature,
-                                this.leadIteration,
-                                this.pair,
-                                this.isBaseline,
-                                this.poolingStep,
-                                projectDetails,
-                                this.lead);
+            this.projectDetails = projectDetails;
+            return this;
         }
 
-        public Builder setLead(Integer lead)
+        /**
+         * Sets the lead duration.
+         * @param lead the lead duration.
+         * @return the builder
+         */
+        
+        public Builder setLead(Duration lead)
         {
-            return new Builder( this.destinationConfig,
-                                this.date,
-                                this.feature,
-                                this.leadIteration,
-                                this.pair,
-                                this.isBaseline,
-                                this.poolingStep,
-                                this.projectDetails,
-                                lead);
+            this.lead = lead;
+            return this;
+        }
+        
+        /**
+         * Sets the decimal formatter.
+         * 
+         * @param formatter the formatter
+         * @return the builder
+         */
+        
+        public Builder setFormatter(DecimalFormat formatter)
+        {
+            this.formatter = formatter;
+            return this;
         }
 
+        /**
+         * Builds the pair writer.
+         * @return the pair writer
+         */
+        
         public PairWriter build()
         {
-            int errorCount = 0;
-            StringJoiner errorJoiner = new StringJoiner( NEWLINE );
-
-            if (this.destinationConfig == null)
-            {
-                errorCount += 1;
-                errorJoiner.add( "There was no destination passed to write to.");
-            }
-
-            if (this.date == null)
-            {
-                errorCount += 1;
-                errorJoiner.add("No date was added to record.");
-            }
-
-            if (feature == null)
-            {
-                errorCount += 1;
-                errorJoiner.add("No feature was added to record.");
-            }
-
-            if (this.leadIteration == Integer.MIN_VALUE)
-            {
-                errorCount += 1;
-                errorJoiner.add("The iteration was not added to record.");
-            }
-
-            if (this.pair == null)
-            {
-                errorCount += 1;
-                errorJoiner.add("No pair was added to record.");
-            }
-
-            if (this.projectDetails == null)
-            {
-                errorCount += 1;
-                errorJoiner.add("No details about the project were passed.");
-            }
-
-            if (errorCount > 0)
-            {
-                throw new IllegalArgumentException( "A PairWriter could not be "
-                                                    + "created: " +
-                                                    errorJoiner.toString() );
-            }
-
-            return new PairWriter( this.destinationConfig,
-                                   this.date,
-                                   this.feature,
-                                   this.leadIteration,
-                                   this.pair,
-                                   this.isBaseline,
-                                   this.poolingStep,
-                                   this.projectDetails,
-                                   this.lead );
+            return new PairWriter( this );
         }
     }
 
-    private PairWriter( DestinationConfig destinationConfig,
-                        Instant date,
-                        Feature feature,
-                        int windowNum,
-                        EnsemblePair pair,
-                        boolean isBaseline,
-                        int poolingStep,
-                        ProjectDetails projectDetails,
-                        int lead )
+    /**
+     * Builds a pair writer.
+     * @param builder the builder
+     * @throws NullPointerException if one or more required inputs is null
+     */
+    
+    private PairWriter( Builder builder )
     {
-        this.destinationConfig = destinationConfig;
-        this.date = date;
-        this.feature = feature;
-        this.windowNum = windowNum;
-        this.pair = pair;
-        this.isBaseline = isBaseline;
-        this.poolingStep = poolingStep;
-        this.projectDetails = projectDetails;
-        this.lead = lead;
+        // Set then validate        
+        this.destinationConfig = builder.destinationConfig;
+        this.date = builder.date;
+        this.feature = builder.feature;
+        this.leadIteration = builder.leadIteration;
+        this.pair = builder.pair;
+        this.isBaseline = builder.isBaseline;
+        this.poolingStep = builder.poolingStep;
+        this.projectDetails = builder.projectDetails;
+        this.lead = builder.lead;
+        
+        // Tries to set the default formatter when missing
+        if (builder.formatter == null)
+        {
+            String configuredFormat = this.getDestinationConfig().getDecimalFormat();
+
+            if ( configuredFormat != null && !configuredFormat.isEmpty() )
+            {
+                this.formatter = new DecimalFormat();
+                this.formatter.applyPattern( configuredFormat );
+            }
+            else 
+            {
+                this.formatter = null;
+            }
+        }
+        else
+        {
+            this.formatter = builder.formatter;
+        }
+        
+        // Report on all fails collectively
+        int errorCount = 0;
+        StringJoiner errorJoiner = new StringJoiner( NEWLINE );
+
+        if (this.destinationConfig == null)
+        {
+            errorCount += 1;
+            errorJoiner.add( "There was no destination passed to write to.");
+        }
+
+        if (this.date == null)
+        {
+            errorCount += 1;
+            errorJoiner.add("No date was added to record.");
+        }
+
+        if (this.feature == null)
+        {
+            errorCount += 1;
+            errorJoiner.add("No feature was added to record.");
+        }
+
+        if (this.leadIteration == Integer.MIN_VALUE)
+        {
+            errorCount += 1;
+            errorJoiner.add("The iteration was not added to record.");
+        }
+
+        if (this.pair == null)
+        {
+            errorCount += 1;
+            errorJoiner.add("No pair was added to record.");
+        }
+
+        if (this.projectDetails == null)
+        {
+            errorCount += 1;
+            errorJoiner.add("No details about the project were passed.");
+        }
+
+        if (errorCount > 0)
+        {
+            throw new IllegalArgumentException( "A PairWriter could not be "
+                                                + "created: " +
+                                                errorJoiner.toString() );
+        }
     }
 
     @Override
@@ -332,7 +337,7 @@ public class PairWriter implements Supplier<Pair<Path,String>>
         // But above could be as simple as this (and be more precise):
         //line.add( this.date.toString() );
 
-        line.add(String.valueOf(this.lead));
+        line.add( String.valueOf( this.lead.toHours() ) );
 
         try
         {
@@ -356,11 +361,6 @@ public class PairWriter implements Supplier<Pair<Path,String>>
     private DestinationConfig getDestinationConfig()
     {
         return this.destinationConfig;
-    }
-
-    private Instant getDate()
-    {
-        return this.date;
     }
 
     private Feature getFeature()
@@ -392,7 +392,7 @@ public class PairWriter implements Supplier<Pair<Path,String>>
 
     private int getWindowNum()
     {
-        return this.windowNum;
+        return this.leadIteration;
     }
 
     private String getLeftValue()
@@ -445,17 +445,6 @@ public class PairWriter implements Supplier<Pair<Path,String>>
 
     private DecimalFormat getFormatter()
     {
-        if (this.formatter == null)
-        {
-            String configuredFormat = this.getDestinationConfig().getDecimalFormat();
-
-            if ( configuredFormat != null && !configuredFormat.isEmpty() )
-            {
-                this.formatter = new DecimalFormat();
-                this.formatter.applyPattern( configuredFormat );
-            }
-        }
-
         return this.formatter;
     }
 

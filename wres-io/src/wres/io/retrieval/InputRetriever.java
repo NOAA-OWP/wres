@@ -1328,7 +1328,7 @@ class InputRetriever extends Retriever //WRESCallable<MetricInput<?>>
                     .setIsBaseline( isBaseline )
                     .setPoolingStep( this.issueDatesPool )
                     .setProjectDetails( this.getProjectDetails() )
-                    .setLead( (int) pair.getLeadHours() )
+                    .setLead( pair.getLeadDuration() )
                     .build();
 
             sharedWriterManager.accept( pairWriter );
