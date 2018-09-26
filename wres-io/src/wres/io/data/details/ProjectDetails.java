@@ -3037,6 +3037,12 @@ public class ProjectDetails
                 script.addTab(  2  ).addLine("WHERE PS.project_id = " + this.getId());
                 script.addTab(   3   ).addLine("AND PS.member = " + ProjectDetails.RIGHT_MEMBER);
                 script.addTab(   3   ).addLine("AND TSS.timeseries_id = TS.timeseries_id");
+
+                if (ConfigHelper.usesNetCDFData( this.projectConfig ))
+                {
+                    script.addTab(   3   ).addLine("AND TSS.lead = TSV.lead");
+                }
+
                 script.addTab().addLine(");");
             }
             else
