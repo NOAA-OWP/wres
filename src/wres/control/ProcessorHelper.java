@@ -126,7 +126,8 @@ class ProcessorHelper
                                                                                            metricsForSharedWriting ) );
             */
             // Use the gridded netcdf writer
-            sharedWritersBuilder.setNetcdfOutputWriter( NetcdfOutputWriter.of( projectConfig ) );
+            sharedWritersBuilder.setNetcdfOutputWriter( NetcdfOutputWriter.of( projectConfig,
+                                                                               ProductProcessor.DEFAULT_DURATION_UNITS ) );
         }
 
         SharedWriterManager sharedWriterManager = new SharedWriterManager();

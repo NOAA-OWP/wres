@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
@@ -269,13 +270,15 @@ public abstract class ChartEngineFactory
      * @param inputKeyInstance The key-instance corresponding to the slice to create.
      * @param inputSlice The input slice from which to draw the data.
      * @param usedPlotType The plot type.
-     * @return
+     * @param ChronoUnit durationUnits the time units
+     * @return the argument processor
      */
     private static WRESArgumentProcessor constructDiagramArguments( Object inputKeyInstance,
                                                                     ListOfStatistics<MultiVectorStatistic> inputSlice,
-                                                                    ChartType usedPlotType )
+                                                                    ChartType usedPlotType,
+                                                                    ChronoUnit durationUnits )
     {
-        WRESArgumentProcessor args = new WRESArgumentProcessor( inputSlice, usedPlotType );
+        WRESArgumentProcessor args = new WRESArgumentProcessor( inputSlice, usedPlotType, durationUnits );
         if ( usedPlotType.equals( ChartType.LEAD_THRESHOLD ) )
         {
             args.addLeadThresholdArguments( inputSlice, (TimeWindow) inputKeyInstance );
@@ -303,16 +306,17 @@ public abstract class ChartEngineFactory
      * @param overrideParametersStr String of XML (top level tag: chartDrawingParameters) that specifies the user
      *            overrides for the appearance of chart.
      * @return A {@link ChartEngine} to be stored with the inputKeyInstance in a results map.
+     * @param durationUnits the duration units
      * @throws ChartEngineException If the {@link ChartEngine} fails to construct.
      * @throws WRESVisXMLReadingException when reading template fails.
      */
     private static WRESChartEngine
-            processReliabilityDiagram(
-                                       Object inputKeyInstance,
-                                       final ListOfStatistics<MultiVectorStatistic> input,
+            processReliabilityDiagram( Object inputKeyInstance,
+                                       ListOfStatistics<MultiVectorStatistic> input,
                                        ChartType usedPlotType,
                                        String templateName,
-                                       String overrideParametersStr )
+                                       String overrideParametersStr,
+                                       ChronoUnit durationUnits )
                     throws ChartEngineException, WRESVisXMLReadingException
     {
         final List<XYChartDataSource> dataSources = new ArrayList<>();
@@ -321,7 +325,8 @@ public abstract class ChartEngineFactory
 
         final ListOfStatistics<MultiVectorStatistic> inputSlice =
                 sliceInputForDiagram( inputKeyInstance, input, usedPlotType.getBasis() );
-        WRESArgumentProcessor arguments = constructDiagramArguments( inputKeyInstance, inputSlice, usedPlotType );
+        WRESArgumentProcessor arguments =
+                constructDiagramArguments( inputKeyInstance, inputSlice, usedPlotType, durationUnits );
 
         dataSources.add( XYChartDataSourceFactory.ofMultiVectorOutputDiagram( 0,
                                                                               inputSlice,
@@ -330,7 +335,8 @@ public abstract class ChartEngineFactory
                                                                               MetricDimension.FORECAST_PROBABILITY.toString(),
                                                                               MetricDimension.OBSERVED_RELATIVE_FREQUENCY.toString(),
                                                                               0,
-                                                                              null ) );
+                                                                              null,
+                                                                              durationUnits ) );
         dataSources.add( XYChartDataSourceFactory.ofMultiVectorOutputDiagram( 1,
                                                                               inputSlice,
                                                                               MetricDimension.FORECAST_PROBABILITY,
@@ -338,7 +344,8 @@ public abstract class ChartEngineFactory
                                                                               MetricDimension.FORECAST_PROBABILITY.toString(),
                                                                               MetricDimension.SAMPLE_SIZE.toString(),
                                                                               1,
-                                                                              null ) );
+                                                                              null,
+                                                                              durationUnits ) );
         //Diagonal data source added so that it shows up in the legend.
         dataSources.add( constructConnectedPointsDataSource( 2,
                                                              0,
@@ -365,6 +372,7 @@ public abstract class ChartEngineFactory
      * @param templateName The name of the template to use based on the plot type.  
      * @param overrideParametersStr String of XML (top level tag: chartDrawingParameters) that specifies the user
      *            overrides for the appearance of chart.
+     * @param durationUnits the duration units
      * @return A {@link ChartEngine} to be stored with the inputKeyInstance in a results map.
      * @throws ChartEngineException If the {@link ChartEngine} fails to construct.
      * @throws WRESVisXMLReadingException when reading template fails
@@ -372,10 +380,11 @@ public abstract class ChartEngineFactory
     private static WRESChartEngine
             processROCDiagram(
                                Object inputKeyInstance,
-                               final ListOfStatistics<MultiVectorStatistic> input,
+                               ListOfStatistics<MultiVectorStatistic> input,
                                ChartType usedPlotType,
                                String templateName,
-                               String overrideParametersStr )
+                               String overrideParametersStr,
+                               ChronoUnit durationUnits )
                     throws ChartEngineException, WRESVisXMLReadingException
     {
         final List<XYChartDataSource> dataSources = new ArrayList<>();
@@ -384,7 +393,8 @@ public abstract class ChartEngineFactory
 
         final ListOfStatistics<MultiVectorStatistic> inputSlice =
                 sliceInputForDiagram( inputKeyInstance, input, usedPlotType.getBasis() );
-        WRESArgumentProcessor arguments = constructDiagramArguments( inputKeyInstance, inputSlice, usedPlotType );
+        WRESArgumentProcessor arguments =
+                constructDiagramArguments( inputKeyInstance, inputSlice, usedPlotType, durationUnits );
 
         dataSources.add( XYChartDataSourceFactory.ofMultiVectorOutputDiagram( 0,
                                                                               inputSlice,
@@ -393,7 +403,8 @@ public abstract class ChartEngineFactory
                                                                               MetricDimension.PROBABILITY_OF_FALSE_DETECTION.toString(),
                                                                               MetricDimension.PROBABILITY_OF_DETECTION.toString(),
                                                                               0,
-                                                                              null ) );
+                                                                              null,
+                                                                              durationUnits ) );
         dataSources.add( constructConnectedPointsDataSource( 1,
                                                              0,
                                                              new Point2D.Double( 0.0, 0.0 ),
@@ -419,16 +430,18 @@ public abstract class ChartEngineFactory
      * @param templateName The name of the template to use based on the plot type.  
      * @param overrideParametersStr String of XML (top level tag: chartDrawingParameters) that specifies the user
      *            overrides for the appearance of chart.
+     * @param durationUnits the duration units
      * @return A {@link ChartEngine} to be stored with the inputKeyInstance in a results map.
      * @throws ChartEngineException If the {@link ChartEngine} fails to construct.
      * @throws WRESVisXMLReadingException when reading template fails
      */
     private static WRESChartEngine
             processQQDiagram( Object inputKeyInstance,
-                              final ListOfStatistics<MultiVectorStatistic> input,
+                              ListOfStatistics<MultiVectorStatistic> input,
                               ChartType usedPlotType,
                               String templateName,
-                              String overrideParametersStr )
+                              String overrideParametersStr,
+                              ChronoUnit durationUnits )
                     throws ChartEngineException, WRESVisXMLReadingException
     {
         final List<XYChartDataSource> dataSources = new ArrayList<>();
@@ -437,7 +450,8 @@ public abstract class ChartEngineFactory
 
         final ListOfStatistics<MultiVectorStatistic> inputSlice =
                 sliceInputForDiagram( inputKeyInstance, input, usedPlotType.getBasis() );
-        WRESArgumentProcessor arguments = constructDiagramArguments( inputKeyInstance, inputSlice, usedPlotType );
+        WRESArgumentProcessor arguments =
+                constructDiagramArguments( inputKeyInstance, inputSlice, usedPlotType, durationUnits );
 
         DefaultXYChartDataSource dataSource = XYChartDataSourceFactory.ofMultiVectorOutputDiagram( 0,
                                                                                                    inputSlice,
@@ -447,7 +461,8 @@ public abstract class ChartEngineFactory
                                                                                                                                         + " @variableName@@inputUnitsLabelSuffix@",
                                                                                                    MetricConstants.MetricDimension.PREDICTED_QUANTILES.toString() + " @variableName@@inputUnitsLabelSuffix@",
                                                                                                    0,
-                                                                                                   null );
+                                                                                                   null,
+                                                                                                   durationUnits );
 
         //Diagonal data source added, but it won't show up in the legend since it uses features of WRESChartEngine.
         //Also squaring the axes.
@@ -474,16 +489,18 @@ public abstract class ChartEngineFactory
      * @param templateName The name of the template to use based on the plot type.  
      * @param overrideParametersStr String of XML (top level tag: chartDrawingParameters) that specifies the user
      *            overrides for the appearance of chart.
+     * @param durationUnits the duration units
      * @return A {@link ChartEngine} to be stored with the inputKeyInstance in a results map.
      * @throws ChartEngineException If the {@link ChartEngine} fails to construct.
      * @throws WRESVisXMLReadingException when reading template fails.
      */
     private static WRESChartEngine
             processRankHistogram( Object inputKeyInstance,
-                                  final ListOfStatistics<MultiVectorStatistic> input,
+                                  ListOfStatistics<MultiVectorStatistic> input,
                                   ChartType usedPlotType,
                                   String templateName,
-                                  String overrideParametersStr )
+                                  String overrideParametersStr,
+                                  ChronoUnit durationUnits )
                     throws ChartEngineException, WRESVisXMLReadingException
     {
         final List<XYChartDataSource> dataSources = new ArrayList<>();
@@ -492,7 +509,8 @@ public abstract class ChartEngineFactory
 
         final ListOfStatistics<MultiVectorStatistic> inputSlice =
                 sliceInputForDiagram( inputKeyInstance, input, usedPlotType.getBasis() );
-        WRESArgumentProcessor arguments = constructDiagramArguments( inputKeyInstance, inputSlice, usedPlotType );
+        WRESArgumentProcessor arguments =
+                constructDiagramArguments( inputKeyInstance, inputSlice, usedPlotType, durationUnits );
 
         dataSources.add( XYChartDataSourceFactory.ofMultiVectorOutputDiagram( 0,
                                                                               inputSlice,
@@ -503,7 +521,9 @@ public abstract class ChartEngineFactory
                                                                               0,
                                                                               () -> new RankHistogramXYDataset( inputSlice,
                                                                                                                 MetricDimension.RANK_ORDER,
-                                                                                                                MetricDimension.OBSERVED_RELATIVE_FREQUENCY ) ) );
+                                                                                                                MetricDimension.OBSERVED_RELATIVE_FREQUENCY,
+                                                                                                                durationUnits ),
+                                                                              durationUnits ) );
 
         //Build the ChartEngine instance.
         return generateChartEngine( dataSources,
@@ -523,6 +543,7 @@ public abstract class ChartEngineFactory
      *            chart construction. May be null to use default template identified in static table.
      * @param overrideParametersStr String of XML (top level tag: chartDrawingParameters) that specifies the user
      *            overrides for the appearance of chart.
+     * @param durationUnits the duration units
      * @return A map of keys to ChartEngine instances.  The instances can be
      *         passed to {@link ChartTools#generateOutputImageFile(java.io.File, JFreeChart, int, int)} in order to
      *         construct the image file.  The keys depend on the provided plot type selection.
@@ -534,7 +555,8 @@ public abstract class ChartEngineFactory
                                                final ListOfStatistics<MultiVectorStatistic> input,
                                                final OutputTypeSelection userSpecifiedPlotType,
                                                final String userSpecifiedTemplateResourceName,
-                                               final String overrideParametersStr )
+                                               final String overrideParametersStr,
+                                               final ChronoUnit durationUnits )
                     throws ChartEngineException, WRESVisXMLReadingException
     {
         final ConcurrentMap<Object, ChartEngine> results = new ConcurrentSkipListMap<>();
@@ -572,7 +594,8 @@ public abstract class ChartEngineFactory
                                                        input,
                                                        usedPlotType,
                                                        templateName,
-                                                       overrideParametersStr );
+                                                       overrideParametersStr,
+                                                       durationUnits );
                     break;
                 case RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM:
                     engine =
@@ -580,7 +603,8 @@ public abstract class ChartEngineFactory
                                                input,
                                                usedPlotType,
                                                templateName,
-                                               overrideParametersStr );
+                                               overrideParametersStr,
+                                               durationUnits );
                     break;
                 case QUANTILE_QUANTILE_DIAGRAM:
                     engine =
@@ -588,7 +612,8 @@ public abstract class ChartEngineFactory
                                               input,
                                               usedPlotType,
                                               templateName,
-                                              overrideParametersStr );
+                                              overrideParametersStr,
+                                              durationUnits );
                     break;
                 case RANK_HISTOGRAM:
                     engine =
@@ -596,7 +621,8 @@ public abstract class ChartEngineFactory
                                                   input,
                                                   usedPlotType,
                                                   templateName,
-                                                  overrideParametersStr );
+                                                  overrideParametersStr,
+                                                  durationUnits );
                     break;
                 default:
                     throw new IllegalArgumentException( "Unrecognized plot type of " + meta.getMetricID()
@@ -612,15 +638,18 @@ public abstract class ChartEngineFactory
      * 
      * @param input Input providing the box plot data.
      * @param templateName The name of the template to use, if not the standard template.
-     * @param overrideParametersStr An XML string providing override parameters if they were given in the project configuration.
+     * @param overrideParametersStr An XML string providing override parameters if they were given in the project 
+     *            configuration.
+     * @param durationUnits the duration units
      * @return A single instance of {@link WRESChartEngine}.
      * @throws ChartEngineException If the chart could not build for whatever reason.
      * @throws WRESVisXMLReadingException when reading template fails.
      */
     private static WRESChartEngine
-            processBoxPlotErrorsDiagram( final BoxPlotStatistic input,
+            processBoxPlotErrorsDiagram( BoxPlotStatistic input,
                                          String templateName,
-                                         String overrideParametersStr )
+                                         String overrideParametersStr,
+                                         ChronoUnit durationUnits )
                     throws ChartEngineException, WRESVisXMLReadingException
     {
         final List<XYChartDataSource> dataSources = new ArrayList<>();
@@ -635,7 +664,7 @@ public abstract class ChartEngineFactory
                                                 + " specified in the metric information." );
         }
 
-        arguments = new WRESArgumentProcessor( input );
+        arguments = new WRESArgumentProcessor( input, durationUnits );
 
         //Add the data source
         dataSources.add( XYChartDataSourceFactory.ofBoxPlotOutput( 0, input, null ) );
@@ -657,6 +686,7 @@ public abstract class ChartEngineFactory
      *            chart construction. May be null to use default template identified in static table.
      * @param overrideParametersStr String of XML (top level tag: chartDrawingParameters) that specifies the user
      *            overrides for the appearance of chart.
+     * @param durationUnits the duration units
      * @return Map where the keys are instances of {@link Pair} with the two keys being an integer and a threshold.
      * @throws ChartEngineException If the {@link ChartEngine} fails to construct.
      * @throws WRESVisXMLReadingException when reading template fails
@@ -665,7 +695,8 @@ public abstract class ChartEngineFactory
             buildBoxPlotChartEngine( final ProjectConfig config, 
                                      final ListOfStatistics<BoxPlotStatistic> input,
                                      final String userSpecifiedTemplateResourceName,
-                                     final String overrideParametersStr )
+                                     final String overrideParametersStr,
+                                     final ChronoUnit durationUnits )
                     throws ChartEngineException, WRESVisXMLReadingException
     {
         final ConcurrentMap<Pair<TimeWindow, OneOrTwoThresholds>, ChartEngine> results = new ConcurrentSkipListMap<>();
@@ -692,7 +723,8 @@ public abstract class ChartEngineFactory
 
                 final ChartEngine engine = processBoxPlotErrorsDiagram( next,
                                                                         templateName,
-                                                                        overrideParametersStr );
+                                                                        overrideParametersStr,
+                                                                        durationUnits );
                 results.put( Pair.of( next.getMetadata().getSampleMetadata().getTimeWindow(),
                                       next.getMetadata().getSampleMetadata().getThresholds() ),
                              engine );
@@ -722,6 +754,7 @@ public abstract class ChartEngineFactory
      *            chart construction. May be null to use default template identified in static maps.
      * @param overrideParametersStr String of XML (top level tag: chartDrawingParameters) that specifies the user
      *            overrides for the appearance of chart.
+     * @param durationUnits the duration units
      * @return a map of {@link ChartEngine} containing the plots
      * @throws ChartEngineException if the ChartEngine fails to construct
      * @throws WRESVisXMLReadingException when reading template fails
@@ -731,7 +764,8 @@ public abstract class ChartEngineFactory
                                          final ListOfStatistics<DoubleScoreStatistic> input,
                                          final OutputTypeSelection userSpecifiedPlotType,
                                          final String userSpecifiedTemplateResourceName,
-                                         final String overrideParametersStr )
+                                         final String overrideParametersStr,
+                                         final ChronoUnit durationUnits )
                     throws ChartEngineException, WRESVisXMLReadingException
     {
         final ConcurrentMap<MetricConstants, ChartEngine> results = new ConcurrentSkipListMap<>();
@@ -744,7 +778,8 @@ public abstract class ChartEngineFactory
                                                                                    entry.getValue(),
                                                                                    userSpecifiedPlotType,
                                                                                    userSpecifiedTemplateResourceName,
-                                                                                   overrideParametersStr );
+                                                                                   overrideParametersStr,
+                                                                                   durationUnits );
             results.put( entry.getKey(), engine );
         }
         return results;
@@ -760,6 +795,7 @@ public abstract class ChartEngineFactory
      *            chart construction. May be null to use default template identified in static map/table.
      * @param overrideParametersStr String of XML (top level tag: chartDrawingParameters) that specifies the user
      *            overrides for the appearance of chart.
+     * @param durationUnits the duration units
      * @return A {@link ChartEngine} that can be used to build the {@link JFreeChart} and output the image. This can be
      *         passed to {@link ChartTools#generateOutputImageFile(java.io.File, JFreeChart, int, int)} in order to
      *         construct the image file.
@@ -771,7 +807,8 @@ public abstract class ChartEngineFactory
                                                         final ListOfStatistics<DoubleScoreStatistic> input,
                                                         final OutputTypeSelection userSpecifiedPlotType,
                                                         final String userSpecifiedTemplateResourceName,
-                                                        final String overrideParametersStr )
+                                                        final String overrideParametersStr,
+                                                        final ChronoUnit durationUnits )
                     throws ChartEngineException, WRESVisXMLReadingException
     {
         //Determine the output type, converting DEFAULT accordingly, and template name.
@@ -788,7 +825,7 @@ public abstract class ChartEngineFactory
         }
 
         //Setup the default arguments.
-        final WRESArgumentProcessor arguments = new WRESArgumentProcessor( input, usedPlotType );
+        final WRESArgumentProcessor arguments = new WRESArgumentProcessor( input, usedPlotType, durationUnits );
 
         //Setup plot specific arguments.
         arguments.addBaselineArguments( meta );
@@ -799,19 +836,19 @@ public abstract class ChartEngineFactory
         //Lead-threshold is the default.
         if ( usedPlotType == ChartType.LEAD_THRESHOLD )
         {
-            source = XYChartDataSourceFactory.ofDoubleScoreOutputByLeadAndThreshold( 0, input );
+            source = XYChartDataSourceFactory.ofDoubleScoreOutputByLeadAndThreshold( 0, input, durationUnits );
             arguments.addLeadThresholdArguments( input, null );
         }
         //This is for plots with the threshold on the domain axis and lead time in the legend.
         else if ( usedPlotType == ChartType.THRESHOLD_LEAD )
         {
-            source = XYChartDataSourceFactory.ofDoubleScoreOutputByThresholdAndLead( 0, input );
+            source = XYChartDataSourceFactory.ofDoubleScoreOutputByThresholdAndLead( 0, input, durationUnits );
             arguments.addThresholdLeadArguments( input, null );
         }
         //This is for plots that operate with sequences of time windows (e.g. rolling windows)
         else if ( usedPlotType == ChartType.POOLING_WINDOW )
         {
-            source = XYChartDataSourceFactory.ofDoubleScoreOutputByPoolingWindow( 0, input );
+            source = XYChartDataSourceFactory.ofDoubleScoreOutputByPoolingWindow( 0, input, durationUnits );
             arguments.addPoolingWindowArguments( input );
         }
         else
@@ -842,15 +879,17 @@ public abstract class ChartEngineFactory
      * @param input The input from which to build the plot.
      * @param userSpecifiedTemplateResourceName Template resource name, or null to use default.
      * @param overrideParametersStr Override template XML string, or null to not use.
+     * @param durationUnits the duration units
      * @return {@link ChartEngine} ready for plot production.
      * @throws ChartEngineException If the {@link ChartEngine} fails to build for any reason.
      * @throws WRESVisXMLReadingException when reading template fails
      */
     public static ChartEngine
             buildPairedInstantDurationChartEngine( final ProjectConfig config,
-                                                   ListOfStatistics<PairedStatistic<Instant, Duration>> input,
+                                                   final ListOfStatistics<PairedStatistic<Instant, Duration>> input,
                                                    final String userSpecifiedTemplateResourceName,
-                                                   final String overrideParametersStr )
+                                                   final String overrideParametersStr,
+                                                   final ChronoUnit durationUnits )
                     throws ChartEngineException, WRESVisXMLReadingException
     {
         //Determine the output type, converting DEFAULT accordingly, and template name.
@@ -867,7 +906,7 @@ public abstract class ChartEngineFactory
         }
 
         //Setup the default arguments.
-        final WRESArgumentProcessor arguments = new WRESArgumentProcessor( input, null );
+        final WRESArgumentProcessor arguments = new WRESArgumentProcessor( input, null, durationUnits );
 
         //Setup plot specific arguments.
         arguments.addBaselineArguments( meta );
@@ -898,6 +937,7 @@ public abstract class ChartEngineFactory
      * If null, then the default template is used.
      * @param overrideParametersStr XML to parse that can then override the template settings.  If null, then parameters
      * are not overridden.
+     * @param durationUnits the duration units
      * @return A {@link ChartEngine} ready to be used to build a chart.
      * @throws ChartEngineException A problem was encountered building the {@link ChartEngine}.
      * @throws WRESVisXMLReadingException when reading templates fails
@@ -906,7 +946,8 @@ public abstract class ChartEngineFactory
             buildCategoricalDurationScoreChartEngine( final ProjectConfig config,
                                                       ListOfStatistics<DurationScoreStatistic> input,
                                                       final String userSpecifiedTemplateResourceName,
-                                                      final String overrideParametersStr )
+                                                      final String overrideParametersStr,
+                                                      final ChronoUnit durationUnits )
                     throws ChartEngineException, WRESVisXMLReadingException
     {
         //Determine the output type, converting DEFAULT accordingly, and template name.
@@ -923,7 +964,7 @@ public abstract class ChartEngineFactory
         }
 
         //Setup the default arguments.
-        final WRESArgumentProcessor arguments = new WRESArgumentProcessor( input, null );
+        final WRESArgumentProcessor arguments = new WRESArgumentProcessor( input, null, durationUnits );
 
         //Setup plot specific arguments.
         arguments.addBaselineArguments( meta );
@@ -958,6 +999,7 @@ public abstract class ChartEngineFactory
      *            chart construction.
      * @param overrideParametersStr String of XML (top level tag: chartDrawingParameters) that specifies the user
      *            overrides for the appearance of chart.
+     * @param durationUnits the duration units
      * @return A {@link ChartEngine} that can be used to build the {@link JFreeChart} and output the image. This can be
      *         passed to {@link ChartTools#generateOutputImageFile(java.io.File, JFreeChart, int, int)} in order to
      *         construct the image file.
@@ -966,7 +1008,8 @@ public abstract class ChartEngineFactory
      */
     public static ChartEngine buildSingleValuedPairsChartEngine( final SingleValuedPairs input,
                                                                  final String userSpecifiedTemplateResourceName,
-                                                                 final String overrideParametersStr )
+                                                                 final String overrideParametersStr,
+                                                                 final ChronoUnit durationUnits )
             throws ChartEngineException, WRESVisXMLReadingException
     {
 
@@ -980,7 +1023,7 @@ public abstract class ChartEngineFactory
         final DefaultXYChartDataSource source = XYChartDataSourceFactory.ofSingleValuedPairs( 0, input );
 
         //Setup the arguments.
-        final WRESArgumentProcessor arguments = new WRESArgumentProcessor( input.getMetadata() );
+        final WRESArgumentProcessor arguments = new WRESArgumentProcessor( input.getMetadata(), durationUnits );
 
         //Process override parameters.
         ChartDrawingParameters override = null;

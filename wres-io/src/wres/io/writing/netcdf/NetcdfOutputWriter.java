@@ -60,13 +60,7 @@ import wres.util.Strings;
 public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
                                            Supplier<Set<Path>>,
                                            Closeable
-{
-    /**
-     * Default resolution for writing duration outputs. To change the resolution, change this default.
-     */
-
-    static final ChronoUnit DEFAULT_DURATION_UNITS = ChronoUnit.SECONDS;
-    
+{   
     private static final Logger LOGGER = LoggerFactory.getLogger( NetcdfOutputWriter.class );
 
     private static final String DEFAULT_VECTOR_TEMPLATE = "legend_and_nhdplusv2_template.nc";
@@ -80,6 +74,12 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
 
     private DestinationConfig destinationConfig;
     private NetcdfType netcdfConfiguration;
+    
+    /**
+     * Default resolution for writing duration outputs. To change the resolution, change this default.
+     */
+
+    private final ChronoUnit durationUnits;    
 
     /**
      * Set of paths that this writer actually wrote to
@@ -91,16 +91,38 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
      */
     private final List<Future<Set<Path>>> writingTasksSubmitted = new CopyOnWriteArrayList<>();
 
-    public static NetcdfOutputWriter of( final ProjectConfig projectConfig )
+    /**
+     * Returns an instance of the writer. 
+     * 
+     * @param projectConfig the project configuration
+     * @param durationUnits the time units for durations
+     * @return an instance of the writer
+     */
+    
+    public static NetcdfOutputWriter of( final ProjectConfig projectConfig, final ChronoUnit durationUnits )
     {
-        return new NetcdfOutputWriter( projectConfig );
+        return new NetcdfOutputWriter( projectConfig, durationUnits );
     }
-
-    private NetcdfOutputWriter( final ProjectConfig projectConfig )
+    
+    /**
+     * Returns the duration units for writing lead durations.
+     * 
+     * @return the duration units
+     */
+    
+    ChronoUnit getDurationUnits()
     {
+        return this.durationUnits;
+    }    
+    
+    private NetcdfOutputWriter( final ProjectConfig projectConfig, final ChronoUnit durationUnits )
+    {
+        Objects.requireNonNull( durationUnits, "Specify non-null duration units." );
+        
         LOGGER.debug( "Created NetcdfOutputWriter {}", this );
         this.destinationConfig = ConfigHelper.getDestinationsOfType( projectConfig, DestinationType.NETCDF ).get( 0 );
         this.netcdfConfiguration = this.destinationConfig.getNetcdf();
+        this.durationUnits = durationUnits;
 
         if ( this.netcdfConfiguration == null )
         {
@@ -147,11 +169,12 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
             {
                 if ( !NetcdfOutputWriter.WRITERS.containsKey( window ) )
                 {
-                    Collection<MetricVariable> variables = MetricVariable.getAll( scores );
+                    Collection<MetricVariable> variables = MetricVariable.getAll( scores, this.getDurationUnits() );
                     NetcdfOutputWriter.WRITERS.put( window,
                                       new TimeWindowWriter( this,
                                                             window,
-                                                            variables ) );
+                                                            variables,
+                                                            this.getDurationUnits() ) );
                 }
 
                 Callable<Set<Path>> writerTask = new Callable<Set<Path>>()
@@ -358,13 +381,21 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
     private static class TimeWindowWriter implements Closeable
     {
         private final ZonedDateTime ANALYSIS_TIME = ZonedDateTime.now( ZoneId.of( "UTC" ) );
+        
+        /**
+         * The time units for lead durations.
+         */
+        
+        private final ChronoUnit durationUnits;
 
         NetcdfOutputWriter outputWriter;
 
         TimeWindowWriter( NetcdfOutputWriter outputWriter,
                           final TimeWindow timeWindow,
-                          final Collection<MetricVariable> metricVariables )
+                          final Collection<MetricVariable> metricVariables,
+                          final ChronoUnit durationUnits )
         {
+            this.durationUnits = durationUnits;
             this.outputWriter = outputWriter;
             this.timeWindow = timeWindow;
             this.metricVariables = metricVariables;
@@ -406,7 +437,8 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
                                                                       this.timeWindow,
                                                                       this.ANALYSIS_TIME,
                                                                       variables,
-                                                                      output );
+                                                                      output,
+                                                                      this.durationUnits );
                 }
             }
             // Exception is being caught because the threads calling metric

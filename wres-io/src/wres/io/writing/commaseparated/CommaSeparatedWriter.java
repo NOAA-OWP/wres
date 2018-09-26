@@ -23,6 +23,7 @@ import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.TimeScale;
 import wres.datamodel.metadata.TimeWindow;
 import wres.io.config.ConfigHelper;
+import wres.util.TimeHelper;
 
 /**
  * Helps write files of Comma Separated Values (CSV).
@@ -49,16 +50,38 @@ abstract class CommaSeparatedWriter
                                                           Duration.ofSeconds( Long.MIN_VALUE ) );
 
     /**
-     * Default resolution for writing duration outputs. To change the resolution, change this default.
+     * Resolution for writing duration outputs.
      */
 
-    static final ChronoUnit DEFAULT_DURATION_UNITS = ChronoUnit.SECONDS;
+    private final ChronoUnit durationUnits;
 
     /**
      * The project configuration to write.
      */
 
-    final ProjectConfig projectConfig;
+    private final ProjectConfig projectConfig;
+    
+    /**
+     * Returns the duration units for writing lead durations.
+     * 
+     * @return the duration units
+     */
+    
+    ChronoUnit getDurationUnits()
+    {
+        return this.durationUnits;
+    }
+    
+    /**
+     * Returns the project declaration
+     * 
+     * @return the project declaration
+     */
+    
+    ProjectConfig getProjectConfig()
+    {
+        return this.projectConfig;
+    }
 
     /**
      * Validates the input configuration for writing. Throws an exception if the configuration is invalid.
@@ -128,7 +151,9 @@ abstract class CommaSeparatedWriter
      * @param values the values to add, one for each column
      * @param formatter an optional formatter
      * @param append is true to add the values to an existing row with the same time window, false otherwise
+     * @param durationUnits the duration units for lead times
      * @param additionalComaprators one or more additional strings to use in aligning rows
+     * @throws NullPointerException if the rows, timeWindow, values or durationUnits are null
      */
 
     static <T> void addRowToInput( List<RowCompareByLeft> rows,
@@ -136,8 +161,17 @@ abstract class CommaSeparatedWriter
                                    List<T> values,
                                    Format formatter,
                                    boolean append,
+                                   ChronoUnit durationUnits,
                                    String... additionalComparators )
     {
+        Objects.requireNonNull( rows, "Specify one or more rows to mutate." );
+
+        Objects.requireNonNull( timeWindow, "Specify a time window." );
+
+        Objects.requireNonNull( values, "Specify one or more values to add." );
+
+        Objects.requireNonNull( durationUnits, "Specify non-null duration units." );
+
         StringJoiner row = null;
         int rowIndex = rows.indexOf( RowCompareByLeft.of( timeWindow, null, additionalComparators ) );
         // Set the row to append if it exists and appending is required
@@ -151,8 +185,10 @@ abstract class CommaSeparatedWriter
             row = new StringJoiner( "," );
             row.add( timeWindow.getEarliestTime().toString() );
             row.add( timeWindow.getLatestTime().toString() );
-            row.add( Long.toString( timeWindow.getEarliestLeadTime().get( DEFAULT_DURATION_UNITS ) ) );
-            row.add( Long.toString( timeWindow.getLatestLeadTime().get( DEFAULT_DURATION_UNITS ) ) );
+            row.add( Long.toString( TimeHelper.durationToLongUnits( timeWindow.getEarliestLeadTime(),
+                                                                    durationUnits ) ) );
+            row.add( Long.toString( TimeHelper.durationToLongUnits( timeWindow.getLatestLeadTime(),
+                                                                    durationUnits ) ) );
             rows.add( RowCompareByLeft.of( timeWindow, row, additionalComparators ) );
         }
 
@@ -181,13 +217,16 @@ abstract class CommaSeparatedWriter
      * Returns default header from the {@link SampleMetadata} to which additional information may be appended.
      * 
      * @param sampleMetadata the sample metadata
+     * @param durationUnits the duration units for lead times
      * @return default header information
-     * @throws NullPointerException if the sampleMetadata is null
+     * @throws NullPointerException if either input is null
      */
 
-    static StringJoiner getDefaultHeaderFromSampleMetadata( SampleMetadata sampleMetadata )
+    static StringJoiner getDefaultHeaderFromSampleMetadata( SampleMetadata sampleMetadata, ChronoUnit durationUnits )
     {
         Objects.requireNonNull( sampleMetadata, "Cannot determine the default CSV header from null metadata." );
+
+        Objects.requireNonNull( durationUnits, "Specify non-null duration units." );
 
         StringJoiner joiner = new StringJoiner( "," );
 
@@ -214,9 +253,10 @@ abstract class CommaSeparatedWriter
                         + HEADER_DELIMITER
                         + "PAST"
                         + HEADER_DELIMITER
-                        + s.getPeriod().get( DEFAULT_DURATION_UNITS )
+                        + TimeHelper.durationToLongUnits( s.getPeriod(),
+                                                          durationUnits )
                         + HEADER_DELIMITER
-                        + DEFAULT_DURATION_UNITS.name()
+                        + durationUnits.name()
                         + "]";
         }
 
@@ -229,7 +269,7 @@ abstract class CommaSeparatedWriter
                     + HEADER_DELIMITER
                     + "IN"
                     + HEADER_DELIMITER
-                    + DEFAULT_DURATION_UNITS.name()
+                    + durationUnits.name()
                     + timeScale )
               .add( "LATEST" + HEADER_DELIMITER
                     + "LEAD"
@@ -238,7 +278,7 @@ abstract class CommaSeparatedWriter
                     + HEADER_DELIMITER
                     + "IN"
                     + HEADER_DELIMITER
-                    + DEFAULT_DURATION_UNITS.name()
+                    + durationUnits.name()
                     + timeScale );
 
         return joiner;
@@ -403,14 +443,19 @@ abstract class CommaSeparatedWriter
      * Constructor.
      * 
      * @param projectConfig the project configuration
+     * @param durationUnits the time units for lead durations
      * @throws ProjectConfigException if the project configuration is not valid for writing
+     * @throws NullPointerException if the durationUnits are null
      */
 
-    CommaSeparatedWriter( ProjectConfig projectConfig )
+    CommaSeparatedWriter( ProjectConfig projectConfig, ChronoUnit durationUnits )
     {
+        Objects.requireNonNull( durationUnits, "Specify non-null duration units." );
+
         // Validate project for writing
         CommaSeparatedWriter.validateProjectForWriting( projectConfig );
         this.projectConfig = projectConfig;
+        this.durationUnits = durationUnits;
     }
 
 }

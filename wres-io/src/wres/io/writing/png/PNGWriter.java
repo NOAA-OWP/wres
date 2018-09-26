@@ -3,6 +3,7 @@ package wres.io.writing.png;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -27,6 +28,11 @@ import wres.system.SystemSettings;
 /**
  * Helps to write a {@link ChartEngine} to a graphical product file in Portable Network Graphics (PNG) format.
  * 
+ * TODO: implementations of this class are currently building a graphical interchange format {@link ChartEngine},
+ * which doesn't make sense. The interchange format should be passed to the format writers. However, this issue
+ * is subsumed by the broader discussion about a canonical output format, at which point the relationship between
+ * the format writers, wres-vis, and the core of wres-vis could change dramatically. See #54731.  
+ * 
  * @author james.brown@hydrosolved.com
  */
 
@@ -38,12 +44,40 @@ abstract class PNGWriter
      */
 
     static final Logger LOGGER = LoggerFactory.getLogger( PNGWriter.class );
+    
+    /**
+     * Resolution for writing duration outputs.
+     */
+
+    private final ChronoUnit durationUnits; 
 
     /**
      * The project configuration to write.
      */
 
-    final ProjectConfigPlus projectConfigPlus;
+    private final ProjectConfigPlus projectConfigPlus;
+    
+    /**
+     * Returns the duration units for writing lead durations.
+     * 
+     * @return the duration units
+     */
+    
+    ChronoUnit getDurationUnits()
+    {
+        return this.durationUnits;
+    }
+    
+    /**
+     * Returns the project declaration
+     * 
+     * @return the project declaration
+     */
+    
+    ProjectConfigPlus getProjectConfigPlus()
+    {
+        return this.projectConfigPlus;
+    }    
 
     /**
      * Writes an output chart to a specified path.
@@ -235,10 +269,17 @@ abstract class PNGWriter
      * Hidden constructor.
      * 
      * @param projectConfigPlus the project configuration
+     * @param durationUnits the time units for lead durations
+     * @throws NullPointerException if either input is null
      */
 
-    PNGWriter( ProjectConfigPlus projectConfigPlus )
+    PNGWriter( ProjectConfigPlus projectConfigPlus, ChronoUnit durationUnits )
     {
+        Objects.requireNonNull( projectConfigPlus, "Specify a non-null project declaration." );
+        
+        Objects.requireNonNull( durationUnits, "Specify non-null duration units." );
+        
         this.projectConfigPlus = projectConfigPlus;
+        this.durationUnits = durationUnits;
     }
 }

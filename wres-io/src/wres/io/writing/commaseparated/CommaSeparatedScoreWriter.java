@@ -3,6 +3,7 @@ package wres.io.writing.commaseparated;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.text.Format;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -52,14 +53,16 @@ public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends C
      * 
      * @param <T> the score component type
      * @param projectConfig the project configuration
+     * @param durationUnits the time units for durations
      * @return a writer
-     * @throws NullPointerException if the input is null 
+     * @throws NullPointerException if either input is null 
      * @throws ProjectConfigException if the project configuration is not valid for writing
      */
 
-    public static <T extends ScoreStatistic<?, T>> CommaSeparatedScoreWriter<T> of( final ProjectConfig projectConfig )
+    public static <T extends ScoreStatistic<?, T>> CommaSeparatedScoreWriter<T> of( final ProjectConfig projectConfig,
+                                                                                    final ChronoUnit durationUnits )
     {
-        return new CommaSeparatedScoreWriter<>( projectConfig );
+        return new CommaSeparatedScoreWriter<>( projectConfig, durationUnits );
     }
 
     /**
@@ -78,7 +81,8 @@ public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends C
         // Write output
         // In principle, each destination could have a different formatter, so 
         // the output must be generated separately for each destination
-        List<DestinationConfig> numericalDestinations = ConfigHelper.getNumericalDestinations( projectConfig );
+        List<DestinationConfig> numericalDestinations =
+                ConfigHelper.getNumericalDestinations( this.getProjectConfig() );
         for ( DestinationConfig destinationConfig : numericalDestinations )
         {
 
@@ -100,7 +104,8 @@ public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends C
                 Set<Path> innerPathsWrittenTo =
                         CommaSeparatedScoreWriter.writeOneScoreOutputType( destinationConfig,
                                                                            output,
-                                                                           formatter );
+                                                                           formatter,
+                                                                           this.getDurationUnits() );
                 this.pathsWrittenTo.addAll( innerPathsWrittenTo );
             }
             catch ( IOException e )
@@ -110,7 +115,18 @@ public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends C
         }
     }
 
+    /**
+     * Return a snapshot of the paths written to (so far)
+     * 
+     * @return the paths written so far.
+     */
 
+    @Override
+    public Set<Path> get()
+    {
+        return this.getPathsWrittenTo();
+    }
+    
     /**
      * Writes all output for one score type.
      *
@@ -118,6 +134,7 @@ public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends C
      * @param destinationConfig the destination configuration    
      * @param output the score output to iterate through
      * @param formatter optional formatter, can be null
+     * @param durationUnits the time units for durations
      * @throws IOException if the output cannot be written
      * @return set of paths actually written to
      */
@@ -125,7 +142,8 @@ public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends C
     private static <T extends ScoreStatistic<?, T>> Set<Path>
             writeOneScoreOutputType( DestinationConfig destinationConfig,
                                      ListOfStatistics<T> output,
-                                     Format formatter )
+                                     Format formatter,
+                                     ChronoUnit durationUnits )
                     throws IOException
     {
         Set<Path> pathsWrittenTo = new HashSet<>( 1 );
@@ -165,12 +183,14 @@ public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends C
                 StringJoiner headerRow = CommaSeparatedWriter.getDefaultHeaderFromSampleMetadata( nextOutput.getData()
                                                                                                             .get( 0 )
                                                                                                             .getMetadata()
-                                                                                                            .getSampleMetadata() );
+                                                                                                            .getSampleMetadata(),
+                                                                                                  durationUnits );
                 List<RowCompareByLeft> rows =
                         CommaSeparatedScoreWriter.getRowsForOneScore( m,
                                                                       nextOutput,
                                                                       headerRow,
-                                                                      formatter );
+                                                                      formatter,
+                                                                      durationUnits );
 
                 // Add the header row
                 rows.add( RowCompareByLeft.of( HEADER_INDEX, headerRow ) );
@@ -209,6 +229,7 @@ public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends C
      * @param output the score output
      * @param headerRow the header row
      * @param formatter optional formatter, can be null
+     * @param durationUnits the time units for durations
      * @return the rows to write
      */
 
@@ -216,7 +237,8 @@ public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends C
             getRowsForOneScore( MetricConstants scoreName,
                                 ListOfStatistics<T> output,
                                 StringJoiner headerRow,
-                                Format formatter )
+                                Format formatter,
+                                ChronoUnit durationUnits )
     {
         // Slice score by components
         Map<MetricConstants, ListOfStatistics<T>> helper = Slicer.filterByMetricComponent( output );
@@ -232,7 +254,12 @@ public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends C
             {
                 name = name + HEADER_DELIMITER + e.getKey().toString();
             }
-            CommaSeparatedScoreWriter.addRowsForOneScoreComponent( name, e.getValue(), headerRow, returnMe, formatter );
+            CommaSeparatedScoreWriter.addRowsForOneScoreComponent( name,
+                                                                   e.getValue(),
+                                                                   headerRow,
+                                                                   returnMe,
+                                                                   formatter,
+                                                                   durationUnits );
         }
         return returnMe;
     }
@@ -246,13 +273,15 @@ public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends C
      * @param headerRow the header row
      * @param rows the data rows
      * @param formatter optional formatter, can be null
+     * @param durationUnits the time units for durations
      */
 
     private static <T extends ScoreStatistic<?, T>> void addRowsForOneScoreComponent( String name,
                                                                                       ListOfStatistics<T> component,
                                                                                       StringJoiner headerRow,
                                                                                       List<RowCompareByLeft> rows,
-                                                                                      Format formatter )
+                                                                                      Format formatter,
+                                                                                      ChronoUnit durationUnits )
     {
 
         // Discover the time windows and thresholds
@@ -283,7 +312,8 @@ public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends C
                                                         timeWindow,
                                                         Arrays.asList( nextScore.getData().get( 0 ).getData() ),
                                                         formatter,
-                                                        true );
+                                                        true,
+                                                        durationUnits );
                 }
                 // Write no data in place: see #48387
                 else
@@ -292,20 +322,11 @@ public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends C
                                                         timeWindow,
                                                         Arrays.asList( (Object) null ),
                                                         formatter,
-                                                        true );
+                                                        true,
+                                                        durationUnits );
                 }
             }
         }
-    }
-
-    /**
-     * Return a snapshot of the paths written to (so far)
-     */
-
-    @Override
-    public Set<Path> get()
-    {
-        return this.getPathsWrittenTo();
     }
 
     /**
@@ -321,12 +342,14 @@ public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends C
      * Hidden constructor.
      * 
      * @param projectConfig the project configuration
+     * @param durationUnits the time units for durations
+     * @throws NullPointerException if either input is null 
      * @throws ProjectConfigException if the project configuration is not valid for writing 
      */
 
-    private CommaSeparatedScoreWriter( ProjectConfig projectConfig )
+    private CommaSeparatedScoreWriter( ProjectConfig projectConfig, ChronoUnit durationUnits )
     {
-        super( projectConfig );
+        super( projectConfig, durationUnits );
     }
 
 }
