@@ -29,23 +29,7 @@ import wres.util.CalculationException;
  */
 public class PairWriter implements Supplier<Pair<Path,String>>
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger( PairWriter.class );
-    private static final String NEWLINE = System.lineSeparator();
-    private static final String DELIMITER = ",";
-    private static final String PAIR_FILENAME = "/pairs.csv";
-    private static final String BASELINE_FILENAME = "/baseline_pairs.csv";
 
-    private final DestinationConfig destinationConfig;
-    private final Instant date;
-    private final Feature feature;
-    private final int leadIteration;
-    private final EnsemblePair pair;
-    private final boolean isBaseline;
-    private final int poolingStep;
-    private final ProjectDetails projectDetails;
-    private final Duration lead;
-    private final DecimalFormat formatter;
-    
     /*
      * TODO: currently writing of paired outputs is not coordinated by the ProductProcessor like all other outputs.
      * The ProductProcessor coordinates the ChronoUnit resolution for writing outputs. Given the above, the near-term
@@ -57,7 +41,24 @@ public class PairWriter implements Supplier<Pair<Path,String>>
      * products in their own right. See #54942. Long-term, this class will disappear completely, subject to agreement.
      */
     
-    private final ChronoUnit durationUnits = ChronoUnit.SECONDS;
+    static final ChronoUnit DEFAULT_DURATION_UNITS = ChronoUnit.SECONDS;
+    
+    private static final Logger LOGGER = LoggerFactory.getLogger( PairWriter.class );
+    private static final String NEWLINE = System.lineSeparator();
+    private static final String DELIMITER = ",";
+    private static final String PAIR_FILENAME = "/pairs.csv";
+    private static final String BASELINE_FILENAME = "/baseline_pairs.csv";
+    
+    private final DestinationConfig destinationConfig;
+    private final Instant date;
+    private final Feature feature;
+    private final int leadIteration;
+    private final EnsemblePair pair;
+    private final boolean isBaseline;
+    private final int poolingStep;
+    private final ProjectDetails projectDetails;
+    private final Duration lead;
+    private final DecimalFormat formatter;
 
     /**
      * Build a {@link PairWriter} with a mutable builder. 
@@ -337,8 +338,8 @@ public class PairWriter implements Supplier<Pair<Path,String>>
         // But above could be as simple as this (and be more precise):
         //line.add( this.date.toString() );
 
-        line.add( String.valueOf( this.lead.toHours() ) );
-
+        line.add( String.valueOf( this.getLeadDuration().toHours() ) );
+                
         try
         {
             line.add( this.getWindow() );
@@ -366,6 +367,11 @@ public class PairWriter implements Supplier<Pair<Path,String>>
     private Feature getFeature()
     {
         return this.feature;
+    }
+    
+    private Duration getLeadDuration()
+    {
+        return this.lead;
     }
 
     private String getWindow() throws CalculationException
@@ -430,9 +436,9 @@ public class PairWriter implements Supplier<Pair<Path,String>>
             {
                 arrayJoiner.add( "NaN" );
             }
-            else if ( formatter != null )
+            else if ( this.getFormatter() != null )
             {
-                arrayJoiner.add( formatter.format( rightValue ) );
+                arrayJoiner.add( this.getFormatter().format( rightValue ) );
             }
             else
             {
