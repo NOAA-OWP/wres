@@ -39,7 +39,6 @@ import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
-import wres.io.utilities.ScriptBuilder;
 import wres.io.writing.pair.PairWriter;
 import wres.io.writing.pair.SharedWriterManager;
 import wres.util.TimeHelper;
@@ -77,7 +76,7 @@ public class TimeSeriesRetriever extends Retriever
                     .setLeadIteration( this.getLeadIteration() )
                     .setPair(pair.getValues())
                     .setProjectDetails( this.getProjectDetails() )
-                    .setLead( (int)pair.getLeadHours() )
+                    .setLead( pair.getLeadDuration() )
                     .build();
 
             sharedWriterManager.accept( writer );
