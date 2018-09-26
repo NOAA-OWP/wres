@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -22,6 +23,7 @@ import org.slf4j.LoggerFactory;
 import wres.config.ProjectConfigException;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.ProjectConfig;
+import wres.datamodel.metadata.TimeScale;
 import wres.io.concurrency.CopyExecutor;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.DataSources;
@@ -33,9 +35,11 @@ import wres.io.reading.BasicSource;
 import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
 import wres.io.reading.InvalidInputDataException;
+import wres.io.utilities.DataBuilder;
 import wres.io.utilities.Database;
 import wres.system.ProgressMonitor;
 import wres.util.Strings;
+import wres.util.TimeHelper;
 
 /**
  * @author Qing Zhu
@@ -330,7 +334,7 @@ public class DatacardSource extends BasicSource
 				} //end of loop for one value line 
 			} //end of loop for all value lines
 
-			sendToDatabase();
+            this.observations.build().copy( "wres.Observation", true );
 		}
 		finally
 		{
@@ -347,20 +351,6 @@ public class DatacardSource extends BasicSource
                                                 false );
 	}
 
-	private void sendToDatabase()
-    {
-        if (insertCount > 0)
-        {
-            insertCount = 0;
-            CopyExecutor copier = new CopyExecutor( currentTableDefinition, currentScript.toString(),
-                                                    COPY_DELIMITER );
-            copier.setOnRun(ProgressMonitor.onThreadStartHandler());
-            copier.setOnComplete( ProgressMonitor.onThreadCompleteHandler());
-            Database.ingest(copier);
-            currentScript = null;
-        }
-    }
-
 	/**
 	 * Adds measurement information to the current insert script in the form of observation data
      * @param observedTime The datetime when the measurement was taken (in UTC)
@@ -372,35 +362,23 @@ public class DatacardSource extends BasicSource
                                    String observedValue )
             throws IOException
 	{
-       	if (insertCount > 0)
-		{
-			currentScript.append(NEWLINE);
-		}
-		else
-		{
-			currentTableDefinition = INSERT_OBSERVATION_HEADER;
-			currentScript = new StringBuilder();
-		}
-
-		try
+	    this.observations.addRow();
+        try
         {
-            currentScript.append( this.getVariableFeatureID() );
-            currentScript.append( COPY_DELIMITER );
-            currentScript.append( "'" ).append( observedTime ).append( "'" );
-            currentScript.append( COPY_DELIMITER );
-            currentScript.append( observedValue );
-            currentScript.append( COPY_DELIMITER );
-            currentScript.append( this.getMeasurementID() );
-            currentScript.append( COPY_DELIMITER );
-            currentScript.append( this.getSourceID() );
+            this.observations.set("variablefeature_id", this.getVariableFeatureID());
+            this.observations.set("observation_time", observedTime);
+            this.observations.set("observed_value", observedValue);
+            this.observations.set("measurementunit_id", this.getMeasurementID());
+            this.observations.set("source_id", this.getSourceID());
+            this.observations.set("scale_period", 1);
+            this.observations.set( "scale_function", TimeScale.TimeScaleFunction.UNKNOWN.toString());
+            this.observations.set( "time_step", TimeHelper.unitsToLeadUnits( ChronoUnit.HOURS.toString(), this.timeInterval));
         }
-        catch ( SQLException se )
+        catch ( SQLException e )
         {
             throw new IngestException( "Failed to get information from database.",
-                                       se );
+                                       e );
         }
-
-		insertCount++;
 	}
 
     private Integer getMeasurementID() throws SQLException
@@ -604,27 +582,18 @@ public class DatacardSource extends BasicSource
 	private int valuesPerRecord = 0;
 
 	private static final int FIRST_OBS_VALUE_START_POS = 20;
-		
-	/**
-	 * The current state of a script that will be sent to the database
-	 */
-	private StringBuilder currentScript = null;
-	
-	/**
-	 * The current definition of the table in which the data will be saved
-	 */
-	private String currentTableDefinition = null;
-	
-	/**
-	 * The number of values that will be inserted in the next sql call
-	 */
-	private int insertCount = 0;
-	
-	/**
-	 * The delimiter between values for copy statements
-	 */
-	private static final String COPY_DELIMITER = "|";
-	
+
+    private final DataBuilder observations = DataBuilder.with(
+            "variablefeature_id",
+            "observation_time",
+            "observed_value",
+            "measurementunit_id",
+            "source_id",
+            "scale_period",
+            "scale_function",
+            "time_step"
+    );
+
 	/**
 	 * The ID for the variable that is currently being parsed
 	 */

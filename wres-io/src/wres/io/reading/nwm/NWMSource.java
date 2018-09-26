@@ -57,9 +57,6 @@ public class NWMSource extends BasicSource
     private static final Logger LOGGER = LoggerFactory.getLogger(NWMSource.class);
     private static final int MAXIMUM_OPEN_ATTEMPTS = 5;
 
-    private static final Object PROJECTION_LOCK = new Object();
-    private static final Set<Integer> ENCOUNTERED_PROJECTIONS = new TreeSet<>();
-
     private boolean alreadyFound;
 
 	/**
