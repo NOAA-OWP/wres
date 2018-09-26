@@ -81,6 +81,7 @@ public class USGSReader extends BasicSource
             saver.setOnComplete( ProgressMonitor.onThreadCompleteHandler() );
             saver.setOnUpdate( this::seriesEvaluated );
 
+            LOGGER.trace("Added task to ingest NWIS data");
             Future<IngestResult> usgsIngest = Executor.submit( saver );
 
             ingests.add( usgsIngest );
@@ -92,7 +93,7 @@ public class USGSReader extends BasicSource
             try
             {
                 IngestResult result = ingest.get();
-
+                LOGGER.trace("Completed an NWIS ingest.");
                 if (result != null)
                 {
                     results.add(result);

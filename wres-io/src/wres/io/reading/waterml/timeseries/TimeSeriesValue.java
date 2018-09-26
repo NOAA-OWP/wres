@@ -1,5 +1,9 @@
 package wres.io.reading.waterml.timeseries;
 
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+
 public class TimeSeriesValue
 {
     Double value;
@@ -24,9 +28,16 @@ public class TimeSeriesValue
         this.qualifiers = qualifiers;
     }
 
-    public String getDateTime()
+    public Instant getDateTime()
     {
-        return dateTime;
+        if (this.dateTime != null)
+        {
+            return OffsetDateTime.parse( this.dateTime)
+                                 .withOffsetSameInstant( ZoneOffset.UTC )
+                                 .toInstant();
+        }
+
+        return null;
     }
 
     public void setDateTime( String dateTime )

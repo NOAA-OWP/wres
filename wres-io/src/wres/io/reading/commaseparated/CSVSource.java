@@ -11,7 +11,6 @@ import java.util.StringJoiner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.generated.DataSourceConfig;
 import wres.config.generated.ProjectConfig;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.DataSources;
@@ -24,7 +23,7 @@ import wres.io.data.details.TimeSeries;
 import wres.io.reading.BasicSource;
 import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
-import wres.io.reading.TimeSeriesValues;
+import wres.io.reading.IngestedValues;
 import wres.io.utilities.DataProvider;
 import wres.util.Strings;
 import wres.util.TimeHelper;
@@ -122,7 +121,7 @@ public class CSVSource extends BasicSource
                 }
 
 
-                TimeSeriesValues.add( currentTimeSeries.getTimeSeriesID(), lead, value );
+                IngestedValues.addTimeSeriesValue( currentTimeSeries.getTimeSeriesID(), lead, value );
             }
             catch (SQLException e)
             {
