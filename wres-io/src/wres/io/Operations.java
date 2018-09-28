@@ -455,6 +455,7 @@ public final class Operations {
         finally
         {
             List<IngestResult> leftovers = Database.completeAllIngestTasks();
+
             IngestedValues.complete();
 
             if ( LOGGER.isDebugEnabled() )
