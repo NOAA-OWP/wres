@@ -68,7 +68,8 @@ class NWCALReader extends S3Reader
         LocalDate latest;
 
         // Get the earliest date to get data from
-        if (earliestIssue.isBefore( earliestValidDate ))
+        if ((ConfigHelper.isForecast( this.dataSourceConfig ) && earliestIssue.isBefore( LocalDateTime.MAX)) ||
+            earliestIssue.isBefore( earliestValidDate ))
         {
             earliest = earliestIssue.toLocalDate();
         }
@@ -81,6 +82,10 @@ class NWCALReader extends S3Reader
         if (latestIssue == null && latestValidDate == null)
         {
             latest = LocalDate.now();
+        }
+        else if (ConfigHelper.isForecast( this.getDataSourceConfig() ) && latestIssue != null)
+        {
+            latest = latestIssue.toLocalDate();
         }
         else if (latestValidDate == null || latestIssue != null && latestIssue.isAfter( latestValidDate ) )
         {

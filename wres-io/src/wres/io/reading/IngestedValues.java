@@ -146,10 +146,10 @@ public final class IngestedValues
     {
         synchronized ( VALUES_TO_SAVE_LOCK )
         {
-            LOGGER.info("Adding the rest of the consolidated observation and forecasted values.");
+            LOGGER.trace("Adding the rest of the consolidated observation and forecasted values.");
             List<Future<?>> tasks = new ArrayList<>();
 
-            LOGGER.info("Adding {} observation values", IngestedValues.OBSERVATIONS.getRowCount());
+            LOGGER.trace("Adding {} observation values", IngestedValues.OBSERVATIONS.getRowCount());
             tasks.add(IngestedValues.OBSERVATIONS.build().copy( "wres.Observation" ));
 
             for (String partitionName : VALUES_TO_SAVE.keySet())

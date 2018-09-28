@@ -32,7 +32,7 @@ public class DataSetProvider implements DataProvider
     private boolean closed;
 
     private DataSetProvider(){
-        columnNames = new TreeMap<>(  );
+        columnNames = new TreeMap<>( String.CASE_INSENSITIVE_ORDER );
         rows = new ArrayList<>(  );
     }
 

@@ -99,8 +99,8 @@ public class TimeSeriesRetriever extends Retriever
         Instant reference = Instant.from( referenceTime );
 
         TimeWindow window = TimeWindow.of(
-                reference.plus( this.timeSeries.getLowestLead(), TimeHelper.LEAD_RESOLUTION ),
-                reference.plus( this.timeSeries.getHighestLead(), TimeHelper.LEAD_RESOLUTION ),
+                reference,
+                reference,
                 ReferenceTime.ISSUE_TIME,
                 Duration.of( this.timeSeries.getLowestLead(), TimeHelper.LEAD_RESOLUTION),
                 Duration.of(this.timeSeries.getHighestLead(), TimeHelper.LEAD_RESOLUTION)

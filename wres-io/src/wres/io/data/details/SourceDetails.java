@@ -1,11 +1,6 @@
 package wres.io.data.details;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 
 import org.slf4j.Logger;
@@ -14,8 +9,6 @@ import org.slf4j.LoggerFactory;
 import wres.io.data.details.SourceDetails.SourceKey;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
-import wres.io.utilities.Database;
-import wres.io.utilities.ScriptBuilder;
 
 /**
  * Details about a source of observation or forecast data
@@ -151,8 +144,8 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
 	protected DataScripter getInsertSelect()
 			throws SQLException
 	{
-	    List<Object> args = new ArrayList<>();
         DataScripter script = new DataScripter(  );
+        script.setHighPriority( true );
 
 	    script.addLine("WITH new_source AS");
 	    script.addLine("(");
@@ -198,54 +191,19 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
 	@Override
     public void save() throws SQLException
     {
-        Connection connection = null;
+        DataScripter script = this.getInsertSelect();
 
-		try
+        try (DataProvider resultSet = script.getData())
         {
-            connection = Database.getConnection();
-            connection.setAutoCommit( false );
-
-            Database.lockTable( connection, "wres.Source" );
-
-            try (DataProvider resultSet = this.getInsertSelect().getData(connection))
-            {
-                this.setID( resultSet.getValue( this.getIDName() ) );
-                this.performedInsert = resultSet.getValue( "wasInserted" );
-            }
-
-            connection.commit();
-
-            if ( LOGGER.isTraceEnabled() )
-            {
-                LOGGER.trace( "Did I create Source ID {}? {}",
-                              this.getId(),
-                              this.performedInsert );
-            }
+            this.setID( resultSet.getValue( this.getIDName() ) );
+            this.performedInsert = resultSet.getValue( "wasInserted" );
         }
-        catch (SQLException e)
-        {
-            if (connection != null)
-            {
-                try
-                {
-                    connection.rollback();
-                }
-                catch ( SQLException se )
-                {
-                    // Failure to roll back should not affect primary outputs.
-                    LOGGER.warn( "Failed to rollback on connection {}.", connection, se );
-                }
-            }
 
-            throw e;
-        }
-        finally
+        if ( LOGGER.isTraceEnabled() )
         {
-            if (connection != null)
-            {
-                connection.setAutoCommit( true );
-                Database.returnConnection( connection );
-            }
+            LOGGER.trace( "Did I create Source ID {}? {}",
+                          this.getId(),
+                          this.performedInsert );
         }
     }
 

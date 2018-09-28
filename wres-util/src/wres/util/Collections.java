@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NavigableMap;
 import java.util.Objects;
+import java.util.StringJoiner;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 
@@ -429,5 +430,54 @@ public final class Collections
         }
 
         return values;
+    }
+
+
+    public static <V, E extends Exception> String toString(
+            V[] values,
+            ExceptionalFunction<V, String, E> transformer
+    ) throws E
+    {
+        return Collections.toString(values, transformer, ", ");
+    }
+
+    public static <V, E extends Exception> String toString(
+            V[] values,
+            ExceptionalFunction<V, String, E> transformer,
+            final String delimiter
+    ) throws E
+    {
+        StringJoiner joiner = new StringJoiner( delimiter);
+
+        for (V value : values)
+        {
+            joiner.add(transformer.call( value ));
+        }
+
+        return joiner.toString();
+    }
+
+    public static <V, E extends Exception> String toString(
+            Collection<V> values,
+            ExceptionalFunction<V, String, E> transformer
+    ) throws E
+    {
+        return Collections.toString(values, transformer, ", ");
+    }
+
+    public static <V, E extends Exception> String toString(
+            Collection<V> values,
+            ExceptionalFunction<V, String, E> transformer,
+            final String delimiter
+    ) throws E
+    {
+        StringJoiner joiner = new StringJoiner( delimiter);
+
+        for (V value : values)
+        {
+            joiner.add(transformer.call( value ));
+        }
+
+        return joiner.toString();
     }
 }

@@ -1090,21 +1090,6 @@ public class ProjectDetails
             else if (lowestStep != 0 && highestStep % lowestStep == 0)
             {
                 commonScale = highestStep;
-                /*String message = "The temporal scales of the left and right hand data "
-                                 + "don't match. The left hand data is in a "
-                                 + "scale of %d %s and the scale on the "
-                                 + "right is in %d minutes. If the data is "
-                                 + "compatible, a scale of %d minutes should "
-                                 + "suffice.";
-                throw new NoDataException(
-                        String.format(
-                                message,
-                                leftStep,
-                                TimeHelper.LEAD_RESOLUTION.toString().toLowerCase(),
-                                rightStep,
-                                highestStep
-                        )
-                );*/
             }
             else if (!(lowestStep == 0 || highestStep == 0))
             {
@@ -1116,16 +1101,6 @@ public class ProjectDetails
                                .intValue();
 
                 commonScale = leftStep * rightStep / greatestCommonFactor;
-
-                /*String message = "The temporal scales of the left (%d minutes) "
-                                 + "and right (%d minutes) hand data are in "
-                                 + "different temporal scales and more "
-                                 + "information is needed in order to pair "
-                                 + "data properly. Please supply a desired time "
-                                 + "scale. A scale of %d minutes should work if "
-                                 + "there is enough data and an appropriate "
-                                 + "scaling function is supplied.";
-                throw new NoDataException( String.format( message, leftStep, rightStep, commonScale ) );*/
             }
             else
             {

@@ -420,29 +420,29 @@ public class DatacardSource extends BasicSource
 			}
 
 			// TODO: Modify the cache to do this work
-            SourceDetails.SourceKey deetsKey =
+            SourceDetails.SourceKey sourceKey =
                     new SourceDetails.SourceKey( this.getFilename(),
                                                  this.creationDateTime,
                                                  null,
                                                  this.getHash() );
 
-            boolean wasInCache = DataSources.isCached( deetsKey );
+            boolean wasInCache = DataSources.isCached( sourceKey );
             boolean wasThisReaderTheOneThatInserted = false;
-            SourceDetails deets = null;
+            SourceDetails sourceDetails;
 
 
             if ( !wasInCache )
             {
                 // We *might* be the one in charge of doing this source ingest.
-                deets = new SourceDetails( deetsKey );
-                deets.save();
-                if ( deets.performedInsert() )
+                sourceDetails = new SourceDetails( sourceKey );
+                sourceDetails.save();
+                if ( sourceDetails.performedInsert() )
                 {
                     // Now we have the definitive answer from the database.
                     wasThisReaderTheOneThatInserted = true;
 
                     // Now that ball is in our court we should put in cache
-                    DataSources.put( deets );
+                    DataSources.put( sourceDetails );
                     // // Older, implicit way:
                     // DataSources.hasSource( this.getHash() );
                 }

@@ -93,6 +93,7 @@ public class USGSReader extends BasicSource
             try
             {
                 IngestResult result = ingest.get();
+
                 LOGGER.trace("Completed an NWIS ingest.");
                 if (result != null)
                 {
@@ -109,6 +110,8 @@ public class USGSReader extends BasicSource
                 throw new IngestException( "USGS data could not be ingested.", e );
             }
         }
+
+        LOGGER.trace("Done looping through all USGS regions");
 
         // Throw an error if nothing was saved
         if (results.size() == 0)
