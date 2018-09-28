@@ -145,6 +145,7 @@ public abstract class TestDatabaseGenerator
         // TODO: Evaluate if this is actually mocking 'getPool' properly
         PowerMockito.when(Database.getPool()).thenReturn(dataSource);
         Whitebox.setInternalState( Database.class, "CONNECTION_POOL", dataSource );
+        Whitebox.setInternalState( Database.class, "HIGH_PRIORITY_CONNECTION_POOL", dataSource );
 
         LOGGER.trace("The database named {} has been created.", name);
 
