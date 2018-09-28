@@ -2,6 +2,7 @@ package wres.io.reading.usgs;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -25,7 +26,7 @@ import org.slf4j.LoggerFactory;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DurationUnit;
 import wres.config.generated.ProjectConfig;
-import wres.io.concurrency.CopyExecutor;
+import wres.datamodel.metadata.TimeScale;
 import wres.io.concurrency.WRESCallable;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.DataSources;
@@ -36,17 +37,14 @@ import wres.io.data.details.FeatureDetails;
 import wres.io.data.details.SourceDetails;
 import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
+import wres.io.reading.IngestedValues;
 import wres.io.reading.waterml.Response;
 import wres.io.reading.waterml.timeseries.TimeSeries;
 import wres.io.reading.waterml.timeseries.TimeSeriesValue;
 import wres.io.reading.waterml.timeseries.TimeSeriesValues;
 import wres.io.reading.waterml.variable.Variable;
-import wres.io.utilities.Database;
-import wres.system.ProgressMonitor;
-import wres.system.SystemSettings;
 import wres.util.functional.ExceptionalConsumer;
 import wres.io.utilities.NoDataException;
-import wres.io.utilities.ScriptBuilder;
 import wres.util.FormattedStopwatch;
 import wres.util.Strings;
 import wres.util.TimeHelper;
@@ -200,6 +198,8 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
             throw ie;
         }
 
+        LOGGER.debug("NWIS Data was loaded from {}", this.requestURL);
+
         // Throw an error if absolutely nothing came back from USGS (this
         // is unlikely to ever happen, considering that an error should
         // have been hit in "load(..)")
@@ -215,6 +215,7 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
                                             response.hash,
                                             this.requestURL,
                                             true );
+            LOGGER.debug("We've already seen this data before.");
         }
         else
         {
@@ -251,6 +252,10 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
                     LOGGER.debug( "Data for {} different locations have been saved.",
                                   amountSaved );
                 }
+                else
+                {
+                    LOGGER.info("No data from {} was saved.", this.requestURL );
+                }
             }
         }
 
@@ -260,17 +265,6 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
             throw new IngestException( "No data from any USGS features could "
                                        + "be saved for evaluation." );
         }
-
-        // Complete lingering copies
-        try
-        {
-            this.performCopy();
-        }
-        catch ( SQLException e )
-        {
-            throw new IOException( "USGS observations could not be saved.", e );
-        }
-
 
         return result;
     }
@@ -291,15 +285,26 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
 
             requestURL = webTarget.getUri().toURL().toString();
             String hash = Strings.getMD5Checksum( requestURL.getBytes());
-            SourceDetails usgsDetails;
+            SourceDetails.SourceKey sourceKey =
+                    new SourceDetails.SourceKey( requestURL,
+                                                 operationStartTime,
+                                                 null,
+                                                 hash );
+            SourceDetails usgsDetails = new SourceDetails( sourceKey );
 
             try
             {
-                usgsDetails = DataSources.get( requestURL,
-                                               operationStartTime,
-                                               null,
-                                               hash
-                );
+
+                if (DataSources.isCached( sourceKey ))
+                {
+                    LOGGER.debug( "The data for '{}' had been previously ingested.", requestURL );
+                    return new USGSRegionSaver.WebResponse( null,
+                                                            true,
+                                                            DataSources.getActiveSourceID(hash),
+                                                            hash );
+                }
+
+                usgsDetails.save();
 
                 if (!usgsDetails.performedInsert())
                 {
@@ -329,23 +334,21 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
                 stopwatch.start();
             }
 
-            // TODO: Evaluate if this should actually be in the retry block
-            usgsResponse = invocationBuilder.get( Response.class );
-
-            if (LOGGER.isDebugEnabled() && stopwatch != null)
-            {
-                stopwatch.stop();
-
-                LOGGER.debug( "It took {} to download the USGS data.",
-                              stopwatch.getFormattedDuration() );
-            }
-
             WebResponseRetryStrategy retryStrategy = new WebResponseRetryStrategy();
 
             while (retryStrategy.shouldTry())
             {
                 try
                 {
+                    usgsResponse = invocationBuilder.get( Response.class );
+
+                    if (LOGGER.isDebugEnabled() && stopwatch != null)
+                    {
+                        stopwatch.stop();
+
+                        LOGGER.debug( "It took {} to download the USGS data.",
+                                      stopwatch.getFormattedDuration() );
+                    }
                     response = new USGSRegionSaver.WebResponse( usgsResponse,
                                                                 false,
                                                                 usgsDetails.getId(),
@@ -630,7 +633,7 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
                     dateTime = dateTime.plus(1L, ChronoUnit.HOURS);
                 }
 
-                this.endDate = TimeHelper.convertDateToString( dateTime );;
+                this.endDate = TimeHelper.convertDateToString( dateTime );
             }
         }
         return this.endDate;
@@ -694,39 +697,37 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
         return this.variableID;
     }
 
-    private void addValue(String gageID, String observationTime, Double value, int sourceID)
-            throws SQLException
+    private void addValue(String gageID, Instant observationTime, Double value, Duration timeStep, int sourceID)
+            throws SQLException, IngestException
     {
-        if (this.copyScript == null)
+        TimeScale.TimeScaleFunction function = TimeScale.TimeScaleFunction.UNKNOWN;
+        Duration period = null;
+
+        if (this.getParameter().getAggregation().equalsIgnoreCase( "sum" ))
         {
-            this.copyScript = new ScriptBuilder(  );
+            period = timeStep;
+            function = TimeScale.TimeScaleFunction.TOTAL;
+        }
+        else if (this.getParameter().getAggregation().equalsIgnoreCase( "min" ))
+        {
+            period = timeStep;
+            function = TimeScale.TimeScaleFunction.MINIMUM;
+        }
+        else if (this.getParameter().getAggregation().equalsIgnoreCase( "max" ))
+        {
+            period = timeStep;
+            function = TimeScale.TimeScaleFunction.MAXIMUM;
         }
 
-        observationTime = OffsetDateTime.parse( observationTime)
-                                        .withOffsetSameInstant( ZoneOffset.UTC )
-                                        .toString();
-
-        this.copyScript.add(this.getVariableFeatureID( gageID )).add("|")
-                       .add("'" + observationTime + "'").add("|");
-
-        if (value == null)
-        {
-            this.copyScript.add("\\N").add("|");
-        }
-        else
-        {
-            this.copyScript.add( value ).add( "|" );
-        }
-
-        this.copyScript.add(this.parameter.getMeasurementUnitID()).add("|")
-                       .addLine(sourceID);
-
-        this.copyCount++;
-
-        if ( this.copyCount >= SystemSettings.getMaximumCopies())
-        {
-            this.performCopy();
-        }
+        IngestedValues.observed(value)
+                      .at( observationTime )
+                      .forVariableAndFeatureID( this.getVariableFeatureID( gageID ) )
+                      .measuredIn( this.getParameter().getMeasurementUnitID() )
+                      .inSource( sourceID )
+                      .scaleOf( period )
+                      .scaledBy( function )
+                      .every( timeStep )
+                      .add();
     }
 
     private int saveResponse(Response usgsResponse, int sourceID) throws IOException
@@ -801,6 +802,7 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
                     this.addValue( series.getSourceInfo().getSiteCode()[0].getValue(),
                                    value.getDateTime(),
                                    readValue,
+                                   valueSet.getTimeStep(),
                                    sourceID);
                 }
                 catch ( SQLException e )
@@ -811,36 +813,6 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
         }
 
         return true;
-    }
-
-    private void performCopy() throws SQLException
-    {
-        if (this.copyCount > 0)
-        {
-            CopyExecutor copier = new CopyExecutor( USGSRegionSaver.COPY_HEADER, this.copyScript.toString(), DELIMITER );
-
-            // TODO: If we want to only update the ProgressMonitor for files, remove these handlers
-            // Tell the copier to increase the number representing the
-            // total number of operations to perform when the thread starts.
-            // It is debatable whether we should increase the number in this
-            // thread or in the thread operating on the actual database copy
-            // statement
-            copier.setOnRun( ProgressMonitor.onThreadStartHandler() );
-
-            // Tell the copier to inform the ProgressMonitor that work has been
-            // completed when the thread has finished
-            copier.setOnComplete( ProgressMonitor.onThreadCompleteHandler() );
-
-            // Send the copier to the Database handler's task queue and add
-            // the resulting future to our list of copy operations
-            Database.ingest( copier );
-
-            // Reset the values to copy
-            this.copyScript = new ScriptBuilder(  );
-
-            // Reset the count of values to copy
-            this.copyCount = 0;
-        }
     }
 
     void setOnUpdate( ExceptionalConsumer<TimeSeries, IOException> handler)
@@ -874,9 +846,6 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
     private String parameterCode;
 
     private USGSParameters.USGSParameter parameter;
-
-    private ScriptBuilder copyScript = null;
-    private int copyCount = 0;
 
     @Override
     protected Logger getLogger()

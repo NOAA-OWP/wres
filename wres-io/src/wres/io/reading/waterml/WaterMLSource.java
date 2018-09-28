@@ -2,6 +2,7 @@ package wres.io.reading.waterml;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.time.Instant;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
@@ -177,7 +178,7 @@ public class WaterMLSource
         return true;
     }
 
-    private void addObservationValue( String gageID, String observationTime, Double value)
+    private void addObservationValue( String gageID, Instant observationTime, Double value)
             throws SQLException
     {
         if (this.copyScript == null)

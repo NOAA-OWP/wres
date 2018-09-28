@@ -1,5 +1,7 @@
 package wres.io.reading.waterml.timeseries;
 
+import java.time.Duration;
+
 public class TimeSeriesValues
 {
     public TimeSeriesValue[] getValue()
@@ -80,6 +82,18 @@ public class TimeSeriesValues
     public void setCensorCode( String[] censorCode )
     {
         this.censorCode = censorCode;
+    }
+
+    public Duration getTimeStep()
+    {
+        Duration step = null;
+
+        if (this.value != null && this.value.length > 1)
+        {
+            return Duration.between( this.value[0].getDateTime(), this.value[1].getDateTime() );
+        }
+
+        return step;
     }
 
     TimeSeriesValue[] value;

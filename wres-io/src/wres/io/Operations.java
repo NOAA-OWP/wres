@@ -49,13 +49,11 @@ import wres.io.data.details.ProjectDetails;
 import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
 import wres.io.reading.SourceLoader;
-import wres.io.reading.TimeSeriesValues;
-import wres.io.reading.fews.PIXMLReader;
+import wres.io.reading.IngestedValues;
 import wres.io.retrieval.InputGenerator;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
-import wres.io.utilities.ScriptBuilder;
 import wres.io.writing.netcdf.NetCDFCopier;
 import wres.io.writing.pair.SharedWriterManager;
 import wres.system.ProgressMonitor;
@@ -385,6 +383,7 @@ public final class Operations {
 
     /**
      * Ingests and returns the hashes of source files involved in this project.
+     * TODO: Find a more appropriate location; this should call the ingest logic, not implement it
      * @param projectConfig the projectConfig to ingest
      * @return the projectdetails object from ingesting this project
      * @throws IOException when anything goes wrong
@@ -441,8 +440,7 @@ public final class Operations {
                 ProgressMonitor.completeStep();
                 projectSources.addAll( ingested );
             }
-            PIXMLReader.saveLeftoverForecasts();
-            TimeSeriesValues.complete();
+            //PIXMLReader.saveLeftoverForecasts();
         }
         catch ( InterruptedException ie )
         {
@@ -454,13 +452,12 @@ public final class Operations {
             String message = "An ingest task could not be completed.";
             throw new IngestException( message, e );
         }
-        catch ( SQLException se )
-        {
-            throw new IngestException( "Failed to save leftover forecasts", se );
-        }
         finally
         {
             List<IngestResult> leftovers = Database.completeAllIngestTasks();
+
+            IngestedValues.complete();
+
             if ( LOGGER.isDebugEnabled() )
             {
                 LOGGER.debug( leftovers.size() + " indirect ingest results" );

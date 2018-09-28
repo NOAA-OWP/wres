@@ -24,6 +24,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1089,21 +1090,6 @@ public class ProjectDetails
             else if (lowestStep != 0 && highestStep % lowestStep == 0)
             {
                 commonScale = highestStep;
-                /*String message = "The temporal scales of the left and right hand data "
-                                 + "don't match. The left hand data is in a "
-                                 + "scale of %d %s and the scale on the "
-                                 + "right is in %d minutes. If the data is "
-                                 + "compatible, a scale of %d minutes should "
-                                 + "suffice.";
-                throw new NoDataException(
-                        String.format(
-                                message,
-                                leftStep,
-                                TimeHelper.LEAD_RESOLUTION.toString().toLowerCase(),
-                                rightStep,
-                                highestStep
-                        )
-                );*/
             }
             else if (!(lowestStep == 0 || highestStep == 0))
             {
@@ -1115,16 +1101,6 @@ public class ProjectDetails
                                .intValue();
 
                 commonScale = leftStep * rightStep / greatestCommonFactor;
-
-                /*String message = "The temporal scales of the left (%d minutes) "
-                                 + "and right (%d minutes) hand data are in "
-                                 + "different temporal scales and more "
-                                 + "information is needed in order to pair "
-                                 + "data properly. Please supply a desired time "
-                                 + "scale. A scale of %d minutes should work if "
-                                 + "there is enough data and an appropriate "
-                                 + "scaling function is supplied.";
-                throw new NoDataException( String.format( message, leftStep, rightStep, commonScale ) );*/
             }
             else
             {
@@ -1967,13 +1943,16 @@ public class ProjectDetails
             throws IOException, SQLException, CalculationException
     {
         if (ConfigHelper.isSimulation( this.getRight() ) ||
-                ProjectConfigs.hasTimeSeriesMetrics( this.projectConfig ) ||
-            this.usesGriddedData( this.getRight() ))
+                ProjectConfigs.hasTimeSeriesMetrics( this.projectConfig ))
         {
             return 0;
         }
-
-        if (this.leadOffsets.isEmpty())
+        else if (this.usesGriddedData( this.getRight() ))
+        {
+            // We subtract by one since this returns an exclusive value where minimum lead is inclusive
+            return ObjectUtils.firstNonNull( this.getMinimumLead(), 1) - 1;
+        }
+        else if (this.leadOffsets.isEmpty())
         {
             this.populateLeadOffsets();
         }

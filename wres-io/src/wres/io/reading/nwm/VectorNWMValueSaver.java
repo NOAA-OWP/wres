@@ -5,6 +5,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
@@ -36,6 +37,7 @@ import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
 import wres.io.data.details.SourceDetails;
 import wres.io.data.details.TimeSeries;
+import wres.io.reading.IngestedValues;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
 import wres.io.utilities.ScriptBuilder;
@@ -153,15 +155,6 @@ class VectorNWMValueSaver extends WRESRunnable
         return lock;
     }
 
-    private static final String DELIMITER = "|";
-    private static final String FORECAST_COLUMN_DEFINTIION =
-            "(timeseries_id, lead, series_value)";
-
-
-    private StringBuilder copyScript;
-    private String copyHeader;
-    private int copyCount = 0;
-
     private final Path filePath;
     private NetcdfFile source;
     private Integer lead;
@@ -175,24 +168,6 @@ class VectorNWMValueSaver extends WRESRunnable
     private Double missingValue;
     private boolean inChargeOfIngest;
     private Integer ensembleId;
-
-    VectorNWMValueSaver( String filename,
-                         Future<String> futureHash,
-                         DataSourceConfig dataSourceConfig)
-    {
-        if (!Strings.hasValue( filename ))
-        {
-            throw new IllegalArgumentException("The passed filename is either null or empty.");
-        }
-        else if(futureHash == null)
-        {
-            throw new IllegalArgumentException( "No hash creation operation was passed to the ingestor." );
-        }
-
-        this.filePath = Paths.get(filename);
-        this.futureHash = futureHash;
-        this.dataSourceConfig = dataSourceConfig;
-    }
 
     VectorNWMValueSaver (String filename,
                          String hash,
@@ -246,36 +221,6 @@ class VectorNWMValueSaver extends WRESRunnable
             }
         }
         return this.hash;
-    }
-
-    /**
-     * Generates and returns the header used to copy data straight into the
-     * database
-     * @return The header for copy statements
-     * @throws IOException Thrown if the lead time could not be retrieved
-     * from the source file
-     * @throws SQLException Thrown if an appropriate name for a partition
-     * could not be retrieved from the database
-     */
-    private String getCopyHeader() throws IOException, SQLException
-    {
-        if (!Strings.hasValue( this.copyHeader ) && this.isForecast())
-        {
-            this.copyHeader = TimeSeries.getTimeSeriesValuePartition( this.getLead() );
-            this.copyHeader += " ";
-            this.copyHeader += VectorNWMValueSaver.FORECAST_COLUMN_DEFINTIION;
-        }
-        else if (!Strings.hasValue( this.copyHeader ))
-        {
-            this.copyHeader = "wres.Observation (" +
-                                    "variablefeature_id, " +
-                                    "observation_time, " +
-                                    "observed_value, " +
-                                    "measurementunit_id, " +
-                                    "source_id " +
-                              ")";
-        }
-        return this.copyHeader;
     }
 
     /**
@@ -439,71 +384,21 @@ class VectorNWMValueSaver extends WRESRunnable
             return;
         }
 
-        // If the object used to create the copy statement doesn't exist,
-        // create it
-        if ( this.copyScript == null)
-        {
-            this.copyScript = new StringBuilder(  );
-        }
-
         // If this is a forecast, we need to link the lead time, the value,
         // and the id for the appropriate time series together
         if (this.isForecast())
         {
-            this.copyScript.append( spatioVariableID )
-                           .append( DELIMITER )
-                           .append( this.getLead() )
-                           .append( DELIMITER );
-
-            // If the value is null, the value to copy should be '\N', which
-            // postgresql recognizes as null in the copy statement.
-            if (value == null)
-            {
-                this.copyScript.append("\\N");
-            }
-            else
-            {
-                this.copyScript.append(value);
-            }
-
-            this.copyScript.append( NEWLINE );
+            IngestedValues.addTimeSeriesValue( spatioVariableID, this.getLead(), value );
         }
         else
         {
-            // If this is an observation, we want to link the location for the
-            // variable to the time that the value is valid, the value itself,
-            // the unit it was measured in, and the id of the source file
-            this.copyScript.append( spatioVariableID )
-                           .append( DELIMITER )
-                           .append( NetCDF.getTime( this.getSource() ) )
-                           .append( DELIMITER );
-
-            // If the value is null, the value to copy should be '\N', which
-            // postgresql recognizes as null in the copy statement.
-            if (value == null)
-            {
-                this.copyScript.append("\\N");
-            }
-            else
-            {
-                this.copyScript.append(value);
-            }
-
-            this.copyScript.append( DELIMITER )
-                           .append(this.getMeasurementUnitID())
-                           .append( DELIMITER )
-                           .append( this.getSourceID() )
-                           .append( NEWLINE );
-        }
-
-        // Increase the count of queued values
-        this.copyCount++;
-
-        // If the number of queued values reaches the maximum number, save
-        // everything
-        if ( this.copyCount >= SystemSettings.getMaximumCopies())
-        {
-            this.saveValues();
+            IngestedValues.observed( value )
+                          .measuredIn( this.getMeasurementUnitID() )
+                          .at(NetCDF.getTime(this.getSource()))
+                          .inSource( this.getSourceID() )
+                          .forVariableAndFeatureID( spatioVariableID )
+                          .every( Duration.ZERO)
+                          .add();
         }
     }
 
@@ -577,47 +472,6 @@ class VectorNWMValueSaver extends WRESRunnable
         return this.getMissingValue() == null ||
                !String.valueOf(measurement)
                       .equalsIgnoreCase(String.valueOf(this.getMissingValue()));
-    }
-
-    /**
-     * Sends all queued data to the database
-     * @throws IOException Thrown if communication with the source file failed
-     * @throws SQLException Thrown if communication with the database failed
-     */
-    private void saveValues() throws IOException, SQLException
-    {
-        // Only attempt to save if there is at least one value to copy
-        if (this.copyCount > 0)
-        {
-            // Create the copy runnable with the data to copy and the header
-            // appropriate to either the Observation table or the
-            // forecast value table
-            CopyExecutor copier = new CopyExecutor( this.getCopyHeader(),
-                                                    this.copyScript.toString(),
-                                                    DELIMITER );
-
-            // TODO: If we want to only update the ProgressMonitor for files, remove these handlers
-            // Tell the copier to increase the number representing the
-            // total number of operations to perform when the thread starts.
-            // It is debatable whether we should increase the number in this
-            // thread or in the thread operating on the actual database copy
-            // statement
-            copier.setOnRun( ProgressMonitor.onThreadStartHandler() );
-
-            // Tell the copier to inform the ProgressMonitor that work has been
-            // completed when the thread has finished
-            copier.setOnComplete( ProgressMonitor.onThreadCompleteHandler() );
-
-            // Send the copier to the Database handler's task queue and add
-            // the resulting future to our list of copy operations
-            Database.ingest( copier );
-
-            // Reset the values to copy
-            this.copyScript = new StringBuilder(  );
-
-            // Reset the count of values to copy
-            this.copyCount = 0;
-        }
     }
 
     /**
@@ -1014,9 +868,6 @@ class VectorNWMValueSaver extends WRESRunnable
                 this.addValuesToSave(positionIndex, value);
             }
         }
-
-        // Add any left over values to the queue to be saved
-        saveValues();
     }
 
     @Override
