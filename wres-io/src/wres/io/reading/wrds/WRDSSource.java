@@ -43,9 +43,9 @@ public class WRDSSource extends BasicSource
             dataPath = Paths.get(this.getFilename()).toUri().toURL();
         }
 
-        ForecastReader reader = new ForecastReader( this.getProjectConfig(),
-                                                    this.getDataSourceConfig(),
-                                                    dataPath);
+        ReadValueManager reader = new ReadValueManager( this.getProjectConfig(),
+                                                        this.getDataSourceConfig(),
+                                                        dataPath);
 
         return reader.save();
     }

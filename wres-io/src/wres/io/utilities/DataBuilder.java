@@ -134,7 +134,9 @@ public class DataBuilder
      */
     public DataProvider build()
     {
-        return DataSetProvider.from(this.columnNames, this.rows);
+        DataProvider provider = DataSetProvider.from(this.columnNames, this.rows);
+        this.reset();
+        return provider;
     }
 
     public DataBuilder reset()

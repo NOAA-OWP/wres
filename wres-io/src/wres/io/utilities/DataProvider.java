@@ -28,6 +28,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import wres.io.concurrency.CopyExecutor;
 import wres.io.concurrency.WRESRunnable;
+import wres.system.ProgressMonitor;
 import wres.util.functional.ExceptionalConsumer;
 import wres.util.functional.ExceptionalFunction;
 
@@ -496,23 +497,14 @@ public interface DataProvider extends AutoCloseable
      */
     default String toString(final String columnName)
     {
-        String representation = null;
         Object value = this.getObject( columnName );
 
         if (value == null)
         {
             return null;
         }
-        else if (value instanceof Number)
-        {
-            representation = value.toString();
-        }
-        else
-        {
-            representation = "'" + value.toString() + "'";
-        }
 
-        return representation;
+        return value.toString();
     }
 
     /**
@@ -522,9 +514,22 @@ public interface DataProvider extends AutoCloseable
      * @param table Fully qualified table name to copy data into
      * @return A future representing data being asynchronously copied into the database
      */
-    default Future<?> copy( final String table)
+    default Future<?> copy(final String table)
     {
-        final String delimiter = ",";
+        return this.copy( table, false );
+    }
+
+    /**
+     * Copies the data within the provider from the current row through the last row into the the schema and table
+     * <br>
+     * The position of the provider will be at the end of the dataset after function completion
+     * @param table Fully qualified table name to copy data into
+     * @param showProgress Whether or not to show progress during the copy operation
+     * @return A future representing data being asynchronously copied into the database
+     */
+    default Future<?> copy( final String table, final boolean showProgress)
+    {
+        final String delimiter = "|";
         final String NULL = "\\N";
         StringJoiner lineJoiner = new StringJoiner( System.lineSeparator() );
         StringJoiner valueJoiner;
@@ -554,6 +559,13 @@ public interface DataProvider extends AutoCloseable
                 lineJoiner.toString(),
                 delimiter
         );
+
+        if (showProgress)
+        {
+            copier.setOnRun( ProgressMonitor.onThreadStartHandler() );
+            copier.setOnComplete( ProgressMonitor.onThreadCompleteHandler() );
+        }
+
         return Database.execute( copier );
     }
 

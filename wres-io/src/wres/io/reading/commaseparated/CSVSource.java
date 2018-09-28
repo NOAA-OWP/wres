@@ -23,7 +23,7 @@ import wres.io.data.details.TimeSeries;
 import wres.io.reading.BasicSource;
 import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
-import wres.io.reading.TimeSeriesValues;
+import wres.io.reading.IngestedValues;
 import wres.io.utilities.DataProvider;
 import wres.util.Strings;
 import wres.util.TimeHelper;
@@ -122,7 +122,7 @@ public class CSVSource extends BasicSource
                 }
 
 
-                TimeSeriesValues.add( currentTimeSeries.getTimeSeriesID(), lead, value );
+                IngestedValues.addTimeSeriesValue( currentTimeSeries.getTimeSeriesID(), lead, value );
             }
             catch (SQLException e)
             {

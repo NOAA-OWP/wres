@@ -25,17 +25,17 @@ import wres.io.data.details.SourceDetails;
 import wres.io.data.details.TimeSeries;
 import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
-import wres.io.reading.TimeSeriesValues;
+import wres.io.reading.IngestedValues;
 import wres.util.Strings;
 import wres.util.TimeHelper;
 
-public class ForecastReader
+public class ReadValueManager
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger( ForecastReader.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( ReadValueManager.class );
 
-    ForecastReader( final ProjectConfig projectConfig,
-                    final DataSourceConfig datasourceConfig,
-                    final URL location )
+    ReadValueManager( final ProjectConfig projectConfig,
+                      final DataSourceConfig datasourceConfig,
+                      final URL location )
     {
         this.location = location;
         this.projectConfig = projectConfig;
@@ -130,7 +130,7 @@ public class ForecastReader
         {
             Duration between = Duration.between( startTime, dataPoint.getTime());
             int lead = ( int ) TimeHelper.durationToLongUnits( between, TimeHelper.LEAD_RESOLUTION );
-            TimeSeriesValues.add( timeSeries.getTimeSeriesID(), lead, dataPoint.getValue() );
+            IngestedValues.addTimeSeriesValue( timeSeries.getTimeSeriesID(), lead, dataPoint.getValue() );
         }
     }
 

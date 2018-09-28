@@ -81,6 +81,7 @@ public class USGSReader extends BasicSource
             saver.setOnComplete( ProgressMonitor.onThreadCompleteHandler() );
             saver.setOnUpdate( this::seriesEvaluated );
 
+            LOGGER.trace("Added task to ingest NWIS data");
             Future<IngestResult> usgsIngest = Executor.submit( saver );
 
             ingests.add( usgsIngest );
@@ -93,6 +94,7 @@ public class USGSReader extends BasicSource
             {
                 IngestResult result = ingest.get();
 
+                LOGGER.trace("Completed an NWIS ingest.");
                 if (result != null)
                 {
                     results.add(result);
@@ -108,6 +110,8 @@ public class USGSReader extends BasicSource
                 throw new IngestException( "USGS data could not be ingested.", e );
             }
         }
+
+        LOGGER.trace("Done looping through all USGS regions");
 
         // Throw an error if nothing was saved
         if (results.size() == 0)

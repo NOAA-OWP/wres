@@ -142,7 +142,7 @@ public final class Database {
 	 * Adds a task to the ingest queue
 	 * @param task The ingest task to add to the queue
 	 */
-	private static void storeIngestTask(Future task)
+	public static void storeIngestTask(Future task)
 	{
 		Database.storedIngestTasks.add(task);
 	}
@@ -1536,7 +1536,7 @@ public final class Database {
                             LOGGER.warn( "Failed to close statement {}.", statement, se );
                         }
                     }
-                    LOGGER.error( "The following SQL query failed:{}{}", NEWLINE, query, error );
+                    LOGGER.error( "The following SQL query failed:{}{}", NEWLINE, script, error );
                     throw error;
                 }
             }
