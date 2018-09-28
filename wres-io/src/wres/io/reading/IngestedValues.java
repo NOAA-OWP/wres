@@ -243,9 +243,9 @@ public final class IngestedValues
                     this.value,
                     this.measurementUnitId,
                     this.sourceId,
-                    (int)TimeHelper.durationToLeadUnits( this.scalePeriod ),
+                    (int)TimeHelper.durationToLongUnits( this.scalePeriod, TimeHelper.LEAD_RESOLUTION ),
                     this.scaleFunction,
-                    (int)TimeHelper.durationToLeadUnits( this.timeStep )
+                    (int)TimeHelper.durationToLongUnits( this.timeStep, TimeHelper.LEAD_RESOLUTION )
             );
         }
 
