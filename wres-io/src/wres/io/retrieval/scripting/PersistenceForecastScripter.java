@@ -1,19 +1,20 @@
 package wres.io.retrieval.scripting;
 
+import java.io.IOException;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 import java.util.StringJoiner;
 
+import wres.config.ProjectConfigs;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
 import wres.io.data.details.ProjectDetails;
+import wres.util.CalculationException;
 
 class PersistenceForecastScripter extends Scripter
 {
-    private static final String NEWLINE = System.lineSeparator();
-
     // To call super, we need an integer
     // I doubt that "progress" or "sequenceStep" have any meaning for the
     // persistence forecast (other than following contract of Scripter), so
@@ -45,7 +46,7 @@ class PersistenceForecastScripter extends Scripter
     }
 
     @Override
-    String formScript()
+    String formScript() throws IOException
     {
         Objects.requireNonNull( this.instantsToGetValuesFor,
                                 "Persistence Forecast depends on a basis time." );
@@ -61,30 +62,40 @@ class PersistenceForecastScripter extends Scripter
             }
         }
 
-        // Get ALL the values from zerodate to latest basis time for this chunk.
-        // The caller then will have to do some work on the results to find the
-        // correct data for each basis time. The reason for this is rescaling.
-        return "SELECT ( EXTRACT( epoch from o.observation_time ) * 1000 )::bigint AS valid_time,"
-               + NEWLINE
-               + "    o.observed_value AS observed_value," + NEWLINE
-               + "    o.measurementunit_id" + NEWLINE
-               + "FROM wres.observation AS o" + NEWLINE
-               + "INNER JOIN wres.projectsource AS ps" + NEWLINE
-               + "    ON ps.source_id = o.source_id" + NEWLINE
-               + "WHERE o.observed_value IS NOT NULL" + NEWLINE
-               + "    AND ps.project_id = "
-               + getProjectDetails().getId() + NEWLINE
-               + "    AND ps.member = 'baseline'" + NEWLINE
-               + "    AND o." + this.variableFeatureClause + NEWLINE
-               + "    AND o.observation_time >= '"
-               + this.getZeroDate() + "'" + NEWLINE
+        this.addLine("-- ", this.getDescription());
+        this.addLine("SELECT O.observation_time AS valid_time,");
 
-               // The next line is intentionally inclusive to pick t0's value.
-               // InputRetriever counts on this.
-               + "    AND o.observation_time <= '"
-               + latestBasisTime.toString() + "'" + NEWLINE
-               + "ORDER BY o.observation_time DESC";
-                // Removing limit because we *can't* limit it due to scaling
+        try
+        {
+            this.addTab().addLine(
+                    "O.observation_time - INTERVAL '",
+                    this.getProjectDetails().getScale().getPeriod(),
+                    " ",
+                    this.getProjectDetails().getScale().getUnit(),
+                    "' AS earliest_time,");
+        }
+        catch ( CalculationException e )
+        {
+            throw new IOException( "The scale of the persistence data could not be calculated." );
+        }
+
+        this.addTab().addLine("O.observed_value AS observed_value,");
+        this.addTab().addLine("O.measurementunit_id");
+        this.addLine("FROM wres.Observation O");
+        this.addLine("INNER JOIN (");
+        this.addTab().addLine("SELECT PS.source_id");
+        this.addTab().addLine("FROM wres.ProjectSource PS");
+        this.addTab().addLine("WHERE PS.project_id = ", this.getProjectDetails().getId());
+        this.addTab(  2  ).addLine("AND PS.member = 'baseline'");
+        this.addTab().addLine(") AS PS");
+        this.addTab(  2  ).addLine("ON PS.source_id = O.source_id");
+        this.addLine("WHERE O.", this.variableFeatureClause);
+        this.addTab().addLine("AND O.observation_time >= '", this.getZeroDate(), "'");
+        this.addTab().addLine("AND O.observation_time <= '", latestBasisTime, "'");
+        this.addTab().addLine("AND O.observed_value IS NOT NULL");
+        this.addLine("ORDER BY O.observation_time DESC;");
+
+        return this.toString();
     }
 
     @Override
@@ -104,8 +115,7 @@ class PersistenceForecastScripter extends Scripter
         return this.zeroDate;
     }
 
-    @Override
-    public String toString()
+    public String getDescription()
     {
         StringJoiner result = new StringJoiner( ",", "PersistenceForecastScripter: ", "" );
         result.add( this.instantsToGetValuesFor.toString() );

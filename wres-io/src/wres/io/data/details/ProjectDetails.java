@@ -2046,6 +2046,7 @@ public class ProjectDetails
         part.addTab(    4    ).addLine("AND PS.member = 'right'");
         part.addTab(    4    ).addLine("AND TSS.timeseries_id = TS.timeseries_id");
         part.addTab(  2  ).addLine(")");
+        part.addTab(  2  ).addLine("GROUP BY TS.initialization_date, TSV.lead");
         part.addTab(  2  ).addLine("ORDER BY valid_time");
 
 
