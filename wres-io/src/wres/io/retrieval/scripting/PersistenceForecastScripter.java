@@ -93,6 +93,7 @@ class PersistenceForecastScripter extends Scripter
         this.addTab().addLine("AND O.observation_time >= '", this.getZeroDate(), "'");
         this.addTab().addLine("AND O.observation_time <= '", latestBasisTime, "'");
         this.addTab().addLine("AND O.observed_value IS NOT NULL");
+        this.addLine("GROUP BY O.observation_time, O.observed_value, O.measurementunit_id");
         this.addLine("ORDER BY O.observation_time DESC;");
 
         return this.toString();

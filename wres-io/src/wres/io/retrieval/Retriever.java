@@ -547,6 +547,16 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
             return getLeadDuration().toHours();
         }
 
+        @Override
+        public String toString()
+        {
+            String string = "Basis: " + this.getBasisTime() + ", ";
+            string += "Valid: " + this.getValidTime() + ", ";
+            string += "Lead: " + this.getLeadDuration() + ", ";
+            string += "Values: " + this.getValues();
+            return string;
+        }
+
         // TODO: Add function to get lead to print
         // Leads are saved and passed in TimeHelper.LEAD_RESOLUTION (minutes, currently)
         // We want to display in hours. What if a set doesn't have leads that are expressed in hours?
