@@ -87,7 +87,6 @@ public final class IngestedValues
 
             if (IngestedValues.OBSERVATIONS.getRowCount() > SystemSettings.getMaximumCopies())
             {
-                LOGGER.info("Added observation values");
                 Future copy = IngestedValues.OBSERVATIONS.build().copy( "wres.Observation", true );
                 Database.storeIngestTask(copy);
             }

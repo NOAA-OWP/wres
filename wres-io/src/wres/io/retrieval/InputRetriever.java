@@ -7,6 +7,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -832,23 +833,21 @@ class InputRetriever extends Retriever //WRESCallable<MetricInput<?>>
         Connection connection = null;
 
         // First, store the raw results
-        List<RawPersistenceRow> rawRawPersistenceValues = new ArrayList<>();
+        Collection<RawPersistenceRow> rawRawPersistenceValues;
 
         try
         {
             connection = Database.getConnection();
             try (DataProvider data = Database.getResults( connection, loadScript ))
             {
-                while ( data.next() )
-                {
-                    long basisEpochTimeMillis = data.getLong( VALID_DATETIME_COLUMN );
-                    double value = data.getDouble( RESULT_VALUE_COLUMN );
-                    int measurementUnitId = data.getInt( MEASUREMENT_ID_COLUMN );
-                    RawPersistenceRow row = new RawPersistenceRow( basisEpochTimeMillis,
-                                                                   value,
-                                                                   measurementUnitId );
-                    rawRawPersistenceValues.add( row );
-                }
+                rawRawPersistenceValues = data.interpret(
+                        row -> new RawPersistenceRow(
+                                row.getInstant(VALID_DATETIME_COLUMN),
+                                row.getInstant( "earliest_time" ),
+                                row.getDouble( RESULT_VALUE_COLUMN ),
+                                row.getInt( MEASUREMENT_ID_COLUMN )
+                        )
+                );
             }
         }
         catch ( SQLException e )
@@ -863,81 +862,57 @@ class InputRetriever extends Retriever //WRESCallable<MetricInput<?>>
             }
         }
 
-        List<RawPersistenceRow> rawPersistenceValues =
-                Collections.unmodifiableList( rawRawPersistenceValues );
+        List<RawPersistenceRow> rawPersistenceValues = new ArrayList<>(rawRawPersistenceValues);
+        rawPersistenceValues = Collections.unmodifiableList( rawPersistenceValues );
 
         // Second, analyze the results for the majority count-per-agg-window
         Duration aggDuration = ProjectConfigs.getDurationFromTimeScale( this.getCommonScale() );
 
-        long aggDurationMillis = aggDuration.toMillis();
+        LOGGER.trace( "Duration of aggregation: {}", aggDuration );
 
-        LOGGER.trace( "Duration of aggregation: {}, in millis: {}",
-                      aggDuration, aggDurationMillis );
+        // Group Persistence rows by their earliest times
+        Map<Instant, List<RawPersistenceRow>> rowsByEarliestTime =
+                wres.util.Collections.group( rawPersistenceValues, value -> value.earliestTime );
 
         Map<Integer,Integer> countOfWindowsByCountInside = new HashMap<>();
         int totalWindowsCounted = 0;
-        Adder adder = new Adder();
 
-        // 2a slide a window over the data and count the number of values
-        for ( int i = 0; i < rawPersistenceValues.size(); i++ )
+        // Find the frequency of the number of values per earliest time
+        for (Entry<Instant, List<RawPersistenceRow>> rows : rowsByEarliestTime.entrySet())
         {
-            RawPersistenceRow currentEvent = rawPersistenceValues.get( i );
-            long earliestTime = currentEvent.getMillisSinceEpoch() - aggDurationMillis;
-            Integer count = 0;
-
-            LOGGER.trace( "i: {}, count: {}, earliestTime: {}",
-                          i, count, earliestTime );
-
-            for ( int j = i + 1; j < rawPersistenceValues.size(); j++ )
-            {
-                RawPersistenceRow possibleEndEvent = rawPersistenceValues.get( j );
-
-                if ( possibleEndEvent.getMillisSinceEpoch() >= earliestTime )
-                {
-                    count++;
-                }
-                else
-                {
-                    // We are counting the number of windows with each count:
-                    countOfWindowsByCountInside.merge( count, 1, adder );
-                    totalWindowsCounted++;
-                    break;
-                }
-            }
+            countOfWindowsByCountInside.merge( rows.getValue().size(), 1, (x, y) -> x + y );
+            totalWindowsCounted += rows.getValue().size();
         }
+
+        int simpleMajority = Math.floorDiv( totalWindowsCounted, 2 );
 
         LOGGER.trace( "Instances of count, by count: {}",
                       countOfWindowsByCountInside );
 
-        int countOfValuesInAGoodWindow = Integer.MIN_VALUE;
 
+        int mostCommonFrequency = Integer.MIN_VALUE;
+
+        // Find the frequency of values that occupy at least half of the data set
         for ( Entry<Integer,Integer> entry : countOfWindowsByCountInside.entrySet() )
         {
-            // Simple majority decision ("more than half")
-            if ( entry.getValue() > totalWindowsCounted / 2 )
+            if (entry.getValue() >= simpleMajority)
             {
-                countOfValuesInAGoodWindow = entry.getKey();
+                mostCommonFrequency = entry.getKey();
                 LOGGER.trace( "Found {} is the usual count of values in a window",
-                              countOfValuesInAGoodWindow );
+                              mostCommonFrequency );
                 break;
             }
         }
 
-        if ( countOfValuesInAGoodWindow <= 0 )
+        if ( mostCommonFrequency <= 0 )
         {
             throw new IllegalStateException( "The regularity of data in baseline could not be guessed." );
         }
 
-        boolean shouldAggregate = true;
-
-        if ( countOfValuesInAGoodWindow == 1 )
-        {
-            // There should be no need for aggregation when 1 value per window.
-            shouldAggregate = false;
-        }
+        // Only aggregate when there's more than one value per window
+        boolean shouldAggregate = mostCommonFrequency > 1;
 
         // Third, for each basis time, find the latest valid agg-window and agg
-
         for ( ForecastedPair primaryPair : primaryPairs )
         {
             ForecastedPair persistencePair;
@@ -946,8 +921,8 @@ class InputRetriever extends Retriever //WRESCallable<MetricInput<?>>
                 persistencePair =
                         getAggregatedPairFromRawPairs( primaryPair,
                                                        rawPersistenceValues,
-                                                       aggDurationMillis,
-                                                       countOfValuesInAGoodWindow,
+                                                       aggDuration,
+                                                       mostCommonFrequency,
                                                        this.getCommonScale() );
             }
             else
@@ -984,7 +959,7 @@ class InputRetriever extends Retriever //WRESCallable<MetricInput<?>>
     {
         for ( RawPersistenceRow rawPair : rawPersistenceValues )
         {
-            if ( rawPair.getMillisSinceEpoch() < primaryPair.getBasisTime().toEpochMilli() )
+            if ( rawPair.getValidTime().isBefore(primaryPair.getBasisTime()) )
             {
                 // Convert units!
                 Double convertedValue =
@@ -1014,43 +989,42 @@ class InputRetriever extends Retriever //WRESCallable<MetricInput<?>>
      * Create an aggregated persistence forecast pair from a set of raw pairs
      * @param primaryPair the forecasted pair to create a persistence pair from
      * @param rawPersistenceValues pairs of ( valid time in millis since epoch, value )
-     * @param aggDurationMillis the width of an aggregation window in millis
+     * @param aggDuration the width of an aggregation window
      * @param countOfValuesInAGoodWindow the count of values in a valid window
      * @return a persistence forecasted pair
      */
 
     private ForecastedPair getAggregatedPairFromRawPairs( ForecastedPair primaryPair,
                                                           List<RawPersistenceRow> rawPersistenceValues,
-                                                          long aggDurationMillis,
+                                                          Duration aggDuration,
                                                           int countOfValuesInAGoodWindow,
                                                           TimeScaleConfig scaleConfig )
     {
         List<Double> valuesToAggregate = new ArrayList<>( 0 );
-
-        long basisTimeEpochMillis = primaryPair.getBasisTime().toEpochMilli();
 
         for ( int i = 0; i < rawPersistenceValues.size(); i++ )
         {
             RawPersistenceRow currentEvent = rawPersistenceValues.get( i );
 
             // We found a possible starting value. Calculate window.
-            long earliestTime = currentEvent.getMillisSinceEpoch() - aggDurationMillis;
+            Instant earliestTime = currentEvent.getValidTime().minus( aggDuration );
+
             valuesToAggregate = new ArrayList<>( countOfValuesInAGoodWindow );
 
-            if ( basisTimeEpochMillis > currentEvent.getMillisSinceEpoch() )
+            if ( primaryPair.getBasisTime().isAfter( currentEvent.getValidTime() ) )
             {
                 for ( int j = i; j < rawPersistenceValues.size(); j++ )
                 {
                     RawPersistenceRow possibleEndEvent = rawPersistenceValues.get( j );
-                    long epochMillisOfEvent = possibleEndEvent.getMillisSinceEpoch();
                     Double valueOfEvent = possibleEndEvent.getValue();
 
-                    if ( epochMillisOfEvent > earliestTime )
+                    if ( possibleEndEvent.getValidTime().isAfter( earliestTime ) ||
+                         possibleEndEvent.getValidTime().equals( earliestTime ) )
                     {
                         LOGGER.trace( "Adding value {} from time {} because {} >= {}",
                                       valueOfEvent,
-                                      epochMillisOfEvent,
-                                      epochMillisOfEvent,
+                                      possibleEndEvent,
+                                      possibleEndEvent,
                                       earliestTime );
 
                         // Convert units if needed!
@@ -1341,14 +1315,14 @@ class InputRetriever extends Retriever //WRESCallable<MetricInput<?>>
         return InputRetriever.LOGGER;
     }
 
-    private static class Adder implements BinaryOperator<Integer>
+    /*private static class Adder implements BinaryOperator<Integer>
     {
         @Override
         public Integer apply( Integer first, Integer second )
         {
             return first + second;
         }
-    }
+    }*/
 
 
     /**
@@ -1357,22 +1331,27 @@ class InputRetriever extends Retriever //WRESCallable<MetricInput<?>>
 
     private static class RawPersistenceRow
     {
-        private final long millisSinceEpoch;
+        private final Instant validTime;
+        private final Instant earliestTime;
         private final double value;
         private final int measurementUnitId;
 
-        RawPersistenceRow( long millisSinceEpoch,
-                                  double value,
-                                  int measurementUnitId )
+        RawPersistenceRow(
+                Instant validTime,
+                Instant earliestTime,
+                double value,
+                int measurementUnitId
+        )
         {
-            this.millisSinceEpoch = millisSinceEpoch;
+            this.validTime = validTime;
+            this.earliestTime = earliestTime;
             this.value = value;
             this.measurementUnitId = measurementUnitId;
         }
 
-        long getMillisSinceEpoch()
+        Instant getValidTime()
         {
-            return this.millisSinceEpoch;
+            return this.validTime;
         }
 
         public double getValue()

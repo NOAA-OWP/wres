@@ -123,7 +123,7 @@ public abstract class Scripter extends ScriptBuilder
                                                    DataSourceConfig dataSourceConfig,
                                                    Feature feature,
                                                    List<Instant> basisTimes )
-            throws SQLException
+            throws SQLException, IOException
     {
         Objects.requireNonNull( projectDetails );
         Objects.requireNonNull( dataSourceConfig );
