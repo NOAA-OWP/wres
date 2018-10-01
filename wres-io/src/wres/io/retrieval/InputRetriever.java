@@ -832,7 +832,7 @@ class InputRetriever extends Retriever //WRESCallable<MetricInput<?>>
 
         Connection connection = null;
 
-        // First, store the raw results
+        // First, store the raw results in descending order based on valid time
         Collection<RawPersistenceRow> rawRawPersistenceValues;
 
         try
@@ -862,29 +862,82 @@ class InputRetriever extends Retriever //WRESCallable<MetricInput<?>>
             }
         }
 
+        // We don't want to be able to modify the number of elements within the collection,
+        // but still want random access.  Still in descending order.
         List<RawPersistenceRow> rawPersistenceValues = new ArrayList<>(rawRawPersistenceValues);
         rawPersistenceValues = Collections.unmodifiableList( rawPersistenceValues );
 
-        // Second, analyze the results for the majority count-per-agg-window
+        // Create a mapping of the number of records per observation "window" mapped to the number
+        // of times that that number of records was encountered over the course of the retrieved
+        // data set
+        Map<Integer,Integer> countOfWindowsByCountInside = new HashMap<>();
+        int totalWindowsCounted = 0;
+
+        // 2a slide a window over the data and count the number of values
+        for ( int i = 0; i < rawPersistenceValues.size(); i++ )
+        {
+            RawPersistenceRow currentEvent = rawPersistenceValues.get( i );
+            Integer count = 0;
+
+            LOGGER.trace( "i: {}, count: {}, earliestTime: {}",
+                          i, count, currentEvent.earliestTime );
+
+            for ( int j = i + 1; j < rawPersistenceValues.size(); j++ )
+            {
+                RawPersistenceRow possibleEndEvent = rawPersistenceValues.get( j );
+
+                // We want to count every observation whose observation time is on or after
+                // the first encountered earliest time, starting at the next row.
+                //
+                // For the results:
+                //   Valid Time            |  Earliest Time          |  value  |
+                //  "2551-03-19 00:00:00"  |  "2551-03-18 21:00:00"  |  619    |
+                //  "2551-03-18 23:00:00"  |  "2551-03-18 20:00:00"  |  617    |
+                //  "2551-03-18 22:00:00"  |  "2551-03-18 19:00:00"  |  613    |
+                //  "2551-03-18 21:00:00"  |  "2551-03-18 18:00:00"  |  607    |
+                //  "2551-03-18 20:00:00"  |  "2551-03-18 17:00:00"  |  601    |
+                //  "2551-03-18 19:00:00"  |  "2551-03-18 16:00:00"  |  599    |
+                //  "2551-03-18 18:00:00"  |  "2551-03-18 15:00:00"  |  593    |
+                //  "2551-03-18 17:00:00"  |  "2551-03-18 14:00:00"  |  587    |
+                //
+                // Our first value's earliest time is: "2551-03-18 21:00:00"
+                //  Now we're going to lump together everything whose valid time is at
+                //  or greater than that earliest time following that first row.
+                // That gives us:
+                //
+                //  "2551-03-18 23:00:00"  |  "2551-03-18 20:00:00"  |  617    |
+                //  "2551-03-18 22:00:00"  |  "2551-03-18 19:00:00"  |  613    |
+                //  "2551-03-18 21:00:00"  |  "2551-03-18 18:00:00"  |  607    |
+                //
+                // After that row, we end up below that earliest time so we record the
+                // count and move on
+
+                if ( possibleEndEvent.getValidTime().isAfter( currentEvent.earliestTime ) ||
+                     possibleEndEvent.getValidTime().equals( currentEvent.earliestTime ) )
+                {
+                    count++;
+                }
+                else
+                {
+                    // Now that we've determined that we have n records between our earliest
+                    // time and our last record at or after that earliest time, we increment
+                    // the number of times we've reached n records by 1 within the
+                    // countOfWindowsByCountInside map.
+                    countOfWindowsByCountInside.merge( count, 1, (x, y) -> x + y );
+
+                    // We increment the totalWindowsCounted variable; this will help us
+                    // determine what counts occured the most often
+                    totalWindowsCounted++;
+                    break;
+                }
+            }
+        }
+
         Duration aggDuration = ProjectConfigs.getDurationFromTimeScale( this.getCommonScale() );
 
         LOGGER.trace( "Duration of aggregation: {}", aggDuration );
 
-        // Group Persistence rows by their earliest times
-        Map<Instant, List<RawPersistenceRow>> rowsByEarliestTime =
-                wres.util.Collections.group( rawPersistenceValues, value -> value.earliestTime );
-
-        Map<Integer,Integer> countOfWindowsByCountInside = new HashMap<>();
-        int totalWindowsCounted = 0;
-
-        // Find the frequency of the number of values per earliest time
-        for (Entry<Instant, List<RawPersistenceRow>> rows : rowsByEarliestTime.entrySet())
-        {
-            countOfWindowsByCountInside.merge( rows.getValue().size(), 1, (x, y) -> x + y );
-            totalWindowsCounted += rows.getValue().size();
-        }
-
-        int simpleMajority = Math.floorDiv( totalWindowsCounted, 2 );
+        double simpleMajority = totalWindowsCounted / 2;
 
         LOGGER.trace( "Instances of count, by count: {}",
                       countOfWindowsByCountInside );
@@ -904,6 +957,7 @@ class InputRetriever extends Retriever //WRESCallable<MetricInput<?>>
             }
         }
 
+        // If no common frequency could be found, we cannot continue
         if ( mostCommonFrequency <= 0 )
         {
             throw new IllegalStateException( "The regularity of data in baseline could not be guessed." );
@@ -912,7 +966,7 @@ class InputRetriever extends Retriever //WRESCallable<MetricInput<?>>
         // Only aggregate when there's more than one value per window
         boolean shouldAggregate = mostCommonFrequency > 1;
 
-        // Third, for each basis time, find the latest valid agg-window and agg
+        // Third, for each primary pair, we want to find the latest set of aggregated observations
         for ( ForecastedPair primaryPair : primaryPairs )
         {
             ForecastedPair persistencePair;
@@ -921,7 +975,6 @@ class InputRetriever extends Retriever //WRESCallable<MetricInput<?>>
                 persistencePair =
                         getAggregatedPairFromRawPairs( primaryPair,
                                                        rawPersistenceValues,
-                                                       aggDuration,
                                                        mostCommonFrequency,
                                                        this.getCommonScale() );
             }
@@ -988,15 +1041,13 @@ class InputRetriever extends Retriever //WRESCallable<MetricInput<?>>
     /**
      * Create an aggregated persistence forecast pair from a set of raw pairs
      * @param primaryPair the forecasted pair to create a persistence pair from
-     * @param rawPersistenceValues pairs of ( valid time in millis since epoch, value )
-     * @param aggDuration the width of an aggregation window
+     * @param rawPersistenceValues grouping of observed values in descending order based on observation time
      * @param countOfValuesInAGoodWindow the count of values in a valid window
      * @return a persistence forecasted pair
      */
 
     private ForecastedPair getAggregatedPairFromRawPairs( ForecastedPair primaryPair,
                                                           List<RawPersistenceRow> rawPersistenceValues,
-                                                          Duration aggDuration,
                                                           int countOfValuesInAGoodWindow,
                                                           TimeScaleConfig scaleConfig )
     {
@@ -1004,28 +1055,28 @@ class InputRetriever extends Retriever //WRESCallable<MetricInput<?>>
 
         for ( int i = 0; i < rawPersistenceValues.size(); i++ )
         {
+            // Grab an anchor value for our group of values to aggregate
             RawPersistenceRow currentEvent = rawPersistenceValues.get( i );
-
-            // We found a possible starting value. Calculate window.
-            Instant earliestTime = currentEvent.getValidTime().minus( aggDuration );
 
             valuesToAggregate = new ArrayList<>( countOfValuesInAGoodWindow );
 
+            // We want to gather values to aggregate if our anchor happens to occur after the primary pair
             if ( primaryPair.getBasisTime().isAfter( currentEvent.getValidTime() ) )
             {
+                // We want to gather all values between our anchor and the last value that happens
+                // to come after the earliest time for the anchor
                 for ( int j = i; j < rawPersistenceValues.size(); j++ )
                 {
                     RawPersistenceRow possibleEndEvent = rawPersistenceValues.get( j );
                     Double valueOfEvent = possibleEndEvent.getValue();
 
-                    if ( possibleEndEvent.getValidTime().isAfter( earliestTime ) ||
-                         possibleEndEvent.getValidTime().equals( earliestTime ) )
+                    if ( possibleEndEvent.getValidTime().isAfter( currentEvent.earliestTime ) )
                     {
-                        LOGGER.trace( "Adding value {} from time {} because {} >= {}",
+                        LOGGER.trace( "Adding value {} from time {} because {} > {}",
                                       valueOfEvent,
                                       possibleEndEvent,
                                       possibleEndEvent,
-                                      earliestTime );
+                                      currentEvent.earliestTime );
 
                         // Convert units if needed!
                         Double convertedValue =
@@ -1040,6 +1091,8 @@ class InputRetriever extends Retriever //WRESCallable<MetricInput<?>>
                     }
                 }
 
+                // If our number of values to gather has been reached, we can go ahead and exit the loop;
+                // we've gathered the ideal window
                 if ( valuesToAggregate.size() == countOfValuesInAGoodWindow )
                 {
                     LOGGER.trace( "Found a good window with values {}",
@@ -1315,15 +1368,6 @@ class InputRetriever extends Retriever //WRESCallable<MetricInput<?>>
         return InputRetriever.LOGGER;
     }
 
-    /*private static class Adder implements BinaryOperator<Integer>
-    {
-        @Override
-        public Integer apply( Integer first, Integer second )
-        {
-            return first + second;
-        }
-    }*/
-
 
     /**
      * Encapsulates a single persistence result row.
@@ -1362,6 +1406,16 @@ class InputRetriever extends Retriever //WRESCallable<MetricInput<?>>
         int getMeasurementUnitId()
         {
             return this.measurementUnitId;
+        }
+
+        @Override
+        public String toString()
+        {
+            String string = "Basis Time: " + this.earliestTime + ", ";
+            string += "Valid Time: " + this.validTime + ", ";
+            string += "Value: " + this.value;
+
+            return string;
         }
     }
 }
