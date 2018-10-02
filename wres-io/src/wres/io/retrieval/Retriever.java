@@ -542,11 +542,6 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
             return Duration.of( millis, ChronoUnit.MILLIS );
         }
 
-        long getLeadHours()
-        {
-            return getLeadDuration().toHours();
-        }
-
         @Override
         public String toString()
         {
