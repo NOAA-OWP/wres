@@ -102,7 +102,7 @@ class ProcessorHelper
         thresholds.putAll( ConfigHelper.readExternalThresholdsFromProjectConfig( projectConfig ) );
 
         // The project code - ideally project hash
-        String projectIdentifier = String.valueOf( projectDetails.getKey() );
+        String projectIdentifier = String.valueOf( projectDetails.getInputCode() );
 
         ResolvedProject resolvedProject = ResolvedProject.of( projectConfigPlus,
                                                               decomposedFeatures,

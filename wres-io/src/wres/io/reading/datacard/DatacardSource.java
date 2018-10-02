@@ -8,6 +8,7 @@ import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.sql.SQLException;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -34,6 +35,7 @@ import wres.io.data.details.SourceDetails;
 import wres.io.reading.BasicSource;
 import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
+import wres.io.reading.IngestedValues;
 import wres.io.reading.InvalidInputDataException;
 import wres.io.utilities.DataBuilder;
 import wres.io.utilities.Database;
@@ -149,8 +151,6 @@ public class DatacardSource extends BasicSource
             //First non-comment, header line.
             if (line != null)
             {
-                boolean useSpecifiedId = false;
-
                 setTimeInterval(line.substring(29, 31));
                 if ( line.length() > 45 )
                 {
@@ -178,22 +178,10 @@ public class DatacardSource extends BasicSource
                         throw new ProjectConfigException( getDataSourceConfig(),
                                                           message );
                     }
-                    else
-                    {
-                        // There was an empty "timeseries id" in the file, use
-                        // the config.
-                        useSpecifiedId = true;
-                    }
-                }
-                else
-                {
-                    // There was no "timeseries id" in the file, use the config.
-                    useSpecifiedId = true;
                 }
 
                 if ( getSpecifiedLocationID() != null
-                     && !getSpecifiedLocationID().isEmpty()
-                     && useSpecifiedId )
+                     && !getSpecifiedLocationID().isEmpty() )
                 {
                     setCurrentLocationId( getSpecifiedLocationID() );
                 }
@@ -323,8 +311,15 @@ public class DatacardSource extends BasicSource
 
                         utcDateTime = utcDateTime.plusHours( timeInterval );
 
-                        addObservedEvent( utcDateTime, this.getValueToSave( actualValue ) );
-                        entryCount++;
+                        IngestedValues.observed(actualValue)
+                                      .at( utcDateTime )
+                                      .measuredIn( this.getMeasurementID() )
+                                      .scaledBy( TimeScale.TimeScaleFunction.UNKNOWN )
+                                      .scaleOf( Duration.of(1, TimeHelper.LEAD_RESOLUTION) )
+                                      .every( Duration.of(this.timeInterval, ChronoUnit.HOURS))
+                                      .inSource( this.getSourceID() )
+                                      .forVariableAndFeatureID( this.getVariableFeatureID() )
+                                      .add();
 					}
 					else
 					{
@@ -333,14 +328,11 @@ public class DatacardSource extends BasicSource
 					}
 				} //end of loop for one value line 
 			} //end of loop for all value lines
-
-            this.observations.build().copy( "wres.Observation", true );
 		}
-		finally
-		{
-            LOGGER.debug( "{} values of datacardsource saved to database.",
-                         entryCount );
-		}
+        catch ( SQLException e )
+        {
+            throw new IngestException( "Metadata used to save Datacard data could not be loaded.", e );
+        }
 
 		LOGGER.debug("Finished Parsing '{}'", this.getFilename());
 
@@ -349,36 +341,6 @@ public class DatacardSource extends BasicSource
                                                 this.getHash(),
                                                 this.getFilename(),
                                                 false );
-	}
-
-	/**
-	 * Adds measurement information to the current insert script in the form of observation data
-     * @param observedTime The datetime when the measurement was taken (in UTC)
-	 * @param observedValue The value retrieved from the XML
-     * @throws IOException when reading the file or computing the hash
-     * @throws IngestException when getting information from db fails
-     */
-    private void addObservedEvent( LocalDateTime observedTime,
-                                   String observedValue )
-            throws IOException
-	{
-	    this.observations.addRow();
-        try
-        {
-            this.observations.set("variablefeature_id", this.getVariableFeatureID());
-            this.observations.set("observation_time", observedTime);
-            this.observations.set("observed_value", observedValue);
-            this.observations.set("measurementunit_id", this.getMeasurementID());
-            this.observations.set("source_id", this.getSourceID());
-            this.observations.set("scale_period", 1);
-            this.observations.set( "scale_function", TimeScale.TimeScaleFunction.UNKNOWN.toString());
-            this.observations.set( "time_step", TimeHelper.unitsToLeadUnits( ChronoUnit.HOURS.toString(), this.timeInterval));
-        }
-        catch ( SQLException e )
-        {
-            throw new IngestException( "Failed to get information from database.",
-                                       e );
-        }
 	}
 
     private Integer getMeasurementID() throws SQLException
@@ -568,12 +530,6 @@ public class DatacardSource extends BasicSource
     {
         this.currentLocationId = currentLocationId;
     }
-
-    private static final String INSERT_OBSERVATION_HEADER = "wres.Observation(VariableFeature_id, " +
-                                                            "observation_time, " +
-                                                            "observed_value, " +
-                                                            "measurementunit_id, " +
-                                                            "source_id)";
 
 	private static final String DATE_TIME_FORMAT = "^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}";
 
