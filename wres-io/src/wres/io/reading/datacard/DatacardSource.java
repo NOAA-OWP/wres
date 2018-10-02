@@ -292,11 +292,16 @@ public class DatacardSource extends BasicSource
 							value = line.substring(startIdx, endIdx);
 						}
 
-                        double actualValue;
+                        Double actualValue;
 
                         try
                         {
                             actualValue = Double.parseDouble( value );
+
+                            if (this.valueIsIgnorable( actualValue ) || this.valueIsMissing( actualValue ))
+                            {
+                                actualValue = null;
+                            }
                         }
                         catch ( NumberFormatException nfe )
                         {
