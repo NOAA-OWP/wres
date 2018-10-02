@@ -1983,8 +1983,16 @@ public class ProjectDetails
         }
         else if (this.usesGriddedData( this.getRight() ))
         {
+            Integer offset = this.getMinimumLead();
+
+            // If the default minimum was hit, return 0 instead.
+            if (offset == Integer.MIN_VALUE)
+            {
+                return 0;
+            }
+
             // We subtract by one since this returns an exclusive value where minimum lead is inclusive
-            return ObjectUtils.firstNonNull( this.getMinimumLead(), 1) - 1;
+            return offset - 1;
         }
         else if (this.leadOffsets.isEmpty())
         {
