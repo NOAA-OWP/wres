@@ -141,15 +141,15 @@ public class Projects
         this.add(element);
     }
 
-    private void add( ProjectDetails element )
+    private void add( ProjectDetails project )
     {
         synchronized (Projects.KEY_LOCK)
         {
-            this.getKeyIndex().put(element.getKey(), element.getId());
+            this.getKeyIndex().put(project.getInputCode(), project.getId());
 
-            if (this.details != null && !this.details.containsKey(element.getId()))
+            if (this.details != null && !this.details.containsKey(project.getId()))
             {
-                this.getDetails().put(element.getId(), element);
+                this.getDetails().put(project.getId(), project);
             }
         }
     }

@@ -62,12 +62,24 @@ import wres.util.Strings;
 import wres.util.TimeHelper;
 
 /**
- * Wrapper object linking a project configuration and the data needed to form
- * database statements. TODO: refactor this class and make it immutable, ideally, but otherwise thread-safe. It's also
+ * Encapsulates operations involved with interpreting unpredictable data within the
+ * project configuration, storing the results of expensive calculations, and forming database
+ * statements based solely on the configured specifications
+ *
+ * TODO: refactor this class and make it immutable, ideally, but otherwise thread-safe. It's also
  * far too large (JBr). See #49511.
  */
 public class ProjectDetails
 {
+    /**
+     * Controls the type of pair retrieval for the project
+     *
+     * ROLLING: Used when collecting values based on issuance
+     * BACK_TO_BACK: Used for simplest case pairing
+     * TIME_SERIES: Used when pairing every single time series. Each grouping of pairs in this mode
+     *              is essentially a page of the entire data set
+     * BY_TIMESERIES: Used when all pairs in a window belong exclusively to a single time series
+     */
     public enum PairingMode
     {
         ROLLING,
@@ -88,11 +100,6 @@ public class ProjectDetails
      * Lock used to protect access to the logic used to determine the rightt hand scale
      */
     private static final Object RIGHT_LEAD_LOCK = new Object();
-
-    /**
-     * Lock used to protect access to the logic used to determine the baseline scale
-     */
-    private static final Object BASELINE_LEAD_LOCK = new Object();
 
     /**
      * The member identifier for left handed data in the database
@@ -118,7 +125,9 @@ public class ProjectDetails
     private final ProjectConfig projectConfig;
 
     /**
-     *  Stores the last possible lead time for each feature. TODO: refector this class to make it thread-safe, 
+     *  Stores the last possible lead time for each feature.
+     *
+     *  TODO: refector this class to make it thread-safe,
      *  ideally immutable. Synchronizing access and setting the cache to 100 features avoids earlier problems 
      *  with reads and writes both occurring in the same code block with a check-then-act, but this is not a long-term
      *  Solution (JBr). See #49511. 
@@ -126,7 +135,7 @@ public class ProjectDetails
     private final Map<Feature, Integer> lastLeads = java.util.Collections.synchronizedMap( new LRUMap<>( 100 ) );
 
     /**
-     * Stores the lead hour offset for each feature
+     * Stores the lead unit offset for each feature. The unit is described by TimeHelper.LEAD_RESOLUTION
      *
      * <p>
      * If there is a 6 hour offset at feature x, it means that the lead times
@@ -138,11 +147,37 @@ public class ProjectDetails
 
     /**
      * Stores the earliest possible observation date for each feature
+     * <p>
+     *     Date strings are used because they are plugged right into queries.
+     * </p>
+     * <b>Used for script building</b>
      */
     private final Map<Feature, String> initialObservationDates = new LRUMap<>( 100 );
 
+    /**
+     * Stores the string dates for the first forecast for each feature
+     *
+     * <p>
+     *     Initial dates are stored because they are somewhat expensive to determine and
+     *     the parts of the codebase that need them are linked via the ProjectDetails
+     * </p>
+     * <p>
+     *     Date strings are used because they are plugged right into queries.
+     * </p>
+     * <b>Used for script building</b>
+     * <b>Used as part of the TIME_SERIES pairing method</b>
+     */
     private final Map<Feature, String> initialForecastDates = new LRUMap<>( 100 );
 
+    /**
+     * Stores the number of lead units between each time series for a feature
+     *
+     * <p>
+     *     Lags are stored because they are somewhat expensive to determine and
+     *     the parts of the codebase that need them are linked via the ProjectDetails
+     * </p>
+     * <b>Used as part of the TIME_SERIES pairing method</b>
+     */
     private final Map<Feature, Integer> timeSeriesLag = new LRUMap<>( 100 );
 
     /**
@@ -177,7 +212,11 @@ public class ProjectDetails
      */
     private Integer baselineVariableID = null;
 
+    /**
+     * Guards access to numberOfSeriesToRetrieve
+     */
     private static final Object SERIES_AMOUNT_LOCK = new Object();
+
     /**
      * Details the number of time series to pull at once when gathering by time series
      */
@@ -190,7 +229,7 @@ public class ProjectDetails
     private boolean performedInsert;
 
     /**
-     * The overall hash for the total specifications for the project
+     * The overall hash for the data sources used in the project
      */
     private final int inputCode;
 
@@ -357,11 +396,6 @@ public class ProjectDetails
         Objects.requireNonNull( inputCode );
         this.projectConfig = projectConfig;
         this.inputCode = inputCode;
-    }
-
-    public Integer getKey()
-    {
-        return this.getInputCode();
     }
 
     public ProjectConfig getProjectConfig()
@@ -2100,6 +2134,7 @@ public class ProjectDetails
         try
         {
             connection = Database.getConnection();
+
             try (DataProvider data = Database.getResults( connection, script ))
             {
                 LOGGER.trace("Variable feature metadata loaded...");
@@ -2324,7 +2359,7 @@ public class ProjectDetails
      * Returns unique identifier for this project's config+data
      * @return The unique ID
      */
-    private Integer getInputCode()
+    public Integer getInputCode()
     {
         return this.inputCode;
     }
