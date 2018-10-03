@@ -7,9 +7,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 import java.util.Optional;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartEngineException;
 import ohd.hseb.charter.ChartTools;
@@ -40,12 +37,6 @@ abstract class PNGWriter
 {
 
     /**
-     * Logger.
-     */
-
-    static final Logger LOGGER = LoggerFactory.getLogger( PNGWriter.class );
-    
-    /**
      * Resolution for writing duration outputs.
      */
 
@@ -56,7 +47,12 @@ abstract class PNGWriter
      */
 
     private final ProjectConfigPlus projectConfigPlus;
-    
+
+    /**
+     * The output directory to use to write
+     */
+    private final Path outputDirectory;
+
     /**
      * Returns the duration units for writing lead durations.
      * 
@@ -78,6 +74,11 @@ abstract class PNGWriter
     {
         return this.projectConfigPlus;
     }    
+
+    Path getOutputDirectory()
+    {
+        return this.outputDirectory;
+    }
 
     /**
      * Writes an output chart to a specified path.
@@ -270,16 +271,20 @@ abstract class PNGWriter
      * 
      * @param projectConfigPlus the project configuration
      * @param durationUnits the time units for lead durations
+     * @param outputDirectory the directory into which to write
      * @throws NullPointerException if either input is null
      */
 
-    PNGWriter( ProjectConfigPlus projectConfigPlus, ChronoUnit durationUnits )
+    PNGWriter( ProjectConfigPlus projectConfigPlus,
+               ChronoUnit durationUnits,
+               Path outputDirectory )
     {
         Objects.requireNonNull( projectConfigPlus, "Specify a non-null project declaration." );
-        
         Objects.requireNonNull( durationUnits, "Specify non-null duration units." );
-        
+        Objects.requireNonNull( outputDirectory, "Specify non-null output directory." );
+
         this.projectConfigPlus = projectConfigPlus;
         this.durationUnits = durationUnits;
+        this.outputDirectory = outputDirectory;
     }
 }

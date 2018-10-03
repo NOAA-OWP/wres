@@ -504,10 +504,13 @@ public final class Operations {
 
     public static InputGenerator getInputs( ProjectDetails projectDetails,
                                             Feature feature,
-                                            SharedWriterManager sharedWriterManager )
+                                            SharedWriterManager sharedWriterManager,
+                                            Path outputDirectoryForPairs )
     {
-        return new InputGenerator( feature, projectDetails,
-                                   sharedWriterManager );
+        return new InputGenerator( feature,
+                                   projectDetails,
+                                   sharedWriterManager,
+                                   outputDirectoryForPairs );
     }
 
     /**

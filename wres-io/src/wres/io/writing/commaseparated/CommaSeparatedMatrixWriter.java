@@ -48,14 +48,17 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
      * 
      * @param projectConfig the project configuration
      * @param durationUnits the time units for durations
+     * @param outputDirectory the directory into which to write
      * @return a writer
      * @throws NullPointerException if either input is null 
      * @throws ProjectConfigException if the project configuration is not valid for writing
      */
 
-    public static CommaSeparatedMatrixWriter of( final ProjectConfig projectConfig, final ChronoUnit durationUnits )
+    public static CommaSeparatedMatrixWriter of( ProjectConfig projectConfig,
+                                                 ChronoUnit durationUnits,
+                                                 Path outputDirectory )
     {
-        return new CommaSeparatedMatrixWriter( projectConfig, durationUnits );
+        return new CommaSeparatedMatrixWriter( projectConfig, durationUnits, outputDirectory );
     }
 
     /**
@@ -75,7 +78,7 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
         // In principle, each destination could have a different formatter, so 
         // the output must be generated separately for each destination
         List<DestinationConfig> numericalDestinations =
-                ConfigHelper.getNumericalDestinations( this.getProjectConfig() );
+                ConfigHelper.getNumericalDestinations( super.getProjectConfig() );
         for ( DestinationConfig destinationConfig : numericalDestinations )
         {
 
@@ -86,11 +89,12 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
             try
             {
                 Set<Path> innerPathsWrittenTo =
-                        CommaSeparatedMatrixWriter.writeOneMatrixOutputType( this.getProjectConfig(),
+                        CommaSeparatedMatrixWriter.writeOneMatrixOutputType( super.getOutputDirectory(),
+                                                                             super.getProjectConfig(),
                                                                              destinationConfig,
                                                                              output,
                                                                              formatter,
-                                                                             this.getDurationUnits() );
+                                                                             super.getDurationUnits() );
                 this.pathsWrittenTo.addAll( innerPathsWrittenTo );
             }
             catch ( IOException e )
@@ -115,6 +119,7 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
     /**
      * Writes all output for one matrix type.
      *
+     * @param outputDirectory the directory into which to write
      * @param projectConfig the project configuration
      * @param destinationConfig the destination configuration    
      * @param output the matrix output
@@ -123,7 +128,8 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
      * @throws IOException if the output cannot be written
      */
 
-    private static Set<Path> writeOneMatrixOutputType( ProjectConfig projectConfig,
+    private static Set<Path> writeOneMatrixOutputType( Path outputDirectory,
+                                                       ProjectConfig projectConfig,
                                                        DestinationConfig destinationConfig,
                                                        ListOfStatistics<MatrixStatistic> output,
                                                        Format formatter,
@@ -152,7 +158,8 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
             if ( diagramType == OutputTypeSelection.DEFAULT || diagramType == OutputTypeSelection.LEAD_THRESHOLD )
             {
                 innerPathsWrittenTo =
-                        CommaSeparatedMatrixWriter.writeOneMatrixOutputTypePerTimeWindow( destinationConfig,
+                        CommaSeparatedMatrixWriter.writeOneMatrixOutputTypePerTimeWindow( outputDirectory,
+                                                                                          destinationConfig,
                                                                                           Slicer.filter( output, m ),
                                                                                           headerRow,
                                                                                           formatter,
@@ -162,7 +169,8 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
             else if ( diagramType == OutputTypeSelection.THRESHOLD_LEAD )
             {
                 innerPathsWrittenTo =
-                        CommaSeparatedMatrixWriter.writeOneMatrixOutputTypePerThreshold( destinationConfig,
+                        CommaSeparatedMatrixWriter.writeOneMatrixOutputTypePerThreshold( outputDirectory,
+                                                                                         destinationConfig,
                                                                                          Slicer.filter( output, m ),
                                                                                          headerRow,
                                                                                          formatter,
@@ -177,7 +185,8 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
 
     /**
      * Writes one matrix output for all thresholds at each time window in the input.
-     * 
+     *
+     * @param outputDirectory the directory into which to write
      * @param destinationConfig the destination configuration    
      * @param output the matrix output
      * @param headerRow the header row
@@ -187,7 +196,8 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
      * @return set of paths actually written to
      */
 
-    private static Set<Path> writeOneMatrixOutputTypePerTimeWindow( DestinationConfig destinationConfig,
+    private static Set<Path> writeOneMatrixOutputTypePerTimeWindow( Path outputDirectory,
+                                                                    DestinationConfig destinationConfig,
                                                                     ListOfStatistics<MatrixStatistic> output,
                                                                     StringJoiner headerRow,
                                                                     Format formatter,
@@ -214,7 +224,8 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
                                            CommaSeparatedMatrixWriter.getMatrixOutputHeader( next, headerRow ) ) );
 
             // Write the output
-            Path outputPath = ConfigHelper.getOutputPathToWrite( destinationConfig,
+            Path outputPath = ConfigHelper.getOutputPathToWrite( outputDirectory,
+                                                                 destinationConfig,
                                                                  meta,
                                                                  timeWindow,
                                                                  durationUnits );
@@ -232,7 +243,8 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
 
     /**
      * Writes one matrix output for all time windows at each threshold in the input.
-     * 
+     *
+     * @param outputDirectory the directory into which to write
      * @param destinationConfig the destination configuration    
      * @param output the matrix output
      * @param headerRow the header row
@@ -242,7 +254,8 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
      * @return set of paths actually written to
      */
 
-    private static Set<Path> writeOneMatrixOutputTypePerThreshold( DestinationConfig destinationConfig,
+    private static Set<Path> writeOneMatrixOutputTypePerThreshold( Path outputDirectory,
+                                                                   DestinationConfig destinationConfig,
                                                                    ListOfStatistics<MatrixStatistic> output,
                                                                    StringJoiner headerRow,
                                                                    Format formatter,
@@ -269,7 +282,10 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
                                            CommaSeparatedMatrixWriter.getMatrixOutputHeader( next, headerRow ) ) );
 
             // Write the output
-            Path outputPath = ConfigHelper.getOutputPathToWrite( destinationConfig, meta, threshold );
+            Path outputPath = ConfigHelper.getOutputPathToWrite( outputDirectory,
+                                                                 destinationConfig,
+                                                                 meta,
+                                                                 threshold );
 
             CommaSeparatedWriter.writeTabularOutputToFile( rows, outputPath );
 
@@ -403,13 +419,16 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
      * 
      * @param projectConfig the project configuration
      * @param durationUnits the time units for durations
+     * @param outputDirectory the directory into which to write
      * @throws NullPointerException if either input is null 
      * @throws ProjectConfigException if the project configuration is not valid for writing 
      */
 
-    private CommaSeparatedMatrixWriter( ProjectConfig projectConfig, ChronoUnit durationUnits )
+    private CommaSeparatedMatrixWriter( ProjectConfig projectConfig,
+                                        ChronoUnit durationUnits,
+                                        Path outputDirectory )
     {
-        super( projectConfig, durationUnits );
+        super( projectConfig, durationUnits, outputDirectory );
     }
 
 }

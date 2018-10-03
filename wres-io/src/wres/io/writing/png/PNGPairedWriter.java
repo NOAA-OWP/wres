@@ -44,14 +44,17 @@ public class PNGPairedWriter extends PNGWriter
      * 
      * @param projectConfigPlus the project configuration
      * @param durationUnits the time units for durations
+     * @param outputDirectory the directory into which to write
      * @return a writer
      * @throws NullPointerException if either input is null
      * @throws ProjectConfigException if the project configuration is not valid for writing
      */
 
-    public static PNGPairedWriter of( final ProjectConfigPlus projectConfigPlus, final ChronoUnit durationUnits )
+    public static PNGPairedWriter of( ProjectConfigPlus projectConfigPlus,
+                                      ChronoUnit durationUnits,
+                                      Path outputDirectory )
     {
-        return new PNGPairedWriter( projectConfigPlus, durationUnits );
+        return new PNGPairedWriter( projectConfigPlus, durationUnits, outputDirectory );
     }
 
     /**
@@ -69,7 +72,7 @@ public class PNGPairedWriter extends PNGWriter
 
         // Write output
         List<DestinationConfig> destinations =
-                ConfigHelper.getGraphicalDestinations( this.getProjectConfigPlus().getProjectConfig() );
+                ConfigHelper.getGraphicalDestinations( super.getProjectConfigPlus().getProjectConfig() );
 
         // Iterate through destinations
         for ( DestinationConfig destinationConfig : destinations )
@@ -80,10 +83,11 @@ public class PNGPairedWriter extends PNGWriter
             for ( MetricConstants next : metrics )
             {
                 Set<Path> innerPathsWrittenTo =
-                        PNGPairedWriter.writePairedOutputByInstantDurationCharts( this.getProjectConfigPlus(),
+                        PNGPairedWriter.writePairedOutputByInstantDurationCharts( super.getOutputDirectory(),
+                                                                                  super.getProjectConfigPlus(),
                                                                                   destinationConfig,
                                                                                   Slicer.filter( output, next ),
-                                                                                  this.getDurationUnits() );
+                                                                                  super.getDurationUnits() );
                 this.pathsWrittenTo.addAll( innerPathsWrittenTo );
             }
 
@@ -106,6 +110,7 @@ public class PNGPairedWriter extends PNGWriter
      * Writes a set of charts associated with {@link PairedStatistic} for a single metric and time window,
      * stored in a {@link ListOfStatistics}.
      *
+     * @param outputDirectory the directory into which to write
      * @param projectConfigPlus the project configuration
      * @param destinationConfig the destination configuration for the written output
      * @param output the metric results
@@ -114,7 +119,8 @@ public class PNGPairedWriter extends PNGWriter
      * @return the paths actually written to
      */
 
-    private static Set<Path> writePairedOutputByInstantDurationCharts( ProjectConfigPlus projectConfigPlus,
+    private static Set<Path> writePairedOutputByInstantDurationCharts( Path outputDirectory,
+                                                                       ProjectConfigPlus projectConfigPlus,
                                                                        DestinationConfig destinationConfig,
                                                                        ListOfStatistics<PairedStatistic<Instant, Duration>> output,
                                                                        ChronoUnit durationUnits )
@@ -136,7 +142,9 @@ public class PNGPairedWriter extends PNGWriter
                                                                               durationUnits );
 
             // Build the output file name
-            Path outputImage = ConfigHelper.getOutputPathToWrite( destinationConfig, meta );
+            Path outputImage = ConfigHelper.getOutputPathToWrite( outputDirectory,
+                                                                  destinationConfig,
+                                                                  meta );
 
             PNGWriter.writeChart( outputImage, engine, destinationConfig );
             // Only if writeChart succeeded do we assume that it was written
@@ -155,13 +163,16 @@ public class PNGPairedWriter extends PNGWriter
      * 
      * @param projectConfigPlus the project configuration
      * @param durationUnits the time units for durations
+     * @param outputDirectory the directory into which to write
      * @throws ProjectConfigException if the project configuration is not valid for writing
      * @throws NullPointerException if either input is null
      */
 
-    private PNGPairedWriter( ProjectConfigPlus projectConfigPlus, ChronoUnit durationUnits )
+    private PNGPairedWriter( ProjectConfigPlus projectConfigPlus,
+                             ChronoUnit durationUnits,
+                             Path outputDirectory )
     {
-        super( projectConfigPlus, durationUnits );
+        super( projectConfigPlus, durationUnits, outputDirectory );
     }
 
 }

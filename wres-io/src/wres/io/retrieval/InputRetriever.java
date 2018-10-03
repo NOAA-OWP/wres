@@ -1,6 +1,7 @@
 package wres.io.retrieval;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Duration;
@@ -15,7 +16,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.TreeMap;
-import java.util.function.BinaryOperator;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -74,9 +74,13 @@ class InputRetriever extends Retriever //WRESCallable<MetricInput<?>>
 
     InputRetriever ( final ProjectDetails projectDetails,
                      final CacheRetriever getLeftValues,
-                     SharedWriterManager sharedWriterManager )
+                     SharedWriterManager sharedWriterManager,
+                     Path outputDirectoryForPairs )
     {
-        super( projectDetails, getLeftValues, sharedWriterManager );
+        super( projectDetails,
+               getLeftValues,
+               sharedWriterManager,
+               outputDirectoryForPairs );
     }
 
     void setIssueDatesPool( int issueDatesPool )
@@ -85,7 +89,7 @@ class InputRetriever extends Retriever //WRESCallable<MetricInput<?>>
     }
 
     @Override
-    public SampleData<?> execute() throws SQLException, IOException
+    public SampleData<?> execute() throws SQLException
     {
         if ( this.getProjectDetails().usesGriddedData( this.getProjectDetails().getRight() ))
         {
@@ -152,8 +156,7 @@ class InputRetriever extends Retriever //WRESCallable<MetricInput<?>>
      * Creates a MetricInput object based on the previously retrieved pairs and
      * generated metadata.
      * @return A MetricInput object used to provide a point for evaluation
-     * @throws IOException
-     * @throws SQLException
+     * @throws IOException when buildMetadata fails or no data is found
      */
     @Override
     protected SampleData<?> createInput() throws IOException
@@ -985,7 +988,7 @@ class InputRetriever extends Retriever //WRESCallable<MetricInput<?>>
             }
 
             this.writePair( sharedWriterManager,
-                            persistencePair.getValidTime(),
+                            super.getOutputDirectoryForPairs(),
                             persistencePair,
                             dataSourceConfig );
             pairs.add( persistencePair );
@@ -1328,13 +1331,14 @@ class InputRetriever extends Retriever //WRESCallable<MetricInput<?>>
 
     /**
      * Creates a task to write pair data to a file
-     * @param date The date of when the pair exists
+     * @param sharedWriterManager sink for pairs, writes the pairs
+     * @param outputDirectory the directory into which to write pairs
      * @param pair Pair data that will be written
      * @param dataSourceConfig The configuration that led to the creation of the pairs
      */
     @Override
     protected void writePair( SharedWriterManager sharedWriterManager,
-                              Instant date,
+                              Path outputDirectory,
                               ForecastedPair pair,
                               DataSourceConfig dataSourceConfig )
     {
@@ -1348,7 +1352,7 @@ class InputRetriever extends Retriever //WRESCallable<MetricInput<?>>
 
             PairWriter pairWriter = new PairWriter.Builder()
                     .setDestinationConfig( dest )
-                    .setDate( date )
+                    .setDate( pair.getValidTime() )
                     .setFeature( this.getFeature() )
                     .setLeadIteration( this.getLeadIteration() )
                     .setPair( pair.getValues() )
@@ -1356,6 +1360,7 @@ class InputRetriever extends Retriever //WRESCallable<MetricInput<?>>
                     .setPoolingStep( this.issueDatesPool )
                     .setProjectDetails( this.getProjectDetails() )
                     .setLead( pair.getLeadDuration() )
+                    .setOutputDirectory( outputDirectory )
                     .build();
 
             sharedWriterManager.accept( pairWriter );

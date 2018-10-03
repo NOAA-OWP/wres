@@ -48,7 +48,8 @@ public class PairWriter implements Supplier<Pair<Path,String>>
     private static final String DELIMITER = ",";
     private static final String PAIR_FILENAME = "/pairs.csv";
     private static final String BASELINE_FILENAME = "/baseline_pairs.csv";
-    
+
+    private final Path outputDirectory;
     private final DestinationConfig destinationConfig;
     private final Instant date;
     private final Feature feature;
@@ -66,6 +67,7 @@ public class PairWriter implements Supplier<Pair<Path,String>>
     
     public static class Builder
     {
+        private Path outputDirectory;
         private DestinationConfig destinationConfig;
         private Instant date;
         private Feature feature;
@@ -76,7 +78,18 @@ public class PairWriter implements Supplier<Pair<Path,String>>
         private ProjectDetails projectDetails;
         private Duration lead;
         private DecimalFormat formatter;
-        
+
+        /**
+         * Set the output directory
+         * @param outputDirectory the directory into which to write pairs
+         * @return builder
+         */
+        public Builder setOutputDirectory( Path outputDirectory )
+        {
+            this.outputDirectory = outputDirectory;
+            return this;
+        }
+
         /**
          * Set the destination configuration
          * @param destinationConfig the destination configuration
@@ -216,7 +229,8 @@ public class PairWriter implements Supplier<Pair<Path,String>>
     
     private PairWriter( Builder builder )
     {
-        // Set then validate        
+        // Set then validate
+        this.outputDirectory = builder.outputDirectory;
         this.destinationConfig = builder.destinationConfig;
         this.date = builder.date;
         this.feature = builder.feature;
@@ -250,6 +264,12 @@ public class PairWriter implements Supplier<Pair<Path,String>>
         // Report on all fails collectively
         int errorCount = 0;
         StringJoiner errorJoiner = new StringJoiner( NEWLINE );
+
+        if ( this.outputDirectory == null )
+        {
+            errorCount += 1;
+            errorJoiner.add( "Specify an output directory." );
+        }
 
         if (this.destinationConfig == null)
         {
@@ -298,8 +318,8 @@ public class PairWriter implements Supplier<Pair<Path,String>>
     @Override
     public Pair<Path,String> get()
     {
-        File directoryFromDestinationConfig =
-                ConfigHelper.getDirectoryFromDestinationConfig( this.getDestinationConfig() );
+        File directoryFromDestinationConfig = this.getOutputDirectory()
+                                                  .toFile();
 
         String actualFileDestination = directoryFromDestinationConfig.toString();
 
@@ -315,16 +335,16 @@ public class PairWriter implements Supplier<Pair<Path,String>>
                          directoryFromDestinationConfig );
         }
 
+        Path destination;
+
         if (this.isBaseline)
         {
-            actualFileDestination += BASELINE_FILENAME;
+            destination = Paths.get( actualFileDestination, BASELINE_FILENAME );
         }
         else
         {
-            actualFileDestination += PAIR_FILENAME;
+            destination = Paths.get( actualFileDestination, PAIR_FILENAME );
         }
-
-        Path destination = Paths.get( actualFileDestination );
 
         StringJoiner line = new StringJoiner( DELIMITER );
 
@@ -339,7 +359,7 @@ public class PairWriter implements Supplier<Pair<Path,String>>
         //line.add( this.date.toString() );
 
         line.add( String.valueOf( this.getLeadDuration().toHours() ) );
-                
+
         try
         {
             line.add( this.getWindow() );
@@ -357,6 +377,12 @@ public class PairWriter implements Supplier<Pair<Path,String>>
         String toWrite = line.toString();
 
         return Pair.of( destination, toWrite );
+    }
+
+
+    private Path getOutputDirectory()
+    {
+        return this.outputDirectory;
     }
 
     private DestinationConfig getDestinationConfig()

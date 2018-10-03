@@ -1,6 +1,7 @@
 package wres.io.retrieval;
 
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,10 +18,14 @@ class PoolingMetricInputIterator extends MetricInputIterator
 
     PoolingMetricInputIterator( Feature feature,
                                 ProjectDetails projectDetails,
-                                SharedWriterManager sharedWriterManager )
+                                SharedWriterManager sharedWriterManager,
+                                Path outputDirectoryForPairs )
             throws IOException
     {
-        super( feature, projectDetails, sharedWriterManager );
+        super( feature,
+               projectDetails,
+               sharedWriterManager,
+               outputDirectoryForPairs );
     }
 
     @Override

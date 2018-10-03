@@ -53,14 +53,17 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
      * 
      * @param projectConfig the project configuration
      * @param durationUnits the time units for durations
+     * @param outputDirectory the directory into which to write
      * @return a writer
      * @throws NullPointerException if the input is null 
      * @throws ProjectConfigException if the project configuration is not valid for writing
      */
 
-    public static CommaSeparatedDiagramWriter of( final ProjectConfig projectConfig, final ChronoUnit durationUnits )
+    public static CommaSeparatedDiagramWriter of( ProjectConfig projectConfig,
+                                                  ChronoUnit durationUnits,
+                                                  Path outputDirectory)
     {
-        return new CommaSeparatedDiagramWriter( projectConfig, durationUnits );
+        return new CommaSeparatedDiagramWriter( projectConfig, durationUnits, outputDirectory );
     }
 
     /**
@@ -80,7 +83,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
         // In principle, each destination could have a different formatter, so 
         // the output must be generated separately for each destination
         List<DestinationConfig> numericalDestinations =
-                ConfigHelper.getNumericalDestinations( this.getProjectConfig() );
+                ConfigHelper.getNumericalDestinations( super.getProjectConfig() );
         for ( DestinationConfig destinationConfig : numericalDestinations )
         {
 
@@ -91,11 +94,12 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
             try
             {
                 Set<Path> innerPathsWrittenTo =
-                        CommaSeparatedDiagramWriter.writeOneDiagramOutputType( this.getProjectConfig(),
+                        CommaSeparatedDiagramWriter.writeOneDiagramOutputType( super.getOutputDirectory(),
+                                                                               super.getProjectConfig(),
                                                                                destinationConfig,
                                                                                output,
                                                                                formatter,
-                                                                               this.getDurationUnits() );
+                                                                               super.getDurationUnits() );
                 this.pathsWrittenTo.addAll( innerPathsWrittenTo );
             }
             catch ( IOException e )
@@ -121,6 +125,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
     /**
      * Writes all output for one diagram type.
      *
+     * @param outputDirectory the directory into which to write
      * @param projectConfig the project configuration
      * @param destinationConfig the destination configuration    
      * @param output the diagram output
@@ -129,7 +134,8 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
      * @throws IOException if the output cannot be written
      */
 
-    private static Set<Path> writeOneDiagramOutputType( ProjectConfig projectConfig,
+    private static Set<Path> writeOneDiagramOutputType( Path outputDirectory,
+                                                        ProjectConfig projectConfig,
                                                         DestinationConfig destinationConfig,
                                                         ListOfStatistics<MultiVectorStatistic> output,
                                                         Format formatter,
@@ -157,7 +163,8 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
             if ( diagramType == OutputTypeSelection.DEFAULT || diagramType == OutputTypeSelection.LEAD_THRESHOLD )
             {
                 innerPathsWrittenTo =
-                        CommaSeparatedDiagramWriter.writeOneDiagramOutputTypePerTimeWindow( destinationConfig,
+                        CommaSeparatedDiagramWriter.writeOneDiagramOutputTypePerTimeWindow( outputDirectory,
+                                                                                            destinationConfig,
                                                                                             Slicer.filter( output, m ),
                                                                                             headerRow,
                                                                                             formatter,
@@ -167,7 +174,8 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
             else if ( diagramType == OutputTypeSelection.THRESHOLD_LEAD )
             {
                 innerPathsWrittenTo =
-                        CommaSeparatedDiagramWriter.writeOneDiagramOutputTypePerThreshold( destinationConfig,
+                        CommaSeparatedDiagramWriter.writeOneDiagramOutputTypePerThreshold( outputDirectory,
+                                                                                           destinationConfig,
                                                                                            Slicer.filter( output, m ),
                                                                                            headerRow,
                                                                                            formatter,
@@ -184,7 +192,8 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
 
     /**
      * Writes one diagram for all thresholds at each time window in the input.
-     * 
+     *
+     * @param outputDirectory the directory into which to write
      * @param destinationConfig the destination configuration    
      * @param output the diagram output
      * @param headerRow the header row
@@ -194,7 +203,8 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
      * @return set of paths actually written to
      */
 
-    private static Set<Path> writeOneDiagramOutputTypePerTimeWindow( DestinationConfig destinationConfig,
+    private static Set<Path> writeOneDiagramOutputTypePerTimeWindow( Path outputDirectory,
+                                                                     DestinationConfig destinationConfig,
                                                                      ListOfStatistics<MultiVectorStatistic> output,
                                                                      StringJoiner headerRow,
                                                                      Format formatter,
@@ -219,7 +229,8 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
             rows.add( RowCompareByLeft.of( HEADER_INDEX, getDiagramHeader( next, headerRow ) ) );
 
             // Write the output
-            Path outputPath = ConfigHelper.getOutputPathToWrite( destinationConfig,
+            Path outputPath = ConfigHelper.getOutputPathToWrite( outputDirectory,
+                                                                 destinationConfig,
                                                                  meta,
                                                                  timeWindow,
                                                                  durationUnits );
@@ -238,7 +249,8 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
 
     /**
      * Writes one diagram for all time windows at each threshold in the input.
-     * 
+     *
+     * @param outputDirectory the directory into which to write
      * @param destinationConfig the destination configuration    
      * @param output the diagram output
      * @param headerRow the header row
@@ -248,7 +260,8 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
      * @return set of paths actually written to
      */
 
-    private static Set<Path> writeOneDiagramOutputTypePerThreshold( DestinationConfig destinationConfig,
+    private static Set<Path> writeOneDiagramOutputTypePerThreshold( Path outputDirectory,
+                                                                    DestinationConfig destinationConfig,
                                                                     ListOfStatistics<MultiVectorStatistic> output,
                                                                     StringJoiner headerRow,
                                                                     Format formatter,
@@ -276,7 +289,10 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
                                            CommaSeparatedDiagramWriter.getDiagramHeader( next, headerRow ) ) );
 
             // Write the output
-            Path outputPath = ConfigHelper.getOutputPathToWrite( destinationConfig, meta, threshold );
+            Path outputPath = ConfigHelper.getOutputPathToWrite( outputDirectory,
+                                                                 destinationConfig,
+                                                                 meta,
+                                                                 threshold );
 
             CommaSeparatedWriter.writeTabularOutputToFile( rows, outputPath );
 
@@ -464,13 +480,16 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
      * 
      * @param projectConfig the project configuration
      * @param durationUnits the time units for durations
+     * @param outputDirectory the directory into which to write
      * @throws NullPointerException if either input is null 
      * @throws ProjectConfigException if the project configuration is not valid for writing 
      */
 
-    private CommaSeparatedDiagramWriter( ProjectConfig projectConfig, ChronoUnit durationUnits )
+    private CommaSeparatedDiagramWriter(ProjectConfig projectConfig,
+                                        ChronoUnit durationUnits,
+                                        Path outputDirectory )
     {
-        super( projectConfig, durationUnits );
+        super( projectConfig, durationUnits, outputDirectory );
     }
 
 }
