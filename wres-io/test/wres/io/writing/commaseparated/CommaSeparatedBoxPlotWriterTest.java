@@ -13,7 +13,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import org.junit.Test;
@@ -36,7 +35,6 @@ import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.sampledata.pairs.EnsemblePair;
 import wres.datamodel.statistics.BoxPlotStatistic;
 import wres.datamodel.statistics.ListOfStatistics;
-import wres.datamodel.statistics.StatisticAccessException;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
@@ -50,20 +48,19 @@ import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 public class CommaSeparatedBoxPlotWriterTest extends CommaSeparatedWriterTestHelper
 {
 
+    private final Path outputDirectory = Paths.get( System.getProperty( "java.io.tmpdir" ) );
+
     /**
      * Tests the writing of {@link BoxPlotStatistic} to file.
      * 
      * @throws ProjectConfigException if the project configuration is incorrect
      * @throws IOException if the output could not be written
      * @throws InterruptedException if the process is interrupted
-     * @throws ExecutionException if the execution fails
-     * @throws StatisticAccessException if the metric output could not be accessed
      */
 
     @Test
     public void writeBoxPlotOutput()
-            throws IOException, InterruptedException,
-            ExecutionException, StatisticAccessException
+            throws IOException, InterruptedException
     {
 
         // location id
@@ -129,10 +126,13 @@ public class CommaSeparatedBoxPlotWriterTest extends CommaSeparatedWriterTestHel
         ProjectConfig projectConfig = getMockedProjectConfig( feature );
 
         // Begin the actual test now that we have constructed dependencies.
-        CommaSeparatedBoxPlotWriter.of( projectConfig, ChronoUnit.SECONDS ).accept( output.getBoxPlotStatistics() );
+        CommaSeparatedBoxPlotWriter.of( projectConfig,
+                                        ChronoUnit.SECONDS,
+                                        this.outputDirectory )
+                                   .accept( output.getBoxPlotStatistics() );
 
         // Read the file, verify it has what we wanted:
-        Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ),
+        Path pathToFile = Paths.get( this.outputDirectory.toString(),
                                      "JUNP1_SQIN_HEFS_BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE_86400_SECONDS.csv" );
         List<String> result = Files.readAllLines( pathToFile );
 

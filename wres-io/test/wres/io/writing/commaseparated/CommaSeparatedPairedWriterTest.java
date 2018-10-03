@@ -13,7 +13,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -34,7 +33,6 @@ import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.PairedStatistic;
-import wres.datamodel.statistics.StatisticAccessException;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
@@ -47,6 +45,7 @@ import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 
 public class CommaSeparatedPairedWriterTest extends CommaSeparatedWriterTestHelper
 {
+    private final Path outputDirectory = Paths.get( System.getProperty( "java.io.tmpdir" ) );
 
     /**
      * Tests the writing of {@link PairedStatistic} to file, where the left pair comprises an {@link Instant} and the
@@ -55,14 +54,11 @@ public class CommaSeparatedPairedWriterTest extends CommaSeparatedWriterTestHelp
      * @throws ProjectConfigException if the project configuration is incorrect
      * @throws IOException if the output could not be written
      * @throws InterruptedException if the process is interrupted
-     * @throws ExecutionException if the execution fails
-     * @throws StatisticAccessException if the metric output could not be accessed
      */
 
     @Test
     public void writePairedOutputForTimeSeriesMetrics()
-            throws IOException, InterruptedException,
-            ExecutionException, StatisticAccessException
+            throws IOException, InterruptedException
     {
 
         // location id
@@ -123,7 +119,9 @@ public class CommaSeparatedPairedWriterTest extends CommaSeparatedWriterTestHelp
 
         // Begin the actual test now that we have constructed dependencies.
         CommaSeparatedPairedWriter<Instant, Duration> writer =
-                CommaSeparatedPairedWriter.of( projectConfig, ChronoUnit.SECONDS );
+                CommaSeparatedPairedWriter.of( projectConfig,
+                                               ChronoUnit.SECONDS,
+                                               this.outputDirectory );
         writer.accept( output.getPairedStatistics() );
 
         // read the file, verify it has what we wanted:

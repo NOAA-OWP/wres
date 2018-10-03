@@ -1,6 +1,7 @@
 package wres.io.retrieval;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
@@ -49,19 +50,36 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
     private TimeScaleConfig commonScale;
 
     private final SharedWriterManager sharedWriterManager;
+    private final Path outputDirectoryForPairs;
 
+    /**
+     * As of 2018-10-02, pair writing is performed by retrievers. If we change
+     * pair writing to occur in another way, the writer manager and output
+     * directory can be removed.
+     * @param projectDetails most project detail
+     * @param getLeftValues getter of left side data
+     * @param sharedWriterManager sink for pairs to write, tracks paths written
+     * @param outputDirectoryForPairs the output directory into which to write pairs
+     */
     Retriever( ProjectDetails projectDetails,
                CacheRetriever getLeftValues,
-               SharedWriterManager sharedWriterManager )
+               SharedWriterManager sharedWriterManager,
+               Path outputDirectoryForPairs )
     {
         this.projectDetails = projectDetails;
         this.getLeftValues = getLeftValues;
         this.sharedWriterManager = sharedWriterManager;
+        this.outputDirectoryForPairs = outputDirectoryForPairs;
     }
 
     protected SharedWriterManager getSharedWriterManager()
     {
         return this.sharedWriterManager;
+    }
+
+    protected Path getOutputDirectoryForPairs()
+    {
+        return this.outputDirectoryForPairs;
     }
 
     /**
@@ -277,7 +295,7 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
                 );
 
                 writePair( this.sharedWriterManager,
-                           condensedIngestedValue.validTime,
+                           this.outputDirectoryForPairs,
                            packagedPair,
                            dataSourceConfig );
                 pairs.add( packagedPair );
@@ -467,12 +485,13 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
 
     /**
      * Creates a task to write pair data to a file
-     * @param date The date of when the pair exists
+     * @param sharedWriterManager the pair writer tool to use to write pair
+     * @param outputDirectory the directory into which to write pair
      * @param pair Pair data that will be written
      * @param dataSourceConfig The configuration that led to the creation of the pairs
      */
     abstract void writePair( SharedWriterManager sharedWriterManager,
-                             Instant date,
+                             Path outputDirectory,
                              ForecastedPair pair,
                              DataSourceConfig dataSourceConfig );
 

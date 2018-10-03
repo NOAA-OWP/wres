@@ -13,7 +13,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import org.junit.Test;
@@ -34,7 +33,6 @@ import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.MatrixStatistic;
-import wres.datamodel.statistics.StatisticAccessException;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
@@ -47,6 +45,7 @@ import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 
 public class CommaSeparatedMatrixWriterTest extends CommaSeparatedWriterTestHelper
 {
+    private final Path outputDirectory = Paths.get( System.getProperty( "java.io.tmpdir" ) );
 
     /**
      * Tests the writing of {@link MatrixStatistic} to file.
@@ -54,14 +53,11 @@ public class CommaSeparatedMatrixWriterTest extends CommaSeparatedWriterTestHelp
      * @throws ProjectConfigException if the project configuration is incorrect
      * @throws IOException if the output could not be written
      * @throws InterruptedException if the process is interrupted
-     * @throws ExecutionException if the execution fails
-     * @throws StatisticAccessException if the metric output could not be accessed
      */
 
     @Test
     public void writeMatrixOutput()
-            throws IOException, InterruptedException,
-            ExecutionException, StatisticAccessException
+            throws IOException, InterruptedException
     {
 
         // location id
@@ -126,10 +122,13 @@ public class CommaSeparatedMatrixWriterTest extends CommaSeparatedWriterTestHelp
         ProjectConfig projectConfig = getMockedProjectConfig( feature );
 
         // Begin the actual test now that we have constructed dependencies.
-        CommaSeparatedMatrixWriter.of( projectConfig, ChronoUnit.SECONDS ).accept( output.getMatrixStatistics() );
+        CommaSeparatedMatrixWriter.of( projectConfig,
+                                       ChronoUnit.SECONDS,
+                                       this.outputDirectory )
+                                  .accept( output.getMatrixStatistics() );
 
         // read the file, verify it has what we wanted:
-        Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ),
+        Path pathToFile = Paths.get( this.outputDirectory.toString(),
                                      "BDAC1_SQIN_HEFS_CONTINGENCY_TABLE_86400_SECONDS.csv" );
         List<String> result = Files.readAllLines( pathToFile );
 

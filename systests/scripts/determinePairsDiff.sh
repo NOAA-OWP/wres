@@ -7,7 +7,7 @@
 # Author: Raymond.Chui@***REMOVED***
 # Created: November, 2017
 
-# Copied from runtest.sh; this must be kept consistent.  
+# Copied from runtest.sh; this must be kept consistent.
 echoPrefix="===================="
 
 if [ $# -gt 0 ] # if a dictory is provided
@@ -21,54 +21,56 @@ then
 	cd $test_dir
 fi
 
+# If BENCHMARK_DIR is set, use it, else use "benchmarks", e.g. for scenario9*
+benchmarkDir="${BENCHMARK_DIR:-benchmarks}"
+outputDirPrefix=wres_evaluation_output_
+
+
 # Comparing the dirListing.txt file.
-if [ -f output/dirListing.txt -a -f benchmarks/dirListing.txt ]
+if [ -f ${outputDirPrefix}*/dirListing.txt -a -f ${benchmarkDir}/dirListing.txt ]
 then
-        echo "$echoPrefix Comparing listing with benchmark expected contents: diff -q output/dirListing.txt benchmarks/dirListing.txt"
-        diff -q output/dirListing.txt benchmarks/dirListing.txt | tee /dev/stderr
+        echo "$echoPrefix Comparing listing with benchmark expected contents: diff -q ${outputDirPrefix}*/dirListing.txt ${benchmarkDir}/dirListing.txt"
+        diff -q ${outputDirPrefix}*/dirListing.txt ${benchmarkDir}/dirListing.txt | tee /dev/stderr
 fi
 
 # For all files with "pairs.csv" in their name (could include pairs.csv or baseline_pairs.csv), but 
 # without sorted in their names (in case an old sorted_pairs.csv is floating around), do...
-for pairsFileName in $(ls output | grep pairs\.csv | grep -v sorted); do
-    
-  #if [ -f benchmarks/sorted_$pairsFileName -a -f output/$pairsFileName ] # if both files exist
-  if [ -f output/$pairsFileName ] # if pairs files exist
-  then 
-      echo "$echoPrefix Sorting and comparing file $pairsFileName with benchmark..."
-      # do sorting here
-#echo "Ready to sort out the output/pairs.csv and compare the sorted output with benchmarks/sorted_pairs.csv"
-#    sort output/pairs.csv > output/sorted_pairs.csv
-# sort the output/pairs.csv file with options -t, use a comman as delimiter; -k1s,1 column1 as directionary order 1st;
-# -k4n,4 column 4 as numeric order 2nd; and -k2n,2 column 2 as numeric order 3rd
-      sort -t, -k1d,1 -k4n,4 -k2n,2 output/$pairsFileName > output/sorted_$pairsFileName
-      
-      #diff --brief output/sorted_pairs.csv benchmarks/sorted_pairs.csv 2>&1 | tee diff_sorted_pairs.txt # output the diffs with benchmarks
-      if [ -f benchmarks/sorted_$pairsFileName -a -f output/sorted_$pairsFileName ] # if both files exist
-      then
-      	diff --brief output/sorted_$pairsFileName benchmarks/sorted_$pairsFileName  | tee /dev/stderr
-      elif [ ! -f output/$pairsFileName ]
-      then
-	echo "$echoPrefix Not comparing pairs file with benchmark: File output/$pairsFileName not found."
-      elif [ ! -f benchmarks/sorted_$pairsFileName ]
-      then
-	echo "$echoPrefix Not comparing pairs File with benchmark: benchmarks/sorted_$pairsFileName not found."
-      fi
-  fi
+for directory in ${outputDirPrefix}*
+do
+    for pairsFile in $directory/pairs.csv
+    do
+        echo "$echoPrefix Sorting and comparing file $pairsFile with benchmark..."
+        pairsFileBaseName=$( basename $pairsFile )
+        # do sorting here
+        sort -t, -k1d,1 -k4n,4 -k2n,2 $pairsFile > $directory/sorted_$pairsFileBaseName
+
+        if [ -f ${benchmarkDir}/sorted_$pairsFileBaseName \
+             -a -f $directory/sorted_$pairsFileBaseName ]
+        then
+            # both files exist, do the comparison
+            diff --brief $directory/sorted_$pairsFileBaseName ${benchmarkDir}/sorted_$pairsFileBaseName  | tee /dev/stderr
+        elif [ ! -f $directory/$pairsFileBaseName ]
+        then
+	        echo "$echoPrefix Not comparing pairs file with benchmark: File $directory/$pairsFileBaseName not found."
+        elif [ ! -f ${benchmarkDir}/sorted_$pairsFileBaseName ]
+        then
+	        echo "$echoPrefix Not comparing pairs File with benchmark: ${benchmarkDir}/sorted_$pairsFileBaseName not found."
+        fi
+    done
 done
 
-# Comparing metric otuput .csv files that exist in both benchmarks and outputs.
-echo "$echoPrefix Comparing output .csv files with benchmarks if the benchmark version exists..."
-for csvFile in $(ls output | grep csv | grep -v pairs)
+# Comparing metric otuput .csv files that exist in both ${benchmarkDir} and outputs.
+echo "$echoPrefix Comparing output .csv files with ${benchmarkDir} if the benchmark version exists..."
+for csvFile in $(ls ${outputDirPrefix}* | grep csv | grep -v pairs)
 do
-	if [ -f output/$csvFile -a -f benchmarks/$csvFile ]
+	if [ -f ${outputDirPrefix}*/$csvFile -a -f ${benchmarkDir}/$csvFile ]
 	then
-		diff -q output/$csvFile benchmarks/$csvFile | tee /dev/stderr
+		diff -q ${outputDirPrefix}*/$csvFile ${benchmarkDir}/$csvFile | tee /dev/stderr
 	fi
         # Hank, 3/9: I'm commenting this out.  I don't think we need to see when a csv file is not benchmarked.
         # If its not benchmarked, then we made a conscious decisioon not to check it.
-        #elif [ ! -f benchmarks/$csvFile ]
+        #elif [ ! -f ${benchmarkDir}/$csvFile ]
 	#then
-                # echo "File benchmarks/$csvFile not found."
+                # echo "File ${benchmarkDir}/$csvFile not found."
 	#fi
 done

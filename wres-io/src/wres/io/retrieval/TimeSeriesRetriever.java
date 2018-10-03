@@ -1,6 +1,7 @@
 package wres.io.retrieval;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Duration;
@@ -52,16 +53,20 @@ public class TimeSeriesRetriever extends Retriever
             final ProjectDetails projectDetails,
             final CacheRetriever getLeftValues,
             final int timeSeriesID,
-            SharedWriterManager sharedWriterManager
+            SharedWriterManager sharedWriterManager,
+            Path outputDirectoryForPairs
     )
     {
-        super( projectDetails, getLeftValues, sharedWriterManager );
+        super( projectDetails,
+               getLeftValues,
+               sharedWriterManager,
+               outputDirectoryForPairs );
         this.timeSeriesID = timeSeriesID;
     }
 
     @Override
     void writePair( SharedWriterManager sharedWriterManager,
-                    Instant date,
+                    Path outputDirectory,
                     ForecastedPair pair,
                     DataSourceConfig dataSourceConfig )
     {
@@ -71,12 +76,13 @@ public class TimeSeriesRetriever extends Retriever
         {
             PairWriter writer = new PairWriter.Builder()
                     .setDestinationConfig( destination )
-                    .setDate( date )
+                    .setDate( pair.getValidTime() )
                     .setFeature( this.getFeature() )
                     .setLeadIteration( this.getLeadIteration() )
                     .setPair(pair.getValues())
                     .setProjectDetails( this.getProjectDetails() )
                     .setLead( pair.getLeadDuration() )
+                    .setOutputDirectory( outputDirectory )
                     .build();
 
             sharedWriterManager.accept( writer );
@@ -97,18 +103,11 @@ public class TimeSeriesRetriever extends Retriever
         TemporalAccessor referenceTime = TimeHelper.convertStringToDate( this.timeSeries.getInitializationDate() );
         Instant reference = Instant.from( referenceTime );
 
-        int earliestLead = this.getProjectDetails().getMinimumLead();
-
-        if (earliestLead == Integer.MIN_VALUE)
-        {
-            earliestLead = 0;
-        }
-
         TimeWindow window = TimeWindow.of(
                 reference,
                 reference,
                 ReferenceTime.ISSUE_TIME,
-                Duration.of( earliestLead, TimeHelper.LEAD_RESOLUTION),
+                Duration.of( this.timeSeries.getLowestLead(), TimeHelper.LEAD_RESOLUTION),
                 Duration.of(this.timeSeries.getHighestLead(), TimeHelper.LEAD_RESOLUTION)
         );
 
@@ -275,10 +274,10 @@ public class TimeSeriesRetriever extends Retriever
                     ForecastedPair pair = new ForecastedPair( lead,
                                                               condensedIngestedValue.validTime,
                                                               ensemblePair);
-                    this.writePair( this.getSharedWriterManager(),
-                                    pair.getValidTime(),
+                    this.writePair( super.getSharedWriterManager(),
+                                    super.getOutputDirectoryForPairs(),
                                     pair,
-                                    this.getProjectDetails().getRight() );
+                                    super.getProjectDetails().getRight() );
                     this.addPrimaryPair( pair );
                 }
             }
