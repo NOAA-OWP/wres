@@ -144,25 +144,6 @@ public abstract class BasicSource
         return this.projectConfig;
     }
 
-    /**
-     * Sets the specific features to ingest. Only the described features should
-     * be ingested
-     * @param specifiedFeatures A listing of features used to filter the ingest
-     *                          process
-     */
-	public void setSpecifiedFeatures(List<Feature> specifiedFeatures)
-    {
-        this.specifiedFeatures = specifiedFeatures;
-    }
-
-    /**
-     * @return The listing of configured features that may be ingested
-     */
-    protected List<Feature> getSpecifiedFeatures()
-    {
-        return this.specifiedFeatures;
-    }
-
     public void setIsRemote(final boolean isRemote)
     {
         this.isRemote = isRemote;
@@ -619,11 +600,6 @@ public abstract class BasicSource
      * might need to be ingested
      */
     private DataSourceConfig.Source sourceConfig;
-
-    /**
-     * The listing of features to ingest
-     */
-	private List<Feature> specifiedFeatures;
 
     /**
      * The ID of the variable being ingested

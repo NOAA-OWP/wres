@@ -345,7 +345,6 @@ public class SourceLoader
                                                .withProject( projectConfig )
                                                .withDataSourceConfig( dataSourceConfig )
                                                .withSourceConfig( source )
-                                               .withFeatures( specifiedFeatures )
                                                .withHash( checkIngest.getHash() )
                                                .withProgressMonitoring()
                                                .build()

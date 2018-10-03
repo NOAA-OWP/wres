@@ -31,21 +31,18 @@ public final class ZippedPIXMLIngest extends WRESCallable<List<IngestResult>>
     private final byte[] content;
     private final DataSourceConfig dataSourceConfig;
     private final DataSourceConfig.Source sourceConfig;
-    private final List<Feature> specifiedFeatures;
     private final ProjectConfig projectConfig;
 
     public ZippedPIXMLIngest ( final String fileName,
                                final byte[] content,
                                final DataSourceConfig dataSourceConfig,
                                final DataSourceConfig.Source sourceConfig,
-                               final List<Feature> specifiedFeatures,
                                final ProjectConfig projectConfig )
     {
         this.fileName = fileName;
         this.content = content;
         this.dataSourceConfig = dataSourceConfig;
         this.sourceConfig = sourceConfig;
-        this.specifiedFeatures = specifiedFeatures;
         this.projectConfig = projectConfig;
     }
 
@@ -67,7 +64,6 @@ public final class ZippedPIXMLIngest extends WRESCallable<List<IngestResult>>
                                                          input,
                                                          hash );
 
-                    reader.setSpecifiedFeatures(this.specifiedFeatures);
                     reader.setDataSourceConfig(this.dataSourceConfig);
                     reader.setSourceConfig( this.sourceConfig );
                     reader.parse();

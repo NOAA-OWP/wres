@@ -34,7 +34,6 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
         private final ProjectConfig projectConfig;
         private final DataSourceConfig dataSourceConfig;
         private final DataSourceConfig.Source sourceConfig;
-        private final List<Feature> specifiedFeatures;
         private final String hash;
         private final boolean monitorProgress;
         private final boolean isRemote;
@@ -45,7 +44,6 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
             this.projectConfig = null;
             this.dataSourceConfig = null;
             this.sourceConfig = null;
-            this.specifiedFeatures = null;
             this.hash = null;
             this.monitorProgress = false;
             this.isRemote = false;
@@ -58,7 +56,6 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
                     this.projectConfig,
                     this.dataSourceConfig,
                     this.sourceConfig,
-                    this.specifiedFeatures,
                     this.hash,
                     this.monitorProgress,
                     this.isRemote
@@ -72,7 +69,6 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
                     projectConfig,
                     this.dataSourceConfig,
                     this.sourceConfig,
-                    this.specifiedFeatures,
                     this.hash,
                     this.monitorProgress,
                     this.isRemote
@@ -86,7 +82,6 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
                     this.projectConfig,
                     dataSourceConfig,
                     this.sourceConfig,
-                    this.specifiedFeatures,
                     this.hash,
                     this.monitorProgress,
                     this.isRemote
@@ -100,21 +95,6 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
                     this.projectConfig,
                     this.dataSourceConfig,
                     sourceConfig,
-                    this.specifiedFeatures,
-                    this.hash,
-                    this.monitorProgress,
-                    this.isRemote
-            );
-        }
-
-        public IngestBuilder withFeatures(final List<Feature> specifiedFeatures)
-        {
-            return new IngestBuilder(
-                    this.filepath,
-                    this.projectConfig,
-                    this.dataSourceConfig,
-                    this.sourceConfig,
-                    specifiedFeatures,
                     this.hash,
                     this.monitorProgress,
                     this.isRemote
@@ -128,7 +108,6 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
                     this.projectConfig,
                     this.dataSourceConfig,
                     this.sourceConfig,
-                    this.specifiedFeatures,
                     hash,
                     this.monitorProgress,
                     this.isRemote
@@ -142,7 +121,6 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
                     this.projectConfig,
                     this.dataSourceConfig,
                     this.sourceConfig,
-                    this.specifiedFeatures,
                     this.hash,
                     true,
                     this.isRemote
@@ -156,7 +134,6 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
                     this.projectConfig,
                     this.dataSourceConfig,
                     this.sourceConfig,
-                    this.specifiedFeatures,
                     this.hash,
                     this.monitorProgress,
                     true
@@ -168,7 +145,6 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
                 final ProjectConfig projectConfig,
                 final DataSourceConfig dataSourceConfig,
                 final DataSourceConfig.Source sourceConfig,
-                final List<Feature> specifiedFeatures,
                 final String hash,
                 final boolean monitorProgress,
                 final boolean isRemote)
@@ -177,7 +153,6 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
             this.projectConfig = projectConfig;
             this.dataSourceConfig = dataSourceConfig;
             this.sourceConfig = sourceConfig;
-            this.specifiedFeatures = specifiedFeatures;
             this.hash = hash;
             this.monitorProgress = monitorProgress;
             this.isRemote = isRemote;
@@ -206,7 +181,6 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
                     this.projectConfig,
                     this.dataSourceConfig,
                     this.sourceConfig,
-                    this.specifiedFeatures,
                     this.hash,
                     this.isRemote
             );
@@ -225,7 +199,6 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
     private final ProjectConfig projectConfig;
     private final DataSourceConfig dataSourceConfig;
     private final DataSourceConfig.Source sourceConfig;
-    private final List<Feature> specifiedFeatures;
     private final String hash;
     private final boolean isRemote;
 
@@ -233,7 +206,6 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
                         ProjectConfig projectConfig,
                         DataSourceConfig dataSourceConfig,
                         DataSourceConfig.Source sourceConfig,
-                        List<Feature> specifiedFeatures,
                         final String hash,
                          final boolean isRemote)
     {
@@ -241,7 +213,6 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
         this.projectConfig = projectConfig;
         this.dataSourceConfig = dataSourceConfig;
         this.sourceConfig = sourceConfig;
-        this.specifiedFeatures = specifiedFeatures;
         this.hash = hash;
         this.isRemote = isRemote;
     }
@@ -254,7 +225,6 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
                                                       this.filepath );
         source.setDataSourceConfig( this.dataSourceConfig );
         source.setSourceConfig( this.sourceConfig );
-        source.setSpecifiedFeatures( this.specifiedFeatures );
         source.setHash( this.hash );
         source.setIsRemote( this.isRemote );
         return source.save();

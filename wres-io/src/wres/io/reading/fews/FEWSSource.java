@@ -46,7 +46,6 @@ public class FEWSSource extends BasicSource
                 PIXMLReader sourceReader = new PIXMLReader( this.getAbsoluteFilename(),
                                                             this.getHash() );
                 sourceReader.setDataSourceConfig( this.getDataSourceConfig() );
-                sourceReader.setSpecifiedFeatures( this.getSpecifiedFeatures() );
                 sourceReader.setSourceConfig( this.getSourceConfig() );
                 sourceReader.parse();
                 wasFoundInCache = false;
