@@ -139,7 +139,7 @@ for scenarioName in $*; do
     # If it fails then the file FAILS must exist in the scenario directory or its treated
     # as a test failure.  the file FAILS tells this script that failure is expected.
     echo "$echoPrefix Executing the project: ../wres.sh execute $configName ..."
-    ../wres.sh execute $configName
+    JAVA_OPTS='-Djava.io.tmpdir=.' ../wres.sh execute $configName
     if [[ $? != 0 ]]; then
         if [ -f FAILS ]; then
             echo "$echoPrefix Expected failure occurred.  Test passes."
