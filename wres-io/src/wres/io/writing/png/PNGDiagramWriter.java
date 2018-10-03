@@ -46,14 +46,17 @@ public class PNGDiagramWriter extends PNGWriter
      * 
      * @param projectConfigPlus the project configuration
      * @param durationUnits the time units for durations
+     * @param outputDirectory the directory into which to write
      * @return a writer
      * @throws NullPointerException if either input is null
      * @throws ProjectConfigException if the project configuration is not valid for writing
      */
 
-    public static PNGDiagramWriter of( final ProjectConfigPlus projectConfigPlus, final ChronoUnit durationUnits )
+    public static PNGDiagramWriter of( ProjectConfigPlus projectConfigPlus,
+                                       ChronoUnit durationUnits,
+                                       Path outputDirectory )
     {
-        return new PNGDiagramWriter( projectConfigPlus, durationUnits );
+        return new PNGDiagramWriter( projectConfigPlus, durationUnits, outputDirectory );
     }
 
     /**
@@ -71,7 +74,7 @@ public class PNGDiagramWriter extends PNGWriter
 
         // Write output
         List<DestinationConfig> destinations =
-                ConfigHelper.getGraphicalDestinations( this.getProjectConfigPlus().getProjectConfig() );
+                ConfigHelper.getGraphicalDestinations( super.getProjectConfigPlus().getProjectConfig() );
 
         // Iterate through destinations
         for ( DestinationConfig destinationConfig : destinations )
@@ -81,10 +84,11 @@ public class PNGDiagramWriter extends PNGWriter
             for ( MetricConstants next : metrics )
             {
                 Set<Path> innerPathsWrittenTo =
-                        PNGDiagramWriter.writeMultiVectorCharts( this.getProjectConfigPlus(),
+                        PNGDiagramWriter.writeMultiVectorCharts( super.getOutputDirectory(),
+                                                                 super.getProjectConfigPlus(),
                                                                  destinationConfig,
                                                                  Slicer.filter( output, next ),
-                                                                 this.getDurationUnits() );
+                                                                 super.getDurationUnits() );
                 this.pathsWrittenTo.addAll( innerPathsWrittenTo );
             }
         }
@@ -106,6 +110,7 @@ public class PNGDiagramWriter extends PNGWriter
      * Writes a set of charts associated with {@link MultiVectorStatistic} for a single metric and time window,
      * stored in a {@link ListOfStatistics}.
      *
+     * @param outputDirectory the directory into which to write
      * @param projectConfigPlus the project configuration
      * @param destinationConfig the destination configuration for the written output
      * @param output the metric results
@@ -114,7 +119,8 @@ public class PNGDiagramWriter extends PNGWriter
      * @return the paths actually written to
      */
 
-    private static Set<Path> writeMultiVectorCharts( ProjectConfigPlus projectConfigPlus,
+    private static Set<Path> writeMultiVectorCharts( Path outputDirectory,
+                                                     ProjectConfigPlus projectConfigPlus,
                                                      DestinationConfig destinationConfig,
                                                      ListOfStatistics<MultiVectorStatistic> output,
                                                      ChronoUnit durationUnits )
@@ -144,14 +150,16 @@ public class PNGDiagramWriter extends PNGWriter
                 Object append = nextEntry.getKey();
                 if ( append instanceof TimeWindow )
                 {
-                    outputImage = ConfigHelper.getOutputPathToWrite( destinationConfig,
+                    outputImage = ConfigHelper.getOutputPathToWrite( outputDirectory,
+                                                                     destinationConfig,
                                                                      meta,
                                                                      (TimeWindow) append,
                                                                      durationUnits );
                 }
                 else if ( append instanceof OneOrTwoThresholds )
                 {
-                    outputImage = ConfigHelper.getOutputPathToWrite( destinationConfig,
+                    outputImage = ConfigHelper.getOutputPathToWrite( outputDirectory,
+                                                                     destinationConfig,
                                                                      meta,
                                                                      (OneOrTwoThresholds) append );
                 }
@@ -175,16 +183,19 @@ public class PNGDiagramWriter extends PNGWriter
 
     /**
      * Hidden constructor.
-     * 
+     *
+     * @param outputDirectory the directory into which to write
      * @param projectConfigPlus the project configuration
      * @param durationUnits the time units for durations
      * @throws ProjectConfigException if the project configuration is not valid for writing
      * @throws NullPointerException if either input is null
      */
 
-    private PNGDiagramWriter( ProjectConfigPlus projectConfigPlus, ChronoUnit durationUnits )
+    private PNGDiagramWriter( ProjectConfigPlus projectConfigPlus,
+                              ChronoUnit durationUnits,
+                              Path outputDirectory )
     {
-        super( projectConfigPlus, durationUnits );
+        super( projectConfigPlus, durationUnits, outputDirectory );
     }
 
 }

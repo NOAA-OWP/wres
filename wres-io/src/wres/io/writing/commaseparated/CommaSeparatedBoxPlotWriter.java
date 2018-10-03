@@ -51,14 +51,17 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedWriter
      * 
      * @param projectConfig the project configuration
      * @param durationUnits the time units for durations
+     * @param outputDirectory the directory into which to write
      * @return a writer
      * @throws NullPointerException if either input is null 
      * @throws ProjectConfigException if the project configuration is not valid for writing
      */
 
-    public static CommaSeparatedBoxPlotWriter of( final ProjectConfig projectConfig, final ChronoUnit durationUnits )
+    public static CommaSeparatedBoxPlotWriter of( ProjectConfig projectConfig,
+                                                  ChronoUnit durationUnits,
+                                                  Path outputDirectory )
     {
-        return new CommaSeparatedBoxPlotWriter( projectConfig, durationUnits );
+        return new CommaSeparatedBoxPlotWriter( projectConfig, durationUnits, outputDirectory );
     }
 
     /**
@@ -80,7 +83,8 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedWriter
         // In principle, each destination could have a different formatter, so 
         // the output must be generated separately for each destination
         List<DestinationConfig> numericalDestinations =
-                ConfigHelper.getNumericalDestinations( this.getProjectConfig() );
+                ConfigHelper.getNumericalDestinations( super.getProjectConfig() );
+
         for ( DestinationConfig destinationConfig : numericalDestinations )
         {
             // Formatter
@@ -90,10 +94,11 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedWriter
             try
             {
                 Set<Path> innerPathsWrittenTo =
-                        CommaSeparatedBoxPlotWriter.writeOneBoxPlotOutputType( destinationConfig,
+                        CommaSeparatedBoxPlotWriter.writeOneBoxPlotOutputType( super.getOutputDirectory(),
+                                                                               destinationConfig,
                                                                                output,
                                                                                formatter,
-                                                                               this.getDurationUnits() );
+                                                                               super.getDurationUnits() );
                 pathsWrittenTo.addAll( innerPathsWrittenTo );
             }
             catch ( IOException e )
@@ -120,6 +125,7 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedWriter
     /**
      * Writes all output for one box plot type.
      *
+     * @param outputDirectory the directory into which to write
      * @param destinationConfig the destination configuration    
      * @param output the box plot output to iterate through
      * @param formatter optional formatter, can be null
@@ -127,7 +133,8 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedWriter
      * @throws IOException if the output cannot be written 
      */
 
-    private static Set<Path> writeOneBoxPlotOutputType( DestinationConfig destinationConfig,
+    private static Set<Path> writeOneBoxPlotOutputType( Path outputDirectory,
+                                                        DestinationConfig destinationConfig,
                                                         ListOfStatistics<BoxPlotStatistic> output,
                                                         Format formatter,
                                                         ChronoUnit durationUnits )
@@ -140,7 +147,8 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedWriter
         for ( MetricConstants next : metrics )
         {
             Set<Path> innerPathsWrittenTo =
-                    CommaSeparatedBoxPlotWriter.writeOneBoxPlotOutputTypePerTimeWindow( destinationConfig,
+                    CommaSeparatedBoxPlotWriter.writeOneBoxPlotOutputTypePerTimeWindow( outputDirectory,
+                                                                                        destinationConfig,
                                                                                         Slicer.filter( output, next ),
                                                                                         formatter,
                                                                                         durationUnits );
@@ -152,7 +160,8 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedWriter
 
     /**
      * Writes one box plot for all thresholds at each time window in the input.
-     * 
+     *
+     * @param outputDirectory the directory into which to write
      * @param destinationConfig the destination configuration    
      * @param output the box plot output
      * @param formatter optional formatter, can be null
@@ -161,7 +170,8 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedWriter
      * @return set of paths actually written to
      */
 
-    private static Set<Path> writeOneBoxPlotOutputTypePerTimeWindow( DestinationConfig destinationConfig,
+    private static Set<Path> writeOneBoxPlotOutputTypePerTimeWindow( Path outputDirectory,
+                                                                     DestinationConfig destinationConfig,
                                                                      ListOfStatistics<BoxPlotStatistic> output,
                                                                      Format formatter,
                                                                      ChronoUnit durationUnits )
@@ -188,7 +198,8 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedWriter
             rows.add( RowCompareByLeft.of( HEADER_INDEX,
                                            CommaSeparatedBoxPlotWriter.getBoxPlotHeader( next, headerRow ) ) );
             // Write the output
-            Path outputPath = ConfigHelper.getOutputPathToWrite( destinationConfig,
+            Path outputPath = ConfigHelper.getOutputPathToWrite( outputDirectory,
+                                                                 destinationConfig,
                                                                  meta,
                                                                  nextWindow,
                                                                  durationUnits );
@@ -306,13 +317,16 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedWriter
      * 
      * @param projectConfig the project configuration
      * @param durationUnits the duration units
+     * @param outputDirectory the directory into which to write
      * @throws NullPointerException if either input is null 
      * @throws ProjectConfigException if the project configuration is not valid for writing 
      */
 
-    private CommaSeparatedBoxPlotWriter( ProjectConfig projectConfig, ChronoUnit durationUnits )
+    private CommaSeparatedBoxPlotWriter( ProjectConfig projectConfig,
+                                         ChronoUnit durationUnits,
+                                         Path outputDirectory )
     {
-        super( projectConfig, durationUnits );
+        super( projectConfig, durationUnits, outputDirectory );
     }
 
 }

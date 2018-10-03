@@ -1,6 +1,7 @@
 package wres.control;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -104,10 +105,15 @@ class ProcessorHelper
         // The project code - ideally project hash
         String projectIdentifier = String.valueOf( projectDetails.getInputCode() );
 
+        // Where outputs files will be written
+        Path outputDirectory = Files.createTempDirectory( "wres_evaluation_output_"
+                                                          + projectIdentifier + "_" );
+
         ResolvedProject resolvedProject = ResolvedProject.of( projectConfigPlus,
                                                               decomposedFeatures,
                                                               projectIdentifier,
-                                                              thresholds );
+                                                              thresholds,
+                                                              outputDirectory );
 
         // Build any writers of incremental formats that are shared across features
         /* skip the general-purpose incomplete netcdf writer
@@ -127,7 +133,8 @@ class ProcessorHelper
             */
             // Use the gridded netcdf writer
             sharedWritersBuilder.setNetcdfOutputWriter( NetcdfOutputWriter.of( projectConfig,
-                                                                               ProductProcessor.DEFAULT_DURATION_UNITS ) );
+                                                                               ProductProcessor.DEFAULT_DURATION_UNITS,
+                                                                               outputDirectory ) );
         }
 
         SharedWriterManager sharedWriterManager = new SharedWriterManager();

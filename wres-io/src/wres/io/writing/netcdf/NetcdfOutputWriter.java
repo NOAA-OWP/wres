@@ -72,7 +72,8 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
     private static final Map<Object, Integer> VECTOR_COORDINATES = new ConcurrentHashMap<>();
     private static final int VALUE_SAVE_LIMIT = 500;
 
-    private DestinationConfig destinationConfig;
+    private final DestinationConfig destinationConfig;
+    private final Path outputDirectory;
     private NetcdfType netcdfConfiguration;
     
     /**
@@ -96,33 +97,43 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
      * 
      * @param projectConfig the project configuration
      * @param durationUnits the time units for durations
+     * @param outputDirectory the directory into which to write
      * @return an instance of the writer
      */
-    
-    public static NetcdfOutputWriter of( final ProjectConfig projectConfig, final ChronoUnit durationUnits )
+
+    public static NetcdfOutputWriter of( ProjectConfig projectConfig,
+                                         ChronoUnit durationUnits,
+                                         Path outputDirectory)
     {
-        return new NetcdfOutputWriter( projectConfig, durationUnits );
+        return new NetcdfOutputWriter( projectConfig,
+                                       durationUnits,
+                                       outputDirectory );
     }
-    
+
     /**
      * Returns the duration units for writing lead durations.
      * 
      * @return the duration units
      */
-    
+
     ChronoUnit getDurationUnits()
     {
         return this.durationUnits;
     }    
-    
-    private NetcdfOutputWriter( final ProjectConfig projectConfig, final ChronoUnit durationUnits )
+
+    private NetcdfOutputWriter( ProjectConfig projectConfig,
+                                ChronoUnit durationUnits,
+                                Path outputDirectory )
     {
+        Objects.requireNonNull( projectConfig, "Specify non-null project config." );
         Objects.requireNonNull( durationUnits, "Specify non-null duration units." );
-        
+        Objects.requireNonNull( outputDirectory, "Specify non-null output directory." );
+
         LOGGER.debug( "Created NetcdfOutputWriter {}", this );
         this.destinationConfig = ConfigHelper.getDestinationsOfType( projectConfig, DestinationType.NETCDF ).get( 0 );
         this.netcdfConfiguration = this.destinationConfig.getNetcdf();
         this.durationUnits = durationUnits;
+        this.outputDirectory = outputDirectory;
 
         if ( this.netcdfConfiguration == null )
         {
@@ -151,6 +162,11 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
         return this.destinationConfig;
     }
 
+    private Path getOutputDirectory()
+    {
+        return this.outputDirectory;
+    }
+
     @Override
     public void accept( ListOfStatistics<DoubleScoreStatistic> output )
     {
@@ -172,6 +188,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
                     Collection<MetricVariable> variables = MetricVariable.getAll( scores, this.getDurationUnits() );
                     NetcdfOutputWriter.WRITERS.put( window,
                                       new TimeWindowWriter( this,
+                                                            this.getOutputDirectory(),
                                                             window,
                                                             variables,
                                                             this.getDurationUnits() ) );
@@ -389,14 +406,17 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
         private final ChronoUnit durationUnits;
 
         NetcdfOutputWriter outputWriter;
+        Path outputDirectory;
 
         TimeWindowWriter( NetcdfOutputWriter outputWriter,
+                          Path outputDirectory,
                           final TimeWindow timeWindow,
                           final Collection<MetricVariable> metricVariables,
                           final ChronoUnit durationUnits )
         {
             this.durationUnits = durationUnits;
             this.outputWriter = outputWriter;
+            this.outputDirectory = outputDirectory;
             this.timeWindow = timeWindow;
             this.metricVariables = metricVariables;
             this.creationLock = new ReentrantLock();
@@ -433,6 +453,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
                 if ( !Strings.hasValue( this.outputPath ) )
                 {
                     this.outputPath = NetcdfOutputFileCreator.create( getTemplatePath( this.outputWriter ),
+                                                                      this.outputDirectory,
                                                                       this.outputWriter.getDestinationConfig(),
                                                                       this.timeWindow,
                                                                       this.ANALYSIS_TIME,

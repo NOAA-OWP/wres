@@ -151,7 +151,8 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
         // Build an InputGenerator for the next feature
         InputGenerator metricInputs = Operations.getInputs( this.projectDetails,
                                                             this.feature.getFeature(),
-                                                            this.sharedWriterManager );
+                                                            this.sharedWriterManager,
+                                                            this.resolvedProject.getOutputDirectory() );
 
         // Queue the various tasks by time window (time window is the pooling dimension for metric calculation here)
         final List<CompletableFuture<Set<Path>>> listOfFutures = new ArrayList<>(); //List of futures to test for completion

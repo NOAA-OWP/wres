@@ -1,5 +1,6 @@
 package wres.control;
 
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
@@ -36,27 +37,32 @@ class ResolvedProject
     private final String projectIdentifier;
     private final Map<FeaturePlus, ThresholdsByMetric>
             externalThresholds;
+    private final Path outputDirectory;
 
     private ResolvedProject( ProjectConfigPlus projectConfigPlus,
                              Set<FeaturePlus> decomposedFeatures,
                              String projectIdentifier,
-                             Map<FeaturePlus, ThresholdsByMetric> thresholds )
+                             Map<FeaturePlus, ThresholdsByMetric> thresholds,
+                             Path outputDirectory )
     {
         this.projectConfigPlus = projectConfigPlus;
         this.decomposedFeatures = Collections.unmodifiableSet( decomposedFeatures );
         this.projectIdentifier = projectIdentifier;
         this.externalThresholds = Collections.unmodifiableMap( thresholds );
+        this.outputDirectory = outputDirectory;
     }
 
     static ResolvedProject of( ProjectConfigPlus projectConfigPlus,
                                Set<FeaturePlus> decomposedFeatures,
                                String projectIdentifier,
-                               Map<FeaturePlus, ThresholdsByMetric> thresholds )
+                               Map<FeaturePlus, ThresholdsByMetric> thresholds,
+                               Path outputDirectory )
     {
         return new ResolvedProject( projectConfigPlus,
                                     decomposedFeatures,
                                     projectIdentifier,
-                                    thresholds );
+                                    thresholds,
+                                    outputDirectory );
 
     }
 
@@ -198,5 +204,13 @@ class ResolvedProject
         }
 
         return Collections.unmodifiableSet( result );
+    }
+
+    /**
+     * @return the shared output directory to store output files
+     */
+    Path getOutputDirectory()
+    {
+        return this.outputDirectory;
     }
 }

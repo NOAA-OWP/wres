@@ -54,15 +54,17 @@ public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends C
      * @param <T> the score component type
      * @param projectConfig the project configuration
      * @param durationUnits the time units for durations
+     * @param outputDirectory the directory into which to write
      * @return a writer
      * @throws NullPointerException if either input is null 
      * @throws ProjectConfigException if the project configuration is not valid for writing
      */
 
-    public static <T extends ScoreStatistic<?, T>> CommaSeparatedScoreWriter<T> of( final ProjectConfig projectConfig,
-                                                                                    final ChronoUnit durationUnits )
+    public static <T extends ScoreStatistic<?, T>> CommaSeparatedScoreWriter<T> of( ProjectConfig projectConfig,
+                                                                                    ChronoUnit durationUnits,
+                                                                                    Path outputDirectory )
     {
-        return new CommaSeparatedScoreWriter<>( projectConfig, durationUnits );
+        return new CommaSeparatedScoreWriter<>( projectConfig, durationUnits, outputDirectory );
     }
 
     /**
@@ -102,7 +104,8 @@ public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends C
             try
             {
                 Set<Path> innerPathsWrittenTo =
-                        CommaSeparatedScoreWriter.writeOneScoreOutputType( destinationConfig,
+                        CommaSeparatedScoreWriter.writeOneScoreOutputType( super.getOutputDirectory(),
+                                                                           destinationConfig,
                                                                            output,
                                                                            formatter,
                                                                            this.getDurationUnits() );
@@ -131,6 +134,7 @@ public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends C
      * Writes all output for one score type.
      *
      * @param <T> the score component type
+     * @param outputDirectory the directory into which to write
      * @param destinationConfig the destination configuration    
      * @param output the score output to iterate through
      * @param formatter optional formatter, can be null
@@ -140,7 +144,8 @@ public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends C
      */
 
     private static <T extends ScoreStatistic<?, T>> Set<Path>
-            writeOneScoreOutputType( DestinationConfig destinationConfig,
+            writeOneScoreOutputType( Path outputDirectory,
+                                     DestinationConfig destinationConfig,
                                      ListOfStatistics<T> output,
                                      Format formatter,
                                      ChronoUnit durationUnits )
@@ -207,7 +212,10 @@ public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends C
                     append = secondThresholds.iterator().next().toStringSafe();
                 }
                 StatisticMetadata meta = nextOutput.getData().get( 0 ).getMetadata();
-                Path outputPath = ConfigHelper.getOutputPathToWrite( destinationConfig, meta, append );
+                Path outputPath = ConfigHelper.getOutputPathToWrite( outputDirectory,
+                                                                     destinationConfig,
+                                                                     meta,
+                                                                     append );
 
                 CommaSeparatedWriter.writeTabularOutputToFile( rows, outputPath );
 
@@ -343,13 +351,16 @@ public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends C
      * 
      * @param projectConfig the project configuration
      * @param durationUnits the time units for durations
+     * @param outputDirectory the directory into which to write
      * @throws NullPointerException if either input is null 
      * @throws ProjectConfigException if the project configuration is not valid for writing 
      */
 
-    private CommaSeparatedScoreWriter( ProjectConfig projectConfig, ChronoUnit durationUnits )
+    private CommaSeparatedScoreWriter( ProjectConfig projectConfig,
+                                       ChronoUnit durationUnits,
+                                       Path outputDirectory )
     {
-        super( projectConfig, durationUnits );
+        super( projectConfig, durationUnits, outputDirectory );
     }
 
 }

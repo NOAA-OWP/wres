@@ -1,6 +1,7 @@
 package wres.io.retrieval;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.sql.SQLException;
 import java.util.HashSet;
 import java.util.List;
@@ -18,7 +19,6 @@ import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.details.ProjectDetails;
 import wres.io.utilities.DataScripter;
-import wres.io.utilities.ScriptBuilder;
 import wres.io.writing.pair.SharedWriterManager;
 import wres.util.CalculationException;
 
@@ -28,10 +28,11 @@ public class ByForecastMetricInputIterator extends MetricInputIterator
 
     ByForecastMetricInputIterator( Feature feature,
                                    ProjectDetails projectDetails,
-                                   SharedWriterManager sharedWriterManager )
+                                   SharedWriterManager sharedWriterManager,
+                                   Path outputDirectoryForPairs )
             throws IOException
     {
-        super( feature, projectDetails, sharedWriterManager );
+        super( feature, projectDetails, sharedWriterManager, outputDirectoryForPairs );
     }
 
     @Override
@@ -167,7 +168,8 @@ public class ByForecastMetricInputIterator extends MetricInputIterator
                 this.getProjectDetails(),
                 this.leftCache::getLeftValues,
                 this.timeSeries.get(this.getWindowNumber()),
-                this.getSharedWriterManager()
+                this.getSharedWriterManager(),
+                this.getOutputPathForPairs()
         );
         retriever.setFeature( this.getFeature() );
         retriever.setClimatology( this.getClimatology() );

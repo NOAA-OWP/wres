@@ -45,7 +45,8 @@ public class PNGBoxPlotWriter extends PNGWriter
 
     /**
      * Returns an instance of a writer.
-     * 
+     *
+     * @param outputDirectory the directory into which to write
      * @param projectConfigPlus the project configuration
      * @param durationUnits the time units for durations
      * @return a writer
@@ -53,9 +54,11 @@ public class PNGBoxPlotWriter extends PNGWriter
      * @throws ProjectConfigException if the project configuration is not valid for writing
      */
 
-    public static PNGBoxPlotWriter of( final ProjectConfigPlus projectConfigPlus, final ChronoUnit durationUnits )
+    public static PNGBoxPlotWriter of( ProjectConfigPlus projectConfigPlus,
+                                       ChronoUnit durationUnits,
+                                       Path outputDirectory )
     {
-        return new PNGBoxPlotWriter( projectConfigPlus, durationUnits );
+        return new PNGBoxPlotWriter( projectConfigPlus, durationUnits, outputDirectory );
     }
 
     /**
@@ -73,7 +76,7 @@ public class PNGBoxPlotWriter extends PNGWriter
 
         // Write output
         List<DestinationConfig> destinations =
-                ConfigHelper.getGraphicalDestinations( this.getProjectConfigPlus().getProjectConfig() );
+                ConfigHelper.getGraphicalDestinations( super.getProjectConfigPlus().getProjectConfig() );
 
         // Iterate through destinations
         for ( DestinationConfig destinationConfig : destinations )
@@ -83,10 +86,11 @@ public class PNGBoxPlotWriter extends PNGWriter
             for ( MetricConstants next : metrics )
             {
                 Set<Path> innerPathsWrittenTo =
-                        PNGBoxPlotWriter.writeBoxPlotCharts( this.getProjectConfigPlus(),
+                        PNGBoxPlotWriter.writeBoxPlotCharts( super.getOutputDirectory(),
+                                                             super.getProjectConfigPlus(),
                                                              destinationConfig,
                                                              Slicer.filter( output, next ),
-                                                             this.getDurationUnits() );
+                                                             super.getDurationUnits() );
                 this.pathsWrittenTo.addAll( innerPathsWrittenTo );
             }
         }
@@ -108,6 +112,7 @@ public class PNGBoxPlotWriter extends PNGWriter
      * Writes a set of charts associated with {@link BoxPlotStatistic} for a single metric and time window,
      * stored in a {@link ListOfStatistics}.
      *
+     * @param outputDirectory the directory into which to write
      * @param projectConfigPlus the project configuration
      * @param destinationConfig the destination configuration for the written output
      * @param output the metric results
@@ -116,7 +121,8 @@ public class PNGBoxPlotWriter extends PNGWriter
      * @return the paths actually written to
      */
 
-    private static Set<Path> writeBoxPlotCharts( ProjectConfigPlus projectConfigPlus,
+    private static Set<Path> writeBoxPlotCharts( Path outputDirectory,
+                                                 ProjectConfigPlus projectConfigPlus,
                                                  DestinationConfig destinationConfig,
                                                  ListOfStatistics<BoxPlotStatistic> output,
                                                  ChronoUnit durationUnits )
@@ -140,8 +146,8 @@ public class PNGBoxPlotWriter extends PNGWriter
             // Build the outputs
             for ( final Entry<Pair<TimeWindow, OneOrTwoThresholds>, ChartEngine> nextEntry : engines.entrySet() )
             {
-
-                Path outputImage = ConfigHelper.getOutputPathToWrite( destinationConfig,
+                Path outputImage = ConfigHelper.getOutputPathToWrite( outputDirectory,
+                                                                      destinationConfig,
                                                                       meta,
                                                                       nextEntry.getKey().getLeft(),
                                                                       durationUnits );
@@ -164,13 +170,16 @@ public class PNGBoxPlotWriter extends PNGWriter
      * 
      * @param projectConfigPlus the project configuration
      * @param durationUnits the time units for durations
+     * @param outputDirectory the directory into which to write
      * @throws ProjectConfigException if the project configuration is not valid for writing
      * @throws NullPointerException if either input is null
      */
 
-    private PNGBoxPlotWriter( ProjectConfigPlus projectConfigPlus, ChronoUnit durationUnits )
+    private PNGBoxPlotWriter( ProjectConfigPlus projectConfigPlus,
+                              ChronoUnit durationUnits,
+                              Path outputDirectory )
     {
-        super( projectConfigPlus, durationUnits );
+        super( projectConfigPlus, durationUnits, outputDirectory );
     }
 
 }

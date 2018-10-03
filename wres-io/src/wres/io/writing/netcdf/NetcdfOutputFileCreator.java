@@ -31,6 +31,7 @@ class NetcdfOutputFileCreator
     private static final Object CREATION_LOCK = new Object();
 
     static String create( final String templatePath,
+                          Path outputDirectory,
                                     final DestinationConfig destinationConfig,
                                     final TimeWindow window,
                                     final ZonedDateTime analysisTime,
@@ -44,7 +45,8 @@ class NetcdfOutputFileCreator
         // worth experimenting with no locking
         synchronized ( NetcdfOutputFileCreator.CREATION_LOCK )
         {
-            Path targetPath = ConfigHelper.getOutputPathToWriteForOneTimeWindow( destinationConfig,
+            Path targetPath = ConfigHelper.getOutputPathToWriteForOneTimeWindow( outputDirectory,
+                                                                                 destinationConfig,
                                                                                  window,
                                                                                  output,
                                                                                  durationUnits );

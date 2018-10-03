@@ -714,65 +714,6 @@ public class ConfigHelper
     }
 
     /**
-     * Convert a DestinationConfig into a directory to write to.
-     *
-     * @param d the destination configuration element to read
-     * @return a File referring to a directory to write to
-     * @throws ProjectConfigException when the path inside d is null
-     * @throws NullPointerException when d is null
-     */
-    public static File getDirectoryFromDestinationConfig( DestinationConfig d )
-    {
-        Path outputDirectory = Paths.get( d.getPath() );
-
-        if ( outputDirectory == null )
-        {
-            String message = "Destination path " + d.getPath()
-                             +
-                             " could not be found.";
-            throw new ProjectConfigException( d, message );
-        }
-        else
-        {
-            File outputLocation = outputDirectory.toFile();
-
-            try
-            {
-                outputLocation = outputDirectory.toFile().getCanonicalFile();
-            }
-            catch ( IOException ioe )
-            {
-                LOGGER.warn( "Could not determine canonical file location of {}",
-                             outputDirectory );
-            }
-
-            if ( outputLocation.isDirectory() )
-            {
-                return outputLocation;
-            }
-            else if ( outputLocation.isFile() )
-            {
-                // Use parent directory, warn user
-                LOGGER.warn( "Using parent directory {} for output instead of "
-                             + "{} because there may be more than one file to "
-                             + "write.",
-                             outputDirectory.getParent(),
-                             outputDirectory );
-
-                return outputDirectory.getParent().toFile();
-            }
-            else
-            {
-                // If we have neither a file nor a directory, is issue.
-                String message = "Destination path " + d.getPath()
-                                 + " needs to be changed to a directory"
-                                 + " that can be written to.";
-                throw new ProjectConfigException( d, message );
-            }
-        }
-    }
-
-    /**
      * Get all the destinations from a configuration for a particular type.
      * @param config the config to search through
      * @param type the type to look for
@@ -1375,7 +1316,8 @@ public class ConfigHelper
 
     /**
      * Returns a path to write from a combination of the {@link DestinationConfig} and the {@link StatisticMetadata}.
-     * 
+     *
+     * @param outputDirectory the directory into which to write
      * @param destinationConfig the destination configuration
      * @param meta the metadata
      * @return a path to write
@@ -1383,17 +1325,22 @@ public class ConfigHelper
      * @throws IOException if the path cannot be produced
      */
 
-    public static Path getOutputPathToWrite( DestinationConfig destinationConfig,
+    public static Path getOutputPathToWrite( Path outputDirectory,
+                                             DestinationConfig destinationConfig,
                                              StatisticMetadata meta )
             throws IOException
     {
-        return ConfigHelper.getOutputPathToWrite( destinationConfig, meta, (String) null );
+        return ConfigHelper.getOutputPathToWrite( outputDirectory,
+                                                  destinationConfig,
+                                                  meta,
+                                                  (String) null );
     }
 
     /**
      * Returns a path to write from a combination of the {@link DestinationConfig}, the {@link StatisticMetadata} 
      * associated with the results and a {@link TimeWindow}.
-     * 
+     *
+     * @param outputDirectory the directory into which to write
      * @param destinationConfig the destination configuration
      * @param meta the metadata
      * @param timeWindow the time window
@@ -1403,7 +1350,8 @@ public class ConfigHelper
      * @throws IOException if the path cannot be produced
      */
 
-    public static Path getOutputPathToWrite( DestinationConfig destinationConfig,
+    public static Path getOutputPathToWrite( Path outputDirectory,
+                                             DestinationConfig destinationConfig,
                                              StatisticMetadata meta,
                                              TimeWindow timeWindow,
                                              ChronoUnit leadUnits )
@@ -1418,7 +1366,8 @@ public class ConfigHelper
         Objects.requireNonNull( leadUnits,
                                 "Enter a non-null time unit for the lead durations to establish a path for writing." );
 
-        return ConfigHelper.getOutputPathToWrite( destinationConfig,
+        return ConfigHelper.getOutputPathToWrite( outputDirectory,
+                                                  destinationConfig,
                                                   meta,
                                                   TimeHelper.durationToLongUnits( timeWindow.getLatestLeadTime(),
                                                                                   leadUnits )
@@ -1429,7 +1378,8 @@ public class ConfigHelper
     /**
      * Returns a path to write from a combination of the {@link DestinationConfig}, the {@link StatisticMetadata} 
      * associated with the results and a {@link OneOrTwoThresholds}.
-     * 
+     *
+     * @param outputDirectory the directory into which to write
      * @param destinationConfig the destination configuration
      * @param meta the metadata
      * @param threshold the threshold
@@ -1438,7 +1388,8 @@ public class ConfigHelper
      * @throws IOException if the path cannot be produced
      */
 
-    public static Path getOutputPathToWrite( DestinationConfig destinationConfig,
+    public static Path getOutputPathToWrite( Path outputDirectory,
+                                             DestinationConfig destinationConfig,
                                              StatisticMetadata meta,
                                              OneOrTwoThresholds threshold )
             throws IOException
@@ -1447,13 +1398,17 @@ public class ConfigHelper
 
         Objects.requireNonNull( threshold, "Enter non-null threshold to establish a path for writing." );
 
-        return getOutputPathToWrite( destinationConfig, meta, threshold.toStringSafe() );
+        return getOutputPathToWrite( outputDirectory,
+                                     destinationConfig,
+                                     meta,
+                                     threshold.toStringSafe() );
     }
 
     /**
      * Returns a path to write from a combination of the destination configuration, the input metadata and any 
      * additional string that should be appended to the path (e.g. lead time or threshold). 
-     * 
+     *
+     * @param outputDirectory the directory into which to write
      * @param destinationConfig the destination configuration
      * @param meta the metadata
      * @param append an optional string to append to the end of the path, may be null
@@ -1464,7 +1419,8 @@ public class ConfigHelper
      * @throws ProjectConfigException when the destination configuration is invalid
      */
 
-    public static Path getOutputPathToWrite( DestinationConfig destinationConfig,
+    public static Path getOutputPathToWrite( Path outputDirectory,
+                                             DestinationConfig destinationConfig,
                                              StatisticMetadata meta,
                                              String append )
             throws IOException
@@ -1479,8 +1435,6 @@ public class ConfigHelper
                                 "Enter a non-null identifier for the metadata to establish "
                                                                           + "a path for writing." );
 
-        // Determine the directory
-        File outputDirectory = getDirectoryFromDestinationConfig( destinationConfig );
 
         // Build the path 
         StringJoiner joinElements = new StringJoiner( "_" );
@@ -1536,7 +1490,8 @@ public class ConfigHelper
     /**
      * Returns a formatted file name for writing outputs to a specific time window using the destination 
      * information and other hints provided.
-     * 
+     *
+     * @param outputDirectory the directory into which to write
      * @param destinationConfig the destination information
      * @param timeWindow the time window
      * @param output the output to write
@@ -1547,13 +1502,14 @@ public class ConfigHelper
      * @throws IOException if the path cannot be produced
      */
 
-    public static Path getOutputPathToWriteForOneTimeWindow( final DestinationConfig destinationConfig,
+    public static Path getOutputPathToWriteForOneTimeWindow( Path outputDirectory,
+                                                             final DestinationConfig destinationConfig,
                                                              final TimeWindow timeWindow,
                                                              final Collection<DoubleScoreStatistic> output,
                                                              final ChronoUnit leadUnits )
             throws NoDataException, IOException
     {
-
+        Objects.requireNonNull( outputDirectory, "Enter non-null output directory to establish a path for writing." );
         Objects.requireNonNull( destinationConfig, "Enter non-null time window to establish a path for writing." );
 
         Objects.requireNonNull( output, "Enter non-null output to establish a path for writing." );
@@ -1608,7 +1564,7 @@ public class ConfigHelper
         // Sanitize file name
         String safeName = URLEncoder.encode( filename.toString().replace( " ", "_" ) + extension, "UTF-8" );
 
-        return Paths.get( destinationConfig.getPath(), safeName );
+        return Paths.get( outputDirectory.toString(), safeName );
     }
 
     /**

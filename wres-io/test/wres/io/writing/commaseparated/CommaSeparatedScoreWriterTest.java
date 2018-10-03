@@ -15,7 +15,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import org.junit.Test;
@@ -36,7 +35,6 @@ import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.DurationScoreStatistic;
 import wres.datamodel.statistics.ListOfStatistics;
-import wres.datamodel.statistics.StatisticAccessException;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
@@ -49,6 +47,7 @@ import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 
 public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTestHelper
 {
+    private final Path outputDirectory = Paths.get( System.getProperty( "java.io.tmpdir" ) );
 
     /**
      * Tests the writing of {@link DoubleScoreStatistic} to file.
@@ -56,14 +55,11 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTestHelpe
      * @throws ProjectConfigException if the project configuration is incorrect
      * @throws IOException if the output could not be written
      * @throws InterruptedException if the process is interrupted
-     * @throws ExecutionException if the execution fails
-     * @throws StatisticAccessException if the metric output could not be accessed
      */
 
     @Test
     public void writeDoubleScores()
-            throws IOException, InterruptedException,
-            ExecutionException, StatisticAccessException
+            throws IOException, InterruptedException
     {
 
         // location id
@@ -136,11 +132,13 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTestHelpe
 
         // Begin the actual test now that we have constructed dependencies.
         CommaSeparatedScoreWriter<DoubleScoreStatistic> writer =
-                CommaSeparatedScoreWriter.of( projectConfig, ChronoUnit.SECONDS );
+                CommaSeparatedScoreWriter.of( projectConfig,
+                                              ChronoUnit.SECONDS,
+                                              this.outputDirectory );
         writer.accept( output.getDoubleScoreStatistics() );
 
         // Read the file, verify it has what we wanted:
-        Path pathToFirstFile = Paths.get( System.getProperty( "java.io.tmpdir" ),
+        Path pathToFirstFile = Paths.get( this.outputDirectory.toString(),
                                           "DRRC2_SQIN_HEFS_MEAN_SQUARE_ERROR.csv" );
         List<String> firstResult = Files.readAllLines( pathToFirstFile );
 
@@ -180,14 +178,11 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTestHelpe
      * @throws ProjectConfigException if the project configuration is incorrect
      * @throws IOException if the output could not be written
      * @throws InterruptedException if the process is interrupted
-     * @throws ExecutionException if the execution fails
-     * @throws StatisticAccessException if the metric output could not be accessed
      */
 
     @Test
     public void writeDurationScores()
-            throws IOException, InterruptedException,
-            ExecutionException, StatisticAccessException
+            throws IOException, InterruptedException
     {
 
         // location id
@@ -249,11 +244,13 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTestHelpe
 
         // Begin the actual test now that we have constructed dependencies.
         CommaSeparatedScoreWriter<DurationScoreStatistic> writer =
-                CommaSeparatedScoreWriter.of( projectConfig, ChronoUnit.SECONDS );
+                CommaSeparatedScoreWriter.of( projectConfig,
+                                              ChronoUnit.SECONDS,
+                                              this.outputDirectory );
         writer.accept( output.getDurationScoreStatistics() );
 
         // read the file, verify it has what we wanted:
-        Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ),
+        Path pathToFile = Paths.get( this.outputDirectory.toString(),
                                      "DOLC2_SQIN_HEFS_TIME_TO_PEAK_ERROR_STATISTIC.csv" );
         List<String> result = Files.readAllLines( pathToFile );
 
@@ -273,14 +270,11 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTestHelpe
      * @throws ProjectConfigException if the project configuration is incorrect
      * @throws IOException if the output could not be written
      * @throws InterruptedException if the process is interrupted
-     * @throws ExecutionException if the execution fails
-     * @throws StatisticAccessException if the metric output could not be accessed
      */
 
     @Test
     public void writeDoubleScoresWithMissingData()
-            throws IOException, InterruptedException,
-            ExecutionException, StatisticAccessException
+            throws IOException, InterruptedException
     {
 
         // location id
@@ -385,11 +379,13 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTestHelpe
 
         // Begin the actual test now that we have constructed dependencies.
         CommaSeparatedScoreWriter<DoubleScoreStatistic> writer =
-                CommaSeparatedScoreWriter.of( projectConfig, ChronoUnit.SECONDS );
+                CommaSeparatedScoreWriter.of( projectConfig,
+                                              ChronoUnit.SECONDS,
+                                              this.outputDirectory );
         writer.accept( output.getDoubleScoreStatistics() );
 
         // read the file, verify it has what we wanted:
-        Path pathToFirstFile = Paths.get( System.getProperty( "java.io.tmpdir" ),
+        Path pathToFirstFile = Paths.get( this.outputDirectory.toString(),
                                           "FTSC1_SQIN_HEFS_MEAN_SQUARE_ERROR.csv" );
 
         List<String> firstResult = Files.readAllLines( pathToFirstFile );

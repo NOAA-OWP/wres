@@ -174,13 +174,10 @@ public class Validation
     {
         Objects.requireNonNull( projectConfigPlus, NON_NULL );
 
-        boolean valid = Validation.isNetcdfOutputConfigValid(
+        return Validation.isNetcdfOutputConfigValid(
                 projectConfigPlus.toString(),
                 projectConfigPlus.getProjectConfig().getOutputs().getDestination()
-
         );
-        // Validate that outputs are writeable directories
-        return  Validation.areAllOutputPathsWriteableDirectories( projectConfigPlus ) && valid;
     }
 
     private static boolean isNetcdfOutputConfigValid(String path, List<DestinationConfig> destinations)

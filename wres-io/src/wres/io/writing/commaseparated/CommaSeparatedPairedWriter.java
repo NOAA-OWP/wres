@@ -47,15 +47,17 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedWriter
      * @param <T> the right side if the paired output type
      * @param projectConfig the project configuration
      * @param durationUnits the time units for durations
+     * @param outputDirectory the directory into which to write
      * @return a writer
      * @throws NullPointerException if either input is null 
      * @throws ProjectConfigException if the project configuration is not valid for writing
      */
 
-    public static <S, T> CommaSeparatedPairedWriter<S, T> of( final ProjectConfig projectConfig,
-                                                              final ChronoUnit durationUnits )
+    public static <S, T> CommaSeparatedPairedWriter<S, T> of( ProjectConfig projectConfig,
+                                                              ChronoUnit durationUnits,
+                                                              Path outputDirectory )
     {
-        return new CommaSeparatedPairedWriter<>( projectConfig, durationUnits );
+        return new CommaSeparatedPairedWriter<>( projectConfig, durationUnits, outputDirectory );
     }
 
     /**
@@ -75,7 +77,7 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedWriter
         // In principle, each destination could have a different formatter, so 
         // the output must be generated separately for each destination
         List<DestinationConfig> numericalDestinations =
-                ConfigHelper.getNumericalDestinations( this.getProjectConfig() );
+                ConfigHelper.getNumericalDestinations( super.getProjectConfig() );
         for ( DestinationConfig destinationConfig : numericalDestinations )
         {
 
@@ -85,10 +87,11 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedWriter
             // Write per time-window
             try
             {
-                CommaSeparatedPairedWriter.writeOnePairedOutputType( destinationConfig,
+                CommaSeparatedPairedWriter.writeOnePairedOutputType( super.getOutputDirectory(),
+                                                                     destinationConfig,
                                                                      output,
                                                                      formatter,
-                                                                     this.getDurationUnits() );
+                                                                     super.getDurationUnits() );
             }
             catch ( IOException e )
             {
@@ -104,6 +107,7 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedWriter
      *
      * @param <S> the left side of the paired output type
      * @param <T> the right side if the paired output type
+     * @param outputDirectory the directory into which to write
      * @param destinationConfig the destination configuration    
      * @param output the paired output to iterate through
      * @param formatter optional formatter, can be null
@@ -112,7 +116,8 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedWriter
      * @return set of paths actually written to
      */
 
-    private static <S, T> Set<Path> writeOnePairedOutputType( DestinationConfig destinationConfig,
+    private static <S, T> Set<Path> writeOnePairedOutputType( Path outputDirectory,
+                                                              DestinationConfig destinationConfig,
                                                               ListOfStatistics<PairedStatistic<S, T>> output,
                                                               Format formatter,
                                                               ChronoUnit durationUnits )
@@ -145,7 +150,9 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedWriter
             // Write the output
             StatisticMetadata meta = nextOutput.getData().get( 0 ).getMetadata();
 
-            Path outputPath = ConfigHelper.getOutputPathToWrite( destinationConfig, meta );
+            Path outputPath = ConfigHelper.getOutputPathToWrite( outputDirectory,
+                                                                 destinationConfig,
+                                                                 meta );
 
             CommaSeparatedWriter.writeTabularOutputToFile( rows, outputPath );
 
@@ -223,13 +230,16 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedWriter
      * 
      * @param projectConfig the project configuration
      * @param durationUnits the time units for durations
+     * @param outputDirectory the directory into which to write
      * @throws NullPointerException if either input is null 
      * @throws ProjectConfigException if the project configuration is not valid for writing 
      */
 
-    private CommaSeparatedPairedWriter( ProjectConfig projectConfig, ChronoUnit durationUnits )
+    private CommaSeparatedPairedWriter(ProjectConfig projectConfig,
+                                       ChronoUnit durationUnits,
+                                       Path outputDirectory )
     {
-        super( projectConfig, durationUnits );
+        super( projectConfig, durationUnits, outputDirectory );
     }
 
 }
