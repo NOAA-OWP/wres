@@ -299,7 +299,6 @@ public class ZippedSource extends BasicSource {
                                            content,
                                            this.getDataSourceConfig(),
                                            originalSource,
-                                           this.getSpecifiedFeatures(),
                                            this.getProjectConfig() );
 
             ingest.setOnComplete( ProgressMonitor.onThreadCompleteHandler());

@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 import wres.config.ProjectConfigException;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
+import wres.config.generated.ProjectConfig;
 import wres.datamodel.metadata.TimeScale;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.DataSources;
@@ -434,9 +435,6 @@ public final class PIXMLReader extends XMLReader
 					this.currentTimeSeriesID = null;
 					this.currentTimeSeries = null;
 
-					// If this is an alias, get the real LID
-					this.currentLID = this.getLIDToSave( this.currentLID );
-
 					if (currentLID.length() > 5)
 					{
 					    String shortendID = currentLID.substring(0, 5);
@@ -825,23 +823,6 @@ public final class PIXMLReader extends XMLReader
         return val;
     }
 
-    protected String getLIDToSave(final String lid)
-    {
-        String lidToSave = lid;
-        for (Feature feature : this.getSpecifiedFeatures())
-        {
-            if (Strings.hasValue( feature.getLocationId() ) &&
-                feature.getAlias() != null &&
-                Collections.exists( feature.getAlias(), alias -> alias.equalsIgnoreCase( lid ) ) )
-            {
-                lidToSave = feature.getLocationId();
-                break;
-            }
-        }
-
-        return lidToSave;
-    }
-
     private LocalDateTime getStartDate()
 	{
 		return this.startDate;
@@ -986,16 +967,5 @@ public final class PIXMLReader extends XMLReader
         return this.sourceConfig;
     }
 
-	public void setSpecifiedFeatures(List<Feature> specifiedFeatures)
-    {
-        this.specifiedFeatures = specifiedFeatures;
-    }
-
-    private List<Feature> getSpecifiedFeatures()
-    {
-        return this.specifiedFeatures;
-    }
-
     private DataSourceConfig dataSourceConfig;
-    private List<Feature> specifiedFeatures;
 }
