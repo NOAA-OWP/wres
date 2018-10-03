@@ -174,13 +174,10 @@ public class Validation
     {
         Objects.requireNonNull( projectConfigPlus, NON_NULL );
 
-        boolean valid = Validation.isNetcdfOutputConfigValid(
+        return Validation.isNetcdfOutputConfigValid(
                 projectConfigPlus.toString(),
                 projectConfigPlus.getProjectConfig().getOutputs().getDestination()
-
         );
-        // Validate that outputs are writeable directories
-        return  Validation.areAllOutputPathsWriteableDirectories( projectConfigPlus ) && valid;
     }
 
     private static boolean isNetcdfOutputConfigValid(String path, List<DestinationConfig> destinations)
@@ -507,109 +504,6 @@ public class Validation
         return result;
     }    
 
-    /**
-     * Validates outputs portion of project config have writeable directories.
-     *
-     * @param projectConfigPlus the project configuration
-     * @return true if all have writeable directories, false otherwise
-     * @throws NullPointerException when projectConfigPlus is null
-     */
-
-    private static boolean areAllOutputPathsWriteableDirectories( ProjectConfigPlus projectConfigPlus )
-    {
-        Objects.requireNonNull( projectConfigPlus, NON_NULL);
-
-        boolean result = true;
-
-        // No outputs specified
-        if ( projectConfigPlus.getProjectConfig()
-                              .getOutputs() == null )
-        {
-            if ( LOGGER.isWarnEnabled() )
-            {
-                LOGGER.warn( "In file {}, no output configuration was found.",
-                             projectConfigPlus.getOrigin() );
-            }
-
-            return false;
-        }
-
-        final String PLEASE_UPDATE = "Please update the project configuration "
-                                     + "with an existing writeable directory "
-                                     + "or create the directory already "
-                                     + "specified.";
-
-        for ( DestinationConfig d : projectConfigPlus.getProjectConfig()
-                                                     .getOutputs()
-                                                     .getDestination() )
-        {
-            Path destinationPath;
-            try
-            {
-                destinationPath = Paths.get( d.getPath() );
-            }
-            catch ( InvalidPathException ipe )
-            {
-                if ( LOGGER.isWarnEnabled() )
-                {
-                    LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                                 + " The path {} could not be found. "
-                                 + PLEASE_UPDATE,
-                                 projectConfigPlus.getOrigin(),
-                                 d.sourceLocation().getLineNumber(),
-                                 d.sourceLocation().getColumnNumber(),
-                                 d.getPath() );
-                }
-
-                result = false;
-                continue;
-            }
-
-            File destinationFile = destinationPath.toFile();
-
-            if ( !destinationFile.canWrite() || !destinationFile.isDirectory() )
-            {
-                if ( LOGGER.isWarnEnabled() )
-                {
-                    LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                                 + " The path {} was not a writeable directory."
-                                 + " " + PLEASE_UPDATE,
-                                 projectConfigPlus.getOrigin(),
-                                 d.sourceLocation().getLineNumber(),
-                                 d.sourceLocation().getColumnNumber(),
-                                 d.getPath() );
-                }
-
-                result = false;
-            }
-
-            // If we want to protect previous results (the default behavior) and there is already data stored in the
-            // destination, fail validation
-            String[] destinationConents = destinationFile.list();
-            if ( !d.isOverwrite() &&
-                 destinationConents != null &&
-                 destinationConents.length != 0 )
-            {
-                if ( LOGGER.isWarnEnabled() )
-                {
-                    LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                                 + " The path {} contains one or more files or directories. "
-                                 + "Please empty the output directory before proceeding or specify an "
-                                 + "alternative, empty, directory.",
-                                 projectConfigPlus.getOrigin(),
-                                 d.sourceLocation().getLineNumber(),
-                                 d.sourceLocation().getColumnNumber(),
-                                 d.getPath() );
-                }
-
-                result = false;
-            }
-            
-            
-        }
-
-        return result;
-    }
 
     /**
      * Validates graphics portion, similar to isProjectValid, but targeted.

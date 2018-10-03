@@ -29,7 +29,7 @@ fi
 # ============================================================
 systestsDir=$(pwd)
 configName=project_config.xml
-outputDirName=output
+outputDirPrefix=wres_evaluation_output_
 benchDirName=benchmarks
 echoPrefix="===================="
 
@@ -81,12 +81,23 @@ for scenarioName in $*; do
     # ============================================================
     # Setup Scenario
     # ============================================================
-    # Clearing the output directory.
-    echo "$echoPrefix Removing and recreating $executeDir/output of .csv and .png files only..."
-    if [ -d $executeDir/output ]; then
+
+    # Clear all old output directories if they exist.
+    for directory in $executeDir/${outputDirPrefix}*
+    do
+        if [ -d $directory ]
+        then
+            echo "$echoPrefix Removing existing directory $directory"
+            rm -rf $directory
+        fi
+    done
+
+    # Remove older (pre-2018-10-02 output directory as well if needed)
+    if [ -d $executeDir/output ]
+    then
+        echo "$echoPrefix Removing existing old output directory $executeDir/output"
         rm -rf $executeDir/output
     fi
-    mkdir $executeDir/output
 
     # Move into the directory.
     echo "$echoPrefix Moving (cd) to execution directory..."
@@ -128,7 +139,7 @@ for scenarioName in $*; do
     # If it fails then the file FAILS must exist in the scenario directory or its treated
     # as a test failure.  the file FAILS tells this script that failure is expected.
     echo "$echoPrefix Executing the project: ../wres.sh execute $configName ..."
-    ../wres.sh execute $configName
+    JAVA_OPTS='-Djava.io.tmpdir=.' ../wres.sh execute $configName
     if [[ $? != 0 ]]; then
         if [ -f FAILS ]; then
             echo "$echoPrefix Expected failure occurred.  Test passes."
@@ -165,7 +176,7 @@ for scenarioName in $*; do
     # ====================================================
     # Benchmark comparisons.
     # ====================================================
-    cd $outputDirName
+    cd ${outputDirPrefix}*
 
     #List the contents of the output directory and compare with contents in benchmark.
     echo "$echoPrefix Listing the output contents: ls *.csv *.png > dirListing.txt"

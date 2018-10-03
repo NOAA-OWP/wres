@@ -1,6 +1,7 @@
 package wres.io.retrieval;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.sql.SQLException;
 import java.util.Iterator;
 import java.util.concurrent.Callable;
@@ -40,6 +41,7 @@ abstract class MetricInputIterator implements Iterator<Future<SampleData<?>>>
     private Integer finalPoolingStep;
     private int iterationCount = 0;
     private SharedWriterManager sharedWriterManager;
+    private Path outputPathForPairs;
 
     protected int getWindowNumber()
     {
@@ -139,13 +141,15 @@ abstract class MetricInputIterator implements Iterator<Future<SampleData<?>>>
 
     MetricInputIterator( Feature feature,
                          ProjectDetails projectDetails,
-                         SharedWriterManager sharedWriterManager )
+                         SharedWriterManager sharedWriterManager,
+                         Path outputPathForPairs )
             throws IOException
     {
 
         this.projectDetails = projectDetails;
         this.feature = feature;
         this.sharedWriterManager = sharedWriterManager;
+        this.outputPathForPairs = outputPathForPairs;
 
         try
         {
@@ -280,6 +284,11 @@ abstract class MetricInputIterator implements Iterator<Future<SampleData<?>>>
         return this.sharedWriterManager;
     }
 
+    protected Path getOutputPathForPairs()
+    {
+        return this.outputPathForPairs;
+    }
+
     /**
      * Creates the object that will retrieve the data in another thread
      * @return A callable object that will create a Metric Input
@@ -290,7 +299,8 @@ abstract class MetricInputIterator implements Iterator<Future<SampleData<?>>>
         InputRetriever retriever = new InputRetriever(
                 this.getProjectDetails(),
                 this.leftCache::getLeftValues,
-                this.sharedWriterManager
+                this.sharedWriterManager,
+                this.outputPathForPairs
         );
         retriever.setFeature(feature);
         retriever.setClimatology( this.getClimatology() );

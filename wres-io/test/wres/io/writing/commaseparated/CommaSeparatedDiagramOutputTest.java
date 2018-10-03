@@ -48,6 +48,7 @@ import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 
 public class CommaSeparatedDiagramOutputTest extends CommaSeparatedWriterTestHelper
 {
+    private final Path outputDirectory = Paths.get( System.getProperty( "java.io.tmpdir" ) );
 
     /**
      * Tests the writing of {@link MultiVectorStatistic} to file.
@@ -55,14 +56,11 @@ public class CommaSeparatedDiagramOutputTest extends CommaSeparatedWriterTestHel
      * @throws ProjectConfigException if the project configuration is incorrect
      * @throws IOException if the output could not be written
      * @throws InterruptedException if the process is interrupted
-     * @throws ExecutionException if the execution fails
-     * @throws StatisticAccessException if the metric output could not be accessed
      */
 
     @Test
     public void writeDiagramOutput()
-            throws IOException, InterruptedException,
-            ExecutionException, StatisticAccessException
+            throws IOException, InterruptedException
     {
 
         // location id
@@ -126,10 +124,13 @@ public class CommaSeparatedDiagramOutputTest extends CommaSeparatedWriterTestHel
         ProjectConfig projectConfig = getMockedProjectConfig( feature );
 
         // Begin the actual test now that we have constructed dependencies.
-        CommaSeparatedDiagramWriter.of( projectConfig, ChronoUnit.SECONDS ).accept( output.getMultiVectorStatistics() );
+        CommaSeparatedDiagramWriter.of( projectConfig,
+                                        ChronoUnit.SECONDS,
+                                        this.outputDirectory )
+                                   .accept( output.getMultiVectorStatistics() );
 
         // read the file, verify it has what we wanted:
-        Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ),
+        Path pathToFile = Paths.get( this.outputDirectory.toString(),
                                      "CREC1_SQIN_HEFS_RELIABILITY_DIAGRAM_86400_SECONDS.csv" );
         List<String> result = Files.readAllLines( pathToFile );
 

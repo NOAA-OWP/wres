@@ -988,30 +988,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
             }
             else
             {
-                if (Strings.hasValue( this.lid ) && Strings.hasValue( featureKey.lid ))
-                {
-                    comparison = this.lid.compareToIgnoreCase( featureKey.lid );
-                }
-
-                if (comparison == 0 && Strings.hasValue( this.gageID ) && Strings.hasValue( featureKey.gageID ))
-                {
-                    comparison = this.gageID.compareToIgnoreCase( featureKey.gageID );
-                }
-
-                if (comparison == 0 && this.comid != null && featureKey.comid != null)
-                {
-                    comparison = this.comid.compareTo( featureKey.comid );
-                }
-
-                if (comparison == 0 && this.longitude != null && featureKey.longitude != null)
-                {
-                    comparison = this.longitude.compareTo( featureKey.longitude );
-                }
-
-                if (comparison == 0 && this.latitude != null && featureKey.latitude != null)
-                {
-                    comparison = this.latitude.compareTo( featureKey.latitude );
-                }
+                comparison = 1;
             }
 
             return comparison;

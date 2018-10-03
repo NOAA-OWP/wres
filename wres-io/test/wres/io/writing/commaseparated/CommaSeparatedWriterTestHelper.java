@@ -1,5 +1,7 @@
 package wres.io.writing.commaseparated;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,6 +17,7 @@ import wres.config.generated.ProjectConfig;
 //@PowerMockIgnore( "javax.management.*" )
 public class CommaSeparatedWriterTestHelper
 {
+    private final Path outputDirectory = Paths.get( System.getProperty( "java.io.tmpdir" ) );
 
 // what follows is a started attempt at avoiding filesystem (use powermockito)
 //
@@ -64,7 +67,7 @@ public class CommaSeparatedWriterTestHelper
     {
         // Use the system temp directory so that checks for writeability pass.
         DestinationConfig destinationConfig =
-                new DestinationConfig( System.getProperty( "java.io.tmpdir" ),
+                new DestinationConfig( this.outputDirectory.toString(),
                                        null,
                                        null,
                                        null,

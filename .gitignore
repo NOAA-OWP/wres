@@ -39,13 +39,16 @@ out
 *private*key*pem
 *pkcs10*request*pem
 
+# WRES-generated data
+output
+wres_evaluation_output*
+
 # sundry
 /*.xml
 /resources
 /testinput/sharedinput/*
 /src/wres/MainLocal.java
 /.metadata/
-output
 /wres-metrics/testinput/metricProcessorEnsemblePairsByTimeTest/Contingency.R
 /wres-metrics/testinput/metricProcessorEnsemblePairsByTimeTest/NOTE.txt
 /wres-config/nonsrc/ProjectConfig.xsd.xml

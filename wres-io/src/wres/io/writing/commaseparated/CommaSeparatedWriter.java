@@ -27,7 +27,7 @@ import wres.util.TimeHelper;
 
 /**
  * Helps write files of Comma Separated Values (CSV).
- * 
+ *
  * @author jesse
  * @author james.brown@hydrosolved.com
  */
@@ -60,53 +60,47 @@ abstract class CommaSeparatedWriter
      */
 
     private final ProjectConfig projectConfig;
-    
+
+    /**
+     * The directory to write to.
+     */
+
+    private final Path outputDirectory;
+
     /**
      * Returns the duration units for writing lead durations.
-     * 
+     *
      * @return the duration units
      */
-    
+
     ChronoUnit getDurationUnits()
     {
         return this.durationUnits;
     }
-    
+
     /**
      * Returns the project declaration
-     * 
+     *
      * @return the project declaration
      */
-    
+
     ProjectConfig getProjectConfig()
     {
         return this.projectConfig;
     }
 
     /**
-     * Validates the input configuration for writing. Throws an exception if the configuration is invalid.
-     * 
-     * @param projectConfig the project configuration
-     * @throws NullPointerException if the input is null
-     * @throws ProjectConfigException if the project is not correctly configured for writing numerical output
+     * @return the directory to write to
      */
 
-    static void validateProjectForWriting( ProjectConfig projectConfig )
+    Path getOutputDirectory()
     {
-        Objects.requireNonNull( projectConfig, "Specify non-null project configuration when writing outputs." );
-
-        if ( Objects.isNull( projectConfig.getOutputs() )
-             || Objects.isNull( projectConfig.getOutputs().getDestination() )
-             || projectConfig.getOutputs().getDestination().isEmpty() )
-        {
-            throw new ProjectConfigException( projectConfig.getOutputs(),
-                                              ConfigHelper.OUTPUT_CLAUSE_BOILERPLATE );
-        }
+        return this.outputDirectory;
     }
 
     /**
      * Writes the raw tabular output to file.
-     * 
+     *
      * @param rows the tabular data to write (non null, not empty!)
      * @param outputPath the path to which the file should be written
      * @throws IOException if the output cannot be written
@@ -144,7 +138,7 @@ abstract class CommaSeparatedWriter
 
     /**
      * Mutates the input, adding a new row.
-     * 
+     *
      * @param <T> the type of values to add
      * @param rows the map of rows to mutate
      * @param timeWindow the time window
@@ -152,7 +146,7 @@ abstract class CommaSeparatedWriter
      * @param formatter an optional formatter
      * @param append is true to add the values to an existing row with the same time window, false otherwise
      * @param durationUnits the duration units for lead times
-     * @param additionalComaprators one or more additional strings to use in aligning rows
+     * @param additionalComparators one or more additional strings to use in aligning rows
      * @throws NullPointerException if the rows, timeWindow, values or durationUnits are null
      */
 
@@ -179,7 +173,7 @@ abstract class CommaSeparatedWriter
         {
             row = rows.get( rowIndex ).getRight();
         }
-        // Otherwise, start a new row 
+        // Otherwise, start a new row
         else
         {
             row = new StringJoiner( "," );
@@ -215,7 +209,7 @@ abstract class CommaSeparatedWriter
 
     /**
      * Returns default header from the {@link SampleMetadata} to which additional information may be appended.
-     * 
+     *
      * @param sampleMetadata the sample metadata
      * @param durationUnits the duration units for lead times
      * @return default header information
@@ -287,7 +281,7 @@ abstract class CommaSeparatedWriter
     /**
      * A helper class that contains a single row whose natural order is based on the {@link TimeWindow} of the row
      * and one or more additional strings, not the contents of the row value.
-     * 
+     *
      * @author james.brown@hydrosolved.com
      */
 
@@ -312,11 +306,11 @@ abstract class CommaSeparatedWriter
 
         /**
          * Returns an instance for the given input.
-         * 
+         *
          * @param timeWindow the time window
          * @param value the row value
          * @param leftOptions the optional additional values for comparison
-         * @return an instance 
+         * @return an instance
          */
 
         static RowCompareByLeft of( TimeWindow timeWindow, StringJoiner value, String... leftOptions )
@@ -326,7 +320,7 @@ abstract class CommaSeparatedWriter
 
         /**
          * Returns the left value.
-         * 
+         *
          * @return the left value
          */
 
@@ -337,7 +331,7 @@ abstract class CommaSeparatedWriter
 
         /**
          * Returns the left options, may be null
-         * 
+         *
          * @return the left options, may be null
          */
 
@@ -348,7 +342,7 @@ abstract class CommaSeparatedWriter
 
         /**
          * Returns the right value
-         * 
+         *
          * @return the right value
          */
 
@@ -424,7 +418,7 @@ abstract class CommaSeparatedWriter
 
         /**
          * Constructor.
-         * 
+         *
          * @param timeWindow the time window
          * @param value the row value
          * @param leftOptions additional comparators for the left
@@ -441,20 +435,22 @@ abstract class CommaSeparatedWriter
 
     /**
      * Constructor.
-     * 
-     * @param projectConfig the project configuration
+     *
+     * @param outputDirectory the output directory
      * @param durationUnits the time units for lead durations
+     * @param outputDirectory the directory into which to write
      * @throws ProjectConfigException if the project configuration is not valid for writing
      * @throws NullPointerException if the durationUnits are null
      */
 
-    CommaSeparatedWriter( ProjectConfig projectConfig, ChronoUnit durationUnits )
+    CommaSeparatedWriter( ProjectConfig projectConfig, ChronoUnit durationUnits, Path outputDirectory )
     {
+        Objects.requireNonNull( projectConfig, "Specify non-null project configuration." );
         Objects.requireNonNull( durationUnits, "Specify non-null duration units." );
+        Objects.requireNonNull( outputDirectory, "Specify non-null output directory." );
 
-        // Validate project for writing
-        CommaSeparatedWriter.validateProjectForWriting( projectConfig );
         this.projectConfig = projectConfig;
+        this.outputDirectory = outputDirectory;
         this.durationUnits = durationUnits;
     }
 
