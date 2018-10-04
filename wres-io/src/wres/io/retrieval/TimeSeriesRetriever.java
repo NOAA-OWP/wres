@@ -103,12 +103,26 @@ public class TimeSeriesRetriever extends Retriever
         TemporalAccessor referenceTime = TimeHelper.convertStringToDate( this.timeSeries.getInitializationDate() );
         Instant reference = Instant.from( referenceTime );
 
+        int earliestLead = this.getProjectDetails().getMinimumLead();
+
+        if (earliestLead == Integer.MIN_VALUE)
+        {
+            earliestLead = 0;
+        }
+
+        int latestLead = this.getProjectDetails().getMaximumLead();
+
+        if (latestLead == Integer.MAX_VALUE)
+        {
+            latestLead = this.timeSeries.getHighestLead();
+        }
+
         TimeWindow window = TimeWindow.of(
                 reference,
                 reference,
                 ReferenceTime.ISSUE_TIME,
-                Duration.of( this.timeSeries.getLowestLead(), TimeHelper.LEAD_RESOLUTION),
-                Duration.of(this.timeSeries.getHighestLead(), TimeHelper.LEAD_RESOLUTION)
+                Duration.of( earliestLead, TimeHelper.LEAD_RESOLUTION),
+                Duration.of( latestLead, TimeHelper.LEAD_RESOLUTION)
         );
 
         // Build the metadata
