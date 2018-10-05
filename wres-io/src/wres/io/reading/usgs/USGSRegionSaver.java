@@ -58,7 +58,6 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
     private static final String USGS_URL = "https://waterservices.usgs.gov/nwis/";
     private static final String INSTANTANEOUS_VALUE = "iv";
     private static final String DAILY_VALUE = "dv";
-    private static final String DELIMITER = "|";
     private static final double EPSILON = 0.0000001;
 
     private static final String EARLIEST_DATE = "2008-01-01T00:00:00Z";

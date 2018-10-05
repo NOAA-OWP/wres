@@ -62,7 +62,7 @@ public final class IngestedValues
             "time_step"
     );
 
-    public static void addObservation(
+    static void addObservation(
             final int variableFeatureID,
             final TemporalAccessor observationTime,
             final Double observedValue,
