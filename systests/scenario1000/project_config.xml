@@ -36,16 +36,10 @@
     </metrics>
 
     <outputs>
-        <destination type="pairs" decimalFormat="0.000000">
-            <path>output/</path>
-        </destination>
-        <destination type="numeric" decimalFormat="0.000000">
-            <path>output/</path>
-        </destination>
+        <destination type="pairs" decimalFormat="0.000000" />
+        <destination type="numeric" decimalFormat="0.000000" />
         <destination type="graphic">
-            <path>output/</path>
-            <graphical width="800" height="600">
-            </graphical>
+            <graphical width="800" height="600" />
         </destination>
     </outputs>
 

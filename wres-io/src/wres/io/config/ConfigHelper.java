@@ -3,7 +3,6 @@ package wres.io.config;
 import static wres.config.generated.SourceTransformationType.PERSISTENCE;
 import static wres.io.data.details.ProjectDetails.PairingMode.ROLLING;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.file.Path;
@@ -87,7 +86,6 @@ import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
 import wres.io.writing.SharedWriters;
 import wres.io.writing.WriterHelper;
-import wres.io.writing.netcdf.NetcdfDoubleScoreWriter;
 import wres.system.SystemSettings;
 import wres.util.Strings;
 import wres.util.TimeHelper;
@@ -1803,76 +1801,6 @@ public class ConfigHelper
         // Return empty set
         return Collections.emptySet();
     }
-
-    /**
-     * Returns a set of writers to be shared across instances of writing. Returns a {@link SharedWriters} that 
-     * contains one writer for each supported incremental data format and type.
-     *
-     * @param projectIdentifier the unique project identifier
-     * @param projectConfig the project configuration
-     * @param featureCount the number of features
-     * @param thresholdCount the number of thresholds
-     * @param metrics the resolved DoubleScore metrics to write
-     * @return a writer
-     * @throws IOException if the project could not be validated or the writer could not be created
-     * @throws ProjectConfigException if project configuration is invalid
-     */
-
-    public static NetcdfDoubleScoreWriter getNetcdfWriter( String projectIdentifier,
-                                                           ProjectConfig projectConfig,
-                                                           int featureCount,
-                                                           int thresholdCount,
-                                                           Set<MetricConstants> metrics )
-            throws IOException
-    {
-        Objects.requireNonNull( projectConfig, NULL_CONFIGURATION_ERROR );
-
-        // Validate configuration
-        WriterHelper.validateProjectForWriting( projectConfig );
-
-        int basisTimes;
-        int leadCount;
-
-        try
-        {
-            leadCount = (int) Operations.getLeadCountsForProject( projectIdentifier );
-        }
-        catch ( SQLException se )
-        {
-            throw new IOException( "Unable to get lead counts.", se );
-        }
-
-        if ( leadCount > Integer.MAX_VALUE )
-        {
-            throw new IOException( "Cannot use more than "
-                                   + Integer.MAX_VALUE
-                                   + " lead times in a netCDF file." );
-        }
-
-        try
-        {
-            basisTimes = (int) Operations.getBasisTimeCountsForProject( projectIdentifier );
-        }
-        catch ( SQLException se )
-        {
-            throw new IOException( "Unable to get basis time counts.", se );
-        }
-
-        if ( basisTimes > Integer.MAX_VALUE )
-        {
-            throw new IOException( "Cannot use more than "
-                                   + Integer.MAX_VALUE
-                                   + " basis times in a netCDF file." );
-        }
-
-        return NetcdfDoubleScoreWriter.of( projectConfig,
-                                           featureCount,
-                                           basisTimes,
-                                           leadCount,
-                                           thresholdCount,
-                                           metrics );
-    }
-
 
     /**
      * Returns the lead time units associated with the input configuration. Returns {@link ChronoUnit#HOURS} if no

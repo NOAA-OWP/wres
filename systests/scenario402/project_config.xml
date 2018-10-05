@@ -38,12 +38,8 @@
         <metric><name>sample size</name></metric>
     </metrics>
     <outputs>
-        <destination type="pairs" decimalFormat="0.000000">
-            <path>output/</path>
-        </destination>
-        <destination type="numeric" decimalFormat="0.000000">
-            <path>output/</path>
-        </destination>
+        <destination type="pairs" decimalFormat="0.000000" />
+        <destination type="numeric" decimalFormat="0.000000" />
     </outputs>
 
 </project>
