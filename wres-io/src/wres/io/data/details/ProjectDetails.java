@@ -1991,8 +1991,11 @@ public class ProjectDetails
                 return 0;
             }
 
-            // We subtract by one since this returns an exclusive value where minimum lead is inclusive
-            return offset - 1;
+            // We subtract by one time step since this returns an exclusive value where minimum lead is inclusive
+            return offset - (int)TimeHelper.unitsToLeadUnits(
+                    this.getScale().getUnit().value(),
+                    this.getScale().getPeriod()
+            );
         }
         else if (this.leadOffsets.isEmpty())
         {
