@@ -152,6 +152,18 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
     private static FeatureDetails getDetails(Feature feature) throws SQLException
     {
         Integer id = Features.getFeatureID( feature );
+
+        if (id == null)
+        {
+            throw new NullPointerException(
+                    "No feature ID could be found for the feature described as: location id: '" +
+                    String.valueOf(feature.getLocationId()) +
+                    "', gage id: '" +
+                    String.valueOf(feature.getGageId()) +
+                    "', comid: '" +
+                    String.valueOf(feature.getComid()) );
+        }
+        
         return Features.getCache().get( id );
     }
 
