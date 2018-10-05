@@ -44,14 +44,8 @@
         <metric><name>mean square error skill score</name></metric>
     </metrics>
     <outputs>
-        <destination type="pairs" decimalFormat="0.00">
-            <path>output</path>
-        </destination>
-
-        <destination type="numeric" decimalFormat="0.00">
-            <path>output</path>
-        </destination>
-
+        <destination type="pairs" decimalFormat="0.00" />
+        <destination type="numeric" decimalFormat="0.00" />
     </outputs>
 
 </project>

@@ -479,7 +479,6 @@
         </xs:annotation>
 
         <xs:sequence>
-            <xs:element name="path" type="xs:anyURI" />
             <!-- Specifies the type of output required. -->
             <xs:element name="outputType" type="outputTypeSelection" minOccurs="0" maxOccurs="1"/>           
             <!-- If output type is graphical (a chart)... -->
@@ -489,7 +488,6 @@
 
         <xs:attribute name="type" type="destinationType" default="numeric" />
         <xs:attribute name="decimalFormat" type="xs:string" />
-        <xs:attribute name="overwrite" type="xs:boolean" default="false" />
     </xs:complexType>
 
     <xs:simpleType name="timeScaleFunction">

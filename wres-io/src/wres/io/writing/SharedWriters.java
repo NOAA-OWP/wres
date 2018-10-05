@@ -1,7 +1,6 @@
 package wres.io.writing;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashSet;
@@ -16,7 +15,6 @@ import wres.config.generated.DestinationType;
 import wres.datamodel.MetricConstants.StatisticGroup;
 import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.ListOfStatistics;
-import wres.io.writing.netcdf.NetcdfDoubleScoreWriter;
 import wres.io.writing.netcdf.NetcdfOutputWriter;
 
 /**
@@ -29,12 +27,6 @@ public class SharedWriters implements Closeable,
                                       Consumer<ListOfStatistics<DoubleScoreStatistic>>,
                                       Supplier<Set<Path>>
 {
-
-    /**
-     * Instance of a {@link NetcdfDoubleScoreWriter}
-     */
-    
-    private final NetcdfDoubleScoreWriter netcdfDoublescoreWriter;
 
     private final NetcdfOutputWriter netcdfOutputWriter;
 
@@ -61,17 +53,7 @@ public class SharedWriters implements Closeable,
         
         return storedTypes.contains( Pair.of( format, type ) );
     }
-    
-    /**
-     * Returns a {@link NetcdfDoubleScoreWriter} or null.
-     * 
-     * @return a writer or null
-     */
-    
-    public NetcdfDoubleScoreWriter getNetcdfDoubleScoreWriter()
-    {
-        return netcdfDoublescoreWriter;
-    }
+
 
     NetcdfOutputWriter getNetcdfOutputWriter()
     {
@@ -84,31 +66,13 @@ public class SharedWriters implements Closeable,
     
     public static class SharedWritersBuilder 
     {
-        
-        /**
-         * Instance of a {@link NetcdfDoubleScoreWriter}
-         */
-
-        private NetcdfDoubleScoreWriter netcdfDoublescoreWriter;
 
         /**
-         * Instance of a {@link NetcdfDoubleScoreWriter}
+         * Instance of a {@link NetcdfOutputWriter}
          */
 
         private NetcdfOutputWriter netcdfOutputWriter;
 
-        /**
-         * Sets a {@link NetcdfDoubleScoreWriter}.
-         * 
-         * @param netcdfDoublescoreWriter the writer
-         * @return the builder
-         */
-        
-        public SharedWritersBuilder setNetcdfDoublescoreWriter( NetcdfDoubleScoreWriter netcdfDoublescoreWriter )
-        {
-            this.netcdfDoublescoreWriter = netcdfDoublescoreWriter;
-            return this;
-        }
 
         public SharedWritersBuilder setNetcdfOutputWriter( NetcdfOutputWriter netcdfOutputWriter )
         {
@@ -138,14 +102,12 @@ public class SharedWriters implements Closeable,
     private SharedWriters( SharedWritersBuilder builder )
     {
         // Set
-        this.netcdfDoublescoreWriter = builder.netcdfDoublescoreWriter;
         this.netcdfOutputWriter = builder.netcdfOutputWriter;
         
         // Register the stored types
         Set<Pair<DestinationType,StatisticGroup>> localTypes = new HashSet<>();
         
-        if( Objects.nonNull( this.netcdfDoublescoreWriter )
-            || Objects.nonNull( this.getNetcdfOutputWriter() ) )
+        if( Objects.nonNull( this.getNetcdfOutputWriter() ) )
         {
             localTypes.add( Pair.of( DestinationType.NETCDF, StatisticGroup.DOUBLE_SCORE ) );
         }
@@ -188,13 +150,8 @@ public class SharedWriters implements Closeable,
      * Closes resources managed by SharedWriters
      */
     @Override
-    public void close() throws IOException
+    public void close()
     {
-        if ( this.getNetcdfDoubleScoreWriter() != null )
-        {
-            this.getNetcdfDoubleScoreWriter().close();
-        }
-
         if ( this.getNetcdfOutputWriter() != null )
         {
             this.getNetcdfOutputWriter().close();

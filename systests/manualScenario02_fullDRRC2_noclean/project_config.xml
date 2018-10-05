@@ -36,8 +36,6 @@
         <metric> <name>all valid</name> </metric>
     </metrics>
     <outputs>
-        <destination type="numeric" decimalFormat="0.000000">
-            <path>output</path>
-        </destination>
+        <destination type="numeric" decimalFormat="0.000000" />
     </outputs>
 </project>

@@ -66,14 +66,10 @@
     </metrics>
     <outputs>
         <destination type="numeric" decimalFormat="0.000000">
-            <path>output/</path>
-	    <outputType>threshold lead</outputType>
+	        <outputType>threshold lead</outputType>
         </destination>
-        <destination type="pairs" decimalFormat="0.000000">
-            <path>output/</path>
-        </destination>
+        <destination type="pairs" decimalFormat="0.000000" />
         <destination type="graphic">
-            <path>output/</path>
             <outputType>threshold lead</outputType>
             <graphical width="800" height="600"/>
         </destination>

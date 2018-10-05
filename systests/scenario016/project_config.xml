@@ -37,11 +37,7 @@
         <metric> <name>reliability diagram</name> </metric>
     </metrics>
     <outputs>
-        <destination type="numeric" decimalFormat="0.000000">
-            <path>output/</path>
-        </destination>
-        <destination type="pairs" decimalFormat="0.000000">
-            <path>output/</path>
-        </destination>
+        <destination type="numeric" decimalFormat="0.000000" />
+        <destination type="pairs" decimalFormat="0.000000" />
     </outputs>
 </project>
