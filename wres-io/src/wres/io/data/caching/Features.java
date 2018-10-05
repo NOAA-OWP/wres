@@ -163,7 +163,7 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
                     "', comid: '" +
                     String.valueOf(feature.getComid()) );
         }
-        
+
         return Features.getCache().get( id );
     }
 
@@ -476,6 +476,17 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
             throws SQLException
     {
         Integer id = Features.getFeatureID( comid, lid, gageID, huc );
+
+        if (id == null)
+        {
+            throw new NullPointerException(
+                    "No feature ID could be found for the feature described as: location id: '" +
+                    String.valueOf(lid) +
+                    "', gage id: '" +
+                    String.valueOf(gageID) +
+                    "', comid: '" +
+                    String.valueOf(comid) );
+        }
         return Features.getCache().get( id );
     }
 

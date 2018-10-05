@@ -113,6 +113,7 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
     private Map<Integer, UnitConversions.Conversion> conversionMap;
     private int leadIteration;
 
+    // TODO: Why are we sending Feature objects instead of FeatureDetails objects?
     public void setFeature(Feature feature)
     {
         this.feature = feature;
