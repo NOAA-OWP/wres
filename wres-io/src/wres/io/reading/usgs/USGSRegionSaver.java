@@ -333,21 +333,22 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
                 stopwatch.start();
             }
 
+            usgsResponse = invocationBuilder.get( Response.class );
+
+            if (LOGGER.isDebugEnabled() && stopwatch != null)
+            {
+                stopwatch.stop();
+
+                LOGGER.debug( "It took {} to download the USGS data.",
+                              stopwatch.getFormattedDuration() );
+            }
+
             WebResponseRetryStrategy retryStrategy = new WebResponseRetryStrategy();
 
             while (retryStrategy.shouldTry())
             {
                 try
                 {
-                    usgsResponse = invocationBuilder.get( Response.class );
-
-                    if (LOGGER.isDebugEnabled() && stopwatch != null)
-                    {
-                        stopwatch.stop();
-
-                        LOGGER.debug( "It took {} to download the USGS data.",
-                                      stopwatch.getFormattedDuration() );
-                    }
                     response = new USGSRegionSaver.WebResponse( usgsResponse,
                                                                 false,
                                                                 usgsDetails.getId(),
