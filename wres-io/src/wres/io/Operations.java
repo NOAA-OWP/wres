@@ -502,6 +502,7 @@ public final class Operations {
     }
 
 
+    // TODO: Why are we passing a feature and not a FeatureDetails object, which is custom made for all of this?
     public static InputGenerator getInputs( ProjectDetails projectDetails,
                                             Feature feature,
                                             SharedWriterManager sharedWriterManager,
