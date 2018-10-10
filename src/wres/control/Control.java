@@ -212,6 +212,7 @@ public class Control implements Function<String[], Integer>,
                     ProcessorHelper.processProjectConfig( projectConfigPlus,
                                                           executors );
             this.pathsWrittenTo.addAll( innerPathsWrittenTo );
+            LOGGER.info( "Wrote the following output: {}", this.pathsWrittenTo );
         }
         catch ( WresProcessingException | IOException internalException)
         {
