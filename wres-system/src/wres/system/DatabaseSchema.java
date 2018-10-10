@@ -83,6 +83,7 @@ public class DatabaseSchema
         }
     }
 
+    // Left public for unit testing
     public String getChangelogURL()
     {
         URL changelogURL = this.getClass().getClassLoader().getResource( "database/db.changelog-master.xml" );
