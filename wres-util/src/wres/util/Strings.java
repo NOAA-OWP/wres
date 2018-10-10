@@ -24,33 +24,6 @@ public final class Strings
 	private static final Pattern RTRIM = Pattern.compile("\\s+$");
 	private static final Pattern NUMERIC_PATTERN = Pattern.compile( "^[-]?\\d*\\.?\\d+$" );
 
-	// This should always be true in a production environment. Set to false in
-    // cases where the read time for full files prevents practical development
-	private static boolean HASH_ENTIRE_FILE = true;
-	private static final Object HASH_LOCK = new Object();
-
-	public static void setFullHash(final boolean hashAll)
-    {
-        if (!hashAll)
-        {
-            LOGGER.warn( "Full file hashing is being disabled. This should never be done on a production instance, "
-                         + "only on development systems." );
-        }
-
-        synchronized ( HASH_LOCK )
-        {
-            Strings.HASH_ENTIRE_FILE = hashAll;
-        }
-    }
-
-    private static boolean shouldHashEntireFile()
-    {
-        synchronized ( HASH_LOCK )
-        {
-            return Strings.HASH_ENTIRE_FILE;
-        }
-    }
-
 	private static final int LINE_LENGTH = 120;
 	private static final int TRUNCATE_SIZE = 2000;
 
@@ -117,11 +90,6 @@ public final class Strings
 		return Strings.extractWord( source, regex, defaultString );
 	}
 
-	public static String extractWord(final String source, final Pattern pattern)
-	{
-		return Strings.extractWord( source, pattern, null );
-	}
-
 	public static String extractWord(final String source,
                                      final Pattern pattern,
                                      final String defaultString)
@@ -172,14 +140,21 @@ public final class Strings
                NUMERIC_PATTERN.matcher( possibleNumber.trim() ).matches();
 	}
 
-	public static String getStackTrace(Exception error)
+	public static String getStackTrace()
 	{
+        StackTraceElement[] traceElements = Thread.currentThread().getStackTrace();
+        traceElements = Arrays.copyOfRange( traceElements, 2, traceElements.length);
+        return Collections.toString( traceElements, StackTraceElement::toString, "    " + System.lineSeparator());
+	}
+
+    public static String getStackTrace(Exception error)
+    {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         PrintStream ps = new PrintStream(baos);
         error.printStackTrace(ps);
         ps.close();
         return baos.toString();
-	}
+    }
 
 	public static boolean isOneOf(String possible, String... options)
 	{
@@ -252,7 +227,7 @@ public final class Strings
 
 		boolean continueBuffering = amountLastBuffered != -1;
 
-		if (continueBuffering && !Strings.shouldHashEntireFile())
+		if (continueBuffering)
 		{
 			continueBuffering = passCount < passLimit;
 		}
@@ -298,7 +273,6 @@ public final class Strings
         }
         catch ( NoSuchAlgorithmException e )
         {
-        	LOGGER.error(Strings.getStackTrace( e ));
             throw new RuntimeException(
                     "Something went wrong when trying to generate the MD5 algorithm",
                     e );

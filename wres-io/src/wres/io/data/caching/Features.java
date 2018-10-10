@@ -118,12 +118,15 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
 
 	private static Integer getFeatureID( FeatureDetails.FeatureKey key) throws SQLException
     {
-        if (!Features.getCache().hasID( key ))
+        synchronized ( KEY_LOCK )
         {
-            Features.getCache().addElement( new FeatureDetails( key ) );
-        }
+            if ( !Features.getCache().hasID( key ) )
+            {
+                Features.getCache().addElement( new FeatureDetails( key ) );
+            }
 
-        return Features.getCache().getID( key );
+            return Features.getCache().getID( key );
+        }
     }
 
     private static Integer getFeatureID( Integer comid, String lid, String gageID, String huc)
@@ -643,6 +646,72 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
     {
         FeatureDetails featureDetails = Features.getDetailsByLID( lid );
         return Features.getVariableFeatureByFeature( featureDetails, variableID );
+    }
+
+    @Override
+    public boolean hasID( FeatureDetails.FeatureKey key )
+    {
+        synchronized ( this.getKeyLock() )
+        {
+            if (key.hasPrimaryKey())
+            {
+                // If the primary key for the FeatureKey has the current primary key (lid at the time of writing),
+                // use the standard search
+                return this.getKeyIndex().containsKey( key );
+            }
+            else
+            {
+                // Otherwise, scan the keys for a match on a partial key
+                boolean hasIt = false;
+
+                for ( FeatureDetails.FeatureKey featureKey : this.getKeyIndex().keySet() )
+                {
+                    hasIt = featureKey.equals( key );
+                    if ( hasIt )
+                    {
+                        break;
+                    }
+                }
+
+                return hasIt;
+            }
+        }
+    }
+
+    @Override
+    Integer getID( FeatureDetails.FeatureKey key ) throws SQLException
+    {
+        synchronized ( this.getKeyLock() )
+        {
+            if (key.hasPrimaryKey())
+            {
+                // If the primary key for the FeatureKey has the current primary key (lid at the time of writing),
+                // use the standard search
+                return this.getKeyIndex().get( key );
+            }
+            else
+            {
+                // Otherwise, scan the keys for a match on a partial key
+                Integer id = null;
+                boolean foundIt = false;
+
+                for ( Map.Entry<FeatureDetails.FeatureKey, Integer> keyId : this.getKeyIndex().entrySet() )
+                {
+                    if ( keyId.getKey().equals( key ) )
+                    {
+                        id = keyId.getValue();
+                        foundIt = true;
+                        break;
+                    }
+                }
+
+                if ( foundIt && id == null )
+                {
+                    LOGGER.debug( "The key of {} was found but the ID couldn't be retrieved.", key );
+                }
+                return id;
+            }
+        }
     }
 
     public static Integer getVariableFeatureID( Feature feature, Integer variableID)

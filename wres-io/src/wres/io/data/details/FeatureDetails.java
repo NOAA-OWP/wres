@@ -911,6 +911,16 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
             this.latitude = latitude;
         }
 
+        private String getPrimaryKey()
+        {
+            return this.lid;
+        }
+
+        public boolean hasPrimaryKey()
+        {
+            return this.getPrimaryKey() != null;
+        }
+
         @Override
         public String toString()
         {
@@ -974,17 +984,21 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
         }
 
         @Override
-        public int compareTo( FeatureKey featureKey )
+        public int compareTo( FeatureKey otherKey )
         {
-            int comparison = 0;
+            int comparison;
 
-            if (featureKey == null)
+            if (otherKey == null)
             {
                 comparison = 1;
             }
-            else if (this.equals( featureKey ))
+            else if (this.equals( otherKey ))
             {
                 comparison = 0;
+            }
+            else if (this.hasPrimaryKey() && otherKey.hasPrimaryKey() )
+            {
+                return this.getPrimaryKey().compareTo( otherKey.getPrimaryKey() );
             }
             else
             {

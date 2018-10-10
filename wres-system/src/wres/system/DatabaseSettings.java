@@ -304,7 +304,7 @@ final class DatabaseSettings
 		}
 		catch (PropertyVetoException e)
 		{
-			LOGGER.error(Strings.getStackTrace(e));
+			LOGGER.error("Property Configuration on database connection pool failed.", e);
 		}
 
 		return highPrioritySource;
