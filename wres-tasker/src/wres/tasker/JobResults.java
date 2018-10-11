@@ -7,20 +7,24 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.google.protobuf.GeneratedMessageV3;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static wres.tasker.JobMessageHelper.JOB_NOT_DONE_YET;
 
 import wres.messages.generated.JobStandardStream;
 
@@ -40,9 +44,6 @@ class JobResults
                                                                            .maximumSize( 10_000 )
                                                                            .build();
 
-    /** A magic value placeholder for job registered-but-not-done */
-    private static final Integer JOB_NOT_DONE_YET = Integer.MIN_VALUE + 1;
-
     /** A shared bag of job standard out */
     private static final Cache<String, ConcurrentNavigableMap<Integer,String>> JOB_STDOUT_BY_ID
             = Caffeine.newBuilder()
@@ -51,6 +52,12 @@ class JobResults
 
     /** A shared bag of job standard error */
     private static final Cache<String, ConcurrentNavigableMap<Integer,String>> JOB_STDERR_BY_ID
+            = Caffeine.newBuilder()
+                      .maximumSize( 1_000 )
+                      .build();
+
+    /** A shared bag of job output references */
+    private static final Cache<String, ConcurrentSkipListSet<String>> JOB_OUTPUTS_BY_ID
             = Caffeine.newBuilder()
                       .maximumSize( 1_000 )
                       .build();
@@ -119,7 +126,7 @@ class JobResults
      * on the service end and cache them before the web service is called.
      */
 
-    private static class ResultWatcher implements Callable<Integer>
+    private static class JobResultWatcher implements Callable<Integer>
     {
         private final Connection connection;
         private final String jobStatusExchangeName;
@@ -130,9 +137,9 @@ class JobResults
          * @param jobStatusExchangeName the exchange name to look in
          * @param jobId the job identifier to look for
          */
-        ResultWatcher( Connection connection,
-                       String jobStatusExchangeName,
-                       String jobId )
+        JobResultWatcher( Connection connection,
+                          String jobStatusExchangeName,
+                          String jobId )
         {
             this.connection = connection;
             this.jobStatusExchangeName = jobStatusExchangeName;
@@ -183,13 +190,13 @@ class JobResults
 
                 LOGGER.debug( "Bindresult: {}", bindResult );
 
-                JobResultReceiver jobResultReceiver =
-                        new JobResultReceiver( channel,
+                JobResultConsumer jobResultConsumer =
+                        new JobResultConsumer( channel,
                                                result );
 
                 String consumerTag = channel.basicConsume( queueName,
                                                            true,
-                                                           jobResultReceiver );
+                                                           jobResultConsumer );
                 LOGGER.debug( "consumerTag: {}", consumerTag );
 
                 LOGGER.debug( "Waiting to take a result value..." );
@@ -219,7 +226,7 @@ class JobResults
         @Override
         public String toString()
         {
-            StringJoiner result = new StringJoiner( ", ", "ResultWatcher with ", "" );
+            StringJoiner result = new StringJoiner( ", ", "JobResultWatcher with ", "" );
             result.add( "connection=" + this.getConnection() );
             result.add( "jobStatusExchangeName=" + this.getJobStatusExchangeName() );
             result.add( "jobId=" + this.getJobId() );
@@ -234,13 +241,11 @@ class JobResults
      * on the service end and cache them before the web service is called.
      */
 
-    private static class OutputWatcher implements Callable<ConcurrentNavigableMap<Integer,String>>
+    private static class StandardStreamWatcher implements Callable<ConcurrentNavigableMap<Integer,String>>
     {
         private static final int LOCAL_Q_SIZE = 10;
-        private static final int JOB_WAIT_MINUTES = 5;
-        private static final int MESSAGE_WAIT_SECONDS = 5;
 
-        public enum WhichOutput
+        public enum WhichStream
         {
             STDOUT,
             STDERR;
@@ -249,22 +254,22 @@ class JobResults
         private final Connection connection;
         private final String jobStatusExchangeName;
         private final String jobId;
-        private final WhichOutput whichOutput;
+        private final WhichStream whichStream;
 
         /**
          * @param connection shared connection
          * @param jobStatusExchangeName the exchange name to look in
          * @param jobId the job identifier to look for
          */
-        OutputWatcher( Connection connection,
-                       String jobStatusExchangeName,
-                       String jobId,
-                       WhichOutput whichOutput )
+        StandardStreamWatcher( Connection connection,
+                               String jobStatusExchangeName,
+                               String jobId,
+                               WhichStream whichStream )
         {
             this.connection = connection;
             this.jobStatusExchangeName = jobStatusExchangeName;
             this.jobId = jobId;
-            this.whichOutput = whichOutput;
+            this.whichStream = whichStream;
             LOGGER.debug( "Instantiated {}", this );
         }
 
@@ -283,9 +288,9 @@ class JobResults
             return this.jobId;
         }
 
-        private WhichOutput getWhichOutput()
+        private WhichStream getWhichStream()
         {
-            return this.whichOutput;
+            return this.whichStream;
         }
 
         /**
@@ -296,13 +301,14 @@ class JobResults
         public ConcurrentNavigableMap<Integer,String> call() throws IOException, TimeoutException
         {
             ConcurrentNavigableMap<Integer,String> sharedList = new ConcurrentSkipListMap<>();
+            Consumer<GeneratedMessageV3> sharer = new JobStandardStreamSharer( sharedList );
 
             // Store shared list to the static bag-o-state.
-            if ( this.getWhichOutput().equals( WhichOutput.STDOUT ) )
+            if ( this.getWhichStream().equals( WhichStream.STDOUT ) )
             {
                 JOB_STDOUT_BY_ID.put( this.getJobId(), sharedList );
             }
-            else if ( this.getWhichOutput().equals( WhichOutput.STDERR ) )
+            else if ( this.getWhichStream().equals( WhichStream.STDERR ) )
             {
                 JOB_STDERR_BY_ID.put( this.getJobId(), sharedList );
             }
@@ -316,7 +322,7 @@ class JobResults
 
             String exchangeName = this.getJobStatusExchangeName();
             String exchangeType = "topic";
-            String bindingKey = "job." + this.getJobId() + "." + this.getWhichOutput().name();
+            String bindingKey = "job." + this.getJobId() + "." + this.getWhichStream().name();
 
             try ( Channel channel = this.getConnection().createChannel() )
             {
@@ -326,15 +332,19 @@ class JobResults
                 String queueName = channel.queueDeclare().getQueue();
                 channel.queueBind( queueName, exchangeName, bindingKey );
 
-                JobOutputReceiver jobOutputReceiver =
-                        new JobOutputReceiver( channel,
-                                               oneLineOfOutput );
+                JobStandardStreamConsumer jobStandardStreamConsumer =
+                        new JobStandardStreamConsumer( channel,
+                                                       oneLineOfOutput );
 
                 channel.basicConsume( queueName,
                                       true,
-                                      jobOutputReceiver );
+                                      jobStandardStreamConsumer );
 
-                waitForAllMessages( queueName, oneLineOfOutput, sharedList );
+                JobMessageHelper.waitForAllMessages( queueName,
+                                                     this.getJobId(),
+                                                     oneLineOfOutput,
+                                                     sharer,
+                                                     this.getWhichStream().toString() );
             }
             catch ( InterruptedException ie )
             {
@@ -353,82 +363,10 @@ class JobResults
         }
 
 
-        /**
-         * Wait for messages from rabbitmq client
-         * @param queueName the queue name to look in
-         * @param oneLineOfOutput the synchronizer to use to talk to q client
-         * @param sharedList shared list to save to, MUTATED! Output to this!
-         * @throws InterruptedException when talking to q client is interrupted
-         */
-
-        private void waitForAllMessages( String queueName,
-                                         BlockingQueue<JobStandardStream.job_standard_stream> oneLineOfOutput,
-                                         ConcurrentNavigableMap<Integer,String> sharedList )
-                throws InterruptedException
-        {
-            boolean timedOut = false;
-
-            while ( !timedOut )
-            {
-                LOGGER.debug( "Consuming from {}, waiting for result.", queueName );
-
-                // One call to .basicConsume can result in many messages
-                // being received by our jobOutputReceiver. Look for them.
-                // This still seems uncertain and finnicky, but works?
-                boolean mayBeMoreMessages = true;
-
-                while ( mayBeMoreMessages )
-                {
-                    JobStandardStream.job_standard_stream oneMoreLine
-                            = oneLineOfOutput.poll( MESSAGE_WAIT_SECONDS, TimeUnit.SECONDS );
-
-                    if ( oneMoreLine != null )
-                    {
-                        sharedList.put( oneMoreLine.getIndex(),
-                                        oneMoreLine.getText() );
-                    }
-                    else
-                    {
-                        mayBeMoreMessages = false;
-                    }
-                }
-
-                // Give up waiting if we don't get any output for some time
-                // after the job has completed.
-                JobStandardStream.job_standard_stream oneLastLine =
-                        oneLineOfOutput.poll( JOB_WAIT_MINUTES, TimeUnit.MINUTES );
-
-                if ( oneLastLine != null )
-                {
-                    sharedList.put( oneLastLine.getIndex(),
-                                    oneLastLine.getText() );
-                }
-                else
-                {
-                    // Has the job actually finished?
-                    Integer jobStatus = JobResults.getJobResultRaw( this.getJobId() );
-
-                    if ( jobStatus != null && !jobStatus.equals( JOB_NOT_DONE_YET ) )
-                    {
-                        timedOut = true;
-                        LOGGER.info( "Finished waiting for job {} {}",
-                                     jobId, whichOutput );
-                    }
-                    else
-                    {
-                        timedOut = false;
-                        LOGGER.info( "Still waiting for job {} {}",
-                                     jobId, whichOutput );
-                    }
-                }
-            }
-        }
-
-
         @Override
         public String toString()
         {
-            StringJoiner result = new StringJoiner( ", ", "OutputWatcher with ", "" );
+            StringJoiner result = new StringJoiner( ", ", "StandardStreamWatcher with ", "" );
             result.add( "connection=" + this.getConnection() );
             result.add( "jobStatusExchangeName=" + this.getJobStatusExchangeName() );
             result.add( "jobId=" + this.getJobId() );
@@ -461,21 +399,25 @@ class JobResults
                          jobId );
         }
 
-        ResultWatcher resultWatcher = new ResultWatcher( this.getConnection(),
-                                                         jobStatusExchangeName,
-                                                         jobId );
-        OutputWatcher stdoutWatcher = new OutputWatcher( this.getConnection(),
-                                                         jobStatusExchangeName,
-                                                         jobId,
-                                                         OutputWatcher.WhichOutput.STDOUT );
-        OutputWatcher stderrWatcher = new OutputWatcher( this.getConnection(),
-                                                         jobStatusExchangeName,
-                                                         jobId,
-                                                         OutputWatcher.WhichOutput.STDERR );
+        JobResultWatcher jobResultWatcher = new JobResultWatcher( this.getConnection(),
+                                                                  jobStatusExchangeName,
+                                                                  jobId );
+        StandardStreamWatcher stdoutWatcher = new StandardStreamWatcher( this.getConnection(),
+                                                                         jobStatusExchangeName,
+                                                                         jobId,
+                                                                         StandardStreamWatcher.WhichStream.STDOUT );
+        StandardStreamWatcher stderrWatcher = new StandardStreamWatcher( this.getConnection(),
+                                                                         jobStatusExchangeName,
+                                                                         jobId,
+                                                                         StandardStreamWatcher.WhichStream.STDERR );
+        JobOutputWatcher jobOutputWatcher = new JobOutputWatcher( this.getConnection(),
+                                                                  jobStatusExchangeName,
+                                                                  jobId );
 
         EXECUTOR.submit( stdoutWatcher );
         EXECUTOR.submit( stderrWatcher );
-        return EXECUTOR.submit( resultWatcher );
+        EXECUTOR.submit( jobOutputWatcher );
+        return EXECUTOR.submit( jobResultWatcher );
     }
 
     /**

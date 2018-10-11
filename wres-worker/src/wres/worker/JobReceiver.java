@@ -1,6 +1,9 @@
 package wres.worker;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
@@ -73,7 +76,8 @@ class JobReceiver extends DefaultConsumer
                                 byte[] body )
     {
         // Translate the message into a command
-        ProcessBuilder processBuilder = createBuilderFromMessage( body );
+        ProcessBuilder processBuilder = createBuilderFromMessage( body,
+                                                                  properties.getCorrelationId() );
         // Set up the information needed to launch process and send info back
         WresProcess wresProcess = new WresProcess( processBuilder,
                                                    properties.getReplyTo(),
@@ -90,9 +94,11 @@ class JobReceiver extends DefaultConsumer
      * @param message a message from the queue
      * @return a ProcessBuilder to attempt to run
      * @throws IllegalArgumentException if the message is not well formed
+     * @throws IllegalStateException when output data directory cannot be created
      */
 
-    private ProcessBuilder createBuilderFromMessage( byte[] message )
+    private ProcessBuilder createBuilderFromMessage( byte[] message,
+                                                     String jobId )
     {
         Job.job jobMessage;
 
@@ -105,9 +111,25 @@ class JobReceiver extends DefaultConsumer
             throw new IllegalArgumentException( "Bad message received", ipbe );
         }
 
+        // Create an area for data related to this job, using java.io.tmpdir.
+        // Will end up with a nested directory structure.
+        Path outputPath;
+
+        try
+        {
+            outputPath = Files.createTempDirectory( "wres_job_"
+                                                    + jobId + "_" );
+        }
+        catch ( IOException ioe )
+        {
+            throw new IllegalStateException( "Failed to create directory for job "
+                                             + jobId, ioe );
+        }
+
         String javaOpts = "-Dwres.url=" + jobMessage.getDatabaseHostname()
                           + " -Dwres.databaseName=" + jobMessage.getDatabaseName()
-                          + " -Dwres.username=" + jobMessage.getDatabaseUsername();
+                          + " -Dwres.username=" + jobMessage.getDatabaseUsername()
+                          + " -Djava.io.tmpdir=" + outputPath.toString();
 
         List<String> result = new ArrayList<>();
 
