@@ -14,9 +14,9 @@ import org.slf4j.LoggerFactory;
 
 import wres.messages.generated.JobStandardStream;
 
-class JobOutputReceiver extends DefaultConsumer
+class JobStandardStreamConsumer extends DefaultConsumer
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger( JobOutputReceiver.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( JobStandardStreamConsumer.class );
 
     private final BlockingQueue<JobStandardStream.job_standard_stream> result;
 
@@ -25,8 +25,8 @@ class JobOutputReceiver extends DefaultConsumer
      * @param result the shared object to write a result to
      */
 
-    JobOutputReceiver( Channel channel,
-                       BlockingQueue<JobStandardStream.job_standard_stream> result )
+    JobStandardStreamConsumer( Channel channel,
+                               BlockingQueue<JobStandardStream.job_standard_stream> result )
     {
         super( channel );
         this.result = result;
@@ -58,31 +58,20 @@ class JobOutputReceiver extends DefaultConsumer
             throw new WresParseException( "Failed to parse message, hex: " + hexVersion, ipbe );
         }
 
-        this.getResult().offer( decodedResult );
-    }
+        boolean offerSucceeded = this.getResult().offer( decodedResult );
 
-
-    /**
-     * Because of the lack of checked exception handling above, use custom
-     * RuntimeException to notify when a parse error occurs (which means that
-     * we probably messed up somewhere in versions of a dependency or something)
-     */
-
-    private static class WresParseException extends RuntimeException
-    {
-        public WresParseException( Throwable cause )
+        if ( !offerSucceeded )
         {
-            super( cause );
-        }
+            LOGGER.info( "Failed to offer {} to the standardstream processing queue {}, retrying.",
+                         decodedResult, this.getResult() );
 
-        public WresParseException( String message, Throwable cause )
-        {
-            super( message, cause );
-        }
+            boolean secondOfferSucceeded = this.getResult().offer( decodedResult );
 
-        public WresParseException( String message )
-        {
-            super( message );
+            if ( !secondOfferSucceeded )
+            {
+                LOGGER.warn( "Failed again to offer {} to the standardstream processing queue {}, gave up.",
+                             decodedResult, this.getResult() );
+            }
         }
     }
 }
