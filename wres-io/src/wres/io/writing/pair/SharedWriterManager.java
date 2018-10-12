@@ -11,15 +11,12 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
@@ -29,7 +26,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.io.concurrency.Executor;
 import wres.io.concurrency.WRESRunnableException;
 
 /**
@@ -47,7 +43,9 @@ public class SharedWriterManager implements Closeable,
     /**
      * The header to write on new files.
      */
-    private static final String OUTPUT_HEADER = "Feature,Date,Lead,Window,Left,Right";
+    private static final String OUTPUT_HEADER =
+            "FEATURE DESCRIPTION,VALID TIME,LEAD TIME IN " + PairSupplier.DEFAULT_DURATION_UNITS.name().toUpperCase()
+                                                + ",TIME WINDOW INDEX,LEFT,RIGHT";
 
     /**
      * A map of open writers so we don't have to constantly reopen the files.
@@ -58,12 +56,6 @@ public class SharedWriterManager implements Closeable,
      * A map of locks for writers to guard those writers.
      */
     private final ConcurrentMap<Path, ReentrantLock> pairWriterLocks;
-
-    /**
-     * Queue to be used by pairBuildingExecutor.
-     */
-    private final BlockingQueue<Runnable> pairBuildingQueue =
-            new ArrayBlockingQueue<>( 100 );
 
     /**
      * ThreadFactory to be used by pairBuildingExecutor (helps name threads)
@@ -244,6 +236,12 @@ public class SharedWriterManager implements Closeable,
     @Override
     public void accept( Supplier<Pair<Path,String>> pairCallable )
     {
+        
+        
+        
+        
+        
+        
         // Send the pair building task through a larger executor with a caller
         // runs rejection policy, and send the result of that task to the
         // pair writing executor which is a single thread executor devoted to

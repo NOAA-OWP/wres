@@ -27,7 +27,7 @@ import wres.util.CalculationException;
 /**
  * Returns a string to be written to a pairs file.
  */
-public class PairWriter implements Supplier<Pair<Path,String>>
+public class PairSupplier implements Supplier<Pair<Path,String>>
 {
 
     /*
@@ -43,7 +43,7 @@ public class PairWriter implements Supplier<Pair<Path,String>>
     
     static final ChronoUnit DEFAULT_DURATION_UNITS = ChronoUnit.SECONDS;
     
-    private static final Logger LOGGER = LoggerFactory.getLogger( PairWriter.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( PairSupplier.class );
     private static final String NEWLINE = System.lineSeparator();
     private static final String DELIMITER = ",";
     private static final String PAIR_FILENAME = "/pairs.csv";
@@ -62,7 +62,7 @@ public class PairWriter implements Supplier<Pair<Path,String>>
     private final DecimalFormat formatter;
 
     /**
-     * Build a {@link PairWriter} with a mutable builder. 
+     * Build a {@link PairSupplier} with a mutable builder. 
      */
     
     public static class Builder
@@ -215,9 +215,9 @@ public class PairWriter implements Supplier<Pair<Path,String>>
          * @return the pair writer
          */
         
-        public PairWriter build()
+        public PairSupplier build()
         {
-            return new PairWriter( this );
+            return new PairSupplier( this );
         }
     }
 
@@ -227,7 +227,7 @@ public class PairWriter implements Supplier<Pair<Path,String>>
      * @throws NullPointerException if one or more required inputs is null
      */
     
-    private PairWriter( Builder builder )
+    private PairSupplier( Builder builder )
     {
         // Set then validate
         this.outputDirectory = builder.outputDirectory;
@@ -351,14 +351,16 @@ public class PairWriter implements Supplier<Pair<Path,String>>
         line.add( ConfigHelper.getFeatureDescription( this.getFeature() ) );
 
         // Avoid changing date format to iso format because benchmarks
-        line.add( this.date.toString()
-                           .replace( "T", " " )
-                           .replace( "Z", "" ) );
+        // Jbr: #55231 reverse this 
+        //line.add( this.date.toString()
+        //                   .replace( "T", " " )
+        //                   .replace( "Z", "" ) );
 
         // But above could be as simple as this (and be more precise):
-        //line.add( this.date.toString() );
+        // Jbr: and now it is! See #55231. 
+        line.add( this.date.toString() );
 
-        line.add( String.valueOf( this.getLeadDuration().toHours() ) );
+        line.add( String.valueOf( this.getLeadDuration().get( PairSupplier.DEFAULT_DURATION_UNITS ) ) );
 
         try
         {
@@ -366,7 +368,7 @@ public class PairWriter implements Supplier<Pair<Path,String>>
         }
         catch ( CalculationException e )
         {
-            throw new WRESRunnableException( "Pairs could not be gotten for " +
+            throw new WRESRunnableException( "Pairs could not be written for " +
                                              ConfigHelper.getFeatureDescription( this.feature ),
                                              e );
         }
