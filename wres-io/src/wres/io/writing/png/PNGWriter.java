@@ -185,7 +185,13 @@ abstract class PNGWriter
             {
                 outputType = destConfig.getOutputType();
             }
-            String templateResourceName = destConfig.getGraphical().getTemplate();
+            String templateResourceName = null;
+            
+            if( Objects.nonNull( destConfig.getGraphical() ) )
+            {
+                templateResourceName = destConfig.getGraphical().getTemplate();
+            }
+
             if ( Objects.nonNull( nextConfig ) )
             {
 
