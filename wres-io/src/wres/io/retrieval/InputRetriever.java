@@ -52,7 +52,7 @@ import wres.io.retrieval.scripting.Scripter;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
-import wres.io.writing.pair.PairWriter;
+import wres.io.writing.pair.PairSupplier;
 import wres.io.writing.pair.SharedWriterManager;
 import wres.util.CalculationException;
 import wres.util.NotImplementedException;
@@ -1350,7 +1350,7 @@ class InputRetriever extends Retriever //WRESCallable<MetricInput<?>>
             // TODO: Since we are passing the ForecastedPair object and the ProjectDetails,
             // we can probably eliminate a lot of the arguments
 
-            PairWriter pairWriter = new PairWriter.Builder()
+            PairSupplier pairWriter = new PairSupplier.Builder()
                     .setDestinationConfig( dest )
                     .setDate( pair.getValidTime() )
                     .setFeature( this.getFeature() )

@@ -40,7 +40,7 @@ import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
-import wres.io.writing.pair.PairWriter;
+import wres.io.writing.pair.PairSupplier;
 import wres.io.writing.pair.SharedWriterManager;
 import wres.util.TimeHelper;
 
@@ -74,7 +74,7 @@ public class TimeSeriesRetriever extends Retriever
 
         for (DestinationConfig destination : destinationConfigs)
         {
-            PairWriter writer = new PairWriter.Builder()
+            PairSupplier writer = new PairSupplier.Builder()
                     .setDestinationConfig( destination )
                     .setDate( pair.getValidTime() )
                     .setFeature( this.getFeature() )
