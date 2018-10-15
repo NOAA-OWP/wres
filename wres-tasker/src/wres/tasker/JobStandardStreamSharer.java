@@ -10,7 +10,7 @@ import wres.messages.generated.JobStandardStream;
 /**
  * Saves stream messages to a given shared location.
  *
- * The impetus is to genericize waitForAllMessages method in JobMessageHelper
+ * The purpose is to genericize waitForAllMessages method in JobMessageHelper
  * rather than re-implementing it over and over for each message type.
  * Instead, we have this boilerplate helper class for each message type.
  */
