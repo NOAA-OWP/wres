@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+package wres.messages.generated;
+
+message job_output
+{
+    string resource = 1;
+}

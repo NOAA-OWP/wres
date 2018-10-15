@@ -390,8 +390,6 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTestHelpe
 
         List<String> firstResult = Files.readAllLines( pathToFirstFile );
 
-        System.out.println( firstResult.get( 0 ) );
-
         assertTrue( firstResult.get( 0 ).equals( "EARLIEST VALID TIME,LATEST VALID TIME,EARLIEST LEAD TIME IN SECONDS,"
                                                  + "LATEST LEAD TIME IN SECONDS,MEAN SQUARE ERROR All data,"
                                                  + "MEAN SQUARE ERROR > 23.0" ) );
