@@ -1336,7 +1336,7 @@ public final class Database {
 
                 removalQueries.add(Database.execute( new SQLExecutor( valueRemover.toString() ) ));
 
-                LOGGER.info("Started task to remove orphaned values in {}...", partition);
+                LOGGER.debug("Started task to remove orphaned values in {}...", partition);
             }
 
             ScriptBuilder removalScript = new ScriptBuilder(  );
@@ -1349,7 +1349,7 @@ public final class Database {
 
             removalQueries.add(Database.execute( new SQLExecutor( removalScript.toString() ) ));
 
-            LOGGER.info("Started task to remove orphaned observations...");
+            LOGGER.debug("Started task to remove orphaned observations...");
 
             int total = removalQueries.size();
             int completed = 0;
@@ -1368,7 +1368,7 @@ public final class Database {
                         query.get( 500, TimeUnit.MILLISECONDS );
                     }
                     completed++;
-                    LOGGER.info("Completed a removal task. [{}/{}]", completed, total);
+                    LOGGER.debug("Completed a removal task. [{}/{}]", completed, total);
                 }
                 catch ( InterruptedException e )
                 {
@@ -1394,10 +1394,10 @@ public final class Database {
             removalScript.addTab().addLine("WHERE PS.source_id = TSS.source_id");
             removalScript.addLine(");");
 
-            LOGGER.info("Removing orphaned TimeSeriesSource Links...");
+            LOGGER.debug("Removing orphaned TimeSeriesSource Links...");
             Database.execute( removalScript.toString() );
 
-            LOGGER.info("Removed orphaned TimeSeriesSource Links");
+            LOGGER.debug("Removed orphaned TimeSeriesSource Links");
 
             removalScript = new ScriptBuilder(  );
 
@@ -1410,7 +1410,7 @@ public final class Database {
 
             removalQueries.add(Database.execute( new SQLExecutor( removalScript.toString() ) ));
 
-            LOGGER.info("Added Task to remove orphaned time series...");
+            LOGGER.debug("Added Task to remove orphaned time series...");
 
             removalScript = new ScriptBuilder(  );
 
@@ -1423,7 +1423,7 @@ public final class Database {
 
             removalQueries.add(Database.execute( new SQLExecutor( removalScript.toString() ) ));
 
-            LOGGER.info("Added task to remove orphaned sources...");
+            LOGGER.debug("Added task to remove orphaned sources...");
 
             removalScript = new ScriptBuilder(  );
 
@@ -1434,7 +1434,7 @@ public final class Database {
             removalScript.addTab().addLine("WHERE PS.project_id = P.project_id");
             removalScript.add(");");
 
-            LOGGER.info("Added task to remove orphaned projects...");
+            LOGGER.debug("Added task to remove orphaned projects...");
 
             removalQueries.add(Database.execute( new SQLExecutor( removalScript.toString() ) ));
 
@@ -1448,7 +1448,7 @@ public final class Database {
                 try
                 {
                     query.get( 5, TimeUnit.SECONDS );
-                    LOGGER.info("Either orphaned forecasts, projects, or sources have been removed.");
+                    LOGGER.debug("Either orphaned forecasts, projects, or sources have been removed.");
                 }
                 catch ( InterruptedException e )
                 {
@@ -1465,7 +1465,7 @@ public final class Database {
                     timeoutCount++;
                     if (timeoutCount % timoutLimit == 0)
                     {
-                        LOGGER.info( "Forecast, project, and source metadata clearance is taking longer than expected..." );
+                        LOGGER.debug( "Forecast, project, and source metadata clearance is taking longer than expected..." );
                     }
                 }
             }
