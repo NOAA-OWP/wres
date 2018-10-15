@@ -15,6 +15,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
 import java.util.StringJoiner;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -26,6 +27,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.postgresql.PGConnection;
 import org.postgresql.copy.CopyManager;
@@ -57,12 +59,11 @@ public final class Database {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Database.class);
 
-	// The ingest lock key kind of resembles word INGEST, doesn't it?
 	private static final long MUTATION_LOCK_KEY = 126357;
 	private static final long MUTATION_LOCK_WAIT_MS = 32000;
 
-	// The length of an acceptable query; arbitrarily set to 5 minutes
-	private static final int QUERY_TIMEOUT = 60 * 5;
+	// The length of an acceptable query; arbitrarily set to 15 minutes
+	private static final int QUERY_TIMEOUT = 60 * 15;
 
 	/**
 	 * An advisory lock only lasts for the duration of a connection. If we
@@ -73,7 +74,7 @@ public final class Database {
 	private static Connection advisoryLockConnection = null;
 
     /**
-     * @Guards advisoryLockConnection
+     * Protects access to the advisoryLockConnection
      */
 	private static final Object ADVISORY_LOCK = new Object();
 
@@ -1281,11 +1282,14 @@ public final class Database {
                 return false;
             }
 
+            // Can't lock for mutation here because we'd also need to unlock, but this
+            // operation will occur alongside other operations that need that lock.
+
             LOGGER.info("Incomplete data has been detected. Incomplete data "
                         + "will now be removed to ensure that all data operated "
                         + "upon is valid.");
 
-            List<String> partitionTables = new ArrayList<>();
+            List<String> partitionTables;
             ScriptBuilder script;
 
             // First, get list of all partition tables to gather
@@ -1297,13 +1301,14 @@ public final class Database {
                 script.addLine( "INNER JOIN pg_catalog.pg_namespace N" );
                 script.addTab().addLine( "ON N.oid = C.relnamespace" );
                 script.addLine( "WHERE relchecks > 0" );
-                script.addTab().addLine( "AND N.nspname = 'partitions'" );
+                script.addTab().addLine( "AND (N.nspname = 'partitions' OR N.nspname = 'wres')" );
                 script.addTab().addLine( "AND C.relname LIKE 'timeseriesvalue_lead%'" );
                 script.addTab().addLine( "AND relkind = 'r';" );
 
-                Database.consume(
+                partitionTables = Database.interpret(
                         script.toString(),
-                        tableRow -> partitionTables.add(tableRow.getString( "table_name" ))
+                        tableRow -> tableRow.getString( "table_name" ),
+                        false
                 );
             }
             catch ( SQLException databaseError )
@@ -1314,76 +1319,156 @@ public final class Database {
                         databaseError );
             }
 
-            // Next obtain locks for individual tables
-            // Exclusive mode is used so that unrelated processes may read, but not modify
-
-            script = new ScriptBuilder(  );
-
-            script.addLine( "LOCK TABLE wres.Source IN EXCLUSIVE MODE;" );
-            script.addLine( "LOCK TABLE wres.ProjectSource IN EXCLUSIVE MODE;");
-            script.addLine( "LOCK TABLE wres.Project IN EXCLUSIVE MODE;");
-            script.addLine( "LOCK TABLE wres.TimeSeriesSource IN EXCLUSIVE MODE;");
-            script.addLine( "LOCK TABLE wres.TimeSeries IN EXCLUSIVE MODE;");
-            script.addLine( "LOCK TABLE wres.Observation IN EXCLUSIVE MODE;");
+            Queue<Future> removalQueries = new LinkedList<>(  );
 
             for (String partition : partitionTables)
             {
-                script.addLine( "LOCK TABLE ", partition, " IN EXCLUSIVE MODE;" );
+                ScriptBuilder valueRemover = new ScriptBuilder();
+                valueRemover.addLine( "DELETE FROM ", partition, " P" );
+                valueRemover.addLine( "WHERE NOT EXISTS (");
+                valueRemover.addTab().addLine( "SELECT 1");
+                valueRemover.addTab().addLine( "FROM wres.TimeSeriesSource TSS");
+                valueRemover.addTab().addLine( "INNER JOIN wres.ProjectSource PS");
+                valueRemover.addTab(  2  ).addLine( "ON PS.source_id = TSS.source_id");
+                valueRemover.addTab().addLine( "WHERE TSS.timeseries_id = P.timeseries_id");
+                valueRemover.addTab(  2  ).addLine( "AND (TSS.lead IS NULL OR TSS.lead = P.lead)");
+                valueRemover.add(");");
+
+                removalQueries.add(Database.execute( new SQLExecutor( valueRemover.toString() ) ));
+
+                LOGGER.info("Started task to remove orphaned values in {}...", partition);
             }
 
-            script.addLine();
+            ScriptBuilder removalScript = new ScriptBuilder(  );
+            removalScript.addLine("DELETE FROM wres.Observation O");
+            removalScript.addLine("WHERE NOT EXISTS (");
+            removalScript.addTab().addLine("SELECT 1");
+            removalScript.addTab().addLine("FROM wres.ProjectSource PS");
+            removalScript.addTab().addLine("WHERE PS.source_id = O.source_id");
+            removalScript.add(");");
 
-            script.addLine("DELETE FROM wres.Source S" );
-            script.addLine("WHERE NOT EXISTS (");
-            script.addTab().addLine("SELECT 1");
-            script.addTab().addLine("FROM wres.ProjectSource PS");
-            script.addTab().addLine("WHERE PS.source_id = S.source_id");
-            script.addLine(");");
-            script.addLine("DELETE FROM wres.Project P");
-            script.addLine("WHERE NOT EXISTS (");
-            script.addTab().addLine("SELECT 1");
-            script.addTab().addLine("FROM wres.ProjectSource PS");
-            script.addTab().addLine("WHERE PS.project_id = P.project_id");
-            script.addLine(");");
-            script.addLine("DELETE FROM wres.TimeSeriesSource TSS");
-            script.addLine("WHERE NOT EXISTS (");
-            script.addTab().addLine("SELECT 1");
-            script.addTab().addLine("FROM wres.ProjectSource S");
-            script.addTab().addLine("WHERE S.source_id = TSS.source_id");
-            script.addLine(");");
-            script.addLine("DELETE FROM wres.Observation O");
-            script.addLine("WHERE NOT EXISTS (");
-            script.addTab().addLine("SELECT 1");
-            script.addTab().addLine("FROM wres.ProjectSource S");
-            script.addTab().addLine("WHERE S.source_id = O.source_id");
-            script.addLine(");");
-            script.addLine("DELETE FROM wres.TimeSeries TS");
-            script.addLine("WHERE NOT EXISTS (");
-            script.addTab().addLine("SELECT 1");
-            script.addTab().addLine("FROM wres.TimeSeriesSource TSS");
-            script.addTab().addLine("INNER JOIN wres.ProjectSource PS");
-            script.addTab(  2  ).addLine("ON PS.source_id = TSS.source_id");
-            script.addTab().addLine("WHERE TSS.timeseries_id = TS.timeseries_id");
-            script.addLine(");");
+            removalQueries.add(Database.execute( new SQLExecutor( removalScript.toString() ) ));
 
-            for (String partition : partitionTables)
+            LOGGER.info("Started task to remove orphaned observations...");
+
+            int total = removalQueries.size();
+            int completed = 0;
+            while (!removalQueries.isEmpty())
             {
-                script.addLine("DELETE FROM ", partition, " FV");
-                script.addLine("WHERE NOT EXISTS (");
-                script.addTab().addLine("SELECT 1");
-                script.addTab().addLine("FROM wres.ProjectSource PS");
-                script.addTab().addLine("INNER JOIN wres.TimeSeriesSource TSS");
-                script.addTab(  2  ).addLine("ON TSS.source_id = PS.source_id");
-                script.addTab().addLine("WHERE TSS.timeseries_id = FV.timeseries_id");
-                script.addLine(");");
+                Future query = removalQueries.remove();
+
+                try
+                {
+                    if (removalQueries.isEmpty())
+                    {
+                        query.get();
+                    }
+                    else
+                    {
+                        query.get( 500, TimeUnit.MILLISECONDS );
+                    }
+                    completed++;
+                    LOGGER.info("Completed a removal task. [{}/{}]", completed, total);
+                }
+                catch ( InterruptedException e )
+                {
+                    LOGGER.error("Removal Query interrupted.", e);
+                    Thread.currentThread().interrupt();
+                }
+                catch ( ExecutionException e )
+                {
+                    throw new SQLException( "Orphaned observed and forecasted values could not be removed.", e );
+                }
+                catch ( TimeoutException e )
+                {
+                    removalQueries.add( query );
+                }
             }
 
-            // We have to run everything sequentially because the tables need
-            // to know about their parents to know what to delete.
-            // Async would be neat, but not really possible. MVCC might make it
-            // possible though; probably worth exploring since this can take a
-            // while
-            Database.execute( script.toString(), true );
+            removalScript = new ScriptBuilder(  );
+
+            removalScript.addLine("DELETE FROM wres.TimeSeriesSource TSS");
+            removalScript.addLine("WHERE NOT EXISTS (");
+            removalScript.addTab().addLine("SELECT 1");
+            removalScript.addTab().addLine("FROM wres.ProjectSource PS");
+            removalScript.addTab().addLine("WHERE PS.source_id = TSS.source_id");
+            removalScript.addLine(");");
+
+            LOGGER.info("Removing orphaned TimeSeriesSource Links...");
+            Database.execute( removalScript.toString() );
+
+            LOGGER.info("Removed orphaned TimeSeriesSource Links");
+
+            removalScript = new ScriptBuilder(  );
+
+            removalScript.addLine("DELETE FROM wres.TimeSeries TS");
+            removalScript.addLine("WHERE NOT EXISTS (");
+            removalScript.addTab().addLine("SELECT 1");
+            removalScript.addTab().addLine("FROM wres.TimeSeriesSource TSS");
+            removalScript.addTab().addLine("WHERE TS.timeseries_id = TS.timeseries_id");
+            removalScript.add(");");
+
+            removalQueries.add(Database.execute( new SQLExecutor( removalScript.toString() ) ));
+
+            LOGGER.info("Added Task to remove orphaned time series...");
+
+            removalScript = new ScriptBuilder(  );
+
+            removalScript.addLine("DELETE FROM wres.Source S");
+            removalScript.addLine("WHERE NOT EXISTS (");
+            removalScript.addTab().addLine("SELECT 1");
+            removalScript.addTab().addLine("FROM wres.ProjectSource PS");
+            removalScript.addTab().addLine("WHERE PS.source_id = S.source_id");
+            removalScript.add(");");
+
+            removalQueries.add(Database.execute( new SQLExecutor( removalScript.toString() ) ));
+
+            LOGGER.info("Added task to remove orphaned sources...");
+
+            removalScript = new ScriptBuilder(  );
+
+            removalScript.addLine("DELETE FROM wres.Project P");
+            removalScript.addLine("WHERE NOT EXISTS (");
+            removalScript.addTab().addLine("SELECT 1");
+            removalScript.addTab().addLine("FROM wres.ProjectSource PS");
+            removalScript.addTab().addLine("WHERE PS.project_id = P.project_id");
+            removalScript.add(");");
+
+            LOGGER.info("Added task to remove orphaned projects...");
+
+            removalQueries.add(Database.execute( new SQLExecutor( removalScript.toString() ) ));
+
+            int timeoutCount = 0;
+            int timoutLimit = 12;
+
+            while (!removalQueries.isEmpty())
+            {
+                Future query = removalQueries.remove();
+
+                try
+                {
+                    query.get( 5, TimeUnit.SECONDS );
+                    LOGGER.info("Either orphaned forecasts, projects, or sources have been removed.");
+                }
+                catch ( InterruptedException e )
+                {
+                    LOGGER.error("Removal Query interrupted.", e);
+                    Thread.currentThread().interrupt();
+                }
+                catch ( ExecutionException e )
+                {
+                    throw new SQLException( "Orphaned forecast, project, and source metadata could not be removed.", e );
+                }
+                catch ( TimeoutException e )
+                {
+                    removalQueries.add( query );
+                    timeoutCount++;
+                    if (timeoutCount % timoutLimit == 0)
+                    {
+                        LOGGER.info( "Forecast, project, and source metadata clearance is taking longer than expected..." );
+                    }
+                }
+            }
 
             LOGGER.info("Incomplete data has been removed from the system.");
         }
@@ -1750,6 +1835,7 @@ public final class Database {
         {
             boolean shouldTryAgain;
 
+            // TODO: Simplify the retry loop; we need to try for a longer period than we do now, but it is not clear at all how the retry loop works
             do
             {
                 connection = SystemSettings.getRawDatabaseConnection();
