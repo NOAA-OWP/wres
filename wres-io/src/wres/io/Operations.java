@@ -616,8 +616,17 @@ public final class Operations {
      */
     public static void refreshDatabase() throws SQLException
     {
-        Database.removeOrphanedData();
-        Database.refreshStatistics(true);
+        try
+        {
+            Database.lockForMutation();
+            Database.removeOrphanedData();
+            Database.refreshStatistics(true);
+            Database.releaseLockForMutation();
+        }
+        catch ( IOException e )
+        {
+            throw new SQLException( "Database mutation could not be locked for statistical refresh." );
+        }
     }
 
     /**
