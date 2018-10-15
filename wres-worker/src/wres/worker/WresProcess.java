@@ -119,18 +119,18 @@ class WresProcess implements Callable<Integer>
 
             // Set up way to publish the standard output of the process to broker
             // and bind process outputs to message publishers
-            OutputMessenger stdoutMessenger =
-                    new OutputMessenger( this.getConnection(),
-                                         this.getExchangeName(),
-                                         this.getJobId(),
-                                         OutputMessenger.WhichOutput.STDOUT,
-                                         process.getInputStream() );
-            OutputMessenger stderrMessenger =
-                    new OutputMessenger( this.getConnection(),
-                                         this.getExchangeName(),
-                                         this.getJobId(),
-                                         OutputMessenger.WhichOutput.STDERR,
-                                         process.getErrorStream() );
+            JobStandardStreamMessenger stdoutMessenger =
+                    new JobStandardStreamMessenger( this.getConnection(),
+                                                    this.getExchangeName(),
+                                                    this.getJobId(),
+                                                    JobStandardStreamMessenger.WhichStream.STDOUT,
+                                                    process.getInputStream() );
+            JobStandardStreamMessenger stderrMessenger =
+                    new JobStandardStreamMessenger( this.getConnection(),
+                                                    this.getExchangeName(),
+                                                    this.getJobId(),
+                                                    JobStandardStreamMessenger.WhichStream.STDERR,
+                                                    process.getErrorStream() );
             executorService.submit( stdoutMessenger );
             executorService.submit( stderrMessenger );
         }

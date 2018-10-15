@@ -13,14 +13,25 @@ import com.rabbitmq.client.Connection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class OutputMessenger implements Runnable
+
+/**
+ * Produces and sends one message for each line of one of stdout or stderr to
+ * the broker, each message containing a line of one of the standard streams.
+ *
+ * A consumer (e.g. the tasker) can listen for this output on a topic named
+ * with the convention job.[job_id].[which_stream], for example job.532.stdout,
+ * and can do whatever it chooses with the stream such as display it, serve it,
+ * or store it.
+ */
+
+public class JobStandardStreamMessenger implements Runnable
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger( OutputMessenger.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( JobStandardStreamMessenger.class );
 
     /** Flag to indicate whether to also send output to system.out, system.err*/
     private static final boolean PASS_THROUGH = true;
 
-    public enum WhichOutput
+    public enum WhichStream
     {
         STDOUT,
         STDERR;
@@ -29,22 +40,22 @@ public class OutputMessenger implements Runnable
     private final Connection connection;
     private final String exchangeName;
     private final String jobId;
-    private final WhichOutput whichOutput;
+    private final WhichStream whichStream;
     private final InputStream stream;
 
     /** Helps the consumer re-order the stream */
     private final AtomicInteger order = new AtomicInteger( 0 );
 
-    OutputMessenger( Connection connection,
-                     String exchangeName,
-                     String jobId,
-                     WhichOutput whichOutput,
-                     InputStream stream )
+    JobStandardStreamMessenger( Connection connection,
+                                String exchangeName,
+                                String jobId,
+                                WhichStream whichStream,
+                                InputStream stream )
     {
         this.connection = connection;
         this.exchangeName = exchangeName;
         this.jobId = jobId;
-        this.whichOutput = whichOutput;
+        this.whichStream = whichStream;
         this.stream = stream;
     }
 
@@ -63,9 +74,9 @@ public class OutputMessenger implements Runnable
         return this.jobId;
     }
 
-    private WhichOutput getWhichOutput()
+    private WhichStream getWhichStream()
     {
-        return this.whichOutput;
+        return this.whichStream;
     }
 
     private InputStream getStream()
@@ -80,7 +91,7 @@ public class OutputMessenger implements Runnable
 
     private String getRoutingKey()
     {
-        return "job." + this.getJobId() + "." + this.getWhichOutput().name();
+        return "job." + this.getJobId() + "." + this.getWhichStream().name();
     }
 
     @Override
@@ -106,7 +117,7 @@ public class OutputMessenger implements Runnable
         {
             LOGGER.warn( "Failed to read a line,", ioe );
         }
-        LOGGER.info( "Finished sending {} for job {}", whichOutput, jobId );
+        LOGGER.info( "Finished sending {} for job {}", whichStream, jobId );
     }
 
 
@@ -145,12 +156,12 @@ public class OutputMessenger implements Runnable
         }
 
         // We may also wish to see output on standard out and standard err...
-        if ( PASS_THROUGH && this.getWhichOutput().equals( WhichOutput.STDOUT ) )
+        if ( PASS_THROUGH && this.getWhichStream().equals( WhichStream.STDOUT ) )
         {
             System.out.println( line );
         }
         else if ( PASS_THROUGH
-                  && this.getWhichOutput().equals( WhichOutput.STDERR ) )
+                  && this.getWhichStream().equals( WhichStream.STDERR ) )
         {
             System.err.println( line );
         }
