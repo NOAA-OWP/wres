@@ -62,9 +62,6 @@ public final class Database {
 	private static final long MUTATION_LOCK_KEY = 126357;
 	private static final long MUTATION_LOCK_WAIT_MS = 32000;
 
-	// The length of an acceptable query; arbitrarily set to 15 minutes
-	private static final int QUERY_TIMEOUT = 60 * 15;
-
 	/**
 	 * An advisory lock only lasts for the duration of a connection. If we
 	 * open and create an advisory lock in a connection, it is lost  when the
@@ -191,6 +188,7 @@ public final class Database {
         {
             // Remove queued indexes for tables that don't exist
             ScriptBuilder script = new ScriptBuilder(  );
+            //script.addLine("DELETE FROM wres.IndexQueue IQ");
             script.addLine("DELETE FROM IndexQueue IQ");
             script.addLine("WHERE NOT EXISTS (");
             script.addTab().addLine("SELECT 1");
@@ -226,8 +224,8 @@ public final class Database {
         try
         {
             connection = Database.getConnection();
-            indexes = Database.getResults( connection,
-                                           "SELECT * FROM public.IndexQueue;" );
+            //indexes = Database.getResults( connection, "SELECT * FROM wres.IndexQueue;" );
+            indexes = Database.getResults( connection, "SELECT * FROM IndexQueue;" );
 
             while ( indexes.next())
             {
@@ -252,7 +250,8 @@ public final class Database {
                 indexTasks.add(Database.execute(restore));
 
                 builder = new StringBuilder(  );
-                builder.append("DELETE FROM public.IndexQueue").append(NEWLINE);
+                //builder.append("DELETE FROM wres.IndexQueue").append(NEWLINE);
+                builder.append("DELETE FROM IndexQueue").append(NEWLINE);
                 builder.append("WHERE indexqueue_id = ")
                        .append(indexes.getInt( "indexqueue_id" ))
                        .append(";");
@@ -322,7 +321,8 @@ public final class Database {
         }
 
 		StringBuilder script = new StringBuilder(  );
-		script.append("INSERT INTO public.IndexQueue (table_name, index_name, column_definition, method)").append(NEWLINE);
+		//script.append("INSERT INTO wres.IndexQueue (table_name, index_name, column_definition, method)").append(NEWLINE);
+        script.append("INSERT INTO IndexQueue (table_name, index_name, column_definition, method)").append(NEWLINE);
 		script.append("VALUES('")
 			  .append(tableName)
 			  .append("', '")
@@ -620,7 +620,7 @@ public final class Database {
             connection = getConnection();
             connection.setAutoCommit( !forceTransaction );
             statement = connection.createStatement();
-            statement.setQueryTimeout( QUERY_TIMEOUT );
+            statement.setQueryTimeout( SystemSettings.getQueryTimeout() );
             statement.execute(query);
 
             if (forceTransaction)
@@ -691,7 +691,7 @@ public final class Database {
 
             connection = getConnection();
             statement = connection.prepareStatement(query);
-            statement.setQueryTimeout( QUERY_TIMEOUT );
+            statement.setQueryTimeout( SystemSettings.getQueryTimeout() );
 
             for (Object[] statementValues : parameters)
             {
@@ -924,7 +924,7 @@ public final class Database {
 			}
 
 			statement = connection.createStatement();
-			statement.setQueryTimeout( QUERY_TIMEOUT );
+			statement.setQueryTimeout( SystemSettings.getQueryTimeout() );
 			statement.setFetchSize(1);
 
 			Timer scriptTimer = null;
@@ -1515,7 +1515,7 @@ public final class Database {
         }
 
         Statement fetcher = connection.createStatement();
-        fetcher.setQueryTimeout( QUERY_TIMEOUT );
+        fetcher.setQueryTimeout( SystemSettings.getQueryTimeout() );
         fetcher.setFetchSize(SystemSettings.fetchSize());
 
 		return executeStatement(
@@ -1546,7 +1546,7 @@ public final class Database {
         // Don't close the statement; it will close the result set.
         // Closing the data provider will also kill the statement
         PreparedStatement preparedStatement = connection.prepareStatement( query );
-        preparedStatement.setQueryTimeout( QUERY_TIMEOUT );
+        preparedStatement.setQueryTimeout( SystemSettings.getQueryTimeout() );
 
         int addedParameters = 0;
         for (; addedParameters < parameters.length; ++addedParameters)
@@ -1787,7 +1787,7 @@ public final class Database {
         try
         {
             statement = connection.createStatement();
-            statement.setQueryTimeout( QUERY_TIMEOUT );
+            statement.setQueryTimeout( SystemSettings.getQueryTimeout() );
             statement.execute( query );
         }
         catch (SQLException e)
