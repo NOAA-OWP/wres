@@ -1,6 +1,8 @@
 package wres.worker;
 
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -32,6 +34,7 @@ class WresProcess implements Callable<Integer>
     private final String exchangeName;
     private final String jobId;
     private final Connection connection;
+    private final Path pathForOutput;
 
     /**
      * The envelope from the message that caused creation of this process,
@@ -43,13 +46,15 @@ class WresProcess implements Callable<Integer>
                  String exchangeName,
                  String jobId,
                  Connection connection,
-                 Envelope envelope )
+                 Envelope envelope,
+                 Path pathForOutput )
     {
         this.processBuilder = processBuilder;
         this.exchangeName = exchangeName;
         this.jobId = jobId;
         this.connection = connection;
         this.envelope = envelope;
+        this.pathForOutput = pathForOutput;
     }
 
     private ProcessBuilder getProcessBuilder()
@@ -75,6 +80,11 @@ class WresProcess implements Callable<Integer>
     private Envelope getEnvelope()
     {
         return this.envelope;
+    }
+
+    private Path getPathForOutput()
+    {
+        return this.pathForOutput;
     }
 
     /**
@@ -110,11 +120,20 @@ class WresProcess implements Callable<Integer>
         // Do the execution requested from the queue
         Process process;
 
-        // Use one Thread per output stream:
-        ExecutorService executorService = Executors.newFixedThreadPool( 2 );
+        // Use one Thread per messenger:
+        ExecutorService executorService = Executors.newFixedThreadPool( 3 );
+
+
+        JobOutputMessenger outputMessenger =
+                new JobOutputMessenger( this.getConnection(),
+                                        this.getExchangeName(),
+                                        this.getJobId(),
+                                        this.getPathForOutput() );
 
         try
         {
+            executorService.submit( outputMessenger );
+
             process = this.getProcessBuilder().start();
 
             // Set up way to publish the standard output of the process to broker
@@ -139,6 +158,7 @@ class WresProcess implements Callable<Integer>
             LOGGER.warn( "Failed to launch process from {}.", processBuilder, ioe );
             byte[] response = WresProcess.prepareMetaFailureResponse( ioe );
             this.sendResponse( response );
+            outputMessenger.close();
             WresProcess.shutdownExecutor( executorService );
             return META_FAILURE_CODE;
         }
@@ -152,6 +172,8 @@ class WresProcess implements Callable<Integer>
             byte[] response;
             response = WresProcess.prepareResponse( exitValue, null );
             this.sendResponse( response );
+            // We need to wait for all output before closing?
+            outputMessenger.close();
             WresProcess.shutdownExecutor( executorService );
             return exitValue;
         }
@@ -160,6 +182,7 @@ class WresProcess implements Callable<Integer>
             LOGGER.warn( "Interrupted while waiting for {}.", process, ie );
             byte[] response = WresProcess.prepareMetaFailureResponse( ie );
             this.sendResponse( response );
+            outputMessenger.close();
             WresProcess.shutdownExecutor( executorService );
             Thread.currentThread().interrupt();
             return META_FAILURE_CODE;
