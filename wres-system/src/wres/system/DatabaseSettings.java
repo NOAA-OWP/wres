@@ -59,6 +59,9 @@ final class DatabaseSettings
 	private int maxPoolSize = 10;
 	private int maxIdleTime = 30;
 
+	// The query timeout needs to be in seconds and we're setting the default for 5 hours (arbitrarily large)
+	private int queryTimeout = 60 * 60 * 5;
+
 	/**
 	 * Creates the mapping between the names of databases to the name of the classes that may connect to them
 	 * @return Map of database names to class names
@@ -458,6 +461,9 @@ final class DatabaseSettings
                         case "max_idle_time":
                             maxIdleTime = Integer.parseInt( value );
                             break;
+                        case "query_timeout":
+                            queryTimeout = Integer.parseInt( value );
+                            break;
                         default:
                             LOGGER.error( "Tag of type: '{}' is not valid for database configuration.",
                                           tagName );
@@ -480,7 +486,12 @@ final class DatabaseSettings
 	{
 		return this.username;
 	}
-	
+
+	public int getQueryTimeout()
+    {
+        return this.queryTimeout;
+    }
+
 	@Override
     public String toString()
 	{
@@ -533,6 +544,12 @@ final class DatabaseSettings
 		{
 			this.url = urlOverride;
 		}
+
+		String timeoutOverride = System.getProperty( "wres.query_timeout" );
+        if (timeoutOverride != null)
+        {
+            this.queryTimeout = Integer.parseInt( timeoutOverride );
+        }
 
 		// Intended order of passphrase precedence:
         // 1) -Dwres.password (but perhaps we should remove this)

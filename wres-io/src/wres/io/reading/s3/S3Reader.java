@@ -25,6 +25,7 @@ import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.IngestSaver;
 import wres.io.concurrency.WRESCallable;
 import wres.io.config.ConfigHelper;
+import wres.io.config.LeftOrRightOrBaseline;
 import wres.io.data.caching.DataSources;
 import wres.io.data.details.SourceDetails;
 import wres.io.reading.BasicSource;
@@ -57,6 +58,19 @@ public abstract class S3Reader extends BasicSource
         List<IngestResult> results = new ArrayList<>(  );
         List<Future<List<IngestResult>>> ingests = new ArrayList<>();
         List<ETagKey> toIngest = new ArrayList<>(  );
+        Collection<ETagKey> ingestableObjects = this.getIngestableObjects();
+
+        if (ingestableObjects.isEmpty())
+        {
+            LeftOrRightOrBaseline evaluationSide = ConfigHelper.getLeftOrRightOrBaseline(
+                    this.getProjectConfig(),
+                    this.getDataSourceConfig()
+            );
+
+            throw new IOException( "No objects could be found in the object store for the " +
+                                   evaluationSide.value() +
+                                   " side of the input." );
+        }
 
         for (ETagKey tagAndKey : this.getIngestableObjects())
         {
@@ -221,11 +235,6 @@ public abstract class S3Reader extends BasicSource
      * @return The name of the bucket to access
      */
     abstract String getBucketName();
-
-    /**
-     * @return The URL pointing at the endpoint to use
-     */
-    //abstract String getEndpointURL();
 
     /**
      * Gets the required credentials needed to access a store with the required permissions.
