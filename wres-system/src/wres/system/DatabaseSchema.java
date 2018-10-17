@@ -294,10 +294,8 @@ public class DatabaseSchema
 
         if (!originalTables.isEmpty())
         {
-
             String table = null;
 
-            connection.setAutoCommit( false );
             try (Statement schemaChange = connection.createStatement())
             {
                 for (String tableName : originalTables)
@@ -323,10 +321,6 @@ public class DatabaseSchema
                                             "' could not be moved from the '" + from +
                                             "' schema to the '" + to + "' schema.", e  );
                 }
-            }
-            finally
-            {
-                connection.setAutoCommit( true );
             }
         }
     }
