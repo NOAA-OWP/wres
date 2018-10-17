@@ -188,8 +188,7 @@ public final class Database {
         {
             // Remove queued indexes for tables that don't exist
             ScriptBuilder script = new ScriptBuilder(  );
-            //script.addLine("DELETE FROM wres.IndexQueue IQ");
-            script.addLine("DELETE FROM IndexQueue IQ");
+            script.addLine("DELETE FROM wres.IndexQueue IQ");
             script.addLine("WHERE NOT EXISTS (");
             script.addTab().addLine("SELECT 1");
             script.addTab().addLine("FROM INFORMATION_SCHEMA.TABLES T");
@@ -224,8 +223,7 @@ public final class Database {
         try
         {
             connection = Database.getConnection();
-            //indexes = Database.getResults( connection, "SELECT * FROM wres.IndexQueue;" );
-            indexes = Database.getResults( connection, "SELECT * FROM IndexQueue;" );
+            indexes = Database.getResults( connection, "SELECT * FROM wres.IndexQueue;" );
 
             while ( indexes.next())
             {
@@ -250,8 +248,7 @@ public final class Database {
                 indexTasks.add(Database.execute(restore));
 
                 builder = new StringBuilder(  );
-                //builder.append("DELETE FROM wres.IndexQueue").append(NEWLINE);
-                builder.append("DELETE FROM IndexQueue").append(NEWLINE);
+                builder.append("DELETE FROM wres.IndexQueue").append(NEWLINE);
                 builder.append("WHERE indexqueue_id = ")
                        .append(indexes.getInt( "indexqueue_id" ))
                        .append(";");
@@ -321,8 +318,7 @@ public final class Database {
         }
 
 		StringBuilder script = new StringBuilder(  );
-		//script.append("INSERT INTO wres.IndexQueue (table_name, index_name, column_definition, method)").append(NEWLINE);
-        script.append("INSERT INTO IndexQueue (table_name, index_name, column_definition, method)").append(NEWLINE);
+		script.append("INSERT INTO wres.IndexQueue (table_name, index_name, column_definition, method)").append(NEWLINE);
 		script.append("VALUES('")
 			  .append(tableName)
 			  .append("', '")
@@ -1273,6 +1269,41 @@ public final class Database {
         LOGGER.info("Database statistical analysis is now complete.");
 	}
 
+	private static Collection<String> getPartitionTables(final String tablePattern) throws SQLException
+    {
+        ScriptBuilder script = new ScriptBuilder(  );
+
+        script.addLine("SELECT N.nspname || '.' || C.relname AS table_name" );
+        script.addLine( "FROM pg_catalog.pg_class C" );
+        script.addLine( "INNER JOIN pg_catalog.pg_namespace N" );
+        script.addTab().addLine( "ON N.oid = C.relnamespace" );
+        script.addLine( "WHERE relchecks > 0" );
+        script.addTab().addLine( "AND (N.nspname = 'partitions' OR N.nspname = 'wres')" );
+
+        if (tablePattern != null)
+        {
+            script.addTab().addLine( "AND C.relname LIKE '", tablePattern, "'" );
+        }
+
+        script.addTab().addLine( "AND relkind = 'r';" );
+
+        try
+        {
+            return Database.interpret(
+                    script.toString(),
+                    tableRow -> tableRow.getString( "table_name" ),
+                    false
+            );
+        }
+        catch ( SQLException e )
+        {
+            throw new SQLException(
+                    "A list of partition tables to evaluate "
+                    + "could not be loaded.",
+                    e );
+        }
+    }
+
 	public static boolean removeOrphanedData() throws SQLException
     {
         try
@@ -1289,35 +1320,7 @@ public final class Database {
                         + "will now be removed to ensure that all data operated "
                         + "upon is valid.");
 
-            List<String> partitionTables;
-            ScriptBuilder script;
-
-            // First, get list of all partition tables to gather
-            try
-            {
-                script = new ScriptBuilder();
-                script.addLine("SELECT N.nspname || '.' || C.relname AS table_name" );
-                script.addLine( "FROM pg_catalog.pg_class C" );
-                script.addLine( "INNER JOIN pg_catalog.pg_namespace N" );
-                script.addTab().addLine( "ON N.oid = C.relnamespace" );
-                script.addLine( "WHERE relchecks > 0" );
-                script.addTab().addLine( "AND (N.nspname = 'partitions' OR N.nspname = 'wres')" );
-                script.addTab().addLine( "AND C.relname LIKE 'timeseriesvalue_lead%'" );
-                script.addTab().addLine( "AND relkind = 'r';" );
-
-                partitionTables = Database.interpret(
-                        script.toString(),
-                        tableRow -> tableRow.getString( "table_name" ),
-                        false
-                );
-            }
-            catch ( SQLException databaseError )
-            {
-                throw new SQLException(
-                        "A list of partition tables to evaluate "
-                        + "could not be loaded.",
-                        databaseError );
-            }
+            Collection<String> partitionTables = Database.getPartitionTables( "timeseriesvalue_lead%" );
 
             Queue<Future> removalQueries = new LinkedList<>(  );
 
@@ -1534,7 +1537,7 @@ public final class Database {
      * @return The results of the query
      * @throws SQLException Any issue caused by running the query in the database
      */
-    public static DataProvider getResults(final Connection connection, String query, Object[] parameters) throws SQLException
+    static DataProvider getResults(final Connection connection, String query, Object[] parameters) throws SQLException
     {
         if (LOGGER.isTraceEnabled())
         {
@@ -1724,10 +1727,22 @@ public final class Database {
     {
 		StringBuilder builder = new StringBuilder();
 
-		builder.append("DROP SCHEMA partitions CASCADE;").append(NEWLINE);
-		builder.append("CREATE SCHEMA partitions AUTHORIZATION wres;").append(NEWLINE);
+		Collection<String> partitions = Database.getPartitionTables( "timeseriesvalue_lead%" );
+
+		for (String partition : partitions)
+        {
+            builder.append("DROP TABLE ").append( partition).append(";").append(NEWLINE);
+        }
+
+        partitions = Database.getPartitionTables( "variablefeature_variable%" );
+
+        for (String partition : partitions)
+        {
+            builder.append("DROP TABLE ").append( partition).append(";").append(NEWLINE);
+        }
+
 		builder.append("TRUNCATE wres.TimeSeriesSource;").append(NEWLINE);
-		builder.append("TRUNCATE wres.TimeSeriesValue;").append(NEWLINE);
+		builder.append("TRUNCATE wres.TimeSeriesValue CASCADE;").append(NEWLINE);
 		builder.append("TRUNCATE wres.Observation;").append(NEWLINE);
 		builder.append("TRUNCATE wres.Source RESTART IDENTITY CASCADE;").append(NEWLINE);
 		builder.append("TRUNCATE wres.TimeSeries RESTART IDENTITY CASCADE;").append(NEWLINE);

@@ -684,7 +684,7 @@ public final class Operations {
 
             DataScripter script = new DataScripter(  );
 
-            script.addLine("INSERT INTO ExecutionLog (");
+            script.addLine("INSERT INTO wres.ExecutionLog (");
             script.addTab().addLine("arguments,");
             script.addTab().addLine("system_version,");
             script.addTab().addLine("project,");
@@ -699,7 +699,7 @@ public final class Operations {
             script.addTab().addLine("?,");
             script.addTab().addLine("?,");
             script.addTab().addLine("?,");
-            script.addTab().addLine("current_user,");
+            script.addTab().addLine("?,");
             script.addTab().addLine("inet_client_addr(),");
             script.addTab().addLine("?,");
             script.addTab().addLine("CAST(? AS INTERVAL),");
@@ -710,6 +710,7 @@ public final class Operations {
             script.execute( String.join(" ", arguments),
                             version,
                           project,
+                          System.getProperty( "user.name" ),
                           // Let server find and report username
                           // Let server find and report network address
                           startTimestamp,
@@ -736,7 +737,6 @@ public final class Operations {
      * created
      */
     public static Set<FeaturePlus> decomposeFeatures( ProjectDetails projectDetails )
-
             throws SQLException, IOException
     {
         Set<FeaturePlus> atomicFeatures = new TreeSet<>( Comparator.comparing(
@@ -783,75 +783,10 @@ public final class Operations {
      * @param ingestResults the results of ingest
      * @return true if we should run an analyze
      */
-
     private static boolean shouldAnalyze( List<IngestResult> ingestResults )
     {
         return wres.util.Collections.exists( ingestResults,
                                              ingestResult -> !ingestResult.wasFoundAlready() );
-    }
-
-
-    /**
-     * Get the count of leads for a project
-     * TODO: optimize
-     * @param projectIdentifier the code/hash of a project (not row id)
-     * @return the count of distinct leads found across all forecasts in project
-     * @throws SQLException if the count could not be determined
-     */
-
-    public static long getLeadCountsForProject( String projectIdentifier )
-            throws SQLException
-    {
-        final String NEWLINE = System.lineSeparator();
-        final String LABEL = "total_leads";
-        String query = "SELECT count( distinct( TSV.lead ) ) AS "
-                       + LABEL + NEWLINE
-                       + "FROM wres.TimeSeries TS" + NEWLINE
-                       + "INNER JOIN wres.TimeSeriesValue TSV" + NEWLINE
-                       + "    ON TS.timeseries_id = TSV.timeseries_id" + NEWLINE
-                       + "WHERE EXISTS (" + NEWLINE
-                       + "        SELECT 1" + NEWLINE
-                       + "        FROM wres.ProjectSource PS" + NEWLINE
-                       + "        INNER JOIN wres.TimeSeriesSource TSS" + NEWLINE
-                       + "            ON TSS.source_id = PS.source_id" + NEWLINE
-                       + "        INNER JOIN wres.Project P" + NEWLINE
-                       + "            ON P.project_id = PS.project_id" + NEWLINE
-                       + "        WHERE P.input_code = "
-                       + projectIdentifier + NEWLINE
-                       + "            AND TSS.timeseries_id = TS.timeseries_id" + NEWLINE
-                       + "    );";
-        return (long) Database.getResult( query, LABEL );
-    }
-
-
-    /**
-     * Get the count of basis times for a project
-     * TODO: optimize
-     * @param projectIdentifier the code/hash of a project (not row id)
-     * @return the count of distinct basis times found across all forecasts
-     * in the project
-     * @throws SQLException if the count could not be determined
-     */
-    public static long getBasisTimeCountsForProject( String projectIdentifier )
-            throws SQLException
-    {
-        final String NEWLINE = System.lineSeparator();
-        final String LABEL = "total_bases";
-        String query = "SELECT count( distinct( TS.initialization_date ) ) AS "
-                       + LABEL + NEWLINE
-                       + "FROM wres.TimeSeries TS" + NEWLINE
-                       + "WHERE EXISTS (" + NEWLINE
-                       + "        SELECT 1" + NEWLINE
-                       + "        FROM wres.ProjectSource PS" + NEWLINE
-                       + "        INNER JOIN wres.TimeSeriesSource TSS" + NEWLINE
-                       + "            ON TSS.source_id = PS.source_id" + NEWLINE
-                       + "        INNER JOIN wres.Project P" + NEWLINE
-                       + "            ON P.project_id = PS.project_id"
-                       + "        WHERE P.input_code = "
-                       + projectIdentifier + NEWLINE
-                       + "            AND TSS.timeseries_id = TS.timeseries_id" + NEWLINE
-                       + "    );";
-        return (long) Database.getResult( query, LABEL );
     }
 
     public static void createNetCDFOutputTemplate(final String sourceName, final String templateName)
@@ -862,57 +797,5 @@ public final class Operations {
         {
             writer.write();
         }
-    }
-
-    /**
-     * Calls functions used to set up the system for future use
-     * @throws SQLException when WRES cannot access the database
-     */
-    public static void install() throws SQLException
-    {
-        // Pinging the database settings will trigger scripts
-        Operations.testConnection();
-    }
-
-    public static void s3Test() throws IOException
-    {
-        AWSCredentials credentials = new AnonymousAWSCredentials();
-        AwsClientBuilder.EndpointConfiguration configuration = new AwsClientBuilder.EndpointConfiguration( "http://***REMOVED***rgw.***REMOVED***.***REMOVED***:8080", Regions.US_EAST_1.getName() );
-        ClientConfiguration clientConfiguration = new ClientConfiguration(  );
-        clientConfiguration.setSignerOverride( "S3SignerType" );
-        AmazonS3 connection = AmazonS3ClientBuilder.standard()
-                                                   .withCredentials( new AWSStaticCredentialsProvider( credentials ) )
-                                                   .withPathStyleAccessEnabled( true )
-                                                   .withEndpointConfiguration( configuration )
-                                                   .withClientConfiguration( clientConfiguration )
-                                                   .build();
-        final PathMatcher matcher = FileSystems.getDefault().getPathMatcher( "glob:nwm.*/short_range/*channel_rt*" );
-        ListObjectsRequest request = new ListObjectsRequest(  );
-        request.setPrefix( "nwm.20180605" );
-        request.setBucketName( "nwm" );
-        request.setMaxKeys( 12000 );
-        List<S3ObjectSummary> matchingSummaries = new ArrayList<>();
-
-        ObjectListing s3Objects = connection.listObjects( request );
-        do
-        {
-            s3Objects.getObjectSummaries().forEach( s3ObjectSummary -> {
-                if ( matcher.matches( Paths.get( s3ObjectSummary.getKey() ) ) )
-                {
-                    matchingSummaries.add( s3ObjectSummary );
-                    LOGGER.info("Added another object from {}. ({})", s3ObjectSummary.getLastModified(), matchingSummaries.size());
-                }
-            } );
-
-            s3Objects = connection.listNextBatchOfObjects( s3Objects );
-        } while ( !s3Objects.getObjectSummaries().isEmpty() );
-
-        LOGGER.info("Objects:");
-        matchingSummaries.forEach( summary -> LOGGER.info( "{}\t{}\t{}", summary.getBucketName(), summary.getETag(), summary.getKey() ) );
-
-        S3ObjectSummary first = matchingSummaries.get( 0 );
-        GetObjectRequest getObjectRequest = new GetObjectRequest( "nwm", first.getKey() );
-        S3Object object = connection.getObject( getObjectRequest );
-        object.close();
     }
 }

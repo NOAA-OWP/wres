@@ -57,7 +57,7 @@ public final class VariableDetails extends CachedDetail<VariableDetails, String>
 	{
 		if (this.variablePositionPartitionName == null)
 		{
-			this.variablePositionPartitionName = "partitions.VARIABLEFEATURE_VARIABLE_" + this.getId().toString();
+			this.variablePositionPartitionName = "wres.VARIABLEFEATURE_VARIABLE_" + this.getId().toString();
 		}
 		return this.variablePositionPartitionName;
 	}
