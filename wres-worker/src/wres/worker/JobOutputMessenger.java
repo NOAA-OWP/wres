@@ -308,6 +308,8 @@ class JobOutputMessenger implements Runnable, Closeable
 
         URI theOutputResource = path.toUri();
 
+        LOGGER.debug( "Sending output uri {} to broker.", theOutputResource );
+
         JobOutput.job_output jobOutputMessage = JobOutput.job_output
                 .newBuilder()
                 .setResource( theOutputResource.toString() )

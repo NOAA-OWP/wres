@@ -24,6 +24,18 @@ import org.slf4j.LoggerFactory;
 import wres.messages.BrokerHelper;
 import wres.messages.generated.Job;
 
+/**
+ * Web services related to wres jobs.
+ * A job is modeled as a resource.
+ * A wres job is an evaluation.
+ * To request an evaluation, one POSTs to /job.
+ * A job id representing the evaluation is created by the server.
+ * More services are available for each job: "status", "stdout", "stderr" ...
+ * To request the status, one GETs /job/{jobid}/status
+ * To request the stdout, one GETs /job/{jobid}/stdout
+ * and so forth.
+ * As of 2018-10, there are only plain text and/or html responses.
+ */
 @Path( "/job")
 public class WresJob
 {

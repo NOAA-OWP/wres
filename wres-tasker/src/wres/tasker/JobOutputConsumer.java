@@ -37,11 +37,17 @@ class JobOutputConsumer extends DefaultConsumer
                                 byte[] message )
 
     {
+        LOGGER.debug( "Heard a message, consumerTag: {}, envelope: {}, properties: {}, message: {}",
+                      consumerTag, envelope, properties, message );
+
         JobOutput.job_output oneWresJobOutputMessage;
 
         try
         {
             oneWresJobOutputMessage = JobOutput.job_output.parseFrom( message );
+
+            LOGGER.debug( "Successfully parsed message, consumerTag: {}, envelope: {}, properties: {}, message: {}",
+                          consumerTag, envelope, properties, oneWresJobOutputMessage );
             boolean offerSucceeded = this.getWresJobOutput().offer( oneWresJobOutputMessage );
 
             if ( !offerSucceeded )

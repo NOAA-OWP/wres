@@ -37,7 +37,7 @@ class JobOutputSharer implements Consumer<GeneratedMessageV3>
     {
         JobOutput.job_output jobOutput =
                 (JobOutput.job_output) mustBeJobOutput;
-        URI jobOutputUri = Paths.get( jobOutput.getResource() ).toUri();
+        URI jobOutputUri = URI.create( jobOutput.getResource() );
         this.sharedSet.add( jobOutputUri );
     }
 }
