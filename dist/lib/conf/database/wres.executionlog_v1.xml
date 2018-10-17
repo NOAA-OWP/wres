@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="ExecutionLog - Change System Settings" author="Christopher Tubbs">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="ExecutionLog" schemaName="public" />
+            <columnExists tableName="ExecutionLog" schemaName="public" columnName="system_settings" />
+        </preConditions>
+        <renameColumn tableName="ExecutionLog" oldColumnName="system_settings" newColumnName="system_version" />
+    </changeSet>
+    <changeSet id="ExecutionLog v1.0" author="Christopher Tubbs" dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="ExecutionLog" schemaName="public" />
+            </not>
+        </preConditions>
+        <createTable tableName="ExecutionLog" schemaName="public">
+           <column name="log_id" type="serial" autoIncrement="true" />
+            <column name="arguments" type="text" remarks="Arguments passed into the application upon execution">
+                <constraints nullable="false"/>
+            </column>
+            <column name="system_version" type="text" remarks="The version of the application">
+                <constraints nullable="false" />
+            </column>
+            <column name="project" type="text" remarks="The project configuration used" />
+            <column name="username" type="text" remarks="The name of the user who ran the application" />
+            <column name="address" type="text" remarks="The address of the user on the network" />
+            <column name="start_time" type="timestamp without time zone" remarks="The time at which the execution started" />
+            <column name="run_time" type="interval" remarks="The total runtime of the application" />
+            <column name="failed" type="boolean" defaultValueBoolean="false" remarks="Whether or not the application failed" />
+            <column name="error" type="text" remarks="Information about a failed execution" />
+            <column name="input_code" type="text" remarks="The input code of a project that was executed" />
+        </createTable>
+        <sql>
+            ALTER TABLE public.ExecutionLog OWNER TO wres;
+        </sql>
+        <comment>
+            The public.ExecutionLog table has been created.
+        </comment>
+    </changeSet>
+    <changeSet id="ExecutionLog - Move to wres schema " author="Christopher Tubbs">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="ExecutionLog" schemaName="public" />
+                <not>
+                    <tableExists tableName="ExecutionLog" schemaName="wres" />
+                </not>
+            </and>
+        </preConditions>
+        <dropView viewName="ProjectExecutions" schemaName="public" />
+        <createTable tableName="ExecutionLog" schemaName="wres">
+            <column name="log_id" type="serial" autoIncrement="true" />
+            <column name="arguments" type="text" remarks="Arguments passed into the application upon execution">
+                <constraints nullable="false"/>
+            </column>
+            <column name="system_version" type="text" remarks="The version of the application">
+                <constraints nullable="false" />
+            </column>
+            <column name="project" type="text" remarks="The project configuration used" />
+            <column name="username" type="text" remarks="The name of the user who ran the application" />
+            <column name="address" type="text" remarks="The address of the user on the network" />
+            <column name="start_time" type="timestamp without time zone" remarks="The time at which the execution started" />
+            <column name="run_time" type="interval" remarks="The total runtime of the application" />
+            <column name="failed" type="boolean" defaultValueBoolean="false" remarks="Whether or not the application failed" />
+            <column name="error" type="text" remarks="Information about a failed execution" />
+            <column name="input_code" type="text" remarks="The input code of a project that was executed" />
+        </createTable>
+        <sql>
+            ALTER TABLE wres.ExecutionLog OWNER TO wres;
+        </sql>
+        <sql>
+            INSERT INTO wres.ExecutionLog (
+                arguments,
+                system_version,
+                project,
+                username,
+                address,
+                start_time,
+                run_time,
+                failed,
+                error,
+                input_code
+            )
+            SELECT arguments,
+                system_version,
+                project,
+                username,
+                address,
+                start_time,
+                run_time,
+                failed,
+                error,
+                input_code
+            FROM public.ExecutionLog;
+        </sql>
+        <dropTable tableName="ExecutionLog" schemaName="public" />
+        <createView viewName="ProjectExecutions" schemaName="wres" replaceIfExists="true">
+            SELECT CASE
+                WHEN failed = true THEN
+                    'FAILED'
+                ELSE
+                    'SUCCEEDED'
+                END AS status,
+                substring(executionlog.project, '(?&lt;=&lt;project (label=".+" )?name=")[^"]+'::text) AS project_name,
+                arguments,
+                start_time,
+                run_time,
+                error,
+                log_id
+            FROM wres.ExecutionLog
+            WHERE arguments LIKE 'execute%'
+            ORDER BY start_time;
+        </createView>
+        <sql>
+            ALTER TABLE wres.ProjectExecutions OWNER TO wres;
+        </sql>
+    </changeSet>
+</databaseChangeLog>

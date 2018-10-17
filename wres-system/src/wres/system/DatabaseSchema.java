@@ -12,6 +12,7 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.Objects;
 import java.util.StringJoiner;
 
@@ -129,6 +130,8 @@ public class DatabaseSchema
             throw new SQLException( "The WRES could not be properly initialized.", e);
         }
 
+        this.moveSchema( connection, "partitions", "wres" );
+
         // Allow other users to apply liquibase changes...
         try (Statement statement = connection.createStatement())
         {
@@ -208,6 +211,116 @@ public class DatabaseSchema
                 );
                 addresses.forEach( builder::add );
                 statement.execute( builder.toString() );
+            }
+        }
+    }
+
+    private void moveSchema(final Connection connection, final String from, final String to) throws SQLException
+    {
+        final String NEWLINE = System.lineSeparator();
+        boolean schemaExists;
+
+        try (Statement schemaExistence = connection.createStatement())
+        {
+            String script = "SELECT EXISTS (" + NEWLINE +
+                            "    SELECT 1" + NEWLINE +
+                            "    FROM information_schema.schemata" + NEWLINE +
+                            "    WHERE schema_name = '" + from + "'" + NEWLINE +
+                            ");";
+
+            try (ResultSet existence = schemaExistence.executeQuery( script ))
+            {
+                existence.next();
+                schemaExists = existence.getBoolean( "exists" );
+            }
+        }
+        catch (SQLException e)
+        {
+            throw new SQLException( "While moving tables from the '" +
+                                    from + "' schema to the '" + to +
+                                    "' schema, it could not be determined if the schema '" +
+                                    from + "' even exists.", e );
+        }
+
+        if (!schemaExists)
+        {
+            return;
+        }
+
+        List<String> originalTables = new ArrayList<>(  );
+
+        try (Statement tableSelect = connection.createStatement())
+        {
+            String script = "SELECT table_schema || '.' || table_name AS table_name" + NEWLINE +
+                            "FROM information_schema.tables" + NEWLINE +
+                            "WHERE table_schema = '" + from + "';";
+
+            try (ResultSet tables = tableSelect.executeQuery( script ))
+            {
+                while (tables.next())
+                {
+                    originalTables.add( tables.getString("table_name") );
+                }
+            }
+        }
+        catch (SQLException e)
+        {
+            throw new SQLException( "While moving tables from the '" + from +
+                                    "' schema to the '" + to + "' schema, tables from the '" +
+                                    from + "' schema could not be requested.", e );
+        }
+
+        try (Statement tableSelect = connection.createStatement())
+        {
+            String script = "SELECT '" + from + "' || '.' || table_name AS table_name" + NEWLINE +
+                            "FROM information_schema.tables" + NEWLINE +
+                            "WHERE table_schema = '" + to + "'";
+
+            try (ResultSet tables = tableSelect.executeQuery( script ))
+            {
+                // Remove any tables from the list tables that will get moved if there would be a conflict.
+                while (tables.next())
+                {
+                    String preexistingTable = tables.getString( "table_name" );
+                    originalTables.remove(preexistingTable);
+
+                    if (originalTables.isEmpty())
+                    {
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (!originalTables.isEmpty())
+        {
+            String table = null;
+
+            try (Statement schemaChange = connection.createStatement())
+            {
+                for (String tableName : originalTables)
+                {
+                    table = tableName;
+                    schemaChange.execute( "ALTER TABLE " + table + " SET SCHEMA " + to + ";" );
+                }
+                connection.commit();
+            }
+            catch ( SQLException e )
+            {
+                connection.rollback();
+
+                if (table == null)
+                {
+                    throw new SQLException(originalTables.size() + " tables from the '" +
+                                           from + "' schema could not be moved to the '" +
+                                           to + "' schema.", e);
+                }
+                else
+                {
+                    throw new SQLException( "The table named '" + table +
+                                            "' could not be moved from the '" + from +
+                                            "' schema to the '" + to + "' schema.", e  );
+                }
             }
         }
     }

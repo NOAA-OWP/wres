@@ -352,14 +352,6 @@ public final class SystemSettings extends XMLReader
     }
 
 	/**
-	 * @return The maximum number of values that may be inserted into the database at once
-	 */
-    public static int maximumDatabaseInsertStatements()
-    {
-        return instance.maximumInserts;
-    }
-
-	/**
 	 * @return The maximum number of values that may be copied into the database at once
 	 */
 	public static int getMaximumCopies() {
@@ -430,18 +422,12 @@ public final class SystemSettings extends XMLReader
         return instance.databaseConfiguration.createHighPriorityDataSource();
     }
 
-	public static String getUserName()
+    /**
+     * @return Returns the number of seconds that should elapse before a database query should timeout
+     */
+    public static int getQueryTimeout()
     {
-        String name = instance.databaseConfiguration.getUsername();
-
-        // If the user is using the default user name, pull their actual user
-        // name, not their database user name
-        if (name.equals( "wres_user" ))
-        {
-            name = System.getProperty( "user.name" );
-        }
-
-        return name;
+        return SystemSettings.instance.databaseConfiguration.getQueryTimeout();
     }
 
     public static Connection getRawDatabaseConnection() throws SQLException

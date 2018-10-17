@@ -119,7 +119,7 @@ abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
     			id = this.getKeyIndex().get(key);
     		}
 		}
-		
+
 		return id;
 	}
 	

@@ -395,20 +395,21 @@ public final class TimeSeries
                     highCheck = "lead < " + (partitionNumber + 1) * TIMESERIESVALUE_PARTITION_SPAN;
                 }
 
-                name = "partitions.TimeSeriesValue_Lead_" + partitionNumberWord;
+                name = "wres.TimeSeriesValue_Lead_" + partitionNumberWord;
 
-                ScriptBuilder script = new ScriptBuilder();
+                DataScripter script = new DataScripter();
                 script.addLine("CREATE TABLE IF NOT EXISTS ", name);
                 script.addLine("(");
                 script.addTab().addLine("CHECK ( ", highCheck, " AND ", lowCheck, " )");
                 script.addLine(") INHERITS (wres.TimeSeriesValue);");
                 script.addLine("ALTER TABLE ", name, " ALTER COLUMN lead SET STATISTICS 2000;");
                 script.addLine("ALTER TABLE ", name, " ALTER COLUMN timeseries_id SET STATISTICS 2000;");
+                script.addLine("ALTER TABLE ", name, " SET (autovacuum_enabled = FALSE, toast.autovacuum_enabled = FALSE);");
                 script.addLine("ALTER TABLE ", name, " OWNER TO wres;");
 
                 synchronized (PARTITION_LOCK)
                 {
-                    Database.execute(script.toString());
+                    script.execute();
                 }
 
                 Database.saveIndex( name,
