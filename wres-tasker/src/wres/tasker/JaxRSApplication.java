@@ -18,11 +18,12 @@ public class JaxRSApplication extends Application
     @Override
     public Set<Class<?>> getClasses()
     {
-        Set<Class<?>> s = new HashSet<>( 2 );
+        Set<Class<?>> s = new HashSet<>( 5 );
         s.add( WresJob.class );
         s.add( WresJobResult.class );
         s.add( WresJobStdout.class );
         s.add( WresJobStderr.class );
+        s.add( WresJobOutput.class );
         return Collections.unmodifiableSet( s );
     }
 }

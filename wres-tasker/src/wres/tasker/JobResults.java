@@ -1,6 +1,8 @@
 package wres.tasker;
 
 import java.io.IOException;
+import java.net.URI;
+import java.util.Set;
 import java.util.StringJoiner;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -57,7 +59,7 @@ class JobResults
                       .build();
 
     /** A shared bag of job output references */
-    private static final Cache<String, ConcurrentSkipListSet<String>> JOB_OUTPUTS_BY_ID
+    private static final Cache<String, ConcurrentSkipListSet<URI>> JOB_OUTPUTS_BY_ID
             = Caffeine.newBuilder()
                       .maximumSize( 1_000 )
                       .build();
@@ -410,9 +412,17 @@ class JobResults
                                                                          jobStatusExchangeName,
                                                                          jobId,
                                                                          StandardStreamWatcher.WhichStream.STDERR );
+
+        // Share the output locations, allows service endpoint to find files.
+        // Not relying on inner classes, so need to pass the shared location to
+        // the watcher in order for watcher to know where to put messages.
+        ConcurrentSkipListSet<URI> outputsForOneJob = new ConcurrentSkipListSet<>();
+        JOB_OUTPUTS_BY_ID.asMap()
+                         .putIfAbsent( jobId, outputsForOneJob );
         JobOutputWatcher jobOutputWatcher = new JobOutputWatcher( this.getConnection(),
                                                                   jobStatusExchangeName,
-                                                                  jobId );
+                                                                  jobId,
+                                                                  outputsForOneJob );
 
         EXECUTOR.submit( stdoutWatcher );
         EXECUTOR.submit( stderrWatcher );
@@ -531,4 +541,19 @@ class JobResults
 
         return result.toString();
     }
+
+
+    /**
+     * Get the list of outputs for a job
+     * @param jobId the job to look for
+     * @return the flat set of output resources associated with that job or null
+     * if job not found
+     */
+
+    static Set<URI> getJobOutputs( String jobId )
+    {
+        return JOB_OUTPUTS_BY_ID.asMap()
+                                .get( jobId );
+    }
+
 }

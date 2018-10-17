@@ -2,9 +2,9 @@ package wres.tasker;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.Objects;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
@@ -17,7 +17,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.messages.generated.JobOutput;
 
-class JobOutputWatcher implements Callable<ConcurrentSkipListSet<URI>>
+class JobOutputWatcher implements Runnable
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( JobOutputWatcher.class );
 
@@ -39,13 +39,24 @@ class JobOutputWatcher implements Callable<ConcurrentSkipListSet<URI>>
      */
     private final String jobId;
 
+    /**
+     * Shared mutable state, where to put all the URIs from job output messages
+     */
+    private final ConcurrentSkipListSet<URI> sharedUris;
+
     JobOutputWatcher( Connection connection,
                       String jobStatusExchangeName,
-                      String jobId )
+                      String jobId,
+                      ConcurrentSkipListSet<URI> sharedUris )
     {
+        Objects.requireNonNull( connection );
+        Objects.requireNonNull( jobStatusExchangeName );
+        Objects.requireNonNull( jobId );
+        Objects.requireNonNull( sharedUris );
         this.connection = connection;
         this.jobStatusExchangeName = jobStatusExchangeName;
         this.jobId = jobId;
+        this.sharedUris = sharedUris;
     }
 
     private Connection getConnection()
@@ -63,12 +74,15 @@ class JobOutputWatcher implements Callable<ConcurrentSkipListSet<URI>>
         return this.jobId;
     }
 
-    @Override
-    public ConcurrentSkipListSet<URI> call()
-            throws IOException, TimeoutException
+    private ConcurrentSkipListSet<URI> getSharedUris()
     {
-        ConcurrentSkipListSet<URI> sharedSet = new ConcurrentSkipListSet<>();
-        Consumer<GeneratedMessageV3> sharer = new JobOutputSharer( sharedSet );
+        return this.sharedUris;
+    }
+
+    @Override
+    public void run()
+    {
+        Consumer<GeneratedMessageV3> sharer = new JobOutputSharer( this.getSharedUris() );
 
         BlockingQueue<JobOutput.job_output> jobOutputQueue
                 = new ArrayBlockingQueue<>( LOCAL_Q_SIZE );
@@ -103,14 +117,11 @@ class JobOutputWatcher implements Callable<ConcurrentSkipListSet<URI>>
             LOGGER.warn( "Interrupted while getting output for job {}", jobId, ie );
             Thread.currentThread().interrupt();
         }
-        catch ( IOException ioe )
+        catch ( IOException | TimeoutException e )
         {
             // Since we may or may not actually consume result, log exception here
             LOGGER.warn( "When attempting to get job output message using {}:",
-                         this, ioe );
-            throw ioe;
+                         this, e );
         }
-
-        return sharedSet;
     }
 }
