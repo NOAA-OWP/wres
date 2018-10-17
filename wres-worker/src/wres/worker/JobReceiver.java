@@ -59,6 +59,7 @@ class JobReceiver extends DefaultConsumer
         return this.processToLaunch;
     }
 
+
     /**
      * This is the entry point that will accept a message and create a
      * WresProcess that the main thread or another thread can run, sharing it
@@ -75,42 +76,7 @@ class JobReceiver extends DefaultConsumer
                                 AMQP.BasicProperties properties,
                                 byte[] body )
     {
-        // Translate the message into a command
-        ProcessBuilder processBuilder = createBuilderFromMessage( body,
-                                                                  properties.getCorrelationId() );
-        // Set up the information needed to launch process and send info back
-        WresProcess wresProcess = new WresProcess( processBuilder,
-                                                   properties.getReplyTo(),
-                                                   properties.getCorrelationId(),
-                                                   this.getChannel().getConnection(),
-                                                   envelope );
-        // Share the process information with the caller
-        this.getProcessToLaunch().offer( wresProcess );
-    }
-
-
-    /**
-     * Translate a message from the queue into a ProcessBuilder to run
-     * @param message a message from the queue
-     * @return a ProcessBuilder to attempt to run
-     * @throws IllegalArgumentException if the message is not well formed
-     * @throws IllegalStateException when output data directory cannot be created
-     */
-
-    private ProcessBuilder createBuilderFromMessage( byte[] message,
-                                                     String jobId )
-    {
-        Job.job jobMessage;
-
-        try
-        {
-            jobMessage = Job.job.parseFrom( message );
-        }
-        catch ( InvalidProtocolBufferException ipbe )
-        {
-            throw new IllegalArgumentException( "Bad message received", ipbe );
-        }
-
+        String jobId = properties.getCorrelationId();
         // Create an area for data related to this job, using java.io.tmpdir.
         // Will end up with a nested directory structure.
         Path outputPath;
@@ -126,10 +92,48 @@ class JobReceiver extends DefaultConsumer
                                              + jobId, ioe );
         }
 
+        // Translate the message into a command
+        ProcessBuilder processBuilder = createBuilderFromMessage( body,
+                                                                  outputPath );
+        // Set up the information needed to launch process and send info back
+        WresProcess wresProcess = new WresProcess( processBuilder,
+                                                   properties.getReplyTo(),
+                                                   properties.getCorrelationId(),
+                                                   this.getChannel().getConnection(),
+                                                   envelope,
+                                                   outputPath );
+        // Share the process information with the caller
+        this.getProcessToLaunch().offer( wresProcess );
+    }
+
+
+    /**
+     * Translate a message from the queue into a ProcessBuilder to run
+     * @param message a message from the queue
+     * @param outputDirectory a directory exclusively for this job's outputs
+     * @return a ProcessBuilder to attempt to run
+     * @throws IllegalArgumentException if the message is not well formed
+     * @throws IllegalStateException when output data directory cannot be created
+     */
+
+    private ProcessBuilder createBuilderFromMessage( byte[] message,
+                                                     Path outputDirectory )
+    {
+        Job.job jobMessage;
+
+        try
+        {
+            jobMessage = Job.job.parseFrom( message );
+        }
+        catch ( InvalidProtocolBufferException ipbe )
+        {
+            throw new IllegalArgumentException( "Bad message received", ipbe );
+        }
+
         String javaOpts = "-Dwres.url=" + jobMessage.getDatabaseHostname()
                           + " -Dwres.databaseName=" + jobMessage.getDatabaseName()
                           + " -Dwres.username=" + jobMessage.getDatabaseUsername()
-                          + " -Djava.io.tmpdir=" + outputPath.toString();
+                          + " -Djava.io.tmpdir=" + outputDirectory.toString();
 
         List<String> result = new ArrayList<>();
 
