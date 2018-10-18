@@ -5,22 +5,56 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Path( "/job/{jobId}/output/{resourceName}" )
+import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
+
+@Path( "/job/{jobId}/output" )
 public class WresJobOutput
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( WresJobOutput.class );
 
     @GET
+    @Produces( TEXT_PLAIN )
+    public Response getProjectResources( @PathParam( "jobId" ) String id )
+    {
+        LOGGER.debug( "Retrieving resource list form job {}", id );
+        Set<URI> jobOutputs = JobResults.getJobOutputs( id );
+
+        if ( jobOutputs == null )
+        {
+            return Response.status( Response.Status.NOT_FOUND )
+                           .entity( "Could not find project " + id )
+                           .build();
+        }
+
+        List<String> resourceNames = new ArrayList<>();
+
+        for ( URI outputResource : jobOutputs )
+        {
+            java.nio.file.Path path = Paths.get( outputResource.getPath() );
+            java.nio.file.Path resourceName = path.getFileName();
+            resourceNames.add( resourceName.toString() );
+        }
+
+        return Response.ok( resourceNames.toString() )
+                       .build();
+    }
+
+
+    @GET
+    @Path( "/{resourceName}" )
     public Response getProjectResource( @PathParam( "jobId" ) String id,
                                         @PathParam( "resourceName" ) String resourceName )
     {
