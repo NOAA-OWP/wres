@@ -124,12 +124,19 @@ public class WresJob
         String statusUrl = "/job/" + jobId + "/status";
         String stdoutUrl = "/job/" + jobId + "/stdout";
         String stderrUrl = "/job/" + jobId + "/stderr";
+        String outputUrl = "/job/" + jobId + "/output";
 
-        return Response.ok( "<!DOCTYPE html><html><head><title>Job received.</title></head><body><h1>Your job has been received for processing.</h1><p>See <a href=\""
+        return Response.ok( "<!DOCTYPE html><html><head><title>Job received.</title></head>"
+                            + "<body><h1>Your job has been received for processing.</h1>"
+                            + "<p>To check whether your job has completed/succeeded/failed, GET (poll) <a href=\""
                             + statusUrl + "\">" + statusUrl + "</a></p>"
-                            + "<p>For more details, see <a href=\"" + stdoutUrl + "\">" + stdoutUrl + "</a>"
-                            + " or <a href=\"" + stderrUrl + "\">" + stderrUrl + "</a>"
-                            + "</body></html>" )
+                            + "<p>For job evaluation results, GET <a href=\""
+                            + outputUrl + "\">" + outputUrl
+                            + "</a> <strong>after</strong> status shows that the job completed successfully (exited 0).</p>"
+                            + "<p>For detailed progress (debug) information, GET <a href=\""
+                            + stdoutUrl + "\">" + stdoutUrl + "</a>"
+                            + " or <a href=\"" + stderrUrl + "\">" + stderrUrl
+                            + "</a></p></body></html>" )
                        .build();
     }
 
