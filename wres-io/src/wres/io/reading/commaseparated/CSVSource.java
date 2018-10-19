@@ -32,6 +32,9 @@ public class CSVSource extends BasicSource
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( CSVSource.class );
 
+    // It's probably worth making this configurable
+    private static final String DELIMITER = ",";
+
     /**
      * Constructor that sets the filename
      * @param projectConfig the ProjectConfig causing ingest
@@ -47,8 +50,46 @@ public class CSVSource extends BasicSource
     @Override
     protected List<IngestResult> saveObservation() throws IOException
     {
-        // TODO: Add Support for observations
-        return super.saveObservation();
+        try
+        {
+            sourceDetails = DataSources.get( this.getFilename(), Instant.now().toString(), null, this.getHash());
+        }
+        catch ( SQLException e )
+        {
+            throw new IOException( "Metadata about the file at '" + this.getFilename() + "' could not be created.", e );
+        }
+
+        if (sourceDetails.performedInsert())
+        {
+            DataProvider data;
+
+            if (this.getSourceConfig().isHasHeader())
+            {
+                data = DataProvider.fromCSV( this.getFilename(), DELIMITER );
+            }
+            else
+            {
+                data = DataProvider.fromCSV(
+                        this.getFilename(),
+                        DELIMITER,
+                        "value_date",
+                        "variable_name",
+                        "location",
+                        "measurement_unit",
+                        "value"
+                );
+            }
+
+            this.parseObservations( data );
+        }
+
+        return IngestResult.singleItemListFrom(
+                this.getProjectConfig(),
+                this.getDataSourceConfig(),
+                this.getHash(),
+                this.getFilename(),
+                !sourceDetails.performedInsert()
+        );
     }
 
     @Override
@@ -69,12 +110,13 @@ public class CSVSource extends BasicSource
 
             if (this.getSourceConfig().isHasHeader())
             {
-                data = DataProvider.fromCSV( this.getFilename() );
+                data = DataProvider.fromCSV( this.getFilename(), DELIMITER );
             }
             else
             {
                 data = DataProvider.fromCSV(
                         this.filename,
+                        DELIMITER,
                         "start_date",
                         "value_date",
                         "variable_name",
@@ -128,6 +170,56 @@ public class CSVSource extends BasicSource
             {
                 throw new IOException( "Metadata needed to save time series values could not be loaded.", e );
             }
+        }
+    }
+
+    private void parseObservations(final DataProvider data) throws IOException
+    {
+        while (data.next())
+        {
+            this.validateDataProvider( data );
+
+            Instant valueDate = data.getInstant( "value_date" );
+            Double value = data.getDouble( "value" );
+
+            String variable = data.getString( "variable_name" );
+            String location = data.getString( "location" );
+            String measurementUnit = data.getString( "measurement_unit" );
+            Integer measurementUnitId;
+
+            try
+            {
+                measurementUnitId = MeasurementUnits.getMeasurementUnitID( measurementUnit );
+            }
+            catch ( SQLException e )
+            {
+                throw new IOException( "Could not determine the ID for the measurement unit '" +
+                                       measurementUnit + "'", e );
+            }
+
+            Integer variableFeatureId;
+
+            try
+            {
+                variableFeatureId = Features.getVariableFeatureIDByLID(
+                        location,
+                        Variables.getVariableID(variable)
+                );
+            }
+            catch ( SQLException e )
+            {
+                throw new IOException( "Could not determine the metadata about where '" +
+                                       location + "' and the variable '" + variable +
+                                       "' intersect that are needed to save observations from " +
+                                       this.getFilename(), e );
+            }
+
+            IngestedValues.observed( value )
+                          .at(valueDate)
+                          .measuredIn( measurementUnitId )
+                          .forVariableAndFeatureID( variableFeatureId )
+                          .inSource( this.sourceDetails.getId() )
+                          .add();
         }
     }
 

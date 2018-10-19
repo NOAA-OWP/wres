@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -286,7 +287,7 @@ final class MainFunctions
                 int cutoff = Integer.MAX_VALUE;
 
                 // If there is input for the cutoff, set it
-                if (args.length >= 4 && Strings.isNumeric(args[3]))
+                if (args.length >= 4 && StringUtils.isNumeric( args[3]))
                 {
                     cutoff = Integer.parseInt(args[3]);
                 }

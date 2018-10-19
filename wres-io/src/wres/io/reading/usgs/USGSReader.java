@@ -11,6 +11,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 
 import org.slf4j.LoggerFactory;
@@ -163,7 +164,7 @@ public class USGSReader extends BasicSource
 
             for (FeatureDetails featureDetails : details)
             {
-                if (!Strings.isNumeric( featureDetails.getGageID() ))
+                if (!StringUtils.isNumeric( featureDetails.getGageID() ))
                 {
                     LOGGER.warn( "{} has an invalid gage id", featureDetails );
                 }

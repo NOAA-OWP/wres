@@ -9,6 +9,7 @@ import javax.xml.stream.XMLStreamReader;
 import javax.xml.transform.TransformerException;
 
 import com.mchange.v2.c3p0.ComboPooledDataSource;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -175,7 +176,7 @@ public final class SystemSettings extends XMLReader
             throws XMLStreamException
     {
         String value = XMLHelper.getXMLText( reader );
-        if (value != null && Strings.isNumeric( value ))
+        if (value != null && StringUtils.isNumeric(value))
         {
             this.minimumCachedNetcdf = Integer.parseInt( value );
         }
@@ -185,7 +186,7 @@ public final class SystemSettings extends XMLReader
             throws XMLStreamException
     {
         String value = XMLHelper.getXMLText( reader );
-        if (value != null && Strings.isNumeric( value ))
+        if (value != null && StringUtils.isNumeric(value))
         {
             this.maximumCachedNetcdf = Integer.parseInt( value );
         }
@@ -195,7 +196,7 @@ public final class SystemSettings extends XMLReader
             throws XMLStreamException
     {
         String value = XMLHelper.getXMLText( reader );
-        if (value != null && Strings.isNumeric( value ))
+        if (value != null && StringUtils.isNumeric(value))
         {
             this.netcdfCachePeriod = Integer.parseInt( value );
         }
@@ -205,7 +206,7 @@ public final class SystemSettings extends XMLReader
             throws XMLStreamException
     {
         String value = XMLHelper.getXMLText( reader );
-        if (value != null && Strings.isNumeric( value ))
+        if (value != null && StringUtils.isNumeric(value))
         {
             this.hardNetcdfCacheLimit = Integer.parseInt( value );
         }
@@ -215,7 +216,7 @@ public final class SystemSettings extends XMLReader
             throws XMLStreamException
     {
         String value = XMLHelper.getXMLText( reader );
-        if (value != null && Strings.isNumeric( value ))
+        if (value != null && StringUtils.isNumeric(value))
         {
             this.maximumThreadCount = Integer.parseInt( value );
         }
@@ -225,7 +226,7 @@ public final class SystemSettings extends XMLReader
             throws XMLStreamException
     {
         String value = XMLHelper.getXMLText( reader );
-        if (value != null && Strings.isNumeric( value ))
+        if (value != null && StringUtils.isNumeric(value))
         {
             this.poolObjectLifespan = Integer.parseInt(value);
         }
@@ -235,7 +236,7 @@ public final class SystemSettings extends XMLReader
             throws XMLStreamException
     {
         String value = XMLHelper.getXMLText( reader );
-        if (value != null && Strings.isNumeric( value ))
+        if (value != null && StringUtils.isNumeric(value))
         {
             this.maximumInserts = Integer.parseInt(value);
         }
@@ -245,7 +246,7 @@ public final class SystemSettings extends XMLReader
             throws XMLStreamException
     {
         String value = XMLHelper.getXMLText( reader );
-        if (value != null && Strings.isNumeric( value ))
+        if (value != null && StringUtils.isNumeric(value))
         {
             this.maximumCopies = Integer.parseInt(value);
         }
@@ -255,7 +256,7 @@ public final class SystemSettings extends XMLReader
             throws XMLStreamException
     {
         String value = XMLHelper.getXMLText( reader );
-        if (value != null && Strings.isNumeric( value ))
+        if (value != null && StringUtils.isNumeric(value))
         {
             ProgressMonitor.setUpdateFrequency(Long.parseLong( value ));
         }
@@ -265,7 +266,7 @@ public final class SystemSettings extends XMLReader
             throws XMLStreamException
     {
         String value = XMLHelper.getXMLText( reader );
-        if (value != null && Strings.isNumeric( value ))
+        if (value != null && StringUtils.isNumeric(value))
         {
             this.fetchSize = Integer.parseInt(value);
         }
@@ -275,7 +276,7 @@ public final class SystemSettings extends XMLReader
             throws XMLStreamException
     {
         String value = XMLHelper.getXMLText( reader );
-        if (value != null && Strings.isNumeric( value ))
+        if (value != null && StringUtils.isNumeric(value))
         {
             this.defaultChartWidth = Integer.parseInt(value);
         }
@@ -285,7 +286,7 @@ public final class SystemSettings extends XMLReader
         throws XMLStreamException
     {
         String value = XMLHelper.getXMLText( reader );
-        if (value != null && Strings.isNumeric( value ))
+        if (value != null && StringUtils.isNumeric(value))
         {
             this.defaultChartHeight = Integer.parseInt(value);
         }

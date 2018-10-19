@@ -255,6 +255,6 @@ public final class IngestedValues
         private Integer sourceId;
         private Duration scalePeriod = Duration.of( 1, TimeHelper.LEAD_RESOLUTION);
         private TimeScale.TimeScaleFunction scaleFunction = TimeScale.TimeScaleFunction.UNKNOWN;
-        private Duration timeStep;
+        private Duration timeStep = Duration.ZERO;
     }
 }

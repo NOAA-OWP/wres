@@ -61,19 +61,19 @@ public interface DataProvider extends AutoCloseable
      * @throws IndexOutOfBoundsException Thrown if the provider attempts to
      * move beyond its own boundaries
      */
-    boolean back();
+    boolean back() throws IOException;
 
     /**
      * Moves to the last row in the data
      * @throws IllegalStateException Thrown if the data has been closed down
      */
-    void toEnd();
+    void toEnd() throws IOException;
 
     /**
      * Moves to the first row in the data
      * @throws IllegalStateException Thrown if the data has been closed down
      */
-    void reset();
+    void reset() throws IOException;
 
     /**
      * @param columnName The name of the column to look for
@@ -575,49 +575,9 @@ public interface DataProvider extends AutoCloseable
      * @return A DataProvider containing the provided CSV data
      * @throws IOException Thrown if the file could not be read
      */
-    static DataProvider fromCSV(final String fileName) throws IOException
+    static DataProvider fromCSV(final String fileName, final String delimiter) throws IOException
     {
-        String[] columns;
-        DataProvider provider;
-
-        try ( BufferedReader reader = new BufferedReader( new FileReader( fileName ) ))
-        {
-            String line = reader.readLine();
-
-            columns = StringUtils.split( line, "," );
-
-            line = reader.readLine();
-            int lineNumber = 2;
-
-            DataBuilder data = DataBuilder.with( columns );
-
-            while (line != null)
-            {
-                data.addRow();
-                Object[] values = line.split( "," );
-
-                if (values.length > columns.length)
-                {
-                    throw new IOException(
-                            "Line " + lineNumber + " of '" + fileName + "' has " + values.length +
-                            " columns worth of data where the document only has " + columns.length +
-                            " columns."
-                    );
-                }
-
-                for (int column = 0; column < values.length; ++column)
-                {
-                    data.set( columns[column], values[column]);
-                }
-
-                line = reader.readLine();
-                lineNumber++;
-            }
-
-            provider = data.build();
-        }
-
-        return provider;
+        return CSVDataProvider.from(fileName, delimiter);
     }
 
     /**
@@ -629,43 +589,16 @@ public interface DataProvider extends AutoCloseable
      */
     static DataProvider fromCSV(
             final String fileName,
+            final String delimiter,
             final String... columnNames)
             throws IOException
     {
-        String[] columns;
-        DataProvider provider;
-
-        try ( BufferedReader reader = new BufferedReader( new FileReader( fileName ) ))
+        Map<String, Integer> columnIndices = new HashMap<>(  );
+        for (int i = 0; i < columnNames.length; ++i)
         {
-            String line = reader.readLine();
-
-            if (columnNames != null && columnNames.length > 0)
-            {
-                columns = columnNames;
-            }
-            else
-            {
-                columns = new String[StringUtils.countMatches( line, "," ) + 1];
-
-                for (int column = 0; column < columns.length; ++column)
-                {
-                    columns[column] = String.valueOf( column );
-                }
-            }
-
-            DataBuilder data = DataBuilder.with( columns );
-
-            while (line != null)
-            {
-                Object[] values = line.split( "," );
-                data.addRow( values );
-                line = reader.readLine();
-            }
-
-            provider = data.build();
+            columnIndices.put(columnNames[i], i);
         }
-
-        return provider;
+        return CSVDataProvider.from( fileName, delimiter, columnIndices );
     }
 
     /**
@@ -676,7 +609,7 @@ public interface DataProvider extends AutoCloseable
      * will not be able to return to the beginning of their data
      * @return The DataProvider represented as a JSON String
      */
-    default String toJSONString()
+    default String toJSONString() throws IOException
     {
         return this.toJSON().toString();
     }
@@ -689,7 +622,7 @@ public interface DataProvider extends AutoCloseable
      * will not be able to return to the beginning of their data
      * @return The DataProvider represented as JSON
      */
-    default JsonValue toJSON()
+    default JsonValue toJSON() throws IOException
     {
         JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
 
