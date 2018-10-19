@@ -784,13 +784,13 @@ class InputRetriever extends Retriever //WRESCallable<MetricInput<?>>
                 }
             }
         }
-        catch(SQLException e)
-        {
-            throw new RetrievalFailedException( "An error occured while trying to retrieve data.", e );
-        }
         catch(NoDataException e)
         {
             throw new RetrievalFailedException( "No data could be retrieved.", e );
+        }
+        catch(SQLException  e)
+        {
+            throw new RetrievalFailedException( "An error occured while trying to retrieve data.", e );
         }
         finally
         {

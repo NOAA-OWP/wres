@@ -86,7 +86,7 @@ public class TimeSeriesValues
 
     public Duration getTimeStep()
     {
-        Duration step = null;
+        Duration step = Duration.ZERO;
 
         if (this.value != null && this.value.length > 1)
         {

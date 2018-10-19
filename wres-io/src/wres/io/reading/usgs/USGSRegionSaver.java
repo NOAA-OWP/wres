@@ -719,6 +719,13 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
             function = TimeScale.TimeScaleFunction.MAXIMUM;
         }
 
+        if (timeStep == null)
+        {
+            LOGGER.info("");
+            LOGGER.info(this.requestURL);
+            LOGGER.info("");
+        }
+
         IngestedValues.observed(value)
                       .at( observationTime )
                       .forVariableAndFeatureID( this.getVariableFeatureID( gageID ) )

@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -130,16 +131,58 @@ public final class Strings
         return string.replaceAll(pattern, "");
     }
 
-	/**
-	 * Determines if a string describes some number
-	 * @param possibleNumber A string that might be a number
-	 * @return True if the possibleNumber really is a number
-	 */
-	public static boolean isNumeric(String possibleNumber) {
-		return hasValue(possibleNumber) &&
-               NUMERIC_PATTERN.matcher( possibleNumber.trim() ).matches();
-	}
+    public static boolean isNaturalNumber(final CharSequence candidate)
+    {
+        for (int i = 0; i < candidate.length(); ++i)
+        {
+            if (i == 0 && candidate.charAt( i ) == '-')
+            {
+                continue;
+            }
+            if (!Character.isDigit( candidate.charAt( i ) ))
+            {
+                return false;
+            }
+        }
 
+        return true;
+    }
+
+    public static boolean isFloatingPoint(final CharSequence candidate)
+    {
+        boolean decimalEncountered = false;
+
+        for (int i = 0; i < candidate.length(); ++i)
+        {
+            if (i == 0 && candidate.charAt( i ) == '-')
+            {
+                continue;
+            }
+
+            if (candidate.charAt( i ) == '.')
+            {
+                if (decimalEncountered)
+                {
+                    return false;
+                }
+
+                decimalEncountered = true;
+            }
+            else if (!Character.isDigit( candidate.charAt( i ) ))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Generates a stack trace from the current thread
+     * <br>
+     * Useful for debugging and tracing asynchronous processes
+     * @return A multiline string representation of the stack trace
+     */
 	public static String getStackTrace()
 	{
         StackTraceElement[] traceElements = Thread.currentThread().getStackTrace();
