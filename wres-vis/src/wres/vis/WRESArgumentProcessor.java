@@ -1,25 +1,22 @@
 package wres.vis;
 
-import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 import java.util.SortedSet;
-import java.util.TimeZone;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import ohd.hseb.hefs.utils.arguments.Argument;
 import ohd.hseb.hefs.utils.arguments.DefaultArgumentsProcessor;
-import ohd.hseb.hefs.utils.datetime.HEFSTimeZoneTools;
 import ohd.hseb.hefs.utils.plugins.UniqueGenericParameterList;
 import ohd.hseb.util.misc.HString;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
 import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.TimeWindow;
@@ -85,7 +82,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
 
         recordIdentifierArguments( meta );
 
-        recordWindowingArguments( meta );
+        recordWindowingArguments( meta.getTimeWindow() );
 
         initializeFunctionInformation();
     }
@@ -111,7 +108,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         StatisticMetadata meta = displayPlotInput.getMetadata();
         extractStandardArgumentsFromMetadata( meta );
 
-        recordWindowingArguments( meta.getSampleMetadata() );
+        recordWindowingArguments( meta.getSampleMetadata().getTimeWindow() );
 
         String durationString = Long.toString( TimeHelper.durationToLongUnits( meta.getSampleMetadata()
                                                                                    .getTimeWindow()
@@ -162,15 +159,16 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
             SortedSet<TimeWindow> timeWindows =
                     Slicer.discover( displayedPlotInput,
                                      next -> next.getMetadata().getSampleMetadata().getTimeWindow() );
-            recordWindowingArguments( timeWindows.first().getEarliestTime(),
-                                      timeWindows.last().getLatestTime(),
-                                      timeWindows.first().getEarliestLeadTime(),
-                                      timeWindows.last().getLatestLeadTime(),
-                                      timeWindows.first().getReferenceTime() );
+            TimeWindow timeWindow = TimeWindow.of( timeWindows.first().getEarliestTime(),
+                                                   timeWindows.last().getLatestTime(),
+                                                   timeWindows.first().getReferenceTime(),
+                                                   timeWindows.first().getEarliestLeadTime(),
+                                                   timeWindows.last().getLatestLeadTime() );
+            recordWindowingArguments( timeWindow );
         }
         else
         {
-            recordWindowingArguments( meta.getSampleMetadata() );
+            recordWindowingArguments( meta.getSampleMetadata().getTimeWindow() );
         }
 
         initializeFunctionInformation();
@@ -242,54 +240,30 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         }
     }
 
-    private void recordWindowingArguments( final SampleMetadata meta )
+    private void recordWindowingArguments( final TimeWindow timeWindow )
     {
-        if ( meta.hasTimeWindow() )
+        // Check for unbounded times and do not display this unconstrained condition: #46772
+        if ( Objects.nonNull( timeWindow ) && ! timeWindow.hasUnboundedTimes() )
         {
-            earliestInstant = meta.getTimeWindow().getEarliestTime();
-            latestInstant = meta.getTimeWindow().getLatestTime();
+            earliestInstant = timeWindow.getEarliestTime();
+            latestInstant = timeWindow.getLatestTime();
             addArgument( "earliestLeadTime",
-                         Long.toString( TimeHelper.durationToLongUnits( meta.getTimeWindow().getEarliestLeadTime(),
+                         Long.toString( TimeHelper.durationToLongUnits( timeWindow.getEarliestLeadTime(),
                                                                         this.getDurationUnits() ) ) );
             addArgument( "latestLeadTime",
-                         Long.toString( TimeHelper.durationToLongUnits( meta.getTimeWindow().getLatestLeadTime(),
+                         Long.toString( TimeHelper.durationToLongUnits( timeWindow.getLatestLeadTime(),
                                                          this.getDurationUnits() ) ) );
-            addArgument( "referenceTime", meta.getTimeWindow().getReferenceTime().toString() ); //#44873
-
-            recordWindowingArguments( meta.getTimeWindow().getEarliestTime(),
-                                      meta.getTimeWindow().getLatestTime(),
-                                      meta.getTimeWindow().getEarliestLeadTime(),
-                                      meta.getTimeWindow().getLatestLeadTime(),
-                                      meta.getTimeWindow().getReferenceTime() );
+            
+            // Jbr: Qualify the reference time with "evaluation period" in code rather than the graphics template
+            // This allows for the time window to be ommited when unconstrained. See #46772.
+            String referenceTime = timeWindow.getReferenceTime().toString() + " Evaluation Period: ";
+            
+            addArgument( "referenceTime", referenceTime ); //#44873, #46772
         }
         else
         {
             addArgument( "referenceTime", "" );
         }
-    }
-
-    //XXX HANK -- Think about this when you have a chance.  Basically, there are two options:  
-    //arguments pulled from metadata; arguments pulled from displayed data.  Considerations:
-    //want to avoid using the same strings (argument names) repeatedly.  
-    /**
-     * Record the pooling window arguments and attributes from the meta data or provided overrides.  
-     * @param usedEarliestLeadTime Earliest lead time to use
-     * @param usedLatestLeadTime Latest lead time to use
-     * @param usedReferenceTime The reference time system for the pooling windows.
-     */
-    private void recordWindowingArguments( Instant earliestTime,
-                                           Instant latestTime,
-                                           Duration usedEarliestLeadTime,
-                                           Duration usedLatestLeadTime,
-                                           ReferenceTime usedReferenceTime )
-    {
-        earliestInstant = earliestTime;
-        latestInstant = latestTime;
-        addArgument( "earliestLeadTime",
-                     Long.toString( TimeHelper.durationToLongUnits( usedEarliestLeadTime, this.getDurationUnits() ) ) );
-        addArgument( "latestLeadTime",
-                     Long.toString( TimeHelper.durationToLongUnits( usedLatestLeadTime, this.getDurationUnits() ) ) );
-        addArgument( "referenceTime", usedReferenceTime.toString() ); //#44873
     }
 
     /**
@@ -425,7 +399,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
     }
 
     /**
-     * Adds the arguments relating to the {@TimeScale} of the pairs from which the verification metrics were
+     * Adds the arguments relating to the {@timeScale} of the pairs from which the verification metrics were
      * computed.
      * 
      * @param meta the statistics metadata
@@ -475,20 +449,14 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         {
             final String dateFormat = argument.getFunctionParameterValues().get( 0 );
             final String timeZoneStr = argument.getFunctionParameterValues().get( 1 );
-            HEFSTimeZoneTools.retrieveTimeZone( timeZoneStr );
 
             DateTimeFormatter formatter;
-
-            // TODO: if retrieveTimeZone throws any kind of RuntimeException,
-            // catch specifically that exception for this one line.
-            // Didn't have the javadoc available to see which one is thrown.
-            TimeZone zone = HEFSTimeZoneTools.retrieveTimeZone( timeZoneStr );
 
             try
             {
                  formatter =
                          DateTimeFormatter.ofPattern( dateFormat )
-                                          .withZone( zone.toZoneId() );
+                                          .withZone( ZoneId.of( timeZoneStr ) );
             }
             catch ( IllegalArgumentException e )
             {
@@ -513,7 +481,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         if ( ( ( earliestInstant == null ) || ( !earliestInstant.isAfter( Instant.MIN ) ) )
              && ( ( latestInstant == null ) || ( !latestInstant.isBefore( Instant.MAX ) ) ) )
         {
-            return "Window is Unconstrained";
+            return ""; //Jbr. See #46772. Return an empty string, as this will now be unqualified
         }
         else if ( ( earliestInstant == null ) || ( !earliestInstant.isAfter( Instant.MIN ) ) )
         {

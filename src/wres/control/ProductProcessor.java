@@ -71,11 +71,11 @@ class ProductProcessor implements Consumer<StatisticsForProject>,
 {
 
     /**
-     * Default resolution for writing outputs that contain durations, such as lead durations and time scales. To 
-     * change the resolution, change this default.
+     * Default resolution for writing outputs that contain time units, such as lead durations, time scales and
+     * datetimes. To change the resolution, change this default.
      */
 
-    static final ChronoUnit DEFAULT_DURATION_UNITS = ChronoUnit.SECONDS;
+    static final ChronoUnit DEFAULT_TEMPORAL_UNITS = ChronoUnit.SECONDS;
     
     /**
      * Logger.
@@ -359,7 +359,7 @@ class ProductProcessor implements Consumer<StatisticsForProject>,
         {
             CommaSeparatedDiagramWriter diagramWriter =
                     CommaSeparatedDiagramWriter.of( projectConfig,
-                                                    DEFAULT_DURATION_UNITS,
+                                                    DEFAULT_TEMPORAL_UNITS,
                                                     outputDirectory );
             diagramConsumers.put( DestinationType.CSV,
                                   diagramWriter );
@@ -370,7 +370,7 @@ class ProductProcessor implements Consumer<StatisticsForProject>,
         {
             CommaSeparatedBoxPlotWriter boxPlotWriter =
                     CommaSeparatedBoxPlotWriter.of( projectConfig,
-                                                    DEFAULT_DURATION_UNITS,
+                                                    DEFAULT_TEMPORAL_UNITS,
                                                     outputDirectory );
             boxPlotConsumers.put( DestinationType.CSV,
                                   boxPlotWriter );
@@ -381,7 +381,7 @@ class ProductProcessor implements Consumer<StatisticsForProject>,
         {
             CommaSeparatedMatrixWriter matrixWriter =
                     CommaSeparatedMatrixWriter.of( projectConfig,
-                                                   DEFAULT_DURATION_UNITS,
+                                                   DEFAULT_TEMPORAL_UNITS,
                                                    outputDirectory );
             matrixConsumers.put( DestinationType.CSV,
                                  matrixWriter );
@@ -392,7 +392,7 @@ class ProductProcessor implements Consumer<StatisticsForProject>,
         {
             pairedConsumers.put( DestinationType.CSV,
                                  CommaSeparatedPairedWriter.of( projectConfig,
-                                                                DEFAULT_DURATION_UNITS,
+                                                                DEFAULT_TEMPORAL_UNITS,
                                                                 outputDirectory ) );
         }
 
@@ -400,7 +400,7 @@ class ProductProcessor implements Consumer<StatisticsForProject>,
         {
             CommaSeparatedScoreWriter<DoubleScoreStatistic> doubleScoreWriter =
                     CommaSeparatedScoreWriter.of( projectConfig,
-                                                  DEFAULT_DURATION_UNITS,
+                                                  DEFAULT_TEMPORAL_UNITS,
                                                   outputDirectory );
             doubleScoreConsumers.put( DestinationType.CSV,
                                       doubleScoreWriter );
@@ -411,7 +411,7 @@ class ProductProcessor implements Consumer<StatisticsForProject>,
         {
             CommaSeparatedScoreWriter<DurationScoreStatistic> durationScoreWriter =
                     CommaSeparatedScoreWriter.of( projectConfig,
-                                                  DEFAULT_DURATION_UNITS,
+                                                  DEFAULT_TEMPORAL_UNITS,
                                                   outputDirectory );
             durationScoreConsumers.put( DestinationType.CSV,
                                         durationScoreWriter );
@@ -434,7 +434,7 @@ class ProductProcessor implements Consumer<StatisticsForProject>,
         if ( writeWhenTrue.test( StatisticGroup.MULTIVECTOR, DestinationType.PNG ) )
         {
             PNGDiagramWriter diagramWriter = PNGDiagramWriter.of( projectConfigPlus,
-                                                                  DEFAULT_DURATION_UNITS,
+                                                                  DEFAULT_TEMPORAL_UNITS,
                                                                   outputDirectory );
             diagramConsumers.put( DestinationType.PNG,
                                   diagramWriter );
@@ -444,7 +444,7 @@ class ProductProcessor implements Consumer<StatisticsForProject>,
         if ( writeWhenTrue.test( StatisticGroup.BOXPLOT, DestinationType.PNG ) )
         {
             PNGBoxPlotWriter boxPlotWriter = PNGBoxPlotWriter.of( projectConfigPlus,
-                                                                  DEFAULT_DURATION_UNITS,
+                                                                  DEFAULT_TEMPORAL_UNITS,
                                                                   outputDirectory);
             boxPlotConsumers.put( DestinationType.PNG,
                                   boxPlotWriter );
@@ -454,7 +454,7 @@ class ProductProcessor implements Consumer<StatisticsForProject>,
         if ( writeWhenTrue.test( StatisticGroup.PAIRED, DestinationType.PNG ) )
         {
             PNGPairedWriter pairedWriter = PNGPairedWriter.of( projectConfigPlus,
-                                                               DEFAULT_DURATION_UNITS,
+                                                               DEFAULT_TEMPORAL_UNITS,
                                                                outputDirectory );
             pairedConsumers.put( DestinationType.PNG,
                                  pairedWriter );
@@ -465,7 +465,7 @@ class ProductProcessor implements Consumer<StatisticsForProject>,
         {
             PNGDoubleScoreWriter doubleScoreWriter =
                     PNGDoubleScoreWriter.of( projectConfigPlus,
-                                             DEFAULT_DURATION_UNITS,
+                                             DEFAULT_TEMPORAL_UNITS,
                                              outputDirectory );
             doubleScoreConsumers.put( DestinationType.PNG,
                                       doubleScoreWriter );
@@ -476,7 +476,7 @@ class ProductProcessor implements Consumer<StatisticsForProject>,
         {
             PNGDurationScoreWriter durationScoreWriter =
                     PNGDurationScoreWriter.of( projectConfigPlus,
-                                               DEFAULT_DURATION_UNITS,
+                                               DEFAULT_TEMPORAL_UNITS,
                                                outputDirectory );
             durationScoreConsumers.put( DestinationType.PNG,
                                         durationScoreWriter );
@@ -502,7 +502,7 @@ class ProductProcessor implements Consumer<StatisticsForProject>,
         {
             LOGGER.debug( "There are netcdf consumers for {}", this );
             NetcdfOutputWriter netcdfOutputWriter = NetcdfOutputWriter.of( projectConfig,
-                                                                           DEFAULT_DURATION_UNITS,
+                                                                           DEFAULT_TEMPORAL_UNITS,
                                                                            this.getResolvedProject()
                                                                                .getOutputDirectory() );
             doubleScoreConsumers.put( DestinationType.NETCDF,

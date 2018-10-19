@@ -133,7 +133,7 @@ class ProcessorHelper
             */
             // Use the gridded netcdf writer
             sharedWritersBuilder.setNetcdfOutputWriter( NetcdfOutputWriter.of( projectConfig,
-                                                                               ProductProcessor.DEFAULT_DURATION_UNITS,
+                                                                               ProductProcessor.DEFAULT_TEMPORAL_UNITS,
                                                                                outputDirectory ) );
         }
 
