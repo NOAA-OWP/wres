@@ -12,8 +12,6 @@ import org.junit.Test;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.sampledata.pairs.SingleValuedPair;
-import wres.datamodel.sampledata.pairs.SingleValuedPairs;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs.SingleValuedPairsBuilder;
 
 /**
@@ -24,6 +22,27 @@ import wres.datamodel.sampledata.pairs.SingleValuedPairs.SingleValuedPairsBuilde
 public final class SingleValuedPairsTest
 {
 
+    /**
+     * Tests the {@link SingleValuedPairs}.
+     */
+
+    @Test
+    public void testSingleValuedPairs()
+    {
+        final List<SingleValuedPair> values = new ArrayList<>();
+        final SingleValuedPairsBuilder b = new SingleValuedPairsBuilder();
+
+        final SampleMetadata meta = SampleMetadata.of();
+        SingleValuedPairs p = (SingleValuedPairs) b.addData( values ).setMetadata( meta ).build();
+
+        //Check dataset count
+        assertFalse( "Expected a dataset without a baseline [false," + p.hasBaseline() + "].", p.hasBaseline() );
+        p = (SingleValuedPairs) b.addDataForBaseline( values ).setMetadataForBaseline( meta ).build(); //Add another
+        //Check that a returned dataset contains the expected number of pairs
+        assertTrue( "Expected a main dataset with ten pairs [0," + p.getRawData().size() + "].", p.getRawData().size() == 0 );
+    }
+    
+    
     /**
      * Tests the {@link SingleValuedPairs}.
      */

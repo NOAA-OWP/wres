@@ -22,7 +22,6 @@ import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.TimeScale;
 import wres.datamodel.metadata.TimeWindow;
-import wres.io.config.ConfigHelper;
 import wres.util.TimeHelper;
 
 /**
