@@ -196,7 +196,7 @@ for scenarioName in $*; do
 
     if [ $comparisonResult -ne 0 ]
     then
-        echo "$echoPrefix Test $scenarioName comparison FAILED with exit code $comparisonResult TEST FAILS!"
+        echo "$echoPrefix Test $scenarioName comparison FAILED with exit code $comparisonResult. TEST FAILS!" | tee /dev/stderr
         overallResult=1
     fi
 
@@ -209,7 +209,7 @@ if [ $overallResult -eq 0 ]
 then
     echo "$echoPrefix All tests passed."
 else
-    echo "$echoPrefix One or more tests FAILED."
+    echo "$echoPrefix One or more tests FAILED." | tee /dev/stderr
 fi
 
 exit $overallResult

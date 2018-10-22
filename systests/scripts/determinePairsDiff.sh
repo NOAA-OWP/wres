@@ -35,7 +35,9 @@ fi
 benchmarkDir="${BENCHMARK_DIR:-benchmarks}"
 outputDirPrefix=wres_evaluation_output_
 
-# Comparing the dirListing.txt file.
+# ================================================
+# Comparing the dirListing.txt file
+# ================================================
 if [ -f ${outputDirPrefix}*/dirListing.txt -a -f ${benchmarkDir}/dirListing.txt ]
 then
     echo "$echoPrefix Comparing listing with benchmark expected contents: diff -q ${outputDirPrefix}*/dirListing.txt ${benchmarkDir}/dirListing.txt"
@@ -44,18 +46,26 @@ then
     diffResult=$?
     if [ ${diffResult} -ne 0 ]
     then
+        echo "$echoPrefix The dirListing.txt file does not match benchmark." | tee /dev/stderr
         testResult=$(( ${testResult} + ${DIFFERENT_FILES_RESULT} ))
     fi
 fi
 
-# First test that outputdir exists
+# ================================================
+# Check that output dir exists
+# ================================================
 ls ${outputDirPrefix}* &>/dev/null
 lsResult=$?
 
 if [ $lsResult -ne 0 ]
 then
+    echo "$echoPrefix No output directory created." | tee /dev/stderr
     testResult=$(( ${testResult} + ${OUTPUT_NOT_FOUND_RESULT} ))
 fi
+
+# ================================================
+# Check the pairs files
+# ================================================
 
 # For all files with "pairs.csv" in their name (could include pairs.csv or baseline_pairs.csv), but 
 # without sorted in their names (in case an old sorted_pairs.csv is floating around), do...
@@ -65,15 +75,16 @@ do
     do
         echo "$echoPrefix Sorting and comparing file $pairsFile with benchmark..."
         pairsFileBaseName=$( basename $pairsFile )
-        # do sorting here
-        sort -t, -k1d,1 -k4n,4 -k2n,2 $pairsFile > $directory/sorted_$pairsFileBaseName
-        sortResult=$?
 
-        if [ ${sortResult} -ne 0 ]
+        # Sort the pairs file.
+        sort -t, -k1d,1 -k4n,4 -k2,2 -k3n,3 $pairsFile > $directory/sorted_$pairsFileBaseName
+        sortResult=$?
+        if [ ${sortResult} -ne 0 ] # Sorting failed.
         then
             testResult=$(( ${testResult} + ${SORT_FAILED_RESULT} ))
         fi
 
+        # Check for benchmark and, if there, diff.
         if [ -f ${benchmarkDir}/sorted_$pairsFileBaseName \
              -a -f $directory/sorted_$pairsFileBaseName ]
         then
@@ -84,6 +95,7 @@ do
 
             if [ ${pairsDiffResult} -ne 0 ]
             then
+                echo "$echoPrefix The pairs file $directory/sorted_$pairsFileBaseName does not match the benchmark." | tee /dev/stderr
                 testResult=$(( ${testResult} + ${DIFFERENT_PAIRS_RESULT} ))
             fi
         elif [ ! -f $directory/$pairsFileBaseName ]
@@ -95,6 +107,10 @@ do
         fi
     done
 done
+
+# ==============================================
+# Check metric output .csv files
+# ==============================================
 
 # Comparing metric otuput .csv files that exist in both ${benchmarkDir} and outputs.
 echo "$echoPrefix Comparing output .csv files with ${benchmarkDir} if the benchmark version exists..."
@@ -116,5 +132,11 @@ do
         fi
     fi
 done
+if [ "${csvDiffFlag}" == "true" ]
+then
+    echo "$echoPrefix At least one metric output .csv file was different than the benchmark." | tee /dev/stderr
+fi
 
+# Return the overall diff result, which is a sum of all of the accumulated differences, noting that the
+# values summed are factors of two, so that you can identify what differences were found based on the number.
 exit $testResult
