@@ -207,9 +207,10 @@ done
 
 if [ $overallResult -eq 0 ]
 then
-    echo "$echoPrefix All tests passed."
+    echo "All tests passed."
 else
-    echo "$echoPrefix One or more tests FAILED." | tee /dev/stderr
+    echo | tee /dev/stderr
+    echo "One or more tests FAILED." | tee /dev/stderr
 fi
 
 exit $overallResult
