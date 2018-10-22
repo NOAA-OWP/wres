@@ -6,7 +6,7 @@
         <font family="Dialog" size="12" style="1"/>
 		<text>@metricName@ for Various Event @plotTitleVariable@
 @locationName@.@variableName@.@primaryScenario@@timeScale@@diagramInstanceDescription@
-@referenceTime@ Evaluation Period: @dataPoolingWindow(yyyy-MM-dd;GMT)@</text>
+@referenceTime@@dataPoolingWindow(yyyy-MM-dd'T'HH:mm:ss zz;GMT)@</text>
 	</plotTitle>
 	
 	<!-- Shapes for all series. -->

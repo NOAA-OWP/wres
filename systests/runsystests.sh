@@ -39,14 +39,15 @@ startsec=$(date +%s)
 
 # The tests to perform are entered manually on this line.
 ./runtest.sh scenario0* scenario1* scenario2* scenario3* scenario4* scenario5* scenario6* scenario7* scenario8* >> $logFileName
-
+overallResultCode=$?
 endsec=$(date +%s)
 
-echo 
-echo "System tests were executed; results are above.  See the wres.log file for WRES log messages."
+echo
+echo "System tests were executed; results are above. See the wres.log file for WRES log messages."
 echo "Elapsed time: $(($endsec - $startsec)) seconds"
 echo "Testing messages can be found here:"
 echo 
 echo "$logFileName"
 echo
 
+exit $overallResultCode

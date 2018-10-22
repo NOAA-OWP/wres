@@ -6,8 +6,8 @@
     <plotTitle>
         <font family="Dialog" size="12" style="1"/>
         <text>@metricName@ for
-@locationName@.@variableName@.@primaryScenario@@timeSCale@@diagramInstanceDescription@
-@referenceTime@ Evaluation Period: @dataPoolingWindow(yyyy-MM-dd;GMT)@</text>
+@locationName@.@variableName@.@primaryScenario@@timeScale@@diagramInstanceDescription@
+@referenceTime@@dataPoolingWindow(yyyy-MM-dd'T'HH:mm:ss zz;GMT)@</text>
     </plotTitle>
     
     <!-- Shapes for all series. -->
