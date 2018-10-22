@@ -25,7 +25,6 @@ import wres.config.ProjectConfigException;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.metadata.TimeScale;
-import wres.io.concurrency.CopyExecutor;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Features;
@@ -38,8 +37,6 @@ import wres.io.reading.IngestResult;
 import wres.io.reading.IngestedValues;
 import wres.io.reading.InvalidInputDataException;
 import wres.io.utilities.DataBuilder;
-import wres.io.utilities.Database;
-import wres.system.ProgressMonitor;
 import wres.util.Strings;
 import wres.util.TimeHelper;
 

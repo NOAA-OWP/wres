@@ -1,7 +1,5 @@
 package wres.io.utilities;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -23,8 +21,6 @@ import javax.json.Json;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonValue;
-
-import org.apache.commons.lang3.StringUtils;
 
 import wres.io.concurrency.CopyExecutor;
 import wres.io.concurrency.WRESRunnable;
@@ -61,16 +57,18 @@ public interface DataProvider extends AutoCloseable
      * @throws IndexOutOfBoundsException Thrown if the provider attempts to
      * move beyond its own boundaries
      */
-    boolean back() throws IOException;
+    boolean back();
 
     /**
      * Moves to the last row in the data
      * @throws IllegalStateException Thrown if the data has been closed down
      */
-    void toEnd() throws IOException;
+    void toEnd();
 
     /**
      * Moves to the first row in the data
+     * @throws IOException Thrown if an I/O error occurred while attempting to
+     * reset the source for that data being provided
      * @throws IllegalStateException Thrown if the data has been closed down
      */
     void reset() throws IOException;
@@ -572,6 +570,7 @@ public interface DataProvider extends AutoCloseable
     /**
      * Converts a CSV file to a DataProvider with the top line being the header
      * @param fileName The path to the csv file
+     * @param delimiter The delimiter separating values
      * @return A DataProvider containing the provided CSV data
      * @throws IOException Thrown if the file could not be read
      */
@@ -583,6 +582,7 @@ public interface DataProvider extends AutoCloseable
     /**
      * Converts a CSV file to a DataProvider with the provided column names
      * @param fileName The path to the csv file
+     * @param delimiter The delimiter separating values
      * @param columnNames The names of each column
      * @return A DataProvider containing the provided CSV data
      * @throws IOException Thrown if the file could not be read
@@ -609,7 +609,7 @@ public interface DataProvider extends AutoCloseable
      * will not be able to return to the beginning of their data
      * @return The DataProvider represented as a JSON String
      */
-    default String toJSONString() throws IOException
+    default String toJSONString()
     {
         return this.toJSON().toString();
     }
@@ -622,7 +622,7 @@ public interface DataProvider extends AutoCloseable
      * will not be able to return to the beginning of their data
      * @return The DataProvider represented as JSON
      */
-    default JsonValue toJSON() throws IOException
+    default JsonValue toJSON()
     {
         JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
 

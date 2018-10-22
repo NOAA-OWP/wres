@@ -160,11 +160,11 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         {
             throw new NullPointerException(
                     "No feature ID could be found for the feature described as: location id: '" +
-                    String.valueOf(feature.getLocationId()) +
+                    feature.getLocationId() +
                     "', gage id: '" +
-                    String.valueOf(feature.getGageId()) +
+                    feature.getGageId() +
                     "', comid: '" +
-                    String.valueOf(feature.getComid()) );
+                    feature.getComid());
         }
 
         return Features.getCache().get( id );
@@ -484,11 +484,11 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         {
             throw new NullPointerException(
                     "No feature ID could be found for the feature described as: location id: '" +
-                    String.valueOf(lid) +
+                    lid +
                     "', gage id: '" +
-                    String.valueOf(gageID) +
+                    gageID +
                     "', comid: '" +
-                    String.valueOf(comid) );
+                    comid );
         }
         return Features.getCache().get( id );
     }

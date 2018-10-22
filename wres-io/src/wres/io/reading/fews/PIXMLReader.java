@@ -12,10 +12,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
 import java.util.Locale;
-import java.util.Map;
-import java.util.TreeMap;
 
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
@@ -27,8 +24,6 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.ProjectConfigException;
 import wres.config.generated.DataSourceConfig;
-import wres.config.generated.Feature;
-import wres.config.generated.ProjectConfig;
 import wres.datamodel.metadata.TimeScale;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.DataSources;
@@ -41,11 +36,8 @@ import wres.io.data.details.TimeSeries;
 import wres.io.reading.IngestException;
 import wres.io.reading.InvalidInputDataException;
 import wres.io.reading.IngestedValues;
-import wres.io.utilities.DataBuilder;
-import wres.system.SystemSettings;
 import wres.system.xml.XMLHelper;
 import wres.system.xml.XMLReader;
-import wres.util.Collections;
 import wres.util.Strings;
 import wres.util.TimeHelper;
 
@@ -795,7 +787,7 @@ public final class PIXMLReader extends XMLReader
      * @param value The original value
      * @return The conditioned value that is safe to save to the database.
      */
-    protected Double getValueToSave(String value)
+    private Double getValueToSave(String value)
     {
         if (!Strings.hasValue( value ))
         {
@@ -814,10 +806,6 @@ public final class PIXMLReader extends XMLReader
             {
                 val = null;
             }
-        }
-        else if (!Strings.hasValue( value ) || value.equalsIgnoreCase( "null" ) || value.equalsIgnoreCase( "nan" ))
-        {
-            val = null;
         }
 
         return val;

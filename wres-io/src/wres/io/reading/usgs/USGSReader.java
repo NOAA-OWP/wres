@@ -25,7 +25,6 @@ import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
 import wres.io.reading.waterml.timeseries.TimeSeries;
 import wres.system.ProgressMonitor;
-import wres.util.Strings;
 import wres.util.TimeHelper;
 
 public class USGSReader extends BasicSource

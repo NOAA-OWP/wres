@@ -465,6 +465,7 @@ class ClimatologyBuilder
         // Impose date limitations to keep a consistent climatology for USGS projects
         if (ConfigHelper.usesUSGSData( this.projectDetails.getProjectConfig() ))
         {
+            // TODO: This entire section is probably entirely unneccessary now that we don't share USGS data
             Instant date = ConfigHelper.getEarliestDateTimeFromDataSources( this.projectDetails.getProjectConfig() );
 
             String earliest = "'";

@@ -7,7 +7,6 @@ import wres.datamodel.metadata.TimeScale.TimeScaleFunction;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
-import wres.io.utilities.ScriptBuilder;
 
 /**
  * Defines details about a forecasted time series

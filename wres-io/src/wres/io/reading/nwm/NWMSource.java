@@ -1,51 +1,25 @@
 package wres.io.reading.nwm;
 
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
-import java.net.URL;
-import java.nio.channels.Channels;
-import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.SQLException;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Objects;
-import java.util.Queue;
-import java.util.Set;
-import java.util.TreeSet;
-import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ucar.ma2.InvalidRangeException;
-import ucar.nc2.FileWriter2;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
-import ucar.nc2.dataset.NetcdfDataset;
-import ucar.nc2.dt.GridCoordSystem;
-import ucar.nc2.dt.grid.GridDataset;
-import ucar.unidata.geoloc.LatLonPoint;
 
 import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.WRESRunnable;
-import wres.io.config.ConfigHelper;
 import wres.io.data.caching.DataSources;
 import wres.io.data.details.SourceDetails;
 import wres.io.reading.BasicSource;
 import wres.io.reading.IngestResult;
-import wres.io.utilities.DataBuilder;
-import wres.io.utilities.DataProvider;
-import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
 import wres.system.ProgressMonitor;
-import wres.system.SystemSettings;
 import wres.util.NetCDF;
 
 /**
