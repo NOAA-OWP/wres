@@ -1,6 +1,8 @@
 package wres.tasker;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Random;
 import java.util.concurrent.TimeoutException;
 import javax.net.ssl.SSLContext;
@@ -121,18 +123,38 @@ public class WresJob
             return WresJob.internalServerError();
         }
 
-        String statusUrl = "/job/" + jobId + "/status";
-        String stdoutUrl = "/job/" + jobId + "/stdout";
-        String stderrUrl = "/job/" + jobId + "/stderr";
-        String outputUrl = "/job/" + jobId + "/output";
+        String urlCreated= "/job/" + jobId;
 
-        return Response.ok( "<!DOCTYPE html><html><head><title>Job received.</title></head>"
+        String statusUrl = urlCreated + "/status";
+        String stdoutUrl = urlCreated + "/stdout";
+        String stderrUrl = urlCreated + "/stderr";
+        String outputUrl = urlCreated + "/output";
+
+        URI resourceCreated;
+        try
+        {
+            resourceCreated = new URI( urlCreated );
+        }
+        catch ( URISyntaxException use )
+        {
+            LOGGER.error( "Failed to create uri using {}", urlCreated, use );
+            return WresJob.internalServerError();
+        }
+
+        return Response.created( resourceCreated )
+                       .entity( "<!DOCTYPE html><html><head><title>Job received.</title></head>"
                             + "<body><h1>Your job has been received for processing.</h1>"
                             + "<p>To check whether your job has completed/succeeded/failed, GET (poll) <a href=\""
                             + statusUrl + "\">" + statusUrl + "</a></p>"
                             + "<p>For job evaluation results, GET <a href=\""
                             + outputUrl + "\">" + outputUrl
                             + "</a> <strong>after</strong> status shows that the job completed successfully (exited 0).</p>"
+                            + "<p>Please DELETE <a href=\""
+                            + outputUrl + "\">" + outputUrl
+                            + "</a> <strong>after</strong> you have finished reading evaluation results (by doing GET as described)."
+                            + " One option (of many) is to use curl: <code>curl -X DELETE --cacert \"/path/to/wres_ca_x509_cert.pem\" https://[servername]/"
+                            + outputUrl
+                            + "</code> Another option is to use your client library to do the same or use developer tools in your browser to edit the /output GET request to become a DELETE request.</p>"
                             + "<p>For detailed progress (debug) information, GET <a href=\""
                             + stdoutUrl + "\">" + stdoutUrl + "</a>"
                             + " or <a href=\"" + stderrUrl + "\">" + stderrUrl

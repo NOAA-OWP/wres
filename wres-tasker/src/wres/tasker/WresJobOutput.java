@@ -11,6 +11,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.StringJoiner;
+import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -39,7 +40,7 @@ public class WresJobOutput
         if ( jobOutputs == null )
         {
             return Response.status( Response.Status.NOT_FOUND )
-                           .entity( "Could not find project " + id )
+                           .entity( "Could not find job " + id )
                            .build();
         }
 
@@ -67,7 +68,7 @@ public class WresJobOutput
         if ( jobOutputs == null )
         {
             return Response.status( Response.Status.NOT_FOUND )
-                           .entity( "Could not find project " + id )
+                           .entity( "Could not find job " + id )
                            .build();
         }
 
@@ -116,7 +117,7 @@ public class WresJobOutput
         if ( jobOutputs == null )
         {
             return Response.status( Response.Status.NOT_FOUND )
-                           .entity( "Could not find project " + id )
+                           .entity( "Could not find job " + id )
                            .build();
         }
 
@@ -175,4 +176,68 @@ public class WresJobOutput
                        .build();
     }
 
+
+    /**
+     * Afford the client the ability to remove all resources after the client is
+     * finished reading the resources it cares about.
+     *
+     * It is important that the client not specify an arbitrary path, and that
+     * the server here do the job of looking for the resources the *server* has
+     * associated with the job. Otherwise you could imagine a malicious client
+     * deleting anything on the server machine that the server process has
+     * access to. (The server process also should have limited privilege.)
+     *
+     * @param id the id of the job whose outputs to delete
+     * @return 200 when successful (idempotent), 500 when IOException occurs
+     */
+
+    @DELETE
+    @Produces( TEXT_PLAIN )
+    public Response deleteProjectResourcesPlain( @PathParam( "jobId" ) String id )
+    {
+        LOGGER.debug( "Retrieving resources from job {}", id );
+
+        Set<URI> jobOutputs = JobResults.getJobOutputs( id );
+
+        if ( jobOutputs == null )
+        {
+            return Response.status( Response.Status.NOT_FOUND )
+                           .entity( "Could not find job " + id )
+                           .build();
+        }
+
+        try
+        {
+            for ( URI outputResource : jobOutputs )
+            {
+                java.nio.file.Path path = Paths.get( outputResource.getPath() );
+
+                boolean deleted = Files.deleteIfExists( path );
+
+                if ( !deleted )
+                {
+                    LOGGER.warn( "Failed to delete {} -- was it previously deleted?",
+                                 path );
+                }
+                else
+                {
+                    LOGGER.debug( "Deleted {}", path );
+                }
+            }
+
+        }
+        catch ( IOException ioe )
+        {
+            LOGGER.error( "Failed to delete resources for job {} at request of client.",
+                          id, ioe );
+
+            return Response.serverError()
+                    .entity( "Failed to delete resources for job " + id +
+                             " (internal server error)" )
+                    .build();
+        }
+
+        return Response.ok( "Successfully deleted resources for job " + id )
+                       .build();
+    }
 }
