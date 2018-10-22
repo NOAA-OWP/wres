@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Supplier;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,7 +52,7 @@ public class Main {
         }
         else if (args.length > 0)
         {
-            LOGGER.info(String.format("Running \"%s\" is not currently supported.", args[0]));
+            LOGGER.info("Running \"{}\" is not currently supported.", args[0]);
             LOGGER.info("Custom handling needs to be added to prototyping.Prototype.main ");
             LOGGER.info("to test the indicated prototype.");
         }

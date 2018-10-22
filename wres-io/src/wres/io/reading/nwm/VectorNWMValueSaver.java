@@ -36,13 +36,8 @@ import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
 import wres.io.data.details.SourceDetails;
-import wres.io.data.details.TimeSeries;
 import wres.io.reading.IngestedValues;
 import wres.io.utilities.DataScripter;
-import wres.io.utilities.Database;
-import wres.io.utilities.ScriptBuilder;
-import wres.system.ProgressMonitor;
-import wres.system.SystemSettings;
 import wres.util.NetCDF;
 import wres.util.Strings;
 

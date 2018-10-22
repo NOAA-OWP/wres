@@ -12,7 +12,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.generated.DataSourceConfig;
-import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
 import wres.io.data.caching.DataSources;
 import wres.io.reading.IngestException;

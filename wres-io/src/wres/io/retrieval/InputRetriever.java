@@ -940,7 +940,7 @@ class InputRetriever extends Retriever //WRESCallable<MetricInput<?>>
 
         LOGGER.trace( "Duration of aggregation: {}", aggDuration );
 
-        double simpleMajority = totalWindowsCounted / 2;
+        double simpleMajority = totalWindowsCounted / 2.0;
 
         LOGGER.trace( "Instances of count, by count: {}",
                       countOfWindowsByCountInside );

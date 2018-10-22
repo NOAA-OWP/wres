@@ -13,7 +13,6 @@ import org.apache.commons.math3.util.Precision;
 import org.slf4j.Logger;
 
 import wres.config.generated.DataSourceConfig;
-import wres.config.generated.Feature;
 import wres.config.generated.Format;
 import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.Executor;

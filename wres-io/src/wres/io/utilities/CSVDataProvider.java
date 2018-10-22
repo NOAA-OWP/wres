@@ -20,7 +20,6 @@ import java.time.format.DateTimeParseException;
 import java.util.Map;
 import java.util.TreeMap;
 
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -166,13 +165,13 @@ class CSVDataProvider implements DataProvider
     }
 
     @Override
-    public boolean back() throws IOException
+    public boolean back()
     {
-        throw new IOException( "The 'back' operation is not supported." );
+        throw new UnsupportedOperationException( "The 'back' operation is not supported." );
     }
 
     @Override
-    public void toEnd() throws IOException
+    public void toEnd()
     {
         if (this.isClosed())
         {

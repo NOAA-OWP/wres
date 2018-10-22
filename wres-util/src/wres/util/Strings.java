@@ -15,7 +15,6 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,7 +22,6 @@ public final class Strings
 {
 	private static final Logger LOGGER = LoggerFactory.getLogger( Strings.class );
 	private static final Pattern RTRIM = Pattern.compile("\\s+$");
-	private static final Pattern NUMERIC_PATTERN = Pattern.compile( "^[-]?\\d*\\.?\\d+$" );
 
 	private static final int LINE_LENGTH = 120;
 	private static final int TRUNCATE_SIZE = 2000;
