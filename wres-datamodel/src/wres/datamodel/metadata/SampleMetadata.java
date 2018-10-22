@@ -386,7 +386,7 @@ public class SampleMetadata implements Comparable<SampleMetadata>
     /**
      * Returns a {@link TimeWindow} associated with the metadata or null.
      * 
-     * @return a lead time or null
+     * @return a time window or null
      */
 
     public TimeWindow getTimeWindow()

@@ -6,7 +6,7 @@
         <font family="Dialog" size="12" style="1"/>
         <text>@metricName@@metricComponentNameSuffix@ for @primaryScenario@ predictions of @variableName@
 at @locationName@@baselineLabelSuffix@@timeScale@
-@referenceTime@ Evaluation Period: @dataPoolingWindow(yyyy-MM-dd;GMT)@</text>
+@referenceTime@@dataPoolingWindow(yyyy-MM-dd'T'HH:mm:ss zz;GMT)@</text>
     </plotTitle>
 
     <!-- Empty out the nameInLegend so that it uses the defaults; show scatter points. -->
