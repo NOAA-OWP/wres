@@ -3,12 +3,12 @@
     <inputs>
         <left label="">
             <type>simulations</type>
-            <source format="csv">/home/tubbs/workspace/wres/wres/systests/smalldata/DRRC2_QINE_FAKE_HEADLESS.csv</source>
+            <source format="csv">../smalldata/DRRC2_QINE_FAKE_HEADLESS.csv</source>
             <variable>QINE</variable>
         </left>
         <right label="">
             <type>ensemble forecasts</type>
-            <source format="csv">/home/tubbs/workspace/wres/wres/systests/smalldata/DRRC2_SQIN_FAKE_HEADLESS.csv</source>
+            <source format="csv">../smalldata/DRRC2_SQIN_FAKE_HEADLESS.csv</source>
             <variable>SQIN</variable>
         </right>
     </inputs>
