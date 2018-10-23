@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.jfree.chart.JFreeChart;
+import org.jfree.ui.RectangleInsets;
 
 import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartEngineException;
@@ -15,6 +16,7 @@ import ohd.hseb.charter.datasource.XYChartDataSourceException;
 import ohd.hseb.charter.parameters.ChartDrawingParameters;
 import ohd.hseb.charter.parameters.DataSourceDrawingParameters;
 import ohd.hseb.charter.parameters.SeriesDrawingParameters;
+import ohd.hseb.charter.parameters.SubPlotParameters;
 import ohd.hseb.hefs.utils.arguments.ArgumentsProcessor;
 
 /**
@@ -139,6 +141,17 @@ public class WRESChartEngine extends ChartEngine
             ChartTools.squareAxes( chart, axisToSquareAgainstDomain );
         }
 
+        //#55497: Add padding to the right side of necessary.  
+        boolean visible = false;
+        for ( SubPlotParameters parms : getChartParameters().getSubPlotParameters() )
+        {
+            visible = visible || parms.getRightAxis().getVisible();
+        }
+        if (!visible)
+        {
+            chart.setPadding( new RectangleInsets(0, 0, 0, 40) );
+        }
+        
         return chart;
     }
 
