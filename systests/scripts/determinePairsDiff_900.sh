@@ -7,73 +7,136 @@
 # Author: Raymond.Chui@***REMOVED***
 # Created: November, 2017
 
-# Copied from runtest.sh; this must be kept consistent.  
+# Copied from runtest.sh; this must be kept consistent.
 echoPrefix="===================="
+
+PASSED_RESULT=0
+OUTPUT_NOT_FOUND_RESULT=2
+SORT_FAILED_RESULT=4
+DIFFERENT_FILES_RESULT=8
+DIFFERENT_PAIRS_RESULT=16
+DIFFERENT_CSVS_RESULT=32
+
+# Assume passage until failure encountered, add failures into this.
+testResult=${PASSED_RESULT}
 
 if [ $# -gt 0 ] # if a dictory is provided
 then
-	test_dir=$1
-	if [ ! -d $test_dir ]
-	then
-        	echo "Directory $test_dir not found."
-        	exit 2
-	fi
-	cd $test_dir
+    test_dir=$1
+    if [ ! -d $test_dir ]
+    then
+            echo "Directory $test_dir not found."
+            exit 2
+    fi
+    cd $test_dir
 fi
 
-CURRENTDIR=`pwd`
-BASENAME=`basename $CURRENTDIR`
-systestsExpectedOutputs=/wres_share/testing/systestsExpectedOutputs/systests_expected_outputs/$BASENAME/output
-#echo "$systestsExpectedOutputs"
+# If BENCHMARK_DIR is set, use it, else use "benchmarks", e.g. for scenario9*
+benchmarkDir="${BENCHMARK_DIR:-benchmarks}"
+outputDirPrefix=wres_evaluation_output_
 
-# Comparing the dirListing.txt file.
-if [ -f output/dirListing.txt -a -f $systestsExpectedOutputs/dirListing.txt ]
+# ================================================
+# Comparing the dirListing.txt file
+# ================================================
+if [ -f ${outputDirPrefix}*/dirListing.txt -a -f ${benchmarkDir}/dirListing.txt ]
 then
-        echo "$echoPrefix Comparing listing with $systestsExpectedOutputs expected contents: diff -q output/dirListing.txt $systestsExpectedOutputs/dirListing.txt"
-        diff -q output/dirListing.txt $systestsExpectedOutputs/dirListing.txt | tee /dev/stderr
+    echo "$echoPrefix Comparing listing with benchmark expected contents: diff -q ${outputDirPrefix}*/dirListing.txt ${benchmarkDir}/dirListing.txt"
+    # Avoid pipe to "tee" because it hides the exit code of "diff"
+    diff -q ${outputDirPrefix}*/dirListing.txt ${benchmarkDir}/dirListing.txt
+    diffResult=$?
+    if [ ${diffResult} -ne 0 ]
+    then
+        echo "$echoPrefix The dirListing.txt file does not match benchmark." | tee /dev/stderr
+        testResult=$(( ${testResult} + ${DIFFERENT_FILES_RESULT} ))
+    fi
 fi
+
+# ================================================
+# Check that output dir exists
+# ================================================
+ls ${outputDirPrefix}* &>/dev/null
+lsResult=$?
+
+if [ $lsResult -ne 0 ]
+then
+    echo "$echoPrefix No output directory created." | tee /dev/stderr
+    testResult=$(( ${testResult} + ${OUTPUT_NOT_FOUND_RESULT} ))
+fi
+
+# ================================================
+# Check the pairs files
+# ================================================
 
 # For all files with "pairs.csv" in their name (could include pairs.csv or baseline_pairs.csv), but 
 # without sorted in their names (in case an old sorted_pairs.csv is floating around), do...
-for pairsFileName in $(ls output | grep pairs\.csv | grep -v sorted); do
-    
-  #if [ -f $systestsExpectedOutputs/sorted_$pairsFileName -a -f output/$pairsFileName ] # if both files exist
-  if [ -f output/$pairsFileName ] # if pairs files exist
-  then 
-      echo "$echoPrefix Sorting and comparing file $pairsFileName with $systestsExpectedOutputs"
-      # do sorting here
-#echo "Ready to sort out the output/pairs.csv and compare the sorted output with $systestsExpectedOutputs/sorted_pairs.csv"
-#    sort output/pairs.csv > output/sorted_pairs.csv
-# sort the output/pairs.csv file with options -t, use a comman as delimiter; -k1s,1 column1 as directionary order 1st;
-# -k4n,4 column 4 as numeric order 2nd; and -k2n,2 column 2 as numeric order 3rd
-      sort -t, -k1d,1 -k4n,4 -k2n,2 output/$pairsFileName > output/sorted_$pairsFileName
-      
-      #diff --brief output/sorted_pairs.csv $systestsExpectedOutputs/sorted_pairs.csv 2>&1 | tee diff_sorted_pairs.txt # output the diffs with $systestsExpectedOutputs
-      if [ -f $systestsExpectedOutputs/sorted_$pairsFileName -a -f output/sorted_$pairsFileName ] # if both files exist
-      then
-      	diff --brief output/sorted_$pairsFileName $systestsExpectedOutputs/sorted_$pairsFileName  | tee /dev/stderr
-      elif [ ! -f output/$pairsFileName ]
-      then
-	echo "$echoPrefix Not comparing pairs file with $systestsExpectedOutputs: File output/$pairsFileName not found."
-      elif [ ! -f $systestsExpectedOutputs/sorted_$pairsFileName ]
-      then
-	echo "$echoPrefix Not comparing pairs File with $systestsExpectedOutputs: $systestsExpectedOutputs/sorted_$pairsFileName not found."
-      fi
-  fi
+for directory in ${outputDirPrefix}*
+do
+    for pairsFile in $directory/pairs.csv
+    do
+        echo "$echoPrefix Sorting and comparing file $pairsFile with benchmark..."
+        pairsFileBaseName=$( basename $pairsFile )
+
+        # Sort the pairs file.
+        sort -t, -k1d,1 -k4n,4 -k2,2 -k3n,3 $pairsFile > $directory/sorted_$pairsFileBaseName
+        sortResult=$?
+        if [ ${sortResult} -ne 0 ] # Sorting failed.
+        then
+            testResult=$(( ${testResult} + ${SORT_FAILED_RESULT} ))
+        fi
+
+        # Check for benchmark and, if there, diff.
+        if [ -f ${benchmarkDir}/sorted_$pairsFileBaseName \
+             -a -f $directory/sorted_$pairsFileBaseName ]
+        then
+            # both files exist, do the comparison
+            # Avoid pipe to "tee" because it hides the exit code
+            diff --brief $directory/sorted_$pairsFileBaseName ${benchmarkDir}/sorted_$pairsFileBaseName
+            pairsDiffResult=$?
+
+            if [ ${pairsDiffResult} -ne 0 ]
+            then
+                echo "$echoPrefix The pairs file $directory/sorted_$pairsFileBaseName does not match the benchmark." | tee /dev/stderr
+                testResult=$(( ${testResult} + ${DIFFERENT_PAIRS_RESULT} ))
+            fi
+        elif [ ! -f $directory/$pairsFileBaseName ]
+        then
+            echo "$echoPrefix Not comparing pairs file with benchmark: File $directory/$pairsFileBaseName not found."
+        elif [ ! -f ${benchmarkDir}/sorted_$pairsFileBaseName ]
+        then
+            echo "$echoPrefix Not comparing pairs File with benchmark: ${benchmarkDir}/sorted_$pairsFileBaseName not found."
+        fi
+    done
 done
 
-# Comparing metric otuput .csv files that exist in both $systestsExpectedOutputs and outputs.
-echo "$echoPrefix Comparing output .csv files with $systestsExpectedOutputs if the $systestsExpectedOutputs version exists..."
-for csvFile in $(ls output | grep csv | grep -v pairs)
+# ==============================================
+# Check metric output .csv files
+# ==============================================
+
+# Comparing metric otuput .csv files that exist in both ${benchmarkDir} and outputs.
+echo "$echoPrefix Comparing output .csv files with ${benchmarkDir} if the benchmark version exists..."
+csvDiffFlag=false
+
+for csvFile in $(ls ${outputDirPrefix}* | grep csv | grep -v pairs)
 do
-	if [ -f output/$csvFile -a -f $systestsExpectedOutputs/$csvFile ]
-	then
-		diff -q output/$csvFile $systestsExpectedOutputs/$csvFile | tee /dev/stderr
-	fi
-        # Hank, 3/9: I'm commenting this out.  I don't think we need to see when a csv file is not benchmarked.
-        # If its not benchmarked, then we made a conscious decisioon not to check it.
-        #elif [ ! -f benchmarks/$csvFile ]
-	#then
-                # echo "File benchmarks/$csvFile not found."
-	#fi
+    if [ -f ${outputDirPrefix}*/$csvFile -a -f ${benchmarkDir}/$csvFile ]
+    then
+        # Avoid pipe to "tee" because it hides the exit code
+        diff -q ${outputDirPrefix}*/$csvFile ${benchmarkDir}/$csvFile
+        csvDiffResult=$?
+
+        if [ ${csvDiffResult} -ne 0 \
+            -a "${csvDiffFlag}" == "false" ]
+        then
+            testResult=$(( ${testResult} + ${DIFFERENT_CSVS_RESULT} ))
+            csvDiffFlag="true"
+        fi
+    fi
 done
+if [ "${csvDiffFlag}" == "true" ]
+then
+    echo "$echoPrefix At least one metric output .csv file was different than the benchmark." | tee /dev/stderr
+fi
+
+# Return the overall diff result, which is a sum of all of the accumulated differences, noting that the
+# values summed are factors of two, so that you can identify what differences were found based on the number.
+exit $testResult

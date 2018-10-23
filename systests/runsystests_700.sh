@@ -24,21 +24,21 @@ if [[ "$latest" == 1 ]]; then
 fi
  
 # Identify the log file name.
-logFileName="wresSysTestResults_$(date +"%Y%m%d_%H%M%S").txt"
+logFileName="wresSysTestResults_700_$(date +"%Y%m%d_%H%M%S").txt"
 
 # Prep the log file.
 touch $logFileName
 echo "System test results for scenarios:" > $logFileName
-ls -d scenario0* scenario1* scenario2* scenario3* scenario4* scenario5* scenario6* scenario8* >> $logFileName
+ls -d scenario7* >> $logFileName
 
 echo "System test results for scenarios:" 
-ls -d scenario0* scenario1* scenario2* scenario3* scenario4* scenario5* scenario6* scenario8*
+ls -d scenario7*
 
 # Run and time the run.
 startsec=$(date +%s)
 
 # The tests to perform are entered manually on this line.
-./runtest.sh scenario0* scenario1* scenario2* scenario3* scenario4* scenario5* scenario6* scenario8* >> $logFileName
+./runtest.sh scenario7* >> $logFileName
 overallResultCode=$?
 endsec=$(date +%s)
 
