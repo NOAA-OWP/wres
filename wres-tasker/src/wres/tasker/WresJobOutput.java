@@ -1,12 +1,14 @@
 package wres.tasker;
 
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -16,8 +18,10 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.StreamingOutput;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,16 +48,29 @@ public class WresJobOutput
                            .build();
         }
 
-        List<String> resourceNames = new ArrayList<>();
+        StreamingOutput streamingOutput = new StreamingOutput() {
+            @Override
+            public void write( OutputStream output )
+                    throws IOException, WebApplicationException
+            {
+                try ( OutputStreamWriter outputStreamWriter =  new OutputStreamWriter( output );
+                      BufferedWriter writer = new BufferedWriter( outputStreamWriter ) )
+                {
+                    for ( URI outputResource : jobOutputs )
+                    {
+                        java.nio.file.Path path =
+                                Paths.get( outputResource.getPath() );
+                        java.nio.file.Path resourceName = path.getFileName();
+                        writer.write( resourceName.toString() );
+                        writer.newLine();
+                    }
 
-        for ( URI outputResource : jobOutputs )
-        {
-            java.nio.file.Path path = Paths.get( outputResource.getPath() );
-            java.nio.file.Path resourceName = path.getFileName();
-            resourceNames.add( resourceName.toString() );
-        }
+                    writer.flush();
+                }
+            }
+        };
 
-        return Response.ok( resourceNames.toString() )
+        return Response.ok( streamingOutput )
                        .build();
     }
 
