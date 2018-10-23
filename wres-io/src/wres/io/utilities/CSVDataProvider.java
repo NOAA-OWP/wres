@@ -44,6 +44,7 @@ class CSVDataProvider implements DataProvider
     private String[] line = null;
     private final String delimiter;
 
+    // TODO: Construct with an InputStream rather than a file.
     private CSVDataProvider( final File filePath, final String delimiter, final Map<String, Integer> columns) throws IOException
     {
         this.columnNames = new TreeMap<>( String.CASE_INSENSITIVE_ORDER );
@@ -153,11 +154,28 @@ class CSVDataProvider implements DataProvider
             return false;
         }
 
-        this.line = readLine.split( delimiter );
+        String[] futureLine = readLine.split( delimiter );
 
-        for (int i = 0; i < this.line.length; ++i)
+        for (int i = 0; i < futureLine.length; ++i)
         {
-            this.line[i] = this.line[i].replaceAll( "(^\"|\"$)", "" );
+            futureLine[i] = futureLine[i].replaceAll( "(^\"|\"$)", "" );
+        }
+
+        if (this.columnNames.isEmpty())
+        {
+            this.line = futureLine;
+        }
+        else
+        {
+            this.line = new String[this.columnNames.size()];
+            
+            // Theoretically, we could use "System.arraycopy", but both arrays aren't
+            // guarrenteed to have the same length. We want to copy over the minimum number of
+            // columns. If there aren't enough columns in the source, the rest should be null.
+            for (int i = 0; i < Math.min( this.line.length, futureLine.length ); ++i)
+            {
+                this.line[i] = futureLine[i];
+            }
         }
 
         this.currentRow++;
