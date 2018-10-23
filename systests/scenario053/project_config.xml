@@ -7,7 +7,7 @@
             <variable>QINE</variable>
         </left>
         <right label="">
-            <type>ensemble forecasts</type>
+            <type>single valued forecasts</type>
             <source format="csv">../smalldata/DRRC2_SQIN_FAKE_HEADLESS.csv</source>
             <variable>SQIN</variable>
         </right>

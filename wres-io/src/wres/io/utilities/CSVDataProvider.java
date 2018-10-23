@@ -99,16 +99,17 @@ class CSVDataProvider implements DataProvider
     {
         FileReader fileReader = new FileReader( this.filePath );
         this.reader = new BufferedReader( fileReader );
-        boolean dataExists = next();
-
-        if (!dataExists)
-        {
-            throw new IOException( "There isn't any data to read in " + this.filePath.toPath() );
-        }
 
         // If there aren't any columns defined, try to determine them from a possible header
         if (this.columnNames.isEmpty())
         {
+            boolean dataExists = next();
+
+            if (!dataExists)
+            {
+                throw new IOException( "There isn't any data to read in " + this.filePath.toPath() );
+            }
+            
             for (int i = 0; i < this.line.length; ++i)
             {
                 this.columnNames.put( this.line[i], i );
@@ -168,9 +169,9 @@ class CSVDataProvider implements DataProvider
         else
         {
             this.line = new String[this.columnNames.size()];
-            
+
             // Theoretically, we could use "System.arraycopy", but both arrays aren't
-            // guarrenteed to have the same length. We want to copy over the minimum number of
+            // guaranteed to have the same length. We want to copy over the minimum number of
             // columns. If there aren't enough columns in the source, the rest should be null.
             for (int i = 0; i < Math.min( this.line.length, futureLine.length ); ++i)
             {
