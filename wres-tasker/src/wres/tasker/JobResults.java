@@ -2,6 +2,7 @@ package wres.tasker;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -83,6 +84,15 @@ class JobResults
     /** The lock to guard connection when init fails on construction */
     private final Object CONNECTION_LOCK = new Object();
 
+    /** Descriptions of the state of a WRES evaluation job */
+    enum JobState
+    {
+        NOT_FOUND,
+        // We could also have IN_QUEUE which would require better tracking
+        IN_PROGRESS,
+        COMPLETED_REPORTED_SUCCESS,
+        COMPLETED_REPORTED_FAILURE
+    }
 
     JobResults( ConnectionFactory connectionFactory )
     {
@@ -439,28 +449,32 @@ class JobResults
         EXECUTOR.shutdownNow();
     }
 
+
     /**
-     * Get a text description of the result of a wres job
-     * @param correlationId the job to look for
-     * @return description of the result
+     * Get a description of the status of a wres evaluation job
+     * @param correlationId the job id to look for
+     * @return description of the status
      */
 
-    static String getJobResult( String correlationId )
+    static JobState getJobResult( String correlationId )
     {
         Integer result = JOB_RESULTS_BY_ID.asMap().get( correlationId );
 
-        if ( result == null )
+        if ( Objects.isNull( result ) )
         {
-            return "No job id '" + correlationId + "' was registered.";
+            return JobState.NOT_FOUND;
         }
         else if ( result.equals( JOB_NOT_DONE_YET ) )
         {
-            return "Job id '" + correlationId + "' still in progress.";
+            return JobState.IN_PROGRESS;
+        }
+        else if ( result.equals( 0 ) )
+        {
+            return JobState.COMPLETED_REPORTED_SUCCESS;
         }
         else
         {
-            return "Job id '" + correlationId + "' finished with exit code "
-                   + result;
+            return JobState.COMPLETED_REPORTED_FAILURE;
         }
     }
 
