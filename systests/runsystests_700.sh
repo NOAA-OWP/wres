@@ -24,7 +24,7 @@ if [[ "$latest" == 1 ]]; then
 fi
  
 # Identify the log file name.
-logFileName="wresSysTestResults_$(date +"%Y%m%d_%H%M%S").txt"
+logFileName="wresSysTestResults_700_$(date +"%Y%m%d_%H%M%S").txt"
 
 # Prep the log file.
 touch $logFileName
