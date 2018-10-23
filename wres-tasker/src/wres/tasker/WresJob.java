@@ -5,6 +5,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Objects;
 import java.util.Random;
+import java.util.StringJoiner;
 import java.util.concurrent.TimeoutException;
 import javax.net.ssl.SSLContext;
 import javax.ws.rs.Consumes;
@@ -180,12 +181,22 @@ public class WresJob
         String stderrUrl = jobUrl + "/stderr";
         String outputUrl = jobUrl + "/output";
 
+        // Create a list of actual job states from the enum that affords them.
+        StringJoiner jobStates = new StringJoiner( ", " );
+
+        for ( JobResults.JobState jobState : JobResults.JobState.values() )
+        {
+            jobStates.add( jobState.toString() );
+        }
+
         return Response.ok( "<!DOCTYPE html><html><head><title>About job "
                             + jobId + "</title></head>"
                             + "<body><h1>How to proceed with job "
                             + jobId + " using the WRES HTTP API</h1>"
                             + "<p>To check whether your job has completed/succeeded/failed, GET (poll) <a href=\""
-                            + statusUrl + "\">" + statusUrl + "</a></p>"
+                            + statusUrl + "\">" + statusUrl + "</a>.</p>"
+                            + "<p>The possible job states are: "
+                            + jobStates.toString() + ".</p>"
                             + "<p>For job evaluation results, GET <a href=\""
                             + outputUrl + "\">" + outputUrl
                             + "</a> <strong>after</strong> status shows that the job completed successfully (exited 0).</p>"
