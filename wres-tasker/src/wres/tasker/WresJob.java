@@ -83,7 +83,7 @@ public class WresJob
     @POST
     @Consumes( "application/x-www-form-urlencoded")
     @Produces( "text/html")
-    public Response postWresJob( @FormParam( "projectPath" ) String projectPath,
+    public Response postWresJob( @FormParam( "projectConfig" ) String projectConfig,
                                  @FormParam( "userName" ) String wresUser )
     {
         String databaseUrl = Users.getDatabaseHost( wresUser );
@@ -109,7 +109,7 @@ public class WresJob
                                     .setDatabaseHostname( databaseUrl )
                                     .setDatabaseName( databaseName )
                                     .setDatabaseUsername( databaseUser )
-                                    .setProjectConfig( projectPath )
+                                    .setProjectConfig( projectConfig )
                                     .build();
         String jobId;
 

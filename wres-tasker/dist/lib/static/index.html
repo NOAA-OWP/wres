@@ -4,16 +4,100 @@
     <meta charset="UTF-8">
     <title>Water Resources Evaluation Service</title>
     <style type="text/css">
-        .path
+        html, body
         {
-            width: 30em;
+            height: 100%;
+            margin: 0;
+            padding: 0.5em;
+        }
+        .evaluation
+        {
+            width: 60em;
+            height: 70em;
         }
     </style>
 </head>
 <body>
+<h1>Welcome to a guide to the WRES HTTP API</h1>
+<p>
+    One may use this html and plaintext example to learn the WRES HTTP API.
+    The intended users of the HTTP API are programs that request evaluations,
+    which may be written in any language. For more information on how to set up
+    WRES evaluation configurations as well as how to get help, please visit
+    <a href="https://***REMOVED***/redmine/projects/wres-user-support/wiki">
+        https://***REMOVED***/redmine/projects/wres-user-support/wiki
+    </a>
+</p>
+<p>
+    If your browser shows a warning regarding the security of this page or
+    if your HTTP client is not able to connect due to certificate trust issues,
+    more information is available at
+    <a href="https://***REMOVED***/redmine/projects/wres-user-support/wiki/Import_Certificate_Authority_in_Browser_for_Access_to_WRES_Web_Front-End">
+        https://***REMOVED***/redmine/projects/wres-user-support/wiki/Import_Certificate_Authority_in_Browser_for_Access_to_WRES_Web_Front-End
+    </a>
+</p>
+<p>
+    If you do not have access to any of the above pages or if your first name
+    is not accepted by the HTTP API please contact the WRES team for help.
+</p>
+
 <form action="/job" method="post">
-    Project path: <input class="path" type="text" name="projectPath" value="/mnt/wres_share/" /><br />
     Your first name: <input type="text" name="userName" /><br />
+    Evaluation project configuration full text:<br />
+    <textarea class="evaluation" name="projectConfig" required="true">
+<?xml version="1.0" encoding="UTF-8"?>
+<project label="ExampleProject" name="web demo">
+
+    <inputs>
+        <left>
+            <type>observations</type>
+            <source format="PI-XML">/mnt/wres_share/systests/data/DRRC2QINE.xml</source>
+            <variable>QINE</variable>
+        </left>
+        <right label="HEFS">
+            <type>ensemble forecasts</type>
+            <source format="PI-XML">/mnt/wres_share/systests/data/drrc2ForecastsOneMonth/</source>
+            <variable>SQIN</variable>
+        </right>
+    </inputs>
+
+    <pair>
+        <unit>CMS</unit>
+        <feature locationId="DRRC2" />
+        <leadHours minimum="1" maximum="24" />
+
+        <desiredTimeScale>
+            <function>mean</function>
+            <period>1</period>
+            <unit>hours</unit>
+        </desiredTimeScale>
+    </pair>
+
+    <metrics>
+        <thresholds>
+            <type>value</type>
+            <!-- These values are in the unit specified for pairs above -->
+            <commaSeparatedValues>0.5,1,2,5,10,15,20,25</commaSeparatedValues>
+            <operator>greater than or equal to</operator>
+        </thresholds>
+
+        <metric><name>sample size</name></metric>
+        <metric><name>mean absolute error</name></metric>
+        <metric><name>root mean square error</name></metric>
+        <metric><name>box plot of errors by observed value</name></metric>
+        <metric><name>box plot of errors by forecast value</name></metric>
+        <metric><name>quantile quantile diagram</name></metric>
+        <metric><name>rank histogram</name></metric>
+        <metric><name>relative operating characteristic diagram</name></metric>
+        <metric><name>reliability diagram</name></metric>
+    </metrics>
+    <outputs>
+        <destination type="numeric" />
+    </outputs>
+
+</project>
+    </textarea>
+    <br />
     <input type="submit" name="Submit" /><br/>
 </form>
 </body>
