@@ -3,7 +3,9 @@ package wres.tasker;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Objects;
 import java.util.Random;
+import java.util.StringJoiner;
 import java.util.concurrent.TimeoutException;
 import javax.net.ssl.SSLContext;
 import javax.ws.rs.Consumes;
@@ -11,6 +13,7 @@ import javax.ws.rs.FormParam;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -22,6 +25,9 @@ import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.DefaultSaslConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static javax.ws.rs.core.MediaType.APPLICATION_FORM_URLENCODED;
+import static javax.ws.rs.core.MediaType.TEXT_HTML;
 
 import wres.messages.BrokerHelper;
 import wres.messages.generated.Job;
@@ -81,9 +87,9 @@ public class WresJob
 
 
     @POST
-    @Consumes( "application/x-www-form-urlencoded")
-    @Produces( "text/html")
-    public Response postWresJob( @FormParam( "projectPath" ) String projectPath,
+    @Consumes( APPLICATION_FORM_URLENCODED )
+    @Produces( TEXT_HTML )
+    public Response postWresJob( @FormParam( "projectConfig" ) String projectConfig,
                                  @FormParam( "userName" ) String wresUser )
     {
         String databaseUrl = Users.getDatabaseHost( wresUser );
@@ -109,7 +115,7 @@ public class WresJob
                                     .setDatabaseHostname( databaseUrl )
                                     .setDatabaseName( databaseName )
                                     .setDatabaseUsername( databaseUser )
-                                    .setProjectConfig( projectPath )
+                                    .setProjectConfig( projectConfig )
                                     .build();
         String jobId;
 
@@ -124,13 +130,8 @@ public class WresJob
         }
 
         String urlCreated= "/job/" + jobId;
-
-        String statusUrl = urlCreated + "/status";
-        String stdoutUrl = urlCreated + "/stdout";
-        String stderrUrl = urlCreated + "/stderr";
-        String outputUrl = urlCreated + "/output";
-
         URI resourceCreated;
+
         try
         {
             resourceCreated = new URI( urlCreated );
@@ -142,13 +143,64 @@ public class WresJob
         }
 
         return Response.created( resourceCreated )
-                       .entity( "<!DOCTYPE html><html><head><title>Job received.</title></head>"
-                            + "<body><h1>Your job has been received for processing.</h1>"
+                       .entity( "<!DOCTYPE html><html><head><title>Evaluation job received.</title></head>"
+                            + "<body><h1>Evaluation job " + jobId + " has been received for processing.</h1>"
+                            + "<p>See <a href=\""
+                            + urlCreated + "\">" + urlCreated
+                            + "</a></p></body></html>" )
+                       .build();
+    }
+
+
+    /**
+     * Provide guidance on which urls are available for evaluation information,
+     * including status, output, and debug information.
+     * @param jobId the job to look for
+     * @return a response including more specific URLs for a job
+     */
+    @GET
+    @Path( "/{jobId}" )
+    @Produces( TEXT_HTML )
+    public Response getWresJobInfo( @PathParam( "jobId" ) String jobId )
+    {
+        Integer jobResult = JobResults.getJobResultRaw( jobId );
+
+        if ( Objects.isNull( jobResult ) )
+        {
+            return Response.status( Response.Status.NOT_FOUND )
+                           .entity( "<!DOCTYPE html><html><head><title>Not Found</title></head>"
+                                    + " <body><h1>Not found</h1><p>Could not find job "
+                                    + jobId + "</p></body></html>")
+                               .build();
+        }
+
+        String jobUrl= "/job/" + jobId;
+
+        String statusUrl = jobUrl + "/status";
+        String stdoutUrl = jobUrl + "/stdout";
+        String stderrUrl = jobUrl + "/stderr";
+        String outputUrl = jobUrl + "/output";
+
+        // Create a list of actual job states from the enum that affords them.
+        StringJoiner jobStates = new StringJoiner( ", " );
+
+        for ( JobResults.JobState jobState : JobResults.JobState.values() )
+        {
+            jobStates.add( jobState.toString() );
+        }
+
+        return Response.ok( "<!DOCTYPE html><html><head><title>About job "
+                            + jobId + "</title></head>"
+                            + "<body><h1>How to proceed with job "
+                            + jobId + " using the WRES HTTP API</h1>"
                             + "<p>To check whether your job has completed/succeeded/failed, GET (poll) <a href=\""
-                            + statusUrl + "\">" + statusUrl + "</a></p>"
+                            + statusUrl + "\">" + statusUrl + "</a>.</p>"
+                            + "<p>The possible job states are: "
+                            + jobStates.toString() + ".</p>"
                             + "<p>For job evaluation results, GET <a href=\""
                             + outputUrl + "\">" + outputUrl
                             + "</a> <strong>after</strong> status shows that the job completed successfully (exited 0).</p>"
+                            + "<p>When you GET the above output url, you may specify media type text/plain in the Accept header to get a newline-delimited list of outputs.</p>"
                             + "<p>Please DELETE <a href=\""
                             + outputUrl + "\">" + outputUrl
                             + "</a> <strong>after</strong> you have finished reading evaluation results (by doing GET as described)."
@@ -161,7 +213,6 @@ public class WresJob
                             + "</a></p></body></html>" )
                        .build();
     }
-
 
     /**
      *
