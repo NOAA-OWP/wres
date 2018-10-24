@@ -3,6 +3,9 @@ package wres.control;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileAttribute;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -105,9 +108,25 @@ class ProcessorHelper
         // The project code - ideally project hash
         String projectIdentifier = String.valueOf( projectDetails.getInputCode() );
 
+        // Permissions for output directory
+
+        // Permissions for temp directory require group read so that the tasker
+        // may give the output to the client on GET. Write so that the tasker
+        // may remove the output on client DELETE. Execute for dir reads.
+        Set<PosixFilePermission> permissions = new HashSet<>( 6 );
+        permissions.add( PosixFilePermission.OWNER_READ );
+        permissions.add( PosixFilePermission.OWNER_WRITE );
+        permissions.add( PosixFilePermission.OWNER_EXECUTE );
+        permissions.add( PosixFilePermission.GROUP_READ );
+        permissions.add( PosixFilePermission.GROUP_WRITE );
+        permissions.add( PosixFilePermission.GROUP_EXECUTE );
+        FileAttribute<Set<PosixFilePermission>> fileAttribute =
+                PosixFilePermissions.asFileAttribute( permissions );
+
         // Where outputs files will be written
         Path outputDirectory = Files.createTempDirectory( "wres_evaluation_output_"
-                                                          + projectIdentifier + "_" );
+                                                          + projectIdentifier + "_",
+                                                          fileAttribute );
 
         ResolvedProject resolvedProject = ResolvedProject.of( projectConfigPlus,
                                                               decomposedFeatures,

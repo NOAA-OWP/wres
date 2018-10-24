@@ -4,8 +4,13 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileAttribute;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -81,10 +86,24 @@ class JobReceiver extends DefaultConsumer
         // Will end up with a nested directory structure.
         Path outputPath;
 
+        // Permissions for temp directory require group read so that the tasker
+        // may give the output to the client on GET. Write so that the tasker
+        // may remove the output on client DELETE. Execute for dir reads.
+        Set<PosixFilePermission> permissions = new HashSet<>( 6 );
+        permissions.add( PosixFilePermission.OWNER_READ );
+        permissions.add( PosixFilePermission.OWNER_WRITE );
+        permissions.add( PosixFilePermission.OWNER_EXECUTE );
+        permissions.add( PosixFilePermission.GROUP_READ );
+        permissions.add( PosixFilePermission.GROUP_WRITE );
+        permissions.add( PosixFilePermission.GROUP_EXECUTE );
+        FileAttribute<Set<PosixFilePermission>> fileAttribute =
+                PosixFilePermissions.asFileAttribute( permissions );
+
         try
         {
             outputPath = Files.createTempDirectory( "wres_job_"
-                                                    + jobId + "_" );
+                                                    + jobId + "_",
+                                                    fileAttribute );
         }
         catch ( IOException ioe )
         {
