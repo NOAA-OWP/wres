@@ -1850,7 +1850,7 @@ public class ProjectDetails
 
         if (Strings.hasValue(this.getEarliestDate()))
         {
-            script.addTab(3).addLine("AND TS.initialization_date + INTERVAL '1 HOUR' * TSV.lead' >= '", this.getEarliestDate(), "'");
+            script.addTab(3).addLine("AND TS.initialization_date + INTERVAL '1 HOUR' * TSV.lead >= '", this.getEarliestDate(), "'");
         }
 
         if (Strings.hasValue( this.getLatestDate() ))
