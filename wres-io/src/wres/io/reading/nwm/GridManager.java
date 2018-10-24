@@ -3,14 +3,10 @@ package wres.io.reading.nwm;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Queue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +24,7 @@ import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
 import wres.system.SystemSettings;
+import wres.util.FutureQueue;
 import wres.util.NetCDF;
 
 /**
@@ -389,7 +386,8 @@ class GridManager
                         if ( builder.getRowCount() >= SystemSettings.getMaximumCopies())
                         {
                             Future copy = builder.build().copy( "wres.NetcdfCoordinate", true );
-                            this.copyTasks.add( copy );
+                            this.copyQueue.add( copy );
+                            //this.copyTasks.add( copy );
                             LOGGER.trace("Job to copy {} coordinates for {} dispatched.",
                                          SystemSettings.getMaximumCopies(),
                                          this.metadata);
@@ -400,7 +398,8 @@ class GridManager
                 if (builder.getRowCount() > 0)
                 {
                     Future copy = builder.build().copy( "wres.NetcdfCoordinate", true );
-                    this.copyTasks.add( copy );
+                    this.copyQueue.add( copy );
+                    //this.copyTasks.add( copy );
                     LOGGER.trace("Job to copy the last coordinates for {} dispatched.", this.metadata);
                 }
             }
@@ -410,7 +409,7 @@ class GridManager
         {
             LOGGER.trace("Waiting for coordinate copy operations for {} to finish.", this.metadata);
 
-            while (!this.copyTasks.isEmpty())
+            /*while (!this.copyTasks.isEmpty())
             {
                 Future copy = this.copyTasks.remove();
 
@@ -432,8 +431,16 @@ class GridManager
                     LOGGER.trace("Copy operation took too long; moving on to the next one.");
                     this.copyTasks.add( copy );
                 }
-            }
+            }*/
 
+            try
+            {
+                this.copyQueue.loop();
+            }
+            catch ( ExecutionException e )
+            {
+                throw new IOException( "Grid projection copy operation failed.", e );
+            }
             LOGGER.trace("All copy operations for the coordinates belonging to {} completed.", this.metadata);
         }
 
@@ -444,6 +451,7 @@ class GridManager
         }
 
         private final GridMetadata metadata;
-        private final Queue<Future> copyTasks = new LinkedList<>();
+        //private final Queue<Future> copyTasks = new LinkedList<>();
+        private final FutureQueue copyQueue = new FutureQueue(  );
     }
 }

@@ -120,6 +120,11 @@ public class ProjectDetails
      */
     private static final Object FEATURE_LOCK = new Object();
 
+    /**
+     * Protects access to lead range generation which populates did i
+     */
+    private static final Object LEAD_RANGE_LOCK = new Object();
+
     private Integer projectID = null;
     private final ProjectConfig projectConfig;
 
@@ -1688,55 +1693,61 @@ public class ProjectDetails
             beginning = Integer.MIN_VALUE;
             end = Integer.MAX_VALUE;
         }
-        else if (this.shouldCalculateLeads())
-        {
-            int frequency = (int)TimeHelper.unitsToLeadUnits( this.getLeadUnit(), this.getLeadFrequency() );
-            int period = (int)TimeHelper.unitsToLeadUnits( this.getLeadUnit(), this.getLeadPeriod() );
-            Integer offset;
-            try
-            {
-                offset = this.getLeadOffset( feature );
-            }
-            catch ( IOException | SQLException e )
-            {
-                throw new CalculationException( "The offset between observed values and "
-                                                + "forecasted values are needed to determine "
-                                                + "when a lead range should begin, but could "
-                                                + "not be loaded.",
-                                                e );
-            }
-            beginning = windowNumber * frequency + offset;
-            end = beginning + period;
-        }
         else
         {
-            if (this.discreteLeads == null)
+            synchronized ( LEAD_RANGE_LOCK )
             {
-                LOGGER.warn("The system is detecting irregular time series or "
-                            + "data that contains forecasts out of sync with "
-                            + "the others.");
-                LOGGER.warn("Irregular forecasts are not fully supported, so "
-                            + "only discrete leads will be evaluated.");
-                try
+                if ( this.shouldCalculateLeads() )
                 {
-                    populateDiscreteLeads();
+                    int frequency = ( int ) TimeHelper.unitsToLeadUnits( this.getLeadUnit(), this.getLeadFrequency() );
+                    int period = ( int ) TimeHelper.unitsToLeadUnits( this.getLeadUnit(), this.getLeadPeriod() );
+                    Integer offset;
+                    try
+                    {
+                        offset = this.getLeadOffset( feature );
+                    }
+                    catch ( IOException | SQLException e )
+                    {
+                        throw new CalculationException( "The offset between observed values and "
+                                                        + "forecasted values are needed to determine "
+                                                        + "when a lead range should begin, but could "
+                                                        + "not be loaded.",
+                                                        e );
+                    }
+                    beginning = windowNumber * frequency + offset;
+                    end = beginning + period;
                 }
-                catch ( IOException e )
+                else
                 {
-                    throw new CalculationException(
-                            "The unique lead times needed to determine a range of "
-                            + "lead times could not be loaded.",
-                            e
-                    );
+                    if ( this.discreteLeads == null )
+                    {
+                        LOGGER.warn( "The system is detecting irregular time series or "
+                                     + "data that contains forecasts out of sync with "
+                                     + "the others." );
+                        LOGGER.warn( "Irregular forecasts are not fully supported, so "
+                                     + "only discrete leads will be evaluated." );
+                        try
+                        {
+                            populateDiscreteLeads();
+                        }
+                        catch ( IOException e )
+                        {
+                            throw new CalculationException(
+                                    "The unique lead times needed to determine a range of "
+                                    + "lead times could not be loaded.",
+                                    e
+                            );
+                        }
+                    }
+                    // We can probably do an operation on period to get a full scale
+                    // for the irregular series, i.e., if this gives us a period of 1,
+                    // but we might be able to pull off
+                    // [this.discreteLeads.get(feature)[x] - period, this.discreteLeads.get(feature)[x]]
+                    beginning = this.discreteLeads.get( feature )[windowNumber];
+                    end = beginning;
                 }
             }
 
-            // We can probably do an operation on period to get a full scale
-            // for the irregular series, i.e., if this gives us a period of 1,
-            // but we might be able to pull off
-            // [this.discreteLeads.get(feature)[x] - period, this.discreteLeads.get(feature)[x]]
-            beginning = this.discreteLeads.get( feature )[windowNumber];
-            end = beginning;
         }
 
         return Pair.of( beginning, end );

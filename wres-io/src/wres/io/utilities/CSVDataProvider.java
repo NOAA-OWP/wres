@@ -109,7 +109,7 @@ class CSVDataProvider implements DataProvider
             {
                 throw new IOException( "There isn't any data to read in " + this.filePath.toPath() );
             }
-            
+
             for (int i = 0; i < this.line.length; ++i)
             {
                 this.columnNames.put( this.line[i], i );

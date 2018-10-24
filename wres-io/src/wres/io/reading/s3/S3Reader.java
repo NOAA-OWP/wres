@@ -3,7 +3,6 @@ package wres.io.reading.s3;
 import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.PathMatcher;
 import java.nio.file.Paths;
 import java.sql.SQLException;
@@ -31,8 +30,7 @@ import wres.io.data.details.SourceDetails;
 import wres.io.reading.BasicSource;
 import wres.io.reading.IngestResult;
 import wres.io.utilities.Database;
-import wres.system.ProgressMonitor;
-import wres.system.SystemSettings;
+import wres.util.FutureQueue;
 
 public abstract class S3Reader extends BasicSource
 {
@@ -56,9 +54,9 @@ public abstract class S3Reader extends BasicSource
     public List<IngestResult> save() throws IOException
     {
         List<IngestResult> results = new ArrayList<>(  );
-        List<Future<List<IngestResult>>> ingests = new ArrayList<>();
         List<ETagKey> toIngest = new ArrayList<>(  );
         Collection<ETagKey> ingestableObjects = this.getIngestableObjects();
+        FutureQueue<List<IngestResult>> ingestTasks = new FutureQueue<>(  );
 
         if (ingestableObjects.isEmpty())
         {
@@ -76,7 +74,6 @@ public abstract class S3Reader extends BasicSource
         {
             try
             {
-                // TODO: This needs to check if it needs to be stored locally, not if it is gridded
                 boolean isVector = true;
 
                 SourceDetails source = DataSources.getExistingSource( tagAndKey.getEtag() );
@@ -94,7 +91,7 @@ public abstract class S3Reader extends BasicSource
 
                 if ( fileExists )
                 {
-                    ingests.add(
+                    ingestTasks.add(
                             IngestResult.fakeFutureSingleItemListFrom(
                                     this.getProjectConfig(),
                                     this.getDataSourceConfig(),
@@ -129,24 +126,17 @@ public abstract class S3Reader extends BasicSource
                                                                 .withProgressMonitoring()
                                                                 .build();
 
-            ingests.add( Database.ingest(saver));
+            ingestTasks.add( Database.ingest(saver));
         }
 
-        for (Future<List<IngestResult>> ingest : ingests)
+        try
         {
-            try
-            {
-                results.addAll( ingest.get() );
-            }
-            catch ( InterruptedException e )
-            {
-                this.getLogger().warn( "S3 Data ingest was interrupted.", e );
-                Thread.currentThread().interrupt();
-            }
-            catch ( ExecutionException e )
-            {
-                throw new IOException( "S3 Data could not be ingested.", e );
-            }
+            Collection<List<IngestResult>> ingestResults = ingestTasks.loop();
+            ingestResults.forEach( results::addAll );
+        }
+        catch ( ExecutionException e )
+        {
+            throw new IOException( "S3 Data could not be ingested." );
         }
 
         return results;
