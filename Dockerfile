@@ -1,6 +1,6 @@
 FROM centos:7.5.1804
 
-RUN yum install -y java-1.8.0-openjdk-headless-1.8.0.191.b12-0.el7_5 unzip-6.0-19.el7
+RUN yum install -y java-1.8.0-openjdk-headless-1.8.0.191.b12-0.el7_5 unzip-6.0-19.el7 which-2.20-7.el7
 
 # For examples of the following for alpine or debian, see git history.
 RUN groupadd --gid 1370800073 wres \
