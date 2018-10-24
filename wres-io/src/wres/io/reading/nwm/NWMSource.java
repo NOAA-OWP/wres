@@ -63,7 +63,7 @@ public class NWMSource extends BasicSource
                 if (exception.getCause() instanceof SocketTimeoutException &&
                     tryCount < MAXIMUM_OPEN_ATTEMPTS)
                 {
-                    LOGGER.error("Connection to NWM file failed.");
+                    LOGGER.error("Connection to the NWM file at '{}' failed.", this.getFilename());
                     tryCount++;
                     continue;
                 }

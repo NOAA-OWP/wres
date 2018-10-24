@@ -153,21 +153,9 @@ public class SourceLoader
                 }
                 else if ( sourceFile.isFile() )
                 {
-                    List<Feature> specifiedFeatures;
-
-                    try
-                    {
-                        specifiedFeatures = this.getSpecifiedFeatures();
-                    }
-                    catch ( SQLException se )
-                    {
-                        throw new IOException( "Could not get specified features.", se );
-                    }
-
                     Future<List<IngestResult>> task = saveFile( sourcePath,
                                                                 source,
                                                                 config,
-                                                                specifiedFeatures,
                                                                 this.projectConfig );
 
                     if (task != null)
@@ -216,24 +204,10 @@ public class SourceLoader
             matcher = null;
         }
 
-        //ProgressMonitor.increment();
-
-        List<Feature> specifiedFeatureses;
-
-        try
-        {
-            specifiedFeatureses = this.getSpecifiedFeatures();
-        }
-        catch ( SQLException se )
-        {
-            throw new PreIngestException( "Failed to get list of features.", se );
-        }
-
         Function<Path,Future<List<IngestResult>>> fileSaver =
                 new FileSaver( matcher,
                                source,
                                dataSourceConfig,
-                               specifiedFeatureses,
                                this.projectConfig );
 
         try ( Stream<Path> files = Files.walk( directory ) )
@@ -266,19 +240,16 @@ public class SourceLoader
         private final PathMatcher matcher;
         private final DataSourceConfig.Source source;
         private final DataSourceConfig dataSourceConfig;
-        private final List<Feature> specifiedFeatures;
         private final ProjectConfig projectConfig;
 
         FileSaver( PathMatcher pathMatcher,
                    DataSourceConfig.Source source,
                    DataSourceConfig dataSourceConfig,
-                   List<Feature> specifiedFeatures,
                    ProjectConfig projectConfig )
         {
             this.matcher = pathMatcher;
             this.source = source;
             this.dataSourceConfig = dataSourceConfig;
-            this.specifiedFeatures = specifiedFeatures;
             this.projectConfig = projectConfig;
         }
 
@@ -298,7 +269,6 @@ public class SourceLoader
                 return SourceLoader.saveFile( path,
                                               this.source,
                                               this.dataSourceConfig,
-                                              this.specifiedFeatures,
                                               this.projectConfig );
             }
             else
@@ -320,7 +290,6 @@ public class SourceLoader
     private static Future<List<IngestResult>> saveFile( Path filePath,
                                                         DataSourceConfig.Source source,
                                                         DataSourceConfig dataSourceConfig,
-                                                        List<Feature> specifiedFeatures,
                                                         ProjectConfig projectConfig )
     {
         String absolutePath = filePath.toAbsolutePath().toString();
@@ -515,24 +484,6 @@ public class SourceLoader
         return source;
     }
 
-    private List<Feature> getSpecifiedFeatures() throws SQLException
-    {
-        if (this.specifiedFeatures == null)
-        {
-            List<Feature> atomicFeatures = new ArrayList<>();
-
-            for ( FeatureDetails details : Features.getAllDetails( projectConfig ) )
-            {
-                atomicFeatures.add( details.toFeature() );
-            }
-
-            this.specifiedFeatures = Collections.unmodifiableList( atomicFeatures );
-        }
-        return this.specifiedFeatures;
-    }
-
-    private List<Feature> specifiedFeatures;
-
     /**
      * The project configuration indicating what data to used
      */
@@ -563,7 +514,7 @@ public class SourceLoader
             return this.isValid;
         }
 
-        public boolean shouldIngest()
+        boolean shouldIngest()
         {
             return this.shouldIngest;
         }

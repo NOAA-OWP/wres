@@ -13,11 +13,9 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
@@ -28,7 +26,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 
@@ -55,6 +52,7 @@ import wres.datamodel.statistics.ListOfStatistics;
 import wres.io.concurrency.Executor;
 import wres.io.config.ConfigHelper;
 import wres.io.writing.WriteException;
+import wres.util.FutureQueue;
 import wres.util.Strings;
 
 public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
@@ -236,6 +234,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
         }
     }
 
+    @SuppressWarnings( "unchecked" )
     @Override
     public void close()
     {
@@ -279,7 +278,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
             {
                 closeExecutor = Executors.newFixedThreadPool( NetcdfOutputWriter.WRITERS.size() );
 
-                Queue<Future<?>> closeTasks = new LinkedList<>();
+                FutureQueue closeQueue = new FutureQueue( 3000, TimeUnit.MILLISECONDS );
 
                 for ( TimeWindowWriter writer : NetcdfOutputWriter.WRITERS.values() )
                 {
@@ -311,47 +310,18 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
 
                         private TimeWindowWriter writer;
                     }.initialize( writer );
-
-                    closeTasks.add( closeExecutor.submit( closeTask ) );
+                    closeQueue.add( closeExecutor.submit( closeTask ) );
                 }
 
-                Future<?> task = closeTasks.poll();
-
-                while ( task != null )
+                try
                 {
-                    try
-                    {
-                        if ( closeTasks.isEmpty() )
-                        {
-                            task.get();
-                        }
-                        else
-                        {
-                            task.get( 3000, TimeUnit.MILLISECONDS );
-                        }
-                        LOGGER.trace( "Close Task Complete." );
-                    }
-                    catch ( InterruptedException e )
-                    {
-                        LOGGER.warn( "Output writing has been interrupted.",
-                                     e );
-                        Thread.currentThread().interrupt();
-                    }
-                    catch ( ExecutionException e )
-                    {
-                        throw new WriteException(
-                                "A netCDF output could not be written",
-                                e );
-                    }
-                    catch ( TimeoutException e )
-                    {
-                        // Since it took so long to close this writer, try to move on to the next one and try
-                        // to clear the queue
-                        LOGGER.trace( "Task took too long; moving on." );
-                        closeTasks.add( task );
-                    }
-
-                    task = closeTasks.poll();
+                    closeQueue.loop();
+                }
+                catch ( ExecutionException e )
+                {
+                    throw new WriteException(
+                            "A netCDF output could not be written",
+                            e );
                 }
             }
             finally

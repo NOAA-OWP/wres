@@ -15,7 +15,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Queue;
 import java.util.StringJoiner;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -27,7 +26,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import org.postgresql.PGConnection;
 import org.postgresql.copy.CopyManager;
@@ -45,6 +43,7 @@ import wres.io.reading.IngestResult;
 import wres.system.ProgressMonitor;
 import wres.system.SystemSettings;
 import wres.util.FormattedStopwatch;
+import wres.util.FutureQueue;
 import wres.util.Strings;
 import wres.util.functional.ExceptionalConsumer;
 import wres.util.functional.ExceptionalFunction;
@@ -124,6 +123,9 @@ public final class Database {
 
 	/**
 	 * A queue containing tasks used to ingest data into the database
+     * <br><br>
+     * TODO: Make this a collection of futures, not future lists of ingest results.
+     * Other things need to occupy this collection that don't contain ingest results
 	 */
     private static final LinkedBlockingQueue<Future<List<IngestResult>>> storedIngestTasks =
 			new LinkedBlockingQueue<>();
@@ -1304,6 +1306,7 @@ public final class Database {
         }
     }
 
+    @SuppressWarnings( "unchecked" )
 	public static boolean removeOrphanedData() throws SQLException
     {
         try
@@ -1322,7 +1325,8 @@ public final class Database {
 
             Collection<String> partitionTables = Database.getPartitionTables( "timeseriesvalue_lead%" );
 
-            Queue<Future> removalQueries = new LinkedList<>(  );
+            // We aren't actually going to collect the results so raw types are fine.
+            FutureQueue removalQueue = new FutureQueue(  );
 
             for (String partition : partitionTables)
             {
@@ -1337,7 +1341,7 @@ public final class Database {
                 valueRemover.addTab(  2  ).addLine( "AND (TSS.lead IS NULL OR TSS.lead = P.lead)");
                 valueRemover.add(");");
 
-                removalQueries.add(Database.execute( new SQLExecutor( valueRemover.toString() ) ));
+                removalQueue.add(Database.execute( new SQLExecutor( valueRemover.toString() ) ));
 
                 LOGGER.debug("Started task to remove orphaned values in {}...", partition);
             }
@@ -1350,42 +1354,17 @@ public final class Database {
             removalScript.addTab().addLine("WHERE PS.source_id = O.source_id");
             removalScript.add(");");
 
-            removalQueries.add(Database.execute( new SQLExecutor( removalScript.toString() ) ));
+            removalQueue.add(Database.execute( new SQLExecutor( removalScript.toString() ) ));
 
             LOGGER.debug("Started task to remove orphaned observations...");
 
-            int total = removalQueries.size();
-            int completed = 0;
-            while (!removalQueries.isEmpty())
+            try
             {
-                Future query = removalQueries.remove();
-
-                try
-                {
-                    if (removalQueries.isEmpty())
-                    {
-                        query.get();
-                    }
-                    else
-                    {
-                        query.get( 500, TimeUnit.MILLISECONDS );
-                    }
-                    completed++;
-                    LOGGER.debug("Completed a removal task. [{}/{}]", completed, total);
-                }
-                catch ( InterruptedException e )
-                {
-                    LOGGER.error("Removal Query interrupted.", e);
-                    Thread.currentThread().interrupt();
-                }
-                catch ( ExecutionException e )
-                {
-                    throw new SQLException( "Orphaned observed and forecasted values could not be removed.", e );
-                }
-                catch ( TimeoutException e )
-                {
-                    removalQueries.add( query );
-                }
+                removalQueue.loop();
+            }
+            catch ( ExecutionException e )
+            {
+                throw new SQLException( "Orphaned observed and forecasted values could not be removed.", e );
             }
 
             removalScript = new ScriptBuilder(  );
@@ -1411,7 +1390,7 @@ public final class Database {
             removalScript.addTab().addLine("WHERE TS.timeseries_id = TS.timeseries_id");
             removalScript.add(");");
 
-            removalQueries.add(Database.execute( new SQLExecutor( removalScript.toString() ) ));
+            removalQueue.add(Database.execute( new SQLExecutor( removalScript.toString() ) ));
 
             LOGGER.debug("Added Task to remove orphaned time series...");
 
@@ -1424,7 +1403,7 @@ public final class Database {
             removalScript.addTab().addLine("WHERE PS.source_id = S.source_id");
             removalScript.add(");");
 
-            removalQueries.add(Database.execute( new SQLExecutor( removalScript.toString() ) ));
+            removalQueue.add(Database.execute( new SQLExecutor( removalScript.toString() ) ));
 
             LOGGER.debug("Added task to remove orphaned sources...");
 
@@ -1439,38 +1418,15 @@ public final class Database {
 
             LOGGER.debug("Added task to remove orphaned projects...");
 
-            removalQueries.add(Database.execute( new SQLExecutor( removalScript.toString() ) ));
+            removalQueue.add(Database.execute( new SQLExecutor( removalScript.toString() ) ));
 
-            int timeoutCount = 0;
-            int timoutLimit = 12;
-
-            while (!removalQueries.isEmpty())
+            try
             {
-                Future query = removalQueries.remove();
-
-                try
-                {
-                    query.get( 5, TimeUnit.SECONDS );
-                    LOGGER.debug("Either orphaned forecasts, projects, or sources have been removed.");
-                }
-                catch ( InterruptedException e )
-                {
-                    LOGGER.error("Removal Query interrupted.", e);
-                    Thread.currentThread().interrupt();
-                }
-                catch ( ExecutionException e )
-                {
-                    throw new SQLException( "Orphaned forecast, project, and source metadata could not be removed.", e );
-                }
-                catch ( TimeoutException e )
-                {
-                    removalQueries.add( query );
-                    timeoutCount++;
-                    if (timeoutCount % timoutLimit == 0)
-                    {
-                        LOGGER.debug( "Forecast, project, and source metadata clearance is taking longer than expected..." );
-                    }
-                }
+                removalQueue.loop();
+            }
+            catch ( ExecutionException e )
+            {
+                throw new SQLException( "Orphaned forecast, project, and source metadata could not be removed.", e );
             }
 
             LOGGER.info("Incomplete data has been removed from the system.");
@@ -1642,7 +1598,7 @@ public final class Database {
      * @return The results of the query
      * @throws SQLException Any issue caused by running the query in the database
      */
-    public static DataProvider getResults(String query, Object[] parameters, boolean highPriority) throws SQLException
+    static DataProvider getResults(String query, Object[] parameters, boolean highPriority) throws SQLException
     {
         if (LOGGER.isTraceEnabled())
         {
