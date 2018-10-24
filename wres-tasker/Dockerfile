@@ -1,11 +1,11 @@
-FROM azul/zulu-openjdk-alpine:8u181-8.31.0.1
+FROM centos:7.5.1804
 
-# See comments in main wres Dockerfile
-RUN echo "wres_tasker_docker:x:499:1370800073::/home/wres_tasker_docker:" >> /etc/passwd \
-    && echo "user:!:1:0:99999:7:::" >> /etc/shadow \
-    && echo "wres:x:1370800073:" >> etc/group \
-    && mkdir /home/wres_tasker_docker \
-    && chown wres_tasker_docker: /home/wres_tasker_docker
+RUN yum install -y java-1.8.0-openjdk-headless-1.8.0.191.b12-0.el7_5 unzip-6.0-19.el7
+
+# See comments in main/worker/root wres Dockerfile
+
+RUN groupadd --gid 1370800073 wres \
+    && useradd --uid 499 --gid 1370800073 wres_tasker_docker
 
 ARG version
 WORKDIR /opt
