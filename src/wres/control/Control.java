@@ -37,7 +37,7 @@ import wres.system.SystemSettings;
 
 /**
  * A complete implementation of a processing pipeline originating from one or more {@link ProjectConfig}.
- * 
+ *
  * @author james.brown@hydrosolved.com
  * @author jesse
  */
@@ -66,22 +66,45 @@ public class Control implements Function<String[], Integer>,
             return 1; // Or return 400 - Bad Request (see #41467)
         }
 
-        Path configPath = Paths.get( args[0] );
+        String evaluationConfigArgument = args[0].trim();
+
         ProjectConfigPlus projectConfigPlus;
 
-        try
+        // Subject to team approval (if you would prefer to *not* overload
+        // the "execute" command, add a new method instead)
+        if ( evaluationConfigArgument.startsWith( "<?xml " ) )
         {
-            // Unmarshal the configuration
-            projectConfigPlus = ProjectConfigPlus.from( configPath );
+            // Successfully detected a project passed directly as an argument.
+            try
+            {
+                projectConfigPlus = ProjectConfigPlus.from( evaluationConfigArgument,
+                                                            "command line argument" );
+            }
+            catch ( IOException ioe )
+            {
+                LOGGER.error( "Failed to unmarshal project configuration from command line argument.",
+                              ioe );
+                return 1;
+            }
         }
-        catch ( IOException ioe )
+        else
         {
-            LOGGER.error( "Failed to unmarshal project configuration at {}.",
-                          ioe );
-            return 1; // Or return 400 - Bad Request (see #41467)
+            Path configPath = Paths.get( evaluationConfigArgument );
+
+            try
+            {
+                // Unmarshal the configuration
+                projectConfigPlus = ProjectConfigPlus.from( configPath );
+            }
+            catch ( IOException ioe )
+            {
+                LOGGER.error( "Failed to unmarshal project configuration from {}.",
+                              configPath, ioe );
+                return 1; // Or return 400 - Bad Request (see #41467)
+            }
         }
 
-        LOGGER.info( "Successfully unmarshalled project configuration at {}"
+        LOGGER.info( "Successfully unmarshalled project configuration from {}"
                      + ", validating further...",
                      projectConfigPlus );
 
@@ -91,13 +114,13 @@ public class Control implements Function<String[], Integer>,
 
         if ( validated )
         {
-            LOGGER.info( "Successfully validated project configuration at {}. "
+            LOGGER.info( "Successfully validated project configuration from {}. "
                          + "Beginning execution...",
                          projectConfigPlus );
         }
         else
         {
-            LOGGER.error( "Validation failed for project configuration at {}.",
+            LOGGER.error( "Validation failed for project configuration from {}.",
                           projectConfigPlus );
             return 1; // Or return 400 - Bad Request (see #41467)
         }
