@@ -3,12 +3,15 @@ services:
     tasker:
         ports:
          - "443:8443"
-        image: "5dd64a354c17"
+        image: "892125ba64b3"
         restart: always
         depends_on:
          - "broker"
         volumes:
+         # For certificates and keys that correspond to them:
          - /mnt/wres_secrets:/wres_secrets:ro
+         # To read output data:
+         - /mnt/wres_share:/mnt/wres_share
         environment:
          - JAVA_OPTS=-Dwres.broker=broker
          # Make sure to pass through WRES_ENV_SUFFIX to tasker at runtime
@@ -19,24 +22,27 @@ services:
         ports:
          - "5671:5671"
          - "15671:15671"
-        image: "5175de99ac77"
+        image: "746a840faa9f"
         restart: always
         volumes:
+         # For certificates and keys that correspond to them:
          - /mnt/wres_secrets:/wres_secrets:ro
         environment:
          - RABBITMQ_CONFIG_FILE=rabbitmq${WRES_ENV_SUFFIX}.conf
         # rabbitmq.conf should have 180m specified as high watermark
         mem_limit: 360m
     worker:
-        image: "3f775ea654f6"
+        image: "af65f6279679"
         restart: always
         depends_on:
          - "broker"
         volumes:
+         # For input and output data:
          - /mnt/wres_share:/mnt/wres_share
+         # For certificates, keys that correspond to them, and .pgpass:
          - /mnt/wres_secrets:/wres_secrets:ro
         environment:
-         - JAVA_OPTS=-Dwres.broker=broker
+         - JAVA_OPTS=-Dwres.broker=broker -Djava.io.tmpdir=/mnt/wres_share/evaluations
          - PGPASSFILE=/wres_secrets/.pgpass
          #- INNER_JAVA_OPTS=-Dwres.logLevel=trace
         # Worker JVM should have 32m heap, wres should have 1628m heap
