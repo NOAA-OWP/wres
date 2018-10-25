@@ -169,17 +169,10 @@ class InputRetriever extends Retriever //WRESCallable<MetricInput<?>>
 
         if (this.getPrimaryPairs().isEmpty())
         {
-            LOGGER.debug( "Data could not be loaded for {}", metadata.getTimeWindow() );
-            LOGGER.debug( "The script used was:" );
-            LOGGER.debug( "{}{}", NEWLINE, this.rightScript );
-            LOGGER.debug("Window: {}", this.getLeadIteration());
-            LOGGER.debug( "Issue Date Sequence: {}", this.issueDatesPool );
-            throw new NoDataException( "No data could be retrieved for Metric calculation for window " +
-                                       metadata.getTimeWindow().toString() +
-                                       " for " +
-                                       this.getProjectDetails().getRightVariableName() +
-                                       " at " +
-                                       ConfigHelper.getFeatureDescription( this.getFeature() ) );
+            LOGGER.trace("There are no pairs in window {} for {} at {}",
+                         metadata.getTimeWindow(),
+                         this.getProjectDetails().getRightVariableName(),
+                         ConfigHelper.getFeatureDescription( this.getFeature() ));
         }
         else if (this.getPrimaryPairs().size() == 1)
         {
