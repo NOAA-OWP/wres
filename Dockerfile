@@ -22,9 +22,13 @@ RUN unzip wres-worker-${worker_version}.zip \
     && rm wres-worker-${worker_version}.zip
 
 WORKDIR /opt/wres-worker-${worker_version}
+
+# In order to set umask for file sharing, use a wrapper script, see #56790
+COPY ./scripts/docker-entrypoint.sh .
+
 USER wres_docker
 
-CMD [ "bin/wres-worker", "/usr/bin/wres" ]
+CMD [ "./docker-entrypoint.sh" ]
 
 VOLUME /mnt/wres_share
 VOLUME /wres_secrets
