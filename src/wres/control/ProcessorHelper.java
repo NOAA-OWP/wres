@@ -1,6 +1,7 @@
 package wres.control;
 
 import java.io.IOException;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileAttribute;
@@ -12,6 +13,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
@@ -108,25 +110,8 @@ class ProcessorHelper
         // The project code - ideally project hash
         String projectIdentifier = String.valueOf( projectDetails.getInputCode() );
 
-        // Permissions for output directory
-
-        // Permissions for temp directory require group read so that the tasker
-        // may give the output to the client on GET. Write so that the tasker
-        // may remove the output on client DELETE. Execute for dir reads.
-        Set<PosixFilePermission> permissions = new HashSet<>( 6 );
-        permissions.add( PosixFilePermission.OWNER_READ );
-        permissions.add( PosixFilePermission.OWNER_WRITE );
-        permissions.add( PosixFilePermission.OWNER_EXECUTE );
-        permissions.add( PosixFilePermission.GROUP_READ );
-        permissions.add( PosixFilePermission.GROUP_WRITE );
-        permissions.add( PosixFilePermission.GROUP_EXECUTE );
-        FileAttribute<Set<PosixFilePermission>> fileAttribute =
-                PosixFilePermissions.asFileAttribute( permissions );
-
-        // Where outputs files will be written
-        Path outputDirectory = Files.createTempDirectory( "wres_evaluation_output_"
-                                                          + projectIdentifier + "_",
-                                                          fileAttribute );
+        // Output directory
+        Path outputDirectory = ProcessorHelper.createTempOutputDirectory( projectIdentifier );
 
         ResolvedProject resolvedProject = ResolvedProject.of( projectConfigPlus,
                                                               decomposedFeatures,
@@ -217,6 +202,54 @@ class ProcessorHelper
         pathsWrittenTo.addAll( sharedWriters.get() );
         pathsWrittenTo.addAll( sharedWriterManager.get() );
         return Collections.unmodifiableSet( pathsWrittenTo );
+    }
+    
+    /**
+     * Creates a temporary directory for the outputs with the correct permissions. 
+     * 
+     * @param projectIdentifier the project identifier, cannot be null
+     * @return the path to the temporary output directory
+     * @throws IOException if the temporary directory cannot be created
+     * @throws NullPointerException if the projectIdentifier is null
+     */
+
+    private static Path createTempOutputDirectory( final String projectIdentifier ) throws IOException
+    {
+        Objects.requireNonNull( projectIdentifier, "Cannot create an output directory without an identifier." );
+
+        // Where outputs files will be written
+        Path outputDirectory = null;
+
+        // POSIX-compliant
+        if ( FileSystems.getDefault().supportedFileAttributeViews().contains( "posix" ) )
+        {
+            // Permissions for temp directory require group read so that the tasker
+            // may give the output to the client on GET. Write so that the tasker
+            // may remove the output on client DELETE. Execute for dir reads.
+            Set<PosixFilePermission> permissions = new HashSet<>( 6 );
+            permissions.add( PosixFilePermission.OWNER_READ );
+            permissions.add( PosixFilePermission.OWNER_WRITE );
+            permissions.add( PosixFilePermission.OWNER_EXECUTE );
+            permissions.add( PosixFilePermission.GROUP_READ );
+            permissions.add( PosixFilePermission.GROUP_WRITE );
+            permissions.add( PosixFilePermission.GROUP_EXECUTE );
+            FileAttribute<Set<PosixFilePermission>> fileAttribute =
+                    PosixFilePermissions.asFileAttribute( permissions );
+
+            outputDirectory = Files.createTempDirectory( "wres_evaluation_output_"
+                                                         + projectIdentifier
+                                                         + "_",
+                                                         fileAttribute );
+        }
+        // Not POSIX-compliant
+        else
+        {
+            outputDirectory = Files.createTempDirectory( "wres_evaluation_output_"
+                                                         + projectIdentifier
+                                                         + "_" );
+        }
+
+        return outputDirectory;
     }
 
     /**

@@ -149,7 +149,7 @@ public class WRESChartEngine extends ChartEngine
         }
         if (!visible)
         {
-            chart.setPadding( new RectangleInsets(0, 0, 0, 40) );
+            chart.setPadding( new RectangleInsets( 0, 0, 0, 40 ) );
         }
         
         return chart;
