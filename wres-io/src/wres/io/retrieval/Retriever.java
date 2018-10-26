@@ -41,10 +41,8 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
     private final ProjectDetails projectDetails;
 
     private long lastLead = Long.MIN_VALUE;
-    private long lastBaselineLead = Long.MIN_VALUE;
 
     private long firstLead = Long.MAX_VALUE;
-    private long firstBaselineLead = Long.MAX_VALUE;
 
     private Boolean shouldThisScale;
     private TimeScaleConfig commonScale;
@@ -181,19 +179,9 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
         return this.lastLead;
     }
 
-    long getLastBaselineLead()
-    {
-        return lastBaselineLead;
-    }
-
     long getFirstlead()
     {
         return this.firstLead;
-    }
-
-    long getFirstBaselineLead()
-    {
-        return firstBaselineLead;
     }
 
     VectorOfDoubles getClimatology()
@@ -275,18 +263,12 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
         {
             EnsemblePair pair = this.getPair( condensedIngestedValue );
 
-
             if (pair != null)
             {
                 if (this.projectDetails.getInputName( dataSourceConfig ).equals(ProjectDetails.RIGHT_MEMBER))
                 {
                     this.lastLead = Math.max(this.lastLead, condensedIngestedValue.lead);
                     this.firstLead = Math.min(this.firstLead, condensedIngestedValue.lead);
-                }
-                else
-                {
-                    this.lastBaselineLead = Math.max(this.lastBaselineLead, condensedIngestedValue.lead);
-                    this.firstBaselineLead = Math.min(this.firstBaselineLead, condensedIngestedValue.lead);
                 }
 
                 ForecastedPair packagedPair = new ForecastedPair(

@@ -28,11 +28,28 @@ import wres.config.generated.ProjectConfig;
 import wres.io.config.ConfigHelper;
 import wres.util.TimeHelper;
 
+/**
+ * An S3 reader specifically for the NWCAL object store
+ */
 class NWCALReader extends S3Reader
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( NWCALReader.class );
+
+    /**
+     * This is the maximum number of S3 file entries that may be retrieved at once
+     */
     private static final int MAX_KEY_COUNT = 900;
+
+    /**
+     * This is the URL of the NWCAL object store
+     * TODO: Do we want to make this configurable?
+     */
     private static final String ENDPOINT_URL = "http://***REMOVED***rgw.***REMOVED***.***REMOVED***:8080";
+
+    /**
+     * Since the format for immediate sub-buckets in the NWCAL object store is "nwm.yyyyMMdd", we
+     * want to have a formatter that will allow us to find objects in the right sub-buckets
+     */
     private static final DateTimeFormatter DATE_PREFIX_FORMAT = DateTimeFormatter.ofPattern( "yyyyMMdd" );
 
     NWCALReader( ProjectConfig projectConfig )
@@ -129,10 +146,15 @@ class NWCALReader extends S3Reader
         return prefixPatterns;
     }
 
+    /**
+     * @return The earliest day to retrieve data for based off of the configured valid times.
+     * Returns LocalDateTime.MAX if none were configured.
+     */
     private LocalDateTime getEarliestValidDate()
     {
         LocalDateTime date = LocalDateTime.MAX;
 
+        // If the earliest valid date is configured, get the LocalDateTime representation of it
         if (this.getProjectConfig().getPair().getDates() != null &&
             this.getProjectConfig().getPair().getDates().getEarliest() != null)
         {
@@ -144,10 +166,15 @@ class NWCALReader extends S3Reader
         return date;
     }
 
+    /**
+     * @return The latest day to retrieve data for based off of the configured valid times
+     * Returns null if no latest valid time were configured.
+     */
     private LocalDateTime getLatestValidDate()
     {
         LocalDateTime date = null;
 
+        // If the latest valid date is configured, get the LocalDateTime representation of it
         if (this.getProjectConfig().getPair().getDates() != null &&
             this.getProjectConfig().getPair().getDates().getLatest() != null)
         {
@@ -159,6 +186,12 @@ class NWCALReader extends S3Reader
         return date;
     }
 
+    /**
+     * Creates an object representing the earliest day to retrieve data for
+     * based off of the configured issue dates. If an earliest issue date wasn't
+     * configured, the MAX date is returned
+     * @return The earliest day to retrieve data for when considering the configured issue date
+     */
     private LocalDateTime getEarliestIssueDate()
     {
         LocalDateTime date = LocalDateTime.MAX;
@@ -174,6 +207,12 @@ class NWCALReader extends S3Reader
         return date;
     }
 
+    /**
+     * Creates an object representing the latest day to retrieve data for based
+     * off of the configured issued dates. If a latest issue date wasn't configured,
+     * null is returned
+     * @return The latest day to retrieve data for when considering the configured issue date
+     */
     private LocalDateTime getLatestIssueDate()
     {
         LocalDateTime date = null;
@@ -195,7 +234,6 @@ class NWCALReader extends S3Reader
 
         if (this.getProjectConfig().getPair().getLeadHours() != null)
         {
-
             if (this.getProjectConfig().getPair().getLeadHours().getMaximum() != null)
             {
                 specifiedLead = Duration.of(

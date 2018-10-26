@@ -14,19 +14,18 @@ import wres.io.concurrency.Executor;
 import wres.io.config.ConfigHelper;
 import wres.io.data.details.ProjectDetails;
 import wres.io.utilities.DataScripter;
-import wres.io.utilities.ScriptBuilder;
 import wres.io.writing.pair.SharedWriterManager;
 import wres.util.CalculationException;
 
-public class TimeSeriesMetricInputIterator extends MetricInputIterator
+public class TimeSeriesSampleDataIterator extends SampleDataIterator
 {
     private static final Logger LOGGER =
-            LoggerFactory.getLogger(TimeSeriesMetricInputIterator.class);
+            LoggerFactory.getLogger(TimeSeriesSampleDataIterator.class);
 
-    TimeSeriesMetricInputIterator( Feature feature,
-                                   ProjectDetails projectDetails,
-                                   SharedWriterManager sharedWriterManager,
-                                   Path outputDirectoryForPairs )
+    TimeSeriesSampleDataIterator( Feature feature,
+                                  ProjectDetails projectDetails,
+                                  SharedWriterManager sharedWriterManager,
+                                  Path outputDirectoryForPairs )
             throws IOException
     {
         super( feature,

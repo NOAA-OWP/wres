@@ -61,21 +61,19 @@ import wres.util.TimeHelper;
 /**
  * Created by ctubbs on 7/17/17.
  */
-class InputRetriever extends Retriever //WRESCallable<MetricInput<?>>
+class SampleDataRetriever extends Retriever
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(InputRetriever.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(SampleDataRetriever.class);
 
     /**
      * The number of the issue dates pool
      */
     private int issueDatesPool;
 
-    private String rightScript;
-
-    InputRetriever ( final ProjectDetails projectDetails,
-                     final CacheRetriever getLeftValues,
-                     SharedWriterManager sharedWriterManager,
-                     Path outputDirectoryForPairs )
+    SampleDataRetriever( final ProjectDetails projectDetails,
+                         final CacheRetriever getLeftValues,
+                         SharedWriterManager sharedWriterManager,
+                         Path outputDirectoryForPairs )
     {
         super( projectDetails,
                getLeftValues,
@@ -295,14 +293,14 @@ class InputRetriever extends Retriever //WRESCallable<MetricInput<?>>
     private SampleData createEnsembleInput(SampleMetadata rightMetadata, SampleMetadata baselineMetadata)
     {
         List<EnsemblePair> primary =
-                InputRetriever.extractRawPairs( this.getPrimaryPairs() );
+                SampleDataRetriever.extractRawPairs( this.getPrimaryPairs() );
 
 
         List<EnsemblePair> baseline = null;
 
         if ( !this.getBaselinePairs().isEmpty() )
         {
-            baseline = InputRetriever.extractRawPairs( this.getBaselinePairs() );
+            baseline = SampleDataRetriever.extractRawPairs( this.getBaselinePairs() );
         }
 
         return EnsemblePairs.of( primary,
@@ -353,8 +351,7 @@ class InputRetriever extends Retriever //WRESCallable<MetricInput<?>>
      * @param pairPairs A set of packaged pairs
      * @return A list of raw pairs contained within the set of packaged pairs
      */
-    private static List<EnsemblePair>
-    extractRawPairs( List<ForecastedPair> pairPairs )
+    private static List<EnsemblePair> extractRawPairs( List<ForecastedPair> pairPairs )
     {
         List<EnsemblePair> result = new ArrayList<>();
 
@@ -423,9 +420,6 @@ class InputRetriever extends Retriever //WRESCallable<MetricInput<?>>
                                                  getFeature(),
                                                  this.getLeadIteration(),
                                                  this.issueDatesPool );
-
-            // We save the script for debugging purposes
-            this.rightScript = loadScript;
         }
         else
         {
@@ -434,7 +428,7 @@ class InputRetriever extends Retriever //WRESCallable<MetricInput<?>>
             {
                 // Find the data we need to form a persistence forecast: the
                 // basis times from the right side.
-                List<Instant> basisTimes = InputRetriever.extractBasisTimes( this.getPrimaryPairs() );
+                List<Instant> basisTimes = SampleDataRetriever.extractBasisTimes( this.getPrimaryPairs() );
                 loadScript =
                         Scripter.getPersistenceLoadScript( getProjectDetails(),
                                                            dataSourceConfig,
@@ -614,8 +608,6 @@ class InputRetriever extends Retriever //WRESCallable<MetricInput<?>>
      * Loads pairs from the database and directs them to packaged
      * @param dataSourceConfig The configuration whose pairs to retrieve
      * @return A packaged set of pair data
-     * @throws SQLException
-     * @throws IOException
      */
     private List<ForecastedPair> createPairs( DataSourceConfig dataSourceConfig )
             throws RetrievalFailedException
@@ -1152,10 +1144,10 @@ class InputRetriever extends Retriever //WRESCallable<MetricInput<?>>
         Duration firstLead = Duration.ZERO;
         Duration lastLead = Duration.ZERO;
 
-        if ( (ConfigHelper.isForecast( sourceConfig ) && !isBaseline)
-                // Persistence forecast meta is based on the forecast meta
-                || ConfigHelper.isPersistence( getProjectDetails().getProjectConfig(),
-                                               sourceConfig ) )
+        // Persistence forecast meta is based on the forecast meta
+        if ( ConfigHelper.isForecast( sourceConfig ) ||
+             ConfigHelper.isPersistence( getProjectDetails().getProjectConfig(),
+                                         sourceConfig ) )
         {
             if (ProjectConfigs.hasTimeSeriesMetrics(this.getProjectDetails().getProjectConfig()))
             {
@@ -1291,11 +1283,6 @@ class InputRetriever extends Retriever //WRESCallable<MetricInput<?>>
                 firstLead = lastLead;               
             }
         }
-        else if (ConfigHelper.isForecast( sourceConfig ))
-        {
-            firstLead = Duration.of( this.getFirstBaselineLead(), TimeHelper.LEAD_RESOLUTION);
-            lastLead = Duration.of( this.getLastBaselineLead(), TimeHelper.LEAD_RESOLUTION);
-        }
 
         TimeWindow timeWindow = ConfigHelper.getTimeWindow( this.getProjectDetails(),
                                                             firstLead,
@@ -1363,7 +1350,7 @@ class InputRetriever extends Retriever //WRESCallable<MetricInput<?>>
     @Override
     protected Logger getLogger()
     {
-        return InputRetriever.LOGGER;
+        return SampleDataRetriever.LOGGER;
     }
 
 

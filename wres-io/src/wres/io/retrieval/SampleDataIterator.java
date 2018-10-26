@@ -24,12 +24,29 @@ import wres.io.writing.pair.SharedWriterManager;
 import wres.system.ProgressMonitor;
 import wres.util.CalculationException;
 
-abstract class MetricInputIterator implements Iterator<Future<SampleData<?>>>
+abstract class SampleDataIterator implements Iterator<Future<SampleData<?>>>
 {
     protected static final String NEWLINE = System.lineSeparator();
 
     // Setting the initial window number to -1 ensures that our windows are 0 indexed
+    /**
+     * The current iteration index over lead times
+     * <br><br>
+     * Setting the initial window number to -1 ensures that our
+     * parameters for SampleData are 0 indexed. If there are going to be 10
+     * SampleData futures (one for each lead (0, 10], created through this
+     * iterator and windowNumber is 5, that means the current parameters
+     * were used for creating the SampleData covering the lead time of 6
+     */
     private int windowNumber = -1;
+
+    /**
+     * The total number of iterations over chunks of lead times
+     * <br><br>
+     * If we are evaluating leads (0, 24], two leads at a time, the
+     * window count should be 12. That means we'll have 12 chunks of
+     * leads to hop over
+     */
     private Integer windowCount;
 
     private final Feature feature;
@@ -139,10 +156,10 @@ abstract class MetricInputIterator implements Iterator<Future<SampleData<?>>>
         return this.climatology;
     }
 
-    MetricInputIterator( Feature feature,
-                         ProjectDetails projectDetails,
-                         SharedWriterManager sharedWriterManager,
-                         Path outputPathForPairs )
+    SampleDataIterator( Feature feature,
+                        ProjectDetails projectDetails,
+                        SharedWriterManager sharedWriterManager,
+                        Path outputPathForPairs )
             throws IOException
     {
 
@@ -296,7 +313,7 @@ abstract class MetricInputIterator implements Iterator<Future<SampleData<?>>>
      */
     Callable<SampleData<?>> createRetriever() throws IOException
     {
-        InputRetriever retriever = new InputRetriever(
+        SampleDataRetriever retriever = new SampleDataRetriever(
                 this.getProjectDetails(),
                 this.leftCache::getLeftValues,
                 this.sharedWriterManager,

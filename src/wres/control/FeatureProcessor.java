@@ -28,7 +28,7 @@ import wres.engine.statistics.metric.processing.MetricProcessorForProject;
 import wres.io.Operations;
 import wres.io.config.ConfigHelper;
 import wres.io.data.details.ProjectDetails;
-import wres.io.retrieval.InputGenerator;
+import wres.io.retrieval.DataGenerator;
 import wres.io.retrieval.IterationFailedException;
 import wres.io.writing.SharedWriters;
 import wres.io.writing.pair.SharedWriterManager;
@@ -149,10 +149,10 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
         }
 
         // Build an InputGenerator for the next feature
-        InputGenerator metricInputs = Operations.getInputs( this.projectDetails,
-                                                            this.feature.getFeature(),
-                                                            this.sharedWriterManager,
-                                                            this.resolvedProject.getOutputDirectory() );
+        DataGenerator metricInputs = Operations.getInputs( this.projectDetails,
+                                                           this.feature.getFeature(),
+                                                           this.sharedWriterManager,
+                                                           this.resolvedProject.getOutputDirectory() );
 
         // Queue the various tasks by time window (time window is the pooling dimension for metric calculation here)
         final List<CompletableFuture<Set<Path>>> listOfFutures = new ArrayList<>(); //List of futures to test for completion

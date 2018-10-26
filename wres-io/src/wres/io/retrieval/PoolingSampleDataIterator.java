@@ -11,15 +11,15 @@ import wres.io.data.details.ProjectDetails;
 import wres.io.writing.pair.SharedWriterManager;
 import wres.util.CalculationException;
 
-class PoolingMetricInputIterator extends MetricInputIterator
+class PoolingSampleDataIterator extends SampleDataIterator
 {
     private static final Logger LOGGER =
-            LoggerFactory.getLogger(PoolingMetricInputIterator.class);
+            LoggerFactory.getLogger(PoolingSampleDataIterator.class);
 
-    PoolingMetricInputIterator( Feature feature,
-                                ProjectDetails projectDetails,
-                                SharedWriterManager sharedWriterManager,
-                                Path outputDirectoryForPairs )
+    PoolingSampleDataIterator( Feature feature,
+                               ProjectDetails projectDetails,
+                               SharedWriterManager sharedWriterManager,
+                               Path outputDirectoryForPairs )
             throws IOException
     {
         super( feature,

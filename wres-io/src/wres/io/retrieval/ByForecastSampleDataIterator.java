@@ -22,14 +22,14 @@ import wres.io.utilities.DataScripter;
 import wres.io.writing.pair.SharedWriterManager;
 import wres.util.CalculationException;
 
-public class ByForecastMetricInputIterator extends MetricInputIterator
+public class ByForecastSampleDataIterator extends SampleDataIterator
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger( ByForecastMetricInputIterator.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( ByForecastSampleDataIterator.class );
 
-    ByForecastMetricInputIterator( Feature feature,
-                                   ProjectDetails projectDetails,
-                                   SharedWriterManager sharedWriterManager,
-                                   Path outputDirectoryForPairs )
+    ByForecastSampleDataIterator( Feature feature,
+                                  ProjectDetails projectDetails,
+                                  SharedWriterManager sharedWriterManager,
+                                  Path outputDirectoryForPairs )
             throws IOException
     {
         super( feature, projectDetails, sharedWriterManager, outputDirectoryForPairs );
@@ -152,7 +152,7 @@ public class ByForecastMetricInputIterator extends MetricInputIterator
     @Override
     Logger getLogger()
     {
-        return ByForecastMetricInputIterator.LOGGER;
+        return ByForecastSampleDataIterator.LOGGER;
     }
 
     @Override
