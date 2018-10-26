@@ -1,14 +1,11 @@
 package wres.io.utilities;
 
-import java.io.IOException;
-
 /**
- * A temporary placeholder exception to be thrown when data is not found.
- * As distinct from a SQLException which the database client library throws.
- * Long run, since no data is a common every day occurrence, we should handle
- * no data without having any exceptions thrown.
+ * An exception that indicates no data could be found where data was expected, either because validation didn't happen
+ * before a call was made or because the intersection of project declaration and data produced no data whatsoever. All
+ * of these are unrecoverable situations.
  */
-public class NoDataException extends IOException
+public class NoDataException extends RuntimeException
 {
     public NoDataException( String message )
     {
