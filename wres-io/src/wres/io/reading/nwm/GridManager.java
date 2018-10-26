@@ -403,35 +403,15 @@ class GridManager
                     LOGGER.trace("Job to copy the last coordinates for {} dispatched.", this.metadata);
                 }
             }
+            catch ( ExecutionException e )
+            {
+                throw new IOException( "Grid data could not be read and saved.", e );
+            }
         }
 
         private void finishCopyTasks() throws IOException
         {
             LOGGER.trace("Waiting for coordinate copy operations for {} to finish.", this.metadata);
-
-            /*while (!this.copyTasks.isEmpty())
-            {
-                Future copy = this.copyTasks.remove();
-
-                try
-                {
-                    copy.get( 800, TimeUnit.MILLISECONDS);
-                }
-                catch ( InterruptedException e )
-                {
-                    LOGGER.error("Grid Coordinate ingest has been interupted.", e);
-                    Thread.currentThread().interrupt();
-                }
-                catch ( ExecutionException e )
-                {
-                    throw new IOException( "Grid projection copy operation failed.", e );
-                }
-                catch ( TimeoutException e )
-                {
-                    LOGGER.trace("Copy operation took too long; moving on to the next one.");
-                    this.copyTasks.add( copy );
-                }
-            }*/
 
             try
             {

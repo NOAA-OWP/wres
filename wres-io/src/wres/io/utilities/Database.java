@@ -1431,7 +1431,7 @@ public final class Database {
 
             LOGGER.info("Incomplete data has been removed from the system.");
         }
-        catch ( SQLException databaseError )
+        catch ( SQLException | ExecutionException databaseError )
         {
             throw new SQLException( "Orphaned data could not be removed", databaseError );
         }

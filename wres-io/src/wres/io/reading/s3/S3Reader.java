@@ -91,12 +91,13 @@ public abstract class S3Reader extends BasicSource
 
                 if ( fileExists )
                 {
-                    ingestTasks.add(
-                            IngestResult.fakeFutureSingleItemListFrom(
+                    results.add(
+                            IngestResult.from(
                                     this.getProjectConfig(),
                                     this.getDataSourceConfig(),
+                                    tagAndKey.getEtag(),
                                     tagAndKey.getKey(),
-                                    tagAndKey.getEtag()
+                                    true
                             )
                     );
                 }
@@ -114,23 +115,23 @@ public abstract class S3Reader extends BasicSource
             }
         }
 
-        for (ETagKey tagKey : toIngest)
-        {
-
-            WRESCallable<List<IngestResult>> saver = IngestSaver.createTask()
-                                                                .withFilePath( this.getKeyURL( tagKey.getKey() ) )
-                                                                .withProject( this.getProjectConfig() )
-                                                                .withDataSourceConfig( this.getDataSourceConfig() )
-                                                                .withHash( tagKey.getEtag() )
-                                                                .isRemote()
-                                                                .withProgressMonitoring()
-                                                                .build();
-
-            ingestTasks.add( Database.ingest(saver));
-        }
-
         try
         {
+            for (ETagKey tagKey : toIngest)
+            {
+
+                WRESCallable<List<IngestResult>> saver = IngestSaver.createTask()
+                                                                    .withFilePath( this.getKeyURL( tagKey.getKey() ) )
+                                                                    .withProject( this.getProjectConfig() )
+                                                                    .withDataSourceConfig( this.getDataSourceConfig() )
+                                                                    .withHash( tagKey.getEtag() )
+                                                                    .isRemote()
+                                                                    .withProgressMonitoring()
+                                                                    .build();
+
+                ingestTasks.add( Database.ingest(saver));
+            }
+
             Collection<List<IngestResult>> ingestResults = ingestTasks.loop();
             ingestResults.forEach( results::addAll );
         }

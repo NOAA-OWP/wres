@@ -12,21 +12,21 @@ import wres.io.data.details.ProjectDetails;
 import wres.io.writing.pair.SharedWriterManager;
 import wres.util.CalculationException;
 
-final class BackToBackMetricInputIterator extends MetricInputIterator
+final class BackToBackSampleDataIterator extends SampleDataIterator
 {
     private static final Logger
-            LOGGER = LoggerFactory.getLogger( BackToBackMetricInputIterator.class );
+            LOGGER = LoggerFactory.getLogger( BackToBackSampleDataIterator.class );
 
     @Override
     Logger getLogger()
     {
-        return BackToBackMetricInputIterator.LOGGER;
+        return BackToBackSampleDataIterator.LOGGER;
     }
 
-    BackToBackMetricInputIterator( Feature feature,
-                                   ProjectDetails projectDetails,
-                                   SharedWriterManager sharedWriterManager,
-                                   Path outputDirectoryForPairs )
+    BackToBackSampleDataIterator( Feature feature,
+                                  ProjectDetails projectDetails,
+                                  SharedWriterManager sharedWriterManager,
+                                  Path outputDirectoryForPairs )
             throws IOException
     {
         super( feature,

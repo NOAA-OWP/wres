@@ -15,17 +15,17 @@ import wres.util.NotImplementedException;
 /**
  * Interprets a project configuration and spawns asynchronous metric input retrieval operations
  */
-public class InputGenerator implements Iterable<Future<SampleData<?>>>
+public class DataGenerator implements Iterable<Future<SampleData<?>>>
 {
     private final Feature feature;
     private final ProjectDetails projectDetails;
     private final SharedWriterManager sharedWriterManager;
     private final Path outputDirectoryForPairs;
 
-    public InputGenerator( Feature feature,
-                           ProjectDetails projectDetails,
-                           SharedWriterManager sharedWriterManager,
-                           Path outputDirectoryForPairs )
+    public DataGenerator( Feature feature,
+                          ProjectDetails projectDetails,
+                          SharedWriterManager sharedWriterManager,
+                          Path outputDirectoryForPairs )
     {
         this.feature = feature;
         this.projectDetails = projectDetails;
@@ -42,29 +42,29 @@ public class InputGenerator implements Iterable<Future<SampleData<?>>>
             switch (this.projectDetails.getPairingMode())
             {
                 case ROLLING:
-                    iterator = new PoolingMetricInputIterator( this.feature,
-                                                               this.projectDetails,
-                                                               this.sharedWriterManager,
-                                                               this.outputDirectoryForPairs );
+                    iterator = new PoolingSampleDataIterator( this.feature,
+                                                              this.projectDetails,
+                                                              this.sharedWriterManager,
+                                                              this.outputDirectoryForPairs );
                     break;
                 // TODO: Merge back to back and rolling logic
                 case BACK_TO_BACK:
-                    iterator =  new BackToBackMetricInputIterator( this.feature,
-                                                                   this.projectDetails,
-                                                                   this.sharedWriterManager,
-                                                                   this.outputDirectoryForPairs );
+                    iterator =  new BackToBackSampleDataIterator( this.feature,
+                                                                  this.projectDetails,
+                                                                  this.sharedWriterManager,
+                                                                  this.outputDirectoryForPairs );
                     break;
                 case TIME_SERIES:
-                    iterator = new TimeSeriesMetricInputIterator( this.feature,
-                                                                  this.projectDetails,
-                                                                  this.sharedWriterManager,
-                                                                  this.outputDirectoryForPairs );
+                    iterator = new TimeSeriesSampleDataIterator( this.feature,
+                                                                 this.projectDetails,
+                                                                 this.sharedWriterManager,
+                                                                 this.outputDirectoryForPairs );
                     break;
                 case BY_TIMESERIES:
-                    iterator = new ByForecastMetricInputIterator( this.feature,
-                                                                  this.projectDetails,
-                                                                  this.sharedWriterManager,
-                                                                  this.outputDirectoryForPairs );
+                    iterator = new ByForecastSampleDataIterator( this.feature,
+                                                                 this.projectDetails,
+                                                                 this.sharedWriterManager,
+                                                                 this.outputDirectoryForPairs );
                     break;
                 default:
                     throw new NotImplementedException( "The pairing mode of '" +

@@ -280,41 +280,41 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
 
                 FutureQueue closeQueue = new FutureQueue( 3000, TimeUnit.MILLISECONDS );
 
-                for ( TimeWindowWriter writer : NetcdfOutputWriter.WRITERS.values() )
-                {
-                    Callable<?> closeTask = new Callable<Object>()
-                    {
-                        @Override
-                        public Object call() throws IOException
-                        {
-                            try
-                            {
-                                LOGGER.debug( "Calling writer.close on {}", writer );
-                                writer.close();
-                            }
-                            catch ( IOException ioe )
-                            {
-                                throw new IOException(
-                                        "The writer for " + writer.toString()
-                                        + " could not be closed.",
-                                        ioe );
-                            }
-                            return null;
-                        }
-
-                        Callable<Object> initialize( TimeWindowWriter writer )
-                        {
-                            this.writer = writer;
-                            return this;
-                        }
-
-                        private TimeWindowWriter writer;
-                    }.initialize( writer );
-                    closeQueue.add( closeExecutor.submit( closeTask ) );
-                }
-
                 try
                 {
+                    for ( TimeWindowWriter writer : NetcdfOutputWriter.WRITERS.values() )
+                    {
+                        Callable<?> closeTask = new Callable<Object>()
+                        {
+                            @Override
+                            public Object call() throws IOException
+                            {
+                                try
+                                {
+                                    LOGGER.debug( "Calling writer.close on {}", writer );
+                                    writer.close();
+                                }
+                                catch ( IOException ioe )
+                                {
+                                    throw new IOException(
+                                            "The writer for " + writer.toString()
+                                            + " could not be closed.",
+                                            ioe );
+                                }
+                                return null;
+                            }
+
+                            Callable<Object> initialize( TimeWindowWriter writer )
+                            {
+                                this.writer = writer;
+                                return this;
+                            }
+
+                            private TimeWindowWriter writer;
+                        }.initialize( writer );
+                        closeQueue.add( closeExecutor.submit( closeTask ) );
+                    }
+
                     closeQueue.loop();
                 }
                 catch ( ExecutionException e )

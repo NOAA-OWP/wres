@@ -35,7 +35,7 @@ import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
 import wres.io.reading.SourceLoader;
 import wres.io.reading.IngestedValues;
-import wres.io.retrieval.InputGenerator;
+import wres.io.retrieval.DataGenerator;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
@@ -487,15 +487,15 @@ public final class Operations {
 
 
     // TODO: Why are we passing a feature and not a FeatureDetails object, which is custom made for all of this?
-    public static InputGenerator getInputs( ProjectDetails projectDetails,
-                                            Feature feature,
-                                            SharedWriterManager sharedWriterManager,
-                                            Path outputDirectoryForPairs )
+    public static DataGenerator getInputs( ProjectDetails projectDetails,
+                                           Feature feature,
+                                           SharedWriterManager sharedWriterManager,
+                                           Path outputDirectoryForPairs )
     {
-        return new InputGenerator( feature,
-                                   projectDetails,
-                                   sharedWriterManager,
-                                   outputDirectoryForPairs );
+        return new DataGenerator( feature,
+                                  projectDetails,
+                                  sharedWriterManager,
+                                  outputDirectoryForPairs );
     }
 
     /**
