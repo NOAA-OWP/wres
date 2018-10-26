@@ -33,6 +33,7 @@ import wres.config.Validation;
 import wres.control.ProcessorHelper.ExecutorServices;
 import wres.io.concurrency.Executor;
 import wres.io.utilities.Database;
+import wres.io.utilities.NoDataException;
 import wres.system.SystemSettings;
 
 /**
@@ -237,7 +238,7 @@ public class Control implements Function<String[], Integer>,
             this.pathsWrittenTo.addAll( innerPathsWrittenTo );
             LOGGER.info( "Wrote the following output: {}", this.pathsWrittenTo );
         }
-        catch ( WresProcessingException | IOException internalException)
+        catch ( WresProcessingException | IOException | NoDataException internalException )
         {
             String message = "Could not complete project execution";
             LOGGER.error( "{} due to:", message, internalException );

@@ -195,15 +195,6 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
         }
         catch ( IterationFailedException re )
         {
-            // If there was not enough data for this feature, OK
-            if ( ProcessorHelper.wasNoDataExceptionInThisStack( re ) )
-            {
-                return new FeatureProcessingResult( this.feature.getFeature(),
-                                                    false,
-                                                    re,
-                                                    Collections.emptySet() );
-            }
-
             // Otherwise, chain and propagate the exception up to the top.
             throw new WresProcessingException( "Iteration failed", re );
         }
@@ -216,15 +207,6 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
         }
         catch ( CompletionException e )
         {
-            // If there was simply not enough data for this feature, OK
-            if ( ProcessorHelper.wasNoDataExceptionInThisStack( e ) )
-            {
-                return new FeatureProcessingResult( this.feature.getFeature(),
-                                                    false,
-                                                    e,
-                                                    Collections.emptySet() );
-            }
-
             // Otherwise, chain and propagate the exception up to the top.
             throw new WresProcessingException( this.errorMessage, e );
         }
@@ -245,8 +227,6 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
         Set<Path> allPaths = Collections.unmodifiableSet( paths );
 
         return new FeatureProcessingResult( this.feature.getFeature(),
-                                            true,
-                                            null,
                                             allPaths );
     }
 
