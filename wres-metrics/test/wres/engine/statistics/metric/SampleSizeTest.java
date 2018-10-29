@@ -41,9 +41,9 @@ public final class SampleSizeTest
         final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Metadata for the output
-        final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of() ),
+        final StatisticMetadata m1 = StatisticMetadata.of( SampleMetadata.of(),
                                                            input.getRawData().size(),
-                                                           MeasurementUnit.of(),
+                                                           MeasurementUnit.of( "COUNT" ),
                                                            MetricConstants.SAMPLE_SIZE,
                                                            MetricConstants.MAIN );
         
@@ -53,6 +53,7 @@ public final class SampleSizeTest
         //Check the results
         DoubleScoreStatistic actual = ss.apply( input );
         DoubleScoreStatistic expected = DoubleScoreStatistic.of( (double) input.getRawData().size(), m1 );
+
         assertTrue( "Actual: " + actual.getData().doubleValue()
                     + ". Expected: "
                     + expected.getData().doubleValue()
