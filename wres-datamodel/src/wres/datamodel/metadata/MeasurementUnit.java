@@ -19,19 +19,25 @@ public class MeasurementUnit implements Comparable<MeasurementUnit>
 {
 
     /**
+     * Identifier for a dimensionless unit.
+     */
+    
+    public static final String DIMENSIONLESS = "DIMENSIONLESS";
+    
+    /**
      * The unit.
      */
     private final String unit; 
 
     /**
-     * Returns a {@link MeasurementUnit} that is nominally "DIMENSIONLESS".
+     * Returns a {@link MeasurementUnit} that is {@link #DIMENSIONLESS}.
      * 
      * @return a {@link MeasurementUnit}
      */
     
     public static MeasurementUnit of()
     {
-        return MeasurementUnit.of( "DIMENSIONLESS" );
+        return MeasurementUnit.of( DIMENSIONLESS );
     }
     
     /**
@@ -56,7 +62,7 @@ public class MeasurementUnit implements Comparable<MeasurementUnit>
     
     public boolean isRealUnit()
     {
-        return !"DIMENSIONLESS".equals( this.unit );
+        return ! DIMENSIONLESS.equals( this.unit );
     }
     
     /**
