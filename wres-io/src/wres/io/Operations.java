@@ -33,7 +33,6 @@ import wres.io.data.details.FeatureDetails;
 import wres.io.data.details.ProjectDetails;
 import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
-import wres.io.reading.SourceLoader;
 import wres.io.reading.IngestedValues;
 import wres.io.retrieval.DataGenerator;
 import wres.io.utilities.DataScripter;
@@ -719,6 +718,7 @@ public final class Operations {
      * be retrieved from the database
      * @throws IOException Thrown if IO operations prevented the set from being
      * created
+     * @throws NoDataException if there are no features to process
      */
     public static Set<FeaturePlus> decomposeFeatures( ProjectDetails projectDetails )
             throws SQLException, IOException
@@ -756,6 +756,12 @@ public final class Operations {
                              + "it doesn't have any intersecting data between "
                              + "left and right inputs.", details );
             }
+        }
+
+        // Nothing to process, which is exceptional behavior
+        if( atomicFeatures.isEmpty() )
+        {
+            throw new NoDataException( "There were no features to process." );
         }
 
         return Collections.unmodifiableSet( atomicFeatures );

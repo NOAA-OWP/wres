@@ -39,7 +39,6 @@ import wres.io.retrieval.scripting.Scripter;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
-import wres.io.utilities.NoDataException;
 import wres.io.writing.pair.PairSupplier;
 import wres.io.writing.pair.SharedWriterManager;
 import wres.util.TimeHelper;
@@ -199,15 +198,10 @@ public class TimeSeriesRetriever extends Retriever
 
         if ( this.getPrimaryPairs().isEmpty())
         {
-            LOGGER.debug( "Data could not be loaded for {}", metadata.getTimeWindow() );
-            LOGGER.debug( "The script used was:" );
-            LOGGER.debug( "{}{}", NEWLINE, this.script );
-            throw new NoDataException( "No data could be retrieved for Metric calculation for window " +
-                                       metadata.getTimeWindow().toString() +
-                                       " for " +
-                                       this.getProjectDetails().getRightVariableName() +
-                                       " at " +
-                                       ConfigHelper.getFeatureDescription( this.getFeature() ) );
+            LOGGER.trace("There are no pairs in window {} for {} at {}",
+                         metadata.getTimeWindow(),
+                         this.getProjectDetails().getRightVariableName(),
+                         ConfigHelper.getFeatureDescription( this.getFeature() ));
         }
         else if (this.getPrimaryPairs().size() == 1)
         {

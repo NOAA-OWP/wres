@@ -43,12 +43,6 @@ class FeatureReport implements Consumer<FeatureProcessingResult>
     private final ConcurrentLinkedQueue<Feature> successfulFeatures;
 
     /**
-     * List of features that failed due to missing data.
-     */
-
-    private final ConcurrentLinkedQueue<Feature> missingDataFeatures;
-
-    /**
      * Set of paths modified by this feature.
      */
 
@@ -97,7 +91,6 @@ class FeatureReport implements Consumer<FeatureProcessingResult>
         this.totalFeatures = totalFeatures;
         this.printDetailedReport = printDetailedReport;
         this.successfulFeatures = new ConcurrentLinkedQueue<>();
-        this.missingDataFeatures = new ConcurrentLinkedQueue<>();
         this.processed = new AtomicInteger( 1 );
         this.pathsWrittenTo = new ConcurrentSkipListSet<>();
     }
@@ -115,31 +108,14 @@ class FeatureReport implements Consumer<FeatureProcessingResult>
 
         // Increment the feature count
         int currentFeature = this.processed.getAndIncrement();
-        
-        // Data available
-        if ( result.hadData() )
+
+        this.successfulFeatures.add( result.getFeature() );
+        if ( LOGGER.isInfoEnabled() )
         {
-            this.successfulFeatures.add( result.getFeature() );
-            if ( LOGGER.isInfoEnabled() )
-            {
-                LOGGER.info( "[{}/{}] Completed feature '{}'",
-                             currentFeature,
-                             this.totalFeatures,
-                             ConfigHelper.getFeatureDescription( result.getFeature() ) );
-            }
-        }
-        // No data available
-        else
-        {
-            this.missingDataFeatures.add( result.getFeature() );
-            if ( LOGGER.isWarnEnabled() )
-            {
-                LOGGER.warn( "[{}/{}] Not enough data found for feature '{}':",
-                             currentFeature,
-                             this.totalFeatures,
-                             ConfigHelper.getFeatureDescription( result.getFeature() ),
-                             result.getCause() );
-            }
+            LOGGER.info( "[{}/{}] Completed feature '{}'",
+                         currentFeature,
+                         this.totalFeatures,
+                         ConfigHelper.getFeatureDescription( result.getFeature() ) );
         }
 
         this.pathsWrittenTo.addAll( result.getPathsWrittenTo() );
@@ -156,31 +132,20 @@ class FeatureReport implements Consumer<FeatureProcessingResult>
         // Finalize results
         List<Feature> successfulFeaturesToReport =
                 Collections.unmodifiableList( new ArrayList<>( successfulFeatures ) );
-        List<Feature> missingDataFeaturesToReport =
-                Collections.unmodifiableList( new ArrayList<>( missingDataFeatures ) );
 
         // Detailed report
         if ( LOGGER.isInfoEnabled() &&
              this.printDetailedReport &&
-             !(successfulFeaturesToReport.isEmpty() || missingDataFeaturesToReport.isEmpty()))
+             ! successfulFeaturesToReport.isEmpty() )
         {
             LOGGER.info( "The following features succeeded: {}",
                          ConfigHelper.getFeaturesDescription( successfulFeaturesToReport ) );
-
-            if ( !missingDataFeatures.isEmpty() )
-            {
-                LOGGER.info( "The following features were missing data: {}",
-                             ConfigHelper.getFeaturesDescription( missingDataFeaturesToReport ) );
-            }
         }
 
-        // Exception after detailed report
-        if ( successfulFeaturesToReport.isEmpty() && !missingDataFeaturesToReport.isEmpty() )
-        {
-            throw new WresProcessingException( "No features were successful.",
-                                               null );
-        }
-        else if (successfulFeaturesToReport.isEmpty() && missingDataFeaturesToReport.isEmpty())
+        // Exception after detailed report: in practice, this should be handled earlier
+        // but this is another opportunity to signal that zero successful features is 
+        // exceptional behavior
+        if ( successfulFeaturesToReport.isEmpty() )
         {
             throw new WresProcessingException( "No features could be found to evaluate.", null );
         }
@@ -188,7 +153,7 @@ class FeatureReport implements Consumer<FeatureProcessingResult>
         // Summary report
         if ( LOGGER.isInfoEnabled() )
         {
-            if ( totalFeatures == successfulFeaturesToReport.size() )
+            if ( this.totalFeatures == successfulFeaturesToReport.size() )
             {
                 LOGGER.info( "All features in project {} were successfully "
                              + "evaluated.",
@@ -197,11 +162,11 @@ class FeatureReport implements Consumer<FeatureProcessingResult>
             else
             {
                 LOGGER.info( "{} out of {} features in project {} were successfully "
-                             + "evaluated, {} out of {} features were missing data.",
+                             + "evaluated, {} out of {} features were not evaluated.",
                              successfulFeaturesToReport.size(),
                              totalFeatures,
                              projectConfigPlus,
-                             missingDataFeaturesToReport.size(),
+                             totalFeatures - successfulFeaturesToReport.size(),
                              totalFeatures );
             }
         }
