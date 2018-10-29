@@ -31,7 +31,10 @@ class GridCache implements LeftHandCache
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( GridCache.class);
 
-    GridCache(final ProjectDetails projectDetails) throws SQLException, NoDataException
+    /**
+     * @throws NoDataException when ?
+     */
+    GridCache(final ProjectDetails projectDetails) throws SQLException
     {
         this.projectDetails = projectDetails;
         this.cachedSources = new TreeMap<>(  );
@@ -134,7 +137,12 @@ class GridCache implements LeftHandCache
         return leftValues;
     }
 
-    private void loadSourceCache() throws SQLException, NoDataException
+
+    /**
+     * @throws NoDataException when no data could be loaded
+     */
+
+    private void loadSourceCache() throws SQLException
     {
         DataScripter script = new DataScripter();
         script.addLine("SELECT S.path, S.output_time + INTERVAL '1 ", TimeHelper.LEAD_RESOLUTION, "' * S.lead AS output_time");

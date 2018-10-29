@@ -1,12 +1,10 @@
 package wres.io.retrieval.scripting;
 
 import java.sql.SQLException;
-import java.util.InvalidPropertiesFormatException;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
 import wres.io.data.details.ProjectDetails;
-import wres.io.utilities.NoDataException;
 
 class BackToBackObservationScripter extends Scripter
 {
@@ -20,8 +18,7 @@ class BackToBackObservationScripter extends Scripter
     }
 
     @Override
-    String formScript() throws SQLException, InvalidPropertiesFormatException,
-            NoDataException
+    String formScript() throws SQLException
     {
         this.addLine("SELECT ARRAY[O.observed_value] AS measurements,");
 

@@ -198,14 +198,14 @@ public class TimeSeriesRetriever extends Retriever
 
         if ( this.getPrimaryPairs().isEmpty())
         {
-            LOGGER.trace("There are no pairs in window {} for {} at {}",
+            LOGGER.warn("There are no pairs in window {} for {} at {}",
                          metadata.getTimeWindow(),
                          this.getProjectDetails().getRightVariableName(),
                          ConfigHelper.getFeatureDescription( this.getFeature() ));
         }
         else if (this.getPrimaryPairs().size() == 1)
         {
-            LOGGER.trace("There is only one pair in window {} for {} at {}",
+            LOGGER.warn("There is only one pair in window {} for {} at {}",
                          metadata.getTimeWindow(),
                          this.getProjectDetails().getRightVariableName(),
                          ConfigHelper.getFeatureDescription( this.getFeature() ));
