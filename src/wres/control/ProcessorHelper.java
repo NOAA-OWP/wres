@@ -10,6 +10,7 @@ import java.nio.file.attribute.PosixFilePermissions;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -32,7 +33,6 @@ import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.io.Operations;
 import wres.io.config.ConfigHelper;
 import wres.io.data.details.ProjectDetails;
-import wres.io.utilities.NoDataException;
 import wres.io.writing.SharedWriters;
 import wres.io.writing.SharedWriters.SharedWritersBuilder;
 import wres.io.writing.netcdf.NetcdfOutputWriter;
@@ -225,14 +225,14 @@ class ProcessorHelper
         {
             // Permissions for temp directory require group read so that the tasker
             // may give the output to the client on GET. Write so that the tasker
-            // may remove the output on client DELETE. Execute for dir reads.
-            Set<PosixFilePermission> permissions = new HashSet<>( 6 );
-            permissions.add( PosixFilePermission.OWNER_READ );
-            permissions.add( PosixFilePermission.OWNER_WRITE );
-            permissions.add( PosixFilePermission.OWNER_EXECUTE );
-            permissions.add( PosixFilePermission.GROUP_READ );
-            permissions.add( PosixFilePermission.GROUP_WRITE );
-            permissions.add( PosixFilePermission.GROUP_EXECUTE );
+            // may remove the output on client DELETE. Execute for dir reads.            
+            Set<PosixFilePermission> permissions = EnumSet.of( PosixFilePermission.OWNER_READ,
+                                                               PosixFilePermission.OWNER_WRITE,
+                                                               PosixFilePermission.OWNER_EXECUTE,
+                                                               PosixFilePermission.GROUP_READ,
+                                                               PosixFilePermission.GROUP_WRITE,
+                                                               PosixFilePermission.GROUP_EXECUTE );
+
             FileAttribute<Set<PosixFilePermission>> fileAttribute =
                     PosixFilePermissions.asFileAttribute( permissions );
 
@@ -281,32 +281,6 @@ class ProcessorHelper
         }
         //Either all done OR one completes exceptionally
         return CompletableFuture.anyOf( allDone, oneExceptional );
-    }
-
-    /**
-     * Look at a chain of exceptions, returns true if ANY is a NoDataException.
-     *
-     * Intended as a stop-gap measure until we figure out how to avoid creating
-     * NoDataExceptions at lower levels of the software. Once that is resolved,
-     * this method can be removed.
-     *
-     * @param e the exception (and its chained causes) to look at
-     * @return true when either NoDataException or InsufficientDataException is
-     * found, false otherwise
-     */
-
-    static boolean wasNoDataExceptionInThisStack( Exception e )
-    {
-        Throwable cause = e;
-        while ( cause != null )
-        {
-            if ( cause instanceof NoDataException )
-            {
-                return true;
-            }
-            cause = cause.getCause();
-        }
-        return false;
     }
 
 
