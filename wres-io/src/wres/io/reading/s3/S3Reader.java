@@ -13,6 +13,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import com.amazonaws.ClientConfiguration;
+import com.amazonaws.SdkClientException;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.services.s3.AmazonS3;
@@ -160,7 +161,31 @@ public abstract class S3Reader extends BasicSource
             final PathMatcher matcher = FileSystems.getDefault()
                                                    .getPathMatcher( "glob:" + prefixPattern.getPattern() );
 
-            ObjectListing s3Objects = connection.listObjects( request );
+            ObjectListing s3Objects = null;
+
+            int listAttempt = 0;
+
+            do
+            {
+                try
+                {
+                    s3Objects = connection.listObjects( request );
+                }
+                catch (SdkClientException clientException)
+                {
+                    listAttempt++;
+
+                    // If we've exceeded our amount of allowable retries, rethrow the exception.
+                    if (listAttempt > this.getRetryCount())
+                    {
+                        throw clientException;
+                    }
+
+                    this.getLogger().debug( "S3 exception encountered while "
+                                            + "trying to get a list of objects to download. "
+                                            + "Trying again...", clientException );
+                }
+            } while (s3Objects == null);
 
             do
             {
@@ -170,7 +195,29 @@ public abstract class S3Reader extends BasicSource
                         ingestableObjects.add(new ETagKey( summary.getETag(), summary.getKey() ));
                     }
                 } );
-                s3Objects = connection.listNextBatchOfObjects( s3Objects );
+
+                listAttempt = 0;
+
+                do
+                {
+                    try
+                    {
+                        s3Objects = connection.listNextBatchOfObjects( s3Objects );
+                        break;
+                    }
+                    catch ( SdkClientException clientException )
+                    {
+                        listAttempt++;
+
+                        if (listAttempt > this.getRetryCount())
+                        {
+                            throw clientException;
+                        }
+
+                        this.getLogger().debug( "S3 exception encountered while retrieving the next "
+                                                + "set of results. Trying again...", clientException );
+                    }
+                } while (true);
             } while ( !s3Objects.getObjectSummaries().isEmpty() );
         }
 
@@ -247,4 +294,9 @@ public abstract class S3Reader extends BasicSource
      * @return Whether or not to use S3 request path style calculation
      */
     abstract boolean shouldUsePathStyle();
+
+    /**
+     * @return The amount of times that the reader should attempt to hit a resource
+     */
+    abstract int getRetryCount();
 }

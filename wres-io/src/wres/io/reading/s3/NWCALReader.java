@@ -38,7 +38,12 @@ class NWCALReader extends S3Reader
     /**
      * This is the maximum number of S3 file entries that may be retrieved at once
      */
-    private static final int MAX_KEY_COUNT = 900;
+    private static final int MAX_KEY_COUNT = 200;
+
+    /**
+     * The number of times to attempt to access the Object store before giving up
+     */
+    private static final int RETRY_COUNT = 5;
 
     /**
      * This is the URL of the NWCAL object store
@@ -291,6 +296,12 @@ class NWCALReader extends S3Reader
         // The NWCAL Object store uses the pattern
         // "example.com/${BUCKET_NAME}/whatever/content.ext"
         return true;
+    }
+
+    @Override
+    int getRetryCount()
+    {
+        return NWCALReader.RETRY_COUNT;
     }
 
     @Override

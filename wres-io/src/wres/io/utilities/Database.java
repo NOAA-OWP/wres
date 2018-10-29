@@ -1896,8 +1896,17 @@ public final class Database {
             }
             catch ( SQLException e )
             {
-                throw new IOException( "Database privileges could not be "
-                                       + "adequately released.", e );
+                if (Database.advisoryLockConnection == null)
+                {
+                    LOGGER.debug("An error was encountered while attempting to close the "
+                                 + "advisory lock. We don't need to throw an error because "
+                                 + "the desired state was still reached.");
+                }
+                else
+                {
+                    throw new IOException( "Database privileges could not be "
+                                           + "adequately released.", e );
+                }
             }
         }
 
@@ -1909,7 +1918,7 @@ public final class Database {
     {
         synchronized ( Database.ADVISORY_LOCK )
         {
-            if (connection == null)
+            if (Database.advisoryLockConnection != null && connection == null)
             {
                 Database.advisoryLockConnection.close();
             }
