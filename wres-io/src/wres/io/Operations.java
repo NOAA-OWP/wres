@@ -603,13 +603,22 @@ public final class Operations {
         try
         {
             Database.lockForMutation();
-            Database.removeOrphanedData();
-            Database.refreshStatistics(true);
+        }
+        catch ( IOException e )
+        {
+            throw new SQLException( "Database mutation could not be locked for statistical refresh.", e );
+        }
+
+        Database.removeOrphanedData();
+        Database.refreshStatistics(true);
+
+        try
+        {
             Database.releaseLockForMutation();
         }
         catch ( IOException e )
         {
-            throw new SQLException( "Database mutation could not be locked for statistical refresh." );
+            throw new SQLException( "The lock for database mutation could not be properly released.", e );
         }
     }
 

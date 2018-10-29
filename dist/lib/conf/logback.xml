@@ -39,7 +39,6 @@
             <level>INFO</level>
         </filter>
         -->
-
         <encoder>
 
           <!-- %nopexception: suppress stacktrace here -->
@@ -62,6 +61,11 @@
     warning for every acquire/release above the configured limit, resulting in
     thousands of unneccessary messages -->
     <logger name="cacheLogger">
+        <level value="error" />
+    </logger>
+
+    <!-- Quiet the remote Netcdf messages where bytes will be dumped to the log -->
+    <logger name="org.apache.http">
         <level value="error" />
     </logger>
 
