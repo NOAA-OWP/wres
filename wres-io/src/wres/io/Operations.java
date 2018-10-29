@@ -34,6 +34,7 @@ import wres.io.data.details.ProjectDetails;
 import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
 import wres.io.reading.IngestedValues;
+import wres.io.reading.SourceLoader;
 import wres.io.retrieval.DataGenerator;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
@@ -408,7 +409,7 @@ public final class Operations {
 
         List<IngestResult> projectSources = new ArrayList<>();
 
-        SourceLoader loader = new SourceLoader(projectConfig);
+        SourceLoader loader = new SourceLoader( projectConfig);
         try {
             List<Future<List<IngestResult>>> ingestions = loader.load();
             ProgressMonitor.setSteps( (long)ingestions.size());
