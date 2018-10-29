@@ -32,8 +32,10 @@ class IngestedValueCollection
         this.values = new ArrayList<>(  );
     }
 
+    /**
+     * @throws NoDataException when no data is found
+     */
     int getFirstCondensingStep(int period, int frequency, int minimumLead)
-            throws NoDataException
     {
         if (this.size() == 0)
         {
@@ -108,8 +110,12 @@ class IngestedValueCollection
         return firstCondensingStep;
     }
 
+
+    /**
+     * @throws NoDataException when this is empty.
+     */
+
     CondensedIngestedValue condense(final int condensingStep, final int period, final int frequency, final int minimumLead)
-            throws NoDataException
     {
         if (this.size() == 0)
         {
@@ -190,7 +196,12 @@ class IngestedValueCollection
         return result;
     }
 
-    private int getScale() throws NoDataException
+
+    /**
+     * @throws NoDataException when this is empty.
+     */
+
+    private int getScale()
     {
         if (this.size() == 0)
         {

@@ -25,8 +25,13 @@ public final class ScriptGenerator
     
     private static final String NEWLINE = System.lineSeparator();
 
+
+    /**
+     * @throws NoDataException when ?
+     */
+
     public static String formVariableFeatureLoadScript( final ProjectDetails projectDetails, final boolean selectObservedFeatures)
-            throws NoDataException, SQLException
+            throws SQLException
     {
 
         ScriptBuilder script = new ScriptBuilder(  );
