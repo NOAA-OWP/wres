@@ -139,7 +139,9 @@ public class NWMSource extends BasicSource
 
 			saver.setOnRun(ProgressMonitor.onThreadStartHandler());
 			saver.setOnComplete( ProgressMonitor.onThreadCompleteHandler());
-			Database.ingest(saver);
+
+            saver.run();
+			//Database.ingest(saver);
         }
         else
         {

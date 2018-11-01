@@ -1,8 +1,10 @@
 package wres.io.reading.waterml.timeseries;
 
+import java.io.Serializable;
+
 import wres.io.reading.waterml.query.QueryNote;
 
-public class SourceInfo
+public class SourceInfo implements Serializable
 {
     public String getSiteName()
     {

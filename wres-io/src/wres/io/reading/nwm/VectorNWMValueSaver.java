@@ -784,7 +784,8 @@ class VectorNWMValueSaver extends WRESRunnable
                 this.source = NetcdfFile.open(
                         filePath.toString()
                                 .replaceAll( "^http:/", "http://" )
-                                .replaceAll( "^https:/", "https://" ));
+                                .replaceAll( "^https:/", "https://" )
+                );
             }
             catch ( IOException e )
             {

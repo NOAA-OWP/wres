@@ -1,6 +1,8 @@
 package wres.io.reading.waterml.timeseries;
 
-public class SiteCode
+import java.io.Serializable;
+
+public class SiteCode implements Serializable
 {
     String value;
     String network;

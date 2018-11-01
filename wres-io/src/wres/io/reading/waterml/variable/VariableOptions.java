@@ -1,6 +1,8 @@
 package wres.io.reading.waterml.variable;
 
-public class VariableOptions
+import java.io.Serializable;
+
+public class VariableOptions implements Serializable
 {
     public Option[] getOption()
     {

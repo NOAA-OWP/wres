@@ -57,7 +57,7 @@ public abstract class S3Reader extends BasicSource
         List<IngestResult> results = new ArrayList<>(  );
         List<ETagKey> toIngest = new ArrayList<>(  );
         Collection<ETagKey> ingestableObjects = this.getIngestableObjects();
-        FutureQueue<List<IngestResult>> ingestTasks = new FutureQueue<>(  );
+        FutureQueue<List<IngestResult>> ingestTasks = new FutureQueue<>( 20 );
 
         if (ingestableObjects.isEmpty())
         {

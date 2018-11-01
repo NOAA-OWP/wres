@@ -1,9 +1,13 @@
 package wres.io.reading.waterml;
 
+import java.io.Serializable;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import wres.io.reading.waterml.query.QueryInfo;
 import wres.io.reading.waterml.timeseries.TimeSeries;
 
-public class ResponseValue
+public class ResponseValue implements Serializable
 {
     public QueryInfo getQueryInfo()
     {
@@ -38,6 +42,7 @@ public class ResponseValue
         return populationCount;
     }
 
+    @JsonIgnore
     QueryInfo queryInfo;
     TimeSeries[] timeSeries;
 }

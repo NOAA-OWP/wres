@@ -1,6 +1,8 @@
 package wres.io.reading.waterml.timeseries;
 
-public class TimeZone
+import java.io.Serializable;
+
+public class TimeZone implements Serializable
 {
     String zoneOffset;
 

@@ -1,6 +1,8 @@
 package wres.io.reading.waterml.query;
 
-public class QueryTimeParameter
+import java.io.Serializable;
+
+public class QueryTimeParameter implements Serializable
 {
     public String getBeginDateTime()
     {

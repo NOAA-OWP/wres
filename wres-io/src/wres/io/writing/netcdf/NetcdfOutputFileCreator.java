@@ -112,26 +112,4 @@ class NetcdfOutputFileCreator
 
         }
     }
-
-    static String getMetricVariableName( final String metricName,
-                                                 final OneOrTwoThresholds thresholds)
-    {
-        // We start with the raw name of the metric
-        String name = metricName.replace(" ", "_");
-
-        // If the calling metric is associated with a threshold, combine
-        // threshold information with it
-        if (thresholds != null && thresholds.first() != null && thresholds.first().hasProbabilities())
-        {
-            // We first get the probability in raw percentage, i.e., 0.95 becomes 95
-            Double probability = thresholds.first().getProbabilities().first() * 100.0;
-
-            // We now want to indicate that it is a probability and attach
-            // the integer representation. If the probability ended up
-            // being 37.25, we want the name "_Pr_37" not "_Pr_37.25"
-            name += "_Pr_" + probability.toString().replaceAll( "\\.", "" );
-        }
-
-        return name;
-    }
 }

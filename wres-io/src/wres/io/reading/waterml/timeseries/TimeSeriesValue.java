@@ -1,10 +1,11 @@
 package wres.io.reading.waterml.timeseries;
 
+import java.io.Serializable;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 
-public class TimeSeriesValue
+public class TimeSeriesValue implements Serializable
 {
     Double value;
 

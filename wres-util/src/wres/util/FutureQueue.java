@@ -67,6 +67,15 @@ public class FutureQueue<V>
         this.timeoutUnit = TimeUnit.MILLISECONDS;
     }
 
+    public FutureQueue(final int size)
+    {
+        this.queue = new LinkedList<>(  );
+        this.queueLock = new ReentrantLock(  );
+        this.timeout = 500;
+        this.timeoutUnit = TimeUnit.MILLISECONDS;
+        this.maximumTasks = size;
+    }
+
     /**
      * Creates the queue with the given timeout between task completion attempts
      * @param timeout The number of timeout units to wait before moving on to another future

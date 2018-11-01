@@ -1,6 +1,8 @@
 package wres.io.reading.waterml.query;
 
-public class QueryInfo
+import java.io.Serializable;
+
+public class QueryInfo implements Serializable
 {
     public String getQueryURL()
     {

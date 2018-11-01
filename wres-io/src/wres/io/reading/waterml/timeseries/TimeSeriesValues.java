@@ -1,8 +1,9 @@
 package wres.io.reading.waterml.timeseries;
 
+import java.io.Serializable;
 import java.time.Duration;
 
-public class TimeSeriesValues
+public class TimeSeriesValues implements Serializable
 {
     public TimeSeriesValue[] getValue()
     {

@@ -1,6 +1,8 @@
 package wres.io.reading.waterml.timeseries;
 
-public class GeographicLocation
+import java.io.Serializable;
+
+public class GeographicLocation implements Serializable
 {
     String srs;
 

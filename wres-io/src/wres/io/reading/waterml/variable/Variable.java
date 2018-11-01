@@ -1,8 +1,10 @@
 package wres.io.reading.waterml.variable;
 
+import java.io.Serializable;
+
 import wres.io.reading.waterml.query.QueryNote;
 
-public class Variable
+public class Variable implements Serializable
 {
     VariableCode[] variableCode;
     String variableName;

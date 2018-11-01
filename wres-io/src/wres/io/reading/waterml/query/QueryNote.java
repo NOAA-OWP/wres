@@ -1,6 +1,8 @@
 package wres.io.reading.waterml.query;
 
-public class QueryNote
+import java.io.Serializable;
+
+public class QueryNote implements Serializable
 {
     public String getValue()
     {
