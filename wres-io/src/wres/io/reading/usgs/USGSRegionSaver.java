@@ -67,13 +67,6 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
             OffsetDateTime.now( ZoneId.of( "UTC" ) )
     );
 
-    private static final String COPY_HEADER = "wres.Observation ("
-                                              + "variablefeature_id, "
-                                              + "observation_time, "
-                                              + "observed_value, "
-                                              + "measurementunit_id, "
-                                              + "source_id)";
-
     private static class WebResponse
     {
         private WebResponse(final Response usgsResponse,
@@ -274,6 +267,7 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
         Client client = null;
         WebTarget webTarget;
         
+        
         Response usgsResponse;
         WebResponse response = null;
 
@@ -283,42 +277,6 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
             webTarget = this.buildWebTarget( client );
 
             requestURL = webTarget.getUri().toURL().toString();
-            String hash = Strings.getMD5Checksum( requestURL.getBytes());
-            SourceDetails.SourceKey sourceKey =
-                    new SourceDetails.SourceKey( requestURL,
-                                                 operationStartTime,
-                                                 null,
-                                                 hash );
-            SourceDetails usgsDetails = new SourceDetails( sourceKey );
-
-            try
-            {
-
-                if (DataSources.isCached( sourceKey ))
-                {
-                    LOGGER.debug( "The data for '{}' had been previously ingested.", requestURL );
-                    return new USGSRegionSaver.WebResponse( null,
-                                                            true,
-                                                            DataSources.getActiveSourceID(hash),
-                                                            hash );
-                }
-
-                usgsDetails.save();
-
-                if (!usgsDetails.performedInsert())
-                {
-                    LOGGER.debug( "The data for '{}' had been previously ingested.", requestURL );
-                    return new USGSRegionSaver.WebResponse( null,
-                                                                true,
-                                                                usgsDetails.getId(),
-                                                                hash );
-                }
-            }
-            catch ( SQLException e )
-            {
-                throw new IOException( "Source information about the requested "
-                                       + "USGS data could not be found.", e );
-            }
 
             LOGGER.debug("Requesting data from: {}", requestURL);
 
@@ -333,7 +291,46 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
                 stopwatch.start();
             }
 
+            // TODO: Separate into another function for easier mocking
             usgsResponse = invocationBuilder.get( Response.class );
+
+            String responseHash = Strings.getMD5Checksum( usgsResponse );
+
+            SourceDetails.SourceKey sourceKey =
+                    new SourceDetails.SourceKey( requestURL,
+                                                 operationStartTime,
+                                                 null,
+                                                 responseHash );
+            SourceDetails usgsDetails = new SourceDetails( sourceKey );
+
+            try
+            {
+
+                if (DataSources.isCached( sourceKey ))
+                {
+                    LOGGER.debug( "The data for '{}' had been previously ingested.", requestURL );
+                    return new USGSRegionSaver.WebResponse( null,
+                                                            true,
+                                                            DataSources.getActiveSourceID(responseHash),
+                                                            responseHash );
+                }
+
+                usgsDetails.save();
+
+                if (!usgsDetails.performedInsert())
+                {
+                    LOGGER.debug( "The data for '{}' had been previously ingested.", requestURL );
+                    return new USGSRegionSaver.WebResponse( null,
+                                                            true,
+                                                            usgsDetails.getId(),
+                                                            responseHash );
+                }
+            }
+            catch ( SQLException e )
+            {
+                throw new IOException( "Source information about the requested "
+                                       + "USGS data could not be found.", e );
+            }
 
             if (LOGGER.isDebugEnabled() && stopwatch != null)
             {
@@ -352,7 +349,7 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
                     response = new USGSRegionSaver.WebResponse( usgsResponse,
                                                                 false,
                                                                 usgsDetails.getId(),
-                                                                hash );
+                                                                responseHash );
                 }
                 catch (WebApplicationException exception)
                 {

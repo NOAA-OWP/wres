@@ -1,8 +1,10 @@
 package wres.io.reading.waterml.timeseries;
 
+import java.io.Serializable;
+
 import wres.io.reading.waterml.variable.Variable;
 
-public class TimeSeries
+public class TimeSeries implements Serializable
 {
     SourceInfo sourceInfo;
     Variable variable;

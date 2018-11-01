@@ -210,7 +210,6 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
                         catch ( Exception e )
                         {
                             LOGGER.error( "Writing to output failed.", e );
-                            LOGGER.error( Strings.getStackTrace( e ) );
                             throw e;
                         }
                     }
@@ -515,8 +514,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
             }
             catch ( Exception e )
             {
-                LOGGER.error( "Error Occurred when writing directly to the Netcdf output" );
-                LOGGER.error( Strings.getStackTrace( e ) );
+                LOGGER.error( "Error Occurred when writing directly to the Netcdf output", e );
                 throw e;
             }
             finally

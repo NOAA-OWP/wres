@@ -105,7 +105,8 @@ final class MainFunctions
 	 * @param operation The name of the desired method to call
 	 * @param args      The desired arguments to use when calling the method
 	 */
-	static Integer call (String operation, final String[] args) {
+	static Integer call (String operation, final String[] args)
+    {
 	    Integer result = FAILURE;
 		operation = operation.toLowerCase();
 
@@ -120,17 +121,17 @@ final class MainFunctions
 	/**
 	 * Creates the mapping of operation names to their corresponding methods
 	 */
-	private static Map<String, Function<String[], Integer>> createMap () {
+	private static Map<String, Function<String[], Integer>> createMap ()
+    {
 		final Map<String, Function<String[], Integer>> functions = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
-		functions.put("connecttodb", connectToDB());
+		functions.put("connecttodb", MainFunctions::connectToDB);
 		functions.put("commands", MainFunctions::printCommands);
 		functions.put("--help", MainFunctions::printCommands);
 		functions.put("-h", MainFunctions::printCommands);
-		functions.put("cleandatabase", cleanDatabase());
+		functions.put("cleandatabase", MainFunctions::cleanDatabase);
 		functions.put("execute", new Control());
-		functions.put("downloadtestdata", refreshTestData());
-		functions.put("refreshdatabase", refreshDatabase());
+		functions.put("refreshdatabase", MainFunctions::refreshDatabase);
 		functions.put("ingest", MainFunctions::ingest);
 		functions.put("createnetcdftemplate", MainFunctions::createNetCDFTemplate);
 		functions.put("validate", MainFunctions::validate);
@@ -160,19 +161,17 @@ final class MainFunctions
 	 *
 	 * @return method that will attempt to connect to the database to prove that a connection is possible. The version of the connected database will be printed.
 	 */
-	private static Function<String[], Integer> connectToDB () {
-		return (final String[] args) -> {
-		    try
-            {
-                Operations.testConnection();
-                return SUCCESS;
-            }
-            catch ( SQLException se )
-            {
-                LOGGER.warn( "Could not connect to database.", se );
-                return FAILURE;
-            }
-		};
+	private static Integer connectToDB(final String[] args){
+        try
+        {
+            Operations.testConnection();
+            return SUCCESS;
+        }
+        catch ( SQLException se )
+        {
+            LOGGER.warn( "Could not connect to database.", se );
+            return FAILURE;
+        }
 	}
 
 	/**
@@ -181,22 +180,20 @@ final class MainFunctions
 	 * @return A method that will remove all dynamic forecast, observation, and variable data from the database. Prepares the
 	 * database for a cold start.
 	 */
-	private static Function<String[], Integer> cleanDatabase ()
+	private static Integer cleanDatabase(final String[] args)
 	{
-		return (final String[] args) -> {
-            Integer result;
-            try
-            {
-                Operations.cleanDatabase();
-                result = SUCCESS;
-            }
-            catch ( IOException | SQLException e )
-            {
-                LOGGER.error( "While cleaning the database", e );
-                result = FAILURE;
-            }
-			return result;
-		};
+        Integer result;
+        try
+        {
+            Operations.cleanDatabase();
+            result = SUCCESS;
+        }
+        catch ( IOException | SQLException e )
+        {
+            LOGGER.error( "While cleaning the database", e );
+            result = FAILURE;
+        }
+        return result;
 	}
 
 	private static Integer validateNetcdfGrid(String[] args)
@@ -206,13 +203,13 @@ final class MainFunctions
         String path = args[0];
         String variableName = args[1];
 
-        try (NetcdfDataset dataset = NetcdfDataset.openDataset( path ); GridDataset grid = new GridDataset( dataset ))
+        try ( NetcdfDataset dataset = NetcdfDataset.openDataset( path ); GridDataset grid = new GridDataset( dataset ) )
         {
             GridDatatype variable = grid.findGridDatatype( variableName );
 
-            if (variable == null)
+            if ( variable == null )
             {
-                LOGGER.error("The given variable is not a valid projected grid variable.");
+                LOGGER.error( "The given variable is not a valid projected grid variable." );
             }
             else
             {
@@ -226,509 +223,25 @@ final class MainFunctions
         }
         catch ( IOException e )
         {
-            LOGGER.error("The file at {} is not a valid Netcdf Grid Dataset.", path);
+            LOGGER.error( "The file at {} is not a valid Netcdf Grid Dataset.", path );
         }
 
         return result;
     }
 
-    /**
-     * Spawns threads to download NWM data and store them in easy to reach
-     * locations.
-     * <b>NOTE:</b> This will only work for NetCDF data in the format from
-     * the data store
-     * @return The spawning function
-     */
-	private static Function<String[], Integer> refreshTestData () {
-		return (final String[] args) -> {
-			Integer result = FAILURE;
-			if (args.length >= 3)
-			{
-			    // The date from which to pull all forecasts
-			    final String date = args[0];
-
-			    // The range/forecast type, i.e. "long range", "short range", etc
-				String range = args[1];
-
-				// The category of data like "land" or "channel_rt"
-                final String category = args[2];
-
-                // The last hour of a forecast to download; allows a user to
-                // limit the number of files to download.
-                int cutoff = Integer.MAX_VALUE;
-
-                // If there is input for the cutoff, set it
-                if (args.length >= 4 && StringUtils.isNumeric( args[3]))
-                {
-                    cutoff = Integer.parseInt(args[3]);
-                }
-
-                // If the range that was passed is not valid, error out
-				if (!Arrays.asList("analysis_assim",
-								   "fe_analysis_assim",
-								   "fe_medium_range",
-								   "fe_short_range",
-								   "forcing_analysis_assim",
-								   "forcing_medium_range",
-								   "forcing_short_range",
-								   "long_range_mem1",
-								   "long_range_mem2",
-								   "long_range_mem3",
-								   "long_range_mem4",
-								   "medium_range",
-								   "short_range").contains(range.toLowerCase())) {
-                    LOGGER.error("The range of: '" + range + "' is not a valid range of data.");
-					return FAILURE;
-				}
-
-				// If the category of data isn't valid, error out
-				if (!Arrays.asList("land", "reservoir", "channel_rt", "terrain_rt").contains(category.toLowerCase()))
-                {
-                    LOGGER.error("The category of '{}' is not a valid category for this type of data.", category);
-                    return  FAILURE;
-                }
-
-                // We don't need the progress monitor, so disable it
-				ProgressMonitor.deactivate();
-
-				try
-                {
-                    // The last z hour to pull. We might start at t00z, but a
-                    // forecast may continue to t18z. The maxZTime will be
-                    // 18 in this case
-				    int maxZTime = 0;
-
-				    // The step at which to increment forecast start times
-				    int zIncrement = 1;
-
-				    // The increment between forecasted values (in hours)
-                    int hourIncrement;
-
-                    // The current hourly time step into a forecast to download
-                    int current;
-
-                    // The listing of all files to download for a particular
-                    // forecast lead time. For instance, if we are downloading
-                    // the current lead time of 3, we'll want to pull the files
-                    // for lead time 3 for all forecasts between t00z and t18z
-                    List<String> filenames;
-
-                    // Whether or not the data to pull is for analysis and
-                    // assimilation
-                    boolean isAssim = false;
-
-                    // Whether or not this is long range data
-                    boolean isLong = false;
-
-                    // Whether or not this is forcing data
-                    final boolean isForcing = Strings.contains(range, "fe") ||
-                                              Strings.contains(range, "forcing");
-
-                    // A listing of a asynchronous download operations
-                    final Map<String, Future> downloadOperations = new TreeMap<>();
-
-                    // The location for where to put the downloaded files
-                    String downloadPath = SystemSettings.getNetCDFStorePath();
-
-                    if (!downloadPath.endsWith( "/" ))
-                    {
-                        downloadPath += "/";
-                    }
-
-                    downloadPath += category;
-                    downloadPath += "/";
-                    downloadPath += range;
-                    downloadPath += "/";
-                    downloadPath += date;
-                    downloadPath += "/";
-                    final File downloadDirectory = new File(downloadPath);
-
-                    // If the directory doesn't exist, create it
-                    if (!downloadDirectory.exists())
-                    {
-                        LOGGER.trace("Attempting to create a directory for the dataset...");
-
-                        try
-                        {
-                            final boolean directoriesMade = downloadDirectory.mkdirs();
-                            if (!directoriesMade)
-                            {
-                                LOGGER.warn("A directory could not be created for the downloaded files.");
-                            }
-                        }
-                        catch (final SecurityException exception)
-                        {
-                            MainFunctions.addException( exception );
-                            LOGGER.error("You lack the permissions necessary to make the directory for this data.");
-                            LOGGER.error("You will need to get access to your data through other means.");
-                            throw exception;
-                        }
-                    }
-
-                    // We know we're long range if it is in the name
-                    if (Strings.contains(range, "long_range"))
-                    {
-                        // The time between values is 6 hours
-                        hourIncrement = 6;
-
-                        // The first value for a forecast is at lead time 6
-                        current = 6;
-
-                        // The are 6 hours between long range forecasts
-                        zIncrement = 6;
-
-                        // The max for long_range_mem1 is 0; there will just be
-                        // a bunch of failed pulls
-                        maxZTime = 6;
-
-                        // The last lead is 720. Set the cutoff to either
-                        // 720 or the value entered by the user. If the user
-                        // entered a value greater than 720, defer to 720 since
-                        // nothing greater is valid
-                        cutoff = Math.min(cutoff, 720);
-
-                        // Declare that the operation is for long range values
-                        isLong = true;
-                    }
-                    else if (Strings.contains(range, "short_range"))
-                    {
-                        // The first value is at a lead time of 1
-                        current = 1;
-
-                        // The time between forecasts is 1 hour
-                        hourIncrement = 1;
-
-                        // The last forecast to pull is at t23z
-                        maxZTime = 23;
-
-                        // The last lead is 18. Set the cutoff to either
-                        // 18 or the value entered by the user. If the user
-                        // entered a value greater than 18, defer to 18 since
-                        // nothing greater is valid
-                        cutoff = Math.min(cutoff, 18);
-                    }
-                    else if (Strings.contains(range, "medium_range"))
-                    {
-                        // The first value is at lead time 3
-                        current = 3;
-
-                        // There are 3 hours between each forecasted value
-                        hourIncrement = 3;
-
-                        // There are 6 hours between forecasts
-                        zIncrement = 6;
-
-                        // The last forecast occurs at t12z
-                        maxZTime = 12;
-
-                        // The last lead is 240. Set the cutoff to either
-                        // 18 or the value entered by the user. If the user
-                        // entered a value greater than 240, defer to 240 since
-                        // nothing greater is valid
-                        cutoff = Math.min(cutoff, 240);
-                    }
-                    else
-                    {
-                        // There is a single hour between values
-                        hourIncrement = 1;
-
-                        // The first value occurs at hour 0
-                        current = 0;
-
-                        // Simulations are generated 23 times in a day
-                        maxZTime = 23;
-
-                        // There is a single hour between simulation
-                        // generation runs
-                        zIncrement = 1;
-
-                        // The cutoff is hard coded to 0 since only one
-                        // t-minus value is acceptable. If we look to use
-                        // the other t-minus data, this will need to change
-                        cutoff = 0;
-
-                        // Declare that this is analysis and assimilation
-                        isAssim = true;
-                    }
-
-                    // If we are at or prior to the cut off point...
-                    while (current <= cutoff)
-                    {
-                        // Get the initial template for the location of our
-                        // data store
-                        String addressTemplate = SystemSettings.getRemoteNetcdfURL();
-
-                        // Create a new collection for our filenames
-                        filenames = new ArrayList<>(  );
-
-                        // If there is no http/ftp at the front of the address,
-                        // add one (this is how the major browser handle it)
-                        if (!(addressTemplate.toLowerCase().startsWith("http://") ||
-                                addressTemplate.startsWith("https://") ||
-                                addressTemplate.startsWith("ftp://")))
-                        {
-                            addressTemplate = "http://" + addressTemplate;
-                        }
-
-                        // If there is no forward slash to separate the location
-                        // and the files, add it
-                        if (!addressTemplate.endsWith("/"))
-                        {
-                            addressTemplate += "/";
-                        }
-
-                        // Build up the url for the date and range directory. It
-                        // will be of the format:
-                        //  "nwm/20170808/short_range/nwm.t"
-                        addressTemplate += "nwm.";
-                        addressTemplate += date;
-                        addressTemplate += "/";
-                        addressTemplate += range;
-                        addressTemplate += "/";
-
-                        // Begin the initial format for the filename
-                        String filename = "nwm.t";
-
-                        // For all start times for the forecasts in a day
-                        // for the particular range...
-                        for (int i = 0; i <= maxZTime; i += zIncrement)
-                        {
-                            // Add the number of the hour of the basis time
-                            // to the file name and add it to the collection
-                            // of names. Add padding to make sure it
-                            // always has 2 digits
-                            if (i < 10)
-                            {
-                                filenames.add( filename + "0" + String.valueOf(i));
-                            }
-                            else
-                            {
-                                filenames.add( filename + String.valueOf( i ) );
-                            }
-                        }
-
-                        // The variable "filename" should not be used after
-                        // this point
-
-                        // Cap off the start time definitions with the z indicator,
-                        // along with the separator for the following parts of the
-                        // name
-                        for (int i = 0; i < filenames.size(); ++i)
-                        {
-                            filenames.set( i, filenames.get(i) + "z.");
-                        }
-
-                        // If this is for long range data
-                        if (isLong)
-                        {
-                            // Since the name for long range data can be of the form
-                            // of "long_range_mem4" and not "long_range", we want
-                            // to force the name "long_range" on all forecasts
-                            // so that we can add the member number later
-                            for (int i = 0; i < filenames.size(); ++i)
-                            {
-                                filenames.set( i, filenames.get(i) + "long_range");
-                            }
-                        }
-                        else
-                        {
-                            // Otherwise, just add the name of the range to
-                            // each file name
-                            for (int i = 0; i < filenames.size(); ++i)
-                            {
-                                filenames.set( i, filenames.get(i) + range);
-                            }
-                        }
-
-                        // If this is forcing data, the category should just be
-                        // "forcing"
-                        if (isForcing)
-                        {
-                            // Add forcing to the end of each filename
-                            for (int i = 0; i < filenames.size(); ++i)
-                            {
-                                filenames.set( i, filenames.get(i).replace("forcing_", "") + ".forcing");
-                            }
-
-                            // Note: All categories for forcing data is
-                            // contained within a single file
-                        }
-                        else
-                        {
-                            // Add the category to the end of each filename
-                            for (int i = 0; i < filenames.size(); ++i)
-                            {
-                                filenames.set( i, filenames.get(i) + "." + category);
-                            }
-                        }
-
-                        // Add the member ensemble identifier to the end
-                        // of each file name if this is long range data
-                        if (isLong)
-                        {
-                            // Get the member identifier by pulling it off of
-                            // the range. If the range is "long_range_mem4",
-                            // \\d$ will pull a number at the end of the word,
-                            // i.e. 4
-                            String memberTag = "_" + Strings.extractWord(range, "\\d$");
-
-                            // Add the member identifier to each file name
-                            for (int i = 0; i < filenames.size(); ++i)
-                            {
-                                filenames.set( i, filenames.get(i) + memberTag);
-                            }
-                        }
-
-                        // Append the separator to the end of each file name
-                        for (int i = 0; i < filenames.size(); ++i)
-                        {
-                            filenames.set( i, filenames.get(i) + ".");
-                        }
-
-                        // Add the lead time information for each file
-                        if (isAssim)
-                        {
-                            // This will always default to t-minus 0.
-                            // There should probably be a process for getting and
-                            // storing t-minus 1 and t-minus 2 as well
-                            for (int i = 0; i < filenames.size(); ++i)
-                            {
-                                filenames.set( i, filenames.get(i) + "tm00");
-                            }
-                        }
-                        else
-                        {
-                            // The format for the lead information will be of the
-                            // format of "f001" or "f240", so add the "f"
-                            // and ensure that there is enough padding
-                            String fTime = "f";
-                            if (current < 100)
-                            {
-                                fTime += "0";
-                                if (current < 10)
-                                {
-                                    fTime += "0";
-                                }
-                            }
-
-                            // Add the "f", the padding, and the current
-                            // lead time to the name of each file to download
-                            for (int i = 0; i < filenames.size(); ++i)
-                            {
-                                filenames.set( i, filenames.get(i) + fTime + String.valueOf( current ));
-                            }
-                        }
-
-                        // Add the extension to each file name
-                        for (int i = 0; i < filenames.size(); ++i)
-                        {
-                            filenames.set( i, filenames.get(i) + ".conus.nc");
-
-                            // If the requested information is prior to
-                            // 2017-05-09, the water model was version 1.0,
-                            // meaning that it was in a tar format
-                            if (date.compareTo("20170509") < 0)
-                            {
-                                filenames.set( i, filenames.get(i) + ".gz");
-                            }
-                        }
-
-                        // For each generated file name...
-                        for ( String name : filenames)
-                        {
-                            // Create the download handler
-                            final Downloader downloadOperation =
-                                    new Downloader(Paths.get(downloadDirectory.getAbsolutePath(), name),
-                                                   addressTemplate + name);
-
-                            // Ensure that download messages are displayed
-                            downloadOperation.setDisplayOutput( true );
-
-                            // Store the name of the file to download with
-                            // The future generated by sending the handler to
-                            // the executor service
-                            downloadOperations.put( filename,
-                                                    Executor.execute(downloadOperation));
-                        }
-
-                        // Increment the lead hour and continue
-                        current += hourIncrement;
-                    }
-
-                    // call ".get()" on each future to ensure that it finishes
-                    // downloading
-                    for (final Entry<String, Future> operation : downloadOperations.entrySet())
-                    {
-                        try
-                        {
-                            operation.getValue().get();
-                        }
-                        catch (InterruptedException | ExecutionException e)
-                        {
-                            MainFunctions.addException( e );
-                            LOGGER.error("An error was encountered while attempting to complete the download for '" + operation.getKey() + "'.");
-                            throw e;
-                        }
-                    }
-
-                    // Since no error was thrown, report a success
-                    result = SUCCESS;
-                }
-                catch (final Exception e)
-                {
-                    MainFunctions.addException( e );
-                    LOGGER.error(Strings.getStackTrace(e));
-                    result = FAILURE;
-                }
-			}
-			else
-            {
-                // Since not enough information was passed, inform the user of
-                // the require parameters
-				LOGGER.warn("There are not enough parameters to download updated netcdf data.");
-                LOGGER.warn("usage: downloadTestData <date> <range name> <category> [<cutoff hour>]");
-                LOGGER.warn("Example: downloadTestData 20170508 long_range_mem4 land");
-                LOGGER.warn("Acceptable ranges are:");
-                LOGGER.warn("	analysis_assim");
-                LOGGER.warn("	fe_analysis_assim");
-                LOGGER.warn("	fe_medium_range");
-                LOGGER.warn("	fe_short_range");
-                LOGGER.warn("	forcing_analysis_assim");
-                LOGGER.warn("	forcing_medium_range");
-                LOGGER.warn("	forcing_short_range");
-                LOGGER.warn("	long_range_mem1");
-                LOGGER.warn("	long_range_mem2");
-                LOGGER.warn("	long_range_mem3");
-                LOGGER.warn("	long_range_mem4");
-                LOGGER.warn("	medium_range");
-                LOGGER.warn("	short_range");
-                LOGGER.warn("");
-                LOGGER.warn("Acceptable categories are:");
-                LOGGER.warn("   land");
-                LOGGER.warn("   reservoir");
-                LOGGER.warn("   channel_rt");
-                LOGGER.warn("   terrain_rt");
-			}
-
-			return result;
-		};
-	}
-
-	private static Function<String[], Integer> refreshDatabase ()
+	private static Integer refreshDatabase(final String[] args)
 	{
-		return (final String[] args) -> {
-			Integer result = FAILURE;
-			try {
-                Operations.refreshDatabase();
-                result = SUCCESS;
-            }
-            catch (final Exception e)
-            {
-                MainFunctions.addException( e );
-                LOGGER.error(Strings.getStackTrace(e));
-            }
-            return result;
-		};
+        Integer result = FAILURE;
+        try {
+            Operations.refreshDatabase();
+            result = SUCCESS;
+        }
+        catch (final Exception e)
+        {
+            MainFunctions.addException( e );
+            LOGGER.error(Strings.getStackTrace(e));
+        }
+        return result;
 	}
 
     private static Integer ingest(String[] args)

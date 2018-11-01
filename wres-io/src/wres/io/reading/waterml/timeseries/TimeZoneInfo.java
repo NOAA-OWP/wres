@@ -1,6 +1,8 @@
 package wres.io.reading.waterml.timeseries;
 
-public class TimeZoneInfo
+import java.io.Serializable;
+
+public class TimeZoneInfo implements Serializable
 {
     TimeZone defaultTimeZone;
 

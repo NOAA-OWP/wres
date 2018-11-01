@@ -1,6 +1,8 @@
 package wres.io.reading.waterml.timeseries;
 
-public class Qualifier
+import java.io.Serializable;
+
+public class Qualifier implements Serializable
 {
     String qualifierCode;
 

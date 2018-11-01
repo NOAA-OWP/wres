@@ -1,9 +1,10 @@
 package wres.io.reading.waterml;
 
+import java.io.Serializable;
 import javax.xml.bind.annotation.XmlRootElement;
 
 @XmlRootElement
-public class Response
+public class Response implements Serializable
 {
     String name;
 

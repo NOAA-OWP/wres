@@ -5,6 +5,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.ObjectOutputStream;
 import java.io.PrintStream;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Paths;
@@ -249,6 +250,21 @@ public final class Strings
 
         return getMD5Checksum( complete.digest() );
 	}
+
+	public static String getMD5Checksum(Object object) throws IOException
+    {
+        byte[] objectBytes;
+
+        try ( ByteArrayOutputStream byteStream = new ByteArrayOutputStream(  );
+              ObjectOutputStream stream = new ObjectOutputStream( byteStream ))
+        {
+            stream.writeObject( object );
+            stream.flush();
+            objectBytes = byteStream.toByteArray();
+        }
+
+        return Strings.getMD5Checksum( objectBytes );
+    }
 
 	/**
 	 * Determines if buffering should continue for determining a checksum

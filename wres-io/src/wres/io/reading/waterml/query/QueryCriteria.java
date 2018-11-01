@@ -1,6 +1,8 @@
 package wres.io.reading.waterml.query;
 
-public class QueryCriteria
+import java.io.Serializable;
+
+public class QueryCriteria implements Serializable
 {
     public String getLocationParam()
     {

@@ -1,6 +1,8 @@
 package wres.io.reading.waterml.variable;
 
-public class Unit
+import java.io.Serializable;
+
+public class Unit implements Serializable
 {
     public String getUnitCode()
     {

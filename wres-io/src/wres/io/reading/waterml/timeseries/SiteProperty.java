@@ -1,6 +1,8 @@
 package wres.io.reading.waterml.timeseries;
 
-public class SiteProperty
+import java.io.Serializable;
+
+public class SiteProperty implements Serializable
 {
     public String getValue()
     {

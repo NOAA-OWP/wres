@@ -1,6 +1,8 @@
 package wres.io.reading.waterml.timeseries;
 
-public class Location
+import java.io.Serializable;
+
+public class Location implements Serializable
 {
     public GeographicLocation getGeogLocation()
     {

@@ -1,8 +1,10 @@
 package wres.io.reading.waterml.variable;
 
+import java.io.Serializable;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class VariableCode
+public class VariableCode implements Serializable
 {
     String value;
     String network;

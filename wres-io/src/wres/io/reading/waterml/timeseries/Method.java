@@ -1,6 +1,8 @@
 package wres.io.reading.waterml.timeseries;
 
-public class Method
+import java.io.Serializable;
+
+public class Method implements Serializable
 {
     public String getMethodDescription()
     {
