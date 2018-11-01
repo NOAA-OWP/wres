@@ -445,8 +445,11 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
     }
 
 
+    /**
+     * @throws NoDataException when gage ids cannot be found
+     */
+
     private String getGageIdParameter(Collection<FeatureDetails> features)
-            throws NoDataException
     {
         String parameter = null;
 
