@@ -69,8 +69,10 @@ class JobResults
      * How many job results to look for at once (should probably be at least as
      * many as the count of workers active on the platform and at most the max
      * count of jobs expected to be in the job queue at any given time?)
+     * TODO: limit the number of necessary threads to a fixed number, requires
+     * different approach to listening for messages.
      */
-    private final int NUMBER_OF_THREADS = 25;
+    private final int NUMBER_OF_THREADS = 400;
 
     /** An executor service that consumes job results and stores them in JOB_RESULTS_BY_ID. */
     private final ExecutorService EXECUTOR = Executors.newFixedThreadPool( NUMBER_OF_THREADS );
@@ -210,6 +212,12 @@ class JobResults
                                                            true,
                                                            jobResultConsumer );
                 LOGGER.debug( "consumerTag: {}", consumerTag );
+
+                // There is a race condition between basicConsume above being
+                // called and the exitCode being sent. The following message
+                // may help discover some cases when the race is lost by this
+                // Thread.
+                LOGGER.info( "Looking for exit code on topic {}", bindingKey );
 
                 LOGGER.debug( "Waiting to take a result value..." );
                 resultValue = result.take();

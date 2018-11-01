@@ -18,6 +18,7 @@ public class MeasurementUnitTest
      * Test {@link MeasurementUnit#equals(Object)}.
      */
 
+    @SuppressWarnings( "unlikely-arg-type" )
     @Test
     public void testEquals()
     {

@@ -1502,7 +1502,7 @@ public class ConfigHelper
                                                              final TimeWindow timeWindow,
                                                              final Collection<DoubleScoreStatistic> output,
                                                              final ChronoUnit leadUnits )
-            throws NoDataException, IOException
+            throws IOException
     {
         Objects.requireNonNull( outputDirectory, "Enter non-null output directory to establish a path for writing." );
         Objects.requireNonNull( destinationConfig, "Enter non-null time window to establish a path for writing." );
@@ -1516,7 +1516,8 @@ public class ConfigHelper
 
         if ( output.isEmpty() )
         {
-            throw new NoDataException( "No data available to write." );
+            throw new NoDataException( "No data available to write for "
+                                       + timeWindow  + ".");
         }
 
         StringJoiner filename = new StringJoiner( "_" );
