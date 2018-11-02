@@ -22,7 +22,7 @@ echo "Populating..."
 for name in $(ls -d scenario*); do
     echo "  Processing $name..."
     mkdir $targetDir/$name
-    cp -r $name/output $targetDir/$name
+    cp -r $name/wres_evaluation_output_* $targetDir/$name/output
 done
 echo "Done creating and populating $targetDir."
 
