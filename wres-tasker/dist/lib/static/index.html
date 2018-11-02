@@ -6,6 +6,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.41.0/addon/fold/foldgutter.min.css"/>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.41.0/codemirror.min.js" ></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.41.0/mode/xml/xml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.41.0/addon/edit/closebrackets.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.41.0/addon/edit/matchbrackets.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.41.0/addon/edit/matchtags.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.41.0/addon/edit/closetag.min.js"></script>
@@ -123,7 +124,237 @@
 <script>
             // Add Tag information here for autocomplete functionality
             // See the markup from https://codemirror.net/demo/xmlcomplete.html for more details
-            var tags = {};
+            var tags = {
+                "!top": ["project"],
+                project: {
+                    attrs: {
+                        label: null,
+                        name: null
+                    },
+                    children: ["inputs", "pair", "metrics", "outputs"]
+                },
+                inputs: {
+                    children: ["left", "right", "baseline"]
+                },
+                left: {
+                    attrs: {
+                        label: null
+                    },
+                    children: [
+                        "type",
+                        "source",
+                        "variable",
+                        "existingTimeScale",
+                        "ensemble",
+                        "timeShift"
+                    ]
+                },
+                right: {
+                    attrs: {
+                        label: null
+                    },
+                    children: [
+                        "type",
+                        "source",
+                        "variable",
+                        "existingTimeScale",
+                        "ensemble",
+                        "timeShift"
+                    ]
+                },
+                baseline: {
+                    attrs: {
+                        label: null
+                    },
+                    children: [
+                        "type",
+                        "source",
+                        "variable",
+                        "existingTimeScale",
+                        "ensemble",
+                        "timeShift"
+                    ]
+                },
+                source: {
+                    attrs: {
+                        format: ["PI-XML", "netCDF", "datacard", "usgs", "s3", "archive", "wrds", "csv"],
+                        pattern: "",
+                        unit: "",
+                        locationId: "",
+                        zoneOffset: null,
+                        missingValue: -999.0,
+                        has_header: [true, false],
+                        bucket: null
+                    }
+                },
+                ensemble: {
+                    attrs: {
+                        label: null,
+                        name: null,
+                        member_id: null,
+                        qualifier: null,
+                        exclude: [false, true]
+                    }
+                },
+                variable: {
+                    attrs: {
+                        label: null,
+                        unit: null
+                    }
+                },
+                existingTimeScale: {
+                    attrs: {
+                        label: null
+                    },
+                    children: ["function", "period", "frequency", "unit"]
+                },
+                timeShift: {
+                    children: ["width", "duration"]
+                },
+                pair: {
+                    attrs: {
+                        label: null
+                    },
+                    children: [
+                        "unit",
+                        "feature",
+                        "byTimeSeries",
+                        "leadHours",
+                        "dates",
+                        "issuedDates",
+                        "season",
+                        "values",
+                        "desiredTimeScale",
+                        "issuedDatesPoolingWindow",
+                        "leadTimesPoolingWindow"
+                    ]
+                },
+                feature: {
+                    attrs: {
+                        label: null,
+                        locationId: null,
+                        comid: null,
+                        gage_id: null,
+                        huc: null,
+                        name: null,
+                        rfc: null,
+                        state: null
+                    },
+                    children: [
+                        "alias",
+                        "coordinate",
+                        "polygon",
+                        "circle"
+                    ]
+                },
+                coordinate: {
+                    children: ["longitude", "latitude", "range"]
+                },
+                polygon: {
+                    attrs: {
+                        srid: 4326
+                    },
+                    children: ["point"]
+                },
+                point: {
+                    children: ["longitude", "latitude"]
+                },
+                circle: {
+                    attrs: {
+                        srid: 4326
+                    },
+                    children: ["longitude", "latitude", "diameter"]
+                },
+                issuedDatesPoolingWindow: {
+                    children: ["period", "frequency", "unit"]
+                },
+                leadTimesPoolingWindow: {
+                    children: ["period", "frequency", "unit"]
+                },
+                desiredTimeScale: {
+                    attrs: {
+                        label: null
+                    },
+                    children: ["function", "period", "frequency", "unit"]
+                },
+                values: {
+                    attrs: {
+                        minimum: null,
+                        maximum: null,
+                        default_minimum: null,
+                        default_maximum: null
+                    }
+                },
+                season: {
+                    children: ["earliestMonth", "earliestDay", "latestMonth", "latestDay"]
+                },
+                dates: {
+                    attrs: {
+                        earliest: "1900-01-01T00:00:00Z",
+                        latest: "2551-12-31T23:59:59Z"
+                    }
+                },
+                issuedDates: {
+                    attrs: {
+                        earliest: "1900-01-01T00:00:00Z",
+                        latest: "2551-12-31T23:59:59Z"
+                    }
+                },
+                leadHours: {
+                    attrs: {
+                        minimum: null,
+                        maximum: null
+                    }
+                },
+                metrics: {
+                    children: ["thresholds", "metric", "timeSeriesMetric"]
+                },
+                thresholds: {
+                    children: [
+                        "thresholdType",
+                        "applyTo",
+                        "commaSeparatedValues",
+                        "source",
+                        "operator"
+                    ]
+                },
+                metric: {
+                    children: ["name", "templateResourceName"]
+                },
+                timeSeriesMetric: {
+                    children: ["name", "summaryStatistics", "templateResourceName"]
+                },
+                summaryStatistics: {
+                    children: ["summaryStatisticsName"]
+                },
+                outputs: {
+                    children: ["destination"]
+                },
+                destination: {
+                    attrs: {
+                        type: "numeric",
+                        decimalFormat: null
+                    },
+                    children: ["outputType", "graphical", "netcdf"]
+                },
+                netcdf: {
+                    attrs: {
+                        vectorVariable: "feature_id",
+                        gridYVariable: "y",
+                        gridXVariable: "x",
+                        gridded: [false, true]
+                    },
+                    children: ["templatePath"]
+                },
+                graphical: {
+                    attrs: {
+                        width: null,
+                        height: null,
+                        template: null
+                    },
+                    children: ["config"]
+                }
+            };
 
             // If the passed in predicate returns true, show the hint in 100ms
             function completeAfter(cm, pred) {
@@ -174,6 +405,7 @@
                     hintOptions: {schemaInfo: tags},        // Set the 'tags' object as the schema for hints
                     matchTags: {bothTags: true},            // Highlight matching tags
                     autoCloseTags: true,                    // Automatically close tags
+                    autoCloseBrackets: true,
                     foldGutter: true,                       // Show the fold option in the gutters
                     indentUnit: 4,                          // Always indent by 4 spaces
                     gutters: [                              // Show the line number and fold gutters
