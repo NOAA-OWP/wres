@@ -1,6 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.41.0/codemirror.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.41.0/addon/hint/show-hint.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.41.0/addon/fold/foldgutter.min.css"/>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.41.0/codemirror.min.js" ></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.41.0/mode/xml/xml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.41.0/addon/edit/matchbrackets.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.41.0/addon/edit/matchtags.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.41.0/addon/edit/closetag.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.41.0/addon/fold/foldcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.41.0/addon/fold/foldgutter.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.41.0/addon/hint/show-hint.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.41.0/addon/hint/xml-hint.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.41.0/addon/fold/indent-fold.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.41.0/addon/fold/xml-fold.min.js"></script>
+
     <meta charset="UTF-8">
     <title>Water Resources Evaluation Service</title>
     <style type="text/css">
@@ -14,6 +29,11 @@
         {
             width: 60em;
             height: 70em;
+        }
+
+        .CodeMirror
+        {
+            height: 500px;
         }
     </style>
 </head>
@@ -44,7 +64,7 @@
 <form action="/job" method="post">
     Your first name: <input type="text" name="userName" /><br />
     Evaluation project configuration full text:<br />
-    <textarea class="evaluation" name="projectConfig" required="true">
+    <textarea id="projectConfig" class="evaluation" name="projectConfig" required="true">
 <?xml version="1.0" encoding="UTF-8"?>
 <project label="ExampleProject" name="web demo">
 
@@ -100,5 +120,72 @@
     <br />
     <input type="submit" name="Submit" /><br/>
 </form>
-</body>
+<script>
+            // Add Tag information here for autocomplete functionality
+            // See the markup from https://codemirror.net/demo/xmlcomplete.html for more details
+            var tags = {};
+
+            // If the passed in predicate returns true, show the hint in 100ms
+            function completeAfter(cm, pred) {
+                var cur = cm.getCursor();
+                if (!pred || pred())
+                {
+                    setTimeout(
+                        function() {
+                            if(!cm.state.completionActive) {
+                                cm.showHint({completeSingle: false});
+                            }
+                        }, 100
+                    );
+                }
+                return CodeMirror.Pass;
+            }
+
+            // Show an autocomplete if the cursor is after a '<' character
+            function completeIfAfterLt(cm) {
+                return completeAfter (cm, function () {
+                        var cur = cm.getCursor();
+                        return cm.getRange(CodeMirror.Pos(cur.line, cur.ch - 1), cur) == "<";
+                });
+            }
+
+            // Show autocomplete options when within a tag
+            function completeIfInTag(cm) {
+                return completeAfter(cm, function() {
+                    var tok = cm.getTokenAt(cm.getCursor());
+                    if(tok.type == "string" && (!/['"]/.test(tok.string.charAt(tok.string.length - 1)) || tok.string.length == 1)) return false;
+                    var inner = CodeMirror.innerMode(cm.getMode(), tok.state).state;
+                    return inner.tagName;
+                });
+            }
+
+            var editor = CodeMirror.fromTextArea(
+                document.getElementById("projectConfig"),   // Base the editor around 'projectConfig'
+                {
+                    mode: "xml",                            // Edit XML
+                    lineNumbers: true,                      // Show line numbers in the gutter
+                    extraKeys: {                            // Assign custom key press event handles
+                        "'<'": completeAfter,               // Show autocomplete options when '<' is typed
+                        "'/'": completeIfAfterLt,           // Show autocomplete options when '/' is typed
+                        "' '": completeIfInTag,             // Show autocomplete options when ' ' is typed
+                        "'='": completeIfInTag,             // Show autocomplete options when '=' is typed
+                        "Ctrl-Space": "autocomplete"        // Add selected autocomplete suggestion
+                    },
+                    hintOptions: {schemaInfo: tags},        // Set the 'tags' object as the schema for hints
+                    matchTags: {bothTags: true},            // Highlight matching tags
+                    autoCloseTags: true,                    // Automatically close tags
+                    foldGutter: true,                       // Show the fold option in the gutters
+                    indentUnit: 4,                          // Always indent by 4 spaces
+                    gutters: [                              // Show the line number and fold gutters
+                        "CodeMirror-linenumbers",
+                        "CodeMirror-foldgutter"
+                    ]
+                });
+
+                // Update the projectConfig textarea whenever the code changes
+                editor.on("change", function(cm) {
+                    cm.save();
+                });
+        </script>
+    </body>
 </html>
