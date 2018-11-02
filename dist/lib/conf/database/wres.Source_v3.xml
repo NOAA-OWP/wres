@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="wres.Source - Upgrade source_id to serial" author="Christopher Tubbs">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists schemaName="wres" tableName="Source"/>
+                <columnExists schemaName="wres" tableName="Source" columnName="source_id" />
+                <sqlCheck expectedResult="f">
+                    SELECT data_type = 'integer'
+                    FROM information_schema.columns C
+                    WHERE C.table_schema = 'wres'
+                        AND C.table_name = 'source'
+                        AND C.column_name = 'source_id'
+                </sqlCheck>
+            </and>
+        </preConditions>
+        <modifyDataType schemaName="wres" tableName="Source" columnName="source_id" newDataType="integer" />
+    </changeSet>
+</databaseChangeLog>
