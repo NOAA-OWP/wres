@@ -1,0 +1,6 @@
+# Ignore artifacts created by running example R script
+
+.checkpoint
+local_libraries
+*.RData
+*.Rout
