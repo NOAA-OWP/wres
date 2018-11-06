@@ -10,7 +10,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.SdkClientException;
@@ -138,7 +137,7 @@ public abstract class S3Reader extends BasicSource
         }
         catch ( ExecutionException e )
         {
-            throw new IOException( "S3 Data could not be ingested." );
+            throw new IOException( "S3 Data could not be ingested.", e );
         }
 
         return results;
