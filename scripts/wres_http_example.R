@@ -141,6 +141,36 @@ output_path <- paste( "", location_path_only, "output", sep = "/" )
 print( "Output path:" )
 print( output_path )
 
+# To use readLines to read the list of available outputs, we need a temp file
+tempFile <- tempfile()
+
+# GET the list of outputs into tempFile, then read the list of outputs
+outputResponse <- wres_client$get( path = output_path, disk = tempFile )
+availableOutputs <- readLines( tempFile )
+#unlink( tempFile )
+
+print( "Available outputs:" )
+print( availableOutputs )
+
+# Do something with the output, such as making a plot
+for ( availableOutput in availableOutputs )
+{
+    # The key point is here: read.table can be called with a URL as an argument.
+    # There is no need to save data to disk, we read it straight into a data frame.
+    wresDataTable <- read.table( paste( evaluation_location,
+                                        "output",
+                                        availableFile,
+                                        sep = "/" ),
+                                 header = TRUE,
+                                 sep = "," )
+    # Do something with the data here. Print it. Plot it.
+    print( wresDataTable )
+    plot( wresDataTable$LATEST.LEAD.TIME.IN.SECONDS..MEAN.OVER.PAST.3600.SECONDS,
+          wresDataTable$MEAN.ERROR.All.data,
+          type = "b" )
+    Sys.sleep( 2 )
+}
+
 # Clean up after ourselves by deleting output (whether successful or not)
 delete_response <- wres_client$delete( path = output_path,
                                        encode = "text" )
