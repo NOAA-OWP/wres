@@ -26,9 +26,10 @@ import wres.system.SystemSettings;
  * Helps to write a {@link ChartEngine} to a graphical product file in Portable Network Graphics (PNG) format.
  * 
  * TODO: implementations of this class are currently building a graphical interchange format {@link ChartEngine},
- * which doesn't make sense. The interchange format should be passed to the format writers. However, this issue
- * is subsumed by the broader discussion about a canonical output format, at which point the relationship between
- * the format writers, wres-vis, and the core of wres-vis could change dramatically. See #54731.  
+ * which doesn't make sense. For example, implementing a new output format, such as JPEG, would require that the new 
+ * writer generated its own copy in the interchange format. Instead, rhe interchange format should be passed to the 
+ * format writers. More generally, the graphical interchange format should be something other than {@link ChartEngine}. 
+ * The numerical data interchange format is different. See #54731.  
  * 
  * @author james.brown@hydrosolved.com
  */

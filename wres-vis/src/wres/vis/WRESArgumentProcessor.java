@@ -279,11 +279,12 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
 
         final String legendTitle = "Threshold";
         String legendUnitsText = "";
+        // Display real values for all real-valued thresholds, not just quantiles: #56955
         SortedSet<Boolean> thresholds =
                 Slicer.discover( displayedPlotInput,
-                                 next -> next.getMetadata().getSampleMetadata().getThresholds().first().isQuantile() );
+                                 next -> next.getMetadata().getSampleMetadata().getThresholds().first().hasValues() );
 
-        if ( thresholds.contains( true ) || ( thresholds.size() > 1 ) )
+        if ( thresholds.contains( true ) )
         {
             legendUnitsText += " [" + meta.getSampleMetadata().getMeasurementUnit() + "]";
         }
