@@ -14,7 +14,7 @@ import wres.datamodel.sampledata.SampleDataException;
  * 
  * @author james.brown@hydrosolved.com
  */
-public class MulticategoryPairs extends BasicPairs<MulticategoryPair>
+public class MulticategoryPairs extends Pairs<MulticategoryPair>
 {
 
     /**

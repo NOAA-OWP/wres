@@ -1,4 +1,4 @@
-package wres.io.writing.commaseparated;
+package wres.io.writing.commaseparated.statistics;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
