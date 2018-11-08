@@ -2,8 +2,11 @@ package wres.io.writing.commaseparated.pairs;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.text.DecimalFormat;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 import java.util.StringJoiner;
 
@@ -24,20 +27,33 @@ public class SingleValuedPairsWriter extends PairsWriter<TimeSeriesOfSingleValue
 {
 
     /**
-     * Builds a {@link SingleValuedPairsWriter} incrementally.
+     * Build an instance of a writer.
+     * 
+     * @param pathToPairs the path to write
+     * @param timeResolution the time resolution at which to write datetime and duration information
+     * @return the writer
+     * @throws NullPointerException if either input is null
      */
 
-    static class SingleValuedPairsWriterBuilder
-            extends PairsWriterBuilder<TimeSeriesOfSingleValuedPairs>
+    public static SingleValuedPairsWriter of( Path pathToPairs, ChronoUnit timeResolution )
     {
-
-        @Override
-        public SingleValuedPairsWriter build()
-        {
-            return new SingleValuedPairsWriter( this );
-        }
-
+        return new SingleValuedPairsWriter( pathToPairs, timeResolution, null );
     }
+    
+    /**
+     * Build an instance of a writer.
+     * 
+     * @param pathToPairs the path to write
+     * @param timeResolution the time resolution at which to write datetime and duration information
+     * @param formatter the optional formatter for writing decimal values 
+     * @return the writer
+     * @throws NullPointerException if the pathToPairs is null or the timeResolution is null
+     */
+
+    public static SingleValuedPairsWriter of( Path pathToPairs, ChronoUnit timeResolution, DecimalFormat formatter )
+    {
+        return new SingleValuedPairsWriter( pathToPairs, timeResolution, formatter );
+    }    
 
     /**
      * Write the pairs.
@@ -179,14 +195,15 @@ public class SingleValuedPairsWriter extends PairsWriter<TimeSeriesOfSingleValue
     /**
      * Hidden constructor.
      * 
-     * @param <T> the type of pairs to write
-     * @param builder the builder
+     * @param pathToPairs the path to write
+     * @param timeResolution the time resolution at which to write datetime and duration information
+     * @param formatter the optional formatter for writing decimal values
      * @throws NullPointerException if any of the expected inputs is null
      */
 
-    private SingleValuedPairsWriter( SingleValuedPairsWriterBuilder builder )
+    private SingleValuedPairsWriter( Path pathToPairs, ChronoUnit timeResolution, DecimalFormat formatter )
     {
-        super( builder );
+        super( pathToPairs, timeResolution, formatter );
     }
 
 }

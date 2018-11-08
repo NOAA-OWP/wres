@@ -76,7 +76,7 @@ abstract class PairsWriter<T extends Pairs<?>> implements Consumer<T>, Supplier<
     private final ChronoUnit timeResolution;
     
     /**
-     * Optional decimal formatter
+     * Optional decimal formatter.
      */
     
     private final DecimalFormat formatter;
@@ -229,92 +229,24 @@ abstract class PairsWriter<T extends Pairs<?>> implements Consumer<T>, Supplier<
     }
 
     /**
-     * Builds a {@link PairsWriter} incrementally.
-     */
-
-    abstract static class PairsWriterBuilder<T extends Pairs<?>>
-    {
-
-        /**
-         * Path to write.
-         */
-
-        private Path pathToPairs;
-
-        /**
-         * The time resolution.
-         */
-
-        private ChronoUnit timeResolution;
-        
-        /**
-         * Optional decimal formatter
-         */
-        
-        private DecimalFormat formatter;
-
-        /**
-         * Sets the path to write.
-         */
-
-        public PairsWriterBuilder<T> setPath( Path pathToPairs )
-        {
-            this.pathToPairs = pathToPairs;
-
-            return this;
-        }
-
-        /**
-         * Sets the time resolution at which to write pairs.
-         */
-
-        public PairsWriterBuilder<T> setTimeResolution( ChronoUnit timeResolution )
-        {
-            this.timeResolution = timeResolution;
-
-            return this;
-        }
-        
-        /**
-         * Sets the decimal formatter for writing float values.
-         */
-
-        public PairsWriterBuilder<T> setDecimalFormatter( DecimalFormat formatter )
-        {
-            this.formatter = formatter;
-
-            return this;
-        }
-
-        /**
-         * Builds a {@link PairsWriter}.
-         * 
-         * @return the writer
-         */
-
-        public abstract PairsWriter<T> build();
-
-    }
-
-    /**
      * Hidden constructor.
      * 
      * @param <T> the type of pairs to write
-     * @param builder the builder
+     * @param pathToPairs the path to write
+     * @param timeResolution the time resolution at which to write datetime and duration information
+     * @param formatter the optional formatter for writing decimal values
      * @throws NullPointerException if any of the expected inputs is null
      */
 
-    PairsWriter( PairsWriterBuilder<T> builder )
+    PairsWriter( Path pathToPairs, ChronoUnit timeResolution, DecimalFormat formatter )
     {
-        // Set then validate
-        this.pathToPairs = builder.pathToPairs;
-        this.timeResolution = builder.timeResolution;
-        this.formatter = builder.formatter;
+        Objects.requireNonNull( pathToPairs, "Specify a non-null path to write." );
 
-        Objects.requireNonNull( this.getPath(), "Specify a non-null path to write." );
+        Objects.requireNonNull( timeResolution, "Specify a non-null time resolution for writing pairs." );
 
-        Objects.requireNonNull( this.getTimeResolution(), "Specify a non-null time resolution for writing pairs." );
-
+        this.pathToPairs = pathToPairs;
+        this.timeResolution = timeResolution;
+        this.formatter = formatter;
         this.writeLock = new ReentrantLock();
 
         LOGGER.trace( "Will write pairs to {}.", this.getPath() );
