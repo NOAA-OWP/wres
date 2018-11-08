@@ -15,7 +15,7 @@ import wres.datamodel.sampledata.SampleDataException;
  * 
  * @author james.brown@hydrosolved.com
  */
-public class SingleValuedPairs extends BasicPairs<SingleValuedPair>
+public class SingleValuedPairs extends Pairs<SingleValuedPair>
 {
 
     /**

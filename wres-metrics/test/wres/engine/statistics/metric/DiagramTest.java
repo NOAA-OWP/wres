@@ -17,18 +17,7 @@ public final class DiagramTest
 {
 
     @Rule
-    public final ExpectedException exception = ExpectedException.none();
-
-    /**
-     * Constructs a {@link Diagram} and compares the actual result to the expected result.
-     * 
-     * @throws MetricParameterException if the metric could not be constructed
-     */
-
-    @Test
-    public void testDiagram() throws MetricParameterException
-    {        
-    }    
+    public final ExpectedException exception = ExpectedException.none();   
     
     /**
      * Constructs a {@link Diagram} and compares the actual result to the expected result.

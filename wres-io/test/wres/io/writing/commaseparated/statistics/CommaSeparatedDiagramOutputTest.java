@@ -1,4 +1,4 @@
-package wres.io.writing.commaseparated;
+package wres.io.writing.commaseparated.statistics;
 
 import static org.junit.Assert.assertTrue;
 
@@ -9,13 +9,13 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
 import wres.config.ProjectConfigException;
@@ -23,6 +23,7 @@ import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.Location;
@@ -32,7 +33,7 @@ import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.statistics.ListOfStatistics;
-import wres.datamodel.statistics.PairedStatistic;
+import wres.datamodel.statistics.MultiVectorStatistic;
 import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
@@ -40,16 +41,15 @@ import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 
 /**
- * Tests the writing of paired outputs to a file of Comma Separated Values (CSV).
+ * Tests the writing of diagram outputs to a file of Comma Separated Values (CSV).
  */
 
-public class CommaSeparatedPairedWriterTest extends CommaSeparatedWriterTestHelper
+public class CommaSeparatedDiagramOutputTest extends CommaSeparatedWriterTestHelper
 {
     private final Path outputDirectory = Paths.get( System.getProperty( "java.io.tmpdir" ) );
 
     /**
-     * Tests the writing of {@link PairedStatistic} to file, where the left pair comprises an {@link Instant} and the
-     * right pair comprises an (@link Duration).
+     * Tests the writing of {@link MultiVectorStatistic} to file.
      * 
      * @throws ProjectConfigException if the project configuration is incorrect
      * @throws IOException if the output could not be written
@@ -57,12 +57,12 @@ public class CommaSeparatedPairedWriterTest extends CommaSeparatedWriterTestHelp
      */
 
     @Test
-    public void writePairedOutputForTimeSeriesMetrics()
+    public void writeDiagramOutput()
             throws IOException, InterruptedException
     {
 
         // location id
-        final String LID = "FTSC1";
+        final String LID = "CREC1";
 
         // Create fake outputs
         StatisticsForProject.StatisticsForProjectBuilder outputBuilder =
@@ -72,13 +72,14 @@ public class CommaSeparatedPairedWriterTest extends CommaSeparatedWriterTestHelp
                 TimeWindow.of( Instant.MIN,
                                Instant.MAX,
                                ReferenceTime.VALID_TIME,
-                               Duration.ofHours( 1 ),
-                               Duration.ofHours( 18 ) );
+                               Duration.ofHours( 24 ),
+                               Duration.ofHours( 24 ) );
 
         OneOrTwoThresholds threshold =
-                OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                     Operator.GREATER,
-                                                     ThresholdDataType.LEFT ) );
+                OneOrTwoThresholds.of( Threshold.ofQuantileThreshold( OneOrTwoDoubles.of( 11.94128 ),
+                                                                      OneOrTwoDoubles.of( 0.9 ),
+                                                                      Operator.GREATER_EQUAL,
+                                                                      ThresholdDataType.LEFT ) );
 
         // Output requires a future... which requires a metadata...
         // which requires a datasetidentifier..
@@ -93,23 +94,26 @@ public class CommaSeparatedPairedWriterTest extends CommaSeparatedWriterTestHelp
                                                          threshold ),
                                       1000,
                                       MeasurementUnit.of(),
-                                      MetricConstants.TIME_TO_PEAK_ERROR,
+                                      MetricConstants.RELIABILITY_DIAGRAM,
                                       null );
 
-        List<Pair<Instant, Duration>> fakeOutputs = new ArrayList<>();
-        fakeOutputs.add( Pair.of( Instant.parse( "1985-01-01T00:00:00Z" ), Duration.ofHours( 1 ) ) );
-        fakeOutputs.add( Pair.of( Instant.parse( "1985-01-02T00:00:00Z" ), Duration.ofHours( 2 ) ) );
-        fakeOutputs.add( Pair.of( Instant.parse( "1985-01-03T00:00:00Z" ), Duration.ofHours( 3 ) ) );
+        Map<MetricDimension, double[]> fakeOutputs = new HashMap<>();
+        fakeOutputs.put( MetricDimension.FORECAST_PROBABILITY,
+                         new double[] { 0.08625, 0.2955, 0.50723, 0.70648, 0.92682 } );
+        fakeOutputs.put( MetricDimension.OBSERVED_RELATIVE_FREQUENCY,
+                         new double[] { 0.06294, 0.2938, 0.5, 0.73538, 0.93937 } );
+        fakeOutputs.put( MetricDimension.SAMPLE_SIZE, new double[] { 5926, 371, 540, 650, 1501 } );
 
         // Fake output wrapper.
-        ListOfStatistics<PairedStatistic<Instant, Duration>> fakeOutputData =
-                ListOfStatistics.of( Collections.singletonList( PairedStatistic.of( fakeOutputs, fakeMetadata ) ) );
+        ListOfStatistics<MultiVectorStatistic> fakeOutputData =
+                ListOfStatistics.of( Collections.singletonList( MultiVectorStatistic.ofMultiVectorOutput( fakeOutputs,
+                                                                                                          fakeMetadata ) ) );
 
         // wrap outputs in future
-        Future<ListOfStatistics<PairedStatistic<Instant, Duration>>> outputMapByMetricFuture =
+        Future<ListOfStatistics<MultiVectorStatistic>> outputMapByMetricFuture =
                 CompletableFuture.completedFuture( fakeOutputData );
 
-        outputBuilder.addPairedStatistics( outputMapByMetricFuture );
+        outputBuilder.addMultiVectorStatistics( outputMapByMetricFuture );
 
         StatisticsForProject output = outputBuilder.build();
 
@@ -118,29 +122,33 @@ public class CommaSeparatedPairedWriterTest extends CommaSeparatedWriterTestHelp
         ProjectConfig projectConfig = getMockedProjectConfig( feature );
 
         // Begin the actual test now that we have constructed dependencies.
-        CommaSeparatedPairedWriter<Instant, Duration> writer =
-                CommaSeparatedPairedWriter.of( projectConfig,
-                                               ChronoUnit.SECONDS,
-                                               this.outputDirectory );
-        writer.accept( output.getPairedStatistics() );
+        CommaSeparatedDiagramWriter.of( projectConfig,
+                                        ChronoUnit.SECONDS,
+                                        this.outputDirectory )
+                                   .accept( output.getMultiVectorStatistics() );
 
         // read the file, verify it has what we wanted:
-        Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ),
-                                     "FTSC1_SQIN_HEFS_TIME_TO_PEAK_ERROR.csv" );
+        Path pathToFile = Paths.get( this.outputDirectory.toString(),
+                                     "CREC1_SQIN_HEFS_RELIABILITY_DIAGRAM_86400_SECONDS.csv" );
         List<String> result = Files.readAllLines( pathToFile );
 
         assertTrue( result.get( 0 ).contains( "," ) );
-        assertTrue( result.get( 0 ).contains( "ERROR" ) );
-
+        assertTrue( result.get( 0 ).contains( "FORECAST PROBABILITY" ) );
         assertTrue( result.get( 1 )
-                          .equals( "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,3600,64800,"
-                                   + "1985-01-01T00:00:00Z,PT1H" ) );
+                          .equals( "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,86400,86400,"
+                                   + "0.08625,0.06294,5926.0" ) );
         assertTrue( result.get( 2 )
-                          .equals( "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,3600,64800,"
-                                   + "1985-01-02T00:00:00Z,PT2H" ) );
+                          .equals( "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,86400,86400,"
+                                   + "0.2955,0.2938,371.0" ) );
         assertTrue( result.get( 3 )
-                          .equals( "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,3600,64800,"
-                                   + "1985-01-03T00:00:00Z,PT3H" ) );
+                          .equals( "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,86400,86400,"
+                                   + "0.50723,0.5,540.0" ) );
+        assertTrue( result.get( 4 )
+                          .equals( "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,86400,86400,"
+                                   + "0.70648,0.73538,650.0" ) );
+        assertTrue( result.get( 5 )
+                          .equals( "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,86400,86400,"
+                                   + "0.92682,0.93937,1501.0" ) );
         // If all succeeded, remove the file, otherwise leave to help debugging.
         Files.deleteIfExists( pathToFile );
     }

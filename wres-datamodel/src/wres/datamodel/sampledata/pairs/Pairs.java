@@ -27,7 +27,7 @@ import wres.datamodel.sampledata.SampleDataException;
  * @param <T> the paired type
  * @author james.brown@hydrosolved.com
  */
-public abstract class BasicPairs<T> implements SampleData<T>
+public abstract class Pairs<T> implements SampleData<T>
 {
 
     /**
@@ -245,7 +245,7 @@ public abstract class BasicPairs<T> implements SampleData<T>
      * @throws SampleDataException if the pairs are invalid
      */
 
-    BasicPairs( final BasicPairsBuilder<T> b )
+    Pairs( final BasicPairsBuilder<T> b )
     {
         //Ensure safe types
         this.sampleData = Collections.unmodifiableList( b.sampleData );

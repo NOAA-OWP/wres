@@ -1,4 +1,4 @@
-package wres.io.writing.commaseparated;
+package wres.io.writing.commaseparated.statistics;
 
 import static org.junit.Assert.assertTrue;
 
@@ -40,6 +40,7 @@ import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
+import wres.io.writing.commaseparated.statistics.CommaSeparatedBoxPlotWriter;
 
 /**
  * Tests the writing of box plot outputs to a file of Comma Separated Values (CSV).
