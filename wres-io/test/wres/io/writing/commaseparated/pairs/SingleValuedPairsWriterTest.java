@@ -32,7 +32,6 @@ import wres.datamodel.sampledata.pairs.SingleValuedPair;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs.TimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.time.Event;
-import wres.io.writing.commaseparated.pairs.SingleValuedPairsWriter.SingleValuedPairsWriterBuilder;
 
 /**
  * Tests the {@link SingleValuedPairsWriter}.
@@ -131,11 +130,7 @@ public final class SingleValuedPairsWriterTest
         Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ), PairsWriter.DEFAULT_PAIRS_NAME );
 
         // Create the writer
-        SingleValuedPairsWriterBuilder builder =
-                (SingleValuedPairsWriterBuilder) new SingleValuedPairsWriterBuilder().setPath( pathToFile )
-                                                                                     .setTimeResolution( ChronoUnit.SECONDS );
-        SingleValuedPairsWriter writer = builder.build();
-
+        SingleValuedPairsWriter writer = SingleValuedPairsWriter.of( pathToFile, ChronoUnit.SECONDS );
 
         TimeSeriesOfSingleValuedPairsBuilder tsBuilder = new TimeSeriesOfSingleValuedPairsBuilder();
 
@@ -182,10 +177,7 @@ public final class SingleValuedPairsWriterTest
         Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ), PairsWriter.DEFAULT_PAIRS_NAME );
 
         // Create the writer
-        SingleValuedPairsWriterBuilder builder =
-                (SingleValuedPairsWriterBuilder) new SingleValuedPairsWriterBuilder().setPath( pathToFile )
-                                                                                     .setTimeResolution( ChronoUnit.SECONDS );
-        SingleValuedPairsWriter writer = builder.build();
+        SingleValuedPairsWriter writer = SingleValuedPairsWriter.of( pathToFile, ChronoUnit.SECONDS );
 
         // Write the pairs
         writer.accept( pairs );
@@ -218,10 +210,7 @@ public final class SingleValuedPairsWriterTest
         Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ), PairsWriter.DEFAULT_PAIRS_NAME );
 
         // Create the writer
-        SingleValuedPairsWriterBuilder builder =
-                (SingleValuedPairsWriterBuilder) new SingleValuedPairsWriterBuilder().setPath( pathToFile )
-                                                                                     .setTimeResolution( ChronoUnit.SECONDS );
-        SingleValuedPairsWriter writer = builder.build();
+        SingleValuedPairsWriter writer = SingleValuedPairsWriter.of( pathToFile, ChronoUnit.SECONDS );
 
         // Write the pairs
         writer.accept( pairs );
@@ -262,12 +251,8 @@ public final class SingleValuedPairsWriterTest
         // Create the writer with a decimal format
         DecimalFormat formatter = new DecimalFormat();
         formatter.applyPattern( "0.0" );
-        SingleValuedPairsWriterBuilder builder =
-                (SingleValuedPairsWriterBuilder) new SingleValuedPairsWriterBuilder().setPath( pathToFile )
-                                                                                     .setTimeResolution( ChronoUnit.SECONDS )
-                                                                                     .setDecimalFormatter( formatter );
-        SingleValuedPairsWriter writer = builder.build();
-
+        SingleValuedPairsWriter writer = SingleValuedPairsWriter.of( pathToFile, ChronoUnit.SECONDS, formatter );
+        
         // Write the pairs async on the common FJP
         CompletableFuture.allOf( CompletableFuture.runAsync( () -> writer.accept( pairs ) ),
                                  CompletableFuture.runAsync( () -> writer.accept( pairsTwo ) ),
@@ -311,10 +296,7 @@ public final class SingleValuedPairsWriterTest
         Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ), PairsWriter.DEFAULT_PAIRS_NAME );
 
         // Create the writer
-        SingleValuedPairsWriterBuilder builder =
-                (SingleValuedPairsWriterBuilder) new SingleValuedPairsWriterBuilder().setPath( pathToFile )
-                                                                                     .setTimeResolution( ChronoUnit.SECONDS );
-        SingleValuedPairsWriter writer = builder.build();
+        SingleValuedPairsWriter writer = SingleValuedPairsWriter.of( pathToFile, ChronoUnit.SECONDS );
 
         // Write the pairs
         writer.accept( pairs );
