@@ -1,4 +1,4 @@
-#!/usr/bin/Rscript
+#!/usr/bin/env Rscript
 
 # This incomplete R program is provided as-is as a guide to the WRES HTTP
 # Application Programming Interface. It is expected that a more competent R
