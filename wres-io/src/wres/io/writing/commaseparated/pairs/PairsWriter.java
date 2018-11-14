@@ -6,31 +6,39 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.text.DecimalFormat;
+import java.time.Duration;
+import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
+import java.util.StringJoiner;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.datamodel.sampledata.pairs.Pairs;
+import wres.datamodel.time.Event;
+import wres.datamodel.time.TimeSeries;
+import wres.io.writing.WriteException;
 
 /**
- * Abstract base class for writing a collection of pairs as comma separated values (CSV). There is one 
+ * Abstract base class for writing a time-series of pairs as comma separated values (CSV). There is one 
  * {@link PairsWriter} for each {@link Path} to be written; writing to that {@link Path} is 
  * managed by this {@link PairsWriter}.
  * 
- * @param <T> the type of pairs to write
+ * @param <S> the decomposed type of pairs to write
+ * @param <T> the composed type of pairs to write
  * @author james.brown@hydrosolved.com
  */
 
-abstract class PairsWriter<T extends Pairs<?>> implements Consumer<T>, Supplier<Set<Path>>
+abstract class PairsWriter<S extends Object, T extends Pairs<S> & TimeSeries<S>>
+        implements Consumer<T>, Supplier<Set<Path>>
 {
 
     /**
@@ -38,13 +46,13 @@ abstract class PairsWriter<T extends Pairs<?>> implements Consumer<T>, Supplier<
      */
 
     public static final String DEFAULT_PAIRS_NAME = "pairs.csv";
-    
+
     /**
      * Delimiter.
      */
 
     public static final String DELIMITER = ",";
-    
+
     /**
      * A default name for the baseline pairs.
      */
@@ -68,18 +76,18 @@ abstract class PairsWriter<T extends Pairs<?>> implements Consumer<T>, Supplier<
      */
 
     private final Path pathToPairs;
-    
+
     /**
      * The time resolution.
      */
 
     private final ChronoUnit timeResolution;
-    
+
     /**
-     * Optional decimal formatter.
+     * Formatter that maps from a paired value of type <S> to a value of type {@link String}.
      */
-    
-    private final DecimalFormat formatter;
+
+    private final Function<S,String> pairFormatter;
 
     /**
      * Is <code>true</code> if the header needs to be written, <code>false</code> when it has already been written. 
@@ -109,16 +117,108 @@ abstract class PairsWriter<T extends Pairs<?>> implements Consumer<T>, Supplier<
     }
 
     /**
+     * Write the pairs.
+     * 
+     * @param pairs the pairs to write
+     * @throws NullPointerException if the input is null or required metadata is null
+     * @throws WriteException if the writing fails
+     */
+
+    @Override
+    public void accept( T pairs )
+    {
+        Objects.requireNonNull( pairs, "Cannot write null pairs." );
+
+        Objects.requireNonNull( pairs.getMetadata().getIdentifier(),
+                                "Cannot write pairs with a null dataset identifier." );
+
+        Objects.requireNonNull( pairs.getMetadata().getIdentifier().getGeospatialID(),
+                                "Cannot write pairs with a null geospatial identifier." );
+
+        try
+        {
+            // Write header
+            this.writeHeaderIfRequired( pairs );
+
+            // Write contents if available
+            if ( !pairs.getRawData().isEmpty() )
+            {
+                LOGGER.debug( "Writing pairs for {} to {}", pairs.getMetadata().getIdentifier(), this.getPath() );
+
+                // Feature to write, which is fixed across all pairs
+                String featureName = pairs.getMetadata().getIdentifier().getGeospatialID().getLocationName();
+
+                // Prepare
+                this.getWriteLock().lock();
+                LOGGER.trace( "Acquired pair writing lock on {}", this.getPath() );
+
+                // Write by appending
+                try ( BufferedWriter writer = this.getBufferedWriter( true ) )
+                {
+                    // Iterate in time-series order
+                    for ( TimeSeries<S> nextSeries : pairs.basisTimeIterator() )
+                    {
+
+                        Instant basisTime = nextSeries.getEarliestBasisTime();
+
+                        for ( Event<S> nextPair : nextSeries.timeIterator() )
+                        {
+
+                            StringJoiner joiner = new StringJoiner( PairsWriter.DELIMITER );
+
+                            // Move to next line
+                            writer.write( System.lineSeparator() );
+
+                            // Feature description
+                            joiner.add( featureName );
+
+                            // ISO8601 datetime string
+                            joiner.add( nextPair.getTime().toString() );
+
+                            // Lead duration in standard units
+                            joiner.add( Long.toString( Duration.between( basisTime, nextPair.getTime() )
+                                                               .get( this.getTimeResolution() ) ) );
+                            
+                            // Write the values
+                            joiner.add( this.getPairFormatter().apply( nextPair.getValue() ) );
+
+                            // Write next line
+                            writer.write( joiner.toString() );
+
+                        }
+                    }
+
+                    LOGGER.trace( "{} pairs written to {}.", pairs.getRawData().size(), this.getPath() );
+                }
+                // Clean-up
+                finally
+                {
+                    this.getWriteLock().unlock();
+                    LOGGER.trace( "Released pair writing lock on {}", this.getPath() );
+                }
+            }
+            else
+            {
+                LOGGER.debug( "No pairs written to {} as the pairs were empty.", this.getPath() );
+            }
+        }
+        catch ( IOException e )
+        {
+            throw new WriteException( "Unable to write pairs.", e );
+        }
+    }
+
+    /**
      * Returns the time resolution at which pairs should be written.
      * 
      * @return the time resolution
      */
-    
+
     public ChronoUnit getTimeResolution()
     {
         return this.timeResolution;
     }
-    
+
     /**
      * Returns the path to the pairs.
      * 
@@ -142,17 +242,6 @@ abstract class PairsWriter<T extends Pairs<?>> implements Consumer<T>, Supplier<
     }
 
     /**
-     * Returns the decimal formatter or null if no formatter is defined.
-     * 
-     * @return the formatter or null
-     */
-    
-    DecimalFormat getDecimalFormatter()
-    {
-        return this.formatter;
-    }
-    
-    /**
      * Returns a writer that either appends or truncates.
      * 
      * @return a writer
@@ -163,12 +252,12 @@ abstract class PairsWriter<T extends Pairs<?>> implements Consumer<T>, Supplier<
     BufferedWriter getBufferedWriter( boolean appender ) throws IOException
     {
         StandardOpenOption appendOrTruncate = StandardOpenOption.TRUNCATE_EXISTING;
-        
-        if( appender )
+
+        if ( appender )
         {
             appendOrTruncate = StandardOpenOption.APPEND;
         }
-        
+
         return Files.newBufferedWriter( this.getPath(),
                                         StandardCharsets.UTF_8,
                                         StandardOpenOption.CREATE,
@@ -197,7 +286,7 @@ abstract class PairsWriter<T extends Pairs<?>> implements Consumer<T>, Supplier<
             // Prepare to write
             this.getWriteLock().lock();
             LOGGER.trace( "Acquired pair writing lock on {}", this.getPath() );
-            
+
             // Write by truncation
             try ( BufferedWriter writer = this.getBufferedWriter( false ) )
             {
@@ -227,26 +316,41 @@ abstract class PairsWriter<T extends Pairs<?>> implements Consumer<T>, Supplier<
     {
         return this.isHeaderRequired;
     }
+    
+
+    /**
+     * Returns the formatter for writing paired values.
+     * 
+     * @return the formatter
+     */
+
+    private Function<S,String> getPairFormatter()
+    {
+        return this.pairFormatter;
+    }
 
     /**
      * Hidden constructor.
      * 
-     * @param <T> the type of pairs to write
-     * @param pathToPairs the path to write
-     * @param timeResolution the time resolution at which to write datetime and duration information
-     * @param formatter the optional formatter for writing decimal values
+     * @param <S> the type of pairs to write
+     * @param pathToPairs the required path to write
+     * @param timeResolution the required time resolution at which to write datetime and duration information
+     * @param formatter the required formatter for writing pairs
      * @throws NullPointerException if any of the expected inputs is null
      */
 
-    PairsWriter( Path pathToPairs, ChronoUnit timeResolution, DecimalFormat formatter )
+    PairsWriter( Path pathToPairs, ChronoUnit timeResolution, Function<S,String> formatter )
     {
         Objects.requireNonNull( pathToPairs, "Specify a non-null path to write." );
 
         Objects.requireNonNull( timeResolution, "Specify a non-null time resolution for writing pairs." );
 
+        Objects.requireNonNull( formatter, "Specify a non-null time resolution for writing pairs." );
+        
         this.pathToPairs = pathToPairs;
         this.timeResolution = timeResolution;
-        this.formatter = formatter;
+        this.pairFormatter = formatter;
+
         this.writeLock = new ReentrantLock();
 
         LOGGER.trace( "Will write pairs to {}.", this.getPath() );
