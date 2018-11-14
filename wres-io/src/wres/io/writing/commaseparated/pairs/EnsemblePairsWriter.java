@@ -3,21 +3,22 @@ package wres.io.writing.commaseparated.pairs;
 import java.nio.file.Path;
 import java.text.DecimalFormat;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.function.Function;
 
 import wres.datamodel.metadata.TimeScale;
-import wres.datamodel.sampledata.pairs.SingleValuedPair;
-import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
+import wres.datamodel.sampledata.pairs.EnsemblePair;
+import wres.datamodel.sampledata.pairs.TimeSeriesOfEnsemblePairs;
 
 /**
- * Class for writing {@link TimeSeriesOfSingleValuedPairs}.
+ * Class for writing {@link TimeSeriesOfEnsemblePairs}.
  * 
  * @author james.brown@hydrosolved.com
  */
 
-public class SingleValuedPairsWriter extends PairsWriter<SingleValuedPair, TimeSeriesOfSingleValuedPairs>
+public class EnsemblePairsWriter extends PairsWriter<EnsemblePair,TimeSeriesOfEnsemblePairs>
 {
 
     /**
@@ -29,9 +30,9 @@ public class SingleValuedPairsWriter extends PairsWriter<SingleValuedPair, TimeS
      * @throws NullPointerException if either input is null
      */
 
-    public static SingleValuedPairsWriter of( Path pathToPairs, ChronoUnit timeResolution )
+    public static EnsemblePairsWriter of( Path pathToPairs, ChronoUnit timeResolution )
     {
-        return new SingleValuedPairsWriter( pathToPairs, timeResolution, null );
+        return new EnsemblePairsWriter( pathToPairs, timeResolution, null );
     }
 
     /**
@@ -44,14 +45,13 @@ public class SingleValuedPairsWriter extends PairsWriter<SingleValuedPair, TimeS
      * @throws NullPointerException if the pathToPairs is null or the timeResolution is null
      */
 
-    public static SingleValuedPairsWriter
-            of( Path pathToPairs, ChronoUnit timeResolution, DecimalFormat decimalFormatter )
+    public static EnsemblePairsWriter of( Path pathToPairs, ChronoUnit timeResolution, DecimalFormat decimalFormatter )
     {
-        return new SingleValuedPairsWriter( pathToPairs, timeResolution, decimalFormatter );
+        return new EnsemblePairsWriter( pathToPairs, timeResolution, decimalFormatter );
     }
 
     @Override
-    String getHeaderFromPairs( TimeSeriesOfSingleValuedPairs pairs )
+    String getHeaderFromPairs( TimeSeriesOfEnsemblePairs pairs )
     {
         Objects.requireNonNull( pairs, "Cannot obtain header from null pairs." );
 
@@ -80,7 +80,18 @@ public class SingleValuedPairsWriter extends PairsWriter<SingleValuedPair, TimeS
 
         joiner.add( "LEFT IN " + pairs.getMetadata().getMeasurementUnit().getUnit() );
 
-        joiner.add( "RIGHT IN " + pairs.getMetadata().getMeasurementUnit().getUnit() );
+        if ( !pairs.getRawData().isEmpty() )
+        {
+            int memberCount = pairs.getRawData().get( 0 ).getRight().length;
+            for ( int i = 1; i <= memberCount; i++ )
+            {
+                joiner.add( "RIGHT MEMBER " + i + " IN " + pairs.getMetadata().getMeasurementUnit().getUnit() );
+            }
+        }
+        else
+        {
+            joiner.add( "RIGHT IN " + pairs.getMetadata().getMeasurementUnit().getUnit() );
+        }
 
         return joiner.toString();
     }
@@ -94,9 +105,9 @@ public class SingleValuedPairsWriter extends PairsWriter<SingleValuedPair, TimeS
      * @throws NullPointerException if any of the expected inputs is null
      */
 
-    private SingleValuedPairsWriter( Path pathToPairs, ChronoUnit timeResolution, DecimalFormat decimalFormatter )
+    private EnsemblePairsWriter( Path pathToPairs, ChronoUnit timeResolution, DecimalFormat decimalFormatter )
     {
-        super( pathToPairs, timeResolution, SingleValuedPairsWriter.getPairFormatter( decimalFormatter ) );
+        super( pathToPairs, timeResolution, EnsemblePairsWriter.getPairFormatter( decimalFormatter ) );
     }
 
     /**
@@ -106,7 +117,7 @@ public class SingleValuedPairsWriter extends PairsWriter<SingleValuedPair, TimeS
      * @return the string formatter
      */
 
-    private static Function<SingleValuedPair, String> getPairFormatter( DecimalFormat decimalFormatter )
+    private static Function<EnsemblePair, String> getPairFormatter( DecimalFormat decimalFormatter )
     {
         return ( pair ) -> {
 
@@ -117,17 +128,24 @@ public class SingleValuedPairsWriter extends PairsWriter<SingleValuedPair, TimeS
             if ( Objects.nonNull( decimalFormatter ) )
             {
                 joiner.add( decimalFormatter.format( pair.getLeft() ) );
-                joiner.add( decimalFormatter.format( pair.getRight() ) );
+
+                // Add the ensemble members
+                Arrays.stream( pair.getRight() )
+                      .forEach( nextMember -> joiner.add( decimalFormatter.format( nextMember ) ) );
+
             }
             // No format
             else
             {
                 joiner.add( Double.toString( pair.getLeft() ) );
-                joiner.add( Double.toString( pair.getRight() ) );
+
+                // Add the ensemble members
+                Arrays.stream( pair.getRight() )
+                      .forEach( nextMember -> joiner.add( Double.toString( nextMember ) ) );
             }
 
             return joiner.toString();
         };
     }
-
+    
 }
