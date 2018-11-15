@@ -1,14 +1,20 @@
-#!/bin/bash
+#!/usr/bin/env python3
 
-# This incomplete bash program is provided as-is as a guide to the WRES HTTP
-# Application Programming Interface. It is expected that a more appropriate
-# programming language such as Python or R will be used instead of bash.
+import argparse
+import os
+import time
+
+import requests
+
+# This incomplete python program is provided as-is as a guide to the WRES HTTP
+# Application Programming Interface. It is expected that a person will improve
+# this program prior to use.
 # The examples shown here are to indicate what is important about the various
 # requests made to the WRES HTTP API, such as methods, headers, and so forth,
 # as well as the resource tree modeling WRES jobs.
 
-# First, create an evaluation project configuration, store it in project_config
-read -d '' project_config << EOF
+# First, create an evaluation project configuration, store it in evaluation
+evaluation = '''
 <?xml version="1.0" encoding="UTF-8"?>
 <project name="scenario50x">
 
@@ -47,29 +53,29 @@ read -d '' project_config << EOF
     </outputs>
 
 </project>
-EOF
+'''
 
 # We now should have an evaluation project configuration in a variable, show it:
-echo "Here is the WRES evaluation project configuration:"
-echo "$project_config"
-
-# The quotes above around $project_config are important to preserve line breaks.
+print( "Here is the WRES evaluation project configuration:" )
+print( evaluation )
 
 # There is a -dev environment (WRES Test Platform) and a -ti environment (WRES
 # Deployment Platform), therefore we need to specify which one we wish to use.
 # Change the following variable to -ti if you are using this program in -ti.
-env_suffix=-dev
+env_suffix = "-dev"
 
-echo "We are using the $env_suffix environment in this example."
+print( "We are using the " + env_suffix + " environment in this example." )
 
 # You must edit this user_name variable to be your first name or pass as arg.
-user_name=i_need_to_edit_this_user_name_to_be_my_first_name
+user_name = "i_need_to_edit_this_user_name_to_be_my_first_name"
 
-if [ ! -z "$1" ]
-then
-    echo "Setting user_name to $1"
-    user_name=$1
-fi
+parser = argparse.ArgumentParser()
+parser.add_argument( "name", help="Your first name to pass to WRES HTTP API" )
+args = parser.parse_args()
+
+if args.name:
+    print( "Setting user_name to " + args.name )
+    user_name = args.name
 
 # The WRES HTTP API uses secured HTTP, aka HTTPS, which is a form of TLS aka
 # Transport Layer Security, which relies on X.509 certificates for
@@ -82,17 +88,13 @@ fi
 # contains the certificate of the server. The file may be retrieved at
 # https://***REMOVED***/redmine/projects/wres-user-support/wiki/Import_Certificate_Authority_in_Browser_for_Access_to_WRES_Web_Front-End
 
-wres_ca_file=cacerts/wres_ca_x509_cert.pem
+wres_ca_file = "cacerts/wres_ca_x509_cert.pem"
 
-if [ -f $wres_ca_file ]
-then
-    echo "Found the WRES CA file at $wres_ca_file"
-else
-    echo "Did not find the WRES CA file at $wres_ca_file"
-    exit 1
-fi
-
-
+if os.path.exists( wres_ca_file ):
+    print( "Found the WRES CA file at " + wres_ca_file )
+else:
+    print( "Did not find the WRES CA file at" + wres_ca_file )
+    exit( 1 )
 
 # Second, POST the evaluation project configuration to the WRES.
 # "POST" is a standard HTTP verb, see more about the various HTTP verbs here:
@@ -104,11 +106,14 @@ fi
 # The server will create the resource and we can GET information about the job.
 # We furthermore want to save the server's response to the POST, because it
 # contains the name of the created resource in its response. We use post_result.
-# The tr -d is to remove carriage return characters from the response.
-post_result=$( curl -i --cacert $wres_ca_file --data "userName=${user_name}&projectConfig=${project_config}" https://***REMOVED***wres${env_suffix}.***REMOVED***.***REMOVED***/job | tr -d '\r' )
 
-echo "The response from the server was:"
-echo "$post_result"
+post_result = requests.post( url="https://***REMOVED***wres"+env_suffix+".***REMOVED***.***REMOVED***/job",
+                             verify = wres_ca_file,
+                             data = { 'userName': user_name,
+                                      'projectConfig': evaluation } )
+
+print( "The response from the server was:" )
+print( post_result )
 
 # More details about above follow. The -i option of curl causes response headers
 # to be returned. The --cacert option of curl specifies the Certificate
@@ -121,36 +126,35 @@ echo "$post_result"
 # See https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#2xx_Success for
 # information on HTTP response codes.
 
-post_result_http_code=$( echo -n "$post_result" | grep HTTP | tail -n 1 | cut -d' ' -f2 )
-echo "The last status code in the response was $post_result_http_code"
+print( "The last status code in the response was "
+       + str( post_result.status_code ) )
 
-if [ "$post_result_http_code" -eq "201" ] || [ "$post_result_http_code" -eq "200" ]
-then
-    echo "The response code was successful: $post_result_http_code"
-else
-    echo "The response code was NOT 201 nor 200, failed to create, exiting..."
-    exit 2
-fi
+if post_result.status_code == 201 or post_result.status_code == 200:
+    print( "The response code was successful: "
+           + str( post_result.status_code ) )
+else:
+    print( "The response code was NOT 201 nor 200, failed to create, exiting..." )
+    exit( 2 )
 
 # At this point, we think the response code was successful, so we continue
 # by looking for the Location of the uri that was created, it is in an http
 # header called Location.
 
-job_location=$( echo -n "$post_result" | grep Location | cut -d' ' -f2 )
-echo "The location of the resource created by server was $job_location"
+job_location = post_result.headers['Location']
+print( "The location of the resource created by server was " + job_location )
 
 # Third, poll the job status with GET requests until the job status changes
 # to be COMPLETED_REPORTED_SUCCESS or COMPLETED_REPORTED_FAILURE
 
 evaluation_status=""
 
-while [ "$evaluation_status" != "COMPLETED_REPORTED_SUCCESS" ] \
-      && [ "$evaluation_status" != "COMPLETED_REPORTED_FAILURE" ]
-do
+while ( evaluation_status != "COMPLETED_REPORTED_SUCCESS"
+        and evaluation_status != "COMPLETED_REPORTED_FAILURE" ):
     # Pause for two seconds before asking the server for status.
-    sleep 2
-    evaluation_status=$( curl --cacert $wres_ca_file $job_location/status | tr -d '\r' )
-done
+    time.sleep( 2 )
+    evaluation_status = requests.get( url = job_location + "/status",
+                                      verify = wres_ca_file
+                                    ).text
 
 # At this point we think the job is finished. If it was a success we can get
 # output data. If it was not a success, there should be no output data but
@@ -158,42 +162,47 @@ done
 
 output_data=""
 
-if [ "$evaluation_status" == "COMPLETED_REPORTED_SUCCESS" ]
-then
+if evaluation_status == "COMPLETED_REPORTED_SUCCESS":
     # When looking for output data, there are two representations of the list
     # of output data. One is text/html, one is text/plain. The client may ask
     # for one or the other or give a priority list to the server in the Accept
     # HTTP header. For more information on the Accept header, see 
     # https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html
-    # In curl, we use the --header option to specify the Accept header and to
+    # In requests, we use the header arg to specify the Accept header and to
     # set it to text/plain, because WRES text/plain is easier to parse than html
-    output_data=$( curl --cacert $wres_ca_file --header "Accept: text/plain" $job_location/output | tr -d '\r' )
-    echo "Found these output resources available to GET:"
-    echo $output_data
+    output_data = requests.get( url = job_location + "/output",
+                                      verify = wres_ca_file,
+                                      headers = { 'Accept': 'text/plain' }
+                              ).text
 
-    for output in $output_data
-    do
-        some_output=$( curl --cacert $wres_ca_file $job_location/output/$output | tr -d '\r' )
+    print( "Found these output resources available to GET:" )
+    print( output_data )
+
+    for output in output_data.splitlines():
+        some_output = requests.get( url = job_location + "/output/" + output,
+                                    verify = wres_ca_file )
 
         # It is at this point in the script that output from WRES may be
-        # processed. Here we print the output in its binary form using xxd.
+        # processed. Here we print the output in its text form if it is text.
         # A more realistic action might be to create a plot using the data.
-        echo "Here is output from $output:"
-        echo -n "$some_output" | xxd
-    done
-else
-    echo "Evaluation failed, not attempting to GET output data."
-fi
+        if ( some_output.headers['Content-Type'].startswith( 'text' ) ):
+             print( "Here is output from " + output + ":" )
+             print( some_output.text )
+        else:
+             print( "Non-text output was returned for " + output )
+else:
+    print( "Evaluation failed, not attempting to GET output data." )
 
 # After completing the evaluation, and retrieving any data from it, it is
 # important to clean up resources created by the evaluation.
 # Therefore we DELETE the output data.
-curl -v -X DELETE --cacert $wres_ca_file $job_location/output
+requests.delete( url = job_location + "/output",
+                 verify = wres_ca_file )
 
-echo ""
-echo "Congratulations! You successfully used the WRES HTTP API to"
-echo "1. run an evaluation,"
-echo "2. process the results, and"
-echo "3. clean up."
+print( "" )
+print( "Congratulations! You successfully used the WRES HTTP API to" )
+print( "1. run an evaluation," )
+print( "2. process the results, and" )
+print( "3. clean up." )
 
-exit 0
+exit( 0 )
