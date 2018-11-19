@@ -18,12 +18,12 @@ import wres.datamodel.statistics.ListOfStatistics;
 import wres.io.writing.netcdf.NetcdfOutputWriter;
 
 /**
- * Contains a set of shared writers. This is useful for managing the shared state of outputs that are written 
+ * Contains a set of shared writers for managing the shared state of statistical outputs that are written 
  * incrementally.  
  * 
  * @author james.brown@hydrosolved.com
  */
-public class SharedWriters implements Closeable,
+public class SharedStatisticsWriters implements Closeable,
                                       Consumer<ListOfStatistics<DoubleScoreStatistic>>,
                                       Supplier<Set<Path>>
 {
@@ -81,14 +81,14 @@ public class SharedWriters implements Closeable,
         }
 
         /**
-         * Return an instance of a {@link SharedWriters}.
+         * Return an instance of a {@link SharedStatisticsWriters}.
          * 
          * @return a container for sharing writers
          */
         
-        public SharedWriters build()
+        public SharedStatisticsWriters build()
         {
-            return new SharedWriters( this );
+            return new SharedStatisticsWriters( this );
         }
     }
     
@@ -99,7 +99,7 @@ public class SharedWriters implements Closeable,
      * @param builder the builder
      */
 
-    private SharedWriters( SharedWritersBuilder builder )
+    private SharedStatisticsWriters( SharedWritersBuilder builder )
     {
         // Set
         this.netcdfOutputWriter = builder.netcdfOutputWriter;
@@ -119,7 +119,6 @@ public class SharedWriters implements Closeable,
     /**
      * Pass-through any metrics to underlying writers.
      *
-     * At the moment, only DoubleScoreOutput but in future could be generic.
      * @param metricOutput metrics to write
      */
 

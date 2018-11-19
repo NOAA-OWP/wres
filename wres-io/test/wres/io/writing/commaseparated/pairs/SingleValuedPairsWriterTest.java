@@ -187,7 +187,9 @@ public final class SingleValuedPairsWriterTest
 
         // Assert the expected results
         assertTrue( results.size() == 4 );
-        assertTrue( results.get( 0 ).equals( "FEATURE DESCRIPTION,VALID TIME,LEAD DURATION IN SECONDS,"
+        assertTrue( results.get( 0 ).equals( "FEATURE DESCRIPTION,"
+                                             + "VALID TIME,"
+                                             + "LEAD DURATION IN SECONDS,"
                                              + "LEFT IN SCOOBIES,RIGHT IN SCOOBIES" ) );
         assertTrue( results.get( 1 ).equals( "PLUM,1985-01-01T01:00:00Z,3600,1.001,2.0" ) );
         assertTrue( results.get( 2 ).equals( "PLUM,1985-01-01T02:00:00Z,7200,3.0,4.0" ) );
@@ -221,8 +223,10 @@ public final class SingleValuedPairsWriterTest
 
         // Assert the expected results
         assertTrue( results.size() == 7 );
-        assertTrue( results.get( 0 ).equals( "FEATURE DESCRIPTION,VALID TIME,LEAD DURATION IN SECONDS,"
-                                             + "LEFT IN SCOOBIES,RIGHT IN SCOOBIES" ) );
+        assertTrue( results.get( 0 ).equals( "FEATURE DESCRIPTION,VALID TIME,"
+                                             + "LEAD DURATION IN SECONDS,"
+                                             + "LEFT IN SCOOBIES,"
+                                             + "RIGHT IN SCOOBIES" ) );
         assertTrue( results.get( 1 ).equals( "PLUM,1985-01-01T01:00:00Z,3600,1.001,2.0" ) );
         assertTrue( results.get( 2 ).equals( "PLUM,1985-01-01T02:00:00Z,7200,3.0,4.0" ) );
         assertTrue( results.get( 3 ).equals( "PLUM,1985-01-01T03:00:00Z,10800,5.0,6.0" ) );
@@ -252,7 +256,7 @@ public final class SingleValuedPairsWriterTest
         DecimalFormat formatter = new DecimalFormat();
         formatter.applyPattern( "0.0" );
         SingleValuedPairsWriter writer = SingleValuedPairsWriter.of( pathToFile, ChronoUnit.SECONDS, formatter );
-        
+
         // Write the pairs async on the common FJP
         CompletableFuture.allOf( CompletableFuture.runAsync( () -> writer.accept( pairs ) ),
                                  CompletableFuture.runAsync( () -> writer.accept( pairsTwo ) ),
@@ -270,8 +274,11 @@ public final class SingleValuedPairsWriterTest
         assertTrue( results.get( 0 ).equals( "BANANA,1985-01-01T07:00:00Z,25200,13.0,14.0" ) );
         assertTrue( results.get( 1 ).equals( "BANANA,1985-01-01T08:00:00Z,28800,15.0,16.0" ) );
         assertTrue( results.get( 2 ).equals( "BANANA,1985-01-01T09:00:00Z,32400,17.0,18.0" ) );
-        assertTrue( results.get( 3 ).equals( "FEATURE DESCRIPTION,VALID TIME,LEAD DURATION IN SECONDS,"
-                                             + "LEFT IN SCOOBIES,RIGHT IN SCOOBIES" ) );
+        assertTrue( results.get( 3 ).equals( "FEATURE DESCRIPTION,"
+                                             + "VALID TIME,"
+                                             + "LEAD DURATION IN SECONDS,"
+                                             + "LEFT IN SCOOBIES,"
+                                             + "RIGHT IN SCOOBIES" ) );
         assertTrue( results.get( 4 ).equals( "ORANGE,1985-01-01T04:00:00Z,14400,7.0,8.0" ) );
         assertTrue( results.get( 5 ).equals( "ORANGE,1985-01-01T05:00:00Z,18000,9.0,10.0" ) );
         assertTrue( results.get( 6 ).equals( "ORANGE,1985-01-01T06:00:00Z,21600,11.0,12.0" ) );
@@ -282,7 +289,7 @@ public final class SingleValuedPairsWriterTest
         // If all succeeded, remove the file, otherwise leave to help debugging
         Files.deleteIfExists( pathToFile );
     }
-    
+
     /**
      * Builds a {@link SingleValuedPairsWriter}, writes some pairs, and checks that the 
      * {@link SingleValuedPairsWriter#get()} returns the correct path written.

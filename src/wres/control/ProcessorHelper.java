@@ -4,10 +4,13 @@ import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.sql.SQLException;
+import java.text.DecimalFormat;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -33,8 +36,10 @@ import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.io.Operations;
 import wres.io.config.ConfigHelper;
 import wres.io.data.details.ProjectDetails;
-import wres.io.writing.SharedWriters;
-import wres.io.writing.SharedWriters.SharedWritersBuilder;
+import wres.io.writing.SharedSampleDataWriters;
+import wres.io.writing.SharedStatisticsWriters;
+import wres.io.writing.SharedStatisticsWriters.SharedWritersBuilder;
+import wres.io.writing.commaseparated.pairs.PairsWriter;
 import wres.io.writing.netcdf.NetcdfOutputWriter;
 import wres.io.writing.pair.SharedWriterManager;
 import wres.system.ProgressMonitor;
@@ -50,6 +55,13 @@ import wres.system.ProgressMonitor;
 class ProcessorHelper
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( ProcessorHelper.class );
+
+    /**
+     * Default resolution for writing outputs that contain time units, such as lead durations, time scales and
+     * datetimes. To change the resolution, change this default.
+     */
+
+    static final ChronoUnit DEFAULT_TEMPORAL_UNITS = ChronoUnit.SECONDS;
 
     private ProcessorHelper()
     {
@@ -137,16 +149,45 @@ class ProcessorHelper
             */
             // Use the gridded netcdf writer
             sharedWritersBuilder.setNetcdfOutputWriter( NetcdfOutputWriter.of( projectConfig,
-                                                                               ProductProcessor.DEFAULT_TEMPORAL_UNITS,
+                                                                               ProcessorHelper.DEFAULT_TEMPORAL_UNITS,
                                                                                outputDirectory ) );
         }
 
+        // TODO: remove this deprecated pathway on completion of #55231        
         SharedWriterManager sharedWriterManager = new SharedWriterManager();
+        SharedSampleDataWriters sharedSampleDataWriters = null;
+        SharedSampleDataWriters sharedBaselineSampleDataWriters = null;
+        
+        // If there are multiple destinations for pairs, ignore these. The system chooses the destination.
+        // Writing the same pairs, more than once, to that single destination does not make sense.
+        // See #55948-12 and #55948-13. Ultimate solution is to improve the schema to prevent multiple occurrences.
+        if ( !projectDetails.getPairDestinations().isEmpty() )
+        {
+            DecimalFormat decimalFormatter = null;
+            if ( Objects.nonNull( projectDetails.getPairDestinations().get( 0 ).getDecimalFormat() ) )
+            {
+                decimalFormatter = ConfigHelper.getDecimalFormatter( projectDetails.getPairDestinations().get( 0 ) );
+            }
+
+            sharedSampleDataWriters =
+                    SharedSampleDataWriters.of( Paths.get( outputDirectory.toString(), PairsWriter.DEFAULT_PAIRS_NAME ),
+                                                ProcessorHelper.DEFAULT_TEMPORAL_UNITS,
+                                                decimalFormatter );
+            // Baseline writer?
+            if ( Objects.nonNull( projectConfig.getInputs().getBaseline() ) )
+            {
+                sharedBaselineSampleDataWriters = SharedSampleDataWriters.of( Paths.get( outputDirectory.toString(),
+                                                                                         PairsWriter.DEFAULT_BASELINE_PAIRS_NAME ),
+                                                                              ProcessorHelper.DEFAULT_TEMPORAL_UNITS,
+                                                                              decimalFormatter );
+            }
+        }
+
 
         Set<Path> pathsWrittenTo = new HashSet<>();
 
         // Iterate the features, closing any shared writers on completion
-        SharedWriters sharedWriters = sharedWritersBuilder.build();
+        SharedStatisticsWriters sharedStatisticsWriters = sharedWritersBuilder.build();
 
         // Tasks for features
         List<CompletableFuture<Void>> featureTasks = new ArrayList<>();
@@ -167,7 +208,9 @@ class ProcessorHelper
                                                                                                            resolvedProject,
                                                                                                            projectDetails,
                                                                                                            executors,
-                                                                                                           sharedWriters,
+                                                                                                           sharedStatisticsWriters,
+                                                                                                           sharedSampleDataWriters,
+                                                                                                           sharedBaselineSampleDataWriters,
                                                                                                            sharedWriterManager ),
                                                                                      executors.getFeatureExecutor() )
                                                                        .thenAccept( featureReport );
@@ -194,13 +237,23 @@ class ProcessorHelper
         }
         finally
         {
-            sharedWriters.close();
+            sharedStatisticsWriters.close();
             sharedWriterManager.close();
         }
 
         // Find the paths written to by shared writers.
-        pathsWrittenTo.addAll( sharedWriters.get() );
+        pathsWrittenTo.addAll( sharedStatisticsWriters.get() );
+        if( Objects.nonNull( sharedSampleDataWriters ) )
+        {
+            pathsWrittenTo.addAll( sharedSampleDataWriters.get() );     
+        }
+        if( Objects.nonNull( sharedBaselineSampleDataWriters ) )
+        {
+            pathsWrittenTo.addAll( sharedBaselineSampleDataWriters.get() ); 
+        }
+        
         pathsWrittenTo.addAll( sharedWriterManager.get() );
+        
         return Collections.unmodifiableSet( pathsWrittenTo );
     }
     

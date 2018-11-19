@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -30,7 +31,8 @@ import wres.io.config.ConfigHelper;
 import wres.io.data.details.ProjectDetails;
 import wres.io.retrieval.DataGenerator;
 import wres.io.retrieval.IterationFailedException;
-import wres.io.writing.SharedWriters;
+import wres.io.writing.SharedSampleDataWriters;
+import wres.io.writing.SharedStatisticsWriters;
 import wres.io.writing.pair.SharedWriterManager;
 
 /**
@@ -76,7 +78,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
      * The shared writers.
      */
 
-    private final SharedWriters sharedWriters;
+    private final SharedStatisticsWriters sharedWriters;
 
     /**
      * Pairs writers shared state. May need to be reconciled with sharedWriters.
@@ -90,20 +92,38 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
     private final String errorMessage;
 
     /**
-     * Build a processor.
+     * Shared writers for paired sample data.
+     */
+    
+    private SharedSampleDataWriters sharedSampleWriters;
+
+    /**
+     * Shared writers for paired sample data associated with a baseline source.
+     */
+    
+    private SharedSampleDataWriters sharedBaselineSampleWriters;
+
+    /**
+     * Build a processor. 
+     * 
+     * TODO: remove the deprecated {@link SharedWriterManager} on completing #55231.
      * 
      * @param feature the feature to process
      * @param resolvedProject the resolved project
      * @param projectDetails the project details to use
      * @param executors the executors for pairs, thresholds, and metrics
-     * @param sharedWriters writers that are shared across features
+     * @param sharedSampleWriters writers of sample data that are shared across features
+     * @param sharedBaselineSampleWriters writers of baseline sample data that are shared across features
+     * @param sharedWriterManager writers that are shared across features
      */
 
     FeatureProcessor( FeaturePlus feature,
                       ResolvedProject resolvedProject,
                       ProjectDetails projectDetails,
                       ExecutorServices executors,
-                      SharedWriters sharedWriters,
+                      SharedStatisticsWriters sharedWriters,
+                      SharedSampleDataWriters sharedSampleWriters,
+                      SharedSampleDataWriters sharedBaselineSampleWriters,
                       SharedWriterManager sharedWriterManager )
     {
         this.feature = feature;
@@ -111,6 +131,8 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
         this.projectDetails = projectDetails;
         this.executors = executors;
         this.sharedWriters = sharedWriters;
+        this.sharedSampleWriters = sharedSampleWriters;
+        this.sharedBaselineSampleWriters = sharedBaselineSampleWriters;
         this.sharedWriterManager = sharedWriterManager;
 
         // Error message
@@ -168,29 +190,68 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
             // Iterate
             for ( final Future<SampleData<?>> nextInput : metricInputs )
             {
-                // Complete all tasks asynchronously:
-                // 1. Get some pairs from the database
-                // 2. Compute the metrics
-                // 3. Process any intermediate verification results
-                // 4. Monitor progress
-                final CompletableFuture<Set<Path>> c =
-                        CompletableFuture.supplyAsync( new PairsByTimeWindowProcessor( nextInput,
-                                                                                       processor ),
-                                                       executors.getPairExecutor() )
-                                         .thenApplyAsync( metricOutputs ->
-                                                          {
-                                                              ProductProcessor intermediateProcessor =
-                                                                      new ProductProcessor( this.resolvedProject,
-                                                                                            onlyWriteTheseTypes,
-                                                                                            this.sharedWriters );
-                                                              intermediateProcessor.accept( metricOutputs );
-                                                              intermediateProcessor.close();
-                                                              return intermediateProcessor.get();
-                                                          },
+                // Complete all statistics tasks asynchronously:
+                // 1. Get some sample data from the database
+                // 2. Compute statistics from the sample data
+                // 3. Produce outputs from the statistics
+                final CompletableFuture<Set<Path>> statisticsTasks =
+                        CompletableFuture.supplyAsync( new SupplySampleData( nextInput ),
+                                                       this.executors.getPairExecutor() )
+                                         .thenApplyAsync( new ProduceStatisticsFromSampleData( processor ),
+                                                          this.executors.getPairExecutor() )
+                                         .thenApplyAsync( metricOutputs -> {
+                                             ProduceOutputsFromStatistics outputProcessor =
+                                                     new ProduceOutputsFromStatistics( this.resolvedProject,
+                                                                                       onlyWriteTheseTypes,
+                                                                                       this.sharedWriters );
+                                             outputProcessor.accept( metricOutputs );
+                                             outputProcessor.close();
+                                             return outputProcessor.get();
+                                         },
                                                           this.executors.getProductExecutor() );
 
-                // Add the future to the list
-                listOfFutures.add( c );
+                // Add the task to the list
+                listOfFutures.add( statisticsTasks );               
+
+                // Create a separate task for serializing the sample data
+                // In future, this may be parcelled together with the statistical output
+                // in order to form a direct connection between the two. See #54942 and #54731
+                // Form a separate task for the main pairs and baseline pairs, because they are independent tasks
+                // There is one shared writer per output path
+                
+                // Remove this toggle when #55231 is resolved and promote the behavior inside it to unconditional
+                if ( isNewPairsPathwayEnabled() )
+                {
+                    if ( Objects.nonNull( this.sharedSampleWriters ) )
+                    {
+                        final CompletableFuture<Set<Path>> sampleDataTask =
+                                CompletableFuture.supplyAsync( new SupplySampleData( nextInput ),
+                                                               this.executors.getProductExecutor() )
+                                                 .thenApplyAsync( sampleData -> {
+                                                     this.sharedSampleWriters.accept( sampleData );
+                                                     return sharedSampleWriters.get();
+                                                 },
+                                                                  this.executors.getProductExecutor() );
+
+                        listOfFutures.add( sampleDataTask );
+                    }
+
+                    // Create the baseline pairs if required and a writer has been provided
+                    if ( Objects.nonNull( projectConfig.getInputs().getBaseline() )
+                         && Objects.nonNull( this.sharedBaselineSampleWriters ) )
+                    {
+                        final CompletableFuture<Set<Path>> baselineSampleDataTask =
+                                CompletableFuture.supplyAsync( new SupplySampleData( nextInput ),
+                                                               this.executors.getProductExecutor() )
+                                                 .thenApplyAsync( sampleData -> {
+                                                     this.sharedBaselineSampleWriters.accept( sampleData.getBaselineData() );
+                                                     return sharedSampleWriters.get();
+                                                 },
+                                                                  this.executors.getProductExecutor() );
+
+                        listOfFutures.add( baselineSampleDataTask );
+                    }
+                }
             }
         }
         catch ( IterationFailedException re )
@@ -230,7 +291,19 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                                             allPaths );
     }
 
-
+    /**
+     * Feature toggle for testing of new pairs pathway. Return <code>true</code> to test the new pathway,
+     * otherwise <code>false</code>. This should be false outside of production until #55231 is resolved. 
+     * Once #55231 is resolved, remove this deprecated method.
+     * 
+     * TODO: eliminate when #55231 is resolved
+     */
+    @Deprecated
+    private boolean isNewPairsPathwayEnabled()
+    {
+        return false;
+    }
+    
     /**
      * Generates products at the end of the processing pipeline.
      * 
@@ -252,8 +325,8 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                                             && !ConfigHelper.getIncrementalFormats( this.resolvedProject.getProjectConfig() )
                                                             .contains( format );
                 try ( // End of pipeline processor
-                      ProductProcessor endOfPipeline =
-                              new ProductProcessor( this.resolvedProject,
+                      ProduceOutputsFromStatistics endOfPipeline =
+                              new ProduceOutputsFromStatistics( this.resolvedProject,
                                                     nowWriteTheseTypes,
                                                     this.sharedWriters ) )
                 {
