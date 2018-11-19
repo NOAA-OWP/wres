@@ -37,7 +37,7 @@ import wres.io.writing.WriteException;
  * @author james.brown@hydrosolved.com
  */
 
-abstract class PairsWriter<S extends Object, T extends Pairs<S> & TimeSeries<S>>
+public abstract class PairsWriter<S extends Object, T extends Pairs<S> & TimeSeries<S>>
         implements Consumer<T>, Supplier<Set<Path>>
 {
 
@@ -45,7 +45,7 @@ abstract class PairsWriter<S extends Object, T extends Pairs<S> & TimeSeries<S>>
      * A default name for the pairs.
      */
 
-    public static final String DEFAULT_PAIRS_NAME = "pairs.csv";
+    public static final String DEFAULT_PAIRS_NAME = "pairs_new.csv";
 
     /**
      * Delimiter.
@@ -57,7 +57,7 @@ abstract class PairsWriter<S extends Object, T extends Pairs<S> & TimeSeries<S>>
      * A default name for the baseline pairs.
      */
 
-    public static final String DEFAULT_BASELINE_PAIRS_NAME = "baseline_pairs.csv";
+    public static final String DEFAULT_BASELINE_PAIRS_NAME = "baseline_pairs_new.csv";
 
     /**
      * Logger.
@@ -214,7 +214,7 @@ abstract class PairsWriter<S extends Object, T extends Pairs<S> & TimeSeries<S>>
      * @return the time resolution
      */
 
-    public ChronoUnit getTimeResolution()
+    ChronoUnit getTimeResolution()
     {
         return this.timeResolution;
     }
@@ -225,7 +225,7 @@ abstract class PairsWriter<S extends Object, T extends Pairs<S> & TimeSeries<S>>
      * @return the path to the pairs.
      */
 
-    Path getPath()
+    private Path getPath()
     {
         return this.pathToPairs;
     }
@@ -236,7 +236,7 @@ abstract class PairsWriter<S extends Object, T extends Pairs<S> & TimeSeries<S>>
      * @return the write lock
      */
 
-    ReentrantLock getWriteLock()
+    private ReentrantLock getWriteLock()
     {
         return this.writeLock;
     }
@@ -249,7 +249,7 @@ abstract class PairsWriter<S extends Object, T extends Pairs<S> & TimeSeries<S>>
      * @throws IOException if the writer cannot be constructed
      */
 
-    BufferedWriter getBufferedWriter( boolean appender ) throws IOException
+    private BufferedWriter getBufferedWriter( boolean appender ) throws IOException
     {
         StandardOpenOption appendOrTruncate = StandardOpenOption.TRUNCATE_EXISTING;
 
@@ -273,7 +273,7 @@ abstract class PairsWriter<S extends Object, T extends Pairs<S> & TimeSeries<S>>
      * @throws NullPointerException if the header is null
      */
 
-    void writeHeaderIfRequired( final T pairs ) throws IOException
+    private void writeHeaderIfRequired( final T pairs ) throws IOException
     {
         Objects.requireNonNull( pairs, "Specify a non-null header for writing pairs." );
 
