@@ -3,7 +3,7 @@
     <timeZone>0.0</timeZone>
     <series>
         <header>
-            <type>instantaneous</type>
+            <type>accumulative</type>
             <locationId>FAKE2</locationId>
             <parameterId>STREAMFLOW</parameterId>
             <timeStep unit="second" multiplier="10800"/>

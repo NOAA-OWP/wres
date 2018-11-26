@@ -62,6 +62,15 @@ env_suffix=-dev
 
 echo "We are using the $env_suffix environment in this example."
 
+# You must edit this user_name variable to be your first name or pass as arg.
+user_name=i_need_to_edit_this_user_name_to_be_my_first_name
+
+if [ ! -z "$1" ]
+then
+    echo "Setting user_name to $1"
+    user_name=$1
+fi
+
 # The WRES HTTP API uses secured HTTP, aka HTTPS, which is a form of TLS aka
 # Transport Layer Security, which relies on X.509 certificates for
 # authentication. In this case, the server is providing authentication to the
@@ -73,23 +82,16 @@ echo "We are using the $env_suffix environment in this example."
 # contains the certificate of the server. The file may be retrieved at
 # https://***REMOVED***/redmine/projects/wres-user-support/wiki/Import_Certificate_Authority_in_Browser_for_Access_to_WRES_Web_Front-End
 
-wres_ca_file=wres_ca_x509_cert.pem
+wres_ca_file=cacerts/wres_ca_x509_cert.pem
 
 if [ -f $wres_ca_file ]
 then
     echo "Found the WRES CA file at $wres_ca_file"
 else
-    echo "Did not find the WRES CA file at $wres_ca_file, please update script."
+    echo "Did not find the WRES CA file at $wres_ca_file"
     exit 1
 fi
 
-# You must edit this user_name variable to be your first name or pass as arg.
-user_name=i_need_to_edit_this_user_name_to_be_my_first_name
-
-if [ ! -z "$1" ]
-then
-    user_name=$1
-fi
 
 
 # Second, POST the evaluation project configuration to the WRES.
@@ -122,8 +124,7 @@ echo "$post_result"
 post_result_http_code=$( echo -n "$post_result" | grep HTTP | tail -n 1 | cut -d' ' -f2 )
 echo "The last status code in the response was $post_result_http_code"
 
-if [ "$post_result_http_code" -eq "201" ] \
-   || [ "$post_result_http_code" -eq "200" ]
+if [ "$post_result_http_code" -eq "201" ] || [ "$post_result_http_code" -eq "200" ]
 then
     echo "The response code was successful: $post_result_http_code"
 else
@@ -194,3 +195,5 @@ echo "Congratulations! You successfully used the WRES HTTP API to"
 echo "1. run an evaluation,"
 echo "2. process the results, and"
 echo "3. clean up."
+
+exit 0

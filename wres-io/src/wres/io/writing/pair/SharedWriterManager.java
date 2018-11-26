@@ -29,11 +29,14 @@ import org.slf4j.LoggerFactory;
 import wres.io.concurrency.WRESRunnableException;
 
 /**
- * Stores state that needs to be shared between PairWriter instances.
+ * Stores state that needs to be shared between PairSupplier instances.
  * The intent is to only open each pair file *once* and close it *once* per
  * evaluation. If the file exists, it will be deleted and a header written
  * on first check-out.
+ * 
+ * TODO: remove on completion of #55231
  */
+@Deprecated
 public class SharedWriterManager implements Closeable,
                                             Consumer<Supplier<Pair<Path,String>>>,
                                             Supplier<Set<Path>>
