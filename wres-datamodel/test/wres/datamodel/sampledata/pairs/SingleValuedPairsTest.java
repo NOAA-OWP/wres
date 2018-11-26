@@ -39,7 +39,7 @@ public final class SingleValuedPairsTest
         assertFalse( "Expected a dataset without a baseline [false," + p.hasBaseline() + "].", p.hasBaseline() );
         p = (SingleValuedPairs) b.addDataForBaseline( values ).setMetadataForBaseline( meta ).build(); //Add another
         //Check that a returned dataset contains the expected number of pairs
-        assertTrue( "Expected a main dataset with ten pairs [0," + p.getRawData().size() + "].", p.getRawData().size() == 0 );
+        assertTrue( "Expected a main dataset with 0 pairs [0," + p.getRawData().size() + "].", p.getRawData().size() == 0 );
     }
     
     

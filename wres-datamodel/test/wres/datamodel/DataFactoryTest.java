@@ -25,8 +25,8 @@ import wres.config.generated.TimeSeriesMetricConfigName;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.ReferenceTime;
+import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.sampledata.pairs.DichotomousPair;
 import wres.datamodel.sampledata.pairs.DichotomousPairs;
@@ -80,18 +80,18 @@ public final class DataFactoryTest
         final SampleMetadata m3 = SampleMetadata.of( MeasurementUnit.of(),
                                                          DatasetIdentifier.of( l3, "SQIN", "ESP" ) );
         assertNotNull( DiscreteProbabilityPairs.of( dInput, m2 ) );
-        assertNotNull( DiscreteProbabilityPairs.of( dInput, dInput, m2, m3, null ) );
+        assertNotNull( DiscreteProbabilityPairs.of( dInput, dInput, m2, m3 ) );
 
         final List<SingleValuedPair> dInputSingleValued = new ArrayList<>();
         dInputSingleValued.add( SingleValuedPair.of( 0.0, 1.0 ) );
 
         assertNotNull( SingleValuedPairs.of( dInputSingleValued, m3 ) );
-        assertNotNull( SingleValuedPairs.of( dInputSingleValued, dInputSingleValued, m2, m3, null ) );
+        assertNotNull( SingleValuedPairs.of( dInputSingleValued, dInputSingleValued, m2, m3 ) );
 
         final List<EnsemblePair> eInput = new ArrayList<>();
         eInput.add( EnsemblePair.of( 0.0, new double[] { 1.0, 2.0 } ) );
         assertNotNull( EnsemblePairs.of( eInput, m3 ) );
-        assertNotNull( EnsemblePairs.of( eInput, eInput, m2, m3, null ) );
+        assertNotNull( EnsemblePairs.of( eInput, eInput, m2, m3 ) );
     }
 
     @Test

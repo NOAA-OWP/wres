@@ -3,11 +3,11 @@ package wres.datamodel.sampledata.pairs;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.SortedSet;
+import java.util.stream.Collectors;
 
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.SampleMetadata;
@@ -46,7 +46,7 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements TimeSeri
             return null;
         }
         TimeSeriesOfEnsemblePairsBuilder builder = new TimeSeriesOfEnsemblePairsBuilder();
-        builder.addTimeSeriesData( baseline.getRawData() ).setMetadata( getMetadataForBaseline() );
+        builder.addTimeSeries( baseline ).setMetadata( getMetadataForBaseline() );
         return builder.build();
     }
 
@@ -69,9 +69,9 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements TimeSeri
     }
 
     @Override
-    public List<Instant> getBasisTimes()
+    public SortedSet<Instant> getBasisTimes()
     {
-        return Collections.unmodifiableList( main.getBasisTimes() );
+        return Collections.unmodifiableSortedSet( main.getBasisTimes() );
     }
 
     @Override
@@ -101,13 +101,13 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements TimeSeri
     @Override
     public Instant getEarliestBasisTime()
     {
-        return TimeSeriesHelper.getEarliestBasisTime( getBasisTimes() );
+        return main.getEarliestBasisTime();
     }
 
     @Override
     public Instant getLatestBasisTime()
     {
-        return TimeSeriesHelper.getLatestBasisTime( this.getBasisTimes() );
+        return main.getLatestBasisTime();
     }
 
     @Override
@@ -128,45 +128,14 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements TimeSeri
          * The raw data.
          */
 
-        private List<Event<List<Event<EnsemblePair>>>> data = new ArrayList<>();
+        private List<List<Event<EnsemblePair>>> data = new ArrayList<>();
 
         /**
          * The raw data for the baseline
          */
 
-        private List<Event<List<Event<EnsemblePair>>>> baselineData = null;
-
-        /**
-         * Adds an atomic time-series to the builder.
-         * 
-         * @param basisTime the basis time for the time-series
-         * @param values the pairs of time-series values, ordered from earliest to latest
-         * @return the builder
-         */
-
-        public TimeSeriesOfEnsemblePairsBuilder addTimeSeriesData( Instant basisTime,
-                                                                   List<Event<EnsemblePair>> values )
-        {
-            TimeSeriesBuilder.super.addTimeSeriesData( basisTime, values );
-            return this;
-        }
-
-        /**
-         * Adds an atomic time-series to the builder for a baseline.
-         * 
-         * @param basisTime the basis time for the time-series
-         * @param values the pairs of time-series values, ordered from earliest to latest
-         * @return the builder
-         */
-
-        public TimeSeriesOfEnsemblePairsBuilder addTimeSeriesDataForBaseline( Instant basisTime,
-                                                                              List<Event<EnsemblePair>> values )
-        {
-            List<Event<List<Event<EnsemblePair>>>> input = new ArrayList<>();
-            input.add( Event.of( basisTime, values ) );
-            return addTimeSeriesDataForBaseline( input );
-        }
-
+        private List<List<Event<EnsemblePair>>> baselineData = null;
+        
         /**
          * Adds a time-series to the builder.
          * 
@@ -183,6 +152,23 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements TimeSeri
         }
 
         /**
+         * Adds a list of atomic time-series to the builder, each one stored against its basis time.
+         * 
+         * @param values the time-series, stored against their basis times
+         * @return the builder
+         * @throws NullPointerException if the input is null
+         */
+
+        public TimeSeriesOfEnsemblePairsBuilder addTimeSeries( List<Event<EnsemblePair>> values )
+        {
+            Objects.requireNonNull( values, "Specify a non-null list of events." );
+
+            this.data.add( values );
+            addData( values.stream().map( Event::getValue ).collect( Collectors.toList() ) );
+            return this;
+        }
+        
+        /**
          * Adds a time-series to the builder for a baseline dataset.
          * 
          * @param timeSeries the time-series
@@ -191,35 +177,14 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements TimeSeri
          * @throws NullPointerException if the input is null
          */
 
-        public TimeSeriesOfEnsemblePairsBuilder
-                addTimeSeriesForBaseline( TimeSeries<EnsemblePair> timeSeries )
+        public TimeSeriesOfEnsemblePairsBuilder addTimeSeriesForBaseline( TimeSeries<EnsemblePair> timeSeries )
         {
             Objects.requireNonNull( timeSeries, "Specify non-null time-series input." );
 
-            for ( TimeSeries<EnsemblePair> next : timeSeries.basisTimeIterator() )
-            {
-                Instant basisTime = next.getEarliestBasisTime();
-                List<Event<EnsemblePair>> values = new ArrayList<>();
-                next.timeIterator().forEach( values::add );
-                this.addTimeSeriesDataForBaseline( basisTime, values );
-            }
+            List<Event<EnsemblePair>> values = new ArrayList<>();
+            timeSeries.timeIterator().forEach( values::add );
+            this.addTimeSeriesDataForBaseline( values );
 
-            return this;
-        }
-
-        /**
-         * Adds a list of atomic time-series to the builder, each one stored against its basis time.
-         * 
-         * @param values the time-series, stored against their basis times
-         * @return the builder
-         */
-
-        public TimeSeriesOfEnsemblePairsBuilder
-                addTimeSeriesData( List<Event<List<Event<EnsemblePair>>>> values )
-        {
-            List<Event<List<Event<EnsemblePair>>>> sorted = TimeSeriesHelper.sort( values );
-            this.data.addAll( sorted );
-            addData( TimeSeriesHelper.unwrap( sorted ) );
             return this;
         }
 
@@ -230,8 +195,7 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements TimeSeri
          * @return the builder
          */
 
-        public TimeSeriesOfEnsemblePairsBuilder
-                addTimeSeriesDataForBaseline( List<Event<List<Event<EnsemblePair>>>> values )
+        public TimeSeriesOfEnsemblePairsBuilder addTimeSeriesDataForBaseline( List<Event<EnsemblePair>> values )
         {
             if ( Objects.nonNull( values ) )
             {
@@ -239,10 +203,11 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements TimeSeri
                 {
                     this.baselineData = new ArrayList<>();
                 }
-                List<Event<List<Event<EnsemblePair>>>> sorted = TimeSeriesHelper.sort( values );
-                this.baselineData.addAll( sorted );
-                this.addDataForBaseline( TimeSeriesHelper.unwrap( sorted ) );
+
+                this.baselineData.add( values );
+                this.addDataForBaseline( values.stream().map( Event::getValue ).collect( Collectors.toList() ) );
             }
+            
             return this;
         }
 
@@ -252,21 +217,17 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements TimeSeri
          * @param timeSeries the time-series
          * @return the builder
          * @throws SampleDataException if the specified input is inconsistent with any existing input
+         * @throws NullPointerException if the input is null
          */
 
-        public TimeSeriesOfEnsemblePairsBuilder
-                addTimeSeries( TimeSeriesOfEnsemblePairs timeSeries )
+        public TimeSeriesOfEnsemblePairsBuilder addTimeSeries( TimeSeriesOfEnsemblePairs timeSeries )
         {
-            for ( TimeSeries<EnsemblePair> a : timeSeries.basisTimeIterator() )
-            {
-                List<Event<EnsemblePair>> nextSource = new ArrayList<>();
+            Objects.requireNonNull( timeSeries, "Specify non-null time-series input." );
+            
+            List<Event<EnsemblePair>> nextSource = new ArrayList<>();
+            timeSeries.timeIterator().forEach( nextSource::add );
 
-                for ( Event<EnsemblePair> nextEvent : a.timeIterator() )
-                {
-                    nextSource.add( nextEvent );
-                }
-                this.addTimeSeriesData( Arrays.asList( Event.of( a.getEarliestBasisTime(), nextSource ) ) );
-            }
+            this.addTimeSeries( nextSource );
 
             // Set the union of the current metadata and any previously added time-series
             List<SampleMetadata> mainMeta = new ArrayList<>();
@@ -295,21 +256,17 @@ public class TimeSeriesOfEnsemblePairs extends EnsemblePairs implements TimeSeri
          * @param timeSeries the time-series
          * @return the builder
          * @throws SampleDataException if the specified input is inconsistent with any existing input
+         * @throws NullPointerException if the input is null
          */
 
         public TimeSeriesOfEnsemblePairsBuilder addTimeSeriesForBaseline( TimeSeriesOfEnsemblePairs timeSeries )
         {
-            for ( TimeSeries<EnsemblePair> a : timeSeries.basisTimeIterator() )
-            {
-                List<Event<EnsemblePair>> nextSource = new ArrayList<>();
+            Objects.requireNonNull( timeSeries, "Specify non-null time-series input." );
+            
+            List<Event<EnsemblePair>> nextSource = new ArrayList<>();
+            timeSeries.timeIterator().forEach( nextSource::add );
 
-                for ( Event<EnsemblePair> nextEvent : a.timeIterator() )
-                {
-                    nextSource.add( nextEvent );
-                }
-                this.addTimeSeriesDataForBaseline( Arrays.asList( Event.of( a.getEarliestBasisTime(),
-                                                                            nextSource ) ) );
-            }
+            this.addTimeSeriesDataForBaseline( nextSource );
 
             // Set the union of the current metadata and any previously added time-series
             List<SampleMetadata> baselineMeta = new ArrayList<>();
