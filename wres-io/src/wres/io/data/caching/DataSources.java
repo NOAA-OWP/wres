@@ -1,27 +1,23 @@
 package wres.io.data.caching;
 
 import java.sql.Connection;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import ohd.hseb.util.data.DataSetSortComparator;
-import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.generated.DataSourceConfig;
+import wres.datamodel.metadata.ReferenceTime;
 import wres.io.config.ConfigHelper;
-import wres.io.data.details.ProjectDetails;
+import wres.io.config.OrderedSampleMetadata;
 import wres.io.data.details.SourceDetails;
 import wres.io.data.details.SourceDetails.SourceKey;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
-import wres.io.utilities.ScriptBuilder;
 import wres.util.Collections;
 import wres.util.TimeHelper;
 
@@ -283,11 +279,8 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
 	    return super.getID(key);
 	}
 
-	public static List<String> getSourcePaths( final ProjectDetails projectDetails,
-                                               final DataSourceConfig dataSourceConfig,
-                                               final Integer issuePoolStep,
-                                               final Integer firstLead,
-                                               final Integer lastLead)
+	public static List<String> getSourcePaths( final OrderedSampleMetadata sampleMetadata,
+                                               final DataSourceConfig dataSourceConfig)
             throws SQLException
     {
         List<String> paths = new ArrayList<>();
@@ -298,28 +291,20 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
         script.addLine("SELECT path");
         script.addLine("FROM wres.Source S");
         script.addLine("WHERE S.is_point_data = FALSE");
+        script.addTab().addLine("AND S.lead > ", TimeHelper.durationToLead(sampleMetadata.getMinimumLead()));
+        script.addTab().addLine("AND S.lead <= ", TimeHelper.durationToLead(sampleMetadata.getLatestLead()));
 
-        if (isForecast && firstLead != null)
+        if (isForecast && sampleMetadata.getProjectDetails().getMinimumLead() > Integer.MIN_VALUE)
         {
-            script.addTab().addLine("AND S.lead > ", firstLead);
+            script.addTab().addLine("AND S.lead >= ", sampleMetadata.getProjectDetails().getMinimumLead());
         }
 
-        if (isForecast && lastLead != null)
+        if (isForecast && sampleMetadata.getProjectDetails().getMaximumLead() < Integer.MAX_VALUE)
         {
-            script.addTab().addLine("AND S.lead <= ", lastLead);
+            script.addTab().addLine("AND S.lead <= ", sampleMetadata.getProjectDetails().getMaximumLead());
         }
 
-        if (isForecast && projectDetails.getMinimumLead() > Integer.MIN_VALUE)
-        {
-            script.addTab().addLine("AND S.lead >= ", projectDetails.getMinimumLead());
-        }
-
-        if (isForecast && projectDetails.getMaximumLead() < Integer.MAX_VALUE)
-        {
-            script.addTab().addLine("AND S.lead <= ", projectDetails.getMaximumLead());
-        }
-
-        if (projectDetails.getEarliestDate() != null)
+        if (sampleMetadata.getProjectDetails().getEarliestDate() != null)
         {
             script.addTab().add("AND S.output_time ");
 
@@ -328,10 +313,10 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
                 script.add("+ INTERVAL '1 ", TimeHelper.LEAD_RESOLUTION, "' * S.lead ");
             }
 
-            script.addLine(">= '", projectDetails.getEarliestDate(), "'");
+            script.addLine(">= '", sampleMetadata.getProjectDetails().getEarliestDate(), "'");
         }
 
-        if (projectDetails.getLatestDate() != null)
+        if (sampleMetadata.getProjectDetails().getLatestDate() != null)
         {
             script.addTab().add("AND S.output_time ");
 
@@ -340,26 +325,23 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
                 script.add("+ INTERVAL '1 ", TimeHelper.LEAD_RESOLUTION, "' * S.lead ");
             }
 
-            script.addLine("<= '", projectDetails.getLatestDate(), "'");
+            script.addLine("<= '", sampleMetadata.getProjectDetails().getLatestDate(), "'");
         }
 
-        Pair<Instant, Instant> issueRange = projectDetails.getIssueDateRange( issuePoolStep );
-
-        String issueClause;
-        if (issueRange == null)
+        String issueClause = null;
+        if ( sampleMetadata.getReferenceTimeSystem() == ReferenceTime.ISSUE_TIME)
         {
-            issueClause =  null;
-        }
-        else if (issueRange.getLeft().equals(issueRange.getRight()))
-        {
-            issueClause = "S.output_time = '" + issueRange.getLeft() + "'::timestamp without time zone ";
-        }
-        else
-        {
-            // TODO: Uncomment when it's time to go exclusive-inclusive
-            //issueClause = "S.output_time > '" + issueRange.getLeft() + "'::timestamp without time zone ";
-            issueClause = "S.output_time >= '" + issueRange.getLeft() + "'::timestamp without time zone ";
-            issueClause += "AND S.output_time <= '" + issueRange.getRight() + "'::timestamp without time zone";
+            if (sampleMetadata.getEarliestTime().equals( sampleMetadata.getLatestTime() ))
+            {
+                issueClause = "S.output_time = '" + sampleMetadata.getEarliestTime() + "'::timestamp without time zone ";
+            }
+            else
+            {
+                // TODO: Uncomment when it's time to go exclusive-inclusive
+                //issueClause = "S.output_time > '" + timeWindow.getEarliestTime() + "'::timestamp without time zone ";
+                issueClause = "S.output_time >= '" + sampleMetadata.getEarliestTime() + "'::timestamp without time zone ";
+                issueClause += "AND S.output_time <= '" + sampleMetadata.getLatestTime() + "'::timestamp without time zone";
+            }
         }
 
         if (issueClause != null)
@@ -367,21 +349,21 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
             script.addTab().addLine("AND ", issueClause);
         }
 
-        if (issueClause == null && isForecast && projectDetails.getEarliestIssueDate() != null)
+        if (issueClause == null && isForecast && sampleMetadata.getProjectDetails().getEarliestIssueDate() != null)
         {
-            script.addTab().addLine("AND S.output_time >= '", projectDetails.getEarliestIssueDate(), "'");
+            script.addTab().addLine("AND S.output_time >= '", sampleMetadata.getProjectDetails().getEarliestIssueDate(), "'");
         }
 
-        if (issueClause == null && isForecast && projectDetails.getLatestIssueDate() != null)
+        if (issueClause == null && isForecast && sampleMetadata.getProjectDetails().getLatestIssueDate() != null)
         {
-            script.addTab().addLine("AND S.output_time <= '", projectDetails.getLatestIssueDate(), "'");
+            script.addTab().addLine("AND S.output_time <= '", sampleMetadata.getProjectDetails().getLatestIssueDate(), "'");
         }
 
         script.addTab().addLine("AND EXISTS (");
         script.addTab(  2  ).addLine("SELECT 1");
         script.addTab(  2  ).addLine("FROM wres.ProjectSource PS");
-        script.addTab(  2  ).addLine("WHERE PS.project_id = ", projectDetails.getId());
-        script.addTab(   3   ).addLine("AND PS.member = ", projectDetails.getInputName( dataSourceConfig ));
+        script.addTab(  2  ).addLine("WHERE PS.project_id = ", sampleMetadata.getProjectDetails().getId());
+        script.addTab(   3   ).addLine("AND PS.member = ", sampleMetadata.getProjectDetails().getInputName( dataSourceConfig ));
         script.addTab(   3   ).addLine("AND PS.source_id = S.source_id");
         script.addTab().addLine(");");
 

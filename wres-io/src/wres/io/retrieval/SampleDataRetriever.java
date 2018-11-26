@@ -6,7 +6,6 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -14,10 +13,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.TreeMap;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,13 +22,8 @@ import wres.config.ProjectConfigs;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.DestinationConfig;
-import wres.config.generated.ProjectConfig;
 import wres.config.generated.TimeScaleConfig;
-import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.SampleMetadata;
-import wres.datamodel.metadata.SampleMetadata.SampleMetadataBuilder;
-import wres.datamodel.metadata.TimeScale;
+import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
@@ -45,17 +37,15 @@ import wres.grid.client.Fetcher;
 import wres.grid.client.Request;
 import wres.grid.client.Response;
 import wres.io.config.ConfigHelper;
+import wres.io.config.OrderedSampleMetadata;
 import wres.io.data.caching.DataSources;
 import wres.io.data.caching.MeasurementUnits;
-import wres.io.data.details.ProjectDetails;
 import wres.io.retrieval.scripting.Scripter;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
 import wres.io.writing.pair.PairSupplier;
 import wres.io.writing.pair.SharedWriterManager;
-import wres.util.CalculationException;
-import wres.util.NotImplementedException;
 import wres.util.TimeHelper;
 
 /**
@@ -65,25 +55,15 @@ class SampleDataRetriever extends Retriever
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(SampleDataRetriever.class);
 
-    /**
-     * The number of the issue dates pool
-     */
-    private int issueDatesPool;
-
-    SampleDataRetriever( final ProjectDetails projectDetails,
+    SampleDataRetriever( final OrderedSampleMetadata sampleMetadata,
                          final CacheRetriever getLeftValues,
                          SharedWriterManager sharedWriterManager,
                          Path outputDirectoryForPairs )
     {
-        super( projectDetails,
+        super( sampleMetadata,
                getLeftValues,
                sharedWriterManager,
                outputDirectoryForPairs );
-    }
-
-    void setIssueDatesPool( int issueDatesPool )
-    {
-        this.issueDatesPool = issueDatesPool;
     }
 
     @Override
@@ -132,17 +112,7 @@ class SampleDataRetriever extends Retriever
         }
         catch ( IOException e )
         {
-            String message = "While calculating pairs for";
-
-            if ( this.getProjectDetails().getIssuePoolingWindow() != null )
-            {
-                message += " sequence ";
-                message += String.valueOf( this.issueDatesPool );
-                message += " for";
-            }
-
-            message += " lead time ";
-            message += String.valueOf( this.getLeadIteration() );
+            String message = "While calculating pairs for" + this.getSampleMetadata();
 
             throw new RetrievalFailedException( message, e );
         }
@@ -161,66 +131,40 @@ class SampleDataRetriever extends Retriever
     {
         SampleData<?> input;
 
-        SampleMetadata metadata =
-                this.buildMetadata( this.getProjectDetails().getProjectConfig(), false );
-        SampleMetadata baselineMetadata = null;
-
         if (this.getPrimaryPairs().isEmpty())
         {
-            LOGGER.trace("There are no pairs in window {} for {} at {}",
-                         metadata.getTimeWindow(),
-                         this.getProjectDetails().getRightVariableName(),
-                         ConfigHelper.getFeatureDescription( this.getFeature() ));
+            LOGGER.trace("There are no pairs in {}",
+                         this.getSampleMetadata());
         }
         else if (this.getPrimaryPairs().size() == 1)
         {
-            LOGGER.trace("There is only one pair in window {} for {} at {}",
-                         metadata.getTimeWindow(),
-                         this.getProjectDetails().getRightVariableName(),
-                         ConfigHelper.getFeatureDescription( this.getFeature() ));
-        }
-
-        if (this.getProjectDetails().hasBaseline())
-        {
-            baselineMetadata =
-                    this.buildMetadata( this.getProjectDetails().getProjectConfig(), true );
+            LOGGER.trace("There is only one pair in {}",
+                         this.getSampleMetadata());
         }
 
         try
         {
-
             if ( this.getProjectDetails().getRight().getType() == DatasourceType.ENSEMBLE_FORECASTS )
             {
-                if ( ProjectConfigs.hasTimeSeriesMetrics(this.getProjectDetails().getProjectConfig()))
-                {
-                    input = this.createEnsembleTimeSeriesInput( metadata, baselineMetadata );
-                }
-                else
-                {
-                    input = this.createEnsembleInput( metadata, baselineMetadata );
-                }
+                input = this.createEnsembleInput();
             }
             else
             {
                 if ( ProjectConfigs.hasTimeSeriesMetrics(this.getProjectDetails().getProjectConfig()))
                 {
-                    input = this.createSingleValuedTimeSeriesInput( metadata, baselineMetadata );
+                    input = this.createSingleValuedTimeSeriesInput( );
                 }
                 else
                 {
-                    input = this.createSingleValuedInput( metadata,
-                                                          baselineMetadata );
+                    input = this.createSingleValuedInput();
                 }
             }
         }
         catch ( SampleDataException mie )
         {
-            String message = "A collection of pairs could not be created at"
-                             + " window "
-                             + ( this.getLeadIteration() + 1 )
-                             + " for feature '"
-                             + ConfigHelper.getFeatureDescription( this.getFeature() )
-                             + "'.";
+            String message = "A collection of pairs could not be created for "
+                             + this.getSampleMetadata()
+                             + ".";
             // Decorating with more information in our message.
             throw new SampleDataException( message, mie );
         }
@@ -228,7 +172,7 @@ class SampleDataRetriever extends Retriever
         return input;
     }
 
-    private SampleData createSingleValuedInput(SampleMetadata rightMetadata, SampleMetadata baselineMetadata)
+    private SampleData createSingleValuedInput()
     {
         List<SingleValuedPair> primary = convertToPairOfDoubles( this.getPrimaryPairs() );
         List<SingleValuedPair> baseline = null;
@@ -239,26 +183,45 @@ class SampleDataRetriever extends Retriever
         }
 
         return SingleValuedPairs.of( primary,
-                                                baseline,
-                                                rightMetadata,
-                                                baselineMetadata,
-                                                this.getClimatology() );
+                                     baseline,
+                                     this.getSampleMetadata().getMetadata(),
+                                     this.getSampleMetadata().getBaselineMetadata(),
+                                     this.getClimatology() );
     }
 
-    private SampleData createSingleValuedTimeSeriesInput(SampleMetadata rightMetadata, SampleMetadata baselineMetadata)
-            throws RetrievalFailedException
+    private SampleData createSingleValuedTimeSeriesInput()
     {
         TimeSeriesOfSingleValuedPairsBuilder builder = new TimeSeriesOfSingleValuedPairsBuilder();
 
         Map<Instant, List<Event<SingleValuedPair>>> events = this.getSingleValuedEvents( this.getPrimaryPairs() );
         events.forEach( builder::addTimeSeriesData );
-        builder.setMetadata( rightMetadata );
+
+        if (this.getFirstlead() == Long.MAX_VALUE || this.getLastLead() == Long.MIN_VALUE)
+        {
+            throw new RetrievalFailedException(
+                    "No time series data could be loaded from the "
+                    + "database for a time series metric."
+            );
+        }
+
+        TimeWindow fullWindow = TimeWindow.of(
+                Instant.MIN,
+                Instant.MAX,
+                ReferenceTime.ISSUE_TIME,
+                Duration.of(this.getFirstlead(), TimeHelper.LEAD_RESOLUTION),
+                Duration.of(this.getLastLead(), TimeHelper.LEAD_RESOLUTION)
+        );
+
+        OrderedSampleMetadata.Builder copier = OrderedSampleMetadata.Builder.from( this.getSampleMetadata() );
+        copier.setTimeWindow( fullWindow );
+
+        builder.setMetadata( copier.build().getMetadata());
 
         if (!this.getBaselinePairs().isEmpty())
         {
             events = this.getSingleValuedEvents( this.getBaselinePairs() );
             events.forEach( builder::addTimeSeriesDataForBaseline );
-            builder.setMetadataForBaseline( baselineMetadata );
+            builder.setMetadataForBaseline( this.getSampleMetadata().getBaselineMetadata() );
         }
 
         builder.setClimatology( this.getClimatology() );
@@ -266,31 +229,7 @@ class SampleDataRetriever extends Retriever
         return builder.build();
     }
 
-    private SampleData createEnsembleTimeSeriesInput(SampleMetadata rightMetadata, SampleMetadata baselineMetadata)
-            throws RetrievalFailedException
-    {
-        throw new NotImplementedException( "Ensemble Time Series Inputs cannot be created yet." );
-        /*
-        TimeSeriesOfEnsemblePairsBuilder builder = DataFactory.
-                                                                         .ofTimeSeriesOfEnsemblePairsBuilder();
-
-        Map<Instant, List<Event<PairOfDoubleAndVectorOfDoubles>>> events = this.getEnsembleEvents( primaryPairs );
-        events.entrySet().forEach( entry -> builder.addTimeSeriesData( entry.getKey(), entry.getValue() ) );
-        builder.setMetadata( rightMetadata );
-
-        if (baselinePairs != null)
-        {
-            events = this.getEnsembleEvents( this.baselinePairs );
-            events.entrySet().forEach( entry -> builder.addTimeSeriesDataForBaseline( entry.getKey(), entry.getValue() ) );
-            builder.setMetadataForBaseline( baselineMetadata );
-        }
-
-        builder.setClimatology( this.climatology );
-
-        return builder.build();*/
-    }
-
-    private SampleData createEnsembleInput(SampleMetadata rightMetadata, SampleMetadata baselineMetadata)
+    private SampleData createEnsembleInput()
     {
         List<EnsemblePair> primary =
                 SampleDataRetriever.extractRawPairs( this.getPrimaryPairs() );
@@ -304,28 +243,11 @@ class SampleDataRetriever extends Retriever
         }
 
         return EnsemblePairs.of( primary,
-                                            baseline,
-                                            rightMetadata,
-                                            baselineMetadata,
-                                            this.getClimatology() );
+                                 baseline,
+                                 this.getSampleMetadata().getMetadata(),
+                                 this.getSampleMetadata().getBaselineMetadata(),
+                                 this.getClimatology() );
     }
-
-    /*private Map<Instant, List<Event<PairOfDoubleAndVectorOfDoubles>>> getEnsembleEvents(List<ForecastedPair> pairs)
-    {
-        Map<Instant, List<Event<PairOfDoubleAndVectorOfDoubles>>> events = new TreeMap<>(  );
-
-        for (ForecastedPair pair : pairs)
-        {
-            if (!events.containsKey( pair.getBasisTime() ))
-            {
-                events.put( pair.getBasisTime(), new ArrayList<>() );
-            }
-
-            events.get(pair.getBasisTime()).add( Event.of( pair.getValidTime(), pair.getValues() ) );
-        }
-
-        return events;
-    }*/
 
     private Map<Instant, List<Event<SingleValuedPair>>> getSingleValuedEvents(List<ForecastedPair> pairs)
     {
@@ -415,11 +337,8 @@ class SampleDataRetriever extends Retriever
 
         if ( this.getProjectDetails().getRight().equals(dataSourceConfig))
         {
-            loadScript = Scripter.getLoadScript( this.getProjectDetails(),
-                                                 dataSourceConfig,
-                                                 getFeature(),
-                                                 this.getLeadIteration(),
-                                                 this.issueDatesPool );
+            loadScript = Scripter.getLoadScript( this.getSampleMetadata(),
+                                                 dataSourceConfig);
         }
         else
         {
@@ -430,41 +349,106 @@ class SampleDataRetriever extends Retriever
                 // basis times from the right side.
                 List<Instant> basisTimes = SampleDataRetriever.extractBasisTimes( this.getPrimaryPairs() );
                 loadScript =
-                        Scripter.getPersistenceLoadScript( getProjectDetails(),
+                        Scripter.getPersistenceLoadScript( this.getSampleMetadata(),
                                                            dataSourceConfig,
-                                                           this.getFeature(),
                                                            basisTimes );
             }
             else
             {
-                loadScript =
-                        Scripter.getLoadScript( this.getProjectDetails(),
-                                                dataSourceConfig,
-                                                this.getFeature(),
-                                                this.getLeadIteration(),
-                                                this.issueDatesPool );
+                loadScript = Scripter.getLoadScript( this.getSampleMetadata(),
+                                                     dataSourceConfig);
             }
         }
         return loadScript;
     }
 
     private List<ForecastedPair> createGriddedPairs( DataSourceConfig dataSourceConfig )
-            throws RetrievalFailedException
     {
         List<ForecastedPair> pairs = new ArrayList<>(  );
-        Pair<Integer, Integer> leadRange;
-        try
+        Response response = this.getGriddedData( dataSourceConfig );
+
+        for (List<Response.Series> listOfSeries : response)
         {
-            leadRange = this.getProjectDetails().getLeadRange( this.getFeature(), this.getLeadIteration() );
-        }
-        catch ( CalculationException e )
-        {
-            throw new RetrievalFailedException( "Grid pairs could not be loaded because the "
-                                                + "calculation used to determine the range of "
-                                                + "leads to retrieve failed.",
-                                                e );
+            // Until we support many locations per retrieval, we don't need special handling for features
+            for ( Response.Series series : listOfSeries)
+            {
+                pairs.addAll( this.getSeriesPairs(series, dataSourceConfig) );
+            }
         }
 
+        return pairs;
+    }
+
+    private List<ForecastedPair> getSeriesPairs(final Response.Series series, final DataSourceConfig dataSourceConfig)
+    {
+
+        int minimumLead = TimeHelper.durationToLead(this.getSampleMetadata().getMinimumLead());
+
+        int period = this.getCommonScale().getPeriod();
+        int frequency = this.getCommonScale().getFrequency();
+
+        period = (int)TimeHelper.unitsToLeadUnits(
+                this.getCommonScale().getUnit().value(),
+                period
+        );
+
+        frequency = (int)TimeHelper.unitsToLeadUnits(
+                this.getCommonScale().getUnit().value(),
+                frequency
+        );
+
+        List<ForecastedPair> pairs = new ArrayList<>(  );
+
+        IngestedValueCollection ingestedValues = this.loadGriddedValues( series );
+
+        Integer aggregationStep;
+        PivottedValues condensedValue;
+
+        try
+        {
+            aggregationStep = ingestedValues.getFirstPivotStep(
+                    period,
+                    frequency,
+                    minimumLead
+            );
+
+            condensedValue = ingestedValues.pivot(
+                    aggregationStep,
+                    period,
+                    frequency,
+                    minimumLead
+            );
+        }
+        catch ( NoDataException e )
+        {
+            throw new RetrievalFailedException( "There was no data to retrieve.", e );
+        }
+
+        while (condensedValue != null)
+        {
+            this.addPair( pairs, condensedValue, dataSourceConfig );
+            aggregationStep++;
+            try
+            {
+                condensedValue = ingestedValues.pivot(
+                        aggregationStep,
+                        period,
+                        frequency,
+                        minimumLead
+                );
+            }
+            catch ( NoDataException e )
+            {
+                // This is will never trigger; this would be thrown if the above pivot call fails
+                throw new RetrievalFailedException( "There was no data available to group." );
+            }
+        }
+
+        return pairs;
+    }
+
+    private Response getGriddedData(final DataSourceConfig dataSourceConfig)
+    {
         Request griddedRequest;
         try
         {
@@ -478,17 +462,14 @@ class SampleDataRetriever extends Retriever
             throw new RetrievalFailedException( "The request used to retrieve gridded data could not be formed.", e );
         }
 
-        griddedRequest.setEarliestLead( Duration.of(leadRange.getLeft(), TimeHelper.LEAD_RESOLUTION) );
-        griddedRequest.setLatestLead( Duration.of(leadRange.getRight(), TimeHelper.LEAD_RESOLUTION) );
+        griddedRequest.setEarliestLead( this.getSampleMetadata().getEarliestLead() );
+        griddedRequest.setLatestLead( this.getSampleMetadata().getLatestLead() );
 
         try
         {
             DataSources.getSourcePaths(
-                    this.getProjectDetails(),
-                    dataSourceConfig,
-                    this.issueDatesPool,
-                    leadRange.getLeft(),
-                    leadRange.getRight()
+                    getSampleMetadata(),
+                    dataSourceConfig
             ).forEach(griddedRequest::addPath);
         }
         catch ( SQLException e )
@@ -508,99 +489,40 @@ class SampleDataRetriever extends Retriever
             throw new RetrievalFailedException( "Raw values could not be retrieved from gridded files.", e );
         }
 
-        int minimumLead = leadRange.getLeft();
+        return response;
+    }
 
-        int period = this.getCommonScale().getPeriod();
-        int frequency = this.getCommonScale().getFrequency();
+    private IngestedValueCollection loadGriddedValues(Response.Series series)
+    {
+        IngestedValueCollection ingestedValues = new IngestedValueCollection();
 
-        period = (int)TimeHelper.unitsToLeadUnits(
-                this.getCommonScale().getUnit().value(),
-                period
-        );
-
-        frequency = (int)TimeHelper.unitsToLeadUnits(
-                this.getCommonScale().getUnit().value(),
-                frequency
-        );
-
-        for (List<Response.Series> listOfSeries : response)
+        for ( Response.Entry entry : series)
         {
-            // Until we support many locations per retrieval, we don't need special handling for features
-            for ( Response.Series series : listOfSeries)
+            IngestedValue value;
+
+            try
             {
-                IngestedValueCollection ingestedValues = new IngestedValueCollection();
-
-                for ( Response.Entry entry : series)
-                {
-                    IngestedValue value;
-
-                    try
-                    {
-                        value = new IngestedValue(
-                                entry.getValidDate(),
-                                entry.getMeasurements(),
-                                MeasurementUnits.getMeasurementUnitID( entry.getMeasurementUnit()),
-                                ( int ) TimeHelper.durationToLongUnits( entry.getLead(), TimeHelper.LEAD_RESOLUTION ),
-                                series.getIssuedDate().getEpochSecond(),
-                                this.getProjectDetails()
-                        );
-                    }
-                    catch ( SQLException e )
-                    {
-                        throw new RetrievalFailedException( "The unit of measurement for retrieved "
-                                                            + "values could not be identified.",
-                                                            e );
-                    }
-
-                    ingestedValues.add( value );
-
-                }
-
-                Integer aggregationStep = null;
-                CondensedIngestedValue condensedValue;
-                try
-                {
-                    aggregationStep = ingestedValues.getFirstCondensingStep(
-                            period,
-                            frequency,
-                            minimumLead
-                    );
-
-                    condensedValue = ingestedValues.condense(
-                            aggregationStep,
-                            period,
-                            frequency,
-                            minimumLead
-                    );
-                }
-                catch ( NoDataException e )
-                {
-                    throw new RetrievalFailedException( "There was no data to retrieve.", e );
-                }
-
-                while (condensedValue != null)
-                {
-                    this.addPair( pairs, condensedValue, dataSourceConfig );
-                    aggregationStep++;
-                    try
-                    {
-                        condensedValue = ingestedValues.condense(
-                                aggregationStep,
-                                period,
-                                frequency,
-                                minimumLead
-                        );
-                    }
-                    catch ( NoDataException e )
-                    {
-                        // This is will never trigger; this would be thrown if the above condense call fails
-                        throw new RetrievalFailedException( "There was no data available to group." );
-                    }
-                }
+                value = new IngestedValue(
+                        entry.getValidDate(),
+                        entry.getMeasurements(),
+                        MeasurementUnits.getMeasurementUnitID( entry.getMeasurementUnit()),
+                        TimeHelper.durationToLead( entry.getLead()),
+                        series.getIssuedDate().getEpochSecond(),
+                        this.getProjectDetails()
+                );
             }
+            catch ( SQLException e )
+            {
+                throw new RetrievalFailedException( "The unit of measurement for retrieved "
+                                                    + "values could not be identified.",
+                                                    e );
+            }
+
+            ingestedValues.add( value );
+
         }
 
-        return pairs;
+        return ingestedValues;
     }
 
     // TODO: REFACTOR
@@ -610,7 +532,6 @@ class SampleDataRetriever extends Retriever
      * @return A packaged set of pair data
      */
     private List<ForecastedPair> createPairs( DataSourceConfig dataSourceConfig )
-            throws RetrievalFailedException
     {
         List<ForecastedPair> pairs = new ArrayList<>();
         String loadScript;
@@ -662,18 +583,7 @@ class SampleDataRetriever extends Retriever
 
         try
         {
-            int minimumLead;
-            try
-            {
-                minimumLead =
-                        this.getProjectDetails().getLeadRange( this.getFeature(), this.getLeadIteration() ).getLeft();
-            }
-            catch ( CalculationException e )
-            {
-                throw new RetrievalFailedException(
-                        "Values could not be retrieved because the minimum lead"
-                        + "used to collect them could not be calculated.", e );
-            }
+            int minimumLead = TimeHelper.durationToLead(this.getSampleMetadata().getMinimumLead());
 
 
             int period = this.getCommonScale().getPeriod();
@@ -695,24 +605,26 @@ class SampleDataRetriever extends Retriever
 
                 while ( data.next() )
                 {
+                    // TODO: Convert the if logic into its own function
                     // Results need to be ordered by the ascending basis times
                     // first, then ascending lead times. If we have already
                     // gathered at least one value and either encounter a issue
                     // time that differs from the one we just gathered or we
                     // encounter a value for the same issue time but a
-                    // non-incremented lead, we want to condense our gathered
+                    // non-incremented lead, we want to pivot our gathered
                     // values for processing and continue
                     if ( ingestedValues.size() > 0 &&
                          ( data.getLong( "basis_epoch_time" ) != reference ||
                            data.getInt( "lead" ) <= currentLead ) )
                     {
-                        Integer aggregationStep = ingestedValues.getFirstCondensingStep(
+                        // TODO: Convert this logic into a function
+                        Integer aggregationStep = ingestedValues.getFirstPivotStep(
                                 period,
                                 frequency,
                                 minimumLead
                         );
 
-                        CondensedIngestedValue condensedValue = ingestedValues.condense(
+                        PivottedValues condensedValue = ingestedValues.pivot(
                                 aggregationStep,
                                 period,
                                 frequency,
@@ -723,7 +635,7 @@ class SampleDataRetriever extends Retriever
                         {
                             this.addPair( pairs, condensedValue, dataSourceConfig );
                             aggregationStep++;
-                            condensedValue = ingestedValues.condense(
+                            condensedValue = ingestedValues.pivot(
                                     aggregationStep,
                                     period,
                                     frequency,
@@ -740,15 +652,16 @@ class SampleDataRetriever extends Retriever
                     ingestedValues.add( data, this.getProjectDetails() );
                 }
 
+                // TODO: Create some sort of "Has Data" function for IngestedValueCollection
                 if ( ingestedValues.size() > 0 )
                 {
-                    Integer aggregationStep = ingestedValues.getFirstCondensingStep(
+                    Integer aggregationStep = ingestedValues.getFirstPivotStep(
                             period,
                             frequency,
                             minimumLead
                     );
 
-                    CondensedIngestedValue condensedValue = ingestedValues.condense(
+                    PivottedValues condensedValue = ingestedValues.pivot(
                             aggregationStep,
                             period,
                             frequency,
@@ -759,7 +672,7 @@ class SampleDataRetriever extends Retriever
                     {
                         this.addPair( pairs, condensedValue, dataSourceConfig );
                         aggregationStep++;
-                        condensedValue = ingestedValues.condense(
+                        condensedValue = ingestedValues.pivot(
                                 aggregationStep,
                                 period,
                                 frequency,
@@ -788,6 +701,7 @@ class SampleDataRetriever extends Retriever
         return Collections.unmodifiableList( pairs );
     }
 
+    // TODO: Should persistence pair retrieval end up as its own object?
     /**
      * Packages pairs based on persistence forecasting logic
      * @param dataSourceConfig The specification for the baseline
@@ -1108,208 +1022,6 @@ class SampleDataRetriever extends Retriever
     }
 
     /**
-     * Creates the metadata object containing information about the location,
-     * variable, unit of measurement, lead time, and time window for the
-     * eventual MetricInput object
-     * @param projectConfig the project configuration
-     * @param isBaseline is true to build the metadata for the baseline source, false for the left and right source
-     * @return A metadata object that may be used to create a MetricInput Object
-     * @throws IOException
-     */
-    @Override
-    protected SampleMetadata buildMetadata( ProjectConfig projectConfig,
-                                    boolean isBaseline )
-            throws IOException
-    {
-        DataSourceConfig sourceConfig;
-        if( isBaseline )
-        {
-            sourceConfig = projectConfig.getInputs().getBaseline();
-        }
-        else
-        {
-            sourceConfig = projectConfig.getInputs().getRight(); 
-        }
-
-        MeasurementUnit dim = MeasurementUnit.of( this.getProjectDetails().getDesiredMeasurementUnit());
-
-        // Get the variable identifier
-        String variableIdentifier = ConfigHelper.getVariableIdFromProjectConfig( projectConfig, isBaseline );
-
-        DatasetIdentifier datasetIdentifier = DatasetIdentifier.of(this.getGeospatialIdentifier(),
-                                                                                   variableIdentifier,
-                                                                                   sourceConfig.getLabel());
-        // Replicated from earlier declaration as long
-        // TODO: confirm that this is really intended as the default
-        Duration firstLead = Duration.ZERO;
-        Duration lastLead = Duration.ZERO;
-
-        // Persistence forecast meta is based on the forecast meta
-        if ( ConfigHelper.isForecast( sourceConfig ) ||
-             ConfigHelper.isPersistence( getProjectDetails().getProjectConfig(),
-                                         sourceConfig ) )
-        {
-            if (ProjectConfigs.hasTimeSeriesMetrics(this.getProjectDetails().getProjectConfig()))
-            {
-                if (this.getFirstlead() == Long.MIN_VALUE || this.getLastLead() == Long.MAX_VALUE)
-                {
-                    throw new IOException( "Valid lead times could not be "
-                                           + "retrieved from the database." );
-                }
-
-                firstLead = Duration.of( this.getFirstlead(), TimeHelper.LEAD_RESOLUTION );
-                lastLead = Duration.of( this.getLastLead(), TimeHelper.LEAD_RESOLUTION );
-            }
-            else if (this.getProjectDetails().getProjectConfig().getPair().getLeadTimesPoolingWindow() != null)
-            {
-                // If a lead times pooling window, the min and max lead are bound to the parameters of the window, not
-                // the values
-                Pair<Integer, Integer> range = null;
-                try
-                {
-                    range = this.getProjectDetails().getLeadRange( this.getFeature(), this.getLeadIteration() );
-                }
-                catch ( CalculationException e )
-                {
-                    String message = "Metadata for the retrieved data could not be "
-                                     + "formed because the range of leads "
-                                     + "could not be calculated for iteration " +
-                                     this.getLeadIteration() +
-                                     " for '" +
-                                     this.getFeatureDescription() +
-                                     "'";
-                    throw new RetrievalFailedException( message, e );
-                }
-
-                firstLead = Duration.of( range.getLeft(), TimeHelper.LEAD_RESOLUTION );
-                try
-                {
-                    firstLead = firstLead.minus( this.getProjectDetails().getLeadOffset( this.getFeature()), TimeHelper.LEAD_RESOLUTION );
-                }
-                catch ( SQLException | CalculationException e )
-                {
-                    String message = "Metadata for the retrieved data could not be formed "
-                                     + "because the earliest lead for iteration " +
-                                     this.getLeadIteration() +
-                                     " for '" +
-                                     this.getFeatureDescription() +
-                                     "' could not be determined.";
-                    throw new RetrievalFailedException( message, e );
-                }
-
-                lastLead = Duration.of(range.getRight(), TimeHelper.LEAD_RESOLUTION);
-
-                try
-                {
-                    lastLead = lastLead.minus( this.getProjectDetails().getLeadOffset( this.getFeature()), TimeHelper.LEAD_RESOLUTION );
-                }
-                catch ( SQLException | CalculationException e )
-                {
-                    String message = "The latest lead for iteration " +
-                                     this.getLeadIteration() +
-                                     " for '" +
-                                     this.getFeatureDescription() +
-                                     "' could not be determined.";
-                    throw new RetrievalFailedException( message, e );
-                }
-            }
-            else
-            {
-                Integer offset;
-                try
-                {
-                    offset = this.getProjectDetails().getLeadOffset( this.getFeature() );
-                }
-                catch ( SQLException | CalculationException e )
-                {
-                    throw new RetrievalFailedException(
-                            "Metadata for retrieved data could not be formed "
-                            + "because the offset for data at " +
-                            this.getFeatureDescription() +
-                            " could not be evaluated.", e );
-                }
-
-                if (offset == null)
-                {
-                    throw new IOException( "The last lead of the window could not "
-                                           + "be determined because the offset for "
-                                           + "the window could not be determined." );
-                }
-
-                Duration offsetDuration = Duration.of( offset, TimeHelper.LEAD_RESOLUTION );
-                Duration windowWidth = null;
-
-                try
-                {
-                    windowWidth = Duration.of( this.getProjectDetails().getWindowWidth(),
-                                               TimeHelper.LEAD_RESOLUTION );
-                }
-                catch ( CalculationException e )
-                {
-                    throw new RetrievalFailedException(
-                            "Metadata could not be formed because the width of "
-                            + "windows for this project could not be determined.",
-                            e
-                    );
-                }
-
-                ChronoUnit leadTemporalUnit = null;
-                try
-                {
-                    leadTemporalUnit = ChronoUnit.valueOf( this.getProjectDetails().getLeadUnit() );
-                }
-                catch ( CalculationException e )
-                {
-                    throw new RetrievalFailedException( "Metadata could not be formed because the "
-                                                        + "units used to describe leads "
-                                                        + "could not be determined for this project.", e );
-                }
-
-                Duration leadFrequency;
-                try
-                {
-                    leadFrequency = Duration.of( this.getProjectDetails().getLeadFrequency(), leadTemporalUnit );
-                }
-                catch ( CalculationException e )
-                {
-                    throw new RetrievalFailedException( "Metadata could not be formed because the "
-                                                        + "frequency of leads for the overall "
-                                                        + "dataset could not be determined.", e );
-                }
-
-                Duration leadFrequencyMultipliedByLeadIteration = leadFrequency.multipliedBy( this.getLeadIteration() );
-
-                lastLead = leadFrequencyMultipliedByLeadIteration.plus( windowWidth ).plus( offsetDuration );
-                firstLead = lastLead;               
-            }
-        }
-
-        TimeWindow timeWindow = ConfigHelper.getTimeWindow( this.getProjectDetails(),
-                                                            firstLead,
-                                                            lastLead,
-                                                            this.issueDatesPool );
-        // Build the metadata
-        SampleMetadataBuilder builder = new SampleMetadataBuilder().setMeasurementUnit( dim )
-                                                                   .setIdentifier( datasetIdentifier )
-                                                                   .setTimeWindow( timeWindow )
-                                                                   .setProjectConfig( projectConfig );
-
-        // Add the time-scale information to the metadata.
-        // Initially, this comes from the desiredTimeScale.
-        // TODO: when the project declaration is undefined,
-        // determine the Least Common Scale and populate the
-        // metadata with that - that relies on #54415.
-        // See #44539 for an overview.
-        if ( Objects.nonNull( projectConfig.getPair() )
-             && Objects.nonNull( projectConfig.getPair().getDesiredTimeScale() ) )
-        {
-            builder.setTimeScale( TimeScale.of( projectConfig.getPair().getDesiredTimeScale() ) );
-        }
-
-        return builder.build();
-    }
-
-    /**
      * Creates a task to write pair data to a file
      * @param sharedWriterManager sink for pairs, writes the pairs
      * @param outputDirectory the directory into which to write pairs
@@ -1331,14 +1043,11 @@ class SampleDataRetriever extends Retriever
             // we can probably eliminate a lot of the arguments
 
             PairSupplier pairWriter = new PairSupplier.Builder()
+                    .setSampleMetadata( this.getSampleMetadata() )
                     .setDestinationConfig( dest )
                     .setDate( pair.getValidTime() )
-                    .setFeature( this.getFeature() )
-                    .setLeadIteration( this.getLeadIteration() )
                     .setPair( pair.getValues() )
                     .setIsBaseline( isBaseline )
-                    .setPoolingStep( this.issueDatesPool )
-                    .setProjectDetails( this.getProjectDetails() )
                     .setLead( pair.getLeadDuration() )
                     .setOutputDirectory( outputDirectory )
                     .build();

@@ -1022,7 +1022,7 @@ public class ConfigHelper
 
     public static String getSeasonQualifier( ProjectDetails projectDetails,
                                              String databaseColumnName,
-                                             Integer timeShift )
+                                             Duration timeShift )
     {
         Objects.requireNonNull( projectDetails, "projectDetails needs to exist" );
         Objects.requireNonNull( databaseColumnName, "databaseColumnName needs to exist" );
@@ -1099,7 +1099,7 @@ public class ConfigHelper
 
     private static String getExtractSqlSnippet( String toExtract,
                                                 String databaseColumnName,
-                                                Integer timeShift )
+                                                Duration timeShift )
     {
         StringBuilder s = new StringBuilder();
 
@@ -1111,7 +1111,7 @@ public class ConfigHelper
         if ( timeShift != null )
         {
             s.append( " + INTERVAL '1 HOUR' * " );
-            s.append( timeShift );
+            s.append( timeShift.toHours() );
         }
 
         s.append( " )" );

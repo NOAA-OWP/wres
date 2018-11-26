@@ -2,15 +2,20 @@ package wres.io.retrieval;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Duration;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.generated.Feature;
+import wres.datamodel.metadata.TimeWindow;
 import wres.io.config.ConfigHelper;
+import wres.io.config.OrderedSampleMetadata;
 import wres.io.data.details.ProjectDetails;
 import wres.io.writing.pair.SharedWriterManager;
 import wres.util.CalculationException;
+import wres.util.TimeHelper;
 
 final class BackToBackSampleDataIterator extends SampleDataIterator
 {
@@ -35,43 +40,74 @@ final class BackToBackSampleDataIterator extends SampleDataIterator
                outputDirectoryForPairs );
     }
 
+
     @Override
-    int calculateWindowCount() throws CalculationException
+    /**
+     * Generates a list of TimeWindows that will generate SampleData objects
+     */
+    protected void calculateSamples() throws CalculationException
     {
-        int count;
-        if ( ConfigHelper.isForecast( this.getRight() ))
+        int sampleCount = 0;
+        OrderedSampleMetadata.Builder metadataBuilder = new OrderedSampleMetadata.Builder().setProject( this.getProjectDetails() )
+                                                                                           .setFeature( this.getFeature() );
+
+
+        // If we are basing samples on forecasts, we want to have the option of
+        if (ConfigHelper.isForecast( this.getRight() ))
         {
-            long start = Math.max(1, this.getFirstLeadInWindow());
-            Integer last = this.getProjectDetails().getLastLead( this.getFeature() );
+            final Duration lastPossibleLead = Duration.of( this.getProjectDetails().getLastLead( this.getFeature() ),
+                                                           TimeHelper.LEAD_RESOLUTION );
 
-            if (last == null)
+            int leadIteration = 0;
+
+            Pair<Duration, Duration> leadBounds = this.getLeadBounds( leadIteration );
+
+            while (TimeHelper.lessThan(leadBounds.getLeft(), lastPossibleLead) &&
+                   TimeHelper.lessThanOrEqualTo( leadBounds.getRight(), lastPossibleLead ))
             {
-                throw new CalculationException( "The final lead time for the data set for: " +
-                                                    this.getRight()
-                                                        .getVariable()
-                                                        .getValue() +
-                                                    " could not be calculated.");
-            }
-            else if (start > last)
-            {
-                throw new CalculationException( "No data can be retrieved because " +
-                                           "the first requested lead time " +
-                                           "(" + String.valueOf(start) +
-                                           ") is greater than or equal to " +
-                                           "the largest possible lead time (" +
-                                           String.valueOf(last) + ")." );
-            }
+                TimeWindow window = ConfigHelper.getTimeWindow(
+                        this.getProjectDetails(),
+                        leadBounds.getLeft(),
+                        leadBounds.getRight(),
+                        0
+                );
 
-            double windowWidth = this.getProjectDetails().getWindowWidth();
-            double windowSpan = (double)(last - start);
+                sampleCount++;
 
-            count = ((Double)Math.ceil( windowSpan / windowWidth)).intValue();
+                this.addSample(
+                        metadataBuilder.setSampleNumber( sampleCount )
+                                       .setTimeWindow( window )
+                                       .build()
+                );
+
+                leadIteration++;
+
+                leadBounds = this.getLeadBounds( leadIteration );
+            }
         }
         else
         {
-            count = 1;
+            // If we are dealing with observation/simulation data, we only need one window
+            TimeWindow window = ConfigHelper.getTimeWindow(
+                    this.getProjectDetails(),
+                    Duration.ZERO,
+                    Duration.ZERO,
+                    0
+            );
+
+            sampleCount++;
+
+            this.addSample(
+                    metadataBuilder.setSampleNumber( sampleCount )
+                                   .setTimeWindow( window )
+                                   .build()
+            );
         }
 
-        return count;
+        // We need to throw an exception if no samples to evaluate could be determined
+        if (this.amountOfSamplesLeft() == 0)
+        {
+            throw new IterationFailedException( "No windows could be generated for evaluation." );
+        }
     }
 }

@@ -22,6 +22,11 @@ public abstract class WRESTask
         this.onRun = onRun;
     }
 
+    public void setOnError(Consumer<Throwable> onError)
+    {
+        this.onError = onError;
+    }
+
     protected abstract Logger getLogger ();
 
     protected void validate()
@@ -45,6 +50,14 @@ public abstract class WRESTask
         this.validate();
         if (this.onRun != null) {
             this.onRun.accept(this);
+        }
+    }
+
+    void executeOnError(final Throwable error)
+    {
+        if (this.onError != null)
+        {
+            this.onError.accept( error );
         }
     }
 
@@ -76,4 +89,5 @@ public abstract class WRESTask
     private String threadName;
     private Consumer<Object> onComplete;
     private Consumer<Object> onRun;
+    private Consumer<Throwable> onError;
 }

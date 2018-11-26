@@ -19,11 +19,13 @@ public abstract class WRESRunnable extends WRESTask implements Runnable
         }
         catch (RuntimeException re)
         {
+            this.executeOnError( re );
             this.getLogger().error("Task failed", re);
             throw new WRESRunnableException( "Task failed:", re );
         }
         catch ( IOException | SQLException se )
         {
+            this.executeOnError( se );
             throw new WRESRunnableException( "Task failed:", se );
         }
 

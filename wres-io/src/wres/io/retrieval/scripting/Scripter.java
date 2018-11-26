@@ -2,7 +2,10 @@ package wres.io.retrieval.scripting;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalUnit;
 import java.util.List;
 import java.util.Objects;
 import java.util.StringJoiner;
@@ -11,62 +14,47 @@ import wres.config.ProjectConfigException;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.EnsembleCondition;
 import wres.config.generated.Feature;
+import wres.datamodel.metadata.TimeWindow;
 import wres.io.config.ConfigHelper;
+import wres.io.config.OrderedSampleMetadata;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.details.ProjectDetails;
 import wres.io.utilities.ScriptBuilder;
 
 public abstract class Scripter extends ScriptBuilder
 {
-    Scripter( ProjectDetails projectDetails,
-                        DataSourceConfig dataSourceConfig,
-                        Feature feature,
-                        int progress,
-                        int sequenceStep )
+    Scripter( OrderedSampleMetadata sampleMetadata, DataSourceConfig dataSourceConfig)
     {
-        this.projectDetails = projectDetails;
+        this.sampleMetadata = sampleMetadata;
         this.dataSourceConfig = dataSourceConfig;
-        this.feature = feature;
-        this.progress = progress;
-        this.sequenceStep = sequenceStep;
     }
 
-    public static String getLoadScript( ProjectDetails projectDetails,
-                                        DataSourceConfig dataSourceConfig,
-                                        Feature feature,
-                                        int progress,
-                                        int sequenceStep)
+    public static String getLoadScript( OrderedSampleMetadata sampleMetadata,
+                                        DataSourceConfig dataSourceConfig)
             throws SQLException, IOException
     {
         Scripter loadScripter;
 
         boolean isForecast = ConfigHelper.isForecast( dataSourceConfig );
 
-        switch ( projectDetails.getPairingMode() )
+        switch ( sampleMetadata.getProjectDetails().getPairingMode() )
         {
             case BY_TIMESERIES:
-                // TODO: Set up process where the timeseries id isn't passed via the progress field
-                loadScripter = new SingleTimeSeriesScripter( projectDetails, dataSourceConfig, feature, progress );
+                loadScripter = new SingleTimeSeriesScripter( sampleMetadata, dataSourceConfig );
                 break;
             case BACK_TO_BACK:
                 if (isForecast)
                 {
                     loadScripter = new BackToBackForecastScripter(
-                            projectDetails,
-                            dataSourceConfig,
-                            feature,
-                            progress,
-                            sequenceStep
+                            sampleMetadata,
+                            dataSourceConfig
                     );
                 }
                 else
                 {
                     loadScripter = new BackToBackObservationScripter(
-                            projectDetails,
-                            dataSourceConfig,
-                            feature,
-                            progress,
-                            sequenceStep
+                            sampleMetadata,
+                            dataSourceConfig
                     );
                 }
                 break;
@@ -74,17 +62,14 @@ public abstract class Scripter extends ScriptBuilder
                 if (isForecast)
                 {
                     loadScripter = new PoolingForecastScripter(
-                            projectDetails,
-                            dataSourceConfig,
-                            feature,
-                            progress,
-                            sequenceStep
+                            sampleMetadata,
+                            dataSourceConfig
                     );
                 }
                 else
                 {
                     throw new ProjectConfigException(
-                            projectDetails.getProjectConfig(),
+                            sampleMetadata.getProjectDetails().getProjectConfig(),
                             "Only forecasts may perform evaluations based on "
                             + "issue times. This configuration is attempting to "
                             + "use observations or simulations instead." );
@@ -94,17 +79,14 @@ public abstract class Scripter extends ScriptBuilder
                 if (isForecast)
                 {
                     loadScripter = new TimeSeriesScripter(
-                            projectDetails,
-                            dataSourceConfig,
-                            feature,
-                            progress,
-                            sequenceStep
+                            sampleMetadata,
+                            dataSourceConfig
                     );
                 }
                 else
                 {
                     throw new ProjectConfigException(
-                            projectDetails.getProjectConfig(),
+                            sampleMetadata.getProjectDetails().getProjectConfig(),
                             "Only forecasts may perform time series evaluations."
                             + " This configuration is attempting to use "
                             + "observations or simulations instead." );
@@ -115,30 +97,26 @@ public abstract class Scripter extends ScriptBuilder
                                                  + "evaluation pairs could not "
                                                  + "be generated." );
         }
-
         return loadScripter.formScript();
     }
 
-    public static String getPersistenceLoadScript( ProjectDetails projectDetails,
+    public static String getPersistenceLoadScript( OrderedSampleMetadata sampleMetadata,
                                                    DataSourceConfig dataSourceConfig,
-                                                   Feature feature,
                                                    List<Instant> basisTimes )
             throws SQLException, IOException
     {
-        Objects.requireNonNull( projectDetails );
+        Objects.requireNonNull( sampleMetadata );
         Objects.requireNonNull( dataSourceConfig );
-        Objects.requireNonNull( feature );
         Objects.requireNonNull( basisTimes );
 
-        if ( !ConfigHelper.isPersistence( projectDetails.getProjectConfig(),
+        if ( !ConfigHelper.isPersistence( sampleMetadata.getProjectDetails().getProjectConfig(),
                                           dataSourceConfig ) )
         {
             throw new IllegalArgumentException( "Must pass a persistence dataSourceConfig" );
         }
 
-        PersistenceForecastScripter s = new PersistenceForecastScripter( projectDetails,
+        PersistenceForecastScripter s = new PersistenceForecastScripter( sampleMetadata,
                                                                          dataSourceConfig,
-                                                                         feature,
                                                                          basisTimes );
         return s.formScript();
     }
@@ -151,7 +129,7 @@ public abstract class Scripter extends ScriptBuilder
 
     ProjectDetails getProjectDetails()
     {
-        return this.projectDetails;
+        return this.sampleMetadata.getProjectDetails();
     }
 
     DataSourceConfig getDataSourceConfig()
@@ -161,17 +139,7 @@ public abstract class Scripter extends ScriptBuilder
 
     Feature getFeature()
     {
-        return this.feature;
-    }
-
-    int getProgress() throws IOException
-    {
-        return this.progress;
-    }
-
-    int getSequenceStep()
-    {
-        return this.sequenceStep;
+        return this.sampleMetadata.getFeature();
     }
 
 
@@ -213,21 +181,21 @@ public abstract class Scripter extends ScriptBuilder
         }
     }
 
-    Integer getVariableID() throws SQLException
+    private Integer getVariableID() throws SQLException
     {
         if (this.variableID == null)
         {
             if (this.getMember().equalsIgnoreCase( ProjectDetails.LEFT_MEMBER))
             {
-                this.variableID = this.projectDetails.getLeftVariableID();
+                this.variableID = this.getProjectDetails().getLeftVariableID();
             }
             else if (this.getMember().equalsIgnoreCase( ProjectDetails.RIGHT_MEMBER ))
             {
-                this.variableID = this.projectDetails.getRightVariableID();
+                this.variableID = this.getProjectDetails().getRightVariableID();
             }
             else
             {
-                this.variableID = this.projectDetails.getBaselineVariableID();
+                this.variableID = this.getProjectDetails().getBaselineVariableID();
             }
         }
         return this.variableID;
@@ -245,7 +213,7 @@ public abstract class Scripter extends ScriptBuilder
         return this.VariableFeatureClause;
     }
 
-    Integer getTimeShift()
+    Duration getTimeShift()
     {
         if (this.timeShift == null &&
             dataSourceConfig.getTimeShift() != null &&
@@ -254,7 +222,10 @@ public abstract class Scripter extends ScriptBuilder
             // TODO: Is it safe to assume this will always be hours?
             // if not, where do we get the units? Most specifications for time
             // have their own specification for units
-            this.timeShift = dataSourceConfig.getTimeShift().getWidth();
+            this.timeShift = Duration.of(
+                    dataSourceConfig.getTimeShift().getWidth(),
+                    ChronoUnit.valueOf( dataSourceConfig.getTimeShift().getUnit().toString().toUpperCase() )
+            );
         }
 
         return this.timeShift;
@@ -266,7 +237,7 @@ public abstract class Scripter extends ScriptBuilder
         if (this.getTimeShift() != null)
         {
             // The time shift is in hours; we want to convert to seconds
-            this.add(" + ", this.getTimeShift() * 3600);
+            this.add(" + ", this.getTimeShift().getSeconds());
         }
 
         this.addLine(")::bigint AS value_date,");
@@ -337,9 +308,14 @@ public abstract class Scripter extends ScriptBuilder
     {
         if (this.member == null)
         {
-            this.member = this.projectDetails.getInputName( this.dataSourceConfig );
+            this.member = this.getProjectDetails().getInputName( this.dataSourceConfig );
         }
         return this.member;
+    }
+
+    OrderedSampleMetadata getSampleMetadata()
+    {
+        return this.sampleMetadata;
     }
 
     String getScript()
@@ -347,15 +323,11 @@ public abstract class Scripter extends ScriptBuilder
         return this.toString();
     }
 
-    private final ProjectDetails projectDetails;
+    private final OrderedSampleMetadata sampleMetadata;
     private final DataSourceConfig dataSourceConfig;
-    private final Feature feature;
-    private final int progress;
-    private final int sequenceStep;
 
     private Integer variableID;
     private String VariableFeatureClause;
-    private Integer timeShift;
+    private Duration timeShift;
     private String member;
-
 }

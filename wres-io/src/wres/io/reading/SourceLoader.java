@@ -22,15 +22,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.generated.DataSourceConfig;
-import wres.config.generated.Feature;
 import wres.config.generated.Format;
 import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.Executor;
 import wres.io.concurrency.IngestSaver;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.DataSources;
-import wres.io.data.caching.Features;
-import wres.io.data.details.FeatureDetails;
 import wres.system.SystemSettings;
 import wres.util.NetCDF;
 import wres.util.Strings;

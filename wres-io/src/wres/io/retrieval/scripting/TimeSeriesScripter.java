@@ -6,24 +6,23 @@ import java.sql.SQLException;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
 import wres.io.config.ConfigHelper;
+import wres.io.config.OrderedSampleMetadata;
 import wres.io.data.details.ProjectDetails;
 import wres.util.CalculationException;
 import wres.util.Strings;
 
 class TimeSeriesScripter extends Scripter
 {
-    TimeSeriesScripter( ProjectDetails projectDetails,
-                                  DataSourceConfig dataSourceConfig,
-                                  Feature feature,
-                                  int progress,
-                                  int sequenceStep)
+    TimeSeriesScripter( OrderedSampleMetadata sampleMetadata,
+                        DataSourceConfig dataSourceConfig)
     {
-        super( projectDetails, dataSourceConfig, feature, progress, sequenceStep );
+        super( sampleMetadata, dataSourceConfig );
     }
 
     @Override
     String formScript() throws SQLException, IOException
     {
+        this.addLine( "-- ", this.getSampleMetadata() );
         this.add("SELECT ");
         this.applyValueDate();
         this.applyBasisTime();
@@ -100,22 +99,11 @@ class TimeSeriesScripter extends Scripter
         if (this.getForecastLag() != 0)
         {
             this.addTab( 2 ).addLine(
-                    "AND TS.initialization_date >= ",
-                    this.getMinimumForecastDate(),
-                    "::timestamp without time zone + (INTERVAL '",
-                    this.getForecastLag(),
-                    " MINUTE') * ",
-                    this.getProjectDetails().getNumberOfSeriesToRetrieve()
-                    * this.getSequenceStep()
+                    "AND TS.initialization_date >= '", this.getSampleMetadata().getEarliestTime(), "'"
             );
             this.addTab( 2 ).addLine(
-                    "AND TS.initialization_date < ",
-                    this.getMinimumForecastDate(),
-                    "::timestamp without time zone + (INTERVAL '",
-                    this.getForecastLag(),
-                    " MINUTE') * ",
-                    this.getProjectDetails().getNumberOfSeriesToRetrieve() * (
-                            this.getSequenceStep() + 1 ) );
+                    "AND TS.initialization_date < '", this.getSampleMetadata().getLatestTime(), "'"
+            );
         }
 
         this.addTab(  2  ).addLine("AND EXISTS (");
@@ -208,12 +196,6 @@ class TimeSeriesScripter extends Scripter
     private void applyBasisTime()
     {
         this.addTab().addLine("EXTRACT(epoch FROM TS.initialization_date)::bigint AS basis_epoch_time,");
-    }
-
-    @Override
-    int getSequenceStep()
-    {
-        return super.getSequenceStep() - 1;
     }
 
     @Override

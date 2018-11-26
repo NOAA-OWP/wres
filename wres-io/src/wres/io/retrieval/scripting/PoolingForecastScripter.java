@@ -9,32 +9,30 @@ import org.apache.commons.lang3.tuple.Pair;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
 import wres.io.config.ConfigHelper;
+import wres.io.config.OrderedSampleMetadata;
 import wres.io.data.details.ProjectDetails;
 import wres.util.CalculationException;
 import wres.util.TimeHelper;
 
 class PoolingForecastScripter extends Scripter
 {
-    PoolingForecastScripter( ProjectDetails projectDetails,
-                                       DataSourceConfig dataSourceConfig,
-                                       Feature feature,
-                                       int progress,
-                                       int sequenceStep)
+    PoolingForecastScripter( OrderedSampleMetadata sampleMetadata,
+                             DataSourceConfig dataSourceConfig)
     {
-        super( projectDetails, dataSourceConfig, feature, progress, sequenceStep );
+        super( sampleMetadata, dataSourceConfig);
     }
 
     @Override
     String formScript() throws SQLException, IOException
     {
         boolean usesNetcdf = ConfigHelper.usesNetCDFData( this.getProjectDetails().getProjectConfig() );
-        this.addLine("-- iteration #", this.getProgress(), ", pool #", this.getSequenceStep());
+        this.addLine("-- ", this.getSampleMetadata());
         // TODO: Split out into other functions
         this.add("SELECT (EXTRACT(epoch FROM TS.initialization_date");
 
         if (this.getTimeShift() != null)
         {
-            this.add(" + ", this.getTimeShift() * 3600);
+            this.add(" + ", this.getTimeShift().getSeconds());
         }
 
         this.addLine("))::bigint AS basis_epoch_time,");
@@ -42,7 +40,7 @@ class PoolingForecastScripter extends Scripter
 
         if (this.getTimeShift() != null)
         {
-            this.add(" + ", this.getTimeShift() * 3600);
+            this.add(" + ", this.getTimeShift().getSeconds());
         }
 
         this.addLine("))::bigint AS value_date,");
@@ -81,35 +79,21 @@ class PoolingForecastScripter extends Scripter
         }
 
         this.addLine("WHERE TS.", this.getVariableFeatureClause());
-
-        try
-        {
-            this.addTab().addLine("AND ",
-                                  this.getProjectDetails().getLeadQualifier(
-                                          this.getFeature(),
-                                          this.getProgress(),
-                                          "TSV"
-                                  )
-            );
-        }
-        catch ( CalculationException e )
-        {
-            throw new IOException( "Logic used to retrieve values based on leads could not be formed.", e );
-        }
+        this.applyLeadQualifier();
 
         this.applyEnsembleConstraint();
 
-        Pair<Instant, Instant> issueRange = this.getProjectDetails().getIssueDateRange( this.getSequenceStep() );
-
         String issueQualifier;
-        if (issueRange.getLeft().equals(issueRange.getRight()))
+
+        if (this.getSampleMetadata().getEarliestTime().equals( this.getSampleMetadata().getLatestTime() ))
         {
-            issueQualifier = "TS.initialization_date = '" + issueRange.getLeft() + "'::timestamp without time zone ";
+            issueQualifier = "TS.initialization_date = '" + this.getSampleMetadata().getEarliestTime() + "'::timestamp without time zone ";
         }
         else
         {
-            issueQualifier = "TS.initialization_date >= '" + issueRange.getLeft() + "'::timestamp without time zone ";
-            issueQualifier += "AND TS.initialization_date <= '" + issueRange.getRight() + "'::timestamp without time zone";
+            // TODO: Change ">=" to ">" when we move to exclusive-inclusive
+            issueQualifier = "TS.initialization_date >= '" + this.getSampleMetadata().getEarliestTime() + "'::timestamp without time zone ";
+            issueQualifier += "AND TS.initialization_date <= '" + this.getSampleMetadata().getLatestTime() + "'::timestamp without time zone";
         }
         this.addTab().addLine("AND ", issueQualifier);
 
@@ -155,6 +139,22 @@ class PoolingForecastScripter extends Scripter
         this.add("TSV.lead;");
 
         return this.getScript();
+    }
+
+    private void applyLeadQualifier()
+    {
+        long earliest = TimeHelper.durationToLead( this.getSampleMetadata().getMinimumLead() );
+        long latest = TimeHelper.durationToLead( this.getSampleMetadata().getLatestLead() );
+
+        if (earliest == latest)
+        {
+            this.addTab().addLine("AND TSV.lead = ", earliest);
+        }
+        else
+        {
+            this.addTab().addLine( "AND TSV.lead > ", earliest);
+            this.addTab().addLine( "AND TSV.lead <= ", latest);
+        }
     }
 
     @Override

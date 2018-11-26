@@ -177,6 +177,11 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
     {
         this.variablePositions.putIfAbsent( variableId, variablefeatureId );
     }
+
+    public boolean hasCoordinates()
+    {
+        return this.longitude != null && this.latitude != null;
+    }
 	
 	/**
 	 * Sets the LID of the Feature

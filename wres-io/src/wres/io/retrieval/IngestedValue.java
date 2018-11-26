@@ -108,6 +108,12 @@ class IngestedValue implements Comparable<IngestedValue>
         return Instant.ofEpochSecond( this.referenceEpoch );
     }
 
+    /**
+     * Converts all stored values into the desired measurement unit
+     * TODO: Find way to remove the need for a ProjectDetails object
+     * @param measurementunitId The ID of the unit of measurement that all collected values are in
+     * @param projectDetails The object storing information about how values should be handled
+     */
     private void convertAllMeasurements(int measurementunitId, ProjectDetails projectDetails)
     {
         for (int index = 0; index < this.length(); ++index)

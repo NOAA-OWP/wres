@@ -5,23 +5,20 @@ import java.sql.SQLException;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
+import wres.io.config.OrderedSampleMetadata;
 import wres.io.data.details.ProjectDetails;
 
 class SingleTimeSeriesScripter extends Scripter
 {
-    private final int timeSeriesId;
-
-    SingleTimeSeriesScripter( ProjectDetails projectDetails,
-                              DataSourceConfig dataSourceConfig,
-                              Feature feature,
-                              final int timeSeriesId )
+    SingleTimeSeriesScripter( OrderedSampleMetadata sampleMetadata,
+                              DataSourceConfig dataSourceConfig )
     {
-        super(projectDetails, dataSourceConfig, feature, 0, 0);
-        this.timeSeriesId = timeSeriesId;
+        super(sampleMetadata, dataSourceConfig);
     }
     @Override
     String formScript() throws SQLException, IOException
     {
+        this.addLine("-- ", this.getSampleMetadata());
         this.add("SELECT ");
         this.applyValueDate();
         this.addTab().addLine("TSV.lead,");
@@ -29,7 +26,7 @@ class SingleTimeSeriesScripter extends Scripter
 
         if (this.getTimeShift() != null)
         {
-            this.add(" + ", this.getTimeShift() * 60.0);
+            this.add(" + ", this.getTimeShift().getSeconds());
         }
 
         this.addLine(")::bigint AS basis_epoch_time,");
@@ -38,7 +35,7 @@ class SingleTimeSeriesScripter extends Scripter
         this.addLine("FROM (");
         this.addTab().addLine("SELECT TS.initialization_date, TS.timeseries_id, TS.measurementunit_id");
         this.addTab().addLine("FROM wres.TimeSeries TS");
-        this.addTab().addLine("WHERE TS.timeseries_id = ", this.timeSeriesId);
+        this.addTab().addLine("WHERE TS.timeseries_id = ", this.getSampleMetadata().getSampleNumber());
         this.addLine(") AS TS");
         this.addLine("INNER JOIN wres.TimeSeriesValue TSV");
         this.addTab().addLine("ON TS.timeseries_id = TSV.timeseries_id");

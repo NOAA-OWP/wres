@@ -152,7 +152,7 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         return getFeatureID( details );
     }
 
-    private static FeatureDetails getDetails(Feature feature) throws SQLException
+    public static FeatureDetails getDetails(Feature feature) throws SQLException
     {
         Integer id = Features.getFeatureID( feature );
 

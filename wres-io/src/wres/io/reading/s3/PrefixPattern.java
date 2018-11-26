@@ -1,5 +1,6 @@
 package wres.io.reading.s3;
 
+@Deprecated
 class PrefixPattern implements Comparable<PrefixPattern>
 {
     private final String prefix;
