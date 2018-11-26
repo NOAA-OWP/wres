@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.sql.SQLException;
 import java.time.Duration;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.NoSuchElementException;
@@ -90,7 +91,8 @@ abstract class SampleDataIterator implements Iterator<Future<SampleData<?>>>
     SampleDataIterator( Feature feature,
                         ProjectDetails projectDetails,
                         SharedWriterManager sharedWriterManager,
-                        Path outputPathForPairs )
+                        Path outputPathForPairs,
+                        final Collection<OrderedSampleMetadata> sampleMetadata)
             throws IOException
     {
 
@@ -117,13 +119,20 @@ abstract class SampleDataIterator implements Iterator<Future<SampleData<?>>>
             throw new IOException( "The last pool to be evaluated could not be calculated.", e );
         }
 
-        try
+        if (sampleMetadata == null || sampleMetadata.size() == 0)
         {
-            this.calculateSamples();
+            try
+            {
+                this.calculateSamples();
+            }
+            catch ( CalculationException e )
+            {
+                throw new IOException( "The time windows to evaluate could not be calculated.", e );
+            }
         }
-        catch ( CalculationException e )
+        else
         {
-            throw new IOException( "The time windows to evaluate could not be calculated.", e );
+            this.sampleMetadata.addAll( sampleMetadata );
         }
 
         ProgressMonitor.setSteps( (long)this.amountOfSamplesLeft() );

@@ -3,6 +3,7 @@ package wres.io.retrieval;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.sql.SQLException;
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.concurrent.Callable;
@@ -32,10 +33,15 @@ public class ByForecastSampleDataIterator extends SampleDataIterator
     ByForecastSampleDataIterator( Feature feature,
                                   ProjectDetails projectDetails,
                                   SharedWriterManager sharedWriterManager,
-                                  Path outputDirectoryForPairs )
+                                  Path outputDirectoryForPairs,
+                                  final Collection<OrderedSampleMetadata> sampleMetadataCollection)
             throws IOException
     {
-        super( feature, projectDetails, sharedWriterManager, outputDirectoryForPairs );
+        super( feature,
+               projectDetails,
+               sharedWriterManager,
+               outputDirectoryForPairs,
+               sampleMetadataCollection);
     }
 
     @Override

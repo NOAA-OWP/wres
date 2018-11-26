@@ -5,6 +5,7 @@ import java.nio.file.Path;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 
@@ -36,13 +37,15 @@ public class TimeSeriesSampleDataIterator extends SampleDataIterator
     TimeSeriesSampleDataIterator( Feature feature,
                                   ProjectDetails projectDetails,
                                   SharedWriterManager sharedWriterManager,
-                                  Path outputDirectoryForPairs )
+                                  Path outputDirectoryForPairs,
+                                  final Collection<OrderedSampleMetadata> sampleMetadataCollection)
             throws IOException
     {
         super( feature,
                projectDetails,
                sharedWriterManager,
-               outputDirectoryForPairs );
+               outputDirectoryForPairs,
+               sampleMetadataCollection);
     }
 
     @Override
