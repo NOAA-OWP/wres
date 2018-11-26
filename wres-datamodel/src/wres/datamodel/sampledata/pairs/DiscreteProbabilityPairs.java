@@ -15,7 +15,7 @@ import wres.datamodel.sampledata.SampleDataException;
  * @author james.brown@hydrosolved.com
  */
 
-public class DiscreteProbabilityPairs extends BasicPairs<DiscreteProbabilityPair>
+public class DiscreteProbabilityPairs extends Pairs<DiscreteProbabilityPair>
 {
 
     /**

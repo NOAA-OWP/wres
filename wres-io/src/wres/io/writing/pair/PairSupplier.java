@@ -28,8 +28,11 @@ import wres.io.data.details.ProjectDetails;
 import wres.util.CalculationException;
 
 /**
- * Returns a string to be written to a pairs file.
+ * Returns a string to be written to a pairs file. 
+ * 
+ * TODO: remove on completion of #55231
  */
+@Deprecated
 public class PairSupplier implements Supplier<Pair<Path,String>>
 {
 

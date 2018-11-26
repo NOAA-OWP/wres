@@ -15,7 +15,7 @@ import wres.datamodel.sampledata.SampleDataException;
  * 
  * @author james.brown@hydrosolved.com
  */
-public class EnsemblePairs extends BasicPairs<EnsemblePair>
+public class EnsemblePairs extends Pairs<EnsemblePair>
 {
 
     /**
