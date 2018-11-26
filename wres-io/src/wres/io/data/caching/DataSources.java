@@ -2,6 +2,7 @@ package wres.io.data.caching;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -291,8 +292,16 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
         script.addLine("SELECT path");
         script.addLine("FROM wres.Source S");
         script.addLine("WHERE S.is_point_data = FALSE");
-        script.addTab().addLine("AND S.lead > ", TimeHelper.durationToLead(sampleMetadata.getMinimumLead()));
-        script.addTab().addLine("AND S.lead <= ", TimeHelper.durationToLead(sampleMetadata.getLatestLead()));
+
+        if (sampleMetadata.getEarliestLead().equals( sampleMetadata.getLatestLead() ))
+        {
+            script.addTab().addLine("AND S.lead = ", TimeHelper.durationToLead( sampleMetadata.getEarliestLead() ));
+        }
+        else
+        {
+            script.addTab().addLine( "AND S.lead > ", TimeHelper.durationToLead( sampleMetadata.getMinimumLead() ) );
+            script.addTab().addLine( "AND S.lead <= ", TimeHelper.durationToLead( sampleMetadata.getLatestLead() ) );
+        }
 
         if (isForecast && sampleMetadata.getProjectDetails().getMinimumLead() > Integer.MIN_VALUE)
         {
@@ -337,16 +346,32 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
             }
             else
             {
-                // TODO: Uncomment when it's time to go exclusive-inclusive
-                //issueClause = "S.output_time > '" + timeWindow.getEarliestTime() + "'::timestamp without time zone ";
-                issueClause = "S.output_time >= '" + sampleMetadata.getEarliestTime() + "'::timestamp without time zone ";
-                issueClause += "AND S.output_time <= '" + sampleMetadata.getLatestTime() + "'::timestamp without time zone";
+                if (!sampleMetadata.getEarliestTime().equals( Instant.MIN ))
+                {
+                    // TODO: Uncomment when it's time to go exclusive-inclusive
+                    //issueClause = "S.output_time > '" + timeWindow.getEarliestTime() + "'::timestamp without time zone ";
+                    issueClause = "AND S.output_time >= '" + sampleMetadata.getEarliestTime() + "'::timestamp without time zone";
+                }
+
+                if (!sampleMetadata.getLatestTime().equals( Instant.MAX ))
+                {
+                    if (issueClause == null)
+                    {
+                        issueClause = "";
+                    }
+                    else
+                    {
+                        issueClause += NEWLINE;
+                    }
+
+                    issueClause += "AND S.output_time <= '" + sampleMetadata.getLatestTime() + "'::timestamp without time zone";
+                }
             }
         }
 
         if (issueClause != null)
         {
-            script.addTab().addLine("AND ", issueClause);
+            script.addTab().addLine(issueClause);
         }
 
         if (issueClause == null && isForecast && sampleMetadata.getProjectDetails().getEarliestIssueDate() != null)

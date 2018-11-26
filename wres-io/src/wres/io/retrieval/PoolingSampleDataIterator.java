@@ -3,6 +3,7 @@ package wres.io.retrieval;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Collection;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -25,13 +26,15 @@ class PoolingSampleDataIterator extends SampleDataIterator
     PoolingSampleDataIterator( Feature feature,
                                ProjectDetails projectDetails,
                                SharedWriterManager sharedWriterManager,
-                               Path outputDirectoryForPairs )
+                               Path outputDirectoryForPairs,
+                               final Collection<OrderedSampleMetadata> sampleMetadataCollection)
             throws IOException
     {
         super( feature,
                projectDetails,
                sharedWriterManager,
-               outputDirectoryForPairs );
+               outputDirectoryForPairs,
+               sampleMetadataCollection);
     }
 
     @Override
