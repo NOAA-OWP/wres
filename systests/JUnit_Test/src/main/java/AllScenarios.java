@@ -131,14 +131,12 @@ public class AllScenarios {
             if (files[i].startsWith( "before.sh" )) {
                 //TODO handle the before.sh
             }
-            if (files[i].endsWith( "after.sh" )) {
-                //TODO handle the after.sh
-            }
+
             if (files[i].endsWith( "project_config.xml" )) {
-                System.out.print( "executing this config file: " + files[i]);
-                
-                
-                String executeFile [] = {files[i]};
+        	StringBuffer stringBuffer = concatenateFile(files[i]);        
+                //String executeFile [] = {System.getProperty("user.dir") + "/" + files[i]};
+                //System.out.println( "executing this config file: " + System.getProperty("user.dir") + "/" + files[i]);
+                String executeFile [] = {stringBuffer.toString()};
            
                 try {
                     Control control = new Control();
@@ -201,21 +199,49 @@ public class AllScenarios {
                             // We can do the file comparison here or do later
                             fileComparison(tmppath);
                         } // end if iterator has.next()
+			control = null;
                     } // end if hashSet.isEmpty
-                    //hashSet.clear();
-                    //hashSet = null;
                 } catch (NullPointerException npe) {
                     System.err.println( "java.io.tmpdir: NullPointerException: " + npe.getMessage() );
                 } catch (Exception e) {
                     e.printStackTrace();
                 }                
             } // end if for search project_config.xml
+	    if (files[i].endsWith( "after.sh" )) {
+                //TODO handle the after.sh
+            }
         } // end for loop
 	System.out.println("Done with runtest");
 	//System.exit(0);
 //        return tmppath;
     } // end runTest method
     
+/**
+ * concatenate a file and append the lines into a string buffer and return it.
+ *
+ * @param fileName -- concatenate this file name
+ * @return the contents of a file in a string buffer
+ */
+    public StringBuffer concatenateFile(String fileName) {
+	String line = "";
+	StringBuffer stringBuffer = new StringBuffer();
+	String fullPath = System.getProperty("user.dir") + "/" + fileName;
+	System.out.println("Execute: " + fullPath);
+	try {
+		BufferedReader bufferedReader = new BufferedReader(new FileReader(new File(fullPath)));
+		while ((line = bufferedReader.readLine()) != null) {
+			stringBuffer.append(line);
+		}
+		bufferedReader.close();
+	 } catch (FileNotFoundException fnfe) {
+		System.err.println( fnfe.getMessage() );
+	} catch (IOException ioe) {
+		System.err.println( ioe.getMessage() );
+	}
+	return stringBuffer;
+    }
+
+
     /**
      * Compare the evaluation *.csv files with benchmarks
      * @param evaluationPath -- evaluation directory path
@@ -372,7 +398,9 @@ public class AllScenarios {
             // After sorted, let's write to the sorted_pairs.csv file
             String sortedPairs = pairsFile.getParent() + "/" + "sorted_pairs.csv";
             BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(sortedPairs));
-           
+
+            bufferedWriter.write( firstLine);
+	    bufferedWriter.newLine();
             for (Iterator<ThePairs> iterator = arrayList.iterator(); iterator.hasNext();) {
                 ThePairs thePairs = iterator.next();
                 
@@ -389,7 +417,6 @@ public class AllScenarios {
                 }
                 bufferedWriter.newLine();
             }
-            bufferedWriter.write( firstLine);
             bufferedWriter.flush();
             bufferedWriter.close();
             System.out.println( "sorted to " + sortedPairs );
