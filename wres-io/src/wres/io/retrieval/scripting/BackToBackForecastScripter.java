@@ -6,23 +6,23 @@ import java.sql.SQLException;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
 import wres.io.config.ConfigHelper;
+import wres.io.config.OrderedSampleMetadata;
 import wres.io.data.details.ProjectDetails;
 import wres.util.CalculationException;
+import wres.util.TimeHelper;
 
 class BackToBackForecastScripter extends Scripter
 {
-    BackToBackForecastScripter( ProjectDetails projectDetails,
-                                          DataSourceConfig dataSourceConfig,
-                                          Feature feature,
-                                          int progress,
-                                          int sequenceStep)
+    BackToBackForecastScripter( OrderedSampleMetadata sampleMetadata,
+                                DataSourceConfig dataSourceConfig)
     {
-        super( projectDetails, dataSourceConfig, feature, progress, sequenceStep );
+        super( sampleMetadata, dataSourceConfig );
     }
 
     @Override
     String formScript() throws SQLException, IOException
     {
+        this.addLine("-- ", this.getSampleMetadata());
         this.add("SELECT ");
         this.applyValueDate();
         this.addTab().addLine( "TSV.lead,");
@@ -66,28 +66,25 @@ class BackToBackForecastScripter extends Scripter
 
         if (this.getTimeShift() != null)
         {
-            this.add(" + ", this.getTimeShift() * 60);
+            this.add(" + ", this.getTimeShift().getSeconds());
         }
 
         this.addLine(")::bigint AS basis_epoch_time,");
     }
 
-    private void applyLeadQualifier() throws IOException
+    private void applyLeadQualifier()
     {
-        try
+        long earliest = TimeHelper.durationToLead( this.getSampleMetadata().getMinimumLead());
+        long latest = TimeHelper.durationToLead( this.getSampleMetadata().getLatestLead() );
+
+        if (earliest == latest)
         {
-            this.addTab().addLine("AND ",
-                                  this.getProjectDetails()
-                                      .getLeadQualifier(
-                                              this.getFeature(),
-                                              this.getProgress(),
-                                              "TSV"
-                                      )
-            );
+            this.addTab().addLine("AND TSV.lead = ", earliest);
         }
-        catch ( CalculationException e )
+        else
         {
-            throw new IOException( "The lead qualifier could not be calculated.", e );
+            this.addTab().addLine( "AND TSV.lead > ", earliest);
+            this.addTab().addLine( "AND TSV.lead <= ", latest);
         }
     }
 

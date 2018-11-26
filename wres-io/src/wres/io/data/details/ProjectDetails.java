@@ -6,8 +6,9 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.time.Instant;
+import java.time.Duration;
 import java.time.MonthDay;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -17,14 +18,12 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.StringJoiner;
-import java.util.TreeMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,7 +41,6 @@ import wres.config.generated.ProjectConfig;
 import wres.config.generated.ThresholdType;
 import wres.config.generated.TimeScaleConfig;
 import wres.config.generated.TimeScaleFunction;
-import wres.io.concurrency.DataSetRetriever;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
@@ -119,11 +117,6 @@ public class ProjectDetails
      * Protects access and generation of the feature collection
      */
     private static final Object FEATURE_LOCK = new Object();
-
-    /**
-     * Protects access to lead range generation which populates did i
-     */
-    private static final Object LEAD_RANGE_LOCK = new Object();
 
     private Integer projectID = null;
     private final ProjectConfig projectConfig;
@@ -238,26 +231,14 @@ public class ProjectDetails
     private final int inputCode;
 
     /**
-     * The number of application standard wres.config.generated.DurationUnit
-     * for the scale of the left side data
-     *
-     * <p>
-     * If the standard DurationUnit is 'HOURS' and the data is generated daily,
-     * the scale will be 24
-     * </p>
+     * The interval between values for the left hand data
      */
-    private long leftScale = -1;
+    private Duration leftInterval = Duration.ZERO;
 
     /**
-     * The number of application standard wres.config.generated.DurationUnit
-     * for the scale of the right side data
-     *
-     * <p>
-     * If the standard DurationUnit is 'HOURS' and the data is generated daily,
-     * the scale will be 24
-     * </p>
+     * The interval between values for the right hand data
      */
-    private long rightScale = -1;
+    private Duration rightInterval = Duration.ZERO;
 
     /**
      * The desired scale for the project
@@ -268,25 +249,9 @@ public class ProjectDetails
      */
     private TimeScaleConfig desiredTimeScale;
 
-    /**
-     * Indicates whether or not lead times should be calculated rather than
-     * using discrete numbers
-     */
-    private Boolean calculateLeads = null;
-
     private Boolean leftUsesGriddedData = null;
     private Boolean rightUsesGriddedData = null;
     private Boolean baselineUsesGriddedData = null;
-
-    /**
-     * Stores sets of lead times per feature that need to be evaluated
-     * individually if it is deemed that lead times shouldn't be calculated
-     *<p>
-     * In primitive irregular time series, 'lead = x' statements will be created
-     * by pulling values from a feature's list of lead times
-     * </p>
-     */
-    private Map<Feature, Integer[]> discreteLeads;
 
     /**
      * Guards access to the pool counts
@@ -437,6 +402,12 @@ public class ProjectDetails
         return name;
     }
 
+    /**
+     * Performs operations that are needed for the project to run between ingest and evaluation
+     * @throws SQLException
+     * @throws IOException
+     * @throws CalculationException
+     */
     public void prepareForExecution() throws SQLException, IOException, CalculationException
     {
         if (!ConfigHelper.isSimulation( this.getRight() ) &&
@@ -467,6 +438,10 @@ public class ProjectDetails
         }
     }
 
+    /**
+     * Loads metadata about all features that the project needs to use
+     * @throws SQLException Thrown if metadata about the features could not be loaded from the database
+     */
     private void populateFeatures() throws SQLException
     {
         synchronized ( ProjectDetails.FEATURE_LOCK )
@@ -923,12 +898,11 @@ public class ProjectDetails
      * The period from the scale is taken into account because a range of lead
      * hours is required to scale
      *</p>
-     * <br><br>
-     * TODO: Change documentation and names to indicate that this doesn't really involve scale; just the time between values
+     *
      * @return The length of a period of lead time to retrieve from the database
      * @throws CalculationException Thrown if the scale of the data could not be calculated
      */
-    private Integer getLeadPeriod() throws CalculationException
+    public Integer getLeadPeriod() throws CalculationException
     {
         Integer period;
 
@@ -968,8 +942,7 @@ public class ProjectDetails
      * Determines the unit of time that leads should be queried in. If no lead time
      * pooling window has been configured, the default is that of the expected
      * scale of the data
-     * <br><br>
-     * TODO: Change documentation and names to indicate that this doesn't really involve scale; just the time between values
+     *
      * @return The unit of time that leads should be queried in
      * @throws CalculationException Thrown if the scale of the data could not be calculated
      */
@@ -1052,93 +1025,71 @@ public class ProjectDetails
     }
 
     /**
-     * @return Whether or not the system should group leads itself rather than
-     * relying on the configuration
-     */
-    private boolean shouldDynamicallyPoolByLeads()
-    {
-        // We'll want to pool dynamically pool if the right side is a forecast...
-        boolean dynamicallyPool = ConfigHelper.isForecast( this.getRight() );
-        // and there's no defined desired scale...
-        dynamicallyPool = dynamicallyPool && this.projectConfig.getPair().getDesiredTimeScale() == null;
-        // and there's no definition for a lead times pooling window...
-        dynamicallyPool = dynamicallyPool && this.projectConfig.getPair().getLeadTimesPoolingWindow() == null;
-        // and there's no definition for the existing scale for either the left or right input
-        dynamicallyPool = dynamicallyPool &&
-                          (this.getLeft().getExistingTimeScale() == null ||
-                           this.getRight().getExistingTimeScale() == null);
-
-        return dynamicallyPool;
-    }
-
-    /**
      * TODO: Change documentation and names to indicate that this doesn't really involve scale; just the time between values
      * @return Whether or not data should be scaled
      * @throws CalculationException Thrown if the scale of the data could not be calculated
      */
     public boolean shouldScale() throws CalculationException
     {
-        return this.getScale() != null &&
+        return this.getProjectConfig().getPair().getDesiredTimeScale() != null &&
+               this.getScale() != null &&
                !TimeScaleFunction.NONE
                        .value().equalsIgnoreCase(this.getScale().getFunction().value());
     }
 
     /**
-     * Finds a common time step based on both left and right data in the database
+     * Finds a common interval based on both left and right data in the database
      *
      * <p>
-     * The lowest time step is used. If the left handed data has a time step of
-     * 6 hours, but the right is 9, the common time step is determined to be 18
+     * The least common interval is used. If the left handed data has an interval of
+     * 6 hours, but the right has 9 hours, the common interval is determined to be 18
      * hours.
      * </p>
      * <br><br>
      *
-     * @return A common time step between the left and right side of the data
-     * @throws CalculationException Thrown if the scale of the left hand data
+     * @return A common interval between the left and right side of the data
+     * @throws CalculationException Thrown if the interval of the left hand data
      * could not be calculated
-     * @throws CalculationException Thrown if the scale of the right hand data
+     * @throws CalculationException Thrown if the interval of the right hand data
      * could not be calculated
-     * @throws CalculationException Thrown if a scale that was compatible with
+     * @throws CalculationException Thrown if a interval that was compatible with
      * left and right hand data could not be calculated
      */
-    private TimeScaleConfig getCommonTimeStep() throws CalculationException
+    private Duration getCommonInterval() throws CalculationException
     {
-        Long commonScale;
-
-        // TODO: Adjust function based on scale in data
-        // Since we don't have enough information, we're assuming we aren't going to
-        // do any extra operations on the data
-        TimeScaleFunction scaleFunction = TimeScaleFunction.NONE;
+        Duration commonInterval;
 
         try
         {
-            long leftStep = this.getLeftScale();
-            long rightStep = this.getRightScale();
+            Duration leftStep = this.getLeftInterval();
+            Duration rightStep = this.getRightInterval();
 
-            long highestStep = Math.max(leftStep, rightStep);
-            long lowestStep = Math.min(leftStep, rightStep);
+            long highestStep = Math.max(leftStep.getSeconds(), rightStep.getSeconds());
+            long lowestStep = Math.min(leftStep.getSeconds(), rightStep.getSeconds());
 
-            if (leftStep == rightStep)
+            if (highestStep == lowestStep)
             {
-                commonScale = leftStep;
+                commonInterval = leftStep;
             }
             // This logic will attempt to reconcile the two to find a possible
             // desired scale; i.e. if the left is in a scale of 4 hours and the
             // right in 3, the needed scale would be 12 hours.
             else if (lowestStep != 0 && highestStep % lowestStep == 0)
             {
-                commonScale = highestStep;
+                commonInterval = Duration.of(highestStep, ChronoUnit.SECONDS);
             }
             else if (!(lowestStep == 0 || highestStep == 0))
             {
-
-                BigInteger bigLeft = BigInteger.valueOf( leftStep );
+                // If a proper interval could be found from both, find the least common interval
+                BigInteger bigLeft = BigInteger.valueOf( leftStep.getSeconds() );
 
                 Integer greatestCommonFactor =
-                        bigLeft.gcd( BigInteger.valueOf( rightStep ) )
+                        bigLeft.gcd( BigInteger.valueOf( rightStep.getSeconds() ) )
                                .intValue();
 
-                commonScale = leftStep * rightStep / greatestCommonFactor;
+                long commonStep = leftStep.getSeconds() * rightStep.getSeconds()
+                                  / greatestCommonFactor;
+                commonInterval = Duration.of(commonStep, ChronoUnit.SECONDS);
             }
             else
             {
@@ -1154,64 +1105,8 @@ public class ProjectDetails
                                             e );
         }
 
-        return new TimeScaleConfig(
-                scaleFunction,
-                commonScale.intValue(),
-                commonScale.intValue(),
-                DurationUnit.MINUTES,
-                "Dynamic Scale" );
+        return commonInterval;
     }
-
-    /*private Duration getCommonTimeStep() throws CalculationException
-    {
-        Long timeStep;
-
-        try
-        {
-            long left = this.getLeftTimeStep();
-            long right = this.getRightTimeStep();
-
-            long maxScale = Math.max(left, right);
-            long minScale = Math.min(left, right);
-
-            if (left == right)
-            {
-                timeStep = left;
-            }
-            // This logic will attempt to reconcile the two to find a possible
-            // desired scale; i.e. if the left is in a scale of 4 hours and the
-            // right in 3, the needed scale would be 12 hours.
-            else if (minScale != 0 && maxScale % minScale == 0)
-            {
-                timeStep = maxScale;
-            }
-            else if (!(minScale == 0 || maxScale == 0))
-            {
-
-                BigInteger bigLeft = BigInteger.valueOf( left );
-
-                Integer greatestCommonFactor =
-                        bigLeft.gcd( BigInteger.valueOf( right ) )
-                               .intValue();
-
-                timeStep = left * right / greatestCommonFactor;
-            }
-            else
-            {
-                throw new NoDataException( "Not enough data was supplied to "
-                                           + "evaluate a common time step between "
-                                           + "data sources." );
-            }
-        }
-        catch ( NoDataException e )
-        {
-            throw new CalculationException( "A common time step between left and "
-                                            + "right inputs could not be evaluated.",
-                                            e );
-        }
-
-        return Duration.of(timeStep, TimeHelper.LEAD_RESOLUTION);
-    }*/
 
     /**
      * Determines the time step of the data
@@ -1251,12 +1146,19 @@ public class ProjectDetails
 
         if (this.desiredTimeScale == null && ConfigHelper.isForecast( this.getRight() ))
         {
-            this.desiredTimeScale = this.getCommonTimeStep();
+            Duration commonInterval = this.getCommonInterval();
+            this.desiredTimeScale = new TimeScaleConfig(
+                    TimeScaleFunction.MEAN,
+                    (int)commonInterval.toMinutes(),
+                    (int)commonInterval.toMinutes(),
+                    DurationUnit.MINUTES,
+                    "Dynamic Scale"
+            );
         }
         else if(this.desiredTimeScale == null)
         {
             this.desiredTimeScale = new TimeScaleConfig(
-                    TimeScaleFunction.NONE,
+                    TimeScaleFunction.MEAN,
                     60,
                     60,
                     DurationUnit.fromValue(TimeHelper.LEAD_RESOLUTION.toString().toLowerCase() ),
@@ -1346,78 +1248,6 @@ public class ProjectDetails
         }
 
         return frequency;
-    }
-
-    /**
-     * Determines whether or not to calculate ranges of lead times for retrieval
-     * programmatically or to pull them from a discrete list.
-     *
-     * <p>
-     *     Leads will be calculated if there is some sort of lead time
-     *     specification in the configuration (existing scales, desired scale,
-     *     or lead time pooling windows) or if ingested data are determined to
-     *     be regular time series.
-     * </p>
-     *
-     * @return Whether or not ranges of lead times should be calculated
-     * @throws CalculationException Thrown if the logic sent to the database
-     * could not calculate whether or not there was a regular distance between leads
-     */
-    private boolean shouldCalculateLeads() throws CalculationException
-    {
-        if ( this.calculateLeads == null )
-        {
-            this.calculateLeads = !this.shouldDynamicallyPoolByLeads();
-
-            if ( !this.calculateLeads )
-            {
-                DataScripter script = new DataScripter();
-
-                script.addLine( "WITH unique_leads AS" );
-                script.addLine( "(" );
-                script.addTab().addLine("SELECT TSV.lead, lag(TSV.lead) OVER ( ORDER BY TSV.lead)" );
-                script.addTab().addLine( "FROM wres.TimeSeriesValue TSV" );
-                script.addTab().addLine( "WHERE TSV.lead > 0" );
-
-                if ( this.getMaximumLead() != Integer.MAX_VALUE )
-                {
-                    script.addTab(  2  ).addLine( "AND TSV.lead <= ", this.getMaximumLead() );
-                }
-
-                script.addTab(  2  ).addLine( "AND EXISTS (" );
-                script.addTab(   3   ).addLine( "SELECT 1" );
-                script.addTab(   3   ).addLine( "FROM wres.TimeSeriesSource TSS" );
-                script.addTab(   3   ).addLine( "INNER JOIN wres.ProjectSource PS" );
-                script.addTab(    4    ).addLine( "ON PS.source_id = TSS.source_id" );
-                script.addTab(   3   ).addLine( "WHERE TSS.timeseries_id = TSV.timeseries_id" );
-                script.addTab(    4    ).addLine( "AND PS.project_id = ", this.getId() );
-                script.addTab(    4    ).addLine( "AND PS.member = 'right'" );
-                script.addTab(  2  ).addLine( ")" );
-                script.addTab().addLine( "GROUP BY TSV.lead" );
-                script.addLine( ")" );
-                script.addLine( "SELECT MAX(row_number) = 1 AS is_regular" );
-                script.addLine( "FROM (" );
-                script.addTab().addLine("SELECT lead - lag, row_number() OVER (ORDER BY lead - lag)" );
-                script.addTab().addLine( "FROM unique_leads" );
-                script.addTab().addLine( "WHERE lag IS NOT NULL" );
-                script.addTab().addLine( "GROUP BY lead - lag" );
-                script.addLine( ") AS differences;" );
-
-                try
-                {
-                    this.calculateLeads = script.retrieve( "is_regular" );
-                }
-                catch ( SQLException e )
-                {
-                    throw new CalculationException(
-                            "Could not determine whether or not discrete leads should be calculated.",
-                            e
-                    );
-                }
-            }
-        }
-
-        return this.calculateLeads;
     }
 
     /**
@@ -1625,346 +1455,6 @@ public class ProjectDetails
         return ConfigHelper.getDestinationsOfType( this.getProjectConfig(), DestinationType.PAIRS );
     }
 
-    public Pair<Instant, Instant> getIssueDateRange(final int issueDatePoolStep)
-    {
-        if (this.projectConfig.getPair().getIssuedDatesPoolingWindow() == null)
-        {
-            return null;
-        }
-
-        long frequency = TimeHelper.unitsToLeadUnits( this.getIssuePoolingWindowUnit(), this.getIssuePoolingWindowFrequency() );
-        long span = TimeHelper.unitsToLeadUnits( this.getIssuePoolingWindowUnit(), this.getIssuePoolingWindowPeriod() );
-
-        Instant earliestIssue = Instant.parse( this.getEarliestIssueDate() );
-
-        Instant first = earliestIssue.plus( frequency * issueDatePoolStep, TimeHelper.LEAD_RESOLUTION );
-
-        Instant last = earliestIssue.plus( frequency * issueDatePoolStep + span, TimeHelper.LEAD_RESOLUTION );
-
-        return Pair.of( first, last );
-    }
-
-    public String getIssueDatesQualifier(final int issueDatePoolStep, String issueField)
-    {
-        Pair<Instant, Instant> issueRange = this.getIssueDateRange( issueDatePoolStep );
-
-        if (issueRange == null)
-        {
-            return null;
-        }
-
-        String qualifier;
-        if (issueRange.getLeft().equals(issueRange.getRight()))
-        {
-            qualifier = issueField + " = '" + issueRange.getLeft() + "'::timestamp without time zone ";
-        }
-        else
-        {
-            qualifier = issueField + " > '" + issueRange.getLeft() + "'::timestamp without time zone ";
-            qualifier += "AND " + issueField + " <= '" + issueRange.getRight() + "'::timestamp without time zone";
-        }
-
-        return qualifier;
-    }
-
-    /**
-     * Determines the overall range of leads to use in a given window
-     * @param feature The feature who the range belongs to
-     * @param windowNumber The iteration number over lead times
-     * @return A pair containing the earliest lead and latest lead
-     * @throws CalculationException Thrown if the calculation used to
-     * determine whether or not lead offsets should be calculated failed
-     * @throws CalculationException Thrown if a common scale between
-     * left and right data could not be calculated
-     * @throws CalculationException Thrown if an offset between left
-     * and right data could not be calculated
-     * @throws CalculationException Thrown if the specific leads used to
-     * evaluate could not be calculated
-     */
-    public Pair<Integer, Integer> getLeadRange(final Feature feature, final int windowNumber)
-            throws CalculationException
-    {
-        Integer beginning;
-        Integer end;
-
-        // If we're using time series, we want to cover all leads
-        if ( ProjectConfigs.hasTimeSeriesMetrics( this.projectConfig ))
-        {
-            beginning = Integer.MIN_VALUE;
-            end = Integer.MAX_VALUE;
-        }
-        else
-        {
-            synchronized ( LEAD_RANGE_LOCK )
-            {
-                if ( this.shouldCalculateLeads() )
-                {
-                    int frequency = ( int ) TimeHelper.unitsToLeadUnits( this.getLeadUnit(), this.getLeadFrequency() );
-                    int period = ( int ) TimeHelper.unitsToLeadUnits( this.getLeadUnit(), this.getLeadPeriod() );
-                    Integer offset;
-                    try
-                    {
-                        offset = this.getLeadOffset( feature );
-                    }
-                    catch ( IOException | SQLException e )
-                    {
-                        throw new CalculationException( "The offset between observed values and "
-                                                        + "forecasted values are needed to determine "
-                                                        + "when a lead range should begin, but could "
-                                                        + "not be loaded.",
-                                                        e );
-                    }
-                    beginning = windowNumber * frequency + offset;
-                    end = beginning + period;
-                }
-                else
-                {
-                    if ( this.discreteLeads == null )
-                    {
-                        LOGGER.warn( "The system is detecting irregular time series or "
-                                     + "data that contains forecasts out of sync with "
-                                     + "the others." );
-                        LOGGER.warn( "Irregular forecasts are not fully supported, so "
-                                     + "only discrete leads will be evaluated." );
-                        try
-                        {
-                            populateDiscreteLeads();
-                        }
-                        catch ( IOException e )
-                        {
-                            throw new CalculationException(
-                                    "The unique lead times needed to determine a range of "
-                                    + "lead times could not be loaded.",
-                                    e
-                            );
-                        }
-                    }
-                    // We can probably do an operation on period to get a full scale
-                    // for the irregular series, i.e., if this gives us a period of 1,
-                    // but we might be able to pull off
-                    // [this.discreteLeads.get(feature)[x] - period, this.discreteLeads.get(feature)[x]]
-                    beginning = this.discreteLeads.get( feature )[windowNumber];
-                    end = beginning;
-                }
-            }
-
-        }
-
-        return Pair.of( beginning, end );
-    }
-
-    /**
-     * Creates a SQL where clause stating which leads to use for retrieval
-     * @param feature The feature whose leads to retrieve
-     * @param windowNumber The identifier for the current iteration over lead times
-     * @param alias The alias for a table to be used in the SQL statement
-     * @return A SQL where clause stating which leads to use for retrieval
-     * @throws CalculationException Thrown if the first and last leads of a window
-     * could not be calculated
-     */
-    public String getLeadQualifier(Feature feature, Integer windowNumber, String alias)
-            throws CalculationException
-    {
-        Pair<Integer, Integer> range = this.getLeadRange( feature, windowNumber );
-        String qualifier = "";
-
-        if (Strings.hasValue( alias ) && !alias.endsWith( "." ))
-        {
-            alias += ".";
-        }
-        else
-        {
-            alias = "";
-        }
-
-        if (Math.abs(range.getLeft() - range.getRight()) <= 1)
-        {
-            qualifier += alias;
-            qualifier += "lead = ";
-            qualifier += range.getRight();
-        }
-        else
-        {
-            qualifier += range.getLeft();
-            qualifier += " < ";
-            qualifier += alias;
-            qualifier += "lead AND ";
-            qualifier += alias;
-            qualifier += "lead <= ";
-            qualifier += range.getRight();
-        }
-
-        return qualifier;
-    }
-
-    /**
-     * Retrieves and caches all discrete lead times for each feature for the project.
-     *
-     * <p>
-     *     Used for organizing lead times to evaluate for irregular time series
-     * </p>
-     * @throws IOException Thrown if the total list of locations and variables
-     * to evaluate could not be loaded
-     * @throws IOException Thrown if the process of populating lead times is
-     * interrupted
-     * @throws IOException Thrown if an error occurred while loading the data
-     * to populate the lead times
-     */
-    private void populateDiscreteLeads() throws IOException
-    {
-        Connection connection = null;
-        Map<FeatureDetails, Future<DataProvider>> futureLeads = new LinkedHashMap<>(  );
-
-        long width = Math.max(1, this.getMinimumLead());
-
-        ScriptBuilder script = new ScriptBuilder(  );
-
-        script.addLine("SELECT TSV.lead");
-        script.addLine("FROM wres.TimeSeriesValue TSV");
-        script.addLine("WHERE TSV.lead >= ", width);
-
-        if (this.getMaximumLead() != Integer.MAX_VALUE)
-        {
-            script.addTab().addLine("AND TSV.lead <= ", this.getMaximumLead());
-        }
-
-        if (this.getMaximumValue() != Double.MAX_VALUE)
-        {
-            script.addTab().addLine("AND TSV.series_value <= ", this.getMaximumValue());
-        }
-
-        if (this.getMinimumValue() != -Double.MAX_VALUE)
-        {
-            script.addTab().addLine("AND TSV.series_value >= ", this.getMinimumValue());
-        }
-
-        script.addTab().addLine("AND EXISTS (");
-        script.addTab( 2 ).addLine( "SELECT 1");
-        script.addTab( 2 ).addLine( "FROM wres.TimeSeries TS");
-        script.addTab( 2 ).addLine( "INNER JOIN wres.TimeSeriesSource TSS");
-        script.addTab(  3  ).addLine(  "ON TSS.timeseries_id = TS.timeseries_id");
-        script.addTab( 2 ).addLine( "INNER JOIN wres.ProjectSource PS");
-        script.addTab(  3  ).addLine(  "ON PS.source_id = TSS.source_id");
-        script.addTab( 2 ).addLine( "WHERE TS.timeseries_id = TSV.timeseries_id");
-        script.addTab(  3  ).addLine(  "AND PS.project_id = ", this.getId());
-        script.addTab(  3  ).addLine(  "AND PS.member = 'right'");
-
-        if (Strings.hasValue( this.getEarliestIssueDate() ))
-        {
-            script.addTab(3).addLine("AND TS.initialization_date >= '", this.getEarliestIssueDate(), "'");
-        }
-
-        if (Strings.hasValue( this.getLatestIssueDate() ))
-        {
-            script.addTab(3).addLine("AND TS.initialization_date <= '", this.getLatestIssueDate(), "'");
-        }
-
-        if (Strings.hasValue(this.getEarliestDate()))
-        {
-            script.addTab(3).addLine("AND TS.initialization_date + INTERVAL '1 HOUR' * TSV.lead >= '", this.getEarliestDate(), "'");
-        }
-
-        if (Strings.hasValue( this.getLatestDate() ))
-        {
-            script.addTab(3).addLine("AND TS.initialization_date + INTERVAL '1 HOUR' * TSV.lead <= '", this.getLatestDate(), "'");
-        }
-
-        String beginning = script.toString();
-
-        try
-        {
-            connection = Database.getConnection();
-            String variableFeatureScript = ScriptGenerator.formVariableFeatureLoadScript( this, false );
-            try (DataProvider resultSet = Database.getResults( connection, variableFeatureScript ))
-            {
-                while ( resultSet.next() )
-                {
-                    script = new ScriptBuilder( beginning );
-
-                    script.addTab( 3 )
-                          .addLine( "AND TS.variablefeature_id = ", resultSet.getInt( "forecast_feature" ) );
-                    script.addTab().addLine( ")" );
-                    script.addLine( "GROUP BY TSV.lead" );
-                    script.addLine( "ORDER BY TSV.lead;" );
-
-                    futureLeads.put( new FeatureDetails( resultSet ),
-                                     Database.submit( new DataSetRetriever( script.toString() ) ) );
-                }
-            }
-        }
-        catch (SQLException e)
-        {
-            throw new IOException( "Tasks used to determine discrete lead hours "
-                                   + "could not be created.", e );
-        }
-        finally
-        {
-            if (connection != null)
-            {
-                Database.returnConnection( connection );
-            }
-        }
-
-        while (!futureLeads.isEmpty())
-        {
-            FeatureDetails key = (FeatureDetails)futureLeads.keySet().toArray()[0];
-            Feature feature = key.toFeature();
-            Future<DataProvider> futureData = futureLeads.remove( key );
-            List<Integer> leadList = new ArrayList<>();
-            DataProvider dataSet;
-            try
-            {
-                // If we're on the last/only task, there's no reason to try and
-                // cycle through it
-                if (futureLeads.isEmpty())
-                {
-                    dataSet = futureData.get();
-                }
-                else
-                {
-                    dataSet = futureData.get( 500, TimeUnit.MILLISECONDS );
-                }
-
-                if (dataSet == null)
-                {
-                    continue;
-                }
-
-                while (dataSet.next())
-                {
-                    leadList.add(dataSet.getInt( "lead" ));
-                }
-
-                if (this.discreteLeads == null)
-                {
-                    this.discreteLeads = new TreeMap<>(ConfigHelper.getFeatureComparator());
-                }
-
-                this.discreteLeads.put( feature,
-                                        leadList.toArray( new Integer[leadList.size()] ) );
-            }
-            catch ( InterruptedException e )
-            {
-                LOGGER.warn( "Population of discrete leads has been interrupted.",
-                             e );
-                Thread.currentThread().interrupt();
-            }
-            catch ( ExecutionException e )
-            {
-                throw new IOException( "An error occurred while populating discrete leads", e );
-            }
-            catch ( TimeoutException e )
-            {
-                LOGGER.trace("It took too long to get the set of discrete leads "
-                             + "for '{}'; moving on to another location while "
-                             + "we wait for the output for this location.",
-                             ConfigHelper.getFeatureDescription( feature ));
-                futureLeads.put( key, futureData );
-            }
-
-        }
-    }
-
     /**
      * Retrieves the offset for lead times to use to pull a valid window for a
      * feature.
@@ -2080,6 +1570,18 @@ public class ProjectDetails
         if (this.getMaximumLead() != Integer.MAX_VALUE)
         {
             part.addTab(  2  ).addLine( "AND TSV.lead <= ", this.getMaximumLead());
+        }
+
+        // If the minimum value has the potential to filter out values, add it as a filter condition
+        if (this.getMinimumValue() > Integer.MIN_VALUE && this.getDefaultMinimumValue() == null)
+        {
+            part.addTab(  2  ).addLine("AND TSV.series_value >= ", this.getMinimumValue());
+        }
+
+        // If the maximum value has the potential to filter out values, add it as a filter condition
+        if (this.getMaximumValue() > Integer.MAX_VALUE && this.getDefaultMaximumValue() == null)
+        {
+            part.addTab(  2  ).addLine("AND TSV.series_value <= ", this.getMaximumValue());
         }
 
         if (Strings.hasValue( this.getEarliestIssueDate() ))
@@ -2278,12 +1780,14 @@ public class ProjectDetails
      * <p>
      *     Aids in the process of iterating over windows/MetricInputs
      * </p>
+     * TODO: Once the logic below is uncommented and tests are updated, move this logic to the wres.io.retrieval.PoolingSampleDataIterator
+     * and remove the cache
      * @param feature The feature whose pool count to use
      * @return The number of issue date pools for a feature
      * @throws CalculationException Thrown if the number of issue pools
      * for a set of leads for a feature could not be calculated
      */
-    public Integer getIssuePoolCount( Feature feature) throws CalculationException
+    public Integer getIssuePoolCount( final Feature feature) throws CalculationException
     {
         if ( this.getPairingMode() != PairingMode.ROLLING)
         {
@@ -2328,7 +1832,15 @@ public class ProjectDetails
 
                 try
                 {
-                    this.addIssuePoolCount( feature );
+                    DataScripter counter = ScriptGenerator.formIssuePoolCounter( this, feature );
+
+                    counter.consume( row -> {
+                        Integer sampleCount = row.getInt( "window_count" );
+                        if (sampleCount != null)
+                        {
+                            this.poolCounts.put(feature, sampleCount);
+                        }
+                    } );
                 }
                 catch ( SQLException e )
                 {
@@ -2343,32 +1855,6 @@ public class ProjectDetails
         }
 
         return this.poolCounts.get( feature );
-    }
-
-    /**
-     * Adds the number of issue pools for a feature to the cache
-     * @param feature The feature whose count  we want to cache
-     * @throws SQLException Thrown if the script used to find the count could
-     * not be created
-     * @throws SQLException Thrown if the count could not be retrieved
-     */
-    private void addIssuePoolCount( Feature feature) throws SQLException
-    {
-        DataScripter counter = ScriptGenerator.formIssuePoolCounter(this, feature);
-
-        Integer windowCount = counter.retrieve( "window_count" );
-
-        if (windowCount != null)
-        {
-            this.poolCounts.put( feature, windowCount );
-        }
-        else
-        {
-            throw new SQLException( "There was no intersection between "
-                                    + "observation and forecast data for '"
-                                    + ConfigHelper.getFeatureDescription( feature )
-                                    + "'." );
-        }
     }
 
     private String getProjectName()
@@ -2386,137 +1872,117 @@ public class ProjectDetails
     }
 
     /**
-     * Evaluates the scale of the left side of the data
+     * Evaluates the interval of the left side of the data
      * <p>
      *     If no existing time scale has been dictated, it is evaluated from the
      *     database
      * </p>
-     * <br><br>
-     * TODO: Change documentation and names to indicate that this doesn't really involve scale; just the time between values
-     * @return The number of standard temporal units between each value on the
-     * left side of the data
-     * @throws CalculationException thrown if the scale of the left hand data could not be calculated
+     * @return The interval between each value on the left side of the data
+     * @throws CalculationException thrown if the interval of the left hand data could not be calculated
      */
-    private long getLeftScale() throws CalculationException
+    private Duration getLeftInterval() throws CalculationException
     {
         synchronized ( LEFT_LEAD_LOCK )
         {
-            if ( this.leftScale == -1 )
+            if ( this.leftInterval == Duration.ZERO )
             {
                 if ( this.getLeft().getExistingTimeScale() == null )
                 {
-                    this.leftScale = this.getScale( this.getLeft() );
+                    this.leftInterval = this.getValueInterval( this.getLeft() );
                 }
                 else
                 {
-                    this.leftScale =
-                            TimeHelper.unitsToLeadUnits( this.getLeft()
-                                                             .getExistingTimeScale()
-                                                             .getUnit()
-                                                             .value(),
-                                                         this.getLeft()
-                                                             .getExistingTimeScale()
-                                                             .getPeriod() );
+                    this.leftInterval = Duration.of(
+                            this.getLeft().getExistingTimeScale().getPeriod(),
+                            ChronoUnit.valueOf( this.getLeft().getExistingTimeScale().getUnit().toString() )
+                    );
                 }
             }
         }
 
-        return leftScale;
+        return leftInterval;
     }
 
     /**
-     * Evaluates the scale of the right side of the data
+     * Evaluates the interval of the right side of the data
      * <p>
      *     If no existing time scale has been dictated, it is evaluated from the
      *     database
      * </p>
-     * <br><br>
-     * TODO: Change documentation and names to indicate that this doesn't really involve scale; just the time between values
-     * @return The number of standard temporal units between each value on the
-     * right side of the data
+     *
+     * @return The duration between each value on the right side of the data
      * @throws CalculationException thrown if the scale of the right hand data
      * could not be calculated
      */
-    private long getRightScale() throws CalculationException
+    private Duration getRightInterval() throws CalculationException
     {
         synchronized ( RIGHT_LEAD_LOCK )
         {
-            if ( this.rightScale == -1 )
+            if ( this.rightInterval == Duration.ZERO )
             {
                 if ( this.getRight().getExistingTimeScale() == null )
                 {
-                    this.rightScale = this.getScale( this.getRight() );
+                    this.rightInterval = this.getValueInterval( this.getRight() );
                 }
                 else
                 {
-                    this.rightScale =
-                            TimeHelper.unitsToLeadUnits(
-                                    this.getRight()
-                                        .getExistingTimeScale()
-                                        .getUnit()
-                                        .value(),
-                                    this.getRight()
-                                        .getExistingTimeScale()
-                                        .getPeriod()
-                            );
+                    this.rightInterval = Duration.of(
+                            this.getRight().getExistingTimeScale().getPeriod(),
+                            ChronoUnit.valueOf( this.getRight().getExistingTimeScale().getUnit().toString() )
+                    );
                 }
             }
         }
 
-        return this.rightScale;
+        return this.rightInterval;
     }
 
     /**
-     * Determines the number of standard lead units between values
-     * <br><br>
-     * TODO: Change documentation and names to indicate that this doesn't really involve scale; just the time between values
+     * Determines the duration between values in the dataset
+     *
      * @param dataSourceConfig The specification for which values to investigate
-     * @return The number of standard lead units between values
-     * @throws CalculationException thrown if the scale for forecast data could not be calculated
-     * @throws CalculationException thrown if the scale for observed data could not be calculated
-     * @throws CalculationException thrown if the calculation of the scale resulted in an
+     * @return The duration between values
+     * @throws CalculationException thrown if the frequency for forecast data could not be calculated
+     * @throws CalculationException thrown if the frequency for observed data could not be calculated
+     * @throws CalculationException thrown if the calculation of the frequency resulted in an
      * impossible value
      */
-    private int getScale(DataSourceConfig dataSourceConfig) throws CalculationException
+    private Duration getValueInterval( DataSourceConfig dataSourceConfig) throws CalculationException
     {
-        Integer leadScale;
+        Duration interval;
 
         if (ConfigHelper.isForecast( dataSourceConfig ))
         {
-            leadScale = this.getForecastScale( dataSourceConfig );
+            interval = this.getForecastInterval( dataSourceConfig );
         }
         else
         {
-            leadScale = this.getObservationScale( dataSourceConfig );
+            interval = this.getObservationInterval( dataSourceConfig );
         }
 
-        if (leadScale == null || leadScale < 1)
+        if (interval == null)
         {
-            throw new CalculationException("The scale for the " +
+            throw new CalculationException("The interval for the " +
                                            this.getInputName( dataSourceConfig ) +
-                                           " either could not be determined or was "
-                                           + "invalid. (lead = " +
-                                           leadScale +
-                                           ")");
+                                           " data could either not be determined or was "
+                                           + "invalid.");
         }
 
-        return leadScale;
+        return interval;
     }
 
     /**
-     * Retrieves the scale of forecast data from the database
-     * <br><br>
-     * TODO: Change documentation and names to indicate that this doesn't really involve scale; just the time between values
+     * Retrieves the interval between forecast values from the database
      * @param dataSourceConfig The specification for the data with which to investigate
-     * @return The number of standard lead units between values
+     * @return The duration between forecast values
      * @throws CalculationException thrown if a feature to use in the calculation could not be found
      * @throws CalculationException thrown if the intersection between feature data and variable data
      * could not be calculated
      * @throws CalculationException thrown if an isolated ensemble to evaluate could not be found
-     * @throws CalculationException thrown if the calculation used to determine the scale of the
-     * forecast encountered an error
+     * @throws CalculationException thrown if the calculation used to determine the frequency of the
+     * forecast values encountered an error
      */
-    private Integer getForecastScale(DataSourceConfig dataSourceConfig) throws CalculationException
+    private Duration getForecastInterval( DataSourceConfig dataSourceConfig) throws CalculationException
     {
         // TODO: Forecasts between locations might not be unified.
         // Generalizing the scale for all locations based on a single one could cause miscalculations
@@ -2544,7 +2010,7 @@ public class ProjectDetails
         }
         else
         {
-            // Set the maximum to 6,000 (100 hours). If the maximum is lead is 72, then this
+            // Set the maximum to 6,000 (100 hours). If the maximum is lead is 72 hours, then this
             // should not behave much differently than having no clause at all.
             // If real maximum was 172800, 6000 will provide a large enough sample
             // size and produce the correct values in a slightly faster fashion.
@@ -2611,34 +2077,32 @@ public class ProjectDetails
         script.addLine("                AND TSV.timeseries_id = TSS.timeseries_id");
         script.addLine("        )");
         script.addLine(")");
-        script.addLine("SELECT MIN(difference)::integer AS scale");
+        script.addLine("SELECT MIN(difference)::bigint AS interval");
         script.addLine("FROM differences");
         script.addLine("WHERE difference IS NOT NULL");
         script.addLine("    AND difference > 0");
 
         try
         {
-            return script.retrieve( "scale" );
+            return Duration.of(script.retrieve( "interval" ), TimeHelper.LEAD_RESOLUTION);
         }
         catch ( SQLException e )
         {
-            throw new CalculationException( "The scale of the forecast data could not be evaluated.", e );
+            throw new CalculationException( "The interval between forecast values could not be evaluated.", e );
         }
     }
 
     /**
-     * Retrieves the scale of observation data from the database
-     * <br><br>
-     * TODO: Change documentation and names to indicate that this doesn't really involve scale; just the time between values
+     * Retrieves the interval between observation values from the database
      * @param dataSourceConfig The specification for the data with which to investigate
-     * @return The number of standard lead units between values
+     * @return The duration between observation values
      * @throws CalculationException thrown if a feature to evaluate could not be found
      * @throws CalculationException thrown if the intersection between variable and
      * location data could not be calculated
      * @throws CalculationException thrown if the calculation used to determine the
-     * scale of the observation encountered an error
+     * frequency of the observation values encountered an error
      */
-    private int getObservationScale(DataSourceConfig dataSourceConfig) throws CalculationException
+    private Duration getObservationInterval( DataSourceConfig dataSourceConfig) throws CalculationException
     {
         // TODO: Observations between locations are often not unified.
         // Generalizing the scale for all locations based on a single one could cause miscalculations
@@ -2702,19 +2166,19 @@ public class ProjectDetails
         script.addTab().addLine(")");
         script.addTab().addLine("GROUP BY observation_time");
         script.addLine(")");
-        script.addLine("SELECT ( EXTRACT( epoch FROM MIN(age))/60 )::integer AS scale -- Divide by 60 to convert the seconds to minutes");
+        script.addLine("SELECT ( EXTRACT( epoch FROM MIN(age))/60 )::bigint AS interval -- Divide by 60 to convert the seconds to minutes");
         script.addLine("FROM differences");
         script.addLine("WHERE age IS NOT NULL");
         script.addLine("GROUP BY age;");
 
         try
         {
-            return script.retrieve( "scale" );
+            return Duration.of(script.retrieve( "interval" ), TimeHelper.LEAD_RESOLUTION);
         }
         catch ( SQLException e )
         {
             throw new CalculationException( "The calculation used to determine the "
-                                            + "scale of observational data failed.",
+                                            + "interval of observational data failed.",
                                             e );
         }
     }
@@ -3147,10 +2611,10 @@ public class ProjectDetails
                     .getLeadHours()
                     .getMinimum() != null )
         {
-            // Lead hour configuration needs to be converted to lead minutes
-            result = this.getProjectConfig().getPair()
-                         .getLeadHours()
-                         .getMinimum() * 60;
+            result = (int)TimeHelper.unitsToLeadUnits(
+                    ChronoUnit.HOURS.toString(),
+                    this.getProjectConfig().getPair().getLeadHours().getMinimum()
+            );
         }
 
         return result;
@@ -3170,22 +2634,13 @@ public class ProjectDetails
                     .getLeadHours()
                     .getMaximum() != null )
         {
-            // Lead hour configuration needs to be converted to lead minutes
-            result = this.getProjectConfig().getPair()
-                         .getLeadHours()
-                         .getMaximum() * 60;
+            result = (int)TimeHelper.unitsToLeadUnits(
+                    ChronoUnit.HOURS.toString(),
+                    this.getProjectConfig().getPair().getLeadHours().getMaximum()
+            );
         }
 
         return result;
-    }
-
-    /**
-     * @return The overall number of lead units within a single window
-     * @throws CalculationException thrown if an overarching scale could not be calculated
-     */
-    public long getWindowWidth() throws CalculationException
-    {
-        return TimeHelper.unitsToLeadUnits( this.getLeadUnit(), this.getLeadPeriod() );
     }
 
     /**

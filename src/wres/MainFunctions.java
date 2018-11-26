@@ -1,6 +1,5 @@
 package wres;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -10,51 +9,29 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Objects;
-import java.util.Queue;
-import java.util.StringJoiner;
 import java.util.TreeMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import ucar.nc2.NetcdfFile;
-import ucar.nc2.Variable;
 import ucar.nc2.dataset.NetcdfDataset;
 import ucar.nc2.dt.GridCoordSystem;
 import ucar.nc2.dt.GridDatatype;
 import ucar.nc2.dt.grid.GridDataset;
-import ucar.unidata.geoloc.LatLonPoint;
 
 import wres.config.ProjectConfigPlus;
 import wres.config.Validation;
 import wres.config.generated.ProjectConfig;
 import wres.control.Control;
 import wres.io.Operations;
-import wres.io.concurrency.CopyExecutor;
-import wres.io.concurrency.Downloader;
-import wres.io.concurrency.Executor;
-import wres.io.concurrency.WRESRunnable;
 import wres.io.config.ConfigHelper;
-import wres.io.reading.usgs.USGSParameterReader;
-import wres.io.utilities.DataScripter;
-import wres.io.utilities.Database;
 import wres.system.ProgressMonitor;
-import wres.system.SystemSettings;
-import wres.util.NetCDF;
 import wres.util.Strings;
 
 /**

@@ -14,6 +14,19 @@ import wres.io.reading.BasicSource;
 import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
 
+/**
+ * Ingests JSON data from the WRDS schema from either the service or JSON files on the file system
+ * <p>
+ *     As of 11/23/2018, the url for the swagger document is: http://***REMOVED***.***REMOVED***.***REMOVED***/api/v1/20181119/docs
+ *     The project config will be needed to be modified to let the user indicate the format + the
+ *     service where the data will come from. Currently, if you try to get the data from the service,
+ *     it will attempt to find the service on the file system in the sourceloader and fail.
+ * </p>
+ * <p>
+ *     Additional logic will be needed to fill service parameters, such as issued time ranges,
+ *     valid time ranges, and location IDs.
+ * </p>
+ */
 public class WRDSSource extends BasicSource
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( WRDSSource.class );
