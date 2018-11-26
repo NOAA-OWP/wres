@@ -5,8 +5,8 @@ import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -72,6 +72,7 @@ public class TimeSeriesRetriever extends Retriever
         }
     }
 
+    
     @Override
     protected SampleData<?> createInput() throws IOException
     {
@@ -81,19 +82,17 @@ public class TimeSeriesRetriever extends Retriever
 
         for (ForecastedPair pair : this.getPrimaryPairs())
         {
+            List<Event<SingleValuedPair>> eventPairs = new ArrayList<>();
             for (SingleValuedPair singleValuedPair : pair.getSingleValuedPairs())
             {
-                builder.addTimeSeriesData(
-                        pair.getBasisTime(),
-                        Collections.singletonList(
-                                Event.of( pair.getValidTime(),  singleValuedPair)
-                        )
-                );
+                eventPairs.add( Event.of( pair.getBasisTime(), pair.getValidTime(), singleValuedPair ) );
             }
+            builder.addTimeSeries( eventPairs );
         }
 
         return builder.build();
-    }
+    }    
+    
 
     @Override
     protected String getLoadScript( DataSourceConfig dataSourceConfig ) throws SQLException, IOException

@@ -107,13 +107,17 @@ public class SingleValuedPairs extends Pairs<SingleValuedPair>
                                         SampleMetadata baselineMeta,
                                         VectorOfDoubles climatology )
     {
-        SingleValuedPairsBuilder b = new SingleValuedPairsBuilder();
-        return (SingleValuedPairs) b.setMetadata( mainMeta )
-                                    .addData( pairs )
-                                    .addDataForBaseline( basePairs )
-                                    .setMetadataForBaseline( baselineMeta )
-                                    .setClimatology( climatology )
-                                    .build();
+        SingleValuedPairsBuilder b =
+                new SingleValuedPairsBuilder();
+
+        b.addData( pairs ).setMetadata( mainMeta ).setClimatology( climatology );
+
+        if ( Objects.nonNull( basePairs ) )
+        {
+            b.addDataForBaseline( basePairs ).setMetadataForBaseline( baselineMeta );
+        }
+
+        return b.build();
     }
 
     /**

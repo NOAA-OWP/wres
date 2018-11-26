@@ -68,15 +68,17 @@ public final class SingleValuedPairsWriterTest
 
         List<Event<SingleValuedPair>> listOfPairs = new ArrayList<>();
         Instant basisTime = Instant.parse( "1985-01-01T00:00:00Z" );
-        listOfPairs.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), SingleValuedPair.of( 1.001, 2 ) ) );
-        listOfPairs.add( Event.of( Instant.parse( "1985-01-01T02:00:00Z" ), SingleValuedPair.of( 3, 4 ) ) );
-        listOfPairs.add( Event.of( Instant.parse( "1985-01-01T03:00:00Z" ), SingleValuedPair.of( 5, 6 ) ) );
+        listOfPairs.add( Event.of( basisTime,
+                                   Instant.parse( "1985-01-01T01:00:00Z" ),
+                                   SingleValuedPair.of( 1.001, 2 ) ) );
+        listOfPairs.add( Event.of( basisTime, Instant.parse( "1985-01-01T02:00:00Z" ), SingleValuedPair.of( 3, 4 ) ) );
+        listOfPairs.add( Event.of( basisTime, Instant.parse( "1985-01-01T03:00:00Z" ), SingleValuedPair.of( 5, 6 ) ) );
 
         SampleMetadata meta =
                 SampleMetadata.of( MeasurementUnit.of( "SCOOBIES" ),
                                    DatasetIdentifier.of( Location.of( "PLUM" ), "RIFLE" ) );
 
-        pairs = (TimeSeriesOfSingleValuedPairs) tsBuilder.addTimeSeriesData( basisTime, listOfPairs )
+        pairs = (TimeSeriesOfSingleValuedPairs) tsBuilder.addTimeSeries( listOfPairs )
                                                          .setMetadata( meta )
                                                          .build();
 
@@ -84,15 +86,21 @@ public final class SingleValuedPairsWriterTest
         TimeSeriesOfSingleValuedPairsBuilder tsBuilderTwo = new TimeSeriesOfSingleValuedPairsBuilder();
         List<Event<SingleValuedPair>> listOfPairsTwo = new ArrayList<>();
         Instant basisTimeTwo = Instant.parse( "1985-01-01T00:00:00Z" );
-        listOfPairsTwo.add( Event.of( Instant.parse( "1985-01-01T04:00:00Z" ), SingleValuedPair.of( 7, 8 ) ) );
-        listOfPairsTwo.add( Event.of( Instant.parse( "1985-01-01T05:00:00Z" ), SingleValuedPair.of( 9, 10 ) ) );
-        listOfPairsTwo.add( Event.of( Instant.parse( "1985-01-01T06:00:00Z" ), SingleValuedPair.of( 11, 12 ) ) );
+        listOfPairsTwo.add( Event.of( basisTimeTwo,
+                                      Instant.parse( "1985-01-01T04:00:00Z" ),
+                                      SingleValuedPair.of( 7, 8 ) ) );
+        listOfPairsTwo.add( Event.of( basisTimeTwo,
+                                      Instant.parse( "1985-01-01T05:00:00Z" ),
+                                      SingleValuedPair.of( 9, 10 ) ) );
+        listOfPairsTwo.add( Event.of( basisTimeTwo,
+                                      Instant.parse( "1985-01-01T06:00:00Z" ),
+                                      SingleValuedPair.of( 11, 12 ) ) );
 
         SampleMetadata metaTwo =
                 SampleMetadata.of( MeasurementUnit.of( "SCOOBIES" ),
                                    DatasetIdentifier.of( Location.of( "ORANGE" ), "PISTOL" ) );
 
-        pairsTwo = (TimeSeriesOfSingleValuedPairs) tsBuilderTwo.addTimeSeriesData( basisTimeTwo, listOfPairsTwo )
+        pairsTwo = (TimeSeriesOfSingleValuedPairs) tsBuilderTwo.addTimeSeries( listOfPairsTwo )
                                                                .setMetadata( metaTwo )
                                                                .build();
 
@@ -101,16 +109,22 @@ public final class SingleValuedPairsWriterTest
         TimeSeriesOfSingleValuedPairsBuilder tsBuilderThree = new TimeSeriesOfSingleValuedPairsBuilder();
         List<Event<SingleValuedPair>> listOfPairsThree = new ArrayList<>();
         Instant basisTimeThree = Instant.parse( "1985-01-01T00:00:00Z" );
-        listOfPairsThree.add( Event.of( Instant.parse( "1985-01-01T07:00:00Z" ), SingleValuedPair.of( 13, 14 ) ) );
-        listOfPairsThree.add( Event.of( Instant.parse( "1985-01-01T08:00:00Z" ), SingleValuedPair.of( 15, 16 ) ) );
-        listOfPairsThree.add( Event.of( Instant.parse( "1985-01-01T09:00:00Z" ), SingleValuedPair.of( 17, 18 ) ) );
+        listOfPairsThree.add( Event.of( basisTimeThree,
+                                        Instant.parse( "1985-01-01T07:00:00Z" ),
+                                        SingleValuedPair.of( 13, 14 ) ) );
+        listOfPairsThree.add( Event.of( basisTimeThree,
+                                        Instant.parse( "1985-01-01T08:00:00Z" ),
+                                        SingleValuedPair.of( 15, 16 ) ) );
+        listOfPairsThree.add( Event.of( basisTimeThree,
+                                        Instant.parse( "1985-01-01T09:00:00Z" ),
+                                        SingleValuedPair.of( 17, 18 ) ) );
 
         SampleMetadata metaThree =
                 SampleMetadata.of( MeasurementUnit.of( "SCOOBIES" ),
                                    DatasetIdentifier.of( Location.of( "BANANA" ), "GRENADE" ) );
 
         pairsThree =
-                (TimeSeriesOfSingleValuedPairs) tsBuilderThree.addTimeSeriesData( basisTimeThree, listOfPairsThree )
+                (TimeSeriesOfSingleValuedPairs) tsBuilderThree.addTimeSeries( listOfPairsThree )
                                                               .setMetadata( metaThree )
                                                               .build();
 
@@ -144,7 +158,7 @@ public final class SingleValuedPairsWriterTest
                                            .build();
 
         TimeSeriesOfSingleValuedPairs emptyPairs =
-                (TimeSeriesOfSingleValuedPairs) tsBuilder.addTimeSeriesData( Instant.now(), Collections.emptyList() )
+                (TimeSeriesOfSingleValuedPairs) tsBuilder.addTimeSeries( Collections.emptyList() )
                                                          .setMetadata( meta )
                                                          .build();
 
