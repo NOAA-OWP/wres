@@ -20,9 +20,6 @@ import org.junit.rules.ExpectedException;
 
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.SingleValuedPair;
-import wres.datamodel.time.Event;
-import wres.datamodel.time.BasicTimeSeries;
-import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.BasicTimeSeries.BasicTimeSeriesBuilder;
 
 /**
@@ -49,15 +46,15 @@ public final class BasicTimeSeriesTest
         BasicTimeSeriesBuilder<Double> b = new BasicTimeSeriesBuilder<>();
         List<Event<Double>> first = new ArrayList<>();
         Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
-        first.add( Event.of( Instant.parse( "1985-01-02T00:00:00Z" ), 1.0 ) );
-        first.add( Event.of( Instant.parse( "1985-01-03T00:00:00Z" ), 2.0 ) );
+        first.add( Event.of( firstBasisTime, Instant.parse( "1985-01-02T00:00:00Z" ), 1.0 ) );
+        first.add( Event.of( firstBasisTime, Instant.parse( "1985-01-03T00:00:00Z" ), 2.0 ) );
         List<Event<Double>> second = new ArrayList<>();
         Instant secondBasisTime = Instant.parse( "1985-01-03T00:00:00Z" );
-        second.add( Event.of( Instant.parse( "1985-01-04T00:00:00Z" ), 3.0 ) );
-        second.add( Event.of( Instant.parse( "1985-01-05T00:00:00Z" ), 4.0 ) );
+        second.add( Event.of( secondBasisTime, Instant.parse( "1985-01-04T00:00:00Z" ), 3.0 ) );
+        second.add( Event.of( secondBasisTime, Instant.parse( "1985-01-05T00:00:00Z" ), 4.0 ) );
 
-        defaultTimeSeries = (BasicTimeSeries<Double>) b.addTimeSeriesData( firstBasisTime, first )
-                                                       .addTimeSeriesData( secondBasisTime, second )
+        defaultTimeSeries = (BasicTimeSeries<Double>) b.addTimeSeries( first )
+                                                       .addTimeSeries( second )
                                                        .build();
     }
 
@@ -74,10 +71,18 @@ public final class BasicTimeSeriesTest
 
         // Expected events
         List<Event<Double>> expected = new ArrayList<>();
-        expected.add( Event.of( Instant.parse( "1985-01-02T00:00:00Z" ), 1.0 ) );
-        expected.add( Event.of( Instant.parse( "1985-01-03T00:00:00Z" ), 2.0 ) );
-        expected.add( Event.of( Instant.parse( "1985-01-04T00:00:00Z" ), 3.0 ) );
-        expected.add( Event.of( Instant.parse( "1985-01-05T00:00:00Z" ), 4.0 ) );
+        expected.add( Event.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                Instant.parse( "1985-01-02T00:00:00Z" ),
+                                1.0 ) );
+        expected.add( Event.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                Instant.parse( "1985-01-03T00:00:00Z" ),
+                                2.0 ) );
+        expected.add( Event.of( Instant.parse( "1985-01-03T00:00:00Z" ),
+                                Instant.parse( "1985-01-04T00:00:00Z" ),
+                                3.0 ) );
+        expected.add( Event.of( Instant.parse( "1985-01-03T00:00:00Z" ),
+                                Instant.parse( "1985-01-05T00:00:00Z" ),
+                                4.0 ) );
 
         assertTrue( actual.equals( expected ) );
     }
@@ -141,58 +146,6 @@ public final class BasicTimeSeriesTest
     }
 
     /**
-     * Test {@link BasicTimeSeries#getRawData()}.
-     */
-
-    @Test
-    public void testGetRawData()
-    {
-        List<Event<Double>> first = new ArrayList<>();
-        Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
-        first.add( Event.of( Instant.parse( "1985-01-02T00:00:00Z" ), 1.0 ) );
-        first.add( Event.of( Instant.parse( "1985-01-03T00:00:00Z" ), 2.0 ) );
-        List<Event<Double>> second = new ArrayList<>();
-        Instant secondBasisTime = Instant.parse( "1985-01-03T00:00:00Z" );
-        second.add( Event.of( Instant.parse( "1985-01-04T00:00:00Z" ), 3.0 ) );
-        second.add( Event.of( Instant.parse( "1985-01-05T00:00:00Z" ), 4.0 ) );
-
-        List<Event<List<Event<Double>>>> expected = new ArrayList<>();
-        expected.add( Event.of( firstBasisTime, first ) );
-        expected.add( Event.of( secondBasisTime, second ) );
-
-        assertTrue( expected.equals( defaultTimeSeries.getRawData() ) );
-    }
-
-    /**
-     * Confirms that the {@link BasicTimeSeries#getRawData()} returns an immutable outer container.
-     */
-
-    @Test
-    public void testGetRawDataIsImmutableOuter()
-    {
-        List<Event<List<Event<Double>>>> rawData = defaultTimeSeries.getRawData();
-
-        exception.expect( UnsupportedOperationException.class );
-        Instant time = Instant.parse( "1985-01-03T00:00:00Z" );
-        rawData.add( Event.of( time, Arrays.asList( Event.of( time, 1.0 ) ) ) );
-
-    }
-
-    /**
-     * Confirms that the {@link BasicTimeSeries#getRawData()} returns immutable inner containers.
-     */
-
-    @Test
-    public void testGetRawDataIsImmutableInner()
-    {
-        List<Event<List<Event<Double>>>> rawData = defaultTimeSeries.getRawData();
-
-        exception.expect( UnsupportedOperationException.class );
-
-        rawData.get( 0 ).getValue().add( Event.of( Instant.parse( "1985-01-03T00:00:00Z" ), 1.0 ) );
-    }
-
-    /**
      * Tests {@link BasicTimeSeries#isRegular()}.
      */
 
@@ -210,10 +163,10 @@ public final class BasicTimeSeriesTest
     public void testToString()
     {
         StringJoiner expected = new StringJoiner( System.lineSeparator() );
-        expected.add( "(1985-01-02T00:00:00Z,1.0)" );
-        expected.add( "(1985-01-03T00:00:00Z,2.0)" );
-        expected.add( "(1985-01-04T00:00:00Z,3.0)" );
-        expected.add( "(1985-01-05T00:00:00Z,4.0)" );
+        expected.add( "(1985-01-01T00:00:00Z,1985-01-02T00:00:00Z,1.0)" );
+        expected.add( "(1985-01-01T00:00:00Z,1985-01-03T00:00:00Z,2.0)" );
+        expected.add( "(1985-01-03T00:00:00Z,1985-01-04T00:00:00Z,3.0)" );
+        expected.add( "(1985-01-03T00:00:00Z,1985-01-05T00:00:00Z,4.0)" );
 
         assertTrue( expected.toString().equals( defaultTimeSeries.toString() ) );
     }
@@ -229,32 +182,32 @@ public final class BasicTimeSeriesTest
         List<Event<SingleValuedPair>> first = new ArrayList<>();
         BasicTimeSeriesBuilder<SingleValuedPair> b = new BasicTimeSeriesBuilder<>();
         Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
-        first.add( Event.of( Instant.parse( "1985-01-02T00:00:00Z" ), SingleValuedPair.of( 1, 1 ) ) );
+        first.add( Event.of( firstBasisTime, Instant.parse( "1985-01-02T00:00:00Z" ), SingleValuedPair.of( 1, 1 ) ) );
 
-        TimeSeries<SingleValuedPair> ts = b.addTimeSeriesData( firstBasisTime, first )
-                                           .build();
+        TimeSeries<SingleValuedPair> ts = b.addTimeSeries( first ).build();
         Duration benchmark = Duration.ofDays( 1 );
+
         assertTrue( "Expected a regular time-series with a duration of '" + benchmark
                     + "'.",
                     ts.getRegularDuration().equals( benchmark ) );
 
         //Add more data and test again
-        first.add( Event.of( Instant.parse( "1985-01-03T00:00:00Z" ), SingleValuedPair.of( 2, 2 ) ) );
-        first.add( Event.of( Instant.parse( "1985-01-04T00:00:00Z" ), SingleValuedPair.of( 3, 3 ) ) );
-        first.add( Event.of( Instant.parse( "1985-01-05T00:00:00Z" ), SingleValuedPair.of( 4, 4 ) ) );
+        first.add( Event.of( firstBasisTime, Instant.parse( "1985-01-03T00:00:00Z" ), SingleValuedPair.of( 2, 2 ) ) );
+        first.add( Event.of( firstBasisTime, Instant.parse( "1985-01-04T00:00:00Z" ), SingleValuedPair.of( 3, 3 ) ) );
+        first.add( Event.of( firstBasisTime, Instant.parse( "1985-01-05T00:00:00Z" ), SingleValuedPair.of( 4, 4 ) ) );
 
         BasicTimeSeriesBuilder<SingleValuedPair> c = new BasicTimeSeriesBuilder<>();
-        TimeSeries<SingleValuedPair> tsSecond = c.addTimeSeriesData( firstBasisTime, first )
-                                                 .build();
+        TimeSeries<SingleValuedPair> tsSecond = c.addTimeSeries( first ).build();
+
         assertTrue( "Expected a regular time-series with a duration of '" + benchmark
                     + "'.",
                     tsSecond.getRegularDuration().equals( benchmark ) );
 
         //Add an irregular timestep and check for null output
-        first.add( Event.of( Instant.parse( "1985-01-07T00:00:00Z" ), SingleValuedPair.of( 4, 4 ) ) );
+        first.add( Event.of( firstBasisTime, Instant.parse( "1985-01-07T00:00:00Z" ), SingleValuedPair.of( 4, 4 ) ) );
         BasicTimeSeriesBuilder<SingleValuedPair> d = new BasicTimeSeriesBuilder<>();
-        TimeSeries<SingleValuedPair> tsThird = d.addTimeSeriesData( firstBasisTime, first )
-                                                .build();
+        TimeSeries<SingleValuedPair> tsThird = d.addTimeSeries( first ).build();
+
         assertTrue( "Expected an irregular time-series.",
                     Objects.isNull( tsThird.getRegularDuration() ) );
     }
@@ -270,16 +223,19 @@ public final class BasicTimeSeriesTest
         List<Event<SingleValuedPair>> values = new ArrayList<>();
         BasicTimeSeriesBuilder<SingleValuedPair> b = new BasicTimeSeriesBuilder<>();
         Instant basisTime = Instant.parse( "1985-01-01T00:00:00Z" );
-        values.add( Event.of( Instant.parse( "1985-01-02T00:00:00Z" ), SingleValuedPair.of( 1, 1 ) ) );
+        values.add( Event.of( basisTime, Instant.parse( "1985-01-02T00:00:00Z" ), SingleValuedPair.of( 1, 1 ) ) );
 
-        b.addTimeSeriesData( basisTime, values );
+        b.addTimeSeries( values );
 
         //Check dataset count
         assertFalse( "Expected a time-series with one basis time.", b.build().hasMultipleTimeSeries() );
 
         //Add another time-series
         Instant nextBasisTime = Instant.parse( "1985-01-02T00:00:00Z" );
-        b.addTimeSeriesData( nextBasisTime, values );
+        b.addTimeSeries( Arrays.asList( Event.of( nextBasisTime,
+                                                      Instant.parse( "1985-01-02T00:00:00Z" ),
+                                                      SingleValuedPair.of( 1, 1 ) ) ) );
+
         assertTrue( "Expected a time-series with multiple basis times.", b.build().hasMultipleTimeSeries() );
     }
 
@@ -294,11 +250,13 @@ public final class BasicTimeSeriesTest
         List<Event<SingleValuedPair>> values = new ArrayList<>();
         BasicTimeSeriesBuilder<SingleValuedPair> b = new BasicTimeSeriesBuilder<>();
         Instant basisTime = Instant.parse( "1985-01-01T00:00:00Z" );
-        values.add( Event.of( Instant.parse( "1985-01-02T00:00:00Z" ), SingleValuedPair.of( 1, 1 ) ) );
-        b.addTimeSeriesData( basisTime, values );
+        values.add( Event.of( basisTime, Instant.parse( "1985-01-02T00:00:00Z" ), SingleValuedPair.of( 1, 1 ) ) );
+        b.addTimeSeries( values );
 
         Instant nextBasisTime = Instant.parse( "1985-01-02T00:00:00Z" );
-        b.addTimeSeriesData( nextBasisTime, values );
+        b.addTimeSeries( Arrays.asList( Event.of( nextBasisTime,
+                                                      Instant.parse( "1985-01-02T00:00:00Z" ),
+                                                      SingleValuedPair.of( 1, 1 ) ) ) );
         TimeSeries<SingleValuedPair> pairs = b.build();
 
         //Check dataset count
@@ -306,7 +264,7 @@ public final class BasicTimeSeriesTest
 
         //Check the basis times
         assertTrue( "First basis time missing from time-series.",
-                    pairs.getBasisTimes().get( 0 ).equals( basisTime ) );
+                    pairs.getBasisTimes().first().equals( basisTime ) );
         Iterator<Instant> it = pairs.getBasisTimes().iterator();
         it.next();
         assertTrue( "Second basis time missing from time-series.", it.next().equals( nextBasisTime ) );
@@ -323,11 +281,11 @@ public final class BasicTimeSeriesTest
         List<Event<SingleValuedPair>> values = new ArrayList<>();
         BasicTimeSeriesBuilder<SingleValuedPair> b = new BasicTimeSeriesBuilder<>();
         Instant basisTime = Instant.parse( "1985-01-01T00:00:00Z" );
-        values.add( Event.of( Instant.parse( "1985-01-02T00:00:00Z" ), SingleValuedPair.of( 1, 1 ) ) );
-        values.add( Event.of( Instant.parse( "1985-01-03T00:00:00Z" ), SingleValuedPair.of( 2, 2 ) ) );
-        values.add( Event.of( Instant.parse( "1985-01-04T00:00:00Z" ), SingleValuedPair.of( 3, 3 ) ) );
+        values.add( Event.of( basisTime, Instant.parse( "1985-01-02T00:00:00Z" ), SingleValuedPair.of( 1, 1 ) ) );
+        values.add( Event.of( basisTime, Instant.parse( "1985-01-03T00:00:00Z" ), SingleValuedPair.of( 2, 2 ) ) );
+        values.add( Event.of( basisTime, Instant.parse( "1985-01-04T00:00:00Z" ), SingleValuedPair.of( 3, 3 ) ) );
 
-        b.addTimeSeriesData( basisTime, values );
+        b.addTimeSeries( values );
         //Check dataset count
         assertTrue( "Expected a time-series with three lead times.", b.build().getDurations().size() == 3 );
         //Check the lead times
@@ -433,25 +391,33 @@ public final class BasicTimeSeriesTest
     }
 
     /**
-     * Confirms an expected exception when constructing a {@link BasicTimeSeries} with null input.
+     * Confirms an expected exception when constructing a {@link BasicTimeSeries} with a null event.
      */
 
     @Test
-    public void testForExceptionOnNullInput()
+    public void testForExceptionOnNullEvent()
     {
         exception.expect( SampleDataException.class );
-        exception.expectMessage( "Cannot build a time-series with one or more null events." );
+        exception.expectMessage( "One or more time-series has null values." );
 
         List<Event<Double>> withNulls = new ArrayList<>();
-        withNulls.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), 1.0 ) );
+        withNulls.add( Event.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                 Instant.parse( "1985-01-01T01:00:00Z" ),
+                                 1.0 ) );
         withNulls.add( null );
-        new BasicTimeSeriesBuilder<Double>().addTimeSeriesData( Instant.parse( "1985-01-01T00:00:00Z" ), withNulls )
-                                            .build();
+        new BasicTimeSeriesBuilder<Double>().addTimeSeries( withNulls ).build();
+    }
 
+    /**
+     * Confirms an expected exception when constructing a {@link BasicTimeSeries} with a null time-series.
+     */
+
+    @Test
+    public void testForExceptionOnNullTimeSeries()
+    {
         exception.expect( SampleDataException.class );
-        exception.expectMessage( "Cannot build a time-series with one or more null time-series." );
-        new BasicTimeSeriesBuilder<Double>().addTimeSeriesData( Instant.parse( "1985-01-01T00:00:00Z" ), null )
-                                            .build();
+        exception.expectMessage( "One or more time-series is null." );
+        new BasicTimeSeriesBuilder<Double>().addTimeSeries( (List<Event<Double>>)null ).build();
 
     }
 

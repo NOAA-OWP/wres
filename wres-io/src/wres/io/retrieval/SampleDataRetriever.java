@@ -13,7 +13,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.TreeMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,6 +30,7 @@ import wres.datamodel.sampledata.pairs.EnsemblePair;
 import wres.datamodel.sampledata.pairs.EnsemblePairs;
 import wres.datamodel.sampledata.pairs.SingleValuedPair;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
+import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs.TimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.time.Event;
 import wres.grid.client.Fetcher;
@@ -172,7 +172,7 @@ class SampleDataRetriever extends Retriever
         return input;
     }
 
-    private SampleData createSingleValuedInput()
+    private SingleValuedPairs createSingleValuedInput()
     {
         List<SingleValuedPair> primary = convertToPairOfDoubles( this.getPrimaryPairs() );
         List<SingleValuedPair> baseline = null;
@@ -189,12 +189,13 @@ class SampleDataRetriever extends Retriever
                                      this.getClimatology() );
     }
 
-    private SampleData createSingleValuedTimeSeriesInput()
+    private TimeSeriesOfSingleValuedPairs createSingleValuedTimeSeriesInput()
     {
         TimeSeriesOfSingleValuedPairsBuilder builder = new TimeSeriesOfSingleValuedPairsBuilder();
 
-        Map<Instant, List<Event<SingleValuedPair>>> events = this.getSingleValuedEvents( this.getPrimaryPairs() );
-        events.forEach( builder::addTimeSeriesData );
+        List<Event<SingleValuedPair>> events = this.getSingleValuedEvents( this.getPrimaryPairs() );
+        
+        builder.addTimeSeries( events );
 
         if (this.getFirstlead() == Long.MAX_VALUE || this.getLastLead() == Long.MIN_VALUE)
         {
@@ -220,7 +221,7 @@ class SampleDataRetriever extends Retriever
         if (!this.getBaselinePairs().isEmpty())
         {
             events = this.getSingleValuedEvents( this.getBaselinePairs() );
-            events.forEach( builder::addTimeSeriesDataForBaseline );
+            builder.addTimeSeriesDataForBaseline( events );
             builder.setMetadataForBaseline( this.getSampleMetadata().getBaselineMetadata() );
         }
 
@@ -229,7 +230,7 @@ class SampleDataRetriever extends Retriever
         return builder.build();
     }
 
-    private SampleData createEnsembleInput()
+    private EnsemblePairs createEnsembleInput()
     {
         List<EnsemblePair> primary =
                 SampleDataRetriever.extractRawPairs( this.getPrimaryPairs() );
@@ -249,20 +250,15 @@ class SampleDataRetriever extends Retriever
                                  this.getClimatology() );
     }
 
-    private Map<Instant, List<Event<SingleValuedPair>>> getSingleValuedEvents(List<ForecastedPair> pairs)
+    private List<Event<SingleValuedPair>> getSingleValuedEvents(List<ForecastedPair> pairs)
     {
-        Map<Instant, List<Event<SingleValuedPair>>> events = new TreeMap<>(  );
+        List<Event<SingleValuedPair>> events = new ArrayList<>(  );
 
         for (ForecastedPair pair : pairs)
         {
-            if (!events.containsKey( pair.getBasisTime() ))
-            {
-                events.put( pair.getBasisTime(), new ArrayList<>() );
-            }
-
             for (SingleValuedPair singleValue : pair.getSingleValuedPairs())
             {
-                events.get(pair.getBasisTime()).add( Event.of( pair.getValidTime(), singleValue ) );
+                events.add( Event.of( pair.getBasisTime(), pair.getValidTime(), singleValue ) );
             }
         }
 

@@ -2,18 +2,11 @@ package wres.datamodel.time;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.Objects;
 import java.util.StringJoiner;
-import java.util.TreeSet;
 
 import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.time.Event;
-import wres.datamodel.time.TimeSeries;
 
 /**
  * A helper class for time-series.
@@ -89,48 +82,6 @@ public class TimeSeriesHelper
     }
 
     /**
-     * Returns the earliest basis time.
-     * 
-     * @param basisTimes the basis times
-     * @return the earliest basis time
-     */
-
-    public static Instant getEarliestBasisTime( List<Instant> basisTimes )
-    {
-        if ( basisTimes.isEmpty() )
-        {
-            return Instant.MIN;
-        }
-        else if ( basisTimes.size() == 1 )
-        {
-            return ( basisTimes ).iterator().next();
-        }
-
-        return new TreeSet<>( basisTimes ).first();
-    }
-
-    /**
-     * Returns the latest basis time.
-     * 
-     * @param basisTimes the basis times
-     * @return the latest basis time
-     */
-
-    public static Instant getLatestBasisTime( List<Instant> basisTimes )
-    {
-        if ( basisTimes.isEmpty() )
-        {
-            return Instant.MAX;
-        }
-        else if ( basisTimes.size() == 1 )
-        {
-            return ( basisTimes ).iterator().next();
-        }
-
-        return new TreeSet<>( basisTimes ).last();
-    }
-
-    /**
      * Returns a string representation of the {@link TimeSeries}.
      * @param <T> the type of time-series
      * @param timeSeries the input time-series
@@ -155,118 +106,6 @@ public class TimeSeriesHelper
             }
         }
         return joiner.toString();
-    }
-
-    /**
-     * Unwraps a list of lists into the atomic contents.
-     * 
-     * @param <T> the event type
-     * @param input the input
-     * @return the atomic content
-     */
-
-    public static <T> List<T> unwrap( List<Event<List<Event<T>>>> input )
-    {
-        List<T> returnMe = new ArrayList<>();
-        for ( Event<List<Event<T>>> nextSeries : input )
-        {
-            for ( Event<T> nextItem : nextSeries.getValue() )
-            {
-                if ( Objects.nonNull( nextItem ) )
-                {
-                    returnMe.add( nextItem.getValue() );
-                }
-            }
-        }
-        return returnMe;
-    }
-
-    /**
-     * Renders all lists in the input to immutable types.
-     * 
-     * @param <T> the event type
-     * @param input the input with possibly mutable lists
-     * @return the input with immutable lists
-     * @throws SampleDataException if the input is null or any items in the list are null
-     */
-
-    static <T> List<Event<List<Event<T>>>> getImmutableTimeSeries( List<Event<List<Event<T>>>> input )
-    {
-        if ( Objects.isNull( input ) )
-        {
-            throw new SampleDataException( "Specify a non-null list of pairs to render immutable." );
-        }
-        List<Event<List<Event<T>>>> returnMe = new ArrayList<>();
-        for ( Event<List<Event<T>>> nextSeries : input )
-        {
-            if ( Objects.isNull( nextSeries ) )
-            {
-                throw new SampleDataException( "Cannot build a time-series with one or more null time-series." );
-            }
-            List<Event<T>> nextList = new ArrayList<>();
-            nextList.addAll( nextSeries.getValue() );
-            if ( nextList.stream().anyMatch( Objects::isNull ) )
-            {
-                throw new SampleDataException( "Cannot build a time-series with one or more null events." );
-            }
-            returnMe.add( Event.of( nextSeries.getTime(), Collections.unmodifiableList( nextList ) ) );
-        }
-        return Collections.unmodifiableList( returnMe );
-    }
-
-    /**
-     * Sorts the input in time order.
-     * 
-     * @param <T> the event type
-     * @param input the unsorted input
-     * @return the sorted input in time order
-     * @throws SampleDataException if the input is null or any items in the list are null
-     */
-
-    public static <T> List<Event<List<Event<T>>>> sort( List<Event<List<Event<T>>>> input )
-    {
-        if ( Objects.isNull( input ) )
-        {
-            throw new SampleDataException( "Specify a non-null list of pairs to sort." );
-        }
-        List<Event<List<Event<T>>>> returnMe = new ArrayList<>();
-        for ( Event<List<Event<T>>> nextSeries : input )
-        {
-            if ( Objects.isNull( nextSeries ) )
-            {
-                throw new SampleDataException( "Cannot sort a time-series with one or more null time-series." );
-            }
-            List<Event<T>> nextList = new ArrayList<>();
-            nextList.addAll( nextSeries.getValue() );
-            if ( nextList.stream().anyMatch( Objects::isNull ) )
-            {
-                throw new SampleDataException( "Cannot sort a time-series with one or more null events." );
-            }
-            // Sort by inner time
-            nextList.sort( TimeSeriesHelper::compareByTime );
-
-            returnMe.add( Event.of( nextSeries.getTime(), nextList ) );
-        }
-
-        // Sort by outer time
-        returnMe.sort( TimeSeriesHelper::compareByTime );
-
-        return returnMe;
-    }
-
-    /**
-     * Compares two events by time.
-     * 
-     * @param <T> the event type
-     * @param left the left event
-     * @param right the right event
-     * @return a negative integer, zero, or a positive integer as the left event is less than, equal to, or greater 
-     *            than the right event.
-     */
-
-    private static <T> int compareByTime( Event<T> left, Event<T> right )
-    {
-        return left.getTime().compareTo( right.getTime() );
     }
 
     /**
