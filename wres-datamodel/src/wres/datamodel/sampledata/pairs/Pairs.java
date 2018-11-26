@@ -181,29 +181,51 @@ public abstract class Pairs<T> implements SampleData<T>
         }
 
         @Override
-        public BasicPairsBuilder<T> addData( final List<T> mainInput )
+        public BasicPairsBuilder<T> addData( T mainInput )
         {
-            if ( Objects.nonNull( mainInput ) )
-            {
-                this.sampleData.addAll( mainInput );
-            }
+           this.sampleData.add( mainInput );
+            
             return this;
         }
 
         @Override
-        public BasicPairsBuilder<T> addDataForBaseline( final List<T> baselineInput )
+        public BasicPairsBuilder<T> addDataForBaseline( T baselineInput )
         {
-            if ( Objects.nonNull( baselineInput ) )
+            if ( Objects.isNull( this.baselineSampleData ) )
             {
-                if ( Objects.isNull( this.baselineSampleData ) )
-                {
-                    this.baselineSampleData = new ArrayList<>();
-                }
-                this.baselineSampleData.addAll( baselineInput );
+                this.baselineSampleData = new ArrayList<>();
             }
+
+            this.baselineSampleData.add( baselineInput );
+
             return this;
         }
 
+        @Override
+        public BasicPairsBuilder<T> addData( List<T> sampleData )
+        {
+            Objects.requireNonNull( sampleData, "Specify non-null sample data." );
+            
+            this.sampleData.addAll( sampleData );
+            
+            return this;
+        }
+        
+        @Override
+        public BasicPairsBuilder<T> addDataForBaseline( List<T> baselineSampleData )
+        {
+            Objects.requireNonNull( baselineSampleData, "Specify non-null sample data for the baseline." );
+            
+            if ( Objects.isNull( this.baselineSampleData ) )
+            {
+                this.baselineSampleData = new ArrayList<>();
+            }
+            
+            this.baselineSampleData.addAll( baselineSampleData );
+            
+            return this;        
+        }
+        
     }
 
     /**

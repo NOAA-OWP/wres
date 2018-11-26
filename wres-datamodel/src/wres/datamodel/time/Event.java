@@ -1,29 +1,40 @@
 package wres.datamodel.time;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
 
-import org.apache.commons.lang3.tuple.Pair;
-
 /**
- * An event at a specific {@link Instant} on the timeline. Includes a default implementation that acts as a facade for
- * a {@link Pair} of {@link Instant} and the event value.
+ * An event at a specific {@link Instant} on the timeline. Additionally, an event may have a reference time, which is 
+ * also represented by an {@link Instant}. The default reference time is equal to the event time.
  * 
  * @param <T> the the type of event
  * @author james.brown@hydrosolved.com
  */
 
-public class Event<T>
+public class Event<T> implements Comparable<Event<T>>
 {
 
     /**
-     * The pair.
+     * The event time.
      */
 
-    private final Pair<Instant, T> pair;
+    private final Instant eventTime;
 
     /**
-     * Returns a default implementation of an {@link Event} that acts as a facade for a {@link Pair}.
+     * The reference time.
+     */
+
+    private final Instant referenceTime;
+
+    /**
+     * The event.
+     */
+
+    private final T event;
+
+    /**
+     * Returns an {@link Event}.
      * 
      * @param <T> the event type
      * @param time the event time
@@ -34,19 +45,51 @@ public class Event<T>
 
     public static <T> Event<T> of( Instant time, T value )
     {
-        return new Event<>( time, value );
+        return new Event<>( time, time, value );
+    }
+    
+    /**
+     * Returns an {@link Event}.
+     * 
+     * @param <T> the event type
+     * @param time the event time
+     * @param referenceTime the optional reference time
+     * @param value the event value
+     * @return an event
+     * @throws NullPointerException if the time or value are null
+     */
+
+    public static <T> Event<T> of( Instant referenceTime, Instant time, T value )
+    {
+        if( Objects.isNull( referenceTime ) )
+        {
+            return new Event<>( time, time, value );
+        }
+        
+        return new Event<>( referenceTime, time, value );
     }
 
     /**
-     * Return the {@link Instant} associated with the occurrence.
+     * Return the event time as an {@link Instant}.
      * 
      * @return the time
      */
 
     public Instant getTime()
     {
-        return pair.getLeft();
+        return this.eventTime;
     }
+    
+    /**
+     * Return the reference time as an {@link Instant}.
+     * 
+     * @return the reference time
+     */
+
+    public Instant getReferenceTime()
+    {
+        return this.referenceTime;
+    }    
 
     /**
      * Returns the event value.
@@ -56,13 +99,25 @@ public class Event<T>
 
     public T getValue()
     {
-        return pair.getRight();
+        return this.event;
     }
 
+    /**
+     * Returns the {@link Duration} between the {@link #referenceTime} and the {@link #eventTime} as 
+     * <code>Duration.between( this.getReferenceTime(), this.getTime() )</code>.
+     * 
+     * @return the duration between the reference time and the event time
+     */
+    
+    public Duration getDuration()
+    {
+        return Duration.between( this.getReferenceTime(), this.getTime() );
+    }
+    
     @Override
     public String toString()
     {
-        return pair.toString();
+        return "(" + referenceTime + "," + eventTime + "," + event + ")";
     }
 
     @Override
@@ -72,28 +127,63 @@ public class Event<T>
         {
             return false;
         }
-        return ( (Event) o ).pair.equals( pair );
+
+        Event<?> inEvent = (Event<?>) o;
+
+        return inEvent.event.equals( this.event ) && inEvent.eventTime.equals( this.eventTime )
+               && inEvent.referenceTime.equals( this.referenceTime );
     }
 
     @Override
     public int hashCode()
     {
-        return pair.hashCode();
+        return Objects.hash( this.event, this.eventTime, this.referenceTime );
     }
 
     /**
-     * Build an event with a time and value.
+     * Build an event with a time, reference time and value.
      * 
-     * @param time the time
-     * @param value the value
-     * @throws NullPointerException if either input is null
+     * @param referenceTime the reference time
+     * @param eventTime the required time
+     * @param event the required event
+     * @throws NullPointerException if the eventTime is null or the event is null
      */
 
-    private Event( Instant time, T value )
+    private Event( Instant referenceTime, Instant eventTime, T event )
     {
-        Objects.requireNonNull( time, "Specify a non-null time for the event." );
-        Objects.requireNonNull( value, "Specify a non-null value for the event." );
-        pair = Pair.of( time, value );
+        Objects.requireNonNull( eventTime, "Specify a non-null time for the event." );
+
+        Objects.requireNonNull( event, "Specify a non-null value for the event." );
+        
+        Objects.requireNonNull( referenceTime, "Specify a non-null reference time." );
+
+        this.event = event;       
+        this.eventTime = eventTime;
+        this.referenceTime = referenceTime;
+    }
+
+    /**
+     * Compares this {@link Event} against the input {@link Event}, returning a negative integer, zero or positive 
+     * integer as this {@link Event} is less than, equal to, or greater than the input {@link Event}. The comparison 
+     * is made firstly on {@link Event#getReferenceTime()} and secondly on {@link Event#getTime()}.
+     * 
+     * @return a negative integer, zero or positive integer as this object is less than, equal to or greater than 
+     *            the input
+     */
+    
+    @Override
+    public int compareTo( Event<T> o )
+    {
+        Objects.requireNonNull( o, "Specify a non-null input for comparison." );
+        
+        int returnMe = this.referenceTime.compareTo( o.referenceTime );
+        
+        if( returnMe != 0 )
+        {
+            return returnMe;
+        }
+            
+        return this.eventTime.compareTo( o.eventTime );
     }
 
 }

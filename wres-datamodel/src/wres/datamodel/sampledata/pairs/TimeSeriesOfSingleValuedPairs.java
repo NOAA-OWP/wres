@@ -3,11 +3,11 @@ package wres.datamodel.sampledata.pairs;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.SortedSet;
+import java.util.stream.Collectors;
 
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.SampleMetadata;
@@ -46,7 +46,7 @@ public class TimeSeriesOfSingleValuedPairs extends SingleValuedPairs implements 
             return null;
         }
         TimeSeriesOfSingleValuedPairsBuilder builder = new TimeSeriesOfSingleValuedPairsBuilder();
-        builder.addTimeSeriesData( baseline.getRawData() ).setMetadata( getMetadataForBaseline() );
+        builder.addTimeSeries( baseline ).setMetadata( getMetadataForBaseline() );
         return builder.build();
     }
 
@@ -69,9 +69,9 @@ public class TimeSeriesOfSingleValuedPairs extends SingleValuedPairs implements 
     }
 
     @Override
-    public List<Instant> getBasisTimes()
+    public SortedSet<Instant> getBasisTimes()
     {
-        return Collections.unmodifiableList( main.getBasisTimes() );
+        return Collections.unmodifiableSortedSet( main.getBasisTimes() );
     }
 
     @Override
@@ -101,13 +101,13 @@ public class TimeSeriesOfSingleValuedPairs extends SingleValuedPairs implements 
     @Override
     public Instant getEarliestBasisTime()
     {
-        return TimeSeriesHelper.getEarliestBasisTime( this.getBasisTimes() );
+        return main.getEarliestBasisTime();
     }
 
     @Override
     public Instant getLatestBasisTime()
     {
-        return TimeSeriesHelper.getLatestBasisTime( this.getBasisTimes() );
+        return main.getLatestBasisTime();
     }
 
     @Override
@@ -128,58 +128,32 @@ public class TimeSeriesOfSingleValuedPairs extends SingleValuedPairs implements 
          * The raw data.
          */
 
-        private List<Event<List<Event<SingleValuedPair>>>> data = new ArrayList<>();
+        private List<List<Event<SingleValuedPair>>> data = new ArrayList<>();
 
         /**
          * The raw data for the baseline
          */
 
-        private List<Event<List<Event<SingleValuedPair>>>> baselineData = null;
-
-        /**
-         * Adds a list of atomic time-series to the builder for a baseline, each one stored against its basis time.
-         * 
-         * @param values the time-series, stored against their basis times
-         * @return the builder
-         */
-
-        public TimeSeriesOfSingleValuedPairsBuilder
-                addTimeSeriesDataForBaseline( List<Event<List<Event<SingleValuedPair>>>> values )
-        {
-            if ( Objects.nonNull( values ) )
-            {
-                if ( Objects.isNull( this.baselineData ) )
-                {
-                    this.baselineData = new ArrayList<>();
-                }
-                List<Event<List<Event<SingleValuedPair>>>> sorted = TimeSeriesHelper.sort( values );
-                this.baselineData.addAll( sorted );
-                this.addDataForBaseline( TimeSeriesHelper.unwrap( sorted ) );
-            }
-            return this;
-        }
-
+        private List<List<Event<SingleValuedPair>>> baselineData = null;
+        
         /**
          * Adds a time-series to the builder, including any baseline.
          * 
          * @param timeSeries the time-series
          * @return the builder
          * @throws SampleDataException if the specified input is inconsistent with any existing input
+         * @throws NullPointerException if the input is null
          */
 
-        public TimeSeriesOfSingleValuedPairsBuilder
-                addTimeSeries( TimeSeriesOfSingleValuedPairs timeSeries )
+        public TimeSeriesOfSingleValuedPairsBuilder addTimeSeries( TimeSeriesOfSingleValuedPairs timeSeries )
         {
-            for ( TimeSeries<SingleValuedPair> a : timeSeries.basisTimeIterator() )
-            {
-                //Add the main data
-                List<Event<SingleValuedPair>> nextSource = new ArrayList<>();
-                for ( Event<SingleValuedPair> nextEvent : a.timeIterator() )
-                {
-                    nextSource.add( nextEvent );
-                }
-                this.addTimeSeriesData( Arrays.asList( Event.of( a.getEarliestBasisTime(), nextSource ) ) );
-            }
+            Objects.requireNonNull( timeSeries, "Specify non-null time-series input." );
+            
+            //Add the main data
+            List<Event<SingleValuedPair>> nextSource = new ArrayList<>();
+            timeSeries.timeIterator().forEach( nextSource::add );
+
+            this.addTimeSeries( nextSource );
 
             // Set the union of the current metadata and any previously added time-series
             List<SampleMetadata> mainMeta = new ArrayList<>();
@@ -207,21 +181,17 @@ public class TimeSeriesOfSingleValuedPairs extends SingleValuedPairs implements 
          * @param timeSeries the time-series
          * @return the builder
          * @throws SampleDataException if the specified input is inconsistent with any existing input
+         * @throws NullPointerException if the input is null
          */
 
         public TimeSeriesOfSingleValuedPairsBuilder addTimeSeriesForBaseline( TimeSeriesOfSingleValuedPairs timeSeries )
         {
-            for ( TimeSeries<SingleValuedPair> a : timeSeries.basisTimeIterator() )
-            {
-                List<Event<SingleValuedPair>> nextSource = new ArrayList<>();
+            Objects.requireNonNull( timeSeries, "Specify non-null time-series input." );
+            
+            List<Event<SingleValuedPair>> nextSource = new ArrayList<>();
+            timeSeries.timeIterator().forEach( nextSource::add );
 
-                for ( Event<SingleValuedPair> nextEvent : a.timeIterator() )
-                {
-                    nextSource.add( nextEvent );
-                }
-                this.addTimeSeriesDataForBaseline( Arrays.asList( Event.of( a.getEarliestBasisTime(),
-                                                                            nextSource ) ) );
-            }
+            this.addTimeSeriesDataForBaseline( nextSource );
 
             // Set the union of the current metadata and any previously added time-series
             List<SampleMetadata> baselineMeta = new ArrayList<>();
@@ -242,14 +212,39 @@ public class TimeSeriesOfSingleValuedPairs extends SingleValuedPairs implements 
          * 
          * @param values the time-series, stored against their basis times
          * @return the builder
+         * @throws NullPointerException if the input is null
          */
 
-        public TimeSeriesOfSingleValuedPairsBuilder
-                addTimeSeriesData( List<Event<List<Event<SingleValuedPair>>>> values )
+        public TimeSeriesOfSingleValuedPairsBuilder addTimeSeries( List<Event<SingleValuedPair>> values )
         {
-            List<Event<List<Event<SingleValuedPair>>>> sorted = TimeSeriesHelper.sort( values );
-            this.data.addAll( sorted );
-            this.addData( TimeSeriesHelper.unwrap( sorted ) );
+            Objects.requireNonNull( values, "Specify a non-null list of events." );
+            
+            this.data.add( values );
+            this.addData( values.stream().map( Event::getValue ).collect( Collectors.toList() ) );
+
+            return this;
+        }
+
+        /**
+         * Adds a list of atomic time-series to the builder for a baseline, each one stored against its basis time.
+         * 
+         * @param values the time-series, stored against their basis times
+         * @return the builder
+         */
+
+        public TimeSeriesOfSingleValuedPairsBuilder addTimeSeriesDataForBaseline( List<Event<SingleValuedPair>> values )
+        {
+            if ( Objects.nonNull( values ) )
+            {
+                if ( Objects.isNull( this.baselineData ) )
+                {
+                    this.baselineData = new ArrayList<>();
+                }
+
+                this.baselineData.add( values );
+                this.addDataForBaseline( values.stream().map( Event::getValue ).collect( Collectors.toList() ) );
+            }
+
             return this;
         }
 
@@ -265,37 +260,6 @@ public class TimeSeriesOfSingleValuedPairs extends SingleValuedPairs implements 
         }
 
         /**
-         * Adds an atomic time-series to the builder.
-         * 
-         * @param basisTime the basis time for the time-series
-         * @param values the pairs of time-series values, ordered from earliest to latest
-         * @return the builder
-         */
-
-        public TimeSeriesOfSingleValuedPairsBuilder addTimeSeriesData( Instant basisTime,
-                                                                       List<Event<SingleValuedPair>> values )
-        {
-            TimeSeriesBuilder.super.addTimeSeriesData( basisTime, values );
-            return this;
-        }
-
-        /**
-         * Adds an atomic time-series to the builder for a baseline.
-         * 
-         * @param basisTime the basis time for the time-series
-         * @param values the pairs of time-series values, ordered from earliest to latest
-         * @return the builder
-         */
-
-        public TimeSeriesOfSingleValuedPairsBuilder addTimeSeriesDataForBaseline( Instant basisTime,
-                                                                                  List<Event<SingleValuedPair>> values )
-        {
-            List<Event<List<Event<SingleValuedPair>>>> input = new ArrayList<>();
-            input.add( Event.of( basisTime, values ) );
-            return addTimeSeriesDataForBaseline( input );
-        }
-
-        /**
          * Adds a time-series to the builder.
          * 
          * @param timeSeries the time-series
@@ -307,6 +271,7 @@ public class TimeSeriesOfSingleValuedPairs extends SingleValuedPairs implements 
         public TimeSeriesOfSingleValuedPairsBuilder addTimeSeries( TimeSeries<SingleValuedPair> timeSeries )
         {
             TimeSeriesBuilder.super.addTimeSeries( timeSeries );
+
             return this;
         }
 
@@ -323,13 +288,9 @@ public class TimeSeriesOfSingleValuedPairs extends SingleValuedPairs implements 
         {
             Objects.requireNonNull( timeSeries, "Specify non-null time-series input." );
 
-            for ( TimeSeries<SingleValuedPair> next : timeSeries.basisTimeIterator() )
-            {
-                Instant basisTime = next.getEarliestBasisTime();
-                List<Event<SingleValuedPair>> values = new ArrayList<>();
-                next.timeIterator().forEach( values::add );
-                this.addTimeSeriesDataForBaseline( basisTime, values );
-            }
+            List<Event<SingleValuedPair>> values = new ArrayList<>();
+            timeSeries.timeIterator().forEach( values::add );
+            this.addTimeSeriesDataForBaseline( values );
 
             return this;
         }

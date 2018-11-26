@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.StringJoiner;
+import java.util.stream.StreamSupport;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -18,8 +19,6 @@ import org.junit.rules.ExpectedException;
 
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.metadata.SampleMetadata;
-import wres.datamodel.sampledata.pairs.EnsemblePair;
-import wres.datamodel.sampledata.pairs.TimeSeriesOfEnsemblePairs;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfEnsemblePairs.TimeSeriesOfEnsemblePairsBuilder;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
@@ -49,24 +48,43 @@ public final class TimeSeriesOfEnsemblePairsTest
         TimeSeriesOfEnsemblePairsBuilder b = new TimeSeriesOfEnsemblePairsBuilder();
 
         Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
-        first.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), EnsemblePair.of( 1, new double[] { 1 } ) ) );
-        first.add( Event.of( Instant.parse( "1985-01-01T02:00:00Z" ), EnsemblePair.of( 2, new double[] { 2 } ) ) );
-        first.add( Event.of( Instant.parse( "1985-01-01T03:00:00Z" ), EnsemblePair.of( 3, new double[] { 3 } ) ) );
+        first.add( Event.of( firstBasisTime,
+                             Instant.parse( "1985-01-01T01:00:00Z" ),
+                             EnsemblePair.of( 1, new double[] { 1 } ) ) );
+        first.add( Event.of( firstBasisTime,
+                             Instant.parse( "1985-01-01T02:00:00Z" ),
+                             EnsemblePair.of( 2, new double[] { 2 } ) ) );
+        first.add( Event.of( firstBasisTime,
+                             Instant.parse( "1985-01-01T03:00:00Z" ),
+                             EnsemblePair.of( 3, new double[] { 3 } ) ) );
         Instant secondBasisTime = Instant.parse( "1985-01-02T00:00:00Z" );
-        second.add( Event.of( Instant.parse( "1985-01-02T01:00:00Z" ), EnsemblePair.of( 4, new double[] { 4 } ) ) );
-        second.add( Event.of( Instant.parse( "1985-01-02T02:00:00Z" ), EnsemblePair.of( 5, new double[] { 5 } ) ) );
-        second.add( Event.of( Instant.parse( "1985-01-02T03:00:00Z" ), EnsemblePair.of( 6, new double[] { 6 } ) ) );
+        second.add( Event.of( secondBasisTime,
+                              Instant.parse( "1985-01-02T01:00:00Z" ),
+                              EnsemblePair.of( 4, new double[] { 4 } ) ) );
+        second.add( Event.of( secondBasisTime,
+                              Instant.parse( "1985-01-02T02:00:00Z" ),
+                              EnsemblePair.of( 5, new double[] { 5 } ) ) );
+        second.add( Event.of( secondBasisTime,
+                              Instant.parse( "1985-01-02T03:00:00Z" ),
+                              EnsemblePair.of( 6, new double[] { 6 } ) ) );
         Instant thirdBasisTime = Instant.parse( "1985-01-03T00:00:00Z" );
-        third.add( Event.of( Instant.parse( "1985-01-03T01:00:00Z" ), EnsemblePair.of( 7, new double[] { 7 } ) ) );
-        third.add( Event.of( Instant.parse( "1985-01-03T02:00:00Z" ), EnsemblePair.of( 8, new double[] { 8 } ) ) );
-        third.add( Event.of( Instant.parse( "1985-01-03T03:00:00Z" ), EnsemblePair.of( 9, new double[] { 9 } ) ) );
+        third.add( Event.of( thirdBasisTime,
+                             Instant.parse( "1985-01-03T01:00:00Z" ),
+                             EnsemblePair.of( 7, new double[] { 7 } ) ) );
+        third.add( Event.of( thirdBasisTime,
+                             Instant.parse( "1985-01-03T02:00:00Z" ),
+                             EnsemblePair.of( 8, new double[] { 8 } ) ) );
+        third.add( Event.of( thirdBasisTime,
+                             Instant.parse( "1985-01-03T03:00:00Z" ),
+                             EnsemblePair.of( 9, new double[] { 9 } ) ) );
         final SampleMetadata meta = SampleMetadata.of();
         TimeSeriesOfEnsemblePairs ts =
-                (TimeSeriesOfEnsemblePairs) b.addTimeSeriesData( firstBasisTime, first )
-                                             .addTimeSeriesData( secondBasisTime, second )
-                                             .addTimeSeriesData( thirdBasisTime, third )
+                (TimeSeriesOfEnsemblePairs) b.addTimeSeries( first )
+                                             .addTimeSeries( second )
+                                             .addTimeSeries( third )
                                              .setMetadata( meta )
                                              .build();
+
         assertTrue( "Expected a time-series container with multiple basis times.", ts.hasMultipleTimeSeries() );
         //Iterate and test
         int nextValue = 1;
@@ -95,24 +113,42 @@ public final class TimeSeriesOfEnsemblePairsTest
         TimeSeriesOfEnsemblePairsBuilder b = new TimeSeriesOfEnsemblePairsBuilder();
 
         Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
-        first.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), EnsemblePair.of( 1, new double[] { 1 } ) ) );
-        first.add( Event.of( Instant.parse( "1985-01-01T02:00:00Z" ), EnsemblePair.of( 2, new double[] { 2 } ) ) );
-        first.add( Event.of( Instant.parse( "1985-01-01T03:00:00Z" ), EnsemblePair.of( 3, new double[] { 3 } ) ) );
+        first.add( Event.of( firstBasisTime,
+                             Instant.parse( "1985-01-01T01:00:00Z" ),
+                             EnsemblePair.of( 1, new double[] { 1 } ) ) );
+        first.add( Event.of( firstBasisTime,
+                             Instant.parse( "1985-01-01T02:00:00Z" ),
+                             EnsemblePair.of( 2, new double[] { 2 } ) ) );
+        first.add( Event.of( firstBasisTime,
+                             Instant.parse( "1985-01-01T03:00:00Z" ),
+                             EnsemblePair.of( 3, new double[] { 3 } ) ) );
         Instant secondBasisTime = Instant.parse( "1985-01-02T00:00:00Z" );
-        second.add( Event.of( Instant.parse( "1985-01-02T01:00:00Z" ), EnsemblePair.of( 1, new double[] { 1 } ) ) );
-        second.add( Event.of( Instant.parse( "1985-01-02T02:00:00Z" ), EnsemblePair.of( 2, new double[] { 2 } ) ) );
-        second.add( Event.of( Instant.parse( "1985-01-02T03:00:00Z" ), EnsemblePair.of( 3, new double[] { 3 } ) ) );
+        second.add( Event.of( secondBasisTime,
+                              Instant.parse( "1985-01-02T01:00:00Z" ),
+                              EnsemblePair.of( 1, new double[] { 1 } ) ) );
+        second.add( Event.of( secondBasisTime,
+                              Instant.parse( "1985-01-02T02:00:00Z" ),
+                              EnsemblePair.of( 2, new double[] { 2 } ) ) );
+        second.add( Event.of( secondBasisTime,
+                              Instant.parse( "1985-01-02T03:00:00Z" ),
+                              EnsemblePair.of( 3, new double[] { 3 } ) ) );
         Instant thirdBasisTime = Instant.parse( "1985-01-03T00:00:00Z" );
-        third.add( Event.of( Instant.parse( "1985-01-03T01:00:00Z" ), EnsemblePair.of( 1, new double[] { 1 } ) ) );
-        third.add( Event.of( Instant.parse( "1985-01-03T02:00:00Z" ), EnsemblePair.of( 2, new double[] { 2 } ) ) );
-        third.add( Event.of( Instant.parse( "1985-01-03T03:00:00Z" ), EnsemblePair.of( 3, new double[] { 3 } ) ) );
+        third.add( Event.of( thirdBasisTime,
+                             Instant.parse( "1985-01-03T01:00:00Z" ),
+                             EnsemblePair.of( 1, new double[] { 1 } ) ) );
+        third.add( Event.of( thirdBasisTime,
+                             Instant.parse( "1985-01-03T02:00:00Z" ),
+                             EnsemblePair.of( 2, new double[] { 2 } ) ) );
+        third.add( Event.of( thirdBasisTime,
+                             Instant.parse( "1985-01-03T03:00:00Z" ),
+                             EnsemblePair.of( 3, new double[] { 3 } ) ) );
         SampleMetadata meta = SampleMetadata.of();
         //Add the time-series, with only one for baseline
         TimeSeriesOfEnsemblePairs ts =
-                (TimeSeriesOfEnsemblePairs) b.addTimeSeriesData( firstBasisTime, first )
-                                             .addTimeSeriesData( secondBasisTime, second )
-                                             .addTimeSeriesData( thirdBasisTime, third )
-                                             .addTimeSeriesDataForBaseline( firstBasisTime, first )
+                (TimeSeriesOfEnsemblePairs) b.addTimeSeries( first )
+                                             .addTimeSeries( second )
+                                             .addTimeSeries( third )
+                                             .addTimeSeriesDataForBaseline( first )
                                              .setMetadata( meta )
                                              .setMetadataForBaseline( meta )
                                              .build();
@@ -136,10 +172,11 @@ public final class TimeSeriesOfEnsemblePairsTest
 
         //Check the regular duration of a time-series with one duration
         List<Event<EnsemblePair>> fourth = new ArrayList<>();
-        fourth.add( Event.of( Instant.parse( "1985-01-03T03:00:00Z" ), EnsemblePair.of( 3, new double[] { 3 } ) ) );
+        fourth.add( Event.of( firstBasisTime,
+                              Instant.parse( "1985-01-03T03:00:00Z" ),
+                              EnsemblePair.of( 3, new double[] { 3 } ) ) );
         TimeSeriesOfEnsemblePairs durationCheck =
-                (TimeSeriesOfEnsemblePairs) new TimeSeriesOfEnsemblePairsBuilder().addTimeSeriesData( firstBasisTime,
-                                                                                                      fourth )
+                (TimeSeriesOfEnsemblePairs) new TimeSeriesOfEnsemblePairsBuilder().addTimeSeries( fourth )
                                                                                   .setMetadata( meta )
                                                                                   .build();
         assertTrue( "Unexpected regular duration for the regular time-series ",
@@ -158,16 +195,22 @@ public final class TimeSeriesOfEnsemblePairsTest
         TimeSeriesOfEnsemblePairsBuilder b = new TimeSeriesOfEnsemblePairsBuilder();
 
         Instant basisTime = Instant.parse( "1985-01-01T00:00:00Z" );
-        values.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), EnsemblePair.of( 1, new double[] { 1 } ) ) );
-        values.add( Event.of( Instant.parse( "1985-01-01T02:00:00Z" ), EnsemblePair.of( 2, new double[] { 2 } ) ) );
-        values.add( Event.of( Instant.parse( "1985-01-01T03:00:00Z" ), EnsemblePair.of( 3, new double[] { 3 } ) ) );
+        values.add( Event.of( basisTime,
+                              Instant.parse( "1985-01-01T01:00:00Z" ),
+                              EnsemblePair.of( 1, new double[] { 1 } ) ) );
+        values.add( Event.of( basisTime,
+                              Instant.parse( "1985-01-01T02:00:00Z" ),
+                              EnsemblePair.of( 2, new double[] { 2 } ) ) );
+        values.add( Event.of( basisTime,
+                              Instant.parse( "1985-01-01T03:00:00Z" ),
+                              EnsemblePair.of( 3, new double[] { 3 } ) ) );
         SampleMetadata meta = SampleMetadata.of();
-        b.addTimeSeriesData( basisTime, values ).setMetadata( meta );
+        b.addTimeSeries( values ).setMetadata( meta );
         //Check dataset dimensions
         assertTrue( "Unexpected baseline associated with time-series.",
                     Objects.isNull( b.build().getBaselineData() ) );
 
-        b.addTimeSeriesDataForBaseline( basisTime, values );
+        b.addTimeSeriesDataForBaseline( values );
         b.setMetadataForBaseline( meta );
 
         TimeSeriesOfEnsemblePairs baseline = b.build().getBaselineData();
@@ -205,13 +248,19 @@ public final class TimeSeriesOfEnsemblePairsTest
         TimeSeriesOfEnsemblePairsBuilder b = new TimeSeriesOfEnsemblePairsBuilder();
 
         Instant basisTime = Instant.parse( "1985-01-01T00:00:00Z" );
-        first.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), EnsemblePair.of( 1, new double[] { 1 } ) ) );
-        first.add( Event.of( Instant.parse( "1985-01-01T02:00:00Z" ), EnsemblePair.of( 2, new double[] { 2 } ) ) );
-        first.add( Event.of( Instant.parse( "1985-01-01T03:00:00Z" ), EnsemblePair.of( 3, new double[] { 3 } ) ) );
+        first.add( Event.of( basisTime,
+                             Instant.parse( "1985-01-01T01:00:00Z" ),
+                             EnsemblePair.of( 1, new double[] { 1 } ) ) );
+        first.add( Event.of( basisTime,
+                             Instant.parse( "1985-01-01T02:00:00Z" ),
+                             EnsemblePair.of( 2, new double[] { 2 } ) ) );
+        first.add( Event.of( basisTime,
+                             Instant.parse( "1985-01-01T03:00:00Z" ),
+                             EnsemblePair.of( 3, new double[] { 3 } ) ) );
         SampleMetadata meta = SampleMetadata.of();
         VectorOfDoubles climatology = VectorOfDoubles.of( new double[] { 1, 2, 3 } );
-        b.addTimeSeriesData( basisTime, first )
-         .addTimeSeriesDataForBaseline( basisTime, first )
+        b.addTimeSeries( first )
+         .addTimeSeriesDataForBaseline( first )
          .setMetadata( meta )
          .setMetadataForBaseline( meta )
          .setClimatology( climatology );
@@ -227,22 +276,37 @@ public final class TimeSeriesOfEnsemblePairsTest
         assertTrue( "Failed to perserve climatology when building new time-series.",
                     climatology.equals( c.build().getClimatology() ) );
 
-        second.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), EnsemblePair.of( 4, new double[] { 4 } ) ) );
-        second.add( Event.of( Instant.parse( "1985-01-01T02:00:00Z" ), EnsemblePair.of( 5, new double[] { 5 } ) ) );
-        second.add( Event.of( Instant.parse( "1985-01-01T03:00:00Z" ), EnsemblePair.of( 6, new double[] { 6 } ) ) );
-        third.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), EnsemblePair.of( 7, new double[] { 7 } ) ) );
-        third.add( Event.of( Instant.parse( "1985-01-01T02:00:00Z" ), EnsemblePair.of( 8, new double[] { 8 } ) ) );
-        third.add( Event.of( Instant.parse( "1985-01-01T03:00:00Z" ), EnsemblePair.of( 9, new double[] { 9 } ) ) );
-        c.addTimeSeriesData( basisTime, second )
-         .addTimeSeriesData( basisTime, third )
-         .addTimeSeriesDataForBaseline( basisTime, second )
-         .addTimeSeriesDataForBaseline( basisTime, third );
+        second.add( Event.of( basisTime,
+                              Instant.parse( "1985-01-01T01:00:00Z" ),
+                              EnsemblePair.of( 4, new double[] { 4 } ) ) );
+        second.add( Event.of( basisTime,
+                              Instant.parse( "1985-01-01T02:00:00Z" ),
+                              EnsemblePair.of( 5, new double[] { 5 } ) ) );
+        second.add( Event.of( basisTime,
+                              Instant.parse( "1985-01-01T03:00:00Z" ),
+                              EnsemblePair.of( 6, new double[] { 6 } ) ) );
+        third.add( Event.of( basisTime,
+                             Instant.parse( "1985-01-01T01:00:00Z" ),
+                             EnsemblePair.of( 7, new double[] { 7 } ) ) );
+        third.add( Event.of( basisTime,
+                             Instant.parse( "1985-01-01T02:00:00Z" ),
+                             EnsemblePair.of( 8, new double[] { 8 } ) ) );
+        third.add( Event.of( basisTime,
+                             Instant.parse( "1985-01-01T03:00:00Z" ),
+                             EnsemblePair.of( 9, new double[] { 9 } ) ) );
+        c.addTimeSeries( second )
+         .addTimeSeries( third )
+         .addTimeSeriesDataForBaseline( second )
+         .addTimeSeriesDataForBaseline( third );
 
         TimeSeriesOfEnsemblePairs tsAppend = c.build();
 
         //Check dataset dimensions
         assertTrue( "Expected a time-series with three basis times and three lead times.",
-                    tsAppend.getDurations().size() == 3 && tsAppend.getBasisTimes().size() == 3 );
+                    tsAppend.getDurations().size() == 3 && StreamSupport.stream( tsAppend.basisTimeIterator()
+                                                                                         .spliterator(),
+                                                                                 false )
+                                                                        .count() == 3 );
         //Check dataset
         //Iterate and test
         int nextValue = 1;
@@ -264,15 +328,21 @@ public final class TimeSeriesOfEnsemblePairsTest
         List<Event<EnsemblePair>> first = new ArrayList<>();
 
         Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
-        first.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), EnsemblePair.of( 1, new double[] { 1 } ) ) );
-        first.add( Event.of( Instant.parse( "1985-01-01T02:00:00Z" ), EnsemblePair.of( 2, new double[] { 2 } ) ) );
-        first.add( Event.of( Instant.parse( "1985-01-01T03:00:00Z" ), EnsemblePair.of( 3, new double[] { 3 } ) ) );
+        first.add( Event.of( firstBasisTime,
+                             Instant.parse( "1985-01-01T01:00:00Z" ),
+                             EnsemblePair.of( 1, new double[] { 1 } ) ) );
+        first.add( Event.of( firstBasisTime,
+                             Instant.parse( "1985-01-01T02:00:00Z" ),
+                             EnsemblePair.of( 2, new double[] { 2 } ) ) );
+        first.add( Event.of( firstBasisTime,
+                             Instant.parse( "1985-01-01T03:00:00Z" ),
+                             EnsemblePair.of( 3, new double[] { 3 } ) ) );
         final SampleMetadata meta = SampleMetadata.of();
 
         //Check for exceptions on the iterators
         TimeSeriesOfEnsemblePairsBuilder d = new TimeSeriesOfEnsemblePairsBuilder();
         TimeSeriesOfEnsemblePairs ts =
-                (TimeSeriesOfEnsemblePairs) d.addTimeSeriesData( firstBasisTime, first )
+                (TimeSeriesOfEnsemblePairs) d.addTimeSeries( first )
                                              .setMetadata( meta )
                                              .build();
 
@@ -313,11 +383,17 @@ public final class TimeSeriesOfEnsemblePairsTest
         StringJoiner joiner = new StringJoiner( System.lineSeparator() );
         for ( int i = 0; i < 5; i++ )
         {
-            values.add( Event.of( Instant.parse( "1985-01-01T" + String.format( "%02d", i ) + ":00:00Z" ),
+            values.add( Event.of( basisTime,
+                                  Instant.parse( "1985-01-01T" + String.format( "%02d", i ) + ":00:00Z" ),
                                   EnsemblePair.of( 1, new double[] { 1 } ) ) );
-            joiner.add( "(1985-01-01T" + String.format( "%02d", i ) + ":00:00Z" + ",key: " + "1.0 value: [1.0])" );
+            joiner.add( "(" + basisTime
+                        + ",1985-01-01T"
+                        + String.format( "%02d", i )
+                        + ":00:00Z"
+                        + ",key: "
+                        + "1.0 value: [1.0])" );
         }
-        b.addTimeSeriesData( basisTime, values ).setMetadata( meta );
+        b.addTimeSeries( values ).setMetadata( meta );
 
         //Check dataset count
         assertTrue( "Unexpected string representation of time-series.",
@@ -327,22 +403,29 @@ public final class TimeSeriesOfEnsemblePairsTest
         List<Event<EnsemblePair>> otherValues = new ArrayList<>();
         for ( int i = 0; i < 5; i++ )
         {
-            otherValues.add( Event.of( Instant.parse( "1985-01-02T" + String.format( "%02d", i ) + ":00:00Z" ),
+            otherValues.add( Event.of( nextBasisTime,
+                                       Instant.parse( "1985-01-02T" + String.format( "%02d", i ) + ":00:00Z" ),
                                        EnsemblePair.of( 1, new double[] { 1 } ) ) );
-            joiner.add( "(1985-01-02T" + String.format( "%02d", i ) + ":00:00Z" + ",key: " + "1.0 value: [1.0])" );
+            joiner.add( "(" + nextBasisTime
+                        + ",1985-01-02T"
+                        + String.format( "%02d", i )
+                        + ":00:00Z"
+                        + ",key: "
+                        + "1.0 value: [1.0])" );
         }
 
-        b.addTimeSeriesData( nextBasisTime, otherValues );
+        b.addTimeSeries( otherValues );
         assertTrue( "Unexpected string representation of compound time-series.",
                     joiner.toString().equals( b.build().toString() ) );
 
         //Check for equality of string representations when building in two different ways
-        List<Event<List<Event<EnsemblePair>>>> input = new ArrayList<>();
-        input.add( Event.of( basisTime, values ) );
-        input.add( Event.of( nextBasisTime, otherValues ) );
+        List<Event<EnsemblePair>> input = new ArrayList<>();
+        input.addAll( values );
+        input.addAll( otherValues );
+
         TimeSeriesOfEnsemblePairsBuilder a = new TimeSeriesOfEnsemblePairsBuilder();
         TimeSeriesOfEnsemblePairs pairs =
-                ( (TimeSeriesOfEnsemblePairsBuilder) a.addTimeSeriesData( input ).setMetadata( meta ) ).build();
+                ( (TimeSeriesOfEnsemblePairsBuilder) a.addTimeSeries( input ).setMetadata( meta ) ).build();
         assertTrue( "Unequal string representation of two time-series that should have an equal representation.",
                     joiner.toString().equals( pairs.toString() ) );
     }
@@ -362,31 +445,52 @@ public final class TimeSeriesOfEnsemblePairsTest
         TimeSeriesOfEnsemblePairsBuilder b = new TimeSeriesOfEnsemblePairsBuilder();
 
         Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
-        first.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), EnsemblePair.of( 1, new double[] { 1 } ) ) );
-        first.add( Event.of( Instant.parse( "1985-01-01T08:00:00Z" ), EnsemblePair.of( 2, new double[] { 2 } ) ) );
-        first.add( Event.of( Instant.parse( "1985-01-01T09:00:00Z" ), EnsemblePair.of( 3, new double[] { 3 } ) ) );
+        first.add( Event.of( firstBasisTime,
+                             Instant.parse( "1985-01-01T01:00:00Z" ),
+                             EnsemblePair.of( 1, new double[] { 1 } ) ) );
+        first.add( Event.of( firstBasisTime,
+                             Instant.parse( "1985-01-01T08:00:00Z" ),
+                             EnsemblePair.of( 2, new double[] { 2 } ) ) );
+        first.add( Event.of( firstBasisTime,
+                             Instant.parse( "1985-01-01T09:00:00Z" ),
+                             EnsemblePair.of( 3, new double[] { 3 } ) ) );
         Instant secondBasisTime = Instant.parse( "1985-01-02T00:00:00Z" );
-        second.add( Event.of( Instant.parse( "1985-01-02T02:00:00Z" ), EnsemblePair.of( 4, new double[] { 4 } ) ) );
-        second.add( Event.of( Instant.parse( "1985-01-02T04:00:00Z" ), EnsemblePair.of( 5, new double[] { 5 } ) ) );
-        second.add( Event.of( Instant.parse( "1985-01-02T06:00:00Z" ), EnsemblePair.of( 6, new double[] { 6 } ) ) );
+        second.add( Event.of( secondBasisTime,
+                              Instant.parse( "1985-01-02T02:00:00Z" ),
+                              EnsemblePair.of( 4, new double[] { 4 } ) ) );
+        second.add( Event.of( secondBasisTime,
+                              Instant.parse( "1985-01-02T04:00:00Z" ),
+                              EnsemblePair.of( 5, new double[] { 5 } ) ) );
+        second.add( Event.of( secondBasisTime,
+                              Instant.parse( "1985-01-02T06:00:00Z" ),
+                              EnsemblePair.of( 6, new double[] { 6 } ) ) );
         Instant thirdBasisTime = Instant.parse( "1985-01-03T00:00:00Z" );
-        third.add( Event.of( Instant.parse( "1985-01-03T01:00:00Z" ), EnsemblePair.of( 7, new double[] { 7 } ) ) );
-        third.add( Event.of( Instant.parse( "1985-01-03T08:00:00Z" ), EnsemblePair.of( 8, new double[] { 8 } ) ) );
-        third.add( Event.of( Instant.parse( "1985-01-03T09:00:00Z" ), EnsemblePair.of( 9, new double[] { 9 } ) ) );
+        third.add( Event.of( thirdBasisTime,
+                             Instant.parse( "1985-01-03T01:00:00Z" ),
+                             EnsemblePair.of( 7, new double[] { 7 } ) ) );
+        third.add( Event.of( thirdBasisTime,
+                             Instant.parse( "1985-01-03T08:00:00Z" ),
+                             EnsemblePair.of( 8, new double[] { 8 } ) ) );
+        third.add( Event.of( thirdBasisTime,
+                             Instant.parse( "1985-01-03T09:00:00Z" ),
+                             EnsemblePair.of( 9, new double[] { 9 } ) ) );
         Instant fourthBasisTime = Instant.parse( "1985-01-04T00:00:00Z" );
-        fourth.add( Event.of( Instant.parse( "1985-01-04T02:00:00Z" ),
+        fourth.add( Event.of( fourthBasisTime,
+                              Instant.parse( "1985-01-04T02:00:00Z" ),
                               EnsemblePair.of( 10, new double[] { 10 } ) ) );
-        fourth.add( Event.of( Instant.parse( "1985-01-04T04:00:00Z" ),
+        fourth.add( Event.of( fourthBasisTime,
+                              Instant.parse( "1985-01-04T04:00:00Z" ),
                               EnsemblePair.of( 11, new double[] { 11 } ) ) );
-        fourth.add( Event.of( Instant.parse( "1985-01-04T06:00:00Z" ),
+        fourth.add( Event.of( fourthBasisTime,
+                              Instant.parse( "1985-01-04T06:00:00Z" ),
                               EnsemblePair.of( 12, new double[] { 12 } ) ) );
         SampleMetadata meta = SampleMetadata.of();
         //Add the time-series, with only one for baseline
         TimeSeriesOfEnsemblePairs ts =
-                (TimeSeriesOfEnsemblePairs) b.addTimeSeriesData( firstBasisTime, first )
-                                             .addTimeSeriesData( secondBasisTime, second )
-                                             .addTimeSeriesData( thirdBasisTime, third )
-                                             .addTimeSeriesData( fourthBasisTime, fourth )
+                (TimeSeriesOfEnsemblePairs) b.addTimeSeries( first )
+                                             .addTimeSeries( second )
+                                             .addTimeSeries( third )
+                                             .addTimeSeries( fourth )
                                              .setMetadata( meta )
                                              .build();
 
@@ -421,12 +525,18 @@ public final class TimeSeriesOfEnsemblePairsTest
         TimeSeriesOfEnsemblePairsBuilder b = new TimeSeriesOfEnsemblePairsBuilder();
 
         Instant basisTime = Instant.parse( "1985-01-01T00:00:00Z" );
-        first.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), EnsemblePair.of( 1, new double[] { 1 } ) ) );
-        first.add( Event.of( Instant.parse( "1985-01-01T02:00:00Z" ), EnsemblePair.of( 2, new double[] { 2 } ) ) );
-        first.add( Event.of( Instant.parse( "1985-01-01T03:00:00Z" ), EnsemblePair.of( 3, new double[] { 3 } ) ) );
+        first.add( Event.of( basisTime,
+                             Instant.parse( "1985-01-01T01:00:00Z" ),
+                             EnsemblePair.of( 1, new double[] { 1 } ) ) );
+        first.add( Event.of( basisTime,
+                             Instant.parse( "1985-01-01T02:00:00Z" ),
+                             EnsemblePair.of( 2, new double[] { 2 } ) ) );
+        first.add( Event.of( basisTime,
+                             Instant.parse( "1985-01-01T03:00:00Z" ),
+                             EnsemblePair.of( 3, new double[] { 3 } ) ) );
         SampleMetadata meta = SampleMetadata.of();
         VectorOfDoubles climatology = VectorOfDoubles.of( new double[] { 1, 2, 3 } );
-        b.addTimeSeriesData( basisTime, first )
+        b.addTimeSeries( first )
          .setMetadata( meta )
          .setClimatology( climatology );
 

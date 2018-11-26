@@ -13,6 +13,27 @@ import wres.datamodel.metadata.SampleMetadata;
 
 public interface SampleDataBuilder<S>
 {
+    
+    /**
+     * Adds sample data, appending to any existing sample data, as necessary.
+     * 
+     * @param sampleData the sample data
+     * @return the builder
+     * @throws NullPointerException if the input is null
+     */
+
+    SampleDataBuilder<S> addData( List<S> sampleData );
+    
+    /**
+     * Adds sample data for a baseline, which is used to calculate skill, appending to any existing baseline sample, as
+     * necessary.
+     * 
+     * @param baselineSampleData the sample data for the baseline
+     * @return the builder
+     * @throws NullPointerException if the input is null
+     */
+
+    SampleDataBuilder<S> addDataForBaseline( List<S> baselineSampleData );
 
     /**
      * Adds sample data, appending to any existing sample data, as necessary.
@@ -21,8 +42,8 @@ public interface SampleDataBuilder<S>
      * @return the builder
      */
 
-    SampleDataBuilder<S> addData( List<S> sampleData );
-
+    SampleDataBuilder<S> addData( S sampleData );
+    
     /**
      * Sets the metadata associated with the sample.
      * 
@@ -32,15 +53,15 @@ public interface SampleDataBuilder<S>
 
     SampleDataBuilder<S> setMetadata( SampleMetadata sampleMetadata );
 
-    /**
+    /** 
      * Adds sample data for a baseline, which is used to calculate skill, appending to any existing baseline sample, as
-     * necessary.
-     * 
-     * @param baselineSampleData the sample data for the baseline
-     * @return the builder
-     */
+    * necessary.
+    * 
+    * @param baselineSampleData the sample data for the baseline
+    * @return the builder
+    */
 
-    SampleDataBuilder<S> addDataForBaseline( List<S> baselineSampleData );
+    SampleDataBuilder<S> addDataForBaseline( S baselineSampleData );
 
     /**
      * Sets the metadata associated with the baseline sample.
