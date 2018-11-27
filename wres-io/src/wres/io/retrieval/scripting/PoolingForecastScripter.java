@@ -81,11 +81,11 @@ class PoolingForecastScripter extends Scripter
 
         if ( this.getSampleMetadata()
                  .getTimeWindow()
-                 .getEarliestLeadDuration()
-                 .equals( this.getSampleMetadata().getTimeWindow().getLatestLeadDuration() ) )
+                 .getEarliestReferenceTime()
+                 .equals( this.getSampleMetadata().getTimeWindow().getLatestReferenceTime() ) )
         {
             issueQualifier =
-                    "TS.initialization_date = '" + this.getSampleMetadata().getTimeWindow().getEarliestLeadDuration()
+                    "TS.initialization_date = '" + this.getSampleMetadata().getTimeWindow().getEarliestReferenceTime()
                              + "'::timestamp without time zone ";
         }
         else
