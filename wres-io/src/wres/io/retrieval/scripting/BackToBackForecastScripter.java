@@ -4,11 +4,8 @@ import java.io.IOException;
 import java.sql.SQLException;
 
 import wres.config.generated.DataSourceConfig;
-import wres.config.generated.Feature;
 import wres.io.config.ConfigHelper;
 import wres.io.config.OrderedSampleMetadata;
-import wres.io.data.details.ProjectDetails;
-import wres.util.CalculationException;
 import wres.util.TimeHelper;
 
 class BackToBackForecastScripter extends Scripter
@@ -75,7 +72,7 @@ class BackToBackForecastScripter extends Scripter
     private void applyLeadQualifier()
     {
         long earliest = TimeHelper.durationToLead( this.getSampleMetadata().getMinimumLead());
-        long latest = TimeHelper.durationToLead( this.getSampleMetadata().getLatestLead() );
+        long latest = TimeHelper.durationToLead( this.getSampleMetadata().getTimeWindow().getLatestLeadDuration() );
 
         if (earliest == latest)
         {

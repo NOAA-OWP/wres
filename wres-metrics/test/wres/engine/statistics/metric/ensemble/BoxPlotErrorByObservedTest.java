@@ -20,7 +20,6 @@ import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.SampleMetadata.SampleMetadataBuilder;
 import wres.datamodel.metadata.StatisticMetadata;
@@ -67,7 +66,6 @@ public final class BoxPlotErrorByObservedTest
 
         TimeWindow window = TimeWindow.of( Instant.MIN,
                                            Instant.MAX,
-                                           ReferenceTime.VALID_TIME,
                                            Duration.ofHours( 24 ) );
         final TimeWindow timeWindow1 = window;
         SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "MM/DAY" ) )

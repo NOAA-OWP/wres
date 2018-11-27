@@ -1,13 +1,11 @@
 package wres.io.config;
 
 import java.time.Duration;
-import java.time.Instant;
 
 import wres.config.generated.Feature;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.TimeScale;
 import wres.datamodel.metadata.TimeWindow;
@@ -100,14 +98,6 @@ public class OrderedSampleMetadata implements Comparable<OrderedSampleMetadata>
     }
 
     /**
-     * @return The time system describing if the Sample Data is constrained by issued or valid time
-     */
-    public ReferenceTime getReferenceTimeSystem()
-    {
-        return this.metadata.getTimeWindow().getReferenceTime();
-    }
-
-    /**
      * @return Details about the feature being evaluated
      */
     public Feature getFeature()
@@ -128,11 +118,12 @@ public class OrderedSampleMetadata implements Comparable<OrderedSampleMetadata>
      */
     public Duration getMinimumLead()
     {
-        Duration minimum = this.getEarliestLead();
+        Duration minimum = this.getTimeWindow().getEarliestLeadDuration();
 
         // If the data needs to be scaled, but the earliest lead doesn't take that into account,
         // adjust the returned value to take entire range into consideration
-        if (this.getScalePeriod() != null && this.getEarliestLead().equals( this.getLatestLead() ))
+        if ( this.getScalePeriod() != null
+             && this.getTimeWindow().getEarliestLeadDuration().equals( this.getTimeWindow().getLatestLeadDuration() ) )
         {
             minimum = minimum.minus( this.getScalePeriod() );
         }
@@ -141,35 +132,11 @@ public class OrderedSampleMetadata implements Comparable<OrderedSampleMetadata>
     }
 
     /**
-     * @return The earliest lead duration for the values contained within the sample
+     * @return The time window for the values contained within the sample
      */
-    public Duration getEarliestLead()
+    public TimeWindow getTimeWindow()
     {
-        return this.metadata.getTimeWindow().getEarliestLeadTime();
-    }
-
-    /**
-     * @return The latest lead duration for the values contained within the sample
-     */
-    public Duration getLatestLead()
-    {
-        return this.metadata.getTimeWindow().getLatestLeadTime();
-    }
-
-    /**
-     * @return The earliest time contained within the sample data relative to the reference time system
-     */
-    public Instant getEarliestTime()
-    {
-        return this.metadata.getTimeWindow().getEarliestTime();
-    }
-
-    /**
-     * @return The latest time contained within the sample data relative to the reference time system
-     */
-    public Instant getLatestTime()
-    {
-        return this.metadata.getTimeWindow().getLatestTime();
+        return this.metadata.getTimeWindow();
     }
 
     /**

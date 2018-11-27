@@ -27,13 +27,15 @@ public class TimeSeriesHelper
      * input {@link SampleMetadata} when iterating over the atomic time-series by basis time.
      * 
      * @param input the input metadata
-     * @param earliestTime the earliest basis time for the new metadata
-     * @param latestTime the latest basis time for the new metadata
+     * @param earliestReferenceTime the earliest basis time for the new metadata
+     * @param latestReferenceTime the latest basis time for the new metadata
      * @return the adjusted metadata
      * @throws NullPointerException if any of the inputs are null
      */
 
-    static SampleMetadata getBasisTimeAdjustedMetadata( SampleMetadata input, Instant earliestTime, Instant latestTime )
+    static SampleMetadata getReferenceTimeAdjustedMetadata( SampleMetadata input,
+                                                            Instant earliestReferenceTime,
+                                                            Instant latestReferenceTime )
     {
         //Test the input only, as the others are tested on construction
         Objects.requireNonNull( "Specify non-null input for the current metadata." );
@@ -42,11 +44,12 @@ public class TimeSeriesHelper
         {
             TimeWindow current = input.getTimeWindow();
             returnMe = SampleMetadata.of( returnMe,
-                                                    TimeWindow.of( earliestTime,
-                                                                   latestTime,
-                                                                   current.getReferenceTime(),
-                                                                   current.getEarliestLeadTime(),
-                                                                   current.getLatestLeadTime() ) );
+                                          TimeWindow.of( earliestReferenceTime,
+                                                         latestReferenceTime,
+                                                         current.getEarliestValidTime(),
+                                                         current.getLatestValidTime(),
+                                                         current.getEarliestLeadDuration(),
+                                                         current.getLatestLeadDuration() ) );
         }
         return returnMe;
     }
@@ -62,7 +65,8 @@ public class TimeSeriesHelper
      * @throws NullPointerException if any of the inputs are null
      */
 
-    static SampleMetadata getDurationAdjustedMetadata( SampleMetadata input, Duration earliestDuration, Duration latestDuration )
+    static SampleMetadata
+            getDurationAdjustedMetadata( SampleMetadata input, Duration earliestDuration, Duration latestDuration )
     {
         //Test the input only, as the others are tested on construction
         Objects.requireNonNull( "Specify non-null input for the current metadata." );
@@ -71,11 +75,12 @@ public class TimeSeriesHelper
         {
             TimeWindow current = input.getTimeWindow();
             returnMe = SampleMetadata.of( returnMe,
-                                                    TimeWindow.of( current.getEarliestTime(),
-                                                                   current.getLatestTime(),
-                                                                   current.getReferenceTime(),
-                                                                   earliestDuration,
-                                                                   latestDuration ) );
+                                          TimeWindow.of( current.getEarliestReferenceTime(),
+                                                         current.getLatestReferenceTime(),
+                                                         current.getEarliestValidTime(),
+                                                         current.getLatestValidTime(),
+                                                         earliestDuration,
+                                                         latestDuration ) );
         }
 
         return returnMe;

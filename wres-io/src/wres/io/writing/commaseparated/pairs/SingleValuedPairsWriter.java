@@ -7,7 +7,6 @@ import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.function.Function;
 
-import wres.datamodel.metadata.TimeScale;
 import wres.datamodel.sampledata.pairs.SingleValuedPair;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
 
@@ -51,38 +50,15 @@ public class SingleValuedPairsWriter extends PairsWriter<SingleValuedPair, TimeS
     }
 
     @Override
-    String getHeaderFromPairs( TimeSeriesOfSingleValuedPairs pairs )
+    StringJoiner getHeaderFromPairs( TimeSeriesOfSingleValuedPairs pairs )
     {
-        Objects.requireNonNull( pairs, "Cannot obtain header from null pairs." );
-
-        StringJoiner joiner = new StringJoiner( "," );
-
-        joiner.add( "FEATURE DESCRIPTION" )
-              .add( "VALID TIME" );
-
-        if ( pairs.getMetadata().hasTimeScale() )
-        {
-            TimeScale timeScale = pairs.getMetadata().getTimeScale();
-
-            joiner.add( "LEAD DURATION IN " + this.getTimeResolution().toString().toUpperCase()
-                        + " ["
-                        + timeScale.getFunction()
-                        + " OVER PAST "
-                        + timeScale.getPeriod().get( this.getTimeResolution() )
-                        + " "
-                        + this.getTimeResolution().toString().toUpperCase()
-                        + "]" );
-        }
-        else
-        {
-            joiner.add( "LEAD DURATION IN " + this.getTimeResolution().toString().toUpperCase() );
-        }
+        StringJoiner joiner = super.getHeaderFromPairs( pairs );
 
         joiner.add( "LEFT IN " + pairs.getMetadata().getMeasurementUnit().getUnit() );
 
         joiner.add( "RIGHT IN " + pairs.getMetadata().getMeasurementUnit().getUnit() );
 
-        return joiner.toString();
+        return joiner;
     }
 
     /**

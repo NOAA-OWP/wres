@@ -360,8 +360,8 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatistic>,
 
 
     /**
-     * Writes output for a specific pair of lead times, representing the {@link TimeWindow#getEarliestLeadTime()} and
-     * the {@link TimeWindow#getLatestLeadTime()}.
+     * Writes output for a specific pair of lead times, representing the {@link TimeWindow#getEarliestLeadDuration()} and
+     * the {@link TimeWindow#getLatestLeadDuration()}.
      */
     
     private static class TimeWindowWriter implements Closeable

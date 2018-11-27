@@ -8,7 +8,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -35,25 +34,22 @@ public final class TimeWindowTest
         //Construct a window from 1985-01-01T00:00:00Z to 2010-12-31T11:59:59Z with lead times of 6-120h
         TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                            Instant.parse( "2010-12-31T11:59:59Z" ),
-                                           ReferenceTime.VALID_TIME,
+                                           Instant.parse( "1986-01-01T00:00:00Z" ),
+                                           Instant.parse( "2009-12-31T11:59:59Z" ),
                                            Duration.ofHours( 6 ),
                                            Duration.ofHours( 120 ) );
-        assertTrue( "Unexpected start date in time window.",
-                    window.getEarliestTime().equals( Instant.parse( "1985-01-01T00:00:00Z" ) ) );
-        assertTrue( "Unexpected end date in time window.",
-                    window.getLatestTime().equals( Instant.parse( "2010-12-31T11:59:59Z" ) ) );
-        assertTrue( "Unexpected reference time system in window window.",
-                    window.getReferenceTime().equals( ReferenceTime.VALID_TIME ) );
-        assertTrue( "Unexpected earliest lead time in time window.",
-                    window.getEarliestLeadTime().compareTo( Duration.ofHours( 6 ) ) == 0 );
-        assertTrue( "Unexpected latest lead time in time window.",
-                    window.getLatestLeadTime().compareTo( Duration.ofHours( 120 ) ) == 0 );
+        assertEquals( window.getEarliestReferenceTime(), Instant.parse( "1985-01-01T00:00:00Z" ) );
+        assertEquals( window.getLatestReferenceTime(), Instant.parse( "2010-12-31T11:59:59Z" ) );
+        assertEquals( window.getEarliestValidTime(), Instant.parse( "1986-01-01T00:00:00Z" ) );
+        assertEquals( window.getLatestValidTime(), Instant.parse( "2009-12-31T11:59:59Z" ) );
+        assertEquals( window.getEarliestLeadDuration(), Duration.ofHours( 6 ) );
+        assertEquals( window.getLatestLeadDuration(), Duration.ofHours( 120 ) );
 
         //Test mid-point of window 
         assertTrue( "Unexpected error in mid-point of time window.",
                     TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                    Instant.parse( "1985-01-10T00:00:00Z" ) )
-                              .getMidPointBetweenEarliestAndLatestTimes()
+                              .getMidPointBetweenEarliestAndLatestReferenceTimes()
                               .equals( Instant.parse( "1985-01-05T12:00:00Z" ) ) );
     }
 
@@ -67,8 +63,7 @@ public final class TimeWindowTest
         //Construct a window from 1985-01-01T00:00:00Z to 2010-12-31T11:59:59Z with lead times of 6-120h
         TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                            Instant.parse( "2010-12-31T11:59:59Z" ),
-                                           ReferenceTime.VALID_TIME,
-                                           Duration.ofHours( 0 ) );
+                                           Duration.ZERO );
         TimeWindow equalWindow = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                 Instant.parse( "2010-12-31T11:59:59Z" ) );
         assertTrue( "Unexpected inequality between time windows.",
@@ -81,31 +76,36 @@ public final class TimeWindowTest
         assertTrue( "Unexpected equality between time windows on latest time.",
                     !window.equals( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                    Instant.parse( "2011-01-01T00:00:00Z" ) ) ) );
-        assertTrue( "Unexpected equality between time windows on reference time.",
+        assertTrue( "Unexpected equality between time windows on earliest valid time.",
                     !window.equals( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                    Instant.parse( "2010-12-31T11:59:59Z" ),
-                                                   ReferenceTime.ISSUE_TIME,
-                                                   Duration.ofHours( 0 ) ) ) );
+                                                   Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                   Instant.MAX,
+                                                   Duration.ZERO,
+                                                   Duration.ZERO ) ) );
+        assertTrue( "Unexpected equality between time windows on latest valid time.",
+                    !window.equals( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                   Instant.parse( "2010-12-31T11:59:59Z" ),
+                                                   Instant.MIN,
+                                                   Instant.parse( "2010-12-31T11:59:59Z" ),
+                                                   Duration.ZERO,
+                                                   Duration.ZERO ) ) );
         assertTrue( "Unexpected equality between time windows on earliest lead time.",
                     !window.equals( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                    Instant.parse( "2010-12-31T11:59:59Z" ),
-                                                   ReferenceTime.VALID_TIME,
                                                    Duration.ofHours( -1 ),
-                                                   Duration.ofHours( 0 ) ) ) );
+                                                   Duration.ZERO ) ) );
         assertTrue( "Unexpected equality between time windows on latest lead time.",
                     !window.equals( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                    Instant.parse( "2010-12-31T11:59:59Z" ),
-                                                   ReferenceTime.VALID_TIME,
-                                                   Duration.ofHours( 0 ),
+                                                   Duration.ZERO,
                                                    Duration.ofHours( 1 ) ) ) );
         TimeWindow hours = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                           Instant.parse( "2010-12-31T11:59:59Z" ),
-                                          ReferenceTime.VALID_TIME,
                                           Duration.ofHours( 1 ),
                                           Duration.ofHours( 1 ) );
         TimeWindow days = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                          Instant.parse( "2010-12-31T11:59:59Z" ),
-                                         ReferenceTime.VALID_TIME,
                                          Duration.ofDays( 1 ),
                                          Duration.ofDays( 1 ) );
         assertTrue( "Unexpected equality between time windows on lead time units.",
@@ -121,56 +121,24 @@ public final class TimeWindowTest
     {
         TimeWindow first = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                           Instant.parse( "2010-12-31T11:59:59Z" ),
-                                          ReferenceTime.VALID_TIME,
-                                          Duration.ofHours( 0 ) );
+                                          Duration.ZERO );
         TimeWindow second = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                            Instant.parse( "2010-12-31T11:59:59Z" ) );
 
         TimeWindow third = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                           Instant.parse( "2010-12-31T11:59:59Z" ),
-                                          ReferenceTime.VALID_TIME,
-                                          Duration.ofHours( 0 ),
+                                          Instant.parse( "1986-01-01T00:00:00Z" ),
+                                          Instant.parse( "2009-12-31T11:59:59Z" ),
+                                          Duration.ZERO,
                                           Duration.ofHours( 120 ) );
         TimeWindow fourth = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                            Instant.parse( "2010-12-31T11:59:59Z" ),
-                                           ReferenceTime.VALID_TIME,
-                                           Duration.ofHours( 0 ),
+                                           Instant.parse( "1986-01-01T00:00:00Z" ),
+                                           Instant.parse( "2009-12-31T11:59:59Z" ),
+                                           Duration.ZERO,
                                            Duration.ofHours( 120 ) );
-        assertEquals( "Unexpected hash inequality between time windows.", first.hashCode(), second.hashCode() );
-        assertEquals( "Unexpected hash inequality between time windows.", third.hashCode(), fourth.hashCode() );
-        assertTrue( "Unexpected hash equality between time windows on input type.",
-                    first.hashCode() != Double.hashCode( 1.0 ) );
-        assertTrue( "Unexpected hash equality between time windows on earliest time.",
-                    first.hashCode() != Objects.hashCode( TimeWindow.of( Instant.parse( "1985-01-01T00:00:01Z" ),
-                                                                         Instant.parse( "2010-12-31T11:59:59Z" ) ) ) );
-        assertTrue( "Unexpected hash equality between time windows on latest time.",
-                    first.hashCode() != Objects.hashCode( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                                         Instant.parse( "2011-01-01T00:00:00Z" ) ) ) );
-        assertTrue( "Unexpected hash equality between time windows on reference time.",
-                    first.hashCode() != Objects.hashCode( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                                         Instant.parse( "2010-12-31T11:59:59Z" ),
-                                                                         ReferenceTime.ISSUE_TIME,
-                                                                         Duration.ofHours( 0 ) ) ) );
-        assertTrue( "Unexpected hash equality between time windows on earliest lead time.",
-                    first.hashCode() != Objects.hashCode( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                                         Instant.parse( "2010-12-31T11:59:59Z" ),
-                                                                         ReferenceTime.VALID_TIME,
-                                                                         Duration.ofHours( -10 ),
-                                                                         Duration.ofHours( 0 ) ) ) );
-        TimeWindow hours = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                          Instant.parse( "2010-12-31T11:59:59Z" ),
-                                          ReferenceTime.VALID_TIME,
-                                          Duration.ofHours( 0 ),
-                                          Duration.ofHours( 1 ) );
-        assertTrue( "Unexpected hash equality between time windows on latest lead time.",
-                    first.hashCode() != hours.hashCode() );
-        TimeWindow days = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                         Instant.parse( "2010-12-31T11:59:59Z" ),
-                                         ReferenceTime.VALID_TIME,
-                                         Duration.ofDays( 0 ),
-                                         Duration.ofDays( 1 ) );
-        assertTrue( "Unexpected hash equality between time windows on time units.",
-                    days.hashCode() != hours.hashCode() );
+        assertEquals( first.hashCode(), second.hashCode() );
+        assertEquals( third.hashCode(), fourth.hashCode() );
     }
 
     /**
@@ -183,75 +151,76 @@ public final class TimeWindowTest
         //Construct a window from 1985-01-01T00:00:00Z to 2010-12-31T11:59:59Z with lead times of 6-120h
         TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                            Instant.parse( "2010-12-31T11:59:59Z" ),
-                                           ReferenceTime.VALID_TIME,
-                                           Duration.ofHours( 0 ) );
+                                           Duration.ZERO );
 
         //EQUAL
         assertTrue( "Unexpected inequality between two time windows that are equal.",
                     window.compareTo( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                      Instant.parse( "2010-12-31T11:59:59Z" ),
-                                                     ReferenceTime.VALID_TIME,
-                                                     Duration.ofHours( 0 ) ) ) == 0 );
+                                                     Duration.ZERO ) ) == 0 );
         assertTrue( "Unexpected inequality between two time windows that are equal.",
                     TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                    Instant.parse( "2010-12-31T11:59:59Z" ),
-                                   ReferenceTime.VALID_TIME,
-                                   Duration.ofHours( 0 ) )
+                                   Duration.ZERO )
                               .compareTo( window ) == 0 );
-        //DIFFERENCES ON EARLIEST TIME
-        assertTrue( "Current window should be earlier than input window.",
-                    window.compareTo( TimeWindow.of( Instant.parse( "1986-01-01T00:00:00Z" ),
-                                                     Instant.parse( "2010-12-31T11:59:59Z" ),
-                                                     ReferenceTime.VALID_TIME,
-                                                     Duration.ofHours( 0 ) ) ) < 0 );
         //Transitive
         //x.compareTo(y) > 0
         assertTrue( "Current window should be later than input window.",
                     window.compareTo( TimeWindow.of( Instant.parse( "1984-01-01T00:00:00Z" ),
                                                      Instant.parse( "2010-12-31T11:59:59Z" ),
-                                                     ReferenceTime.VALID_TIME,
-                                                     Duration.ofHours( 0 ) ) ) > 0 );
+                                                     Duration.ZERO ) ) > 0 );
         //y.compareTo(z) > 0
         assertTrue( "Current window should be later than input window.",
                     TimeWindow.of( Instant.parse( "1984-01-01T00:00:00Z" ),
                                    Instant.parse( "2010-12-31T11:59:59Z" ),
-                                   ReferenceTime.VALID_TIME,
-                                   Duration.ofHours( 0 ) )
+                                   Duration.ZERO )
                               .compareTo( TimeWindow.of( Instant.parse( "1983-01-01T00:00:00Z" ),
                                                          Instant.parse( "2010-12-31T11:59:59Z" ),
-                                                         ReferenceTime.VALID_TIME,
-                                                         Duration.ofHours( 0 ) ) ) > 0 );
+                                                         Duration.ZERO ) ) > 0 );
         //x.compareTo(z) > 0
         assertTrue( "Current window should be later than input window.",
                     window.compareTo( TimeWindow.of( Instant.parse( "1983-01-01T00:00:00Z" ),
                                                      Instant.parse( "2010-12-31T11:59:59Z" ),
-                                                     ReferenceTime.VALID_TIME,
-                                                     Duration.ofHours( 0 ) ) ) > 0 );
-
+                                                     Duration.ZERO ) ) > 0 );
+        //DIFFERENCES ON EARLIEST TIME
+        assertTrue( "Current window should be earlier than input window.",
+                    window.compareTo( TimeWindow.of( Instant.parse( "1986-01-01T00:00:00Z" ),
+                                                     Instant.parse( "2010-12-31T11:59:59Z" ),
+                                                     Duration.ZERO ) ) < 0 );
         //DIFFERENCES ON LATEST TIME
         assertTrue( "Current window should be earlier than input window.",
                     window.compareTo( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                      Instant.parse( "2011-12-31T11:59:59Z" ),
-                                                     ReferenceTime.VALID_TIME,
-                                                     Duration.ofHours( 0 ) ) ) < 0 );
-        //DIFFERENCES ON REFERENCE TIME
-        assertTrue( "Current window should have a different reference time system.",
+                                                     Duration.ZERO ) ) < 0 );
+
+        //DIFFERENCES ON EARLIEST VALID TIME
+        assertTrue( "Current window should have a different earliest valid time.",
                     window.compareTo( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                      Instant.parse( "2010-12-31T11:59:59Z" ),
-                                                     ReferenceTime.ISSUE_TIME,
-                                                     Duration.ofHours( 0 ) ) ) < 0 );
+                                                     Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                     Instant.MAX,
+                                                     Duration.ZERO,
+                                                     Duration.ZERO ) ) < 0 );
+
+        //DIFFERENCES ON LATEST VALID TIME
+        assertTrue( "Current window should have a different latest valid time.",
+                    window.compareTo( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                     Instant.parse( "2010-12-31T11:59:59Z" ),
+                                                     Instant.MIN,
+                                                     Instant.parse( "2011-12-31T11:59:59Z" ),
+                                                     Duration.ZERO,
+                                                     Duration.ZERO ) ) > 0 );
+
         //DIFFERENCES ON EARLIEST LEAD TIME
         assertTrue( "Current window should have an earliest lead time that is earlier.",
                     window.compareTo( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                      Instant.parse( "2010-12-31T11:59:59Z" ),
-                                                     ReferenceTime.VALID_TIME,
                                                      Duration.ofHours( 1 ) ) ) < 0 );
         //DIFFERENCES ON LATEST LEAD TIME
         assertTrue( "Current window should have a latest lead time that is earlier.",
                     window.compareTo( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                      Instant.parse( "2010-12-31T11:59:59Z" ),
-                                                     ReferenceTime.VALID_TIME,
-                                                     Duration.ofHours( 0 ),
+                                                     Duration.ZERO,
                                                      Duration.ofHours( 1 ) ) ) < 0 );
     }
 
@@ -265,36 +234,61 @@ public final class TimeWindowTest
         //Construct a window from 1985-01-01T00:00:00Z to 2010-12-31T11:59:59Z with lead times of 6-120h
         TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                            Instant.parse( "2010-12-31T11:59:59Z" ),
-                                           ReferenceTime.VALID_TIME,
-                                           Duration.ofHours( 0 ) );
+                                           Instant.parse( "1985-01-01T00:00:00Z" ),
+                                           Instant.parse( "2010-12-31T11:59:59Z" ),
+                                           Duration.ZERO,
+                                           Duration.ZERO );
         //Equality of strings for equal objects
         assertTrue( "Unexpected inequality between the string representation of two time windows that are equal.",
                     window.toString().equals( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                              Instant.parse( "2010-12-31T11:59:59Z" ),
-                                                             ReferenceTime.VALID_TIME,
-                                                             Duration.ofHours( 0 ) )
+                                                             Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                             Instant.parse( "2010-12-31T11:59:59Z" ),
+                                                             Duration.ZERO,
+                                                             Duration.ZERO )
                                                         .toString() ) );
 
         //Equality against a benchmark
-        assertTrue( "Unexpected inequality between the string representation of two time windows that are equal.",
-                    window.toString()
-                          .equals( "[1985-01-01T00:00:00Z,2010-12-31T11:59:59Z,VALID TIME,PT0S,PT0S]" ) );
+        assertTrue( window.toString()
+                          .equals( "[1985-01-01T00:00:00Z,2010-12-31T11:59:59Z,"
+                                   + "1985-01-01T00:00:00Z,2010-12-31T11:59:59Z,PT0S,PT0S]" ) );
     }
 
     /**
-     * Constructs a {@link TimeWindow} and tests for an exception when the earliest time is after the latest time.
+     * Constructs a {@link TimeWindow} and tests for an exception when the earliest reference time is 
+     * after the latest reference time.
      */
 
     @Test
-    public void testExceptionOnEarliestTimeAfterLatestTime()
+    public void testExceptionOnEarliestReferenceTimeAfterLatestReferenceTime()
     {
         exception.expect( IllegalArgumentException.class );
-        exception.expectMessage( "Cannot define a time window whose latest time is before its earliest time." );
+        exception.expectMessage( "Cannot define a time window whose latest reference time is before its "
+                + "earliest reference time." );
 
         TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                        Instant.parse( "1984-12-31T11:59:59Z" ),
-                       ReferenceTime.VALID_TIME,
-                       Duration.ofHours( 0 ) );
+                       Duration.ZERO );
+    }
+    
+    /**
+     * Constructs a {@link TimeWindow} and tests for an exception when the earliest valid time is 
+     * after the latest valid time.
+     */
+
+    @Test
+    public void testExceptionOnEarliestValidTimeAfterLatestValidTime()
+    {
+        exception.expect( IllegalArgumentException.class );
+        exception.expectMessage( "Cannot define a time window whose latest valid time is before its "
+                + "earliest valid time." );
+
+        TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                       Instant.parse( "1986-12-31T11:59:59Z" ),
+                       Instant.parse( "1985-01-01T00:00:00Z" ),
+                       Instant.parse( "1984-12-31T11:59:59Z" ),
+                       Duration.ZERO,
+                       Duration.ZERO );
     }
 
     /**
@@ -306,77 +300,147 @@ public final class TimeWindowTest
     public void testExceptionOnEarliestLeadTimeAfterLatestLeadTime()
     {
         exception.expect( IllegalArgumentException.class );
-        exception.expectMessage( "Cannot define a time window whose latest lead time is before its earliest "
-                + "lead time." );
+        exception.expectMessage( "Cannot define a time window whose latest lead duration is before its earliest "
+                                 + "lead duration." );
 
         TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                        Instant.parse( "2010-12-31T11:59:59Z" ),
-                       ReferenceTime.VALID_TIME,
                        Duration.ofHours( 1 ),
-                       Duration.ofHours( 0 ) );
+                       Duration.ZERO );
     }
 
     /**
-     * Constructs a {@link TimeWindow} and tests for an exception when the earliest time is null.
+     * Constructs a {@link TimeWindow} and tests for an exception when the earliest reference time is null.
      */
 
     @Test
-    public void testExceptionWhenEarliestTimeIsNull()
+    public void testExceptionWhenEarliestReferenceTimeIsNull()
     {
         exception.expect( NullPointerException.class );
-        exception.expectMessage( "The earliest time cannot be null." );
+        exception.expectMessage( "The earliest reference time cannot be null." );
 
         TimeWindow.of( null,
-                       Instant.parse( "1984-12-31T11:59:59Z" ),
-                       ReferenceTime.VALID_TIME,
-                       Duration.ofHours( 0 ) );
+                       Instant.MAX,
+                       Duration.ZERO );
     }
 
     /**
-     * Constructs a {@link TimeWindow} and tests for an exception when the latest time is null.
+     * Constructs a {@link TimeWindow} and tests for an exception when the latest reference time is null.
      */
 
     @Test
-    public void testExceptionWhenLatestTimeIsNull()
+    public void testExceptionWhenLatestReferenceTimeIsNull()
     {
         exception.expect( NullPointerException.class );
-        exception.expectMessage( "The latest time cannot be null." );
+        exception.expectMessage( "The latest reference time cannot be null." );
 
-        TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+        TimeWindow.of( Instant.MIN,
                        null,
-                       ReferenceTime.VALID_TIME,
                        Duration.ofHours( 1 ),
-                       Duration.ofHours( 0 ) );
+                       Duration.ZERO );
     }
     
     /**
-     * Tests {@link TimeWindow#hasUnboundedTimes()}.
+     * Constructs a {@link TimeWindow} and tests for an exception when the earliest valid time is null.
      */
 
     @Test
-    public void testHasUnboundedTimes()
+    public void testExceptionWhenEarliestValidTimeIsNull()
+    {
+        exception.expect( NullPointerException.class );
+        exception.expectMessage( "The earliest valid time cannot be null." );
+
+        TimeWindow.of( Instant.MIN,
+                       Instant.MAX,
+                       null,
+                       Instant.MAX,
+                       Duration.ZERO,
+                       Duration.ZERO );
+    }
+
+    /**
+     * Constructs a {@link TimeWindow} and tests for an exception when the latest valid time is null.
+     */
+
+    @Test
+    public void testExceptionWhenLatestValidTimeIsNull()
+    {
+        exception.expect( NullPointerException.class );
+        exception.expectMessage( "The latest valid time cannot be null." );
+
+        TimeWindow.of( Instant.MIN,
+                       Instant.MAX,
+                       Instant.MIN,
+                       null,
+                       Duration.ZERO,
+                       Duration.ZERO );
+    }
+
+    /**
+     * Constructs a {@link TimeWindow} and tests for an exception when the earliest lead duration is null.
+     */
+
+    @Test
+    public void testExceptionWhenEarliestLeadDurationIsNull()
+    {
+        exception.expect( NullPointerException.class );
+        exception.expectMessage( "The earliest lead duration cannot be null." );
+
+        TimeWindow.of( Instant.MIN,
+                       Instant.MAX,
+                       Instant.MIN,
+                       Instant.MAX,
+                       null,
+                       Duration.ZERO );
+    }
+
+    /**
+     * Constructs a {@link TimeWindow} and tests for an exception when the latest lead duration is null.
+     */
+
+    @Test
+    public void testExceptionWhenLatestLeadDurationTimeIsNull()
+    {
+        exception.expect( NullPointerException.class );
+        exception.expectMessage( "The latest lead duration cannot be null." );
+
+        TimeWindow.of( Instant.MIN,
+                       Instant.MAX,
+                       Instant.MIN,
+                       Instant.MAX,
+                       Duration.ZERO,
+                       null );
+    }
+    
+    /**
+     * Tests {@link TimeWindow#hasUnboundedReferenceTimes()}.
+     */
+
+    @Test
+    public void testHasUnboundedReferenceTimes()
     {
         TimeWindow bounded = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                             Instant.parse( "2015-12-31T11:59:59Z" ),
-                                            ReferenceTime.VALID_TIME,
-                                            Duration.ofHours( 0 ) );
+                                            Duration.ZERO );
+
+        assertFalse( bounded.hasUnboundedReferenceTimes() );
+
         TimeWindow unbounded = TimeWindow.of( Instant.MIN,
                                               Instant.MAX,
-                                              ReferenceTime.VALID_TIME,
-                                              Duration.ofHours( 0 ) );
+                                              Duration.ZERO );
+        assertTrue( unbounded.hasUnboundedReferenceTimes() );
+
         TimeWindow partlyLow = TimeWindow.of( Instant.MIN,
                                               Instant.parse( "2015-12-31T11:59:59Z" ),
-                                              ReferenceTime.VALID_TIME,
-                                              Duration.ofHours( 0 ) );
+                                              Duration.ZERO );
+
+        assertTrue( partlyLow.hasUnboundedReferenceTimes() );
 
         TimeWindow partlyHigh = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                Instant.MAX,
-                                               ReferenceTime.VALID_TIME,
-                                               Duration.ofHours( 0 ) );
-        assertFalse( "Expected bounded time window.", bounded.hasUnboundedTimes() );
-        assertTrue( "Expected unbounded time window on both bounds.", unbounded.hasUnboundedTimes() );
-        assertTrue( "Expected unbounded time window on the low bound.", partlyLow.hasUnboundedTimes() );
-        assertTrue( "Expected unbounded time window on the high bound.", partlyHigh.hasUnboundedTimes() );
+                                               Duration.ZERO );
+
+        assertTrue( partlyHigh.hasUnboundedReferenceTimes() );
     }
 
     /**
@@ -388,23 +452,47 @@ public final class TimeWindowTest
     {
         TimeWindow first = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                           Instant.parse( "2017-12-31T11:59:59Z" ),
-                                          ReferenceTime.VALID_TIME,
                                           Duration.ofHours( 5 ),
                                           Duration.ofHours( 25 ) );
         TimeWindow second = TimeWindow.of( Instant.parse( "1983-01-01T00:00:00Z" ),
                                            Instant.parse( "2015-12-31T11:59:59Z" ),
-                                           ReferenceTime.VALID_TIME,
                                            Duration.ofHours( -5 ),
                                            Duration.ofHours( 20 ) );
         TimeWindow expected = TimeWindow.of( Instant.parse( "1983-01-01T00:00:00Z" ),
                                              Instant.parse( "2017-12-31T11:59:59Z" ),
-                                             ReferenceTime.VALID_TIME,
                                              Duration.ofHours( -5 ),
                                              Duration.ofHours( 25 ) );
         List<TimeWindow> union = new ArrayList<>();
         union.add( first );
         union.add( second );
-        assertTrue( "Unexpected union of two time windows.", TimeWindow.unionOf( union ).equals( expected ) );
+
+        assertTrue( TimeWindow.unionOf( union ).equals( expected ) );
+
+
+        TimeWindow third = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                          Instant.parse( "2017-12-31T11:59:59Z" ),
+                                          Instant.parse( "1983-01-01T00:00:00Z" ),
+                                          Instant.parse( "2019-12-31T11:59:59Z" ),
+                                          Duration.ofHours( 5 ),
+                                          Duration.ofHours( 21 ) );
+        TimeWindow fourth = TimeWindow.of( Instant.parse( "1983-01-01T00:00:00Z" ),
+                                           Instant.parse( "2015-12-31T11:59:59Z" ),
+                                           Instant.parse( "1982-01-01T00:00:00Z" ),
+                                           Instant.parse( "2017-12-31T11:59:59Z" ),
+                                           Duration.ZERO,
+                                           Duration.ofHours( 20 ) );
+        TimeWindow expectedTwo = TimeWindow.of( Instant.parse( "1983-01-01T00:00:00Z" ),
+                                                Instant.parse( "2017-12-31T11:59:59Z" ),
+                                                Instant.parse( "1982-01-01T00:00:00Z" ),
+                                                Instant.parse( "2019-12-31T11:59:59Z" ),
+                                                Duration.ZERO,
+                                                Duration.ofHours( 21 ) );
+        List<TimeWindow> unionTwo = new ArrayList<>();
+        unionTwo.add( third );
+        unionTwo.add( fourth );
+
+        assertTrue( TimeWindow.unionOf( unionTwo ).equals( expectedTwo ) );
+
     }
 
 }

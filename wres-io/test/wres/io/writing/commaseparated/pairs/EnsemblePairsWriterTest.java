@@ -174,8 +174,9 @@ public final class EnsemblePairsWriterTest
 
         // Assert the expected results
         assertTrue( results.size() == 1 );
-        assertTrue( results.get( 0 ).equals( "FEATURE DESCRIPTION,VALID TIME,"
-                                             + "LEAD DURATION IN SECONDS "
+        assertTrue( results.get( 0 ).equals( "FEATURE DESCRIPTION,"
+                                             + "VALID TIME OF PAIR,"
+                                             + "LEAD DURATION OF PAIR IN SECONDS "
                                              + "[MEAN OVER PAST 3600 SECONDS],"
                                              + "LEFT IN SCOOBIES,"
                                              + "RIGHT IN SCOOBIES" ) );
@@ -207,8 +208,9 @@ public final class EnsemblePairsWriterTest
 
         // Assert the expected results
         assertTrue( results.size() == 4 );
-        assertTrue( results.get( 0 ).equals( "FEATURE DESCRIPTION,VALID TIME,"
-                                             + "LEAD DURATION IN SECONDS,"
+        assertTrue( results.get( 0 ).equals( "FEATURE DESCRIPTION,"
+                                             + "VALID TIME OF PAIR,"
+                                             + "LEAD DURATION OF PAIR IN SECONDS,"
                                              + "LEFT IN SCOOBIES,"
                                              + "RIGHT MEMBER 1 IN SCOOBIES,"
                                              + "RIGHT MEMBER 2 IN SCOOBIES,"
@@ -245,8 +247,9 @@ public final class EnsemblePairsWriterTest
 
         // Assert the expected results
         assertTrue( results.size() == 7 );
-        assertTrue( results.get( 0 ).equals( "FEATURE DESCRIPTION,VALID TIME,"
-                                             + "LEAD DURATION IN SECONDS,"
+        assertTrue( results.get( 0 ).equals( "FEATURE DESCRIPTION,"
+                                             + "VALID TIME OF PAIR,"
+                                             + "LEAD DURATION OF PAIR IN SECONDS,"
                                              + "LEFT IN SCOOBIES,"
                                              + "RIGHT MEMBER 1 IN SCOOBIES,"
                                              + "RIGHT MEMBER 2 IN SCOOBIES,"
@@ -299,7 +302,8 @@ public final class EnsemblePairsWriterTest
         assertTrue( results.get( 1 ).equals( "BANANA,1985-01-01T08:00:00Z,28800,29.0,30.0,31.0,32.0" ) );
         assertTrue( results.get( 2 ).equals( "BANANA,1985-01-01T09:00:00Z,32400,33.0,34.0,35.0,36.0" ) );
         assertTrue( results.get( 3 ).equals( "FEATURE DESCRIPTION,"
-                                             + "VALID TIME,LEAD DURATION IN SECONDS,"
+                                             + "VALID TIME OF PAIR,"
+                                             + "LEAD DURATION OF PAIR IN SECONDS,"
                                              + "LEFT IN SCOOBIES,"
                                              + "RIGHT MEMBER 1 IN SCOOBIES,"
                                              + "RIGHT MEMBER 2 IN SCOOBIES,"
