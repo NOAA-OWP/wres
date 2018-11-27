@@ -13,7 +13,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.generated.Feature;
-import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.sampledata.SampleData;
 import wres.io.concurrency.Executor;
@@ -159,7 +158,7 @@ public class TimeSeriesSampleDataIterator extends SampleDataIterator
             Instant last = Instant.ofEpochSecond(
                     initialTimeSeriesDate.getEpochSecond() + iterationModifier * (windowStep + 1) * 60
             );
-            TimeWindow window = TimeWindow.of( initial, last, ReferenceTime.ISSUE_TIME, minimum, maximum);
+            TimeWindow window = TimeWindow.of( initial, last, minimum, maximum);
             this.addSample(
                     sampleMetadataBuilder.setSampleNumber( windowStep + 1 )
                                          .setTimeWindow( window )

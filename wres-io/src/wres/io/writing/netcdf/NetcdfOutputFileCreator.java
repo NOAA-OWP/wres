@@ -75,7 +75,7 @@ class NetcdfOutputFileCreator
 
                 ArrayInt.D1 duration = new ArrayInt.D1( 1, false );
                 duration.set( 0,
-                              ( int ) window.getLatestLeadTime().toMinutes() );
+                              ( int ) window.getLatestLeadDuration().toMinutes() );
 
                 try
                 {

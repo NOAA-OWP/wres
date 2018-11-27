@@ -17,7 +17,6 @@ import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.SampleMetadata.SampleMetadataBuilder;
 import wres.datamodel.metadata.TimeWindow;
@@ -161,7 +160,6 @@ public final class MetricTestDataFactory
 
         final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                  Instant.parse( "2010-12-31T11:59:59Z" ),
-                                                 ReferenceTime.VALID_TIME,
                                                  Duration.ofHours( 1 ) );
         final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
                                                                .setIdentifier( DatasetIdentifier.of( getLocation( "DRRC2" ),
@@ -209,7 +207,6 @@ public final class MetricTestDataFactory
 
         final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                  Instant.parse( "2010-12-31T11:59:59Z" ),
-                                                 ReferenceTime.VALID_TIME,
                                                  Duration.ofHours( 24 ) );
         final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "MM/DAY" ) )
                                                                .setIdentifier( DatasetIdentifier.of( getLocation( "103.1" ),
@@ -235,7 +232,6 @@ public final class MetricTestDataFactory
         values.add( SingleValuedPair.of( 22.9, 22.8 ) );
         final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                  Instant.parse( "2010-12-31T11:59:59Z" ),
-                                                 ReferenceTime.VALID_TIME,
                                                  Duration.ofHours( 24 ) );
         final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "MM/DAY" ) )
                                                                .setIdentifier( DatasetIdentifier.of( getLocation( "A" ),
@@ -295,7 +291,6 @@ public final class MetricTestDataFactory
 
         final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                  Instant.parse( "2010-12-31T11:59:59Z" ),
-                                                 ReferenceTime.VALID_TIME,
                                                  Duration.ofHours( 24 ) );
         final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
                                                                .setIdentifier( DatasetIdentifier.of( getLocation( "DRRC2" ),
@@ -351,7 +346,6 @@ public final class MetricTestDataFactory
 
         final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                  Instant.parse( "2010-12-31T11:59:59Z" ),
-                                                 ReferenceTime.VALID_TIME,
                                                  Duration.ofHours( 24 ) );
         final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
                                                                .setIdentifier( DatasetIdentifier.of( getLocation( "DRRC2" ),
@@ -404,7 +398,6 @@ public final class MetricTestDataFactory
 
         final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                  Instant.parse( "2010-12-31T11:59:59Z" ),
-                                                 ReferenceTime.VALID_TIME,
                                                  Duration.ofHours( 24 ) );
         final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
                                                                .setIdentifier( DatasetIdentifier.of( getLocation( "DRRC2" ),
@@ -432,7 +425,6 @@ public final class MetricTestDataFactory
 
         final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                  Instant.parse( "2010-12-31T11:59:59Z" ),
-                                                 ReferenceTime.VALID_TIME,
                                                  Duration.ofHours( 24 ) );
         final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "MM/DAY" ) )
                                                                .setIdentifier( DatasetIdentifier.of( getLocation( "DRRC2" ),
@@ -453,7 +445,6 @@ public final class MetricTestDataFactory
         //Construct some ensemble pairs
         final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                  Instant.parse( "2010-12-31T11:59:59Z" ),
-                                                 ReferenceTime.VALID_TIME,
                                                  Duration.ofHours( 24 ) );
         final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "MM/DAY" ) )
                                                                .setIdentifier( DatasetIdentifier.of( getLocation( "DRRC2" ),
@@ -1057,7 +1048,6 @@ public final class MetricTestDataFactory
         // Create some default metadata for the time-series
         final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                  Instant.parse( "1985-01-02T00:00:00Z" ),
-                                                 ReferenceTime.ISSUE_TIME,
                                                  Duration.ofHours( 6 ),
                                                  Duration.ofHours( 18 ) );
         final SampleMetadata metaData = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
@@ -1094,7 +1084,6 @@ public final class MetricTestDataFactory
         // Create some default metadata for the time-series
         final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                  Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                 ReferenceTime.ISSUE_TIME,
                                                  Duration.ofHours( 6 ),
                                                  Duration.ofHours( 18 ) );
         final SampleMetadata metaData = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
@@ -1132,7 +1121,6 @@ public final class MetricTestDataFactory
         // Create some default metadata for the time-series
         final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-02T00:00:00Z" ),
                                                  Instant.parse( "1985-01-02T00:00:00Z" ),
-                                                 ReferenceTime.ISSUE_TIME,
                                                  Duration.ofHours( 6 ),
                                                  Duration.ofHours( 18 ) );
         final SampleMetadata metaData = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
@@ -1202,7 +1190,6 @@ public final class MetricTestDataFactory
         // Create some default metadata for the time-series
         final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-02T00:00:00Z" ),
                                                  Instant.parse( "1985-01-02T00:00:00Z" ),
-                                                 ReferenceTime.ISSUE_TIME,
                                                  Duration.ofHours( 6 ),
                                                  Duration.ofHours( 30 ) );
         final SampleMetadata metaData = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )

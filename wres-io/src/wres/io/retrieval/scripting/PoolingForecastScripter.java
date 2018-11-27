@@ -2,16 +2,10 @@ package wres.io.retrieval.scripting;
 
 import java.io.IOException;
 import java.sql.SQLException;
-import java.time.Instant;
-
-import org.apache.commons.lang3.tuple.Pair;
 
 import wres.config.generated.DataSourceConfig;
-import wres.config.generated.Feature;
 import wres.io.config.ConfigHelper;
 import wres.io.config.OrderedSampleMetadata;
-import wres.io.data.details.ProjectDetails;
-import wres.util.CalculationException;
 import wres.util.TimeHelper;
 
 class PoolingForecastScripter extends Scripter
@@ -85,15 +79,24 @@ class PoolingForecastScripter extends Scripter
 
         String issueQualifier;
 
-        if (this.getSampleMetadata().getEarliestTime().equals( this.getSampleMetadata().getLatestTime() ))
+        if ( this.getSampleMetadata()
+                 .getTimeWindow()
+                 .getEarliestLeadDuration()
+                 .equals( this.getSampleMetadata().getTimeWindow().getLatestLeadDuration() ) )
         {
-            issueQualifier = "TS.initialization_date = '" + this.getSampleMetadata().getEarliestTime() + "'::timestamp without time zone ";
+            issueQualifier =
+                    "TS.initialization_date = '" + this.getSampleMetadata().getTimeWindow().getEarliestLeadDuration()
+                             + "'::timestamp without time zone ";
         }
         else
         {
             // TODO: Change ">=" to ">" when we move to exclusive-inclusive
-            issueQualifier = "TS.initialization_date >= '" + this.getSampleMetadata().getEarliestTime() + "'::timestamp without time zone ";
-            issueQualifier += "AND TS.initialization_date <= '" + this.getSampleMetadata().getLatestTime() + "'::timestamp without time zone";
+            issueQualifier =
+                    "TS.initialization_date >= '" + this.getSampleMetadata().getTimeWindow().getEarliestReferenceTime()
+                             + "'::timestamp without time zone ";
+            issueQualifier += "AND TS.initialization_date <= '"
+                              + this.getSampleMetadata().getTimeWindow().getLatestReferenceTime()
+                              + "'::timestamp without time zone";
         }
         this.addTab().addLine("AND ", issueQualifier);
 
@@ -144,7 +147,7 @@ class PoolingForecastScripter extends Scripter
     private void applyLeadQualifier()
     {
         long earliest = TimeHelper.durationToLead( this.getSampleMetadata().getMinimumLead() );
-        long latest = TimeHelper.durationToLead( this.getSampleMetadata().getLatestLead() );
+        long latest = TimeHelper.durationToLead( this.getSampleMetadata().getTimeWindow().getLatestLeadDuration() );
 
         if (earliest == latest)
         {

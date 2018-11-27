@@ -18,19 +18,16 @@ import java.util.StringJoiner;
 
 import wres.config.ProjectConfigException;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.metadata.ReferenceTime;
-import wres.datamodel.metadata.SampleMetadata;
-import wres.datamodel.metadata.TimeScale;
 import wres.datamodel.metadata.TimeWindow;
 import wres.util.TimeHelper;
 
 /**
- * Helps write files of Comma Separated Values (CSV).
+ * Helps write statistics as Comma Separated Values (CSV).
  *
  * @author jesse
  * @author james.brown@hydrosolved.com
  */
-abstract class CommaSeparatedWriter
+abstract class CommaSeparatedStatisticsWriter
 {
 
     /**
@@ -45,7 +42,6 @@ abstract class CommaSeparatedWriter
 
     static final TimeWindow HEADER_INDEX = TimeWindow.of( Instant.MIN,
                                                           Instant.MIN,
-                                                          ReferenceTime.VALID_TIME,
                                                           Duration.ofSeconds( Long.MIN_VALUE ) );
 
     /**
@@ -176,11 +172,11 @@ abstract class CommaSeparatedWriter
         else
         {
             row = new StringJoiner( "," );
-            row.add( timeWindow.getEarliestTime().toString() );
-            row.add( timeWindow.getLatestTime().toString() );
-            row.add( Long.toString( TimeHelper.durationToLongUnits( timeWindow.getEarliestLeadTime(),
+            row.add( timeWindow.getEarliestReferenceTime().toString() );
+            row.add( timeWindow.getLatestReferenceTime().toString() );
+            row.add( Long.toString( TimeHelper.durationToLongUnits( timeWindow.getEarliestLeadDuration(),
                                                                     durationUnits ) ) );
-            row.add( Long.toString( TimeHelper.durationToLongUnits( timeWindow.getLatestLeadTime(),
+            row.add( Long.toString( TimeHelper.durationToLongUnits( timeWindow.getLatestLeadDuration(),
                                                                     durationUnits ) ) );
             rows.add( RowCompareByLeft.of( timeWindow, row, additionalComparators ) );
         }
@@ -204,77 +200,6 @@ abstract class CommaSeparatedWriter
             }
             row.add( toWrite );
         }
-    }
-
-    /**
-     * Returns default header from the {@link SampleMetadata} to which additional information may be appended.
-     *
-     * @param sampleMetadata the sample metadata
-     * @param durationUnits the duration units for lead times
-     * @return default header information
-     * @throws NullPointerException if either input is null
-     */
-
-    static StringJoiner getDefaultHeaderFromSampleMetadata( SampleMetadata sampleMetadata, ChronoUnit durationUnits )
-    {
-        Objects.requireNonNull( sampleMetadata, "Cannot determine the default CSV header from null metadata." );
-
-        Objects.requireNonNull( durationUnits, "Specify non-null duration units." );
-
-        StringJoiner joiner = new StringJoiner( "," );
-
-        String referenceTime = "TIME";
-        String timeScale = "";
-
-        // Set the reference time string
-        if ( sampleMetadata.hasTimeWindow() )
-        {
-            referenceTime = sampleMetadata.getTimeWindow().getReferenceTime().name();
-            referenceTime = referenceTime.replaceAll( "_", HEADER_DELIMITER );
-        }
-
-        // Set the time scale string
-        if ( sampleMetadata.hasTimeScale() )
-        {
-            TimeScale s = sampleMetadata.getTimeScale();
-
-            timeScale = HEADER_DELIMITER
-                        + "["
-                        + s.getFunction()
-                        + HEADER_DELIMITER
-                        + "OVER"
-                        + HEADER_DELIMITER
-                        + "PAST"
-                        + HEADER_DELIMITER
-                        + TimeHelper.durationToLongUnits( s.getPeriod(),
-                                                          durationUnits )
-                        + HEADER_DELIMITER
-                        + durationUnits.name()
-                        + "]";
-        }
-
-        joiner.add( "EARLIEST" + HEADER_DELIMITER + referenceTime )
-              .add( "LATEST" + HEADER_DELIMITER + referenceTime )
-              .add( "EARLIEST" + HEADER_DELIMITER
-                    + "LEAD"
-                    + HEADER_DELIMITER
-                    + "TIME"
-                    + HEADER_DELIMITER
-                    + "IN"
-                    + HEADER_DELIMITER
-                    + durationUnits.name()
-                    + timeScale )
-              .add( "LATEST" + HEADER_DELIMITER
-                    + "LEAD"
-                    + HEADER_DELIMITER
-                    + "TIME"
-                    + HEADER_DELIMITER
-                    + "IN"
-                    + HEADER_DELIMITER
-                    + durationUnits.name()
-                    + timeScale );
-
-        return joiner;
     }
 
     /**
@@ -442,7 +367,7 @@ abstract class CommaSeparatedWriter
      * @throws NullPointerException if the durationUnits are null
      */
 
-    CommaSeparatedWriter( ProjectConfig projectConfig, ChronoUnit durationUnits, Path outputDirectory )
+    CommaSeparatedStatisticsWriter( ProjectConfig projectConfig, ChronoUnit durationUnits, Path outputDirectory )
     {
         Objects.requireNonNull( projectConfig, "Specify non-null project configuration." );
         Objects.requireNonNull( durationUnits, "Specify non-null duration units." );

@@ -24,7 +24,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.TimeWindow;
@@ -1060,13 +1059,13 @@ public final class SlicerTest
         SampleMetadata metadata = SampleMetadata.of( MeasurementUnit.of() );
 
         TimeWindow windowOne =
-                TimeWindow.of( Instant.MIN, Instant.MAX, ReferenceTime.VALID_TIME, Duration.ofHours( 1 ) );
+                TimeWindow.of( Instant.MIN, Instant.MAX, Duration.ofHours( 1 ) );
 
         TimeWindow windowTwo =
-                TimeWindow.of( Instant.MIN, Instant.MAX, ReferenceTime.VALID_TIME, Duration.ofHours( 2 ) );
+                TimeWindow.of( Instant.MIN, Instant.MAX, Duration.ofHours( 2 ) );
 
         TimeWindow windowThree =
-                TimeWindow.of( Instant.MIN, Instant.MAX, ReferenceTime.VALID_TIME, Duration.ofHours( 3 ) );
+                TimeWindow.of( Instant.MIN, Instant.MAX, Duration.ofHours( 3 ) );
 
         OneOrTwoThresholds thresholdOne =
                 OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 1.0 ),
@@ -1150,13 +1149,13 @@ public final class SlicerTest
         SampleMetadata metadata = SampleMetadata.of( MeasurementUnit.of() );
 
         TimeWindow windowOne =
-                TimeWindow.of( Instant.MIN, Instant.MAX, ReferenceTime.VALID_TIME, Duration.ofHours( 1 ) );
+                TimeWindow.of( Instant.MIN, Instant.MAX, Duration.ofHours( 1 ) );
 
         TimeWindow windowTwo =
-                TimeWindow.of( Instant.MIN, Instant.MAX, ReferenceTime.VALID_TIME, Duration.ofHours( 2 ) );
+                TimeWindow.of( Instant.MIN, Instant.MAX, Duration.ofHours( 2 ) );
 
         TimeWindow windowThree =
-                TimeWindow.of( Instant.MIN, Instant.MAX, ReferenceTime.ISSUE_TIME, Duration.ofHours( 2 ) );
+                TimeWindow.of( Instant.MIN, Instant.MAX, Duration.ofHours( 2 ) );
 
         OneOrTwoThresholds thresholdOne =
                 OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 1.0 ),
@@ -1225,11 +1224,11 @@ public final class SlicerTest
                                  next -> Pair.of( next.getMetadata()
                                                       .getSampleMetadata()
                                                       .getTimeWindow()
-                                                      .getEarliestLeadTime(),
+                                                      .getEarliestLeadDuration(),
                                                   next.getMetadata()
                                                       .getSampleMetadata()
                                                       .getTimeWindow()
-                                                      .getLatestLeadTime() ) );
+                                                      .getLatestLeadDuration() ) );
 
         Set<Pair<Duration, Duration>> expectedOutputFour =
                 new TreeSet<>( Arrays.asList( Pair.of( Duration.ofHours( 1 ), Duration.ofHours( 1 ) ),

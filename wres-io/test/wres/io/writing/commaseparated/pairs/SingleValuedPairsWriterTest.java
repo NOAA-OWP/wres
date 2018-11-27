@@ -28,6 +28,7 @@ import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.SampleMetadata.SampleMetadataBuilder;
 import wres.datamodel.metadata.TimeScale;
 import wres.datamodel.metadata.TimeScale.TimeScaleFunction;
+import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.sampledata.pairs.SingleValuedPair;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs.TimeSeriesOfSingleValuedPairsBuilder;
@@ -170,7 +171,9 @@ public final class SingleValuedPairsWriterTest
 
         // Assert the expected results
         assertTrue( results.size() == 1 );
-        assertTrue( results.get( 0 ).equals( "FEATURE DESCRIPTION,VALID TIME,LEAD DURATION IN SECONDS "
+        assertTrue( results.get( 0 ).equals( "FEATURE DESCRIPTION,"
+                                             + "VALID TIME OF PAIR,"
+                                             + "LEAD DURATION OF PAIR IN SECONDS "
                                              + "[MEAN OVER PAST 3600 SECONDS],"
                                              + "LEFT IN SCOOBIES,RIGHT IN SCOOBIES" ) );
 
@@ -202,12 +205,66 @@ public final class SingleValuedPairsWriterTest
         // Assert the expected results
         assertTrue( results.size() == 4 );
         assertTrue( results.get( 0 ).equals( "FEATURE DESCRIPTION,"
-                                             + "VALID TIME,"
-                                             + "LEAD DURATION IN SECONDS,"
+                                             + "VALID TIME OF PAIR,"
+                                             + "LEAD DURATION OF PAIR IN SECONDS,"
                                              + "LEFT IN SCOOBIES,RIGHT IN SCOOBIES" ) );
         assertTrue( results.get( 1 ).equals( "PLUM,1985-01-01T01:00:00Z,3600,1.001,2.0" ) );
         assertTrue( results.get( 2 ).equals( "PLUM,1985-01-01T02:00:00Z,7200,3.0,4.0" ) );
         assertTrue( results.get( 3 ).equals( "PLUM,1985-01-01T03:00:00Z,10800,5.0,6.0" ) );
+
+        // If all succeeded, remove the file, otherwise leave to help debugging
+        Files.deleteIfExists( pathToFile );
+    }
+
+    /**
+     * Builds a {@link SingleValuedPairsWriter} whose {@link SampleMetadata} includes a {@link TimeWindow}, 
+     * writes some pairs, and checks that the written output matches the expected output.
+     * @throws IOException if the writing or removal of the paired file fails
+     */
+
+    @Test
+    public void testAcceptForOneSetOfPairsWithTimeWindow() throws IOException
+    {
+        // Create the path
+        Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ), PairsWriter.DEFAULT_PAIRS_NAME );
+
+        // Create the writer
+        SingleValuedPairsWriter writer = SingleValuedPairsWriter.of( pathToFile, ChronoUnit.SECONDS );
+
+        // Create the pairs with a time window
+        TimeSeriesOfSingleValuedPairsBuilder tsBuilder = new TimeSeriesOfSingleValuedPairsBuilder();
+        tsBuilder.addTimeSeries( pairs );
+        tsBuilder.setMetadata( SampleMetadata.of( pairs.getMetadata(),
+                                                  TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                                 Instant.parse( "1990-01-01T00:00:00Z" ) ) ) );
+
+
+        // Write the pairs
+        writer.accept( tsBuilder.build() );
+
+        // Read the results
+        List<String> results = Files.readAllLines( pathToFile );
+        
+        // Assert the expected results
+        assertTrue( results.size() == 4 );
+        
+        System.out.println( results.get( 0 ) );
+        
+        assertTrue( results.get( 0 ).equals( "FEATURE DESCRIPTION,"
+                                             + "EARLIEST ISSUE TIME,"
+                                             + "LATEST ISSUE TIME,"
+                                             + "EARLIEST LEAD TIME IN SECONDS,"
+                                             + "LATEST LEAD TIME IN SECONDS,"
+                                             + "VALID TIME OF PAIR,"
+                                             + "LEAD DURATION OF PAIR IN SECONDS,"
+                                             + "LEFT IN SCOOBIES,"
+                                             + "RIGHT IN SCOOBIES" ) );
+        assertTrue( results.get( 1 )
+                           .equals( "PLUM,1985-01-01T00:00:00Z,1990-01-01T00:00:00Z,0,0,1985-01-01T01:00:00Z,3600,1.001,2.0" ) );
+        assertTrue( results.get( 2 )
+                           .equals( "PLUM,1985-01-01T00:00:00Z,1990-01-01T00:00:00Z,0,0,1985-01-01T02:00:00Z,7200,3.0,4.0" ) );
+        assertTrue( results.get( 3 )
+                           .equals( "PLUM,1985-01-01T00:00:00Z,1990-01-01T00:00:00Z,0,0,1985-01-01T03:00:00Z,10800,5.0,6.0" ) );
 
         // If all succeeded, remove the file, otherwise leave to help debugging
         Files.deleteIfExists( pathToFile );
@@ -237,8 +294,9 @@ public final class SingleValuedPairsWriterTest
 
         // Assert the expected results
         assertTrue( results.size() == 7 );
-        assertTrue( results.get( 0 ).equals( "FEATURE DESCRIPTION,VALID TIME,"
-                                             + "LEAD DURATION IN SECONDS,"
+        assertTrue( results.get( 0 ).equals( "FEATURE DESCRIPTION,"
+                                             + "VALID TIME OF PAIR,"
+                                             + "LEAD DURATION OF PAIR IN SECONDS,"
                                              + "LEFT IN SCOOBIES,"
                                              + "RIGHT IN SCOOBIES" ) );
         assertTrue( results.get( 1 ).equals( "PLUM,1985-01-01T01:00:00Z,3600,1.001,2.0" ) );
@@ -289,8 +347,8 @@ public final class SingleValuedPairsWriterTest
         assertTrue( results.get( 1 ).equals( "BANANA,1985-01-01T08:00:00Z,28800,15.0,16.0" ) );
         assertTrue( results.get( 2 ).equals( "BANANA,1985-01-01T09:00:00Z,32400,17.0,18.0" ) );
         assertTrue( results.get( 3 ).equals( "FEATURE DESCRIPTION,"
-                                             + "VALID TIME,"
-                                             + "LEAD DURATION IN SECONDS,"
+                                             + "VALID TIME OF PAIR,"
+                                             + "LEAD DURATION OF PAIR IN SECONDS,"
                                              + "LEFT IN SCOOBIES,"
                                              + "RIGHT IN SCOOBIES" ) );
         assertTrue( results.get( 4 ).equals( "ORANGE,1985-01-01T04:00:00Z,14400,7.0,8.0" ) );

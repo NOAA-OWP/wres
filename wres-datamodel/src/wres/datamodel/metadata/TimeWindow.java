@@ -10,22 +10,23 @@ import java.util.StringJoiner;
  * <p>Metadata that describes the partition of two time lines in which a sample is collated for the purposes of a 
  * statistical calculation. The first timeline is absolute (UTC), and is defined by an earliest time and a latest time 
  * in a specified reference time system. The reference time system is either valid time or forecast issue time. The 
- * second timeline is relative, and comprises an earliest forecast lead time and a latest forecast lead time. A 
+ * second timeline is relative, and comprises an earliest forecast lead duration and a latest forecast lead duration. A 
  * {@link TimeWindow} represents the intersection of these two timelines, i.e. it contains elements that are common to 
  * (the partition of) each timeline.</p> 
  * 
  * <p>In summary, a {@link TimeWindow} comprises the following required elements:</p>
  * 
  * <ol>
- * <li>The earliest time</li>
- * <li>The latest time</li>
- * <li>The reference time system (valid time or issue time)
- * <li>The earliest forecast lead time</li>
- * <li>The latest forecast lead time</li>
+ * <li>The earliest reference time</li>
+ * <li>The latest reference time</li>
+ * <li>The earliest valid time
+ * <li>The latest valid time
+ * <li>The earliest forecast lead duration</li>
+ * <li>The latest forecast lead duration</li>
  * </ol>
  * 
  * <p>When describing a sample that does not comprise forecasts, the reference time should be valid time, and the 
- * forecast lead times should be zero.</p>
+ * forecast lead durations should be zero.</p>
  * 
  * <p>TODO: If a future JDK implements something equivalent to an Interval in joda.time, consider replacing the 
  * earliest time and latest time with an Interval.</p>
@@ -39,22 +40,29 @@ public final class TimeWindow implements Comparable<TimeWindow>
 {
 
     /**
-     * The earliest time associated with the time window.
+     * The earliest reference time associated with the time window.
      */
 
-    private final Instant earliestTime;
+    private final Instant earliestReferenceTime;
 
     /**
-     * The latest time associated with the time window.
+     * The latest reference time associated with the time window.
      */
 
-    private final Instant latestTime;
+    private final Instant latestReferenceTime;
 
     /**
-     * The reference time system for the {@link #earliestTime} and {@link #latestTime}. 
+     * The earliest valid time associated with the time window.
      */
 
-    private final ReferenceTime referenceTime;
+    private final Instant earliestValidTime;
+
+    /**
+     * The latest valid time associated with the time window.
+     */
+
+    private final Instant latestValidTime;
+
 
     /**
      * The earliest forecast lead time associated with the time window in {@link leadUnits} units. If the 
@@ -73,166 +81,246 @@ public final class TimeWindow implements Comparable<TimeWindow>
 
     /**
      * Constructs a {@link TimeWindow} where the {@link #earliestLead} and {@link #latestLead} are both 
-     * zero and the {@link #referenceTime} is {@link ReferenceTime#VALID_TIME}.
+     * {@link Duration#ZERO}, the earliest valid time is {@link Instant#MIN} and the latest valid time is 
+     * {@link Instant#MAX}.
      * 
-     * @param earliestTime the earliest time
-     * @param latestTime the latest time
+     * @param earliestReferenceTime the earliest time
+     * @param latestReferenceTime the latest time
      * @return a time window
-     * @throws IllegalArgumentException if the latestTime is before (i.e. smaller than) the earliestTime
+     * @throws IllegalArgumentException if the latestReferenceTime is before the earliestReferenceTime
      */
 
-    public static TimeWindow of( Instant earliestTime, Instant latestTime )
+    public static TimeWindow of( Instant earliestReferenceTime, Instant latestReferenceTime )
     {
-        return new Builder().setEarliestTime( earliestTime ).setLatestTime( latestTime ).build();
+        return new Builder().setEarliestReferenceTime( earliestReferenceTime )
+                            .setLatestReferenceTime( latestReferenceTime )
+                            .setEarliestValidTime( Instant.MIN )
+                            .setLatestValidTime( Instant.MAX )
+                            .setEarliestLeadDuration( Duration.ZERO )
+                            .setLatestLeadDuration( Duration.ZERO )
+                            .build();
     }
 
     /**
-     * Constructs a {@link TimeWindow} where the {@link #earliestLead} and {@link #latestLead} are both zero.
+     * Constructs a {@link TimeWindow} where the earliest reference time is {@link Instant#MIN}, the latest reference 
+     * time is {@link Instant#MAX}, the earliest valid time is {@link Instant#MIN}, and the latest valid time 
+     * is {@link Instant#MAX}.
      * 
-     * @param earliestTime the earliest time
-     * @param latestTime the latest time
-     * @param referenceTime the reference time for the earliestTime and latestTime
+     * @param earliestLead the earliest lead duration
+     * @param latestLead the latest lead duration
      * @return a time window
-     * @throws IllegalArgumentException if the latestTime is before (i.e. smaller than) the earliestTime
+     * @throws IllegalArgumentException if the latestLead is smaller than the earliestLead
      */
 
-    public static TimeWindow of( Instant earliestTime, Instant latestTime, ReferenceTime referenceTime )
+    public static TimeWindow of( Duration earliestLead,
+                                 Duration latestLead )
     {
-        return new Builder().setEarliestTime( earliestTime )
-                            .setLatestTime( latestTime )
-                            .setReferenceTime( referenceTime )
+        return new Builder().setEarliestReferenceTime( Instant.MIN )
+                            .setLatestReferenceTime( Instant.MAX )
+                            .setEarliestValidTime( Instant.MIN )
+                            .setLatestValidTime( Instant.MAX )
+                            .setEarliestLeadDuration( earliestLead )
+                            .setLatestLeadDuration( latestLead )
+                            .build();
+    }
+
+    /**
+     * Constructs a {@link TimeWindow} where the {@link #earliestLead} and {@link #latestLead} are both 
+     * {@link Duration#ZERO}.
+     * 
+     * @param earliestReferenceTime the earliest reference time
+     * @param latestReferenceTime the latest reference time
+     * @param earliestValidTime the earliest valid time
+     * @param latestValidTime the latest valid time
+     * @return a time window
+     * @throws IllegalArgumentException if the latestReferenceTime is before the earliestReferenceTime 
+     *            or the latestValidTime is before the earliestValidTime
+     */
+
+    public static TimeWindow of( Instant earliestReferenceTime,
+                                 Instant latestReferenceTime,
+                                 Instant earliestValidTime,
+                                 Instant latestValidTime )
+    {
+        return new Builder().setEarliestReferenceTime( earliestReferenceTime )
+                            .setLatestReferenceTime( latestReferenceTime )
+                            .setEarliestValidTime( earliestValidTime )
+                            .setLatestValidTime( latestValidTime )
+                            .setEarliestLeadDuration( Duration.ZERO )
+                            .setLatestLeadDuration( Duration.ZERO )
                             .build();
     }
 
     /**
      * Constructs a {@link TimeWindow} where the {@link #earliestLead} and {@link #latestLead} both 
-     * have the same value.
+     * have the same value, the earliest valid time is {@link Instant#MIN} and the latest valid time is 
+     * {@link Instant#MAX}.
      * 
-     * @param earliestTime the earliest time
-     * @param latestTime the latest time
-     * @param referenceTime the reference time for the earliestTime and latestTime
-     * @param lead the earliest and latest lead time
+     * @param earliestReferenceTime the earliest reference time
+     * @param latestReferenceTime the latest reference time
+     * @param lead the earliest and latest lead duration
      * @return a time window
-     * @throws IllegalArgumentException if the latestTime is before (i.e. smaller than) the earliestTime
+     * @throws IllegalArgumentException if the latestReferenceTime is before the earliestReferenceTime
      */
 
-    public static TimeWindow of( Instant earliestTime, Instant latestTime, ReferenceTime referenceTime, Duration lead )
+    public static TimeWindow of( Instant earliestReferenceTime, Instant latestReferenceTime, Duration lead )
     {
-        return new Builder().setEarliestTime( earliestTime )
-                            .setLatestTime( latestTime )
-                            .setReferenceTime( referenceTime )
-                            .setEarliestLeadTime( lead )
-                            .setLatestLeadTime( lead )
+        return new Builder().setEarliestReferenceTime( earliestReferenceTime )
+                            .setLatestReferenceTime( latestReferenceTime )
+                            .setEarliestValidTime( Instant.MIN )
+                            .setLatestValidTime( Instant.MAX )
+                            .setEarliestLeadDuration( lead )
+                            .setLatestLeadDuration( lead )
+                            .build();
+    }
+
+    /**
+     * Constructs a {@link TimeWindow} where the earliest valid time is {@link Instant#MIN} and the latest valid time 
+     * is {@link Instant#MAX}.
+     * 
+     * @param earliestReferenceTime the earliest reference time
+     * @param latestReferenceTime the latest reference time
+     * @param earliestLead the earliest lead duration
+     * @param latestLead the latest lead duration
+     * @return a time window
+     * @throws IllegalArgumentException if the latestReferenceTime is before the earliestReferenceTime or the 
+     *            latestLead is smaller than the earliestLead
+     */
+
+    public static TimeWindow of( Instant earliestReferenceTime,
+                                 Instant latestReferenceTime,
+                                 Duration earliestLead,
+                                 Duration latestLead )
+    {
+        return new Builder().setEarliestReferenceTime( earliestReferenceTime )
+                            .setLatestReferenceTime( latestReferenceTime )
+                            .setEarliestValidTime( Instant.MIN )
+                            .setLatestValidTime( Instant.MAX )
+                            .setEarliestLeadDuration( earliestLead )
+                            .setLatestLeadDuration( latestLead )
                             .build();
     }
 
     /**
      * Constructs a {@link TimeWindow}.
      * 
-     * @param earliestTime the earliest time
-     * @param latestTime the latest time
-     * @param referenceTime the reference time for the earliestTime and latestTime
-     * @param earliestLead the earliest lead time
-     * @param latestLead the latest lead time
+     * @param earliestReferenceTime the earliest reference time
+     * @param latestReferenceTime the latest reference time
+     * @param earliestValidTime the earliest valid time
+     * @param latestValidTime the latest valid time
+     * @param earliestLead the earliest lead duration
+     * @param latestLead the latest lead duration
      * @return a time window
-     * @throws IllegalArgumentException if the latestTime is before (i.e. smaller than) the earliestTime or the 
-     *            latestLead is before (i.e. smaller than) the earliestLead
+     * @throws IllegalArgumentException if the latestReferenceTime is before the earliestReferenceTime or the 
+     *            latestValidTime is before the earliestValidTime or the latestLead is smaller than the earliestLead
      */
 
-    public static TimeWindow of( Instant earliestTime,
-                                 Instant latestTime,
-                                 ReferenceTime referenceTime,
+    public static TimeWindow of( Instant earliestReferenceTime,
+                                 Instant latestReferenceTime,
+                                 Instant earliestValidTime,
+                                 Instant latestValidTime,
                                  Duration earliestLead,
                                  Duration latestLead )
     {
-        return new Builder().setEarliestTime( earliestTime )
-                            .setLatestTime( latestTime )
-                            .setReferenceTime( referenceTime )
-                            .setEarliestLeadTime( earliestLead )
-                            .setLatestLeadTime( latestLead )
+        return new Builder().setEarliestReferenceTime( earliestReferenceTime )
+                            .setLatestReferenceTime( latestReferenceTime )
+                            .setEarliestValidTime( earliestValidTime )
+                            .setLatestValidTime( latestValidTime )
+                            .setEarliestLeadDuration( earliestLead )
+                            .setLatestLeadDuration( latestLead )
                             .build();
     }
 
     /**
      * Returns a {@link TimeWindow} that represents the union of the inputs, specifically where the
-     * {@link #earliestTime} and {@link #latestTime} and {@link #earliestLead} and {@link #latestLead} are the 
-     * earliest and latest instances, respectively.
+     * {@link #earliestReferenceTime} and {@link #latestReferenceTime} are the earliest and latest instances, 
+     * respectively, and likewise for the {@link #earliestValidTime} and {@link #latestValidTime}, and the 
+     * {@link #earliestLead} and {@link #latestLead}.
      * 
      * @param input the input windows
      * @return the union of the inputs with respect to dates and lead times
      * @throws NullPointerException if the input is null
+     * @throws IllegalArgumentException if the input is empty
      */
 
     public static TimeWindow unionOf( List<TimeWindow> input )
     {
         Objects.requireNonNull( input, "Cannot determine the union of time windows for a null input." );
 
+        if ( input.isEmpty() )
+        {
+            throw new IllegalArgumentException( "Cannot determine the union of time windows for empty input." );
+        }
+
         // Check and set time parameters
-        Instant earliestT = null;
-        Instant latestT = null;
-        Duration earliestL = null;
-        Duration latestL = null;
-        ReferenceTime referenceTime = null;
+        Instant earliestR = input.get( 0 ).earliestReferenceTime;
+        Instant latestR = input.get( 0 ).latestReferenceTime;
+        Instant earliestV = input.get( 0 ).earliestValidTime;
+        Instant latestV = input.get( 0 ).latestValidTime;
+        Duration earliestL = input.get( 0 ).earliestLead;
+        Duration latestL = input.get( 0 ).latestLead;
 
         for ( TimeWindow next : input )
         {
-            // Initialize
-            if ( Objects.isNull( earliestT ) )
+            if ( earliestR.isAfter( next.earliestReferenceTime ) )
             {
-                earliestT = next.earliestTime;
-                latestT = next.latestTime;
-                earliestL = next.earliestLead;
-                latestL = next.latestLead;
-                referenceTime = next.referenceTime;
+                earliestR = next.earliestReferenceTime;
             }
-            else
+            if ( latestR.isBefore( next.latestReferenceTime ) )
             {
-                if ( earliestT.isAfter( next.earliestTime ) )
-                {
-                    earliestT = next.earliestTime;
-                }
-                if ( latestT.isBefore( next.latestTime ) )
-                {
-                    latestT = next.latestTime;
-                }
-                if ( earliestL.compareTo( next.earliestLead ) > 0 )
-                {
-                    earliestL = next.earliestLead;
-                }
-                if ( latestL.compareTo( next.latestLead ) < 0 )
-                {
-                    latestL = next.latestLead;
-                }
+                latestR = next.latestReferenceTime;
+            }
+            if ( earliestL.compareTo( next.earliestLead ) > 0 )
+            {
+                earliestL = next.earliestLead;
+            }
+            if ( latestL.compareTo( next.latestLead ) < 0 )
+            {
+                latestL = next.latestLead;
+            }
+            if ( earliestV.isAfter( next.earliestValidTime ) )
+            {
+                earliestV = next.earliestValidTime;
+            }
+            if ( latestV.isBefore( next.latestValidTime ) )
+            {
+                latestV = next.latestValidTime;
             }
         }
 
-        return TimeWindow.of( earliestT, latestT, referenceTime, earliestL, latestL );
+        return TimeWindow.of( earliestR, latestR, earliestV, latestV, earliestL, latestL );
     }
 
     @Override
     public int compareTo( TimeWindow o )
     {
-        int compare = this.earliestTime.compareTo( o.earliestTime );
+        int compare = this.getEarliestReferenceTime().compareTo( o.getEarliestReferenceTime() );
         if ( compare != 0 )
         {
             return compare;
         }
-        compare = this.latestTime.compareTo( o.latestTime );
+        compare = this.getLatestReferenceTime().compareTo( o.getLatestReferenceTime() );
         if ( compare != 0 )
         {
             return compare;
         }
-        compare = this.referenceTime.compareTo( o.referenceTime );
+        compare = this.getEarliestValidTime().compareTo( o.getEarliestValidTime() );
         if ( compare != 0 )
         {
             return compare;
         }
-        compare = this.earliestLead.compareTo( o.earliestLead );
+        compare = this.getLatestValidTime().compareTo( o.getLatestValidTime() );
         if ( compare != 0 )
         {
             return compare;
         }
-        return this.latestLead.compareTo( o.latestLead );
+        compare = this.getEarliestLeadDuration().compareTo( o.getEarliestLeadDuration() );
+        if ( compare != 0 )
+        {
+            return compare;
+        }
+
+        return this.getLatestLeadDuration().compareTo( o.getLatestLeadDuration() );
     }
 
     @Override
@@ -243,88 +331,118 @@ public final class TimeWindow implements Comparable<TimeWindow>
             return false;
         }
         TimeWindow in = (TimeWindow) o;
-        boolean timesEqual = in.earliestTime.equals( this.earliestTime ) && in.latestTime.equals( this.latestTime )
-                             && in.referenceTime.equals( this.referenceTime );
-        return timesEqual && this.earliestLead.equals( in.earliestLead )
-               && this.latestLead.equals( in.latestLead );
+        boolean timesEqual = in.getEarliestReferenceTime().equals( this.getEarliestReferenceTime() )
+                             && in.getLatestReferenceTime().equals( this.getLatestReferenceTime() )
+                             && in.getEarliestValidTime().equals( this.getEarliestValidTime() )
+                             && in.getLatestValidTime().equals( this.getLatestValidTime() );
+        return timesEqual && in.getEarliestLeadDuration().equals( this.getEarliestLeadDuration() )
+               && in.getLatestLeadDuration().equals( this.getLatestLeadDuration() );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( earliestTime,
-                             latestTime,
-                             referenceTime,
-                             earliestLead,
-                             latestLead );
+        return Objects.hash( this.getEarliestReferenceTime(),
+                             this.getLatestReferenceTime(),
+                             this.getEarliestValidTime(),
+                             this.getLatestValidTime(),
+                             this.getEarliestLeadDuration(),
+                             this.getLatestLeadDuration() );
     }
 
     @Override
     public String toString()
     {
         StringJoiner sj = new StringJoiner( ",", "[", "]" );
-        sj.add( earliestTime.toString() )
-          .add( latestTime.toString() )
-          .add( referenceTime.toString() )
-          .add( earliestLead.toString() )
-          .add( latestLead.toString() );
+        sj.add( this.getEarliestReferenceTime().toString() )
+          .add( this.getLatestReferenceTime().toString() )
+          .add( this.getEarliestValidTime().toString() )
+          .add( this.getLatestValidTime().toString() )
+          .add( this.getEarliestLeadDuration().toString() )
+          .add( this.getLatestLeadDuration().toString() );
         return sj.toString();
     }
 
     /**
-     * Returns the earliest {@link Instant} associated with the time window
+     * Returns the earliest reference time {@link Instant} associated with the time window
      * 
-     * @return the earliest instant
+     * @return the earliest reference time instant
      */
 
-    public Instant getEarliestTime()
+    public Instant getEarliestReferenceTime()
     {
-        return this.earliestTime;
+        return this.earliestReferenceTime;
     }
 
     /**
-     * Returns the latest {@link Instant} associated with the time window
+     * Returns the latest reference time {@link Instant} associated with the time window
      * 
-     * @return the latest instant
+     * @return the latest reference time instant
      */
 
-    public Instant getLatestTime()
+    public Instant getLatestReferenceTime()
     {
-        return this.latestTime;
+        return this.latestReferenceTime;
     }
 
     /**
-     * Returns the mid-point on the UTC timeline between the {@link #earliestTime} and the {@link #latestTime}.
+     * Returns the earliest valid time {@link Instant} associated with the time window
+     * 
+     * @return the earliest valid time instant
+     */
+
+    public Instant getEarliestValidTime()
+    {
+        return this.earliestValidTime;
+    }
+
+    /**
+     * Returns the latest valid time {@link Instant} associated with the time window
+     * 
+     * @return the latest valid time instant
+     */
+
+    public Instant getLatestValidTime()
+    {
+        return this.latestValidTime;
+    }
+
+    /**
+     * Returns the mid-point on the UTC timeline between the {@link #earliestReferenceTime} and the {@link #latestReferenceTime}.
      * 
      * @return the mid-point on the UTC timeline
      */
 
-    public Instant getMidPointBetweenEarliestAndLatestTimes()
+    public Instant getMidPointBetweenEarliestAndLatestReferenceTimes()
     {
-        return this.earliestTime.plus( Duration.between( this.earliestTime, this.latestTime ).dividedBy( 2 ) );
+        return this.getEarliestReferenceTime()
+                   .plus( Duration.between( this.getEarliestReferenceTime(), this.getLatestReferenceTime() )
+                                  .dividedBy( 2 ) );
     }
 
     /**
-     * Returns <code>true</code> if {@link #getEarliestTime()} returns {@link Instant#MIN} or 
-     * {@link #getLatestTime()} returns {@link Instant#MAX}, false otherwise.
+     * Returns <code>true</code> if {@link #getEarliestReferenceTime()} returns {@link Instant#MIN} or 
+     * {@link #getLatestReferenceTime()} returns {@link Instant#MAX}, false otherwise.
      * 
      * @return true if the timeline is unbounded, false otherwise
      */
 
-    public boolean hasUnboundedTimes()
+    public boolean hasUnboundedReferenceTimes()
     {
-        return this.earliestTime.equals( Instant.MIN ) || this.latestTime.equals( Instant.MAX );
+        return Instant.MIN.equals( this.getEarliestReferenceTime() )
+               || Instant.MAX.equals( this.getLatestReferenceTime() );
     }
 
     /**
-     * Returns the reference time system for the {@link earliestTime} and {@link latestTime}.
+     * Returns <code>true</code> if {@link #getEarliestValidTime()} returns {@link Instant#MIN} or 
+     * {@link #getLatestValidTime()} returns {@link Instant#MAX}, false otherwise.
      * 
-     * @return the reference time system
+     * @return true if the timeline is unbounded, false otherwise
      */
 
-    public ReferenceTime getReferenceTime()
+    public boolean hasUnboundedValidTimes()
     {
-        return this.referenceTime;
+        return Instant.MIN.equals( this.getEarliestValidTime() ) || Instant.MAX.equals( this.getLatestValidTime() );
     }
 
     /**
@@ -333,7 +451,7 @@ public final class TimeWindow implements Comparable<TimeWindow>
      * @return the earliest lead time
      */
 
-    public Duration getEarliestLeadTime()
+    public Duration getEarliestLeadDuration()
     {
         return this.earliestLead;
     }
@@ -344,7 +462,7 @@ public final class TimeWindow implements Comparable<TimeWindow>
      * @return the latest lead time
      */
 
-    public Duration getLatestLeadTime()
+    public Duration getLatestLeadDuration()
     {
         return this.latestLead;
     }
@@ -355,23 +473,30 @@ public final class TimeWindow implements Comparable<TimeWindow>
 
     public static class Builder
     {
+
         /**
          * The earliest time associated with the time window.
          */
 
-        private Instant earliestTime;
+        private Instant earliestReferenceTime;
 
         /**
          * The latest time associated with the time window.
          */
 
-        private Instant latestTime;
+        private Instant latestReferenceTime;
 
         /**
-         * The reference time system for the {@link #earliestTime} and {@link #latestTime}. 
+         * The earliest valid time associated with the time window.
          */
 
-        private ReferenceTime referenceTime;
+        private Instant earliestValidTime;
+
+        /**
+         * The latest valid time associated with the time window.
+         */
+
+        private Instant latestValidTime;
 
         /**
          * The earliest forecast lead time.
@@ -386,28 +511,54 @@ public final class TimeWindow implements Comparable<TimeWindow>
         private Duration latestLead;
 
         /**
-         * Sets the earliest time.
+         * Sets the earliest reference time.
          * 
-         * @param earliestTime the earliest time
+         * @param earliestReferenceTime the earliest reference time
          * @return the builder
          */
 
-        public Builder setEarliestTime( Instant earliestTime )
+        public Builder setEarliestReferenceTime( Instant earliestReferenceTime )
         {
-            this.earliestTime = earliestTime;
+            this.earliestReferenceTime = earliestReferenceTime;
             return this;
         }
 
         /**
-         * Sets the latest time.
+         * Sets the latest reference time.
          * 
-         * @param latestTime the latest time
+         * @param latestReferenceTime the latest reference time
          * @return the builder
          */
 
-        public Builder setLatestTime( Instant latestTime )
+        public Builder setLatestReferenceTime( Instant latestReferenceTime )
         {
-            this.latestTime = latestTime;
+            this.latestReferenceTime = latestReferenceTime;
+            return this;
+        }
+
+        /**
+         * Sets the earliest valid time.
+         * 
+         * @param earliestValidTime the earliest valid time
+         * @return the builder
+         */
+
+        public Builder setEarliestValidTime( Instant earliestValidTime )
+        {
+            this.earliestValidTime = earliestValidTime;
+            return this;
+        }
+
+        /**
+         * Sets the latest valid time.
+         * 
+         * @param latestValidTime the latest valid time
+         * @return the builder
+         */
+
+        public Builder setLatestValidTime( Instant latestValidTime )
+        {
+            this.latestValidTime = latestValidTime;
             return this;
         }
 
@@ -418,7 +569,7 @@ public final class TimeWindow implements Comparable<TimeWindow>
          * @return the builder
          */
 
-        public Builder setEarliestLeadTime( Duration earliestLead )
+        public Builder setEarliestLeadDuration( Duration earliestLead )
         {
             this.earliestLead = earliestLead;
             return this;
@@ -431,22 +582,9 @@ public final class TimeWindow implements Comparable<TimeWindow>
          * @return the builder
          */
 
-        public Builder setLatestLeadTime( Duration latestLead )
+        public Builder setLatestLeadDuration( Duration latestLead )
         {
             this.latestLead = latestLead;
-            return this;
-        }
-
-        /**
-         * Sets the reference time system.
-         * 
-         * @param referenceTime the reference time system
-         * @return the builder
-         */
-
-        public Builder setReferenceTime( ReferenceTime referenceTime )
-        {
-            this.referenceTime = referenceTime;
             return this;
         }
 
@@ -474,50 +612,41 @@ public final class TimeWindow implements Comparable<TimeWindow>
     private TimeWindow( Builder builder )
     {
         // Set then validate
-        this.earliestTime = builder.earliestTime;
-        this.latestTime = builder.latestTime;
-
-        if ( Objects.isNull( builder.earliestLead ) )
-        {
-            this.earliestLead = Duration.ZERO;
-        }
-        else
-        {
-            this.earliestLead = builder.earliestLead;
-        }
-
-        if ( Objects.isNull( builder.latestLead ) )
-        {
-            this.latestLead = Duration.ZERO;
-        }
-        else
-        {
-            this.latestLead = builder.latestLead;
-        }
-
-        if ( Objects.isNull( builder.referenceTime ) )
-        {
-            this.referenceTime = ReferenceTime.VALID_TIME;
-        }
-        else
-        {
-            this.referenceTime = builder.referenceTime;
-        }
+        this.earliestReferenceTime = builder.earliestReferenceTime;
+        this.latestReferenceTime = builder.latestReferenceTime;
+        this.earliestValidTime = builder.earliestValidTime;
+        this.latestValidTime = builder.latestValidTime;
+        this.earliestLead = builder.earliestLead;
+        this.latestLead = builder.latestLead;
 
         // Validate        
-        Objects.requireNonNull( this.earliestTime, "The earliest time cannot be null." );
+        Objects.requireNonNull( this.earliestReferenceTime, "The earliest reference time cannot be null." );
 
-        Objects.requireNonNull( this.latestTime, "The latest time cannot be null." );
+        Objects.requireNonNull( this.latestReferenceTime, "The latest reference time cannot be null." );
 
-        if ( this.latestTime.isBefore( this.earliestTime ) )
+        Objects.requireNonNull( this.earliestValidTime, "The earliest valid time cannot be null." );
+
+        Objects.requireNonNull( this.latestValidTime, "The latest valid time cannot be null." );
+
+        Objects.requireNonNull( this.earliestLead, "The earliest lead duration cannot be null." );
+
+        Objects.requireNonNull( this.latestLead, "The latest lead duration cannot be null." );
+
+        // Correct time ordering
+        if ( this.latestReferenceTime.isBefore( this.earliestReferenceTime ) )
         {
-            throw new IllegalArgumentException( "Cannot define a time window whose latest time is before its "
-                                                + "earliest time." );
+            throw new IllegalArgumentException( "Cannot define a time window whose latest reference time is "
+                                                + "before its earliest reference time." );
+        }
+        if ( this.latestValidTime.isBefore( this.earliestValidTime ) )
+        {
+            throw new IllegalArgumentException( "Cannot define a time window whose latest valid time is "
+                                                + "before its earliest valid time." );
         }
         if ( this.latestLead.compareTo( this.earliestLead ) < 0 )
         {
-            throw new IllegalArgumentException( "Cannot define a time window whose latest lead time is before its "
-                                                + "earliest lead time." );
+            throw new IllegalArgumentException( "Cannot define a time window whose latest lead duration is "
+                                                + "before its earliest lead duration." );
         }
 
     }

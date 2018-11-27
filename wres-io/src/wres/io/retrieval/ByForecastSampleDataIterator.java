@@ -12,7 +12,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.generated.Feature;
-import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.sampledata.SampleData;
 import wres.io.config.ConfigHelper;
@@ -80,7 +79,6 @@ public class ByForecastSampleDataIterator extends SampleDataIterator
                 TimeWindow window = TimeWindow.of(
                         provider.getInstant( "initialization_date" ),
                         provider.getInstant( "initialization_date" ),
-                        ReferenceTime.ISSUE_TIME,
                         provider.getDuration( "earliest_lead" ),
                         provider.getDuration( "latest_lead" )
                 );

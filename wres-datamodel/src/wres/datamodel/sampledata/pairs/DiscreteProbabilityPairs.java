@@ -140,7 +140,7 @@ public class DiscreteProbabilityPairs extends Pairs<DiscreteProbabilityPair>
      * A builder to build the metric input.
      */
 
-    public static class DiscreteProbabilityPairsBuilder extends BasicPairsBuilder<DiscreteProbabilityPair>
+    public static class DiscreteProbabilityPairsBuilder extends PairsBuilder<DiscreteProbabilityPair>
     {
 
         @Override
