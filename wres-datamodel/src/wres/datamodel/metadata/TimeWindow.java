@@ -88,6 +88,7 @@ public final class TimeWindow implements Comparable<TimeWindow>
      * @param latestReferenceTime the latest time
      * @return a time window
      * @throws IllegalArgumentException if the latestReferenceTime is before the earliestReferenceTime
+     * @throws NullPointerException if any input is null
      */
 
     public static TimeWindow of( Instant earliestReferenceTime, Instant latestReferenceTime )
@@ -110,6 +111,7 @@ public final class TimeWindow implements Comparable<TimeWindow>
      * @param latestLead the latest lead duration
      * @return a time window
      * @throws IllegalArgumentException if the latestLead is smaller than the earliestLead
+     * @throws NullPointerException if any input is null
      */
 
     public static TimeWindow of( Duration earliestLead,
@@ -135,6 +137,7 @@ public final class TimeWindow implements Comparable<TimeWindow>
      * @return a time window
      * @throws IllegalArgumentException if the latestReferenceTime is before the earliestReferenceTime 
      *            or the latestValidTime is before the earliestValidTime
+     * @throws NullPointerException if any input is null
      */
 
     public static TimeWindow of( Instant earliestReferenceTime,
@@ -161,6 +164,7 @@ public final class TimeWindow implements Comparable<TimeWindow>
      * @param lead the earliest and latest lead duration
      * @return a time window
      * @throws IllegalArgumentException if the latestReferenceTime is before the earliestReferenceTime
+     * @throws NullPointerException if any input is null
      */
 
     public static TimeWindow of( Instant earliestReferenceTime, Instant latestReferenceTime, Duration lead )
@@ -185,6 +189,7 @@ public final class TimeWindow implements Comparable<TimeWindow>
      * @return a time window
      * @throws IllegalArgumentException if the latestReferenceTime is before the earliestReferenceTime or the 
      *            latestLead is smaller than the earliestLead
+     * @throws NullPointerException if any input is null
      */
 
     public static TimeWindow of( Instant earliestReferenceTime,
@@ -213,6 +218,7 @@ public final class TimeWindow implements Comparable<TimeWindow>
      * @return a time window
      * @throws IllegalArgumentException if the latestReferenceTime is before the earliestReferenceTime or the 
      *            latestValidTime is before the earliestValidTime or the latestLead is smaller than the earliestLead
+     * @throws NullPointerException if any input is null
      */
 
     public static TimeWindow of( Instant earliestReferenceTime,
@@ -241,6 +247,7 @@ public final class TimeWindow implements Comparable<TimeWindow>
      * @return the union of the inputs with respect to dates and lead times
      * @throws NullPointerException if the input is null
      * @throws IllegalArgumentException if the input is empty
+     * @throws NullPointerException if any input is null
      */
 
     public static TimeWindow unionOf( List<TimeWindow> input )
