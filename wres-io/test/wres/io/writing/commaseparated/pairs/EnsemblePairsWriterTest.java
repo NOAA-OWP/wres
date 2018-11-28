@@ -68,18 +68,21 @@ public final class EnsemblePairsWriterTest
 
         List<Event<EnsemblePair>> listOfPairs = new ArrayList<>();
         Instant basisTime = Instant.parse( "1985-01-01T00:00:00Z" );
-        listOfPairs.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ),
+        listOfPairs.add( Event.of( basisTime,
+                                   Instant.parse( "1985-01-01T01:00:00Z" ),
                                    EnsemblePair.of( 1.001, new double[] { 2, 3, 4 } ) ) );
-        listOfPairs.add( Event.of( Instant.parse( "1985-01-01T02:00:00Z" ),
+        listOfPairs.add( Event.of( basisTime,
+                                   Instant.parse( "1985-01-01T02:00:00Z" ),
                                    EnsemblePair.of( 5, new double[] { 6, 7, 8 } ) ) );
-        listOfPairs.add( Event.of( Instant.parse( "1985-01-01T03:00:00Z" ),
+        listOfPairs.add( Event.of( basisTime,
+                                   Instant.parse( "1985-01-01T03:00:00Z" ),
                                    EnsemblePair.of( 9, new double[] { 10, 11, 12 } ) ) );
 
         SampleMetadata meta =
                 SampleMetadata.of( MeasurementUnit.of( "SCOOBIES" ),
                                    DatasetIdentifier.of( Location.of( "PLUM" ), "RIFLE" ) );
 
-        pairs = (TimeSeriesOfEnsemblePairs) tsBuilder.addTimeSeriesData( basisTime, listOfPairs )
+        pairs = (TimeSeriesOfEnsemblePairs) tsBuilder.addTimeSeries( listOfPairs )
                                                      .setMetadata( meta )
                                                      .build();
 
@@ -87,18 +90,21 @@ public final class EnsemblePairsWriterTest
         TimeSeriesOfEnsemblePairsBuilder tsBuilderTwo = new TimeSeriesOfEnsemblePairsBuilder();
         List<Event<EnsemblePair>> listOfPairsTwo = new ArrayList<>();
         Instant basisTimeTwo = Instant.parse( "1985-01-01T00:00:00Z" );
-        listOfPairsTwo.add( Event.of( Instant.parse( "1985-01-01T04:00:00Z" ),
+        listOfPairsTwo.add( Event.of( basisTimeTwo,
+                                      Instant.parse( "1985-01-01T04:00:00Z" ),
                                       EnsemblePair.of( 13, new double[] { 14, 15, 16 } ) ) );
-        listOfPairsTwo.add( Event.of( Instant.parse( "1985-01-01T05:00:00Z" ),
+        listOfPairsTwo.add( Event.of( basisTimeTwo,
+                                      Instant.parse( "1985-01-01T05:00:00Z" ),
                                       EnsemblePair.of( 17, new double[] { 18, 19, 20 } ) ) );
-        listOfPairsTwo.add( Event.of( Instant.parse( "1985-01-01T06:00:00Z" ),
+        listOfPairsTwo.add( Event.of( basisTimeTwo,
+                                      Instant.parse( "1985-01-01T06:00:00Z" ),
                                       EnsemblePair.of( 21, new double[] { 22, 23, 24 } ) ) );
 
         SampleMetadata metaTwo =
                 SampleMetadata.of( MeasurementUnit.of( "SCOOBIES" ),
                                    DatasetIdentifier.of( Location.of( "ORANGE" ), "PISTOL" ) );
 
-        pairsTwo = (TimeSeriesOfEnsemblePairs) tsBuilderTwo.addTimeSeriesData( basisTimeTwo, listOfPairsTwo )
+        pairsTwo = (TimeSeriesOfEnsemblePairs) tsBuilderTwo.addTimeSeries( listOfPairsTwo )
                                                            .setMetadata( metaTwo )
                                                            .build();
 
@@ -107,11 +113,14 @@ public final class EnsemblePairsWriterTest
         TimeSeriesOfEnsemblePairsBuilder tsBuilderThree = new TimeSeriesOfEnsemblePairsBuilder();
         List<Event<EnsemblePair>> listOfPairsThree = new ArrayList<>();
         Instant basisTimeThree = Instant.parse( "1985-01-01T00:00:00Z" );
-        listOfPairsThree.add( Event.of( Instant.parse( "1985-01-01T07:00:00Z" ),
+        listOfPairsThree.add( Event.of( basisTimeThree,
+                                        Instant.parse( "1985-01-01T07:00:00Z" ),
                                         EnsemblePair.of( 25, new double[] { 26, 27, 28 } ) ) );
-        listOfPairsThree.add( Event.of( Instant.parse( "1985-01-01T08:00:00Z" ),
+        listOfPairsThree.add( Event.of( basisTimeThree,
+                                        Instant.parse( "1985-01-01T08:00:00Z" ),
                                         EnsemblePair.of( 29, new double[] { 30, 31, 32 } ) ) );
-        listOfPairsThree.add( Event.of( Instant.parse( "1985-01-01T09:00:00Z" ),
+        listOfPairsThree.add( Event.of( basisTimeThree,
+                                        Instant.parse( "1985-01-01T09:00:00Z" ),
                                         EnsemblePair.of( 33, new double[] { 34, 35, 36 } ) ) );
 
         SampleMetadata metaThree =
@@ -119,7 +128,7 @@ public final class EnsemblePairsWriterTest
                                    DatasetIdentifier.of( Location.of( "BANANA" ), "GRENADE" ) );
 
         pairsThree =
-                (TimeSeriesOfEnsemblePairs) tsBuilderThree.addTimeSeriesData( basisTimeThree, listOfPairsThree )
+                (TimeSeriesOfEnsemblePairs) tsBuilderThree.addTimeSeries( listOfPairsThree )
                                                           .setMetadata( metaThree )
                                                           .build();
 
@@ -153,7 +162,7 @@ public final class EnsemblePairsWriterTest
                                            .build();
 
         TimeSeriesOfEnsemblePairs emptyPairs =
-                (TimeSeriesOfEnsemblePairs) tsBuilder.addTimeSeriesData( Instant.now(), Collections.emptyList() )
+                (TimeSeriesOfEnsemblePairs) tsBuilder.addTimeSeries( Collections.emptyList() )
                                                      .setMetadata( meta )
                                                      .build();
 
@@ -165,8 +174,9 @@ public final class EnsemblePairsWriterTest
 
         // Assert the expected results
         assertTrue( results.size() == 1 );
-        assertTrue( results.get( 0 ).equals( "FEATURE DESCRIPTION,VALID TIME,"
-                                             + "LEAD DURATION IN SECONDS "
+        assertTrue( results.get( 0 ).equals( "FEATURE DESCRIPTION,"
+                                             + "VALID TIME OF PAIR,"
+                                             + "LEAD DURATION OF PAIR IN SECONDS "
                                              + "[MEAN OVER PAST 3600 SECONDS],"
                                              + "LEFT IN SCOOBIES,"
                                              + "RIGHT IN SCOOBIES" ) );
@@ -198,8 +208,9 @@ public final class EnsemblePairsWriterTest
 
         // Assert the expected results
         assertTrue( results.size() == 4 );
-        assertTrue( results.get( 0 ).equals( "FEATURE DESCRIPTION,VALID TIME,"
-                                             + "LEAD DURATION IN SECONDS,"
+        assertTrue( results.get( 0 ).equals( "FEATURE DESCRIPTION,"
+                                             + "VALID TIME OF PAIR,"
+                                             + "LEAD DURATION OF PAIR IN SECONDS,"
                                              + "LEFT IN SCOOBIES,"
                                              + "RIGHT MEMBER 1 IN SCOOBIES,"
                                              + "RIGHT MEMBER 2 IN SCOOBIES,"
@@ -236,8 +247,9 @@ public final class EnsemblePairsWriterTest
 
         // Assert the expected results
         assertTrue( results.size() == 7 );
-        assertTrue( results.get( 0 ).equals( "FEATURE DESCRIPTION,VALID TIME,"
-                                             + "LEAD DURATION IN SECONDS,"
+        assertTrue( results.get( 0 ).equals( "FEATURE DESCRIPTION,"
+                                             + "VALID TIME OF PAIR,"
+                                             + "LEAD DURATION OF PAIR IN SECONDS,"
                                              + "LEFT IN SCOOBIES,"
                                              + "RIGHT MEMBER 1 IN SCOOBIES,"
                                              + "RIGHT MEMBER 2 IN SCOOBIES,"
@@ -290,7 +302,8 @@ public final class EnsemblePairsWriterTest
         assertTrue( results.get( 1 ).equals( "BANANA,1985-01-01T08:00:00Z,28800,29.0,30.0,31.0,32.0" ) );
         assertTrue( results.get( 2 ).equals( "BANANA,1985-01-01T09:00:00Z,32400,33.0,34.0,35.0,36.0" ) );
         assertTrue( results.get( 3 ).equals( "FEATURE DESCRIPTION,"
-                                             + "VALID TIME,LEAD DURATION IN SECONDS,"
+                                             + "VALID TIME OF PAIR,"
+                                             + "LEAD DURATION OF PAIR IN SECONDS,"
                                              + "LEFT IN SCOOBIES,"
                                              + "RIGHT MEMBER 1 IN SCOOBIES,"
                                              + "RIGHT MEMBER 2 IN SCOOBIES,"

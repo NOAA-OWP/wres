@@ -9,15 +9,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
-import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import wres.datamodel.Slicer;
 import wres.datamodel.sampledata.SampleDataException;
-import wres.datamodel.time.Event;
-import wres.datamodel.time.TimeSeries;
 
 /**
  * Immutable base class for a time-series.
@@ -29,16 +26,16 @@ public class BasicTimeSeries<T> implements TimeSeries<T>
 {
 
     /**
-     * The raw data.
+     * The raw data, which retains the composition of each individual time-series.
      */
 
-    private final List<Event<List<Event<T>>>> data;
+    private final List<List<Event<T>>> data;
 
     /**
      * Basis times for the data.
      */
 
-    private final List<Instant> basisTimes;
+    private final SortedSet<Instant> basisTimes;
 
     /**
      * Durations associated with the time-series.
@@ -65,15 +62,15 @@ public class BasicTimeSeries<T> implements TimeSeries<T>
     private final Iterable<Event<T>> timeIterator;
 
     /**
-     * Builds a time-series from the input. Each {@link Event} in the outer list represents one basis time (i.e. one
-     * time-series). Each {@link Event} in the inner list represents one valid time.
+     * Builds a time-series from the input. The outer list composes the individual time-series and the inner list 
+     * composes the events associated with each time-series.
      * 
      * @param <T> the type of event
      * @param timeSeries the input time-series data
      * @return a time-series
      */
 
-    public static <T> BasicTimeSeries<T> of( List<Event<List<Event<T>>>> timeSeries )
+    public static <T> BasicTimeSeries<T> of( List<List<Event<T>>> timeSeries )
     {
         return new BasicTimeSeries<>( timeSeries );
     }
@@ -89,14 +86,7 @@ public class BasicTimeSeries<T> implements TimeSeries<T>
          * The raw data.
          */
 
-        private List<Event<List<Event<T>>>> data = new ArrayList<>();
-
-        @Override
-        public BasicTimeSeriesBuilder<T> addTimeSeriesData( List<Event<List<Event<T>>>> timeSeries )
-        {
-            data.addAll( timeSeries );
-            return this;
-        }
+        private List<List<Event<T>>> data = new ArrayList<>();
 
         @Override
         public BasicTimeSeries<T> build()
@@ -104,8 +94,16 @@ public class BasicTimeSeries<T> implements TimeSeries<T>
             return new BasicTimeSeries<>( this );
         }
 
-    }    
-    
+        @Override
+        public TimeSeriesBuilder<T> addTimeSeries( List<Event<T>> timeSeries )
+        {
+            this.data.add( timeSeries );
+
+            return this;
+        }
+
+    }
+
     @Override
     public Iterable<Event<T>> timeIterator()
     {
@@ -125,21 +123,30 @@ public class BasicTimeSeries<T> implements TimeSeries<T>
     }
 
     @Override
-    public List<Instant> getBasisTimes()
+    public SortedSet<Instant> getBasisTimes()
     {
-        return Collections.unmodifiableList( this.basisTimes );
+        return Collections.unmodifiableSortedSet( this.basisTimes );
     }
 
     @Override
     public Instant getEarliestBasisTime()
     {
-        return TimeSeriesHelper.getEarliestBasisTime( this.getBasisTimes() );
+        if ( this.getBasisTimes().isEmpty() )
+        {
+            return Instant.MIN;
+        }
+
+        return this.getBasisTimes().first();
     }
 
     @Override
     public Instant getLatestBasisTime()
     {
-        return TimeSeriesHelper.getLatestBasisTime( this.getBasisTimes() );
+        if ( this.getBasisTimes().isEmpty() )
+        {
+            return Instant.MAX;
+        }
+        return this.getBasisTimes().last();
     }
 
     @Override
@@ -199,18 +206,6 @@ public class BasicTimeSeries<T> implements TimeSeries<T>
     }
 
     /**
-     * Returns the immutable raw data.
-     * 
-     * @return the raw data
-     */
-
-    public List<Event<List<Event<T>>>> getRawData()
-    {
-        // Rendered immutable on construction
-        return this.data;
-    }
-
-    /**
      * Build the time-series.
      * 
      * @param data the raw data
@@ -223,7 +218,7 @@ public class BasicTimeSeries<T> implements TimeSeries<T>
     BasicTimeSeries( final BasicTimeSeriesBuilder<T> builder )
     {
         this( builder.data );
-    }    
+    }
 
     /**
      * Build the time-series internally.
@@ -235,47 +230,74 @@ public class BasicTimeSeries<T> implements TimeSeries<T>
      * @throws SampleDataException if one or more inputs is invalid
      */
 
-    BasicTimeSeries( final List<Event<List<Event<T>>>> data )
+    BasicTimeSeries( final List<List<Event<T>>> data )
     {
+        // Time-series cannot be null
+        if ( Objects.isNull( data ) )
+        {
+            throw new SampleDataException( "The time-series input cannot be null." );
+        }
 
-        // Sets and validates
-        this.data = TimeSeriesHelper.getImmutableTimeSeries( data );
+        // Sets and validates       
+        List<List<Event<T>>> localData = new ArrayList<>();
 
-        // Set the iterators
-        this.basisTimeIterator = BasicTimeSeries.getBasisTimeIterator( data );
+        for ( List<Event<T>> nextList : data )
+        {
+            // Check for null values
+            if ( Objects.isNull( nextList ) )
+            {
+                throw new SampleDataException( "One or more time-series is null." );
+            }
 
-        this.durationIterator = BasicTimeSeries.getDurationIterator( data );
+            List<Event<T>> localList = new ArrayList<>();
+
+            localList.addAll( nextList );
+
+            if ( localList.contains( null ) )
+            {
+                throw new SampleDataException( "One or more time-series has null values." );
+            }
+
+            // Sort in time order
+            Collections.sort( localList );
+
+            localData.add( Collections.unmodifiableList( localList ) );
+        }
+
+        this.data = Collections.unmodifiableList( localData );
 
         // Set the durations
-        this.durations = new TreeSet<>();
-        int eventCount = 0;
-        for ( Event<List<Event<T>>> nextSeries : this.data )
-        {
-            Instant basisTime = nextSeries.getTime();
-            for ( Event<T> nextEvent : nextSeries.getValue() )
-            {
-                eventCount++;
-                this.durations.add( Duration.between( basisTime, nextEvent.getTime() ) );
-            }
-        }
-        // Set the basis times
-        this.basisTimes = this.data.stream().map( Event::getTime ).collect( Collectors.toList() );
+        this.durations = this.data.stream()
+                                  .flatMap( List::stream )
+                                  .map( Event::getDuration )
+                                  .collect( Collectors.toCollection( TreeSet::new ) );
 
-        // Set the time iterator
-        this.timeIterator = BasicTimeSeries.getTimeIterator( this.data, eventCount );
+        // Set the basis times
+        this.basisTimes = this.data.stream()
+                                   .flatMap( List::stream )
+                                   .map( Event::getReferenceTime )
+                                   .collect( Collectors.toCollection( TreeSet::new ) );
+
+        // Set the iterators
+        this.basisTimeIterator = BasicTimeSeries.getBasisTimeIterator( this.data, this.basisTimes );
+
+        this.durationIterator = BasicTimeSeries.getDurationIterator( this.data, this.durations );
+
+        this.timeIterator = BasicTimeSeries.getTimeIterator( this.data );
     }
 
     /**
      * Returns an {@link Iterable} view of the {@link Event}.
      * 
      * @param data the data
-     * @param eventCount the total number of events across all time-series
      * @return an iterable view of the times and values
      */
 
-    private static <T> Iterable<Event<T>> getTimeIterator( final List<Event<List<Event<T>>>> data,
-                                                           final int eventCount )
+    private static <T> Iterable<Event<T>> getTimeIterator( final List<List<Event<T>>> data )
     {
+        // Unpack
+        List<Event<T>> unpacked = data.stream().flatMap( List::stream ).collect( Collectors.toList() );
+
         //Construct an iterable view of the times and values
         class IterableTimeSeries implements Iterable<Event<T>>
         {
@@ -285,32 +307,25 @@ public class BasicTimeSeries<T> implements TimeSeries<T>
                 return new Iterator<Event<T>>()
                 {
                     int returned = 0;
-                    int timeSeriesIndex = 0;
-                    int timeIndex = 0;
 
                     @Override
                     public boolean hasNext()
                     {
-                        return returned < eventCount;
+                        return returned < unpacked.size();
                     }
 
                     @Override
                     public Event<T> next()
                     {
-                        if ( returned >= eventCount )
+                        if ( returned >= unpacked.size() )
                         {
                             throw new NoSuchElementException( "No more events to iterate." );
                         }
-                        Event<List<Event<T>>> nextList = data.get( timeSeriesIndex );
-                        Event<T> returnMe = nextList.getValue().get( timeIndex );
+
+                        Event<T> returnMe = unpacked.get( returned );
+
                         returned++;
-                        timeIndex++;
-                        // Roll over to next atomic time-series
-                        if ( timeIndex == data.get( timeSeriesIndex ).getValue().size() )
-                        {
-                            timeSeriesIndex++;
-                            timeIndex = 0;
-                        }
+
                         return returnMe;
                     }
 
@@ -329,16 +344,32 @@ public class BasicTimeSeries<T> implements TimeSeries<T>
      * Returns an {@link Iterable} view of the atomic time-series by basis time.
      * 
      * @param data the input data to iterate
+     * @param basisTimes the basis times
      * @return an iterable view of the basis times
      */
 
-    private static <T> Iterable<TimeSeries<T>> getBasisTimeIterator( final List<Event<List<Event<T>>>> data )
+    private static <T> Iterable<TimeSeries<T>> getBasisTimeIterator( final List<List<Event<T>>> data,
+                                                                     final SortedSet<Instant> basisTimes )
     {
-        //Construct an iterable view of the basis times
+        // The atomic time-series, one for each basis time in each inner list
+        List<List<Event<T>>> atomic = new ArrayList<>();
+        for ( List<Event<T>> nextSeries : data )
+        {
+            for ( Instant nextTime : basisTimes )
+            {
+                List<Event<T>> series = nextSeries.stream()
+                                                  .filter( event -> event.getReferenceTime().equals( nextTime ) )
+                                                  .collect( Collectors.toList() );
+                if ( !series.isEmpty() )
+                {
+                    atomic.add( series );
+                }
+            }
+        }
+
+        // Construct an iterable view of the basis times
         class IterableTimeSeries implements Iterable<TimeSeries<T>>
         {
-            // Basis times
-            List<Instant> basisTimes = data.stream().map( Event::getTime ).collect( Collectors.toList() );
 
             @Override
             public Iterator<TimeSeries<T>> iterator()
@@ -346,12 +377,11 @@ public class BasicTimeSeries<T> implements TimeSeries<T>
                 return new Iterator<TimeSeries<T>>()
                 {
                     int returned = 0;
-                    Iterator<Instant> iterator = basisTimes.iterator();
 
                     @Override
                     public boolean hasNext()
                     {
-                        return iterator.hasNext();
+                        return returned < atomic.size();
                     }
 
                     @Override
@@ -362,13 +392,11 @@ public class BasicTimeSeries<T> implements TimeSeries<T>
                             throw new NoSuchElementException( "No more basis times to iterate." );
                         }
 
-                        // Iterate
-                        iterator.next();
-
-                        List<Event<List<Event<T>>>> events = Arrays.asList( data.get( returned ) );
+                        BasicTimeSeries<T> returnMe = new BasicTimeSeries<>( Arrays.asList( atomic.get( returned ) ) );
 
                         returned++;
-                        return new BasicTimeSeries<>( events );
+
+                        return returnMe;
                     }
 
                     @Override
@@ -389,19 +417,9 @@ public class BasicTimeSeries<T> implements TimeSeries<T>
      * @return an iterable view of the durations
      */
 
-    private static <T> Iterable<TimeSeries<T>> getDurationIterator( final List<Event<List<Event<T>>>> data )
+    private static <T> Iterable<TimeSeries<T>> getDurationIterator( final List<List<Event<T>>> data,
+                                                                    final SortedSet<Duration> durations )
     {
-        // Determine the durations
-        Set<Duration> durations = new TreeSet<>();
-        for ( Event<List<Event<T>>> nextSeries : data )
-        {
-            Instant basisTime = nextSeries.getTime();
-            for ( Event<T> nextEvent : nextSeries.getValue() )
-            {
-                durations.add( Duration.between( basisTime, nextEvent.getTime() ) );
-            }
-        }
-
         //Construct an iterable view of the basis times
         class IterableTimeSeries implements Iterable<TimeSeries<T>>
         {

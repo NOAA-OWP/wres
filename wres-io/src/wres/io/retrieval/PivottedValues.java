@@ -24,7 +24,7 @@ import wres.util.Collections;
  * <br><br>
  * The groups are generally different ensembles
  */
-class CondensedIngestedValue
+class PivottedValues
 {
     /**
      * The date at which the condensed values will represent
@@ -49,7 +49,7 @@ class CondensedIngestedValue
      * @param lead The lead at which the final set of values are valid
      * @param valueMapping The collection of values that will be condensed
      */
-    CondensedIngestedValue (final Instant validTime, final int lead, final Map<Integer, List<Double>> valueMapping)
+    PivottedValues( final Instant validTime, final int lead, final Map<Integer, List<Double>> valueMapping)
     {
         this.validTime = validTime;
         this.lead = lead;

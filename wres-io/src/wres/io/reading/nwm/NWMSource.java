@@ -18,7 +18,6 @@ import wres.io.data.caching.DataSources;
 import wres.io.data.details.SourceDetails;
 import wres.io.reading.BasicSource;
 import wres.io.reading.IngestResult;
-import wres.io.utilities.Database;
 import wres.system.ProgressMonitor;
 import wres.util.NetCDF;
 
@@ -141,7 +140,6 @@ public class NWMSource extends BasicSource
 			saver.setOnComplete( ProgressMonitor.onThreadCompleteHandler());
 
             saver.run();
-			//Database.ingest(saver);
         }
         else
         {

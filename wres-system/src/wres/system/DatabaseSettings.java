@@ -9,6 +9,7 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Map;
+import java.util.Properties;
 import java.util.TreeMap;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
@@ -31,14 +32,24 @@ final class DatabaseSettings
 	private static final Map<String, String> DRIVER_MAPPING =
 			createDriverMapping();
 
+	private static final Map<String, Map<String, String>> DRIVER_PROPERTIES =
+            createDriverProperties();
+
 	private String url = "localhost";
 	private String username = "wres";
 	private String password;
 	private String port = "5432";
 	private String databaseName = "wres";
 	private String databaseType = "postgresql";
+	private String trustPath;
+	private String trustPassword = "changeit";
 	private int maxPoolSize = 10;
 	private int maxIdleTime = 30;
+
+	private Properties connectionProperties;
+
+	private boolean useSSL = false;
+	private boolean validateSSL = true;
 
 	// The query timeout needs to be in seconds and we're setting the default for 5 hours (arbitrarily large)
 	private int queryTimeout = 60 * 60 * 5;
@@ -54,6 +65,29 @@ final class DatabaseSettings
 		mapping.put( "postgresql", "org.postgresql.Driver" );
 		return mapping;
 	}
+
+	private static Map<String, Map<String, String>> createDriverProperties()
+    {
+        Map<String, Map<String, String>> mapping = new TreeMap<>();
+
+        Map<String, String> postgresqlProperties = new TreeMap<>();
+        postgresqlProperties.put( "ssl", "ssl" );
+        postgresqlProperties.put("validate", "sslfactory");
+        postgresqlProperties.put("nonValidateAnswer", "org.postgresql.ssl.NonValidatingFactory");
+        // If postgresql had a custom "yes" property for validating ssl, that would go here
+
+        mapping.put("postgresql", postgresqlProperties);
+
+        Map<String, String> mysqlProperties = new TreeMap<>();
+        mysqlProperties.put("ssl", "useSSL");
+        mysqlProperties.put("validate", "verifyServerCertificate");
+        mysqlProperties.put("nonValidateAnswer", "false");
+        // If mysql had a custom "yes" property for validating ssl, that would go here
+
+        mapping.put("mysql", mysqlProperties);
+
+        return mapping;
+    }
 
 	/**
 	 * Parses the settings for the database from an XMLReader
@@ -223,6 +257,67 @@ final class DatabaseSettings
         }
     }
 
+    private synchronized Properties getConnectionProperties()
+    {
+        if (this.connectionProperties == null)
+        {
+            connectionProperties = new Properties();
+
+            Map<String, String> driverProperties = DatabaseSettings.DRIVER_PROPERTIES.get( this.getDatabaseType() );
+
+            if ( driverProperties == null )
+            {
+                LOGGER.debug( "No custom properties will be applied to database connections." );
+                return connectionProperties;
+            }
+
+            if ( this.shouldUseSSL() )
+            {
+                if ( driverProperties.containsKey( "ssl" ) )
+                {
+                    String sslName = driverProperties.get( "ssl" );
+                    connectionProperties.setProperty( sslName, String.valueOf( this.useSSL ) );
+
+                    String validateName = driverProperties.getOrDefault( "validate", "" );
+
+                    if ( this.shouldValidateSSL() )
+                    {
+                        if ( !validateName.isEmpty() && driverProperties.containsKey( "validateAnswer" ) )
+                        {
+                            connectionProperties.setProperty( validateName, driverProperties.get( "validateAnswer" ) );
+                        }
+                        else
+                        {
+                            LOGGER.debug( "The system was set to validate SSL, but {} either doesn't "
+                                          + "support validation toggling or there isn't a non-default "
+                                          + "property for its activation.", this.getDatabaseType() );
+                        }
+                    }
+                    else
+                    {
+                        if ( !validateName.isEmpty() && driverProperties.containsKey( "nonValidateAnswer" ) )
+                        {
+                            connectionProperties.setProperty( validateName, driverProperties.get( "nonValidateAnswer" ) );
+                        }
+                        else
+                        {
+                            LOGGER.debug( "The system was set to ignore SSL validation, but {} either doesn't "
+                                          + "support validation toggling or there isn't a non-default "
+                                          + "property for its activation.", this.getDatabaseType() );
+                        }
+                    }
+                }
+                else
+                {
+                    LOGGER.debug( "The system was set to utilize SSL for its database connection, "
+                                  + "but {} either doesn't support it or there isn't a non-default "
+                                  + "property for its activation.", this.getDatabaseType() );
+                }
+            }
+        }
+        return this.connectionProperties;
+    }
+
     Connection getRawConnection(String connectionString) throws SQLException
 	{
 	    if (!Strings.hasValue( connectionString ))
@@ -239,7 +334,10 @@ final class DatabaseSettings
 			throw new SQLException( "The driver that will call the database "
 									+ "could not be found.", e );
 		}
-		return DriverManager.getConnection(connectionString, this.username, this.password);
+
+        Connection conn = DriverManager.getConnection(connectionString, this.username, this.password);
+	    conn.setClientInfo( this.getConnectionProperties() );
+		return conn;
 	}
 
 	ComboPooledDataSource createDatasource()
@@ -247,6 +345,8 @@ final class DatabaseSettings
 		ComboPooledDataSource datasource = new ComboPooledDataSource();
 
 		try {
+
+            datasource.setProperties( this.getConnectionProperties() );
 			datasource.setDriverClass(DRIVER_MAPPING.get(getDatabaseType()));
 			datasource.setJdbcUrl(getConnectionString(this.databaseName));
 			datasource.setUser(username);
@@ -274,6 +374,7 @@ final class DatabaseSettings
 
 		try
 		{
+            highPrioritySource.setProperties( this.getConnectionProperties() );
 			highPrioritySource.setDriverClass(DRIVER_MAPPING.get(getDatabaseType()));
 			highPrioritySource.setJdbcUrl(getConnectionString(this.databaseName));
 			highPrioritySource.setUser(username);
@@ -343,6 +444,46 @@ final class DatabaseSettings
     private String getDatabaseName()
     {
         return this.databaseName;
+    }
+
+    private void setUseSSL(final boolean useSSL)
+    {
+        this.useSSL = useSSL;
+    }
+
+    private boolean shouldUseSSL()
+    {
+        return this.useSSL;
+    }
+
+    private void setValidateSSL(final boolean validateSSL)
+    {
+        this.validateSSL = validateSSL;
+    }
+
+    private boolean shouldValidateSSL()
+    {
+        return this.validateSSL;
+    }
+
+    private void setTrustPath(final String trustPath)
+    {
+        this.trustPath = trustPath;
+    }
+
+    String getTrustPath()
+    {
+        return this.trustPath;
+    }
+
+    private void setTrustPassword(final String trustPassword)
+    {
+        this.trustPassword = trustPassword;
+    }
+
+    String getTrustPassword()
+    {
+        return this.trustPassword;
     }
 
 	/**
@@ -445,6 +586,18 @@ final class DatabaseSettings
                         case "query_timeout":
                             queryTimeout = Integer.parseInt( value );
                             break;
+                        case "use_ssl":
+                            setUseSSL( Boolean.parseBoolean( value ) );
+                            break;
+                        case "validate_ssl":
+                            this.setValidateSSL(Boolean.parseBoolean( value ));
+                            break;
+                        case "trust_path":
+                            this.setTrustPath( value );
+                            break;
+                        case "trust_password":
+                            this.setTrustPassword( value );
+                            break;
                         default:
                             LOGGER.error( "Tag of type: '{}' is not valid for database configuration.",
                                           tagName );
@@ -525,6 +678,30 @@ final class DatabaseSettings
 		{
 			this.url = urlOverride;
 		}
+
+		String useSSLOverride = System.getProperty( "wres.useSSL" );
+		if (useSSLOverride != null)
+        {
+            this.useSSL = Boolean.parseBoolean( useSSLOverride );
+        }
+
+        String validateSSLOverride = System.getProperty( "wres.validateSSL" );
+		if (validateSSLOverride != null)
+        {
+            this.validateSSL = Boolean.parseBoolean( validateSSLOverride );
+        }
+
+        String trustPathOverride = System.getProperty( "wres.trust_path" );
+		if (trustPathOverride != null)
+        {
+            this.setTrustPath( trustPathOverride );
+        }
+
+        String trustPasswordOverride = System.getProperty( "wres.trust_password" );
+		if (trustPasswordOverride != null)
+        {
+            this.setTrustPassword( trustPasswordOverride );
+        }
 
 		String timeoutOverride = System.getProperty( "wres.query_timeout" );
         if (timeoutOverride != null)

@@ -1,14 +1,14 @@
 package wres.datamodel.time;
 
-import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
 import wres.datamodel.sampledata.SampleDataException;
 
 /**
- * <p>A builder for a possibly irregular {@link TimeSeries}.
+ * <p>A builder for {@link TimeSeries}. 
  * 
  * @param <T> the atomic type of data
  * @author james.brown@hydrosolved.com
@@ -16,21 +16,6 @@ import wres.datamodel.sampledata.SampleDataException;
 
 public interface TimeSeriesBuilder<T>
 {
-
-    /**
-     * Adds an atomic time-series to the builder.
-     * 
-     * @param basisTime the basis time for the time-series
-     * @param values the pairs of time-series values, ordered from earliest to latest
-     * @return the builder
-     */
-
-    default TimeSeriesBuilder<T> addTimeSeriesData( Instant basisTime, List<Event<T>> values )
-    {
-        List<Event<List<Event<T>>>> input = new ArrayList<>();
-        input.add( Event.of( basisTime, values ) );
-        return addTimeSeriesData( input );
-    }
 
     /**
      * Adds a time-series to the builder.
@@ -45,26 +30,22 @@ public interface TimeSeriesBuilder<T>
     {
         Objects.requireNonNull( timeSeries, "Specify non-null time-series input." );
 
-        for ( TimeSeries<T> next : timeSeries.basisTimeIterator() )
-        {
-            Instant basisTime = next.getEarliestBasisTime();
-            List<Event<T>> values = new ArrayList<>();
-            next.timeIterator().forEach( values::add );
-            this.addTimeSeriesData( basisTime, values );
-        }
+        List<Event<T>> rawData = new ArrayList<>();
+        timeSeries.timeIterator().forEach( rawData::add );       
+        this.addTimeSeries( Collections.unmodifiableList( rawData ) );
 
         return this;
     }
 
     /**
-     * Adds a list of atomic time-series to the builder, each one stored against its basis time.
+     * Adds a time-series to the builder.
      * 
-     * @param timeSeries the time-series, stored against their basis times
+     * @param timeSeries the list of events
      * @return the builder
+     * @throws NullPointerException if the input is null
      */
 
-    TimeSeriesBuilder<T>
-            addTimeSeriesData( List<Event<List<Event<T>>>> timeSeries );
+    TimeSeriesBuilder<T> addTimeSeries( List<Event<T>> timeSeries );
 
     /**
      * Builds a time-series.

@@ -16,16 +16,14 @@ import java.util.TreeMap;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
-import wres.config.generated.ProjectConfig;
 import wres.config.generated.TimeScaleConfig;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.pairs.EnsemblePair;
 import wres.datamodel.sampledata.pairs.SingleValuedPair;
 import wres.datamodel.sampledata.SampleData;
-import wres.datamodel.metadata.Location;
-import wres.datamodel.metadata.SampleMetadata;
 import wres.io.concurrency.WRESCallable;
 import wres.io.config.ConfigHelper;
+import wres.io.config.OrderedSampleMetadata;
 import wres.io.data.caching.UnitConversions;
 import wres.io.data.details.ProjectDetails;
 import wres.io.writing.pair.SharedWriterManager;
@@ -38,8 +36,6 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
     interface CacheRetriever
             extends ExceptionalTriFunction<Feature, LocalDateTime, LocalDateTime, Collection<Double>, IOException>{}
 
-    private final ProjectDetails projectDetails;
-
     private long lastLead = Long.MIN_VALUE;
 
     private long firstLead = Long.MAX_VALUE;
@@ -50,21 +46,23 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
     private final SharedWriterManager sharedWriterManager;
     private final Path outputDirectoryForPairs;
 
+    private OrderedSampleMetadata sampleMetadata;
+
     /**
      * As of 2018-10-02, pair writing is performed by retrievers. If we change
      * pair writing to occur in another way, the writer manager and output
      * directory can be removed.
-     * @param projectDetails most project detail
+     * @param sampleMetadata Information about the sample data that will be retrieved
      * @param getLeftValues getter of left side data
      * @param sharedWriterManager sink for pairs to write, tracks paths written
      * @param outputDirectoryForPairs the output directory into which to write pairs
      */
-    Retriever( ProjectDetails projectDetails,
+    Retriever( OrderedSampleMetadata sampleMetadata,
                CacheRetriever getLeftValues,
                SharedWriterManager sharedWriterManager,
                Path outputDirectoryForPairs )
     {
-        this.projectDetails = projectDetails;
+        this.sampleMetadata = sampleMetadata;
         this.getLeftValues = getLeftValues;
         this.sharedWriterManager = sharedWriterManager;
         this.outputDirectoryForPairs = outputDirectoryForPairs;
@@ -101,25 +99,13 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
     private VectorOfDoubles climatology;
 
     /**
-     * The feature whose input needs to be created
-     */
-    private Feature feature;
-
-    /**
      * A cache for all measurement unit conversions
      */
     private Map<Integer, UnitConversions.Conversion> conversionMap;
-    private int leadIteration;
 
-    // TODO: Why are we sending Feature objects instead of FeatureDetails objects?
-    public void setFeature(Feature feature)
+    OrderedSampleMetadata getSampleMetadata()
     {
-        this.feature = feature;
-    }
-
-    void setLeadIteration( int leadIteration )
-    {
-        this.leadIteration = leadIteration;
+        return this.sampleMetadata;
     }
 
     void setClimatology(VectorOfDoubles climatology)
@@ -139,7 +125,12 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
 
     protected ProjectDetails getProjectDetails()
     {
-        return this.projectDetails;
+        return this.sampleMetadata.getProjectDetails();
+    }
+
+    protected Feature getFeature()
+    {
+        return this.sampleMetadata.getFeature();
     }
 
     @Deprecated
@@ -164,16 +155,6 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
         this.baselinePairs.add(pair);
     }
 
-    protected Feature getFeature()
-    {
-        return this.feature;
-    }
-
-    int getLeadIteration()
-    {
-        return this.leadIteration;
-    }
-
     long getLastLead()
     {
         return this.lastLead;
@@ -191,7 +172,7 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
 
     protected String getFeatureDescription()
     {
-        return "'" + ConfigHelper.getFeatureDescription(this.getFeature())+  "'";
+        return "'" + ConfigHelper.getFeatureDescription( this.getFeature() ) +  "'";
     }
 
     /**
@@ -211,8 +192,11 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
         if (!this.conversionMap.containsKey( measurementUnitID ))
         {
             this.conversionMap.put(measurementUnitID,
-                                   UnitConversions.getConversion( measurementUnitID,
-                                                                  this.projectDetails.getDesiredMeasurementUnit() ));
+                                   UnitConversions.getConversion(
+                                           measurementUnitID,
+                                           this.getProjectDetails().getDesiredMeasurementUnit()
+                                   )
+            );
         }
 
         return this.conversionMap.get( measurementUnitID );
@@ -244,8 +228,8 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
             convertedMeasurement = Double.NaN;
         }
 
-        if (convertedMeasurement < this.projectDetails.getMinimumValue() ||
-            convertedMeasurement > this.projectDetails.getMaximumValue())
+        if (convertedMeasurement < this.getProjectDetails().getMinimumValue() ||
+            convertedMeasurement > this.getProjectDetails().getMaximumValue())
         {
             convertedMeasurement = Double.NaN;
         }
@@ -255,25 +239,25 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
 
     void addPair(
             final List<ForecastedPair> pairs,
-            final CondensedIngestedValue condensedIngestedValue,
+            final PivottedValues pivottedValues,
             final DataSourceConfig dataSourceConfig
     ) throws RetrievalFailedException
     {
-        if (!condensedIngestedValue.isEmpty())
+        if (!pivottedValues.isEmpty())
         {
-            EnsemblePair pair = this.getPair( condensedIngestedValue );
+            EnsemblePair pair = this.getPair( pivottedValues );
 
             if (pair != null)
             {
-                if (this.projectDetails.getInputName( dataSourceConfig ).equals(ProjectDetails.RIGHT_MEMBER))
+                if (this.getProjectDetails().getInputName( dataSourceConfig ).equals(ProjectDetails.RIGHT_MEMBER))
                 {
-                    this.lastLead = Math.max(this.lastLead, condensedIngestedValue.lead);
-                    this.firstLead = Math.min(this.firstLead, condensedIngestedValue.lead);
+                    this.lastLead = Math.max( this.lastLead, pivottedValues.lead);
+                    this.firstLead = Math.min( this.firstLead, pivottedValues.lead);
                 }
 
                 ForecastedPair packagedPair = new ForecastedPair(
-                        condensedIngestedValue.lead,
-                        condensedIngestedValue.validTime,
+                        pivottedValues.lead,
+                        pivottedValues.validTime,
                         pair
                 );
 
@@ -286,10 +270,10 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
         }
     }
 
-    EnsemblePair getPair(CondensedIngestedValue condensedIngestedValue)
+    EnsemblePair getPair(PivottedValues pivottedValues )
             throws RetrievalFailedException
     {
-        if (condensedIngestedValue.isEmpty())
+        if ( pivottedValues.isEmpty())
         {
             throw new RetrievalFailedException( "No values could be retrieved to pair "
                                        + "with with any possible set of left "
@@ -299,7 +283,7 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
         Double leftAggregation;
         try
         {
-            leftAggregation = this.getLeftAggregation( condensedIngestedValue.validTime );
+            leftAggregation = this.getLeftAggregation( pivottedValues.validTime );
         }
         catch ( CalculationException e )
         {
@@ -320,7 +304,7 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
 
         return EnsemblePair.of(
                 leftAggregation,
-                condensedIngestedValue.getAggregatedValues(
+                pivottedValues.getAggregatedValues(
                         this.shouldScale(),
                         this.getCommonScale().getFunction()
                 )
@@ -387,26 +371,7 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
         return leftAggregation;
     }
 
-    Location getGeospatialIdentifier()
-    {
-        Float longitude = null;
-        Float latitude = null;
-
-        if (this.getFeature().getCoordinate() != null)
-        {
-            longitude = this.getFeature().getCoordinate().getLongitude();
-            latitude = this.getFeature().getCoordinate().getLatitude();
-        }
-
-        return Location.of(
-                this.getFeature().getComid(),
-                this.getFeature().getLocationId(),
-                longitude,
-                latitude,
-                this.getFeature().getGageId() );
-    }
-
-    private final Collection<Double> getControlValues(final LocalDateTime start, final LocalDateTime end)
+    private Collection<Double> getControlValues(final LocalDateTime start, final LocalDateTime end)
             throws RetrievalFailedException
     {
         try
@@ -419,8 +384,8 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
                              TimeHelper.convertDateToString(start) +
                              " and " +
                              TimeHelper.convertDateToString( end ) +
-                             " for iteration " +
-                             this.getLeadIteration() +
+                             " for window " +
+                             this.sampleMetadata +
                              " for " +
                              this.getFeatureDescription() +
                              " could not be found.";
@@ -434,7 +399,7 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
         {
             try
             {
-                shouldThisScale = this.projectDetails.shouldScale();
+                shouldThisScale = this.getProjectDetails().shouldScale();
             }
             catch ( CalculationException e )
             {
@@ -478,7 +443,6 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
                              ForecastedPair pair,
                              DataSourceConfig dataSourceConfig );
 
-    protected abstract SampleMetadata buildMetadata( final ProjectConfig projectConfig, final boolean isBaseline) throws IOException;
     protected abstract SampleData<?> createInput() throws IOException;
     protected abstract String getLoadScript( final DataSourceConfig dataSourceConfig) throws SQLException, IOException;
 

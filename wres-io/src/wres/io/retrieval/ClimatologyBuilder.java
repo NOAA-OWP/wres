@@ -12,12 +12,10 @@ import wres.io.reading.usgs.USGSReader;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
-import wres.io.utilities.ScriptBuilder;
 import wres.util.CalculationException;
 
 import java.io.IOException;
 import java.sql.Connection;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.time.OffsetDateTime;

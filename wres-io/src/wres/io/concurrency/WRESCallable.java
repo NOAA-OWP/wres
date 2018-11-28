@@ -19,8 +19,15 @@ public abstract class WRESCallable<V> extends WRESTask implements Callable<V>
         }
         catch (RuntimeException e)
         {
+            // If a runtime error is thrown, we want to catch it and package it up
+            this.executeOnError( e );
             this.getLogger().error( "Callable task failed", e);
             throw new WRESRunnableException( "Callable task failed", e );
+        }
+        catch(Exception e)
+        {
+            this.executeOnError( e );
+            throw e;
         }
     }
 

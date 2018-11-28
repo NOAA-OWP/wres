@@ -32,6 +32,7 @@ import wres.datamodel.statistics.ScoreStatistic;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
 import wres.io.config.ConfigHelper;
+import wres.io.writing.commaseparated.CommaSeparatedUtilities;
 
 /**
  * Helps write scores comprising {@link ScoreStatistic} to a file of Comma Separated Values (CSV).
@@ -40,7 +41,7 @@ import wres.io.config.ConfigHelper;
  * @author james.brown@hydrosolved.com
  */
 
-public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends CommaSeparatedWriter
+public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends CommaSeparatedStatisticsWriter
         implements Consumer<ListOfStatistics<T>>, Supplier<Set<Path>>
 {
     /**
@@ -185,11 +186,12 @@ public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends C
             // Process each output
             for ( ListOfStatistics<T> nextOutput : allOutputs )
             {
-                StringJoiner headerRow = CommaSeparatedWriter.getDefaultHeaderFromSampleMetadata( nextOutput.getData()
-                                                                                                            .get( 0 )
-                                                                                                            .getMetadata()
-                                                                                                            .getSampleMetadata(),
-                                                                                                  durationUnits );
+                StringJoiner headerRow =
+                        CommaSeparatedUtilities.getTimeWindowHeaderFromSampleMetadata( nextOutput.getData()
+                                                                                                 .get( 0 )
+                                                                                                 .getMetadata()
+                                                                                                 .getSampleMetadata(),
+                                                                                       durationUnits );
                 List<RowCompareByLeft> rows =
                         CommaSeparatedScoreWriter.getRowsForOneScore( m,
                                                                       nextOutput,
@@ -217,7 +219,7 @@ public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends C
                                                                      meta,
                                                                      append );
 
-                CommaSeparatedWriter.writeTabularOutputToFile( rows, outputPath );
+                CommaSeparatedStatisticsWriter.writeTabularOutputToFile( rows, outputPath );
 
                 // If writeTabularOutputToFile did not throw an exception, assume
                 // it succeeded in writing to the file, track outputs now (add must
@@ -316,7 +318,7 @@ public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends C
                                                                               .equals( timeWindow ) );
                 if ( !nextScore.getData().isEmpty() )
                 {
-                    CommaSeparatedWriter.addRowToInput( rows,
+                    CommaSeparatedStatisticsWriter.addRowToInput( rows,
                                                         timeWindow,
                                                         Arrays.asList( nextScore.getData().get( 0 ).getData() ),
                                                         formatter,
@@ -326,7 +328,7 @@ public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends C
                 // Write no data in place: see #48387
                 else
                 {
-                    CommaSeparatedWriter.addRowToInput( rows,
+                    CommaSeparatedStatisticsWriter.addRowToInput( rows,
                                                         timeWindow,
                                                         Arrays.asList( (Object) null ),
                                                         formatter,

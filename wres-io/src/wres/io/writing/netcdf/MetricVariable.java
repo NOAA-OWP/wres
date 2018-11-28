@@ -78,23 +78,23 @@ class MetricVariable
 
         // We only add timing information until we get a lead variable in
         // Use the default duration units 
-        this.earliestLead = (int) TimeHelper.durationToLongUnits( timeWindow.getEarliestLeadTime(),
+        this.earliestLead = (int) TimeHelper.durationToLongUnits( timeWindow.getEarliestLeadDuration(),
                                                                   this.getDurationUnits() );
-        this.latestLead = (int) TimeHelper.durationToLongUnits( timeWindow.getLatestLeadTime(),
+        this.latestLead = (int) TimeHelper.durationToLongUnits( timeWindow.getLatestLeadDuration(),
                                                                 this.getDurationUnits() );
 
-        if (!timeWindow.getEarliestTime().equals( Instant.MIN ))
+        if (!timeWindow.getEarliestReferenceTime().equals( Instant.MIN ))
         {
-            this.earliestTime = timeWindow.getEarliestTime().toString();
+            this.earliestTime = timeWindow.getEarliestReferenceTime().toString();
         }
         else
         {
             this.earliestTime = "ALL";
         }
 
-        if (!timeWindow.getLatestTime().equals( Instant.MAX ))
+        if (!timeWindow.getLatestReferenceTime().equals( Instant.MAX ))
         {
-            this.latestTime = timeWindow.getLatestTime().toString();
+            this.latestTime = timeWindow.getLatestReferenceTime().toString();
         }
         else
         {

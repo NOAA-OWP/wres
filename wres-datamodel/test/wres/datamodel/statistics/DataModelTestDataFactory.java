@@ -20,7 +20,6 @@ import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.TimeWindow;
@@ -74,10 +73,9 @@ public final class DataModelTestDataFactory
                 final double leadTime = ( (Double) d.next().getKey() );
                 final TimeWindow timeWindow = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                              Instant.parse( "2010-12-31T11:59:59Z" ),
-                                                             ReferenceTime.VALID_TIME,
                                                              Duration.ofHours( (int) leadTime ) );
                 final MetricResultByThreshold t =
-                        (MetricResultByThreshold) data.getResult( timeWindow.getLatestLeadTime().toHours() );
+                        (MetricResultByThreshold) data.getResult( timeWindow.getLatestLeadDuration().toHours() );
                 final Iterator<MetricResultKey> e = t.getIterator();
                 //Iterate through the thresholds
                 while ( e.hasNext() )
@@ -143,7 +141,6 @@ public final class DataModelTestDataFactory
         {
             final TimeWindow timeWindow = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                          Instant.parse( "2010-12-31T11:59:59Z" ),
-                                                         ReferenceTime.VALID_TIME,
                                                          Duration.ofHours( leadTime ) );
 
             // Add first result
@@ -246,10 +243,9 @@ public final class DataModelTestDataFactory
                 final double leadTime = (Double) d.next().getKey();
                 final TimeWindow timeWindow = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                              Instant.parse( "2010-12-31T11:59:59Z" ),
-                                                             ReferenceTime.VALID_TIME,
                                                              Duration.ofHours( (int) leadTime ) );
                 final MetricResultByThreshold t =
-                        (MetricResultByThreshold) data.getResult( timeWindow.getLatestLeadTime().toHours() );
+                        (MetricResultByThreshold) data.getResult( timeWindow.getLatestLeadDuration().toHours() );
                 final Iterator<MetricResultKey> e = t.getIterator();
                 //Iterate through the thresholds
                 while ( e.hasNext() )

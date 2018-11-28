@@ -3,7 +3,6 @@ package wres.datamodel.time;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Iterator;
-import java.util.List;
 import java.util.SortedSet;
 
 /**
@@ -67,13 +66,13 @@ public interface TimeSeries<T>
 
     /**
      * Returns the basis times associated with all the atomic time-series in the container. If 
-     * {@link #hasMultipleTimeSeries()} returns <code>false</code>, the returned list will contain a single element, 
+     * {@link #hasMultipleTimeSeries()} returns <code>false</code>, the returned set will contain a single element, 
      * otherwise more than one element.
      * 
      * @return the basis times
      */
 
-    List<Instant> getBasisTimes();
+    SortedSet<Instant> getBasisTimes();
 
     /**
      * Returns the durations associated with all the atomic time-series in the container. The results are ordered 

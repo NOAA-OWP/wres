@@ -28,7 +28,6 @@ import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.TimeWindow;
@@ -40,7 +39,6 @@ import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
-import wres.io.writing.commaseparated.statistics.CommaSeparatedScoreWriter;
 
 /**
  * Tests the writing of score outputs to a file of Comma Separated Values (CSV).
@@ -69,7 +67,7 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTestHelpe
         StatisticsForProject.StatisticsForProjectBuilder outputBuilder =
                 DataFactory.ofMetricOutputForProjectByTimeAndThreshold();
 
-        TimeWindow timeOne = TimeWindow.of( Instant.MIN, Instant.MAX, ReferenceTime.VALID_TIME, Duration.ofHours( 1 ) );
+        TimeWindow timeOne = TimeWindow.of( Instant.MIN, Instant.MAX, Duration.ofHours( 1 ) );
 
         OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
@@ -196,7 +194,6 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTestHelpe
         TimeWindow timeOne =
                 TimeWindow.of( Instant.MIN,
                                Instant.MAX,
-                               ReferenceTime.VALID_TIME,
                                Duration.ofHours( 1 ),
                                Duration.ofHours( 18 ) );
 
@@ -285,7 +282,7 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTestHelpe
         StatisticsForProject.StatisticsForProjectBuilder outputBuilder =
                 DataFactory.ofMetricOutputForProjectByTimeAndThreshold();
 
-        TimeWindow timeOne = TimeWindow.of( Instant.MIN, Instant.MAX, ReferenceTime.VALID_TIME, Duration.ofHours( 1 ) );
+        TimeWindow timeOne = TimeWindow.of( Instant.MIN, Instant.MAX, Duration.ofHours( 1 ) );
 
         OneOrTwoThresholds thresholdOne =
                 OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
@@ -349,7 +346,7 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTestHelpe
         outputBuilder.addDoubleScoreOutput( outputMapByMetricFutureB );
 
         // Add data for another time, and one threshold only
-        TimeWindow timeTwo = TimeWindow.of( Instant.MIN, Instant.MAX, ReferenceTime.VALID_TIME, Duration.ofHours( 2 ) );
+        TimeWindow timeTwo = TimeWindow.of( Instant.MIN, Instant.MAX, Duration.ofHours( 2 ) );
 
         StatisticMetadata fakeMetadataC =
                 StatisticMetadata.of( SampleMetadata.of( MeasurementUnit.of( "CMS" ),
@@ -391,7 +388,7 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTestHelpe
 
         List<String> firstResult = Files.readAllLines( pathToFirstFile );
 
-        assertTrue( firstResult.get( 0 ).equals( "EARLIEST VALID TIME,LATEST VALID TIME,EARLIEST LEAD TIME IN SECONDS,"
+        assertTrue( firstResult.get( 0 ).equals( "EARLIEST ISSUE TIME,LATEST ISSUE TIME,EARLIEST LEAD TIME IN SECONDS,"
                                                  + "LATEST LEAD TIME IN SECONDS,MEAN SQUARE ERROR All data,"
                                                  + "MEAN SQUARE ERROR > 23.0" ) );
         assertTrue( firstResult.get( 1 )

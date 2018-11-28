@@ -324,6 +324,7 @@ class GridManager
             clearScript.execute();
         }
 
+        @SuppressWarnings( "unchecked" )
         private void addCopyTasks() throws IOException, SQLException
         {
             DataBuilder builder = DataBuilder.with(
@@ -353,33 +354,8 @@ class GridManager
                         builder.set( "x_position", xIndex );
                         builder.set( "y_position", yIndex );
 
-                        try
-                        {
-                            builder.set( "x", xCoordinates.read( new int[]{xIndex}, new int[]{1} ));
-                        }
-                        catch ( InvalidRangeException e )
-                        {
-                            throw new IOException(
-                                    "The x value at position " +
-                                    xIndex +
-                                    " could not be loaded from " +
-                                    this.metadata.path
-                            );
-                        }
-
-                        try
-                        {
-                            builder.set( "y", yCoordinates.read( new int[]{yIndex}, new int[]{1} ));
-                        }
-                        catch ( InvalidRangeException e )
-                        {
-                            throw new IOException(
-                                    "The y value at position " +
-                                    yIndex +
-                                    " could not be loaded from " +
-                                    this.metadata.path
-                            );
-                        }
+                        this.addX(builder, xCoordinates, xIndex);
+                        this.addY(builder, yCoordinates, yIndex);
 
                         builder.set( "geographic_coordinate", "(" + point.getLongitude() + "," + point.getLatitude() + ")");
 
@@ -387,7 +363,6 @@ class GridManager
                         {
                             Future copy = builder.build().copy( "wres.NetcdfCoordinate", true );
                             this.copyQueue.add( copy );
-                            //this.copyTasks.add( copy );
                             LOGGER.trace("Job to copy {} coordinates for {} dispatched.",
                                          SystemSettings.getMaximumCopies(),
                                          this.metadata);
@@ -399,13 +374,46 @@ class GridManager
                 {
                     Future copy = builder.build().copy( "wres.NetcdfCoordinate", true );
                     this.copyQueue.add( copy );
-                    //this.copyTasks.add( copy );
                     LOGGER.trace("Job to copy the last coordinates for {} dispatched.", this.metadata);
                 }
             }
             catch ( ExecutionException e )
             {
                 throw new IOException( "Grid data could not be read and saved.", e );
+            }
+        }
+
+        private void addX(final DataBuilder builder, final Variable xCoordinates, final int index) throws IOException
+        {
+            try
+            {
+                builder.set( "x", xCoordinates.read( new int[]{index}, new int[]{1} ));
+            }
+            catch ( InvalidRangeException e )
+            {
+                throw new IOException(
+                        "The x value at position " +
+                        index +
+                        " could not be loaded from " +
+                        this.metadata.path
+                );
+            }
+        }
+
+        private void addY(final DataBuilder builder, final Variable yCoordinates, final int index) throws IOException
+        {
+            try
+            {
+                builder.set( "y", yCoordinates.read( new int[]{index}, new int[]{1} ));
+            }
+            catch ( InvalidRangeException e )
+            {
+                throw new IOException(
+                        "The y value at position " +
+                        index +
+                        " could not be loaded from " +
+                        this.metadata.path
+                );
             }
         }
 
@@ -431,7 +439,6 @@ class GridManager
         }
 
         private final GridMetadata metadata;
-        //private final Queue<Future> copyTasks = new LinkedList<>();
         private final FutureQueue copyQueue = new FutureQueue(  );
     }
 }

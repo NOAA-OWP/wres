@@ -107,13 +107,17 @@ public class EnsemblePairs extends Pairs<EnsemblePair>
                                     SampleMetadata baselineMeta,
                                     VectorOfDoubles climatology )
     {
-        EnsemblePairsBuilder b = new EnsemblePairsBuilder();
-        return (EnsemblePairs) b.setMetadata( mainMeta )
-                                .addData( pairs )
-                                .addDataForBaseline( basePairs )
-                                .setMetadataForBaseline( baselineMeta )
-                                .setClimatology( climatology )
-                                .build();
+        EnsemblePairsBuilder b =
+                new EnsemblePairsBuilder();
+
+        b.addData( pairs ).setMetadata( mainMeta ).setClimatology( climatology );
+
+        if ( Objects.nonNull( basePairs ) )
+        {
+            b.addDataForBaseline( basePairs ).setMetadataForBaseline( baselineMeta );
+        }
+
+        return b.build();
     }
 
     /**
@@ -135,7 +139,7 @@ public class EnsemblePairs extends Pairs<EnsemblePair>
      * A builder to build the metric input.
      */
 
-    public static class EnsemblePairsBuilder extends BasicPairsBuilder<EnsemblePair>
+    public static class EnsemblePairsBuilder extends PairsBuilder<EnsemblePair>
     {
 
         @Override

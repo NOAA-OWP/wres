@@ -28,7 +28,6 @@ import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.TimeWindow;
@@ -40,7 +39,6 @@ import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
-import wres.io.writing.commaseparated.statistics.CommaSeparatedBoxPlotWriter;
 
 /**
  * Tests the writing of box plot outputs to a file of Comma Separated Values (CSV).
@@ -75,7 +73,6 @@ public class CommaSeparatedBoxPlotWriterTest extends CommaSeparatedWriterTestHel
         TimeWindow timeOne =
                 TimeWindow.of( Instant.MIN,
                                Instant.MAX,
-                               ReferenceTime.VALID_TIME,
                                Duration.ofHours( 24 ),
                                Duration.ofHours( 24 ) );
 
