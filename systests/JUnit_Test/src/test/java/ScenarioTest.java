@@ -10,8 +10,8 @@ public class ScenarioTest {
     //public void testScenarios000() {    
     //    testScenario001();
     //    testScenario003();
-        testScenario007();
-        //testScenario008();
+    //    testScenario007();
+    	testScenario008();
         //testScenario009();
         
     }
@@ -32,14 +32,17 @@ public class ScenarioTest {
         //scenario003.unsetScenario003();
     }
    */ 
+/*
     public void testScenario007() {
 	AllScenarios allScenarios = new AllScenarios();
         allScenarios.runTest("scenario007");
     }
-    /*
+*/
     public void testScenario008() {
-        helloTest.prepare4Testing("scenario008");           
+        AllScenarios allScenarios = new AllScenarios();
+        allScenarios.runTest("scenario008");
     }
+/*
     public void testScenario009() {
         helloTest.prepare4Testing("scenario009");     
     }
