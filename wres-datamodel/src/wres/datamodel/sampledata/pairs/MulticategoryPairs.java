@@ -70,13 +70,17 @@ public class MulticategoryPairs extends Pairs<MulticategoryPair>
                                                            SampleMetadata baselineMeta,
                                                            VectorOfDoubles climatology )
     {
-        MulticategoryPairsBuilder b = new MulticategoryPairsBuilder();
-        return (MulticategoryPairs) b.addData( pairs )
-                                     .setMetadata( mainMeta )
-                                     .addDataForBaseline( basePairs )
-                                     .setMetadataForBaseline( baselineMeta )
-                                     .setClimatology( climatology )
-                                     .build();
+        MulticategoryPairsBuilder b =
+                new MulticategoryPairsBuilder();
+
+        b.addData( pairs ).setMetadata( mainMeta ).setClimatology( climatology );
+
+        if ( Objects.nonNull( basePairs ) )
+        {
+            b.addDataForBaseline( basePairs ).setMetadataForBaseline( baselineMeta );
+        }
+
+        return b.build();
     }
 
     /**
@@ -116,7 +120,7 @@ public class MulticategoryPairs extends Pairs<MulticategoryPair>
      * A builder to build the metric input.
      */
 
-    public static class MulticategoryPairsBuilder extends BasicPairsBuilder<MulticategoryPair>
+    public static class MulticategoryPairsBuilder extends PairsBuilder<MulticategoryPair>
     {
         @Override
         public MulticategoryPairs build()

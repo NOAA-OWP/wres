@@ -90,11 +90,6 @@ public final class TimeHelper
         return DATE_TIME_FORMATTER.format( datetime );
     }
 
-    public static <R extends TemporalAccessor> R convertStringToDate(String dateTime, TemporalQuery<R> query)
-    {
-        return convertStringToDate( dateTime ).query( query );
-    }
-
     /**
      * Attempts to convert a string representation of a date to an actual date
      * object
@@ -114,6 +109,7 @@ public final class TimeHelper
         OffsetDateTime date = null;
 
         datetime = datetime.trim();
+        datetime = datetime.replace("'", "");
 
         if (isTimestamp(datetime))
         {
@@ -277,5 +273,67 @@ public final class TimeHelper
                                                     + "' are not supported "
                                                     + "in this context." );
         }
+    }
+
+    public static int durationToLead(Duration duration)
+    {
+        Long units = TimeHelper.durationToLongUnits( duration, TimeHelper.LEAD_RESOLUTION );
+        return units.intValue();
+    }
+
+    /**
+     * Determines whether or not the first duration is longer than the second
+     * @param first The first duration used for comparison
+     * @param second The second duration used for comparison
+     * @return True if the first duration is strictly longer than the second, false otherwise
+     */
+    public static boolean greaterThan(final Duration first, final Duration second)
+    {
+        final long firstMillis = first.toMillis();
+        final long secondMillis = second.toMillis();
+
+        return firstMillis > secondMillis;
+    }
+
+    /**
+     * Determines whether or not the first duration is shorter than the second
+     * @param first The first duration used for comparison
+     * @param second The second duration used for comparison
+     * @return True if the first duration is strictly shorter than the second, false otherwise
+     */
+    public static boolean lessThan(final Duration first, final Duration second)
+    {
+        final long firstMillis = first.toMillis();
+        final long secondMillis = second.toMillis();
+
+        return firstMillis < secondMillis;
+    }
+
+    /**
+     * Determines whether or not the first duration is just as long if not longer than the second
+     * @param first The first duration used for comparison
+     * @param second The second duration used for comparison
+     * @return True if the first duration is just as long if not longer than the second
+     */
+    public static boolean greaterThanOrEqualTo(final Duration first, final Duration second)
+    {
+        final long firstMillis = first.toMillis();
+        final long secondMillis = second.toMillis();
+
+        return firstMillis >= secondMillis;
+    }
+
+    /**
+     * Determines whether or not the first duration is just as short if not shorter than the second
+     * @param first The first duration used for comparison
+     * @param second The second duration used for comparison
+     * @return True if the first duration is just as short if not shorter than the second
+     */
+    public static boolean lessThanOrEqualTo(final Duration first, final Duration second)
+    {
+        final long firstMillis = first.toMillis();
+        final long secondMillis = second.toMillis();
+
+        return firstMillis <= secondMillis;
     }
 }

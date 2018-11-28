@@ -3,20 +3,31 @@ package wres.io.retrieval;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.sql.SQLException;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Collection;
+import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.generated.Feature;
+import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.sampledata.SampleData;
 import wres.io.concurrency.Executor;
 import wres.io.config.ConfigHelper;
+import wres.io.config.OrderedSampleMetadata;
 import wres.io.data.details.ProjectDetails;
+import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
 import wres.io.writing.pair.SharedWriterManager;
 import wres.util.CalculationException;
+import wres.util.TimeHelper;
 
+/**
+ * Iterates of tasks used to evaluate sample data including the entire data set
+ */
 public class TimeSeriesSampleDataIterator extends SampleDataIterator
 {
     private static final Logger LOGGER =
@@ -25,38 +36,141 @@ public class TimeSeriesSampleDataIterator extends SampleDataIterator
     TimeSeriesSampleDataIterator( Feature feature,
                                   ProjectDetails projectDetails,
                                   SharedWriterManager sharedWriterManager,
-                                  Path outputDirectoryForPairs )
+                                  Path outputDirectoryForPairs,
+                                  final Collection<OrderedSampleMetadata> sampleMetadataCollection)
             throws IOException
     {
         super( feature,
                projectDetails,
                sharedWriterManager,
-               outputDirectoryForPairs );
+               outputDirectoryForPairs,
+               sampleMetadataCollection);
     }
 
     @Override
-    int calculateWindowCount() throws CalculationException
-    {
-        // If we're going to end up with 100 MetricInputs due to the size of
-        // the data, we want to ensure that we have a step for each.
-        return this.getFinalPoolingStep();
-    }
-
-    @Override
-    protected Future<SampleData<?>> submitForRetrieval() throws IOException
+    protected Future<SampleData<?>> submitForRetrieval(OrderedSampleMetadata sampleMetadata) throws IOException
     {
         // We override because we want to add these to the more limited
         // Executor to ensure that less memory is used.
 
         // TODO: This is set to return ~1MB at a time. If there is only going
         // to be ~30 database threads, is this saving a lot?
-        return Executor.submit( this.createRetriever() );
+        return Executor.submit( this.createRetriever(sampleMetadata) );
+    }
+
+    @Override
+    Callable<SampleData<?>> createRetriever( OrderedSampleMetadata sampleMetadata) throws IOException
+    {
+        SampleDataRetriever retriever = new SampleDataRetriever(
+                sampleMetadata,
+                this.leftCache::getLeftValues,
+                this.getSharedWriterManager(),
+                this.getOutputPathForPairs()
+        );
+
+        retriever.setClimatology( this.getClimatology() );
+        return retriever;
+    }
+
+    @Override
+    protected void calculateSamples() throws CalculationException
+    {
+        final int finalPoolStep = this.calculateFinalPoolingStep();
+
+        Instant initialTimeSeriesDate;
+
+        try
+        {
+            String initialDate = this.getProjectDetails().getInitialForecastDate( this.getRight(), this.getFeature() );
+            initialTimeSeriesDate = Instant.from(TimeHelper.convertStringToDate(initialDate));
+        }
+        catch ( SQLException e )
+        {
+            throw new CalculationException( "The time of issuance for the first time series could not be calculated.", e );
+        }
+
+        int forecastLag = this.getProjectDetails().getForecastLag( this.getRight(), this.getFeature() );
+        Integer seriesToRetrieve = this.getProjectDetails().getNumberOfSeriesToRetrieve();
+
+        //write a script to get the min and max leads
+        DataScripter script = new DataScripter(  );
+
+        script.addLine("SELECT MIN(TSV.lead), MAX(TSV.lead)");
+        script.addLine("FROM wres.TimeSeries TS");
+        script.addLine("INNER JOIN wres.TimeSeriesValue TSV");
+        script.addTab().addLine("ON TS.timeseries_id = TSV.timeseries_id");
+
+        try
+        {
+            script.addLine("WHERE ",
+                           ConfigHelper.getVariableFeatureClause(
+                                   this.getFeature(),
+                                   this.getProjectDetails().getRightVariableID(),
+                                   "TS"
+                           )
+            );
+        }
+        catch ( SQLException e )
+        {
+            throw new CalculationException( "The ID for the variable to evaluate could not be calculated.", e );
+        }
+
+        script.addTab().addLine("AND TSV.lead >= ", this.getProjectDetails().getMinimumLead());
+        script.addTab().addLine("AND TSV.lead <= ", this.getProjectDetails().getMaximumLead());
+
+        script.addTab().addLine("AND EXISTS (");
+        script.addTab(  2  ).addLine("SELECT 1");
+        script.addTab(  2  ).addLine("FROM wres.ProjectSource PS");
+        script.addTab(  2  ).addLine("INNER JOIN wres.TimeSeriesSource TSS");
+        script.addTab(   3   ).addLine("ON TSS.source_id = PS.source_id");
+        script.addTab(  2  ).addLine("WHERE PS.project_id = ", this.getProjectDetails().getId());
+        script.addTab(   3   ).addLine("AND PS.member = ", ProjectDetails.RIGHT_MEMBER);
+        script.addTab(   3   ).addLine("AND TSS.timeseries_id = TS.timeseries_id");
+        script.addTab().add(");");
+
+        Duration minimum;
+        Duration maximum;
+
+        try ( DataProvider dataProvider = script.getData())
+        {
+            minimum = dataProvider.getDuration( "min" );
+            maximum = dataProvider.getDuration( "max" );
+        }
+        catch ( SQLException e )
+        {
+            throw new CalculationException( "The minimum and maximum lead for time series "
+                                            + "metrics could not be calculated.", e );
+        }
+
+        OrderedSampleMetadata.Builder sampleMetadataBuilder = new OrderedSampleMetadata.Builder();
+        sampleMetadataBuilder.setProject(this.getProjectDetails()).setFeature( this.getFeature() );
+
+        // Each iteration should retrieve "seriesToRetrieve" time series back, with a given
+        // distance of "forecastLag" between each
+        int iterationModifier = forecastLag * seriesToRetrieve;
+
+        for (int windowStep = 0; windowStep < finalPoolStep; ++windowStep)
+        {
+            // These chunks are inclusive-exclusive
+            Instant initial = Instant.ofEpochSecond(
+                    initialTimeSeriesDate.getEpochSecond() + iterationModifier * windowStep * 60
+            );
+            Instant last = Instant.ofEpochSecond(
+                    initialTimeSeriesDate.getEpochSecond() + iterationModifier * (windowStep + 1) * 60
+            );
+            TimeWindow window = TimeWindow.of( initial, last, minimum, maximum);
+            this.addSample(
+                    sampleMetadataBuilder.setSampleNumber( windowStep + 1 )
+                                         .setTimeWindow( window )
+                                         .build()
+            );
+        }
     }
 
     @Override
     protected int calculateFinalPoolingStep() throws CalculationException
     {
-        String minimumDate = null;
+        String minimumDate;
         try
         {
             minimumDate = this.getProjectDetails().getInitialForecastDate( this.getRight(), this.getFeature() );
@@ -76,7 +190,7 @@ public class TimeSeriesSampleDataIterator extends SampleDataIterator
         }
 
         Integer seriesToRetrieve = this.getProjectDetails().getNumberOfSeriesToRetrieve();
-        String variablePosition = null;
+        String variablePosition;
         try
         {
             variablePosition = ConfigHelper.getVariableFeatureClause(
@@ -121,6 +235,8 @@ public class TimeSeriesSampleDataIterator extends SampleDataIterator
         script.addTab(    4    ).addLine("AND TSS.timeseries_id = TS.timeseries_id");
         script.addTab(  2  ).addLine(")");
         script.addLine(") AS TS;");
+
+        LOGGER.debug(script.toString());
 
         Double steps = null;
         try

@@ -342,13 +342,16 @@ public final class ListOfStatisticsTest
                                                                                                    MetricConstants.MAIN ) ) ) );
 
         StringBuilder expected = new StringBuilder();
-        expected.append( "{([-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,VALID TIME,PT0S,"
+        expected.append( "{([-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
+                + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT0S,"
                          + "PT0S],> 1.0,DIMENSIONLESS,DIMENSIONLESS,0,BIAS FRACTION,MAIN): 0.1}" )
                 .append( System.lineSeparator() )
-                .append( "{([-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,VALID TIME,PT0S,"
+                .append( "{([-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
+                        + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT0S,"
                          + "PT0S],> 2.0,DIMENSIONLESS,DIMENSIONLESS,0,BIAS FRACTION,MAIN): 0.2}" )
                 .append( System.lineSeparator() )
-                .append( "{([-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,VALID TIME,PT0S,"
+                .append( "{([-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
+                        + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT0S,"
                          + "PT0S],> 3.0,DIMENSIONLESS,DIMENSIONLESS,0,BIAS FRACTION,MAIN): 0.3}" );
 
         assertEquals( expected.toString(), listOfOutputs.toString() );

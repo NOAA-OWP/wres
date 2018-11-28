@@ -3,127 +3,59 @@ package wres.io.retrieval;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.sql.SQLException;
+import java.time.Duration;
+import java.util.Collection;
 import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.NoSuchElementException;
+import java.util.Queue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 
-import wres.config.ProjectConfigs;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.SampleData;
 import wres.io.config.ConfigHelper;
+import wres.io.config.OrderedSampleMetadata;
 import wres.io.data.details.ProjectDetails;
 import wres.io.retrieval.left.LeftHandCache;
 import wres.io.utilities.Database;
-import wres.io.utilities.NoDataException;
 import wres.io.writing.pair.SharedWriterManager;
 import wres.system.ProgressMonitor;
 import wres.util.CalculationException;
+import wres.util.TimeHelper;
 
 abstract class SampleDataIterator implements Iterator<Future<SampleData<?>>>
 {
     protected static final String NEWLINE = System.lineSeparator();
 
-    // Setting the initial window number to -1 ensures that our windows are 0 indexed
-    /**
-     * The current iteration index over lead times
-     * <br><br>
-     * Setting the initial window number to -1 ensures that our
-     * parameters for SampleData are 0 indexed. If there are going to be 10
-     * SampleData futures (one for each lead (0, 10], created through this
-     * iterator and windowNumber is 5, that means the current parameters
-     * were used for creating the SampleData covering the lead time of 6
-     */
-    private int windowNumber = -1;
-
-    /**
-     * The total number of iterations over chunks of lead times
-     * <br><br>
-     * If we are evaluating leads (0, 24], two leads at a time, the
-     * window count should be 12. That means we'll have 12 chunks of
-     * leads to hop over
-     */
-    private Integer windowCount;
-
     private final Feature feature;
 
     private final ProjectDetails projectDetails;
-    protected LeftHandCache leftCache;
+    LeftHandCache leftCache;
     private VectorOfDoubles climatology;
-    private int poolingStep;
     private Integer finalPoolingStep;
-    private int iterationCount = 0;
     private SharedWriterManager sharedWriterManager;
     private Path outputPathForPairs;
+    private final Queue<OrderedSampleMetadata> sampleMetadata = new LinkedList<>(  );
 
-    protected int getWindowNumber()
+    void addSample( final OrderedSampleMetadata orderedSampleMetadata)
     {
-        return this.windowNumber;
+        this.sampleMetadata.add( orderedSampleMetadata );
+        this.getLogger().debug(
+                "Evaluating {}: {}",
+                ConfigHelper.getFeatureDescription( this.getFeature() ),
+                orderedSampleMetadata
+        );
     }
 
-    private int getPoolingStep()
+    int amountOfSamplesLeft()
     {
-        return this.poolingStep;
-    }
-
-    private void incrementWindowNumber()
-    {
-        // If we're using time series metrics, our primary form of iteration is
-        // through sequence/pooling steps, not window numbers. We want to
-        // ensure that that step always increments. Once it passes the
-        // threshold for the final step, the window number will increment,
-        // indicating that we have moved on to the next window, which is
-        // invalid for metrics using whole time series.
-        if ( ProjectConfigs.hasTimeSeriesMetrics(projectDetails.getProjectConfig()))
-        {
-            this.incrementSequenceStep();
-
-            if (this.getPoolingStep() + 1 > this.finalPoolingStep)
-            {
-                this.windowNumber = 0;
-            }
-        }
-        // No incrementing has been done, so we just want to roll with
-        // window 0, sequence < 1
-        else if ( this.windowNumber < 0)
-        {
-            this.windowNumber = 0;
-        }
-        // If the next sequence is less than the final step, we increment the sequence
-        else if ( this.getPoolingStep() + 1 < this.finalPoolingStep )
-        {
-            this.incrementSequenceStep();
-        }
-        // Otherwise, we move on to the next window
-        else
-        {
-            this.resetPoolingStep();
-            this.windowNumber++;
-        }
-    }
-
-    private void incrementSequenceStep()
-    {
-        poolingStep++;
-    }
-
-    private void resetPoolingStep()
-    {
-        this.poolingStep = 0;
-    }
-
-    private Integer getWindowCount() throws CalculationException
-    {
-        if (this.windowCount == null)
-        {
-            this.windowCount = this.calculateWindowCount();
-        }
-
-        return this.windowCount;
+        return this.sampleMetadata.size();
     }
 
     protected Feature getFeature()
@@ -136,9 +68,9 @@ abstract class SampleDataIterator implements Iterator<Future<SampleData<?>>>
         return this.projectDetails;
     }
 
-    protected VectorOfDoubles getClimatology() throws IOException
+    VectorOfDoubles getClimatology() throws IOException
     {
-        if (this.getProjectDetails().usesProbabilityThresholds() && this.climatology == null)
+        if ( this.getProjectDetails().usesProbabilityThresholds() && this.climatology == null)
         {
             ClimatologyBuilder climatologyBuilder = new ClimatologyBuilder( this.getProjectDetails(),
                                                                             this.getProjectDetails().getLeft(),
@@ -159,7 +91,8 @@ abstract class SampleDataIterator implements Iterator<Future<SampleData<?>>>
     SampleDataIterator( Feature feature,
                         ProjectDetails projectDetails,
                         SharedWriterManager sharedWriterManager,
-                        Path outputPathForPairs )
+                        Path outputPathForPairs,
+                        final Collection<OrderedSampleMetadata> sampleMetadata)
             throws IOException
     {
 
@@ -186,14 +119,69 @@ abstract class SampleDataIterator implements Iterator<Future<SampleData<?>>>
             throw new IOException( "The last pool to be evaluated could not be calculated.", e );
         }
 
+        if (sampleMetadata == null || sampleMetadata.size() == 0)
+        {
+            try
+            {
+                this.calculateSamples();
+            }
+            catch ( CalculationException e )
+            {
+                throw new IOException( "The time windows to evaluate could not be calculated.", e );
+            }
+        }
+        else
+        {
+            this.sampleMetadata.addAll( sampleMetadata );
+        }
+
+        ProgressMonitor.setSteps( (long)this.amountOfSamplesLeft() );
+    }
+
+    /**
+     * Generates a list of TimeWindows that will generate SampleData objects
+     */
+    protected abstract void calculateSamples() throws CalculationException;
+
+    /**
+     * Get the left and right lead bounds for a sample
+     * @param sampleNumber The number of the sample, 0 indexed, that indicates the order of evaluation
+     * @return A pair of durations describing the left and right lead bounds for the sample
+     * @throws CalculationException Thrown if the frequency, period, or offset for lead bounds could not be calculated
+     */
+    Pair<Duration, Duration> getLeadBounds(final int sampleNumber) throws CalculationException
+    {
+        Duration beginning;
+        Duration end;
+
+        long frequency = TimeHelper.unitsToLeadUnits(
+                this.getProjectDetails().getLeadUnit(),
+                this.getProjectDetails().getLeadFrequency()
+        );
+
+        long period = TimeHelper.unitsToLeadUnits(
+                this.getProjectDetails().getLeadUnit(),
+                this.getProjectDetails().getLeadPeriod()
+        );
+
+        Long offset;
         try
         {
-            ProgressMonitor.setSteps( Long.valueOf( this.getWindowCount() ) );
+            offset = this.getProjectDetails().getLeadOffset( this.getFeature() ).longValue();
         }
-        catch ( CalculationException e )
+        catch ( IOException | SQLException e )
         {
-            throw new IOException( "The number of inputs to evaluate could not be calculated.", e );
+            throw new CalculationException( "The offset between observed values and "
+                                            + "forecasted values are needed to determine "
+                                            + "when a lead range should begin, but could "
+                                            + "not be loaded.",
+                                            e );
         }
+
+        beginning = Duration.of(sampleNumber * frequency + offset, TimeHelper.LEAD_RESOLUTION);
+        end = Duration.of(TimeHelper.durationToLead( beginning ) + period, TimeHelper.LEAD_RESOLUTION);
+
+        return Pair.of(beginning, end);
     }
 
     int getFinalPoolingStep() throws CalculationException
@@ -213,86 +201,28 @@ abstract class SampleDataIterator implements Iterator<Future<SampleData<?>>>
     @Override
     public boolean hasNext()
     {
-        boolean next = false;
-
-        boolean generatesTimeSeriesInputs =
-                this.getProjectDetails().getPairingMode() == ProjectDetails.PairingMode.TIME_SERIES;
-
-        boolean isForecast = ConfigHelper.isForecast( this.getRight() );
-
-        try
-        {
-            // If this is a non-time series metric forecast evaluation, we want
-            // to test for iteration through windows based on lead parameters
-            if (isForecast && !generatesTimeSeriesInputs)
-            {
-                next = this.getFinalPoolingStep() > 0 && this.getPoolingStep() + 1 < this.getFinalPoolingStep();
-
-                if (!next)
-                {
-                    int nextWindowNumber = this.getWindowNumber() + 1;
-                    Pair<Integer, Integer> range = this.getProjectDetails().getLeadRange( this.getFeature(), nextWindowNumber );
-
-                    int lastLead = this.getProjectDetails().getLastLead( this.getFeature() );
-
-                    // TODO: Remove "range.getRight() <= lastLead" to make sure lead time windows aren't forced within existing lead ranges
-                    next = range.getLeft() < lastLead &&
-                           range.getRight() >= this.getProjectDetails().getMinimumLead() &&
-                           range.getRight() <= lastLead;
-
-                    if (!next)
-                    {
-                        this.getLogger().debug( "There is nothing left to iterate over." );
-                    }
-                }
-            }
-            else
-            {
-                next = this.getWindowNumber() == -1;
-            }
-
-            if (!next && this.iterationCount == 0)
-            {
-                String message = "There was not enough data to evaluate feature: " 
-                        + ConfigHelper.getFeatureDescription( this.getFeature() );
-
-                // Flag this to the caller as a NoDataException 
-                throw new IterationFailedException( message, new NoDataException( message ) );
-            }
-        }
-        catch ( CalculationException e )
-        {
-            throw new IterationFailedException( "The data provided could not be "
-                                                + "used to calculate if another "
-                                                + "object is present for "
-                                                + "iteration.", e );
-        }
-
-        if (!next)
-        {
-            this.getLogger().debug( "We are done iterating." );
-        }
-
-        return next;
+        return !this.sampleMetadata.isEmpty();
     }
 
     @Override
     public Future<SampleData<?>> next()
     {
+        if (this.sampleMetadata.isEmpty())
+        {
+            throw new NoSuchElementException( "There are no more sample data to evaluate for " +
+                                              ConfigHelper.getFeatureDescription( this.getFeature() ) );
+        }
         Future<SampleData<?>> nextInput;
-
-        this.incrementWindowNumber();
 
         try
         {
-            nextInput = this.submitForRetrieval();
+            nextInput = this.submitForRetrieval(this.sampleMetadata.remove());
         }
         catch ( IOException e )
         {
             throw new IterationFailedException( "An exception prevented iteration.", e );
         }
 
-        this.iterationCount++;
         return nextInput;
     }
 
@@ -301,7 +231,7 @@ abstract class SampleDataIterator implements Iterator<Future<SampleData<?>>>
         return this.sharedWriterManager;
     }
 
-    protected Path getOutputPathForPairs()
+    Path getOutputPathForPairs()
     {
         return this.outputPathForPairs;
     }
@@ -311,18 +241,17 @@ abstract class SampleDataIterator implements Iterator<Future<SampleData<?>>>
      * @return A callable object that will create a Metric Input
      * @throws IOException Thrown if a climatology could not be created as needed
      */
-    Callable<SampleData<?>> createRetriever() throws IOException
+    Callable<SampleData<?>> createRetriever(final OrderedSampleMetadata sampleMetadata) throws IOException
     {
         SampleDataRetriever retriever = new SampleDataRetriever(
-                this.getProjectDetails(),
+                sampleMetadata,
                 this.leftCache::getLeftValues,
                 this.sharedWriterManager,
                 this.outputPathForPairs
         );
-        retriever.setFeature(feature);
+
         retriever.setClimatology( this.getClimatology() );
-        retriever.setLeadIteration( this.getWindowNumber() );
-        retriever.setIssueDatesPool( this.getPoolingStep() );
+
         return retriever;
     }
 
@@ -333,9 +262,9 @@ abstract class SampleDataIterator implements Iterator<Future<SampleData<?>>>
      * when null is returned.
      * @throws IOException Thrown if the retrieval object could not be created
      */
-    protected Future<SampleData<?>> submitForRetrieval() throws IOException
+    protected Future<SampleData<?>> submitForRetrieval(final OrderedSampleMetadata sampleMetadata) throws IOException
     {
-        return Database.submit( this.createRetriever() );
+        return Database.submit( this.createRetriever(sampleMetadata) );
     }
 
     protected DataSourceConfig getLeft()
@@ -352,31 +281,6 @@ abstract class SampleDataIterator implements Iterator<Future<SampleData<?>>>
     {
         return this.getProjectDetails().getBaseline();
     }
-
-    long getFirstLeadInWindow()
-            throws CalculationException
-    {
-        Integer offset;
-
-        try
-        {
-            offset = this.getProjectDetails().getLeadOffset( feature );
-        }
-        catch ( IOException | SQLException e )
-        {
-            throw new CalculationException("");
-        }
-
-        if (offset == null)
-        {
-            throw new CalculationException( "There was not enough data to evaluate a "
-                                       + "lead time offset for the location: " +
-                                       ConfigHelper.getFeatureDescription( feature ) );
-        }
-        return this.getProjectDetails().getWindowWidth() + offset;
-    }
-
-    abstract int calculateWindowCount() throws CalculationException;
 
     abstract Logger getLogger();
 }

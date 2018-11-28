@@ -2,6 +2,11 @@ package wres.io.reading.s3;
 
 import java.util.Objects;
 
+// TODO: Remove in favor of an object that collects 2 non-store strings instead of strings specific to S3.
+// We need:
+// a) an identifier (such as a path to the original file + the date of collection)
+// b) a path to the file in the store
+@Deprecated
 class ETagKey implements Comparable<ETagKey>
 {
     private final String etag;

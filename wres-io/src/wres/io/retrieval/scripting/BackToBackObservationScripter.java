@@ -4,22 +4,20 @@ import java.sql.SQLException;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
+import wres.io.config.OrderedSampleMetadata;
 import wres.io.data.details.ProjectDetails;
 
 class BackToBackObservationScripter extends Scripter
 {
-    protected BackToBackObservationScripter( ProjectDetails projectDetails,
-                                             DataSourceConfig dataSourceConfig,
-                                             Feature feature,
-                                             int progress,
-                                             int sequenceStep)
+    BackToBackObservationScripter( OrderedSampleMetadata sampleMetadata, DataSourceConfig dataSourceConfig)
     {
-        super( projectDetails, dataSourceConfig, feature, progress, sequenceStep );
+        super( sampleMetadata, dataSourceConfig);
     }
 
     @Override
     String formScript() throws SQLException
     {
+        this.addLine("-- ", this.getSampleMetadata());
         this.addLine("SELECT ARRAY[O.observed_value] AS measurements,");
 
         this.applyValueDate();
@@ -44,7 +42,7 @@ class BackToBackObservationScripter extends Scripter
 
         if (this.getTimeShift() != null)
         {
-            this.add(" + ", this.getTimeShift() * 3600);
+            this.add(" + ", this.getTimeShift().getSeconds());
         }
 
         this.addLine( ")::bigint AS basis_epoch_time," );

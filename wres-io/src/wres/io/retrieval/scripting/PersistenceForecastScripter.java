@@ -8,30 +8,22 @@ import java.util.Objects;
 import java.util.StringJoiner;
 
 import wres.config.generated.DataSourceConfig;
-import wres.config.generated.Feature;
-import wres.io.data.details.ProjectDetails;
+import wres.io.config.OrderedSampleMetadata;
 import wres.util.CalculationException;
 
 class PersistenceForecastScripter extends Scripter
 {
-    // To call super, we need an integer
-    // I doubt that "progress" or "sequenceStep" have any meaning for the
-    // persistence forecast (other than following contract of Scripter), so
-    // use a placeholder for those values.
-    private static final int DUMMY = -9;
-
     private final Instant zeroDate;
     private final String variableFeatureClause;
     // The Integer is the count of values expected for a basis time
     private List<Instant> instantsToGetValuesFor;
 
-    PersistenceForecastScripter( ProjectDetails projectDetails,
+    PersistenceForecastScripter( OrderedSampleMetadata sampleMetadata,
                                  DataSourceConfig dataSourceConfig,
-                                 Feature feature,
                                  List<Instant> instantsToGetValuesFor )
             throws SQLException
     {
-        super( projectDetails, dataSourceConfig, feature, DUMMY, DUMMY );
+        super( sampleMetadata, dataSourceConfig);
 
         String zeroDate = this.getProjectDetails().getInitialObservationDate(
                 this.getDataSourceConfig(),
@@ -61,6 +53,7 @@ class PersistenceForecastScripter extends Scripter
             }
         }
 
+        this.addLine("-- ", this.getSampleMetadata());
         this.addLine("-- ", this.getDescription());
         this.addLine("SELECT O.observation_time AS valid_time,");
 
@@ -115,7 +108,7 @@ class PersistenceForecastScripter extends Scripter
         return this.zeroDate;
     }
 
-    public String getDescription()
+    private String getDescription()
     {
         StringJoiner result = new StringJoiner( ",", "PersistenceForecastScripter: ", "" );
         result.add( this.instantsToGetValuesFor.toString() );

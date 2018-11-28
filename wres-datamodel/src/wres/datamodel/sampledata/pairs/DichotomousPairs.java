@@ -67,13 +67,19 @@ public class DichotomousPairs extends MulticategoryPairs
                                                        SampleMetadata overrideMainMeta,
                                                        SampleMetadata overrideBaselineMeta )
     {
-        DichotomousPairs.DichotomousPairsBuilder b = new DichotomousPairs.DichotomousPairsBuilder();
-        return (DichotomousPairs) b.addData( pairs.getRawData() )
-                                   .addDataForBaseline( pairs.getRawDataForBaseline() )
-                                   .setMetadata( overrideMainMeta )
-                                   .setMetadataForBaseline( overrideBaselineMeta )
-                                   .setClimatology( pairs.getClimatology() )
-                                   .build();
+        DichotomousPairsBuilder b = new DichotomousPairsBuilder();
+
+        b.addData( pairs.getRawData() )
+         .setMetadata( overrideMainMeta )
+         .setClimatology( pairs.getClimatology() )
+         .build();
+
+        if ( pairs.hasBaseline() )
+        {
+            b.addDataForBaseline( pairs.getRawDataForBaseline() ).setMetadataForBaseline( overrideBaselineMeta );
+        }
+
+        return b.build();
     }
 
     /**
@@ -95,10 +101,15 @@ public class DichotomousPairs extends MulticategoryPairs
                                                        VectorOfDoubles climatology )
     {
         DichotomousPairsBuilder b = new DichotomousPairsBuilder();
+
         b.addDichotomousData( pairs ).setMetadata( mainMeta ).setClimatology( climatology );
-        return (DichotomousPairs) b.addDichotomousDataForBaseline( basePairs )
-                                   .setMetadataForBaseline( baselineMeta )
-                                   .build();
+
+        if ( Objects.nonNull( basePairs ) )
+        {
+            b.addDichotomousDataForBaseline( basePairs ).setMetadataForBaseline( baselineMeta );
+        }
+
+        return b.build();
     }
 
     /**
@@ -198,7 +209,7 @@ public class DichotomousPairs extends MulticategoryPairs
         if ( count > 0 && count != 2 )
         {
             throw new SampleDataException( "Expected one category in the dichotomous input, represented as either "
-                                            + "one or two elements." );
+                                           + "one or two elements." );
         }
     }
 

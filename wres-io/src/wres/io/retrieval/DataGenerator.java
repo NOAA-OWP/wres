@@ -2,12 +2,15 @@ package wres.io.retrieval;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.Iterator;
+import java.util.Queue;
 import java.util.concurrent.Future;
 
 import wres.config.generated.Feature;
 import wres.datamodel.sampledata.SampleData;
 import wres.io.config.ConfigHelper;
+import wres.io.config.OrderedSampleMetadata;
 import wres.io.data.details.ProjectDetails;
 import wres.io.writing.pair.SharedWriterManager;
 import wres.util.NotImplementedException;
@@ -21,6 +24,7 @@ public class DataGenerator implements Iterable<Future<SampleData<?>>>
     private final ProjectDetails projectDetails;
     private final SharedWriterManager sharedWriterManager;
     private final Path outputDirectoryForPairs;
+    private final Collection<OrderedSampleMetadata> sampleMetadata;
 
     public DataGenerator( Feature feature,
                           ProjectDetails projectDetails,
@@ -31,6 +35,20 @@ public class DataGenerator implements Iterable<Future<SampleData<?>>>
         this.projectDetails = projectDetails;
         this.sharedWriterManager = sharedWriterManager;
         this.outputDirectoryForPairs = outputDirectoryForPairs;
+        this.sampleMetadata = null;
+    }
+
+    public DataGenerator( Feature feature,
+                          ProjectDetails projectDetails,
+                          SharedWriterManager sharedWriterManager,
+                          Path outputDirectoryForPairs,
+                          final Collection<OrderedSampleMetadata> sampleMetadata)
+    {
+        this.feature = feature;
+        this.projectDetails = projectDetails;
+        this.sharedWriterManager = sharedWriterManager;
+        this.outputDirectoryForPairs = outputDirectoryForPairs;
+        this.sampleMetadata = sampleMetadata;
     }
 
     @Override
@@ -45,26 +63,30 @@ public class DataGenerator implements Iterable<Future<SampleData<?>>>
                     iterator = new PoolingSampleDataIterator( this.feature,
                                                               this.projectDetails,
                                                               this.sharedWriterManager,
-                                                              this.outputDirectoryForPairs );
+                                                              this.outputDirectoryForPairs,
+                                                              this.sampleMetadata);
                     break;
                 // TODO: Merge back to back and rolling logic
                 case BACK_TO_BACK:
                     iterator =  new BackToBackSampleDataIterator( this.feature,
                                                                   this.projectDetails,
                                                                   this.sharedWriterManager,
-                                                                  this.outputDirectoryForPairs );
+                                                                  this.outputDirectoryForPairs,
+                                                                  this.sampleMetadata);
                     break;
                 case TIME_SERIES:
                     iterator = new TimeSeriesSampleDataIterator( this.feature,
                                                                  this.projectDetails,
                                                                  this.sharedWriterManager,
-                                                                 this.outputDirectoryForPairs );
+                                                                 this.outputDirectoryForPairs,
+                                                                 this.sampleMetadata);
                     break;
                 case BY_TIMESERIES:
                     iterator = new ByForecastSampleDataIterator( this.feature,
                                                                  this.projectDetails,
                                                                  this.sharedWriterManager,
-                                                                 this.outputDirectoryForPairs );
+                                                                 this.outputDirectoryForPairs,
+                                                                 this.sampleMetadata);
                     break;
                 default:
                     throw new NotImplementedException( "The pairing mode of '" +

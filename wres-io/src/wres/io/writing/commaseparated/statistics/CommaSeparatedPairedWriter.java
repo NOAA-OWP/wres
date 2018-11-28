@@ -27,6 +27,7 @@ import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.PairedStatistic;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.io.config.ConfigHelper;
+import wres.io.writing.commaseparated.CommaSeparatedUtilities;
 
 /**
  * Helps write paired output comprising {@link PairedStatistic} to a file of Comma Separated Values (CSV).
@@ -36,7 +37,7 @@ import wres.io.config.ConfigHelper;
  * @author james.brown@hydrosolved.com
  */
 
-public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedWriter
+public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedStatisticsWriter
         implements Consumer<ListOfStatistics<PairedStatistic<S, T>>>
 {
 
@@ -129,11 +130,11 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedWriter
         SortedSet<MetricConstants> metrics = Slicer.discover( output, next -> next.getMetadata().getMetricID() );
         for ( MetricConstants m : metrics )
         {
-            StringJoiner headerRow = CommaSeparatedWriter.getDefaultHeaderFromSampleMetadata( output.getData()
-                                                                                                    .get( 0 )
-                                                                                                    .getMetadata()
-                                                                                                    .getSampleMetadata(),
-                                                                                              durationUnits );
+            StringJoiner headerRow = CommaSeparatedUtilities.getTimeWindowHeaderFromSampleMetadata( output.getData()
+                                                                                                          .get( 0 )
+                                                                                                          .getMetadata()
+                                                                                                          .getSampleMetadata(),
+                                                                                                    durationUnits );
 
             ListOfStatistics<PairedStatistic<S, T>> nextOutput = Slicer.filter( output, m );
 
@@ -154,7 +155,7 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedWriter
                                                                  destinationConfig,
                                                                  meta );
 
-            CommaSeparatedWriter.writeTabularOutputToFile( rows, outputPath );
+            CommaSeparatedStatisticsWriter.writeTabularOutputToFile( rows, outputPath );
 
             // If writeTabularOutputToFile did not throw an exception, assume
             // it succeeded in writing to the file, track outputs now (add must
@@ -211,7 +212,7 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedWriter
                 // Loop across the pairs
                 for ( Pair<S, T> nextPair : next )
                 {
-                    CommaSeparatedWriter.addRowToInput( returnMe,
+                    CommaSeparatedStatisticsWriter.addRowToInput( returnMe,
                                                         next.getMetadata().getSampleMetadata().getTimeWindow(),
                                                         Arrays.asList( nextPair.getLeft(), nextPair.getRight() ),
                                                         formatter,

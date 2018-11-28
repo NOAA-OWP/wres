@@ -4,14 +4,11 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.time.Duration;
 import java.time.Instant;
-import java.time.temporal.TemporalAccessor;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.TreeMap;
 
 import org.slf4j.Logger;
@@ -19,29 +16,20 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DestinationConfig;
-import wres.config.generated.ProjectConfig;
-import wres.datamodel.metadata.DatasetIdentifier;
-import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.SampleMetadata;
-import wres.datamodel.metadata.SampleMetadata.SampleMetadataBuilder;
-import wres.datamodel.metadata.TimeScale;
-import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.pairs.EnsemblePair;
 import wres.datamodel.sampledata.pairs.SingleValuedPair;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs.TimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.time.Event;
 import wres.io.config.ConfigHelper;
-import wres.io.data.details.ProjectDetails;
-import wres.io.data.details.TimeSeries;
+import wres.io.config.OrderedSampleMetadata;
 import wres.io.retrieval.scripting.Scripter;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
 import wres.io.writing.pair.PairSupplier;
 import wres.io.writing.pair.SharedWriterManager;
-import wres.util.TimeHelper;
 
 // TODO: Come up with handling for gridded data
 public class TimeSeriesRetriever extends Retriever
@@ -49,18 +37,16 @@ public class TimeSeriesRetriever extends Retriever
     private static final Logger LOGGER = LoggerFactory.getLogger( TimeSeriesRetriever.class );
 
     TimeSeriesRetriever (
-            final ProjectDetails projectDetails,
+            final OrderedSampleMetadata sampleMetadata,
             final CacheRetriever getLeftValues,
-            final int timeSeriesID,
             SharedWriterManager sharedWriterManager,
             Path outputDirectoryForPairs
     )
     {
-        super( projectDetails,
+        super( sampleMetadata,
                getLeftValues,
                sharedWriterManager,
                outputDirectoryForPairs );
-        this.timeSeriesID = timeSeriesID;
     }
 
     @Override
@@ -76,10 +62,8 @@ public class TimeSeriesRetriever extends Retriever
             PairSupplier writer = new PairSupplier.Builder()
                     .setDestinationConfig( destination )
                     .setDate( pair.getValidTime() )
-                    .setFeature( this.getFeature() )
-                    .setLeadIteration( this.getLeadIteration() )
                     .setPair(pair.getValues())
-                    .setProjectDetails( this.getProjectDetails() )
+                    .setSampleMetadata( this.getSampleMetadata() )
                     .setLead( pair.getLeadDuration() )
                     .setOutputDirectory( outputDirectory )
                     .build();
@@ -88,63 +72,7 @@ public class TimeSeriesRetriever extends Retriever
         }
     }
 
-    @Override
-    protected SampleMetadata buildMetadata( ProjectConfig projectConfig, boolean isBaseline ) throws IOException
-    {
-        MeasurementUnit dim = MeasurementUnit.of( this.getProjectDetails().getDesiredMeasurementUnit() );
-        String variableIdentifier = ConfigHelper.getVariableIdFromProjectConfig( projectConfig, isBaseline );
-        DatasetIdentifier datasetIdentifier = DatasetIdentifier.of(
-                this.getGeospatialIdentifier(),
-                variableIdentifier,
-                this.getProjectDetails().getRight().getLabel()
-        );
-
-        TemporalAccessor referenceTime = TimeHelper.convertStringToDate( this.timeSeries.getInitializationDate() );
-        Instant reference = Instant.from( referenceTime );
-
-        int earliestLead = this.getProjectDetails().getMinimumLead();
-
-        if (earliestLead == Integer.MIN_VALUE)
-        {
-            earliestLead = 0;
-        }
-
-        int latestLead = this.getProjectDetails().getMaximumLead();
-
-        if (latestLead == Integer.MAX_VALUE)
-        {
-            latestLead = this.timeSeries.getHighestLead();
-        }
-
-        TimeWindow window = TimeWindow.of(
-                reference,
-                reference,
-                ReferenceTime.ISSUE_TIME,
-                Duration.of( earliestLead, TimeHelper.LEAD_RESOLUTION),
-                Duration.of( latestLead, TimeHelper.LEAD_RESOLUTION)
-        );
-
-        // Build the metadata
-        SampleMetadataBuilder builder = new SampleMetadataBuilder().setMeasurementUnit( dim )
-                                                                   .setIdentifier( datasetIdentifier )
-                                                                   .setTimeWindow( window )
-                                                                   .setProjectConfig( projectConfig );
-
-        // Add the time-scale information to the metadata.
-        // Initially, this comes from the desiredTimeScale.
-        // TODO: when the project declaration is undefined,
-        // determine the Least Common Scale and populate the
-        // metadata with that - that relies on #54415.
-        // See #44539 for an overview.
-        if ( Objects.nonNull( projectConfig.getPair() )
-             && Objects.nonNull( projectConfig.getPair().getDesiredTimeScale() ) )
-        {
-            builder.setTimeScale( TimeScale.of( projectConfig.getPair().getDesiredTimeScale() ) );
-        }
-
-        return builder.build();
-    }
-
+    
     @Override
     protected SampleData<?> createInput() throws IOException
     {
@@ -154,47 +82,31 @@ public class TimeSeriesRetriever extends Retriever
 
         for (ForecastedPair pair : this.getPrimaryPairs())
         {
+            List<Event<SingleValuedPair>> eventPairs = new ArrayList<>();
             for (SingleValuedPair singleValuedPair : pair.getSingleValuedPairs())
             {
-                builder.addTimeSeriesData(
-                        pair.getBasisTime(),
-                        Collections.singletonList(
-                                Event.of( pair.getValidTime(),  singleValuedPair)
-                        )
-                );
+                eventPairs.add( Event.of( pair.getBasisTime(), pair.getValidTime(), singleValuedPair ) );
             }
+            builder.addTimeSeries( eventPairs );
         }
 
         return builder.build();
-    }
+    }    
+    
 
     @Override
     protected String getLoadScript( DataSourceConfig dataSourceConfig ) throws SQLException, IOException
     {
-        this.script =  Scripter.getLoadScript( this.getProjectDetails(),
-                                             dataSourceConfig,
-                                             getFeature(),
-                                             this.timeSeriesID,
-                                             -1 );
+        this.script =  Scripter.getLoadScript( this.getSampleMetadata(),
+                                               dataSourceConfig);
         return this.script;
     }
 
     @Override
     protected SampleData<?> execute() throws IOException
     {
-        try
-        {
-            this.timeSeries = TimeSeries.getByID( this.timeSeriesID );
-        }
-        catch ( SQLException e )
-        {
-            throw new RetrievalFailedException(
-                    "Information about what time series to retrieve could not be loaded.",
-                    e
-            );
-        }
         this.createPairs();
-        this.metadata = this.buildMetadata( this.getProjectDetails().getProjectConfig(), false );
+        this.metadata = this.getSampleMetadata().getMetadata();
 
         if ( this.getPrimaryPairs().isEmpty())
         {
@@ -270,8 +182,8 @@ public class TimeSeriesRetriever extends Retriever
                         }
                     }
 
-                    CondensedIngestedValue condensedIngestedValue = this.formIngestedValue( validSeconds, lead, measurements );
-                    EnsemblePair ensemblePair = this.getPair( condensedIngestedValue );
+                    PivottedValues pivottedValues = this.formPivottedValues( validSeconds, lead, measurements );
+                    EnsemblePair ensemblePair = this.getPair( pivottedValues );
 
                     if (ensemblePair == null)
                     {
@@ -280,7 +192,7 @@ public class TimeSeriesRetriever extends Retriever
                     }
                     
                     ForecastedPair pair = new ForecastedPair( lead,
-                                                              condensedIngestedValue.validTime,
+                                                              pivottedValues.validTime,
                                                               ensemblePair);
                     this.writePair( super.getSharedWriterManager(),
                                     super.getOutputDirectoryForPairs(),
@@ -303,11 +215,23 @@ public class TimeSeriesRetriever extends Retriever
         }
     }
 
-    private CondensedIngestedValue formIngestedValue(final long validSeconds, final int lead, final Double[] value)
+    /**
+     * Manually creates a PivottedValues object rather than using an IngestedValueCollection
+     * <p>
+     *     Since all values in the retrieved set will always be in the same time series and
+     *     scaling isn't really valid, the process of pivotting data into groups for scaling
+     *     isn't necessary.
+     * </p>
+     * @param validSeconds The time in seconds representing when the values were valid
+     * @param lead The lead duration in {@value wres.util.TimeHelper#LEAD_RESOLUTION}
+     * @param value array of retrieved values to "pivot". There will only ever be one.
+     * @return The set of pivotted values
+     */
+    private PivottedValues formPivottedValues( final long validSeconds, final int lead, final Double[] value)
     {
         Map<Integer, List<Double>> mappedResult = new TreeMap<>(  );
         mappedResult.put( 0, Arrays.asList( value ) );
-        return new CondensedIngestedValue( Instant.ofEpochSecond( validSeconds ), lead, mappedResult );
+        return new PivottedValues( Instant.ofEpochSecond( validSeconds ), lead, mappedResult );
     }
 
     @Override
@@ -318,6 +242,4 @@ public class TimeSeriesRetriever extends Retriever
 
     private String script;
     private SampleMetadata metadata;
-    private TimeSeries timeSeries;
-    private final int timeSeriesID;
 }

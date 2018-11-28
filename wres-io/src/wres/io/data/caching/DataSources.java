@@ -1,27 +1,24 @@
 package wres.io.data.caching;
 
 import java.sql.Connection;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import ohd.hseb.util.data.DataSetSortComparator;
-import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.generated.DataSourceConfig;
+import wres.datamodel.metadata.TimeWindow;
 import wres.io.config.ConfigHelper;
-import wres.io.data.details.ProjectDetails;
+import wres.io.config.OrderedSampleMetadata;
 import wres.io.data.details.SourceDetails;
 import wres.io.data.details.SourceDetails.SourceKey;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
-import wres.io.utilities.ScriptBuilder;
 import wres.util.Collections;
 import wres.util.TimeHelper;
 
@@ -283,11 +280,8 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
 	    return super.getID(key);
 	}
 
-	public static List<String> getSourcePaths( final ProjectDetails projectDetails,
-                                               final DataSourceConfig dataSourceConfig,
-                                               final Integer issuePoolStep,
-                                               final Integer firstLead,
-                                               final Integer lastLead)
+	public static List<String> getSourcePaths( final OrderedSampleMetadata sampleMetadata,
+                                               final DataSourceConfig dataSourceConfig)
             throws SQLException
     {
         List<String> paths = new ArrayList<>();
@@ -299,89 +293,114 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
         script.addLine("FROM wres.Source S");
         script.addLine("WHERE S.is_point_data = FALSE");
 
-        if (isForecast && firstLead != null)
+        // Unwrap the time window for local use
+        TimeWindow window = sampleMetadata.getMetadata().getTimeWindow();
+
+        if ( window.getEarliestLeadDuration()
+                   .equals( window.getLatestLeadDuration() ) )
         {
-            script.addTab().addLine("AND S.lead > ", firstLead);
-        }
-
-        if (isForecast && lastLead != null)
-        {
-            script.addTab().addLine("AND S.lead <= ", lastLead);
-        }
-
-        if (isForecast && projectDetails.getMinimumLead() > Integer.MIN_VALUE)
-        {
-            script.addTab().addLine("AND S.lead >= ", projectDetails.getMinimumLead());
-        }
-
-        if (isForecast && projectDetails.getMaximumLead() < Integer.MAX_VALUE)
-        {
-            script.addTab().addLine("AND S.lead <= ", projectDetails.getMaximumLead());
-        }
-
-        if (projectDetails.getEarliestDate() != null)
-        {
-            script.addTab().add("AND S.output_time ");
-
-            if (isForecast)
-            {
-                script.add("+ INTERVAL '1 ", TimeHelper.LEAD_RESOLUTION, "' * S.lead ");
-            }
-
-            script.addLine(">= '", projectDetails.getEarliestDate(), "'");
-        }
-
-        if (projectDetails.getLatestDate() != null)
-        {
-            script.addTab().add("AND S.output_time ");
-
-            if (isForecast)
-            {
-                script.add("+ INTERVAL '1 ", TimeHelper.LEAD_RESOLUTION, "' * S.lead ");
-            }
-
-            script.addLine("<= '", projectDetails.getLatestDate(), "'");
-        }
-
-        Pair<Instant, Instant> issueRange = projectDetails.getIssueDateRange( issuePoolStep );
-
-        String issueClause;
-        if (issueRange == null)
-        {
-            issueClause =  null;
-        }
-        else if (issueRange.getLeft().equals(issueRange.getRight()))
-        {
-            issueClause = "S.output_time = '" + issueRange.getLeft() + "'::timestamp without time zone ";
+            script.addTab()
+                  .addLine( "AND S.lead = ",
+                            TimeHelper.durationToLead( window.getEarliestLeadDuration() ) );
         }
         else
         {
-            // TODO: Uncomment when it's time to go exclusive-inclusive
-            //issueClause = "S.output_time > '" + issueRange.getLeft() + "'::timestamp without time zone ";
-            issueClause = "S.output_time >= '" + issueRange.getLeft() + "'::timestamp without time zone ";
-            issueClause += "AND S.output_time <= '" + issueRange.getRight() + "'::timestamp without time zone";
+            script.addTab().addLine( "AND S.lead > ", TimeHelper.durationToLead( sampleMetadata.getMinimumLead() ) );
+            script.addTab()
+                  .addLine( "AND S.lead <= ",
+                            TimeHelper.durationToLead( window.getLatestLeadDuration() ) );
+        }
+
+        if ( isForecast && sampleMetadata.getProjectDetails().getMinimumLead() > Integer.MIN_VALUE )
+        {
+            script.addTab().addLine( "AND S.lead >= ", sampleMetadata.getProjectDetails().getMinimumLead() );
+        }
+
+        if ( isForecast && sampleMetadata.getProjectDetails().getMaximumLead() < Integer.MAX_VALUE )
+        {
+            script.addTab().addLine( "AND S.lead <= ", sampleMetadata.getProjectDetails().getMaximumLead() );
+        }
+
+        if ( sampleMetadata.getProjectDetails().getEarliestDate() != null )
+        {
+            script.addTab().add( "AND S.output_time " );
+
+            if ( isForecast )
+            {
+                script.add( "+ INTERVAL '1 ", TimeHelper.LEAD_RESOLUTION, "' * S.lead " );
+            }
+
+            script.addLine( ">= '", sampleMetadata.getProjectDetails().getEarliestDate(), "'" );
+        }
+
+        if ( sampleMetadata.getProjectDetails().getLatestDate() != null )
+        {
+            script.addTab().add( "AND S.output_time " );
+
+            if ( isForecast )
+            {
+                script.add( "+ INTERVAL '1 ", TimeHelper.LEAD_RESOLUTION, "' * S.lead " );
+            }
+
+            script.addLine( "<= '", sampleMetadata.getProjectDetails().getLatestDate(), "'" );
+        }
+
+        String issueClause = null;
+        if ( !window.hasUnboundedReferenceTimes() )
+        {
+            if ( window.getEarliestReferenceTime()
+                       .equals( window.getLatestReferenceTime() ) )
+            {
+                issueClause = "S.output_time = '" + window.getEarliestReferenceTime()
+                              + "'::timestamp without time zone ";
+            }
+            else
+            {
+                if ( !window.getEarliestReferenceTime().equals( Instant.MIN ) )
+                {
+                    // TODO: Uncomment when it's time to go exclusive-inclusive
+                    //issueClause = "S.output_time > '" + timeWindow.getEarliestTime() + "'::timestamp without time zone ";
+                    issueClause = "AND S.output_time >= '" + window.getEarliestReferenceTime()
+                                  + "'::timestamp without time zone";
+                }
+
+                if ( !window.getLatestReferenceTime().equals( Instant.MAX ) )
+                {
+                    if ( issueClause == null )
+                    {
+                        issueClause = "";
+                    }
+                    else
+                    {
+                        issueClause += NEWLINE;
+                    }
+
+                    issueClause += "AND S.output_time <= '" + window.getLatestReferenceTime()
+                                   + "'::timestamp without time zone";
+                }
+            }
         }
 
         if (issueClause != null)
         {
-            script.addTab().addLine("AND ", issueClause);
+            script.addTab().addLine(issueClause);
         }
 
-        if (issueClause == null && isForecast && projectDetails.getEarliestIssueDate() != null)
+        if (issueClause == null && isForecast && sampleMetadata.getProjectDetails().getEarliestIssueDate() != null)
         {
-            script.addTab().addLine("AND S.output_time >= '", projectDetails.getEarliestIssueDate(), "'");
+            script.addTab().addLine("AND S.output_time >= '", sampleMetadata.getProjectDetails().getEarliestIssueDate(), "'");
         }
 
-        if (issueClause == null && isForecast && projectDetails.getLatestIssueDate() != null)
+        if (issueClause == null && isForecast && sampleMetadata.getProjectDetails().getLatestIssueDate() != null)
         {
-            script.addTab().addLine("AND S.output_time <= '", projectDetails.getLatestIssueDate(), "'");
+            script.addTab().addLine("AND S.output_time <= '", sampleMetadata.getProjectDetails().getLatestIssueDate(), "'");
         }
 
         script.addTab().addLine("AND EXISTS (");
         script.addTab(  2  ).addLine("SELECT 1");
         script.addTab(  2  ).addLine("FROM wres.ProjectSource PS");
-        script.addTab(  2  ).addLine("WHERE PS.project_id = ", projectDetails.getId());
-        script.addTab(   3   ).addLine("AND PS.member = ", projectDetails.getInputName( dataSourceConfig ));
+        script.addTab(  2  ).addLine("WHERE PS.project_id = ", sampleMetadata.getProjectDetails().getId());
+        script.addTab(   3   ).addLine("AND PS.member = ", sampleMetadata.getProjectDetails().getInputName( dataSourceConfig ));
         script.addTab(   3   ).addLine("AND PS.source_id = S.source_id");
         script.addTab().addLine(");");
 

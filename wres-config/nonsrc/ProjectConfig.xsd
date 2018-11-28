@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
+<?xml-stylesheet type="text/xsl" href="xs3p.xsl"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
            xmlns:jaxb="http://java.sun.com/xml/ns/jaxb"
            jaxb:version="2.1"
@@ -119,12 +120,6 @@
         <xs:attribute name="srid" type="xs:integer" default="4326" />
     </xs:complexType>
 
-    <!-- TODO revisit selection of a grid point by index - who wants? -->
-    <xs:complexType name="variableIndex">
-        <xs:attribute name="x" type="xs:int" />
-        <xs:attribute name="y" type="xs:int" />
-    </xs:complexType>
-
     <xs:complexType name="datasource">
 
         <!-- for class naming using xjc-->
@@ -132,6 +127,9 @@
             <xs:appinfo>
                 <jaxb:class name="DataSourceConfig" />
             </xs:appinfo>
+            <xs:documentation>
+                Used to explain what data to use for evaluation
+            </xs:documentation>
         </xs:annotation>
 
         <xs:sequence>
@@ -343,7 +341,7 @@
     </xs:complexType>
 
     <!-- Base type for a metric -->
-    <xs:complexType name="abstractMetric">
+    <xs:complexType name="abstractMetric" abstract="true">
 
         <!-- for class naming using xjc-->
         <xs:annotation>
@@ -455,7 +453,7 @@
         <xs:sequence>
             <!-- Specifies the path to a template. Eventually, we'll want to
             create one from the input files if one isn't supplied -->
-            <xs:element type="xs:string" name="templatePath" minOccurs="0" />
+            <xs:element type="xs:string" name="templatePath" minOccurs="0"  />
         </xs:sequence>
         <!-- Dictates the name of the variable to use for vector coordinates -->
         <xs:attribute type="xs:string" name="vectorVariable" default="feature_id" />
@@ -476,6 +474,9 @@
             <xs:appinfo>
                 <jaxb:class name="DestinationConfig" />
             </xs:appinfo>
+            <xs:documentation>
+Details a type of output generated to contain or display evaluated statistics
+            </xs:documentation>
         </xs:annotation>
 
         <xs:sequence>
@@ -491,6 +492,11 @@
     </xs:complexType>
 
     <xs:simpleType name="timeScaleFunction">
+        <xs:annotation>
+            <xs:documentation>
+The function that was applied to values over time to determine what was recorded.
+            </xs:documentation>
+        </xs:annotation>
         <xs:restriction base="xs:string">
             <xs:enumeration value="none" />
             <xs:enumeration value="total" />
@@ -504,6 +510,11 @@
         <xs:restriction base="xs:int"/>
     </xs:simpleType>
     <xs:simpleType name="durationUnit">
+        <xs:annotation>
+            <xs:documentation>
+A unit of time
+            </xs:documentation>
+        </xs:annotation>
         <xs:restriction base="xs:string">
             <!-- Please note: these values are intentionally convertible to
             java.time.temporal.ChronoUnit values. Please only add values to this
@@ -517,13 +528,6 @@
         </xs:restriction>
     </xs:simpleType>
 
-    <xs:simpleType name="timeWindowMode">
-        <xs:restriction base="xs:string">
-            <xs:enumeration value="back-to-back" />
-            <xs:enumeration value="rolling" />
-        </xs:restriction>
-    </xs:simpleType>
-
     <xs:complexType name="timeScale">
 
         <!-- for class naming using xjc-->
@@ -531,6 +535,10 @@
             <xs:appinfo>
                 <jaxb:class name="TimeScaleConfig" />
             </xs:appinfo>
+            <xs:documentation>
+Details the period and frequency and by what function values are temporally scaled. If no frequency is specified
+the frequency becomes equivalent to the period.
+            </xs:documentation>
         </xs:annotation>
 
         <xs:sequence>
@@ -539,23 +547,6 @@
             <xs:element name="frequency" type="duration" minOccurs="0" maxOccurs="1"/>
             <xs:element name="unit" type="durationUnit" />
         </xs:sequence>
-        <xs:attribute name="label" type="xs:string" />
-    </xs:complexType>
-
-    <xs:complexType name="spaceAggregation">
-
-        <!-- for class naming using xjc-->
-        <xs:annotation>
-            <xs:appinfo>
-                <jaxb:class name="SpaceAggregationConfig" />
-            </xs:appinfo>
-        </xs:annotation>
-
-        <xs:sequence>
-            <xs:element name="function" type="spaceAggregationFunction" />
-            <xs:element name="parameters" type="xs:string" />
-        </xs:sequence>
-
         <xs:attribute name="label" type="xs:string" />
     </xs:complexType>
 
@@ -580,12 +571,6 @@
             <xs:element name="unit" type="durationUnit" />
         </xs:sequence>
     </xs:complexType>
-
-    <xs:simpleType name="spaceAggregationFunction">
-        <xs:restriction base="xs:string">
-            <xs:enumeration value="scale" />
-        </xs:restriction>
-    </xs:simpleType>
 
     <xs:complexType name="pair">
 

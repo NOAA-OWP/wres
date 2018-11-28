@@ -60,7 +60,7 @@ public class ScoreOutputByThresholdAndLeadXYDataset extends
         for ( final TimeWindow lead : timeWindows )
         {
             setOverrideLegendName( seriesIndex,
-                                   Long.toString( TimeHelper.durationToLongUnits( lead.getLatestLeadTime(),
+                                   Long.toString( TimeHelper.durationToLongUnits( lead.getLatestLeadDuration(),
                                                                                   this.durationUnits ) ) );
             seriesIndex++;
         }

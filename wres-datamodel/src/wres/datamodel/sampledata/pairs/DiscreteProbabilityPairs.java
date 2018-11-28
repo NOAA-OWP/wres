@@ -110,12 +110,15 @@ public class DiscreteProbabilityPairs extends Pairs<DiscreteProbabilityPair>
     {
         DiscreteProbabilityPairsBuilder b =
                 new DiscreteProbabilityPairsBuilder();
-        return (DiscreteProbabilityPairs) b.addData( pairs )
-                                           .setMetadata( mainMeta )
-                                           .addDataForBaseline( basePairs )
-                                           .setMetadataForBaseline( baselineMeta )
-                                           .setClimatology( climatology )
-                                           .build();
+
+        b.addData( pairs ).setMetadata( mainMeta ).setClimatology( climatology );
+
+        if ( Objects.nonNull( basePairs ) )
+        {
+            b.addDataForBaseline( basePairs ).setMetadataForBaseline( baselineMeta );
+        }
+
+        return b.build();
     }
     
     /**
@@ -137,7 +140,7 @@ public class DiscreteProbabilityPairs extends Pairs<DiscreteProbabilityPair>
      * A builder to build the metric input.
      */
 
-    public static class DiscreteProbabilityPairsBuilder extends BasicPairsBuilder<DiscreteProbabilityPair>
+    public static class DiscreteProbabilityPairsBuilder extends PairsBuilder<DiscreteProbabilityPair>
     {
 
         @Override

@@ -33,6 +33,7 @@ import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.MultiVectorStatistic;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.io.config.ConfigHelper;
+import wres.io.writing.commaseparated.CommaSeparatedUtilities;
 
 /**
  * Helps write box plots comprising {@link MultiVectorStatistic} to a file of Comma Separated Values (CSV).
@@ -40,7 +41,7 @@ import wres.io.config.ConfigHelper;
  * @author james.brown@hydrosolved.com
  */
 
-public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
+public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
         implements Consumer<ListOfStatistics<MultiVectorStatistic>>, Supplier<Set<Path>>
 {
     /**
@@ -151,11 +152,11 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
         SortedSet<MetricConstants> metrics = Slicer.discover( output, next -> next.getMetadata().getMetricID() );
         for ( MetricConstants m : metrics )
         {
-            StringJoiner headerRow = CommaSeparatedWriter.getDefaultHeaderFromSampleMetadata( output.getData()
-                                                                                                    .get( 0 )
-                                                                                                    .getMetadata()
-                                                                                                    .getSampleMetadata(),
-                                                                                              durationUnits );
+            StringJoiner headerRow = CommaSeparatedUtilities.getTimeWindowHeaderFromSampleMetadata( output.getData()
+                                                                                                          .get( 0 )
+                                                                                                          .getMetadata()
+                                                                                                          .getSampleMetadata(),
+                                                                                                    durationUnits );
 
             Set<Path> innerPathsWrittenTo = Collections.emptySet();
 
@@ -235,7 +236,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
                                                                  timeWindow,
                                                                  durationUnits );
 
-            CommaSeparatedWriter.writeTabularOutputToFile( rows, outputPath );
+            CommaSeparatedStatisticsWriter.writeTabularOutputToFile( rows, outputPath );
 
             // If writeTabularOutputToFile did not throw an exception, assume
             // it succeeded in writing to the file, track outputs now (add must
@@ -294,7 +295,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
                                                                  meta,
                                                                  threshold );
 
-            CommaSeparatedWriter.writeTabularOutputToFile( rows, outputPath );
+            CommaSeparatedStatisticsWriter.writeTabularOutputToFile( rows, outputPath );
 
             // If writeTabularOutputToFile did not throw an exception, assume
             // it succeeded in writing to the file, track outputs now (add must
@@ -348,7 +349,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
             // Add the merged rows
             for ( List<Double> next : merge.values() )
             {
-                CommaSeparatedWriter.addRowToInput( returnMe,
+                CommaSeparatedStatisticsWriter.addRowToInput( returnMe,
                                                     timeWindow,
                                                     next,
                                                     formatter,

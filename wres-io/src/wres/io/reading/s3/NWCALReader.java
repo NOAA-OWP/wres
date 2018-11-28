@@ -1,6 +1,9 @@
 package wres.io.reading.s3;
 
 import java.io.IOException;
+import java.nio.file.FileSystems;
+import java.nio.file.PathMatcher;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -9,15 +12,20 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.amazonaws.SdkClientException;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.AnonymousAWSCredentials;
 import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.regions.Regions;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.ListObjectsRequest;
+import com.amazonaws.services.s3.model.ObjectListing;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ucar.nc2.NetcdfFile;
@@ -149,6 +157,84 @@ class NWCALReader extends S3Reader
         }
 
         return prefixPatterns;
+    }
+
+    @Override
+    protected Collection<ETagKey> getIngestableObjects()
+    {
+        AmazonS3 connection = this.getConnection();
+        List<ETagKey> ingestableObjects = new ArrayList<>(  );
+        for (PrefixPattern prefixPattern : this.getPrefixPatterns())
+        {
+            ListObjectsRequest request = new ListObjectsRequest(  );
+            request.setPrefix( prefixPattern.getPrefix() );
+            request.setBucketName( this.getBucketName() );
+            request.setMaxKeys( this.getMaxKeyCount() );
+
+            final PathMatcher matcher = FileSystems.getDefault()
+                                                   .getPathMatcher( "glob:" + prefixPattern.getPattern() );
+
+            ObjectListing s3Objects = null;
+
+            int listAttempt = 0;
+
+            do
+            {
+                try
+                {
+                    s3Objects = connection.listObjects( request );
+                }
+                catch (SdkClientException clientException)
+                {
+                    listAttempt++;
+
+                    // If we've exceeded our amount of allowable retries, rethrow the exception.
+                    if (listAttempt > this.getRetryCount())
+                    {
+                        throw clientException;
+                    }
+
+                    this.getLogger().debug( "S3 exception encountered while "
+                                            + "trying to get a list of objects to download. "
+                                            + "Trying again...", clientException );
+                }
+            } while (s3Objects == null);
+
+            do
+            {
+                s3Objects.getObjectSummaries().forEach( summary -> {
+                    if (matcher.matches( Paths.get( summary.getKey()) ))
+                    {
+                        ingestableObjects.add(new ETagKey( summary.getETag(), summary.getKey() ));
+                    }
+                } );
+
+                listAttempt = 0;
+
+                do
+                {
+                    try
+                    {
+                        s3Objects = connection.listNextBatchOfObjects( s3Objects );
+                        break;
+                    }
+                    catch ( SdkClientException clientException )
+                    {
+                        listAttempt++;
+
+                        if (listAttempt > this.getRetryCount())
+                        {
+                            throw clientException;
+                        }
+
+                        this.getLogger().debug( "S3 exception encountered while retrieving the next "
+                                                + "set of results. Trying again...", clientException );
+                    }
+                } while (true);
+            } while ( !s3Objects.getObjectSummaries().isEmpty() );
+        }
+
+        return ingestableObjects;
     }
 
     /**

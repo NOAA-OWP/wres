@@ -18,9 +18,12 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.Feature;
+import wres.datamodel.metadata.SampleMetadata;
+import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.sampledata.pairs.EnsemblePair;
 import wres.io.concurrency.WRESRunnableException;
 import wres.io.config.ConfigHelper;
+import wres.io.config.OrderedSampleMetadata;
 import wres.io.data.details.ProjectDetails;
 import wres.util.CalculationException;
 
@@ -56,11 +59,9 @@ public class PairSupplier implements Supplier<Pair<Path,String>>
     private final DestinationConfig destinationConfig;
     private final Instant date;
     private final Feature feature;
-    private final int leadIteration;
+    private final OrderedSampleMetadata sampleMetadata;
     private final EnsemblePair pair;
     private final boolean isBaseline;
-    private final int poolingStep;
-    private final ProjectDetails projectDetails;
     private final Duration lead;
     private final DecimalFormat formatter;
 
@@ -73,12 +74,9 @@ public class PairSupplier implements Supplier<Pair<Path,String>>
         private Path outputDirectory;
         private DestinationConfig destinationConfig;
         private Instant date;
-        private Feature feature;
-        private int leadIteration;
+        private OrderedSampleMetadata sampleMetadata;
         private EnsemblePair pair;
         private boolean isBaseline;
-        private int poolingStep;
-        private ProjectDetails projectDetails;
         private Duration lead;
         private DecimalFormat formatter;
 
@@ -118,29 +116,6 @@ public class PairSupplier implements Supplier<Pair<Path,String>>
         }
 
         /**
-         * Sets the feature.
-         * @param feature the feature
-         * @return the builder
-         */
-        public Builder setFeature(Feature feature)
-        {
-            this.feature = feature;            
-            return this;
-        }
-
-        /**
-         * Sets the lead time iteration.
-         * @param leadIteration the lead iteration
-         * @return the builder
-         */
-        
-        public Builder setLeadIteration(Integer leadIteration)
-        {
-            this.leadIteration = leadIteration;
-            return this;
-        }
-
-        /**
          * Sets the pair
          * @param pair the pair
          * @return the builder
@@ -161,30 +136,6 @@ public class PairSupplier implements Supplier<Pair<Path,String>>
         public Builder setIsBaseline(boolean isBaseline)
         {
             this.isBaseline = isBaseline;
-            return this;
-        }
-
-        /**
-         * Sets the pooling step.
-         * @param poolingStep the pooling step.
-         * @return the builder
-         */
-        
-        public Builder setPoolingStep(Integer poolingStep)
-        {
-            this.poolingStep = poolingStep;
-            return this;
-        }
-
-        /**
-         * Sets the project details.
-         * @param projectDetails the project details
-         * @return the builder
-         */
-        
-        public Builder setProjectDetails(ProjectDetails projectDetails)
-        {
-            this.projectDetails = projectDetails;
             return this;
         }
 
@@ -213,6 +164,12 @@ public class PairSupplier implements Supplier<Pair<Path,String>>
             return this;
         }
 
+        public Builder setSampleMetadata(OrderedSampleMetadata sampleMetadata)
+        {
+            this.sampleMetadata = sampleMetadata;
+            return this;
+        }
+
         /**
          * Builds the pair writer.
          * @return the pair writer
@@ -236,12 +193,10 @@ public class PairSupplier implements Supplier<Pair<Path,String>>
         this.outputDirectory = builder.outputDirectory;
         this.destinationConfig = builder.destinationConfig;
         this.date = builder.date;
-        this.feature = builder.feature;
-        this.leadIteration = builder.leadIteration;
+        this.feature = builder.sampleMetadata.getFeature();
+        this.sampleMetadata = builder.sampleMetadata;
         this.pair = builder.pair;
         this.isBaseline = builder.isBaseline;
-        this.poolingStep = builder.poolingStep;
-        this.projectDetails = builder.projectDetails;
         this.lead = builder.lead;
         
         // Tries to set the default formatter when missing
@@ -292,22 +247,16 @@ public class PairSupplier implements Supplier<Pair<Path,String>>
             errorJoiner.add("No feature was added to record.");
         }
 
-        if (this.leadIteration == Integer.MIN_VALUE)
+        if (this.sampleMetadata == null)
         {
             errorCount += 1;
-            errorJoiner.add("The iteration was not added to record.");
+            errorJoiner.add("The sample metadata was not added to record.");
         }
 
         if (this.pair == null)
         {
             errorCount += 1;
             errorJoiner.add("No pair was added to record.");
-        }
-
-        if (this.projectDetails == null)
-        {
-            errorCount += 1;
-            errorJoiner.add("No details about the project were passed.");
         }
 
         if (errorCount > 0)
@@ -407,29 +356,7 @@ public class PairSupplier implements Supplier<Pair<Path,String>>
 
     private String getWindow() throws CalculationException
     {
-
-        int window = this.getWindowNum();
-
-        // If basis time pooling is used, you get intermediary pools. This means
-        // that you don't just get entries for window 0, 1, 2, 3, 4, etc, you
-        // get window 0 pooling step 1, window 0 pooling step 2, window 1
-        // pooling step 1, etc. To find the overall window (i.e. "this is the
-        // fifth calculation"), you need to break down the calculation to
-        // compensate for the number of intermediate windows
-        if ( this.projectDetails.getPairingMode() == ProjectDetails.PairingMode.ROLLING )
-        {
-            window *= (this.projectDetails.getIssuePoolCount( this.feature ));
-            window += this.poolingStep;
-        }
-
-        window++;
-
-        return String.valueOf(window);
-    }
-
-    private int getWindowNum()
-    {
-        return this.leadIteration;
+        return String.valueOf(this.sampleMetadata.getSampleNumber());
     }
 
     private String getLeftValue()

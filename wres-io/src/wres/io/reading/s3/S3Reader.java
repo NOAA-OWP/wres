@@ -1,10 +1,7 @@
 package wres.io.reading.s3;
 
 import java.io.IOException;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
-import java.nio.file.PathMatcher;
-import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -12,13 +9,10 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import com.amazonaws.ClientConfiguration;
-import com.amazonaws.SdkClientException;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
-import com.amazonaws.services.s3.model.ListObjectsRequest;
-import com.amazonaws.services.s3.model.ObjectListing;
 
 import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.IngestSaver;
@@ -144,84 +138,13 @@ public abstract class S3Reader extends BasicSource
     }
 
     /**
+     * TODO: Change to return a collection of triplets containing a) some string identifier for the file,
+     * b) a destination of the file for the service, and c) a date for the file. The string identifier
+     * will be what's used as the "hash" for the file. Prefix operations need
+     * to be dropped since they invoke object store  wildcards that cause heavy strain on the server.
      * @return a collection of object metadata from the store that might need to be ingested
      */
-    private Collection<ETagKey> getIngestableObjects()
-    {
-        AmazonS3 connection = this.getConnection();
-        List<ETagKey> ingestableObjects = new ArrayList<>(  );
-        for (PrefixPattern prefixPattern : this.getPrefixPatterns())
-        {
-            ListObjectsRequest request = new ListObjectsRequest(  );
-            request.setPrefix( prefixPattern.getPrefix() );
-            request.setBucketName( this.getBucketName() );
-            request.setMaxKeys( this.getMaxKeyCount() );
-
-            final PathMatcher matcher = FileSystems.getDefault()
-                                                   .getPathMatcher( "glob:" + prefixPattern.getPattern() );
-
-            ObjectListing s3Objects = null;
-
-            int listAttempt = 0;
-
-            do
-            {
-                try
-                {
-                    s3Objects = connection.listObjects( request );
-                }
-                catch (SdkClientException clientException)
-                {
-                    listAttempt++;
-
-                    // If we've exceeded our amount of allowable retries, rethrow the exception.
-                    if (listAttempt > this.getRetryCount())
-                    {
-                        throw clientException;
-                    }
-
-                    this.getLogger().debug( "S3 exception encountered while "
-                                            + "trying to get a list of objects to download. "
-                                            + "Trying again...", clientException );
-                }
-            } while (s3Objects == null);
-
-            do
-            {
-                s3Objects.getObjectSummaries().forEach( summary -> {
-                    if (matcher.matches( Paths.get(summary.getKey()) ))
-                    {
-                        ingestableObjects.add(new ETagKey( summary.getETag(), summary.getKey() ));
-                    }
-                } );
-
-                listAttempt = 0;
-
-                do
-                {
-                    try
-                    {
-                        s3Objects = connection.listNextBatchOfObjects( s3Objects );
-                        break;
-                    }
-                    catch ( SdkClientException clientException )
-                    {
-                        listAttempt++;
-
-                        if (listAttempt > this.getRetryCount())
-                        {
-                            throw clientException;
-                        }
-
-                        this.getLogger().debug( "S3 exception encountered while retrieving the next "
-                                                + "set of results. Trying again...", clientException );
-                    }
-                } while (true);
-            } while ( !s3Objects.getObjectSummaries().isEmpty() );
-        }
-
-        return ingestableObjects;
-    }
+    protected abstract Collection<ETagKey> getIngestableObjects();
 
     /**
      * Generate the full URL to the object in the object store
@@ -248,7 +171,7 @@ public abstract class S3Reader extends BasicSource
      * Creates a connection that can be used to get, interrogate, or modify an S3 object store
      * @return A connection to an object store
      */
-    private AmazonS3 getConnection()
+    protected AmazonS3 getConnection()
     {
         // CT: I have no clue what this does (other than make it work)
         ClientConfiguration clientConfig = new ClientConfiguration(  ).withSignerOverride( "S3SignerType" );

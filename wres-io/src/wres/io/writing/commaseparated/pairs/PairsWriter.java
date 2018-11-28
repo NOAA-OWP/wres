@@ -22,10 +22,14 @@ import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.datamodel.metadata.TimeScale;
+import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.sampledata.pairs.Pairs;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.io.writing.WriteException;
+import wres.io.writing.commaseparated.CommaSeparatedUtilities;
+import wres.util.TimeHelper;
 
 /**
  * Abstract base class for writing a time-series of pairs as comma separated values (CSV). There is one 
@@ -87,7 +91,7 @@ public abstract class PairsWriter<S extends Object, T extends Pairs<S> & TimeSer
      * Formatter that maps from a paired value of type <S> to a value of type {@link String}.
      */
 
-    private final Function<S,String> pairFormatter;
+    private final Function<S, String> pairFormatter;
 
     /**
      * Is <code>true</code> if the header needs to be written, <code>false</code> when it has already been written. 
@@ -96,13 +100,49 @@ public abstract class PairsWriter<S extends Object, T extends Pairs<S> & TimeSer
     private final AtomicBoolean isHeaderRequired = new AtomicBoolean( true );
 
     /**
-     * Returns a header for the pairs from the input.
+     * Returns a basic header for the pairs from the input. Override this method to add information for specific types
+     * of pairs.
      * 
      * @param pairs the pairs
      * @throws NullPointerException if the pairs are null
      */
 
-    abstract String getHeaderFromPairs( T pairs );
+    StringJoiner getHeaderFromPairs( T pairs )
+    {
+        Objects.requireNonNull( pairs, "Cannot obtain header from null pairs." );
+
+        StringJoiner joiner = new StringJoiner( "," );
+
+        joiner.add( "FEATURE DESCRIPTION" );
+
+        // Time window?
+        if ( pairs.getMetadata().hasTimeWindow() )
+        {
+            joiner.merge( CommaSeparatedUtilities.getTimeWindowHeaderFromSampleMetadata( pairs.getMetadata(),
+                                                                                         this.getTimeResolution() ) );
+        }
+        joiner.add( "VALID TIME OF PAIR" );
+
+        if ( pairs.getMetadata().hasTimeScale() )
+        {
+            TimeScale timeScale = pairs.getMetadata().getTimeScale();
+
+            joiner.add( "LEAD DURATION OF PAIR IN " + this.getTimeResolution().toString().toUpperCase()
+                        + " ["
+                        + timeScale.getFunction()
+                        + " OVER PAST "
+                        + timeScale.getPeriod().get( this.getTimeResolution() )
+                        + " "
+                        + this.getTimeResolution().toString().toUpperCase()
+                        + "]" );
+        }
+        else
+        {
+            joiner.add( "LEAD DURATION OF PAIR IN " + this.getTimeResolution().toString().toUpperCase() );
+        }
+
+        return joiner;
+    }
 
     /**
      * Supplies the set of {@link Path} to which values were written.
@@ -148,6 +188,9 @@ public abstract class PairsWriter<S extends Object, T extends Pairs<S> & TimeSer
                 // Feature to write, which is fixed across all pairs
                 String featureName = pairs.getMetadata().getIdentifier().getGeospatialID().getLocationName();
 
+                // Time window to write, which is fixed across all pairs
+                TimeWindow timeWindow = pairs.getMetadata().getTimeWindow();
+
                 // Prepare
                 this.getWriteLock().lock();
                 LOGGER.trace( "Acquired pair writing lock on {}", this.getPath() );
@@ -164,13 +207,24 @@ public abstract class PairsWriter<S extends Object, T extends Pairs<S> & TimeSer
                         for ( Event<S> nextPair : nextSeries.timeIterator() )
                         {
 
-                            StringJoiner joiner = new StringJoiner( PairsWriter.DELIMITER );
-
                             // Move to next line
                             writer.write( System.lineSeparator() );
+                            
+                            StringJoiner joiner = new StringJoiner( PairsWriter.DELIMITER );
 
                             // Feature description
                             joiner.add( featureName );
+
+                            // Time window if available
+                            if ( Objects.nonNull( timeWindow ) )
+                            {
+                                joiner.add( timeWindow.getEarliestReferenceTime().toString() );
+                                joiner.add( timeWindow.getLatestReferenceTime().toString() );
+                                joiner.add( Long.toString( TimeHelper.durationToLongUnits( timeWindow.getEarliestLeadDuration(),
+                                                                                             this.getTimeResolution() ) ) );
+                                joiner.add( Long.toString( TimeHelper.durationToLongUnits( timeWindow.getLatestLeadDuration(),
+                                                                                             this.getTimeResolution() ) ) );
+                            }
 
                             // ISO8601 datetime string
                             joiner.add( nextPair.getTime().toString() );
@@ -178,7 +232,7 @@ public abstract class PairsWriter<S extends Object, T extends Pairs<S> & TimeSer
                             // Lead duration in standard units
                             joiner.add( Long.toString( Duration.between( basisTime, nextPair.getTime() )
                                                                .get( this.getTimeResolution() ) ) );
-                            
+
                             // Write the values
                             joiner.add( this.getPairFormatter().apply( nextPair.getValue() ) );
 
@@ -281,7 +335,7 @@ public abstract class PairsWriter<S extends Object, T extends Pairs<S> & TimeSer
         if ( this.isHeaderRequired().get() )
         {
             // Acquire the header
-            final String header = this.getHeaderFromPairs( pairs );
+            final String header = this.getHeaderFromPairs( pairs ).toString();
 
             // Prepare to write
             this.getWriteLock().lock();
@@ -316,7 +370,7 @@ public abstract class PairsWriter<S extends Object, T extends Pairs<S> & TimeSer
     {
         return this.isHeaderRequired;
     }
-    
+
 
     /**
      * Returns the formatter for writing paired values.
@@ -324,7 +378,7 @@ public abstract class PairsWriter<S extends Object, T extends Pairs<S> & TimeSer
      * @return the formatter
      */
 
-    private Function<S,String> getPairFormatter()
+    private Function<S, String> getPairFormatter()
     {
         return this.pairFormatter;
     }
@@ -339,14 +393,14 @@ public abstract class PairsWriter<S extends Object, T extends Pairs<S> & TimeSer
      * @throws NullPointerException if any of the expected inputs is null
      */
 
-    PairsWriter( Path pathToPairs, ChronoUnit timeResolution, Function<S,String> formatter )
+    PairsWriter( Path pathToPairs, ChronoUnit timeResolution, Function<S, String> formatter )
     {
         Objects.requireNonNull( pathToPairs, "Specify a non-null path to write." );
 
         Objects.requireNonNull( timeResolution, "Specify a non-null time resolution for writing pairs." );
 
         Objects.requireNonNull( formatter, "Specify a non-null time resolution for writing pairs." );
-        
+
         this.pathToPairs = pathToPairs;
         this.timeResolution = timeResolution;
         this.pairFormatter = formatter;

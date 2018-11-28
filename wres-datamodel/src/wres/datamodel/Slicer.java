@@ -837,22 +837,23 @@ public final class Slicer
 
     public static <T> TimeSeries<T> filterByDuration( TimeSeries<T> input, Predicate<Duration> duration )
     {
-        List<Event<List<Event<T>>>> returnMe = new ArrayList<>();
-        // Iterate through basis times
-        for ( TimeSeries<T> nextSeries : input.basisTimeIterator() )
+        Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
+
+        Objects.requireNonNull( duration, NULL_PREDICATE_EXCEPTION );
+        
+        List<Event<T>> returnMe = new ArrayList<>();
+
+        for ( Event<T> nextEvent : input.timeIterator() )
         {
-            Instant basisTime = nextSeries.getEarliestBasisTime();
-            // Iterate through durations until it is later than the nextDuration
-            for ( Event<T> nextEvent : nextSeries.timeIterator() )
+            Duration candidateDuration = nextEvent.getDuration();
+
+            if ( duration.test( candidateDuration ) )
             {
-                Duration candidateDuration = Duration.between( basisTime, nextEvent.getTime() );
-                if ( duration.test( candidateDuration ) )
-                {
-                    returnMe.add( Event.of( basisTime, Arrays.asList( nextEvent ) ) );
-                }
+                returnMe.add( nextEvent );
             }
         }
-        return BasicTimeSeries.of( returnMe );
+
+        return BasicTimeSeries.of( Arrays.asList( returnMe ) );
     }
 
     /**
@@ -935,11 +936,12 @@ public final class Slicer
                 {
                     return null;
                 }
-                rawInput.add( Event.of( next.getTime(),
+                rawInput.add( Event.of( next.getReferenceTime(),
+                                        next.getTime(),
                                         EnsemblePair.of( next.getValue().getLeft(),
                                                          subTraces.toArray( new Double[subTraces.size()] ) ) ) );
             }
-            builder.addTimeSeriesData( nextSeries.getEarliestBasisTime(), rawInput );
+            builder.addTimeSeries( rawInput );
         }
 
         //Return the time-series
