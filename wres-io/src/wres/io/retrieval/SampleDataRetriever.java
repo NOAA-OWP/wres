@@ -456,8 +456,11 @@ class SampleDataRetriever extends Retriever
             throw new RetrievalFailedException( "The request used to retrieve gridded data could not be formed.", e );
         }
 
-        griddedRequest.setEarliestLead( this.getSampleMetadata().getTimeWindow().getEarliestLeadDuration() );
-        griddedRequest.setLatestLead( this.getSampleMetadata().getTimeWindow().getLatestLeadDuration() );
+        griddedRequest.setEarliestLead( this.getSampleMetadata()
+                                            .getMetadata()
+                                            .getTimeWindow()
+                                            .getEarliestLeadDuration() );
+        griddedRequest.setLatestLead( this.getSampleMetadata().getMetadata().getTimeWindow().getLatestLeadDuration() );
 
         try
         {

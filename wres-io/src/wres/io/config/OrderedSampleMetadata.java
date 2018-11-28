@@ -19,7 +19,7 @@ import wres.io.data.details.ProjectDetails;
  *     that this metadata belongs to will be the 5th sample to be evaluated
  * </p>
  */
-public class OrderedSampleMetadata implements Comparable<OrderedSampleMetadata>
+public class OrderedSampleMetadata
 {
     /**
      * Metadata describing the primary set of data used for evaluation
@@ -118,46 +118,20 @@ public class OrderedSampleMetadata implements Comparable<OrderedSampleMetadata>
      */
     public Duration getMinimumLead()
     {
-        Duration minimum = this.getTimeWindow().getEarliestLeadDuration();
+        Duration minimum = this.getMetadata().getTimeWindow().getEarliestLeadDuration();
 
         // If the data needs to be scaled, but the earliest lead doesn't take that into account,
         // adjust the returned value to take entire range into consideration
-        if ( this.getScalePeriod() != null
-             && this.getTimeWindow().getEarliestLeadDuration().equals( this.getTimeWindow().getLatestLeadDuration() ) )
+        if ( this.getMetadata().hasTimeScale()
+             && this.getMetadata()
+                    .getTimeWindow()
+                    .getEarliestLeadDuration()
+                    .equals( this.getMetadata().getTimeWindow().getLatestLeadDuration() ) )
         {
-            minimum = minimum.minus( this.getScalePeriod() );
+            minimum = minimum.minus( this.getMetadata().getTimeScale().getPeriod() );
         }
 
         return minimum;
-    }
-
-    /**
-     * @return The time window for the values contained within the sample
-     */
-    public TimeWindow getTimeWindow()
-    {
-        return this.metadata.getTimeWindow();
-    }
-
-    /**
-     * @return The duration over which data will be rescaled within the sample data
-     */
-    private Duration getScalePeriod()
-    {
-        TimeScale scale = this.metadata.getTimeScale();
-
-        if (scale != null)
-        {
-            return scale.getPeriod();
-        }
-
-        return null;
-    }
-
-    @Override
-    public int compareTo( OrderedSampleMetadata orderedSampleMetadata )
-    {
-        return Integer.compare( this.sampleNumber, orderedSampleMetadata.sampleNumber );
     }
 
     @Override
@@ -178,10 +152,11 @@ public class OrderedSampleMetadata implements Comparable<OrderedSampleMetadata>
     public String toString()
     {
         // Should look like:
-        // -- #2 - GLOO2: [-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,ISSUE TIME,PT24H,PT48H]
+        // -- #2 - GLOO2: [-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,
+        //                 -1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT24H,PT48H]
         return "#" + this.getSampleNumber() + " - " +
                ConfigHelper.getFeatureDescription( this.getFeature() ) + ": " +
-               this.metadata.getTimeWindow();
+               this.getMetadata().getTimeWindow();
     }
 
     /**

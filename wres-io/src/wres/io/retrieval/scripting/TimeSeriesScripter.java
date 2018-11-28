@@ -98,11 +98,11 @@ class TimeSeriesScripter extends Scripter
         {
             this.addTab( 2 ).addLine(
                                       "AND TS.initialization_date >= '",
-                                      this.getSampleMetadata().getTimeWindow().getEarliestReferenceTime(),
+                                      this.getSampleMetadata().getMetadata().getTimeWindow().getEarliestReferenceTime(),
                                       "'" );
             this.addTab( 2 ).addLine(
                                       "AND TS.initialization_date < '",
-                                      this.getSampleMetadata().getTimeWindow().getLatestReferenceTime(),
+                                      this.getSampleMetadata().getMetadata().getTimeWindow().getLatestReferenceTime(),
                                       "'" );
         }
 

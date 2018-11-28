@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.generated.DataSourceConfig;
+import wres.datamodel.metadata.TimeWindow;
 import wres.io.config.ConfigHelper;
 import wres.io.config.OrderedSampleMetadata;
 import wres.io.data.details.SourceDetails;
@@ -292,20 +293,22 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
         script.addLine("FROM wres.Source S");
         script.addLine("WHERE S.is_point_data = FALSE");
 
-        if ( sampleMetadata.getTimeWindow()
-                           .getEarliestLeadDuration()
-                           .equals( sampleMetadata.getTimeWindow().getLatestLeadDuration() ) )
+        // Unwrap the time window for local use
+        TimeWindow window = sampleMetadata.getMetadata().getTimeWindow();
+
+        if ( window.getEarliestLeadDuration()
+                   .equals( window.getLatestLeadDuration() ) )
         {
             script.addTab()
                   .addLine( "AND S.lead = ",
-                            TimeHelper.durationToLead( sampleMetadata.getTimeWindow().getEarliestLeadDuration() ) );
+                            TimeHelper.durationToLead( window.getEarliestLeadDuration() ) );
         }
         else
         {
             script.addTab().addLine( "AND S.lead > ", TimeHelper.durationToLead( sampleMetadata.getMinimumLead() ) );
             script.addTab()
                   .addLine( "AND S.lead <= ",
-                            TimeHelper.durationToLead( sampleMetadata.getTimeWindow().getLatestLeadDuration() ) );
+                            TimeHelper.durationToLead( window.getLatestLeadDuration() ) );
         }
 
         if ( isForecast && sampleMetadata.getProjectDetails().getMinimumLead() > Integer.MIN_VALUE )
@@ -315,54 +318,53 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
 
         if ( isForecast && sampleMetadata.getProjectDetails().getMaximumLead() < Integer.MAX_VALUE )
         {
-            script.addTab().addLine("AND S.lead <= ", sampleMetadata.getProjectDetails().getMaximumLead());
+            script.addTab().addLine( "AND S.lead <= ", sampleMetadata.getProjectDetails().getMaximumLead() );
         }
 
-        if (sampleMetadata.getProjectDetails().getEarliestDate() != null)
+        if ( sampleMetadata.getProjectDetails().getEarliestDate() != null )
         {
-            script.addTab().add("AND S.output_time ");
+            script.addTab().add( "AND S.output_time " );
 
-            if (isForecast)
+            if ( isForecast )
             {
-                script.add("+ INTERVAL '1 ", TimeHelper.LEAD_RESOLUTION, "' * S.lead ");
+                script.add( "+ INTERVAL '1 ", TimeHelper.LEAD_RESOLUTION, "' * S.lead " );
             }
 
-            script.addLine(">= '", sampleMetadata.getProjectDetails().getEarliestDate(), "'");
+            script.addLine( ">= '", sampleMetadata.getProjectDetails().getEarliestDate(), "'" );
         }
 
-        if (sampleMetadata.getProjectDetails().getLatestDate() != null)
+        if ( sampleMetadata.getProjectDetails().getLatestDate() != null )
         {
-            script.addTab().add("AND S.output_time ");
+            script.addTab().add( "AND S.output_time " );
 
-            if (isForecast)
+            if ( isForecast )
             {
-                script.add("+ INTERVAL '1 ", TimeHelper.LEAD_RESOLUTION, "' * S.lead ");
+                script.add( "+ INTERVAL '1 ", TimeHelper.LEAD_RESOLUTION, "' * S.lead " );
             }
 
-            script.addLine("<= '", sampleMetadata.getProjectDetails().getLatestDate(), "'");
+            script.addLine( "<= '", sampleMetadata.getProjectDetails().getLatestDate(), "'" );
         }
 
         String issueClause = null;
-        if ( !sampleMetadata.getTimeWindow().hasUnboundedReferenceTimes() )
+        if ( !window.hasUnboundedReferenceTimes() )
         {
-            if ( sampleMetadata.getTimeWindow()
-                               .getEarliestReferenceTime()
-                               .equals( sampleMetadata.getTimeWindow().getLatestReferenceTime() ) )
+            if ( window.getEarliestReferenceTime()
+                       .equals( window.getLatestReferenceTime() ) )
             {
-                issueClause = "S.output_time = '" + sampleMetadata.getTimeWindow().getEarliestReferenceTime()
+                issueClause = "S.output_time = '" + window.getEarliestReferenceTime()
                               + "'::timestamp without time zone ";
             }
             else
             {
-                if ( !sampleMetadata.getTimeWindow().getEarliestReferenceTime().equals( Instant.MIN ) )
+                if ( !window.getEarliestReferenceTime().equals( Instant.MIN ) )
                 {
                     // TODO: Uncomment when it's time to go exclusive-inclusive
                     //issueClause = "S.output_time > '" + timeWindow.getEarliestTime() + "'::timestamp without time zone ";
-                    issueClause = "AND S.output_time >= '" + sampleMetadata.getTimeWindow().getEarliestReferenceTime()
+                    issueClause = "AND S.output_time >= '" + window.getEarliestReferenceTime()
                                   + "'::timestamp without time zone";
                 }
 
-                if ( !sampleMetadata.getTimeWindow().getLatestReferenceTime().equals( Instant.MAX ) )
+                if ( !window.getLatestReferenceTime().equals( Instant.MAX ) )
                 {
                     if ( issueClause == null )
                     {
@@ -373,7 +375,7 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
                         issueClause += NEWLINE;
                     }
 
-                    issueClause += "AND S.output_time <= '" + sampleMetadata.getTimeWindow().getLatestReferenceTime()
+                    issueClause += "AND S.output_time <= '" + window.getLatestReferenceTime()
                                    + "'::timestamp without time zone";
                 }
             }

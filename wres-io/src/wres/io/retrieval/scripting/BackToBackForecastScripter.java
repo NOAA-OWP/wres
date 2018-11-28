@@ -72,7 +72,10 @@ class BackToBackForecastScripter extends Scripter
     private void applyLeadQualifier()
     {
         long earliest = TimeHelper.durationToLead( this.getSampleMetadata().getMinimumLead());
-        long latest = TimeHelper.durationToLead( this.getSampleMetadata().getTimeWindow().getLatestLeadDuration() );
+        long latest = TimeHelper.durationToLead( this.getSampleMetadata()
+                                                     .getMetadata()
+                                                     .getTimeWindow()
+                                                     .getLatestLeadDuration() );
 
         if (earliest == latest)
         {
