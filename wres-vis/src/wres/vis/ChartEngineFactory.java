@@ -1140,7 +1140,8 @@ public abstract class ChartEngineFactory
             }
             else
             {
-                XMLTools.readXMLFromFile( new File( templateName ),
+                //XMLTools.readXMLFromFile( new File( templateName ),
+                XMLTools.readXMLFromFile( new File( templateName ).getAbsoluteFile(),
                                           parameters );
             }
         }
