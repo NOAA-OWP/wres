@@ -139,7 +139,7 @@ public class SingleValuedPairs extends Pairs<SingleValuedPair>
      * A builder to build the metric input.
      */
 
-    public static class SingleValuedPairsBuilder extends BasicPairsBuilder<SingleValuedPair>
+    public static class SingleValuedPairsBuilder extends PairsBuilder<SingleValuedPair>
     {
 
         @Override

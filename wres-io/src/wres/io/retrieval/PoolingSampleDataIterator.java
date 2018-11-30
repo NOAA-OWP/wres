@@ -79,7 +79,7 @@ class PoolingSampleDataIterator extends SampleDataIterator
 
             leadBounds = this.getLeadBounds( leadIteration );
         }
-
+        
         // We need to throw an exception if no samples to evaluate could be determined
         if (this.amountOfSamplesLeft() == 0)
         {

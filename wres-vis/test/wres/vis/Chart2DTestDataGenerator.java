@@ -30,7 +30,6 @@ import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.SampleMetadata.SampleMetadataBuilder;
 import wres.datamodel.metadata.StatisticMetadata;
@@ -99,7 +98,6 @@ public abstract class Chart2DTestDataGenerator
         {
             TimeWindow filter = TimeWindow.of( Instant.MIN,
                                                Instant.MAX,
-                                               ReferenceTime.VALID_TIME,
                                                Duration.ofHours( next ) );
             Slicer.filter( full, data -> data.getSampleMetadata().getTimeWindow().equals( filter ) ).forEach( builder::addStatistic );
         }
@@ -154,7 +152,6 @@ public abstract class Chart2DTestDataGenerator
                                                                               ThresholdDataType.LEFT ) );
                 TimeWindow window = TimeWindow.of( Instant.MIN,
                                                    Instant.MAX,
-                                                   ReferenceTime.VALID_TIME,
                                                    Duration.ofHours( (long) leadTime ) );
 
                 //Build the scalar result
@@ -222,7 +219,6 @@ public abstract class Chart2DTestDataGenerator
                                                                               ThresholdDataType.LEFT ) );
                 TimeWindow window = TimeWindow.of( Instant.MIN,
                                                    Instant.MAX,
-                                                   ReferenceTime.VALID_TIME,
                                                    Duration.ofHours( (long) leadTime ) );
 
                 //Build the scalar result
@@ -314,7 +310,6 @@ public abstract class Chart2DTestDataGenerator
                 {
                     TimeWindow window = TimeWindow.of( Instant.MIN,
                                                        Instant.MAX,
-                                                       ReferenceTime.VALID_TIME,
                                                        Duration.ofHours( (long) leadTime ) );
 
                     //Build the result
@@ -425,7 +420,6 @@ public abstract class Chart2DTestDataGenerator
                 {
                     TimeWindow window = TimeWindow.of( Instant.MIN,
                                                        Instant.MAX,
-                                                       ReferenceTime.VALID_TIME,
                                                        Duration.ofHours( (long) leadTime ) );
 
                     //Build the result
@@ -521,7 +515,6 @@ public abstract class Chart2DTestDataGenerator
                                                                    ThresholdDataType.LEFT );
                 TimeWindow window = TimeWindow.of( Instant.MIN,
                                                    Instant.MAX,
-                                                   ReferenceTime.VALID_TIME,
                                                    Duration.ofHours( (long) leadTime ) );
 
                 //Build the result
@@ -584,7 +577,6 @@ public abstract class Chart2DTestDataGenerator
         //Metric output metadata
         TimeWindow windowMeta = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                Instant.parse( "2015-12-31T11:59:59Z" ),
-                                               ReferenceTime.VALID_TIME,
                                                Duration.ofHours( 24 ),
                                                Duration.ofHours( 120 ) );
         final TimeWindow timeWindow = windowMeta;
@@ -613,7 +605,6 @@ public abstract class Chart2DTestDataGenerator
             final double leadTime = (Double) d.next().getKey();
             TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                Instant.parse( "2015-12-31T11:59:59Z" ),
-                                               ReferenceTime.VALID_TIME,
                                                Duration.ofHours( (long) leadTime ) );
 
             final DoubleMatrix2DResult t = (DoubleMatrix2DResult) data.getResult( leadTime );
@@ -680,7 +671,6 @@ public abstract class Chart2DTestDataGenerator
             final double leadTime = (Double) d.next().getKey();
             TimeWindow window = TimeWindow.of( Instant.MIN,
                                                Instant.MAX,
-                                               ReferenceTime.VALID_TIME,
                                                Duration.ofHours( (long) leadTime ) );
 
             final DoubleMatrix2DResult t = (DoubleMatrix2DResult) data.getResult( leadTime );
@@ -754,7 +744,6 @@ public abstract class Chart2DTestDataGenerator
             final double leadTime = (Double) d.next().getKey();
             TimeWindow window = TimeWindow.of( Instant.MIN,
                                                Instant.MAX,
-                                               ReferenceTime.VALID_TIME,
                                                Duration.ofHours( (long) leadTime ) );
 
             final DoubleMatrix2DResult t = (DoubleMatrix2DResult) data.getResult( leadTime );
@@ -835,7 +824,6 @@ public abstract class Chart2DTestDataGenerator
             //Add the 6h data
             TimeWindow sixHourWindow = TimeWindow.of( begin,
                                                       end,
-                                                      ReferenceTime.ISSUE_TIME,
                                                       Duration.ofHours( 6 ) );
             DoubleScoreStatistic sixHourOutput =
                     DoubleScoreStatistic.of( sixHourOutputs[i],
@@ -849,7 +837,6 @@ public abstract class Chart2DTestDataGenerator
             //Add the 12h data
             TimeWindow twelveHourWindow = TimeWindow.of( begin,
                                                          end,
-                                                         ReferenceTime.ISSUE_TIME,
                                                          Duration.ofHours( 12 ) );
             DoubleScoreStatistic twelveHourOutput =
                     DoubleScoreStatistic.of( twelveHourOutputs[i],
@@ -863,7 +850,6 @@ public abstract class Chart2DTestDataGenerator
             //Add the 18h data
             TimeWindow eighteenHourWindow = TimeWindow.of( begin,
                                                            end,
-                                                           ReferenceTime.ISSUE_TIME,
                                                            Duration.ofHours( 18 ) );
             DoubleScoreStatistic eighteenHourOutput =
                     DoubleScoreStatistic.of( eighteenHourOutputs[i],
@@ -877,7 +863,6 @@ public abstract class Chart2DTestDataGenerator
             //Add the 24h data
             TimeWindow twentyFourHourWindow = TimeWindow.of( begin,
                                                              end,
-                                                             ReferenceTime.ISSUE_TIME,
                                                              Duration.ofHours( 24 ) );
             DoubleScoreStatistic twentyFourHourOutput =
                     DoubleScoreStatistic.of( twentyFourHourOutputs[i],
@@ -949,7 +934,6 @@ public abstract class Chart2DTestDataGenerator
 
             TimeWindow timeWindow = TimeWindow.of( Instant.parse( nextDate ),
                                                    Instant.parse( nextDate ),
-                                                   ReferenceTime.ISSUE_TIME,
                                                    Duration.ofHours( 0 ),
                                                    Duration.ofHours( 18 ) );
 
@@ -993,7 +977,6 @@ public abstract class Chart2DTestDataGenerator
         // Create the metadata
         TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                            Instant.parse( "1985-01-10T00:00:00Z" ),
-                                           ReferenceTime.ISSUE_TIME,
                                            Duration.ofHours( 6 ),
                                            Duration.ofHours( 336 ) );
 
@@ -1045,7 +1028,6 @@ public abstract class Chart2DTestDataGenerator
         // Expected, which uses identifier of MetricConstants.MAIN for convenience
         TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                            Instant.parse( "1985-01-10T00:00:00Z" ),
-                                           ReferenceTime.ISSUE_TIME,
                                            Duration.ofHours( 6 ),
                                            Duration.ofHours( 336 ) );
 

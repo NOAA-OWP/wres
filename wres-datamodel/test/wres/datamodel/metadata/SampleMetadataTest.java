@@ -131,11 +131,9 @@ public class SampleMetadataTest
         }
         // Add a time window
         TimeWindow firstWindow = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                Instant.parse( "1986-01-01T00:00:00Z" ),
-                                                ReferenceTime.VALID_TIME );
+                                                Instant.parse( "1986-01-01T00:00:00Z" ) );
         TimeWindow secondWindow = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                 Instant.parse( "1986-01-01T00:00:00Z" ),
-                                                 ReferenceTime.VALID_TIME );
+                                                 Instant.parse( "1986-01-01T00:00:00Z" ) );
         Location l6 = Location.of( "DRRC3" );
         final TimeWindow timeWindow2 = firstWindow;
         SampleMetadata m6 = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "SOME_DIM" ) )
@@ -154,7 +152,8 @@ public class SampleMetadataTest
 
         TimeWindow thirdWindow = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                 Instant.parse( "1986-01-01T00:00:00Z" ),
-                                                ReferenceTime.ISSUE_TIME );
+                                                Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                Instant.parse( "1986-01-01T00:00:00Z" ) );
         Location l8 = Location.of( "DRRC3" );
         final TimeWindow timeWindow4 = thirdWindow;
         SampleMetadata m8 = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "SOME_DIM" ) )
@@ -317,11 +316,11 @@ public class SampleMetadataTest
                                                               .build();
 
         assertTrue( metaOne.equalsWithoutTimeWindowOrThresholds( metaOne ) );
-        
+
         assertFalse( metaOne.equalsWithoutTimeWindowOrThresholds( metaTwo ) );
 
         assertFalse( metaOne.equalsWithoutTimeWindowOrThresholds( metaThree ) );
-        
+
         SampleMetadata metaFour = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of() )
                                                              .setTimeScale( TimeScale.of( Duration.ofDays( 1 ),
                                                                                           TimeScaleFunction.MEAN ) )
@@ -331,18 +330,18 @@ public class SampleMetadataTest
                                                              .setTimeScale( TimeScale.of( Duration.ofDays( 1 ),
                                                                                           TimeScaleFunction.MAXIMUM ) )
                                                              .build();
-        
+
         SampleMetadata metaSix = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of() )
-                .setProjectConfig( new ProjectConfig( null,
-                                                      null,
-                                                      null,
-                                                      null,
-                                                      null,
-                                                      "A" ) )
-                .build();
+                                                            .setProjectConfig( new ProjectConfig( null,
+                                                                                                  null,
+                                                                                                  null,
+                                                                                                  null,
+                                                                                                  null,
+                                                                                                  "A" ) )
+                                                            .build();
 
         assertFalse( metaFour.equalsWithoutTimeWindowOrThresholds( metaOne ) );
-        
+
         assertTrue( metaFour.equalsWithoutTimeWindowOrThresholds( metaFour ) );
 
         assertFalse( metaFour.equalsWithoutTimeWindowOrThresholds( metaFive ) );
@@ -388,11 +387,9 @@ public class SampleMetadataTest
 
         // Add a time window
         TimeWindow firstWindow = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                Instant.parse( "1986-01-01T00:00:00Z" ),
-                                                ReferenceTime.VALID_TIME );
+                                                Instant.parse( "1986-01-01T00:00:00Z" ) );
         TimeWindow secondWindow = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                 Instant.parse( "1986-01-01T00:00:00Z" ),
-                                                 ReferenceTime.VALID_TIME );
+                                                 Instant.parse( "1986-01-01T00:00:00Z" ) );
         Location l6 = Location.of( "DRRC3" );
         final TimeWindow timeWindow2 = firstWindow;
         SampleMetadata m6 = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "SOME_DIM" ) )
@@ -410,7 +407,8 @@ public class SampleMetadataTest
 
         TimeWindow thirdWindow = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                 Instant.parse( "1986-01-01T00:00:00Z" ),
-                                                ReferenceTime.ISSUE_TIME );
+                                                Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                Instant.parse( "1986-01-01T00:00:00Z" ) );
         Location l8 = Location.of( "DRRC3" );
 
         // Add a threshold
@@ -517,7 +515,10 @@ public class SampleMetadataTest
                                                                              ThresholdDataType.LEFT ) );
 
         TimeWindow timeWindow =
-                TimeWindow.of( Instant.parse( "2000-02-02T00:00:00Z" ), Instant.parse( "2000-02-02T00:00:00Z" ) );
+                TimeWindow.of( Instant.parse( "2000-02-02T00:00:00Z" ),
+                               Instant.parse( "2000-02-02T00:00:00Z" ),
+                               Instant.parse( "2000-02-02T00:00:00Z" ),
+                               Instant.parse( "2000-02-02T00:00:00Z" ) );
 
         SampleMetadata meta = new SampleMetadataBuilder().setFromExistingInstance( SampleMetadata.of() )
                                                          .setIdentifier( identifier )
@@ -529,8 +530,8 @@ public class SampleMetadataTest
                                                          .build();
 
         assertEquals( meta.toString(),
-                      "(A,B,[2000-02-02T00:00:00Z,2000-02-02T00:00:00Z,VALID TIME,PT0S,PT0S],"
-                                       + "= 1.0,[PT24H,MEAN],DIMENSIONLESS)" );
+                      "(A,B,[2000-02-02T00:00:00Z,2000-02-02T00:00:00Z,2000-02-02T00:00:00Z,2000-02-02T00:00:00Z"
+                      + ",PT0S,PT0S],= 1.0,[PT24H,MEAN],DIMENSIONLESS)" );
 
     }
 

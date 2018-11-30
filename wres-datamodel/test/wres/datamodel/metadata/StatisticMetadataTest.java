@@ -32,8 +32,7 @@ public class StatisticMetadataTest
     public void testEquals()
     {
         TimeWindow firstWindow = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                Instant.parse( "1986-01-01T00:00:00Z" ),
-                                                ReferenceTime.ISSUE_TIME );
+                                                Instant.parse( "1986-01-01T00:00:00Z" ) );
         OneOrTwoThresholds thresholds =
                 OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                      Operator.GREATER,
@@ -203,8 +202,7 @@ public class StatisticMetadataTest
     {
         // Equal
         TimeWindow firstWindow = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                Instant.parse( "1986-01-01T00:00:00Z" ),
-                                                ReferenceTime.ISSUE_TIME );
+                                                Instant.parse( "1986-01-01T00:00:00Z" ) );
 
         OneOrTwoThresholds thresholds =
                 OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),

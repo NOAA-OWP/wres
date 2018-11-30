@@ -28,6 +28,7 @@ import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.MatrixStatistic;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.io.config.ConfigHelper;
+import wres.io.writing.commaseparated.CommaSeparatedUtilities;
 
 /**
  * Helps write contingency tables comprising {@link MatrixStatistic} to a file of Comma Separated Values (CSV).
@@ -35,7 +36,7 @@ import wres.io.config.ConfigHelper;
  * @author james.brown@hydrosolved.com
  */
 
-public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
+public class CommaSeparatedMatrixWriter extends CommaSeparatedStatisticsWriter
         implements Consumer<ListOfStatistics<MatrixStatistic>>, Supplier<Set<Path>>
 {
     /**
@@ -146,11 +147,11 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
         for ( MetricConstants m : metrics )
         {
 
-            StringJoiner headerRow = CommaSeparatedWriter.getDefaultHeaderFromSampleMetadata( output.getData()
-                                                                                                    .get( 0 )
-                                                                                                    .getMetadata()
-                                                                                                    .getSampleMetadata(),
-                                                                                              durationUnits );
+            StringJoiner headerRow = CommaSeparatedUtilities.getTimeWindowHeaderFromSampleMetadata( output.getData()
+                                                                                                          .get( 0 )
+                                                                                                          .getMetadata()
+                                                                                                          .getSampleMetadata(),
+                                                                                                    durationUnits );
 
             Set<Path> innerPathsWrittenTo = Collections.emptySet();
 
@@ -230,7 +231,7 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
                                                                  timeWindow,
                                                                  durationUnits );
 
-            CommaSeparatedWriter.writeTabularOutputToFile( rows, outputPath );
+            CommaSeparatedStatisticsWriter.writeTabularOutputToFile( rows, outputPath );
 
             // If writeTabularOutputToFile did not throw an exception, assume
             // it succeeded in writing to the file, track outputs now (add must
@@ -287,7 +288,7 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
                                                                  meta,
                                                                  threshold );
 
-            CommaSeparatedWriter.writeTabularOutputToFile( rows, outputPath );
+            CommaSeparatedStatisticsWriter.writeTabularOutputToFile( rows, outputPath );
 
             // If writeTabularOutputToFile did not throw an exception, assume
             // it succeeded in writing to the file, track outputs now (add must
@@ -392,7 +393,7 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
                 nextOutput.iterator().forEachRemaining( merge::add );
             }
             // Add the merged row
-            CommaSeparatedWriter.addRowToInput( returnMe,
+            CommaSeparatedStatisticsWriter.addRowToInput( returnMe,
                                                 timeWindow,
                                                 merge,
                                                 formatter,

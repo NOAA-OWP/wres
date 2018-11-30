@@ -2,16 +2,11 @@ package wres.io.retrieval.scripting;
 
 import java.io.IOException;
 import java.sql.SQLException;
-import java.time.Instant;
-
-import org.apache.commons.lang3.tuple.Pair;
 
 import wres.config.generated.DataSourceConfig;
-import wres.config.generated.Feature;
+import wres.datamodel.metadata.TimeWindow;
 import wres.io.config.ConfigHelper;
 import wres.io.config.OrderedSampleMetadata;
-import wres.io.data.details.ProjectDetails;
-import wres.util.CalculationException;
 import wres.util.TimeHelper;
 
 class PoolingForecastScripter extends Scripter
@@ -85,42 +80,52 @@ class PoolingForecastScripter extends Scripter
 
         String issueQualifier;
 
-        if (this.getSampleMetadata().getEarliestTime().equals( this.getSampleMetadata().getLatestTime() ))
+        // Unwrap the time window for local use
+        TimeWindow window = this.getSampleMetadata().getMetadata().getTimeWindow();
+        
+        if ( window.getEarliestReferenceTime()
+                   .equals( window.getLatestReferenceTime() ) )
         {
-            issueQualifier = "TS.initialization_date = '" + this.getSampleMetadata().getEarliestTime() + "'::timestamp without time zone ";
+            issueQualifier =
+                    "TS.initialization_date = '" + window.getEarliestReferenceTime()
+                             + "'::timestamp without time zone ";
         }
         else
         {
             // TODO: Change ">=" to ">" when we move to exclusive-inclusive
-            issueQualifier = "TS.initialization_date >= '" + this.getSampleMetadata().getEarliestTime() + "'::timestamp without time zone ";
-            issueQualifier += "AND TS.initialization_date <= '" + this.getSampleMetadata().getLatestTime() + "'::timestamp without time zone";
+            issueQualifier =
+                    "TS.initialization_date >= '" + window.getEarliestReferenceTime()
+                             + "'::timestamp without time zone ";
+            issueQualifier += "AND TS.initialization_date <= '"
+                              + window.getLatestReferenceTime()
+                              + "'::timestamp without time zone";
         }
-        this.addTab().addLine("AND ", issueQualifier);
+        this.addTab().addLine( "AND ", issueQualifier );
 
-        if (this.getProjectDetails().getEarliestDate() != null)
+        if ( this.getProjectDetails().getEarliestDate() != null )
         {
-            this.addTab().addLine("AND TS.initialization_date + ",
+            this.addTab().addLine( "AND TS.initialization_date + ",
                                    "INTERVAL '1 MINUTE' * TSV.lead >= '",
                                    this.getProjectDetails().getEarliestDate(),
-                                   "'");
+                                   "'" );
         }
 
-        if (this.getProjectDetails().getLatestDate() != null)
+        if ( this.getProjectDetails().getLatestDate() != null )
         {
-            this.addTab().addLine("AND TS.initialization_date + ",
-                                  "INTERVAL '1 MINUTE' * TSV.lead <= '",
-                                  this.getProjectDetails().getLatestDate(),
-                                  "'");
+            this.addTab().addLine( "AND TS.initialization_date + ",
+                                   "INTERVAL '1 MINUTE' * TSV.lead <= '",
+                                   this.getProjectDetails().getLatestDate(),
+                                   "'" );
         }
 
-        this.addTab().addLine("AND EXISTS (");
-        this.addTab(  2  ).addLine("SELECT 1");
-        this.addTab(  2  ).addLine("FROM wres.ProjectSource PS");
-        this.addTab(  2  ).addLine("WHERE PS.project_id = ", this.getProjectDetails().getId());
-        this.addTab(   3   ).addLine("AND PS.member = ", this.getMember());
-        this.addTab(   3   ).addLine("AND PS.source_id = TSS.source_id");
-        this.addTab().addLine(")");
-        this.add("GROUP BY TS.initialization_date, TSV.lead, ");
+        this.addTab().addLine( "AND EXISTS (" );
+        this.addTab( 2 ).addLine( "SELECT 1" );
+        this.addTab( 2 ).addLine( "FROM wres.ProjectSource PS" );
+        this.addTab( 2 ).addLine( "WHERE PS.project_id = ", this.getProjectDetails().getId() );
+        this.addTab( 3 ).addLine( "AND PS.member = ", this.getMember() );
+        this.addTab( 3 ).addLine( "AND PS.source_id = TSS.source_id" );
+        this.addTab().addLine( ")" );
+        this.add( "GROUP BY TS.initialization_date, TSV.lead, " );
 
         if (!usesNetcdf)
         {
@@ -144,7 +149,10 @@ class PoolingForecastScripter extends Scripter
     private void applyLeadQualifier()
     {
         long earliest = TimeHelper.durationToLead( this.getSampleMetadata().getMinimumLead() );
-        long latest = TimeHelper.durationToLead( this.getSampleMetadata().getLatestLead() );
+        long latest = TimeHelper.durationToLead( this.getSampleMetadata()
+                                                     .getMetadata()
+                                                     .getTimeWindow()
+                                                     .getLatestLeadDuration() );
 
         if (earliest == latest)
         {

@@ -4,10 +4,8 @@ import java.io.IOException;
 import java.sql.SQLException;
 
 import wres.config.generated.DataSourceConfig;
-import wres.config.generated.Feature;
 import wres.io.config.ConfigHelper;
 import wres.io.config.OrderedSampleMetadata;
-import wres.io.data.details.ProjectDetails;
 import wres.util.CalculationException;
 import wres.util.Strings;
 
@@ -99,11 +97,13 @@ class TimeSeriesScripter extends Scripter
         if (this.getForecastLag() != 0)
         {
             this.addTab( 2 ).addLine(
-                    "AND TS.initialization_date >= '", this.getSampleMetadata().getEarliestTime(), "'"
-            );
+                                      "AND TS.initialization_date >= '",
+                                      this.getSampleMetadata().getMetadata().getTimeWindow().getEarliestReferenceTime(),
+                                      "'" );
             this.addTab( 2 ).addLine(
-                    "AND TS.initialization_date < '", this.getSampleMetadata().getLatestTime(), "'"
-            );
+                                      "AND TS.initialization_date < '",
+                                      this.getSampleMetadata().getMetadata().getTimeWindow().getLatestReferenceTime(),
+                                      "'" );
         }
 
         this.addTab(  2  ).addLine("AND EXISTS (");

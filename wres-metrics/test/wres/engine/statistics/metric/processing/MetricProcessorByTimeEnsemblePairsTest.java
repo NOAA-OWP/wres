@@ -34,7 +34,6 @@ import wres.datamodel.MetricConstants.SampleDataGroup;
 import wres.datamodel.MetricConstants.StatisticGroup;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.Slicer;
-import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.sampledata.pairs.EnsemblePair;
 import wres.datamodel.sampledata.pairs.EnsemblePairs;
@@ -724,7 +723,6 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         // Expected result
         final TimeWindow expectedWindow = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                          Instant.parse( "2010-12-31T11:59:59Z" ),
-                                                         ReferenceTime.VALID_TIME,
                                                          Duration.ofHours( 24 ) );
 
         //Obtain the results

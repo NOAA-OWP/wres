@@ -120,7 +120,7 @@ public class MulticategoryPairs extends Pairs<MulticategoryPair>
      * A builder to build the metric input.
      */
 
-    public static class MulticategoryPairsBuilder extends BasicPairsBuilder<MulticategoryPair>
+    public static class MulticategoryPairsBuilder extends PairsBuilder<MulticategoryPair>
     {
         @Override
         public MulticategoryPairs build()

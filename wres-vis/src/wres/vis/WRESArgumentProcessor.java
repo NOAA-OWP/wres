@@ -112,7 +112,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
 
         String durationString = Long.toString( TimeHelper.durationToLongUnits( meta.getSampleMetadata()
                                                                                    .getTimeWindow()
-                                                                                   .getLatestLeadTime(),
+                                                                                   .getLatestLeadDuration(),
                                                                                this.getDurationUnits() ) )
                                 + " "
                                 + this.getDurationUnits().name().toUpperCase();
@@ -159,11 +159,12 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
             SortedSet<TimeWindow> timeWindows =
                     Slicer.discover( displayedPlotInput,
                                      next -> next.getMetadata().getSampleMetadata().getTimeWindow() );
-            TimeWindow timeWindow = TimeWindow.of( timeWindows.first().getEarliestTime(),
-                                                   timeWindows.last().getLatestTime(),
-                                                   timeWindows.first().getReferenceTime(),
-                                                   timeWindows.first().getEarliestLeadTime(),
-                                                   timeWindows.last().getLatestLeadTime() );
+            TimeWindow timeWindow = TimeWindow.of( timeWindows.first().getEarliestReferenceTime(),
+                                                   timeWindows.last().getLatestReferenceTime(),
+                                                   timeWindows.first().getEarliestValidTime(),
+                                                   timeWindows.last().getLatestValidTime(),
+                                                   timeWindows.first().getEarliestLeadDuration(),
+                                                   timeWindows.last().getLatestLeadDuration() );
             recordWindowingArguments( timeWindow );
         }
         else
@@ -243,20 +244,20 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
     private void recordWindowingArguments( final TimeWindow timeWindow )
     {
         // Check for unbounded times and do not display this unconstrained condition: #46772
-        if ( Objects.nonNull( timeWindow ) && ! timeWindow.hasUnboundedTimes() )
+        if ( Objects.nonNull( timeWindow ) && ! timeWindow.hasUnboundedReferenceTimes() )
         {
-            earliestInstant = timeWindow.getEarliestTime();
-            latestInstant = timeWindow.getLatestTime();
+            earliestInstant = timeWindow.getEarliestReferenceTime();
+            latestInstant = timeWindow.getLatestReferenceTime();
             addArgument( "earliestLeadTime",
-                         Long.toString( TimeHelper.durationToLongUnits( timeWindow.getEarliestLeadTime(),
+                         Long.toString( TimeHelper.durationToLongUnits( timeWindow.getEarliestLeadDuration(),
                                                                         this.getDurationUnits() ) ) );
             addArgument( "latestLeadTime",
-                         Long.toString( TimeHelper.durationToLongUnits( timeWindow.getLatestLeadTime(),
+                         Long.toString( TimeHelper.durationToLongUnits( timeWindow.getLatestLeadDuration(),
                                                          this.getDurationUnits() ) ) );
             
             // Jbr: Qualify the reference time with "evaluation period" in code rather than the graphics template
             // This allows for the time window to be ommited when unconstrained. See #46772.
-            String referenceTime = timeWindow.getReferenceTime().toString() + " Evaluation Period: ";
+            String referenceTime = "ISSUE TIME Evaluation Period: ";
             
             addArgument( "referenceTime", referenceTime ); //#44873, #46772
         }
@@ -294,7 +295,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         if ( plotTimeWindow != null )
         {
             String durationString =
-                    TimeHelper.durationToLongUnits( plotTimeWindow.getLatestLeadTime(), this.getDurationUnits() ) + " "
+                    TimeHelper.durationToLongUnits( plotTimeWindow.getLatestLeadDuration(), this.getDurationUnits() ) + " "
                               + this.getDurationUnits().name().toUpperCase();
             addArgument( "diagramInstanceDescription", "at Lead Time " + durationString );
             addArgument( "plotTitleVariable", "Thresholds" );
@@ -350,8 +351,8 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         
         if ( !meta.getSampleMetadata()
                   .getTimeWindow()
-                  .getEarliestLeadTime()
-                  .equals( meta.getSampleMetadata().getTimeWindow().getLatestLeadTime() ) )
+                  .getEarliestLeadDuration()
+                  .equals( meta.getSampleMetadata().getTimeWindow().getLatestLeadDuration() ) )
         {
             addArgument( "legendTitle", "Lead time window "+durationUnitsString+", Threshold " );
         }

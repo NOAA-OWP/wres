@@ -22,7 +22,6 @@ import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.TimeScaleConfig;
-import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
@@ -208,7 +207,6 @@ class SampleDataRetriever extends Retriever
         TimeWindow fullWindow = TimeWindow.of(
                 Instant.MIN,
                 Instant.MAX,
-                ReferenceTime.ISSUE_TIME,
                 Duration.of(this.getFirstlead(), TimeHelper.LEAD_RESOLUTION),
                 Duration.of(this.getLastLead(), TimeHelper.LEAD_RESOLUTION)
         );
@@ -458,8 +456,11 @@ class SampleDataRetriever extends Retriever
             throw new RetrievalFailedException( "The request used to retrieve gridded data could not be formed.", e );
         }
 
-        griddedRequest.setEarliestLead( this.getSampleMetadata().getEarliestLead() );
-        griddedRequest.setLatestLead( this.getSampleMetadata().getLatestLead() );
+        griddedRequest.setEarliestLead( this.getSampleMetadata()
+                                            .getMetadata()
+                                            .getTimeWindow()
+                                            .getEarliestLeadDuration() );
+        griddedRequest.setLatestLead( this.getSampleMetadata().getMetadata().getTimeWindow().getLatestLeadDuration() );
 
         try
         {

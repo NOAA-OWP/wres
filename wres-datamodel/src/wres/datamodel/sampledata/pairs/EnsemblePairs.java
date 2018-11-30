@@ -139,7 +139,7 @@ public class EnsemblePairs extends Pairs<EnsemblePair>
      * A builder to build the metric input.
      */
 
-    public static class EnsemblePairsBuilder extends BasicPairsBuilder<EnsemblePair>
+    public static class EnsemblePairsBuilder extends PairsBuilder<EnsemblePair>
     {
 
         @Override

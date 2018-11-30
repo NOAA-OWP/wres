@@ -66,7 +66,6 @@ import wres.config.generated.TimeScaleConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.StatisticMetadata;
 import wres.datamodel.metadata.TimeWindow;
@@ -805,14 +804,14 @@ public class ConfigHelper
         // TODO: simplify this method, if possible
         Objects.requireNonNull( projectDetails );
 
-        Instant earliestTime;
-        Instant latestTime;
-
+        Instant earliestReferenceTime = Instant.MIN;
+        Instant latestReferenceTime = Instant.MAX;
+        Instant earliestValidTime = Instant.MIN;
+        Instant latestValidTime = Instant.MAX;
+        
         Duration beginningLead;
 
-        // Default reference time
-        ReferenceTime referenceTime = ReferenceTime.ISSUE_TIME;
-
+        // Set the lead durations
         if ( ProjectConfigs.hasTimeSeriesMetrics( projectDetails.getProjectConfig() ) )
         {
             beginningLead = firstLead;
@@ -831,52 +830,52 @@ public class ConfigHelper
             beginningLead = lastLead;
         }
 
+        // Set the datetimes
+        
+        // Rolling sequence
         if ( projectDetails.getPairingMode() == ROLLING )
         {
             long frequencyOffset = TimeHelper.unitsToLeadUnits( projectDetails.getIssuePoolingWindowUnit(),
                                                                 projectDetails.getIssuePoolingWindowFrequency() )
                                    * sequenceStep;
 
-            earliestTime = Instant.parse( projectDetails.getEarliestIssueDate() );
-            earliestTime = earliestTime.plus( frequencyOffset, ChronoUnit.MINUTES );
+            earliestReferenceTime = Instant.parse( projectDetails.getEarliestIssueDate() );
+            earliestReferenceTime = earliestReferenceTime.plus( frequencyOffset, ChronoUnit.MINUTES );
 
             if ( projectDetails.getIssuePoolingWindowPeriod() > 0 )
             {
-                latestTime = earliestTime.plus( projectDetails.getIssuePoolingWindowPeriod(),
+                latestReferenceTime = earliestReferenceTime.plus( projectDetails.getIssuePoolingWindowPeriod(),
                                                 ChronoUnit.valueOf( projectDetails.getIssuePoolingWindowUnit()
                                                                                   .toUpperCase() ) );
             }
             else
             {
-                latestTime = earliestTime;
+                latestReferenceTime = earliestReferenceTime;
             }
 
         }
-        //Valid dates available
-        else if ( projectDetails.getEarliestDate() != null && projectDetails.getLatestDate() != null )
-        {
-            earliestTime = Instant.parse( projectDetails.getEarliestDate() );
-            latestTime = Instant.parse( projectDetails.getLatestDate() );
-            
-            referenceTime = ReferenceTime.VALID_TIME;
-            
-        }
-        //Issue dates available
-        else if ( projectDetails.getEarliestIssueDate() != null && projectDetails.getLatestIssueDate() != null )
-        {
-            earliestTime = Instant.parse( projectDetails.getEarliestIssueDate() );
-            latestTime = Instant.parse( projectDetails.getLatestIssueDate() );
-        }
-        //No dates available
+        // No rolling sequence
         else
         {
-            earliestTime = Instant.MIN;
-            latestTime = Instant.MAX;
+            //Valid datetimes available
+            if ( projectDetails.getEarliestDate() != null && projectDetails.getLatestDate() != null )
+            {
+                earliestValidTime = Instant.parse( projectDetails.getEarliestDate() );
+                latestValidTime = Instant.parse( projectDetails.getLatestDate() );
+            }
+
+            //Issue datetimes available
+            if ( projectDetails.getEarliestIssueDate() != null && projectDetails.getLatestIssueDate() != null )
+            {
+                earliestReferenceTime = Instant.parse( projectDetails.getEarliestIssueDate() );
+                latestReferenceTime = Instant.parse( projectDetails.getLatestIssueDate() );
+            }
         }
 
-        return TimeWindow.of( earliestTime,
-                              latestTime,
-                              referenceTime,
+        return TimeWindow.of( earliestReferenceTime,
+                              latestReferenceTime,
+                              earliestValidTime,
+                              latestValidTime,
                               beginningLead,
                               lastLead );
     }
@@ -1364,7 +1363,7 @@ public class ConfigHelper
         return ConfigHelper.getOutputPathToWrite( outputDirectory,
                                                   destinationConfig,
                                                   meta,
-                                                  TimeHelper.durationToLongUnits( timeWindow.getLatestLeadTime(),
+                                                  TimeHelper.durationToLongUnits( timeWindow.getLatestLeadDuration(),
                                                                                   leadUnits )
                                                         + "_"
                                                         + leadUnits.name().toUpperCase() );
@@ -1533,9 +1532,9 @@ public class ConfigHelper
             filename.add( meta.getIdentifier().getScenarioID() );
         }
 
-        if ( !timeWindow.getLatestTime().equals( Instant.MAX ) )
+        if ( !timeWindow.getLatestReferenceTime().equals( Instant.MAX ) )
         {
-            String lastTime = timeWindow.getLatestTime().toString();
+            String lastTime = timeWindow.getLatestReferenceTime().toString();
 
             // TODO: Format the last time in the style of "20180505T2046"
             // instead of "2018-05-05 20:46:00.000-0000"
@@ -1547,7 +1546,7 @@ public class ConfigHelper
         }
 
         // Format the duration with the default format
-        filename.add( Long.toString( TimeHelper.durationToLongUnits( timeWindow.getLatestLeadTime(),
+        filename.add( Long.toString( TimeHelper.durationToLongUnits( timeWindow.getLatestLeadDuration(),
                                                                      leadUnits ) ) );
         filename.add( leadUnits.name().toUpperCase() );
 
