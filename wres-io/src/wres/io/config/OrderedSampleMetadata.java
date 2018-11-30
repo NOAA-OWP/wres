@@ -1,13 +1,11 @@
 package wres.io.config;
 
 import java.time.Duration;
-import java.time.Instant;
 
 import wres.config.generated.Feature;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.TimeScale;
 import wres.datamodel.metadata.TimeWindow;
@@ -21,7 +19,7 @@ import wres.io.data.details.ProjectDetails;
  *     that this metadata belongs to will be the 5th sample to be evaluated
  * </p>
  */
-public class OrderedSampleMetadata implements Comparable<OrderedSampleMetadata>
+public class OrderedSampleMetadata
 {
     /**
      * Metadata describing the primary set of data used for evaluation
@@ -100,14 +98,6 @@ public class OrderedSampleMetadata implements Comparable<OrderedSampleMetadata>
     }
 
     /**
-     * @return The time system describing if the Sample Data is constrained by issued or valid time
-     */
-    public ReferenceTime getReferenceTimeSystem()
-    {
-        return this.metadata.getTimeWindow().getReferenceTime();
-    }
-
-    /**
      * @return Details about the feature being evaluated
      */
     public Feature getFeature()
@@ -128,69 +118,20 @@ public class OrderedSampleMetadata implements Comparable<OrderedSampleMetadata>
      */
     public Duration getMinimumLead()
     {
-        Duration minimum = this.getEarliestLead();
+        Duration minimum = this.getMetadata().getTimeWindow().getEarliestLeadDuration();
 
         // If the data needs to be scaled, but the earliest lead doesn't take that into account,
         // adjust the returned value to take entire range into consideration
-        if (this.getScalePeriod() != null && this.getEarliestLead().equals( this.getLatestLead() ))
+        if ( this.getMetadata().hasTimeScale()
+             && this.getMetadata()
+                    .getTimeWindow()
+                    .getEarliestLeadDuration()
+                    .equals( this.getMetadata().getTimeWindow().getLatestLeadDuration() ) )
         {
-            minimum = minimum.minus( this.getScalePeriod() );
+            minimum = minimum.minus( this.getMetadata().getTimeScale().getPeriod() );
         }
 
         return minimum;
-    }
-
-    /**
-     * @return The earliest lead duration for the values contained within the sample
-     */
-    public Duration getEarliestLead()
-    {
-        return this.metadata.getTimeWindow().getEarliestLeadTime();
-    }
-
-    /**
-     * @return The latest lead duration for the values contained within the sample
-     */
-    public Duration getLatestLead()
-    {
-        return this.metadata.getTimeWindow().getLatestLeadTime();
-    }
-
-    /**
-     * @return The earliest time contained within the sample data relative to the reference time system
-     */
-    public Instant getEarliestTime()
-    {
-        return this.metadata.getTimeWindow().getEarliestTime();
-    }
-
-    /**
-     * @return The latest time contained within the sample data relative to the reference time system
-     */
-    public Instant getLatestTime()
-    {
-        return this.metadata.getTimeWindow().getLatestTime();
-    }
-
-    /**
-     * @return The duration over which data will be rescaled within the sample data
-     */
-    private Duration getScalePeriod()
-    {
-        TimeScale scale = this.metadata.getTimeScale();
-
-        if (scale != null)
-        {
-            return scale.getPeriod();
-        }
-
-        return null;
-    }
-
-    @Override
-    public int compareTo( OrderedSampleMetadata orderedSampleMetadata )
-    {
-        return Integer.compare( this.sampleNumber, orderedSampleMetadata.sampleNumber );
     }
 
     @Override
@@ -211,10 +152,11 @@ public class OrderedSampleMetadata implements Comparable<OrderedSampleMetadata>
     public String toString()
     {
         // Should look like:
-        // -- #2 - GLOO2: [-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,ISSUE TIME,PT24H,PT48H]
+        // -- #2 - GLOO2: [-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,
+        //                 -1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT24H,PT48H]
         return "#" + this.getSampleNumber() + " - " +
                ConfigHelper.getFeatureDescription( this.getFeature() ) + ": " +
-               this.metadata.getTimeWindow();
+               this.getMetadata().getTimeWindow();
     }
 
     /**

@@ -110,7 +110,7 @@ public abstract class Pairs<T> implements SampleData<T>
      * A builder to build the metric input.
      */
 
-    public abstract static class BasicPairsBuilder<T> implements SampleDataBuilder<T>
+    public abstract static class PairsBuilder<T> implements SampleDataBuilder<T>
     {
 
         /**
@@ -148,7 +148,7 @@ public abstract class Pairs<T> implements SampleData<T>
          * @return the builder
          */
 
-        public BasicPairsBuilder<T> setMetadata( SampleMetadata mainMeta )
+        public PairsBuilder<T> setMetadata( SampleMetadata mainMeta )
         {
             this.mainMeta = mainMeta;
             return this;
@@ -161,7 +161,7 @@ public abstract class Pairs<T> implements SampleData<T>
          * @return the builder
          */
 
-        public BasicPairsBuilder<T> setMetadataForBaseline( SampleMetadata baselineMeta )
+        public PairsBuilder<T> setMetadataForBaseline( SampleMetadata baselineMeta )
         {
             this.baselineMeta = baselineMeta;
             return this;
@@ -174,14 +174,14 @@ public abstract class Pairs<T> implements SampleData<T>
          * @return the builder
          */
 
-        public BasicPairsBuilder<T> setClimatology( VectorOfDoubles climatology )
+        public PairsBuilder<T> setClimatology( VectorOfDoubles climatology )
         {
             this.climatology = climatology;
             return this;
         }
 
         @Override
-        public BasicPairsBuilder<T> addData( T mainInput )
+        public PairsBuilder<T> addData( T mainInput )
         {
            this.sampleData.add( mainInput );
             
@@ -189,7 +189,7 @@ public abstract class Pairs<T> implements SampleData<T>
         }
 
         @Override
-        public BasicPairsBuilder<T> addDataForBaseline( T baselineInput )
+        public PairsBuilder<T> addDataForBaseline( T baselineInput )
         {
             if ( Objects.isNull( this.baselineSampleData ) )
             {
@@ -202,7 +202,7 @@ public abstract class Pairs<T> implements SampleData<T>
         }
 
         @Override
-        public BasicPairsBuilder<T> addData( List<T> sampleData )
+        public PairsBuilder<T> addData( List<T> sampleData )
         {
             Objects.requireNonNull( sampleData, "Specify non-null sample data." );
             
@@ -212,7 +212,7 @@ public abstract class Pairs<T> implements SampleData<T>
         }
         
         @Override
-        public BasicPairsBuilder<T> addDataForBaseline( List<T> baselineSampleData )
+        public PairsBuilder<T> addDataForBaseline( List<T> baselineSampleData )
         {
             Objects.requireNonNull( baselineSampleData, "Specify non-null sample data for the baseline." );
             
@@ -267,7 +267,7 @@ public abstract class Pairs<T> implements SampleData<T>
      * @throws SampleDataException if the pairs are invalid
      */
 
-    Pairs( final BasicPairsBuilder<T> b )
+    Pairs( final PairsBuilder<T> b )
     {
         //Ensure safe types
         this.sampleData = Collections.unmodifiableList( b.sampleData );

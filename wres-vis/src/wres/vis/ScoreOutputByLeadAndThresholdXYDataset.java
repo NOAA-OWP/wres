@@ -100,7 +100,7 @@ public class ScoreOutputByLeadAndThresholdXYDataset extends
                                                             .getMetadata()
                                                             .getSampleMetadata()
                                                             .getTimeWindow()
-                                                            .getLatestLeadTime(),
+                                                            .getLatestLeadDuration(),
                                                this.durationUnits );
     }
 

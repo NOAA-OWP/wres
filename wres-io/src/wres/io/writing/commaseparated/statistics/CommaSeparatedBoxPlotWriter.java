@@ -30,6 +30,7 @@ import wres.datamodel.statistics.BoxPlotStatistic;
 import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.io.config.ConfigHelper;
+import wres.io.writing.commaseparated.CommaSeparatedUtilities;
 
 /**
  * Helps write box plots comprising {@link BoxPlotStatistic} to a file of Comma Separated Values (CSV).
@@ -37,7 +38,7 @@ import wres.io.config.ConfigHelper;
  * @author james.brown@hydrosolved.com
  */
 
-public class CommaSeparatedBoxPlotWriter extends CommaSeparatedWriter
+public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
         implements Consumer<ListOfStatistics<BoxPlotStatistic>>, Supplier<Set<Path>>
 {
 
@@ -190,7 +191,8 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedWriter
             StatisticMetadata meta = next.getData().get( 0 ).getMetadata();
 
             StringJoiner headerRow =
-                    CommaSeparatedWriter.getDefaultHeaderFromSampleMetadata( meta.getSampleMetadata(), durationUnits );
+                    CommaSeparatedUtilities.getTimeWindowHeaderFromSampleMetadata( meta.getSampleMetadata(),
+                                                                                   durationUnits );
             List<RowCompareByLeft> rows =
                     CommaSeparatedBoxPlotWriter.getRowsForOneBoxPlot( next, formatter, durationUnits );
 
@@ -204,7 +206,7 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedWriter
                                                                  nextWindow,
                                                                  durationUnits );
 
-            CommaSeparatedWriter.writeTabularOutputToFile( rows, outputPath );
+            CommaSeparatedStatisticsWriter.writeTabularOutputToFile( rows, outputPath );
             // If writeTabularOutputToFile did not throw an exception, assume
             // it succeeded in writing to the file, track outputs now.
             pathsWrittenTo.add( outputPath );
@@ -255,7 +257,7 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedWriter
                     List<Double> data = new ArrayList<>();
                     data.add( nextBox.getLeft() );
                     data.addAll( Arrays.stream( nextBox.getRight() ).boxed().collect( Collectors.toList() ) );
-                    CommaSeparatedWriter.addRowToInput( returnMe,
+                    CommaSeparatedStatisticsWriter.addRowToInput( returnMe,
                                                         timeWindow,
                                                         data,
                                                         formatter,

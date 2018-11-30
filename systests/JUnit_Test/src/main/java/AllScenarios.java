@@ -55,13 +55,101 @@ public class AllScenarios {
 			System.err.println(aie.getMessage());
 		}
 	}
-/*
-    public Path runTest(String dir) {
-	System.setProperty( "user.dir", System.getenv( "TESTS_DIR" ) + "/" + dir );
-        Path userdirPath = Paths.get(System.getProperty("user.dir"));
-	return userdirPath;
+
+    /**
+    * Clean the database if there is a CLEAN file
+    * @param files -- a list of files
+    * @return -- false if no cleaning; true otherwise
+    */
+    public boolean cleanDatabase(String[] files) {
+	boolean isClean = false;
+	for (int i = 0; i < files.length; i++) {
+		if (files[i].endsWith( "CLEAN" )) {
+                	System.out.println( "cleaning the database " + System.getProperty( "wres.databaseName" )  );
+			isClean = true;
+                	try {
+                		Operations.cleanDatabase();
+                	} catch (IOException e1) {
+                    		System.err.println( "IOException: " + e1.getMessage() );
+                	} catch (SQLException e2) {
+                    		System.err.println( "SQLException: " + e2.getMessage() );
+                	}
+            	}
+	}
+	return isClean;
     }
-*/
+
+    /**
+    * delete wres_evaluation_output_* from previous run.
+    * @param files -- a list of files
+    * @param testDir -- a test directory
+    * @return -- false if no deleted; true otherwise
+    */
+    public boolean deleteOldEvaluationDirectory(String[] files, File testDir) {
+	boolean isDeleted = false;
+	// delete wres_evaluation_output_* from previous run.
+	for (int i = 0; i < files.length; i++) {
+             if (files[i].startsWith( "wres_evaluation_output" )) {
+                System.out.println( "Need to delete files under output directory ");
+                Path outputPath = FileSystems.getDefault().getPath( testDir.getAbsolutePath() + "/" + files[i]);
+
+                File outputDir = outputPath.toFile();
+                String outputFiles[] = outputDir.list();
+                    for (int j = 0; j < outputFiles.length; j++) {
+                        Path outputFile = FileSystems.getDefault().getPath( outputDir.getAbsolutePath() + "/" + outputFiles[j]);
+                        try {
+                            Files.delete( outputFile );
+			    //System.out.println( "Deleted file " + outputFile.toString() );
+			 } catch (IOException ioe) {
+                            System.err.println( ioe.toString() );
+                         }
+                    } // end inner for loop
+		try {
+                    Files.deleteIfExists( outputPath );
+                    System.out.println( "Deleted directory " +  outputPath.toString());
+                } catch (IOException ioe) {
+                    System.err.println( ioe.toString() );
+                }
+		isDeleted = true;
+              } // end if
+	} // end outer for loop
+	return isDeleted;
+    } // end method
+
+    /**
+    * if there is a before script, do it 1st
+    * @param files -- a list of files
+    * @return -- false if there is no before script; Otherwise, true
+    */
+    public boolean doBefore(String[] files) {
+	boolean isABeforeScript = false;
+	for (int i = 0; i < files.length; i++) {
+		if (files[i].startsWith( "before.sh" )) {
+			isABeforeScript = true;
+			System.out.println("Found " + files[i]);
+			searchAndReplace(System.getProperty("user.dir") + "/" + files[i]);
+		}
+	}
+	return isABeforeScript;
+    }
+
+    /**
+    * if there is a after script, do it now 
+    * @param files -- a list of files
+    * @return -- false if there is no after script; Otherwise, true
+    */
+    public boolean doAfter(String[] files) {
+        boolean isABeforeScript = false;
+        for (int i = 0; i < files.length; i++) {
+                if (files[i].startsWith( "after.sh" )) {
+                        isABeforeScript = true;
+			System.out.println("Found " + files[i]);
+			searchAndReplace(System.getProperty("user.dir") + "/" + files[i]);
+                }
+        }
+        return isABeforeScript;
+    }
+
     /**
      * Run a scenario test
      * @param dir -- scenario test directory name
@@ -78,59 +166,17 @@ public class AllScenarios {
         //System.setProperty( dir, testDir.getAbsolutePath() );
       
         String files[] = testDir.list();
-        
-        //System.out.println( "wres.hostname = " + System.getProperty( "wres.hostname" ) );
-        
-        // Do clean database if there is a CLEAN file
-        for (int i = 0; i < files.length; i++) {
-            //System.out.println( files[i] );
-            if (files[i].endsWith( "CLEAN" )) {
-                System.out.println( "cleaning the database " + System.getProperty( "wres.databaseName" )  );
-               
-                try {
-                    Operations.cleanDatabase();
-                } catch (IOException e1) {
-                    System.err.println( "IOException: " + e1.getMessage() );
-                } catch (SQLException e2) {
-                    System.err.println( "SQLException: " + e2.getMessage() );
-                } 
-            }
-        }  
-        
-        // delete wres_evaluation_output_* from previous run.
-        for (int i = 0; i < files.length; i++) {
-            //if (files[i].startsWith( "wres_evaluation_output_" )) {
-             if (files[i].startsWith( "wres_evaluation_output" )) {
-                System.out.println( "Need to delete files under output directory ");
-                Path outputPath = FileSystems.getDefault().getPath( testDir.getAbsolutePath() + "/" + files[i]);
-         
-                File outputDir = outputPath.toFile();
-                String outputFiles[] = outputDir.list();
-                    for (int j = 0; j < outputFiles.length; j++) {
-                        Path outputFile = FileSystems.getDefault().getPath( outputDir.getAbsolutePath() + "/" + outputFiles[j]);
-                        try {
-                            Files.delete( outputFile );
-                            //System.out.println( "Deleted file " + outputFile.toString() );
-                        } catch (IOException ioe) {
-                            System.err.println( ioe.toString() );
-                        }
-                    }
-                
-                try {
-                    Files.deleteIfExists( outputPath );
-                    System.out.println( "Deleted directory " +  outputPath.toString());
-                } catch (IOException ioe) {
-                    System.err.println( ioe.toString() );
-                }
-            }
-        }
-        
+	cleanDatabase(files);
+        deleteOldEvaluationDirectory(files, testDir);
+	doBefore(files);
+	executeConfigFile(files);
+	doAfter(files);
+     }
+     
+     public void executeConfigFile(String[] files) { 
         Path tmppath = null;
         // search for project_config.xml file and execute it
         for (int i = 0; i < files.length; i++) {
-            if (files[i].startsWith( "before.sh" )) {
-                //TODO handle the before.sh
-            }
 
             if (files[i].endsWith( "project_config.xml" )) {
         	StringBuffer stringBuffer = concatenateFile(files[i]);        
@@ -207,13 +253,8 @@ public class AllScenarios {
                     e.printStackTrace();
                 }                
             } // end if for search project_config.xml
-	    if (files[i].endsWith( "after.sh" )) {
-                //TODO handle the after.sh
-            }
         } // end for loop
 	System.out.println("Done with runtest");
-	//System.exit(0);
-//        return tmppath;
     } // end runTest method
     
 /**
@@ -363,6 +404,93 @@ public class AllScenarios {
         }
         return returnValue;
     } // end of this method
+
+	public void searchAndReplace(String fileName, String searchFor, String replace, String line) {
+		File file = Paths.get(System.getProperty("user.dir") + "/" + fileName).toFile();
+		System.out.println(file.toString() + '\n' +
+			searchFor + '\n' +
+			replace + '\n' +
+			line);
+		// ArrayList<String> arrayList = new ArrayList<String>();
+		if (file.exists()) {
+			try {
+				ArrayList<String> arrayList = new ArrayList<String>();
+				BufferedReader bufferedReader = new BufferedReader(new FileReader(file));
+				String aLine;
+				int lineNumber = 0;
+				while ((aLine = bufferedReader.readLine()) != null) {
+					int index = 0;
+					if ((index = aLine.indexOf(searchFor)) >= 0) {
+						aLine = aLine.replaceAll(searchFor, replace);
+						System.out.println("Replaced line " + lineNumber + " to " + aLine);
+					}
+					arrayList.add(aLine);
+					lineNumber++;
+				}
+				bufferedReader.close();
+				lineNumber = 0;
+				BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(file));
+				for (Iterator<String> iterator = arrayList.iterator(); 
+						iterator.hasNext(); lineNumber++) {
+					//System.out.println(lineNumber + ": " + iterator.next().toString());
+					bufferedWriter.write(iterator.next().toString());
+					bufferedWriter.newLine();
+				}
+				bufferedWriter.flush();
+				bufferedWriter.close();
+			} catch (FileNotFoundException fnfe) {
+                                System.err.println( fnfe.getMessage());
+                        } catch (IOException ioe) {
+                                System.err.print( ioe.getMessage());
+                        }
+		} else {
+                        System.err.println("File " + file.getPath() + " doesn't existed.");
+                }
+ 
+	}
+
+	/**
+ 	* Search for token File=, Search=, Replace=, and Line= from a file
+ 	* @param fileName -- a before.sh or after.sh shell script
+ 	*/
+	public void searchAndReplace(String fileName) {
+		File file = Paths.get(fileName).toFile();
+		if (file.exists()) {
+			try {
+				BufferedReader bufferedReader = new BufferedReader(new FileReader(file));
+				String aLine;
+				String[] theFile = null;
+				String[] search = null;
+				String[] replace = null;
+				String[] line = null;
+				while ((aLine = bufferedReader.readLine()) != null) {
+					int index = 0;
+					if ((index = aLine.lastIndexOf("File=")) > 0) {
+						theFile = aLine.substring(index).split("=");
+						//System.out.println("File = " + theFile[1]);
+					} else if ((index = aLine.lastIndexOf("Search=")) > 0) {
+						search = aLine.substring(index).split("=");
+						//System.out.println("Search = " + search[1]);
+					} else if ((index = aLine.lastIndexOf("Replace=")) > 0) {
+						replace = aLine.substring(index).split("=");
+						//System.out.println("Replace = " + replace[1]);
+					} else if ((index = aLine.lastIndexOf("Line=")) > 0) {
+						line = aLine.substring(index).split("=");
+						//System.out.println("Line = " + line[1]);
+					}
+				} // end while loop
+				bufferedReader.close();
+				searchAndReplace(theFile[1], search[1], replace[1], line[1]);
+			} catch (FileNotFoundException fnfe) {
+				System.err.println( fnfe.getMessage());
+			} catch (IOException ioe) {
+				System.err.print( ioe.getMessage());
+			} 
+		} else {
+			System.err.println("File " + file.getPath() + " doesn't existed.");
+		} 
+	} // end method
+
     
     /**
      * Sort the pairs.csv file and write output to sorted_pairs.csv 
@@ -421,9 +549,9 @@ public class AllScenarios {
             bufferedWriter.close();
             System.out.println( "sorted to " + sortedPairs );
         } catch (FileNotFoundException fnfe) {
-            System.err.println( fnfe.getMessage() );
+            System.err.println( fnfe.getMessage());
         } catch (IOException ioe) {
-            System.err.print( ioe.getMessage() );
+            System.err.print( ioe.getMessage());
         }
 	System.out.println("end of sortPairs");
     } // end this sortPairs method    

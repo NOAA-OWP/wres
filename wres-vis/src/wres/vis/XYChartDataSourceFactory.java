@@ -318,11 +318,11 @@ public abstract class XYChartDataSourceFactory
                                                                                  next -> Pair.of( next.getMetadata()
                                                                                                       .getSampleMetadata()
                                                                                                       .getTimeWindow()
-                                                                                                      .getEarliestLeadTime(),
+                                                                                                      .getEarliestLeadDuration(),
                                                                                                   next.getMetadata()
                                                                                                       .getSampleMetadata()
                                                                                                       .getTimeWindow()
-                                                                                                      .getLatestLeadTime() ) );
+                                                                                                      .getLatestLeadDuration() ) );
 
                 for ( Pair<Duration, Duration> nextTime : durations )
                 {
@@ -331,11 +331,11 @@ public abstract class XYChartDataSourceFactory
                     ListOfStatistics<DoubleScoreStatistic> slice = Slicer.filter( input,
                                                                                   next -> next.getSampleMetadata()
                                                                                               .getTimeWindow()
-                                                                                              .getEarliestLeadTime()
+                                                                                              .getEarliestLeadDuration()
                                                                                               .equals( nextTime.getLeft() )
                                                                                           && next.getSampleMetadata()
                                                                                                  .getTimeWindow()
-                                                                                                 .getLatestLeadTime()
+                                                                                                 .getLatestLeadDuration()
                                                                                                  .equals( nextTime.getRight() ) );
 
                     // Filter by threshold
@@ -373,7 +373,7 @@ public abstract class XYChartDataSourceFactory
                             next.add( new FixedMillisecond( nextDouble.getMetadata()
                                                                       .getSampleMetadata()
                                                                       .getTimeWindow()
-                                                                      .getMidPointBetweenEarliestAndLatestTimes()
+                                                                      .getMidPointBetweenEarliestAndLatestReferenceTimes()
                                                                       .toEpochMilli() ),
                                       nextDouble.getData() );
                         }
@@ -388,11 +388,11 @@ public abstract class XYChartDataSourceFactory
                                                                          next -> Pair.of( next.getMetadata()
                                                                                               .getSampleMetadata()
                                                                                               .getTimeWindow()
-                                                                                              .getEarliestLeadTime(),
+                                                                                              .getEarliestLeadDuration(),
                                                                                           next.getMetadata()
                                                                                               .getSampleMetadata()
                                                                                               .getTimeWindow()
-                                                                                              .getLatestLeadTime() ) );
+                                                                                              .getLatestLeadDuration() ) );
         SortedSet<OneOrTwoThresholds> thresholds =
                 Slicer.discover( input, next -> next.getMetadata().getSampleMetadata().getThresholds() );
 

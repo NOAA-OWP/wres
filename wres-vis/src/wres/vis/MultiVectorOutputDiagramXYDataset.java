@@ -134,7 +134,7 @@ public class MultiVectorOutputDiagramXYDataset
                                                                                .getMetadata()
                                                                                .getSampleMetadata()
                                                                                .getTimeWindow()
-                                                                               .getLatestLeadTime(),
+                                                                               .getLatestLeadDuration(),
                                                                   this.durationUnits ) );
         }
         else

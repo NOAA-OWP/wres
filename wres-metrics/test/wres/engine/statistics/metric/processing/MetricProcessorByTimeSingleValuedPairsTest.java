@@ -42,7 +42,6 @@ import wres.datamodel.Slicer;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.MeasurementUnit;
-import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.SampleMetadata.SampleMetadataBuilder;
 import wres.datamodel.metadata.StatisticMetadata;
@@ -166,7 +165,6 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         {
             final TimeWindow window = TimeWindow.of( Instant.MIN,
                                                      Instant.MAX,
-                                                     ReferenceTime.VALID_TIME,
                                                      Duration.ofHours( i ) );
             final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
                                                                    .setIdentifier( DatasetIdentifier.of( Location.of( "DRRC2" ),
@@ -191,7 +189,6 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         // Expected result
         final TimeWindow expectedWindow = TimeWindow.of( Instant.MIN,
                                                          Instant.MAX,
-                                                         ReferenceTime.VALID_TIME,
                                                          Duration.ofHours( 1 ) );
 
         final OneOrTwoThresholds expectedThreshold = OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 1.0 ),
@@ -307,12 +304,10 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         // Metadata for the output
         TimeWindow firstWindow = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                 Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                ReferenceTime.ISSUE_TIME,
                                                 Duration.ofHours( 6 ),
                                                 Duration.ofHours( 18 ) );
         TimeWindow secondWindow = TimeWindow.of( Instant.parse( "1985-01-02T00:00:00Z" ),
                                                  Instant.parse( "1985-01-02T00:00:00Z" ),
-                                                 ReferenceTime.ISSUE_TIME,
                                                  Duration.ofHours( 6 ),
                                                  Duration.ofHours( 18 ) );
 
@@ -409,12 +404,10 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         // Metadata for the output
         TimeWindow firstWindow = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                 Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                ReferenceTime.ISSUE_TIME,
                                                 Duration.ofHours( 6 ),
                                                 Duration.ofHours( 18 ) );
         TimeWindow secondWindow = TimeWindow.of( Instant.parse( "1985-01-02T00:00:00Z" ),
                                                  Instant.parse( "1985-01-02T00:00:00Z" ),
-                                                 ReferenceTime.ISSUE_TIME,
                                                  Duration.ofHours( 6 ),
                                                  Duration.ofHours( 18 ) );
 
@@ -524,7 +517,6 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         //Metadata
         TimeWindow combinedWindow = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                    Instant.parse( "1985-01-02T00:00:00Z" ),
-                                                   ReferenceTime.ISSUE_TIME,
                                                    Duration.ofHours( 6 ),
                                                    Duration.ofHours( 18 ) );
         final TimeWindow timeWindow = combinedWindow;
@@ -611,7 +603,6 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         {
             final TimeWindow window = TimeWindow.of( Instant.MIN,
                                                      Instant.MAX,
-                                                     ReferenceTime.VALID_TIME,
                                                      Duration.ofHours( i ) );
             final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
                                                                    .setIdentifier( DatasetIdentifier.of( Location.of( "DRRC2" ),
@@ -636,7 +627,6 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         // Expected result
         final TimeWindow expectedWindow = TimeWindow.of( Instant.MIN,
                                                          Instant.MAX,
-                                                         ReferenceTime.VALID_TIME,
                                                          Duration.ofHours( 1 ) );
 
         final OneOrTwoThresholds expectedThreshold = OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 0.5 ),
@@ -703,7 +693,6 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         {
             final TimeWindow window = TimeWindow.of( Instant.MIN,
                                                      Instant.MAX,
-                                                     ReferenceTime.VALID_TIME,
                                                      Duration.ofHours( i ) );
             final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
                                                                    .setIdentifier( DatasetIdentifier.of( Location.of( "DRRC2" ),
@@ -728,7 +717,6 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         // Expected result
         final TimeWindow expectedWindow = TimeWindow.of( Instant.MIN,
                                                          Instant.MAX,
-                                                         ReferenceTime.VALID_TIME,
                                                          Duration.ofHours( 1 ) );
 
         final OneOrTwoThresholds expectedThreshold = OneOrTwoThresholds.of( Threshold.of( OneOrTwoDoubles.of( 1.0 ),
