@@ -1572,18 +1572,6 @@ public class ProjectDetails
             part.addTab(  2  ).addLine( "AND TSV.lead <= ", this.getMaximumLead());
         }
 
-        // If the minimum value has the potential to filter out values, add it as a filter condition
-        if (this.getMinimumValue() > Integer.MIN_VALUE && this.getDefaultMinimumValue() == null)
-        {
-            part.addTab(  2  ).addLine("AND TSV.series_value >= ", this.getMinimumValue());
-        }
-
-        // If the maximum value has the potential to filter out values, add it as a filter condition
-        if (this.getMaximumValue() > Integer.MAX_VALUE && this.getDefaultMaximumValue() == null)
-        {
-            part.addTab(  2  ).addLine("AND TSV.series_value <= ", this.getMaximumValue());
-        }
-
         if (Strings.hasValue( this.getEarliestIssueDate() ))
         {
             part.addTab(  2  ).addLine("AND TS.initialization_date >= '", this.getEarliestIssueDate() + "'");
