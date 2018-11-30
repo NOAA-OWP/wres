@@ -126,23 +126,25 @@ public class AllScenarios {
 	for (int i = 0; i < files.length; i++) {
 		if (files[i].startsWith( "before.sh" )) {
 			isABeforeScript = true;
-			//TODO later
+			System.out.println("Found " + files[i]);
+			searchAndReplace(System.getProperty("user.dir") + "/" + files[i]);
 		}
 	}
 	return isABeforeScript;
     }
 
     /**
-    * if there is a before script, do it now 
+    * if there is a after script, do it now 
     * @param files -- a list of files
-    * @return -- false if there is no before script; Otherwise, true
+    * @return -- false if there is no after script; Otherwise, true
     */
     public boolean doAfter(String[] files) {
         boolean isABeforeScript = false;
         for (int i = 0; i < files.length; i++) {
                 if (files[i].startsWith( "after.sh" )) {
                         isABeforeScript = true;
-                        //TODO later
+			System.out.println("Found " + files[i]);
+			searchAndReplace(System.getProperty("user.dir") + "/" + files[i]);
                 }
         }
         return isABeforeScript;
@@ -402,6 +404,93 @@ public class AllScenarios {
         }
         return returnValue;
     } // end of this method
+
+	public void searchAndReplace(String fileName, String searchFor, String replace, String line) {
+		File file = Paths.get(System.getProperty("user.dir") + "/" + fileName).toFile();
+		System.out.println(file.toString() + '\n' +
+			searchFor + '\n' +
+			replace + '\n' +
+			line);
+		// ArrayList<String> arrayList = new ArrayList<String>();
+		if (file.exists()) {
+			try {
+				ArrayList<String> arrayList = new ArrayList<String>();
+				BufferedReader bufferedReader = new BufferedReader(new FileReader(file));
+				String aLine;
+				int lineNumber = 0;
+				while ((aLine = bufferedReader.readLine()) != null) {
+					int index = 0;
+					if ((index = aLine.indexOf(searchFor)) >= 0) {
+						aLine = aLine.replaceAll(searchFor, replace);
+						System.out.println("Replaced line " + lineNumber + " to " + aLine);
+					}
+					arrayList.add(aLine);
+					lineNumber++;
+				}
+				bufferedReader.close();
+				lineNumber = 0;
+				BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(file));
+				for (Iterator<String> iterator = arrayList.iterator(); 
+						iterator.hasNext(); lineNumber++) {
+					//System.out.println(lineNumber + ": " + iterator.next().toString());
+					bufferedWriter.write(iterator.next().toString());
+					bufferedWriter.newLine();
+				}
+				bufferedWriter.flush();
+				bufferedWriter.close();
+			} catch (FileNotFoundException fnfe) {
+                                System.err.println( fnfe.getMessage());
+                        } catch (IOException ioe) {
+                                System.err.print( ioe.getMessage());
+                        }
+		} else {
+                        System.err.println("File " + file.getPath() + " doesn't existed.");
+                }
+ 
+	}
+
+	/**
+ 	* Search for token File=, Search=, Replace=, and Line= from a file
+ 	* @param fileName -- a before.sh or after.sh shell script
+ 	*/
+	public void searchAndReplace(String fileName) {
+		File file = Paths.get(fileName).toFile();
+		if (file.exists()) {
+			try {
+				BufferedReader bufferedReader = new BufferedReader(new FileReader(file));
+				String aLine;
+				String[] theFile = null;
+				String[] search = null;
+				String[] replace = null;
+				String[] line = null;
+				while ((aLine = bufferedReader.readLine()) != null) {
+					int index = 0;
+					if ((index = aLine.lastIndexOf("File=")) > 0) {
+						theFile = aLine.substring(index).split("=");
+						//System.out.println("File = " + theFile[1]);
+					} else if ((index = aLine.lastIndexOf("Search=")) > 0) {
+						search = aLine.substring(index).split("=");
+						//System.out.println("Search = " + search[1]);
+					} else if ((index = aLine.lastIndexOf("Replace=")) > 0) {
+						replace = aLine.substring(index).split("=");
+						//System.out.println("Replace = " + replace[1]);
+					} else if ((index = aLine.lastIndexOf("Line=")) > 0) {
+						line = aLine.substring(index).split("=");
+						//System.out.println("Line = " + line[1]);
+					}
+				} // end while loop
+				bufferedReader.close();
+				searchAndReplace(theFile[1], search[1], replace[1], line[1]);
+			} catch (FileNotFoundException fnfe) {
+				System.err.println( fnfe.getMessage());
+			} catch (IOException ioe) {
+				System.err.print( ioe.getMessage());
+			} 
+		} else {
+			System.err.println("File " + file.getPath() + " doesn't existed.");
+		} 
+	} // end method
+
     
     /**
      * Sort the pairs.csv file and write output to sorted_pairs.csv 
@@ -460,9 +549,9 @@ public class AllScenarios {
             bufferedWriter.close();
             System.out.println( "sorted to " + sortedPairs );
         } catch (FileNotFoundException fnfe) {
-            System.err.println( fnfe.getMessage() );
+            System.err.println( fnfe.getMessage());
         } catch (IOException ioe) {
-            System.err.print( ioe.getMessage() );
+            System.err.print( ioe.getMessage());
         }
 	System.out.println("end of sortPairs");
     } // end this sortPairs method    
