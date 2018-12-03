@@ -213,4 +213,14 @@ else
     echo "One or more tests FAILED." | tee /dev/stderr
 fi
 
+# added by RHC, archive each run results
+evaluationDir=`ls -d wres_evaluation_output*`
+if [ -d $evaluationDir ]
+then
+	mkdir -pv archive
+	filename=`echo $evaluationDir | cut -d'_' -f1-4`
+	tar -czf "$filename".tar.gz $evaluationDir/
+	mv -v "$filename".tar.gz archive/
+fi
+
 exit $overallResult
