@@ -367,18 +367,36 @@ public final class Operations {
     }
 
     /**
+     * Ingests for an evaluation project and returns state regarding the same.
+     * @param projectConfig the projectConfig for the evaluation
+     * @return the {@link ProjectDetails} (state about this evaluation)
+     * @throws IOException when anything goes wrong
+     */
+    public static ProjectDetails ingest( ProjectConfig projectConfig )
+            throws IOException
+    {
+        Database.lockForMutation();
+
+        try
+        {
+            return Operations.doIngestWork( projectConfig );
+        }
+        finally
+        {
+            Database.releaseLockForMutation();
+        }
+    }
+
+    /**
      * Ingests and returns the hashes of source files involved in this project.
      * TODO: Find a more appropriate location; this should call the ingest logic, not implement it
      * @param projectConfig the projectConfig to ingest
      * @return the projectdetails object from ingesting this project
      * @throws IOException when anything goes wrong
      */
-    public static ProjectDetails ingest( ProjectConfig projectConfig )
+    private static ProjectDetails doIngestWork( ProjectConfig projectConfig )
             throws IOException
     {
-        // First, ensure this process is the only one ingesting
-        Database.lockForMutation();
-
         boolean orphansDeleted;
         try
         {
@@ -474,8 +492,6 @@ public final class Operations {
         {
             throw new IngestException( "Failed to finalize ingest.", e );
         }
-
-        Database.releaseLockForMutation();
 
         if ( result == null )
         {
