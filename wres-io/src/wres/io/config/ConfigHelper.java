@@ -852,6 +852,13 @@ public class ConfigHelper
             {
                 latestReferenceTime = earliestReferenceTime;
             }
+            
+            //Valid datetimes available
+            if ( projectDetails.getEarliestDate() != null && projectDetails.getLatestDate() != null )
+            {
+                earliestValidTime = Instant.parse( projectDetails.getEarliestDate() );
+                latestValidTime = Instant.parse( projectDetails.getLatestDate() );
+            }
 
         }
         // No rolling sequence

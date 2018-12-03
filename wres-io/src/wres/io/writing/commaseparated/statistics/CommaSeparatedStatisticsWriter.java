@@ -172,8 +172,21 @@ abstract class CommaSeparatedStatisticsWriter
         else
         {
             row = new StringJoiner( "," );
-            row.add( timeWindow.getEarliestReferenceTime().toString() );
-            row.add( timeWindow.getLatestReferenceTime().toString() );
+            
+            // Until #57932 is addressed, use the reference datetimes by default, but the 
+            // valid datetimes when they are bounded and the issued times are unbounded. Fixes #58112
+            if ( timeWindow.hasUnboundedReferenceTimes() && !timeWindow.hasUnboundedValidTimes() )
+            {
+                row.add( timeWindow.getEarliestValidTime().toString() );
+                row.add( timeWindow.getLatestValidTime().toString() );
+            }
+            // Reference times are bounded
+            else
+            {
+                row.add( timeWindow.getEarliestReferenceTime().toString() );
+                row.add( timeWindow.getLatestReferenceTime().toString() );
+            }
+
             row.add( Long.toString( TimeHelper.durationToLongUnits( timeWindow.getEarliestLeadDuration(),
                                                                     durationUnits ) ) );
             row.add( Long.toString( TimeHelper.durationToLongUnits( timeWindow.getLatestLeadDuration(),
