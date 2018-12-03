@@ -296,12 +296,12 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
         // Unwrap the time window for local use
         TimeWindow window = sampleMetadata.getMetadata().getTimeWindow();
 
-        if ( window.getEarliestLeadDuration()
+        if ( sampleMetadata.getMinimumLead()
                    .equals( window.getLatestLeadDuration() ) )
         {
             script.addTab()
                   .addLine( "AND S.lead = ",
-                            TimeHelper.durationToLead( window.getEarliestLeadDuration() ) );
+                            TimeHelper.durationToLead( sampleMetadata.getMinimumLead() ) );
         }
         else
         {
