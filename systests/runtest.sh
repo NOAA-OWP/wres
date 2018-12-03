@@ -219,6 +219,7 @@ WHOAMI=`/bin/whoami`
 # Other developers no need to archive the test results
 if [ "$WHOAMI" = "wres-cron" ]
 then
+	echo "$WHOAMI will archive the test results"
 	evaluationDir=`ls -d wres_evaluation_output*`
 	if [ -d $evaluationDir ]
 	then
@@ -229,6 +230,8 @@ then
 		mkdir -pv ../SystemTestsOutputs
 		mv -v "$filename".tar.gz ../SystemTestsOutputs/ 
 	fi
+else
+	echo "You are $WHOAMI"
 fi
 
 exit $overallResult
