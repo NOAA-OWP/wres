@@ -214,13 +214,21 @@ else
 fi
 
 # added by RHC, archive each run results
-#evaluationDir=`ls -d wres_evaluation_output*`
-#if [ -d $evaluationDir ]
-#then
-#	mkdir -pv archive
-#	filename=`echo $evaluationDir | cut -d'_' -f1-4`
-#	tar -czf "$filename".tar.gz $evaluationDir/
-#	mv -v "$filename".tar.gz archive/
-#fi
+WHOAMI=`/bin/whoami`
+# Only when wres-cron running this wcript during cron job archive the test results.
+# Other developers no need to archive the test results
+if [ "$WHOAMI" = "wres-cron" ]
+then
+	evaluationDir=`ls -d wres_evaluation_output*`
+	if [ -d $evaluationDir ]
+	then
+		WHEREAMI=`pwd | gawk -F/ '{print $NF}'`
+		#filename=`echo $evaluationDir | cut -d'_' -f1-4`
+		filename=`echo "$WHEREAMI"_"$evaluationDir"`
+		tar -czf "$filename".tar.gz $evaluationDir/
+		mkdir -pv ../SystemTestsOutputs
+		mv -v "$filename".tar.gz ../SystemTestsOutputs/ 
+	fi
+fi
 
 exit $overallResult
