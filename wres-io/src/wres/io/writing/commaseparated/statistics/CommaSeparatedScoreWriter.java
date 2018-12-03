@@ -187,7 +187,7 @@ public class CommaSeparatedScoreWriter<T extends ScoreStatistic<?, T>> extends C
             for ( ListOfStatistics<T> nextOutput : allOutputs )
             {
                 StringJoiner headerRow =
-                        CommaSeparatedUtilities.getTimeWindowHeaderFromSampleMetadata( nextOutput.getData()
+                        CommaSeparatedUtilities.getPartialTimeWindowHeaderFromSampleMetadata( nextOutput.getData()
                                                                                                  .get( 0 )
                                                                                                  .getMetadata()
                                                                                                  .getSampleMetadata(),

@@ -244,27 +244,42 @@ public final class SingleValuedPairsWriterTest
 
         // Read the results
         List<String> results = Files.readAllLines( pathToFile );
-        
+
         // Assert the expected results
         assertTrue( results.size() == 4 );
-        
-        System.out.println( results.get( 0 ) );
-        
         assertTrue( results.get( 0 ).equals( "FEATURE DESCRIPTION,"
                                              + "EARLIEST ISSUE TIME,"
                                              + "LATEST ISSUE TIME,"
+                                             + "EARLIEST VALID TIME,"
+                                             + "LATEST VALID TIME,"
                                              + "EARLIEST LEAD TIME IN SECONDS,"
                                              + "LATEST LEAD TIME IN SECONDS,"
                                              + "VALID TIME OF PAIR,"
                                              + "LEAD DURATION OF PAIR IN SECONDS,"
                                              + "LEFT IN SCOOBIES,"
                                              + "RIGHT IN SCOOBIES" ) );
+
         assertTrue( results.get( 1 )
-                           .equals( "PLUM,1985-01-01T00:00:00Z,1990-01-01T00:00:00Z,0,0,1985-01-01T01:00:00Z,3600,1.001,2.0" ) );
+                           .equals( "PLUM,1985-01-01T00:00:00Z,"
+                                    + "1990-01-01T00:00:00Z,"
+                                    + Instant.MIN
+                                    + ","
+                                    + Instant.MAX
+                                    + ",0,0,1985-01-01T01:00:00Z,3600,1.001,2.0" ) );
         assertTrue( results.get( 2 )
-                           .equals( "PLUM,1985-01-01T00:00:00Z,1990-01-01T00:00:00Z,0,0,1985-01-01T02:00:00Z,7200,3.0,4.0" ) );
+                           .equals( "PLUM,1985-01-01T00:00:00Z,"
+                                    + "1990-01-01T00:00:00Z,"
+                                    + Instant.MIN
+                                    + ","
+                                    + Instant.MAX
+                                    + ",0,0,1985-01-01T02:00:00Z,7200,3.0,4.0" ) );
         assertTrue( results.get( 3 )
-                           .equals( "PLUM,1985-01-01T00:00:00Z,1990-01-01T00:00:00Z,0,0,1985-01-01T03:00:00Z,10800,5.0,6.0" ) );
+                           .equals( "PLUM,1985-01-01T00:00:00Z,"
+                                    + "1990-01-01T00:00:00Z,"
+                                    + Instant.MIN
+                                    + ","
+                                    + Instant.MAX
+                                    + ",0,0,1985-01-01T03:00:00Z,10800,5.0,6.0" ) );
 
         // If all succeeded, remove the file, otherwise leave to help debugging
         Files.deleteIfExists( pathToFile );

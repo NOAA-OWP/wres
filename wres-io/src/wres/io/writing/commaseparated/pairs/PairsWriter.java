@@ -121,8 +121,11 @@ public abstract class PairsWriter<S extends Object, T extends Pairs<S> & TimeSer
             joiner.merge( CommaSeparatedUtilities.getTimeWindowHeaderFromSampleMetadata( pairs.getMetadata(),
                                                                                          this.getTimeResolution() ) );
         }
+        
+        // Valid time of pair
         joiner.add( "VALID TIME OF PAIR" );
 
+        // Time scale?
         if ( pairs.getMetadata().hasTimeScale() )
         {
             TimeScale timeScale = pairs.getMetadata().getTimeScale();
@@ -220,6 +223,8 @@ public abstract class PairsWriter<S extends Object, T extends Pairs<S> & TimeSer
                             {
                                 joiner.add( timeWindow.getEarliestReferenceTime().toString() );
                                 joiner.add( timeWindow.getLatestReferenceTime().toString() );
+                                joiner.add( timeWindow.getEarliestValidTime().toString() );
+                                joiner.add( timeWindow.getLatestValidTime().toString() );
                                 joiner.add( Long.toString( TimeHelper.durationToLongUnits( timeWindow.getEarliestLeadDuration(),
                                                                                              this.getTimeResolution() ) ) );
                                 joiner.add( Long.toString( TimeHelper.durationToLongUnits( timeWindow.getLatestLeadDuration(),
