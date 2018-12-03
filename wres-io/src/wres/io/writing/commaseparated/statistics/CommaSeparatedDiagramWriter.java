@@ -152,7 +152,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
         SortedSet<MetricConstants> metrics = Slicer.discover( output, next -> next.getMetadata().getMetricID() );
         for ( MetricConstants m : metrics )
         {
-            StringJoiner headerRow = CommaSeparatedUtilities.getTimeWindowHeaderFromSampleMetadata( output.getData()
+            StringJoiner headerRow = CommaSeparatedUtilities.getPartialTimeWindowHeaderFromSampleMetadata( output.getData()
                                                                                                           .get( 0 )
                                                                                                           .getMetadata()
                                                                                                           .getSampleMetadata(),

@@ -23,6 +23,35 @@ public class CommaSeparatedUtilities
     static final String HEADER_DELIMITER = " ";
 
     /**
+     * Returns a default header from the {@link SampleMetadata} to which additional information may be appended. Does
+     * not include the valid time information and is therefore deprecated for removal once #55231 is complete, to 
+     * be replaced with {@link #getTimeWindowHeaderFromSampleMetadata(SampleMetadata, ChronoUnit)}.
+     *
+     * @param sampleMetadata the sample metadata
+     * @param durationUnits the duration units for lead times
+     * @return default header information
+     * @throws NullPointerException if either input is null
+     */
+
+    @Deprecated
+    public static StringJoiner getPartialTimeWindowHeaderFromSampleMetadata( SampleMetadata sampleMetadata,
+                                                                             ChronoUnit durationUnits )
+    {
+        StringJoiner fullWindow =
+                CommaSeparatedUtilities.getTimeWindowHeaderFromSampleMetadata( sampleMetadata, durationUnits );
+        
+        String adaptedWindow = fullWindow.toString();
+        
+        adaptedWindow = adaptedWindow.replace( "EARLIEST VALID TIME,", "" );
+        adaptedWindow = adaptedWindow.replace( "LATEST VALID TIME,", "" );
+        
+        StringJoiner joiner = new StringJoiner( "," );
+        joiner.add( adaptedWindow );
+        
+        return joiner;
+    }
+    
+    /**
      * Returns a default header from the {@link SampleMetadata} to which additional information may be appended.
      *
      * @param sampleMetadata the sample metadata
@@ -64,6 +93,8 @@ public class CommaSeparatedUtilities
 
         joiner.add( "EARLIEST ISSUE TIME" )
               .add( "LATEST ISSUE TIME" )
+              .add( "EARLIEST VALID TIME" )
+              .add( "LATEST VALID TIME" )
               .add( "EARLIEST" + HEADER_DELIMITER
                     + "LEAD"
                     + HEADER_DELIMITER
@@ -84,6 +115,6 @@ public class CommaSeparatedUtilities
                     + timeScale );
 
         return joiner;
-    }
+    }    
 
 }

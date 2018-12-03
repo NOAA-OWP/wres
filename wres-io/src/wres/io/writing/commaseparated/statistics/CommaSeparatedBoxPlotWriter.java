@@ -191,7 +191,7 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
             StatisticMetadata meta = next.getData().get( 0 ).getMetadata();
 
             StringJoiner headerRow =
-                    CommaSeparatedUtilities.getTimeWindowHeaderFromSampleMetadata( meta.getSampleMetadata(),
+                    CommaSeparatedUtilities.getPartialTimeWindowHeaderFromSampleMetadata( meta.getSampleMetadata(),
                                                                                    durationUnits );
             List<RowCompareByLeft> rows =
                     CommaSeparatedBoxPlotWriter.getRowsForOneBoxPlot( next, formatter, durationUnits );

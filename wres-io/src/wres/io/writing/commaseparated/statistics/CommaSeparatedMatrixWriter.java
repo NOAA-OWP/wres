@@ -147,7 +147,7 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedStatisticsWriter
         for ( MetricConstants m : metrics )
         {
 
-            StringJoiner headerRow = CommaSeparatedUtilities.getTimeWindowHeaderFromSampleMetadata( output.getData()
+            StringJoiner headerRow = CommaSeparatedUtilities.getPartialTimeWindowHeaderFromSampleMetadata( output.getData()
                                                                                                           .get( 0 )
                                                                                                           .getMetadata()
                                                                                                           .getSampleMetadata(),
