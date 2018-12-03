@@ -24,8 +24,9 @@ public class CommaSeparatedUtilities
 
     /**
      * Returns a default header from the {@link SampleMetadata} to which additional information may be appended. Does
-     * not include the valid time information and is therefore deprecated for removal once #55231 is complete, to 
-     * be replaced with {@link #getTimeWindowHeaderFromSampleMetadata(SampleMetadata, ChronoUnit)}.
+     * not include the valid time information and is therefore deprecated for removal once #57932 is complete, to 
+     * be replaced with {@link #getTimeWindowHeaderFromSampleMetadata(SampleMetadata, ChronoUnit)} in all circumstances,
+     * including for pairs and statistics.
      *
      * @param sampleMetadata the sample metadata
      * @param durationUnits the duration units for lead times
@@ -41,10 +42,23 @@ public class CommaSeparatedUtilities
                 CommaSeparatedUtilities.getTimeWindowHeaderFromSampleMetadata( sampleMetadata, durationUnits );
         
         String adaptedWindow = fullWindow.toString();
-        
-        adaptedWindow = adaptedWindow.replace( "EARLIEST VALID TIME,", "" );
-        adaptedWindow = adaptedWindow.replace( "LATEST VALID TIME,", "" );
-        
+               
+        // If valid times are explicitly set and the reference times are not set, then use the valid times
+        // because there is only one pair of times until #57932. Fixes #58112
+        // Again, *only* use valid times if the reference times are unbounded and the valid times not.
+        if ( sampleMetadata.getTimeWindow().hasUnboundedReferenceTimes()
+             && !sampleMetadata.getTimeWindow().hasUnboundedValidTimes() )
+        {
+            adaptedWindow = adaptedWindow.replace( "EARLIEST ISSUE TIME,", "" );
+            adaptedWindow = adaptedWindow.replace( "LATEST ISSUE TIME,", "" );    
+        }
+        // Reference times are bounded
+        else 
+        {
+            adaptedWindow = adaptedWindow.replace( "EARLIEST VALID TIME,", "" );
+            adaptedWindow = adaptedWindow.replace( "LATEST VALID TIME,", "" );        
+        }
+
         StringJoiner joiner = new StringJoiner( "," );
         joiner.add( adaptedWindow );
         
