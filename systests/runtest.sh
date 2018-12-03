@@ -214,24 +214,24 @@ else
 fi
 
 # added by RHC, archive each run results
-WHOAMI=`/bin/whoami`
+#WHOAMI=`/bin/whoami`
 # Only when wres-cron running this wcript during cron job archive the test results.
 # Other developers no need to archive the test results
-if [ "$WHOAMI" = "wres-cron" ]
-then
-	echo "$WHOAMI will archive the test results"
-	evaluationDir=`ls -d wres_evaluation_output*`
-	if [ -d $evaluationDir ]
-	then
-		WHEREAMI=`pwd | gawk -F/ '{print $NF}'`
-		#filename=`echo $evaluationDir | cut -d'_' -f1-4`
-		filename=`echo "$WHEREAMI"_"$evaluationDir"`
-		tar -czf "$filename".tar.gz $evaluationDir/
-		mkdir -pv ../SystemTestsOutputs
-		mv -v "$filename".tar.gz ../SystemTestsOutputs/ 
-	fi
-else
-	echo "You are $WHOAMI"
-fi
+#if [ "$WHOAMI" = "wres-cron" ]
+#then
+#	echo "$WHOAMI will archive the test results"
+#	evaluationDir=`ls -d wres_evaluation_output*`
+#	if [ -d $evaluationDir ]
+#	then
+#		WHEREAMI=`pwd | gawk -F/ '{print $NF}'`
+#		#filename=`echo $evaluationDir | cut -d'_' -f1-4`
+#		filename=`echo "$WHEREAMI"_"$evaluationDir"`
+#		tar -czf "$filename".tar.gz $evaluationDir/
+#		mkdir -pv ../SystemTestsOutputs
+#		mv -v "$filename".tar.gz ../SystemTestsOutputs/ 
+#	fi
+#else
+#	echo "You are $WHOAMI"
+#fi
 
 exit $overallResult
