@@ -36,8 +36,8 @@ public class JavaUtilLoggingRedirector
         }
         catch ( IOException ioe )
         {
-            LOGGER.warn( "Could not find java.util.logging-to-slf4j properties file {} on the classpath. Messages sent through j.u.l may be lost.",
-                         PROPERTIES_FILE_NAME );
+            LOGGER.warn( "Could not read java.util.logging-to-slf4j properties file {} on the classpath. Messages sent through j.u.l may be lost.",
+                         PROPERTIES_FILE_NAME, ioe );
         }
     }
 }
