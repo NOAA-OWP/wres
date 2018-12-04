@@ -15,6 +15,7 @@ import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
 import com.mchange.v2.c3p0.ComboPooledDataSource;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import wres.util.Strings;
@@ -95,6 +96,9 @@ final class DatabaseSettings
 	 */
 	DatabaseSettings( XMLStreamReader reader )
 	{
+        LOGGER.debug( "Default db settings before applying settings xml and before applying system property overrides: {}",
+                      this );
+
 		try
 		{
 			while ( reader.hasNext() )
@@ -117,7 +121,14 @@ final class DatabaseSettings
 					reader.next();
 				}
 			}
+
+            LOGGER.debug( "Db settings after applying settings xml and before applying system property overrides: {}",
+                          this );
+
 			this.applySystemPropertyOverrides();
+
+			LOGGER.debug( "Db settings after applying system property overrides: {}",
+                          this );
 
             DatabaseSchema schema = new DatabaseSchema(this.getDatabaseName());
 
@@ -626,40 +637,28 @@ final class DatabaseSettings
         return this.queryTimeout;
     }
 
-	@Override
+    @Override
     public String toString()
-	{
-		String stringRep = "Database Configuration:";
-		
-		stringRep += System.lineSeparator();
-		stringRep += "\t";
-		stringRep += "URL:\t\t";
-		stringRep += String.valueOf(url);
-		stringRep += System.lineSeparator();
-		stringRep += "\t";
-		stringRep += "Username:\t";
-		stringRep += String.valueOf(username);
-		stringRep += System.lineSeparator();
-		stringRep += "\t";
-		stringRep += "Password:\t";
-		stringRep += "(REDACTED)";
-		stringRep += System.lineSeparator();
-		stringRep += "\t";
-		stringRep += "Database Name:\t";
-		stringRep += String.valueOf(databaseName);
-		stringRep += System.lineSeparator();
-		stringRep += "\t";
-		stringRep += "Port:\t\t";
-		stringRep += String.valueOf(port);
-		stringRep += System.lineSeparator();
-		stringRep += "\t";
-		stringRep += "Database Type:\t";
-		stringRep += String.valueOf(databaseType);
-		
-		return stringRep;
-	}
+    {
+        return new ToStringBuilder( this )
+                .append( "url", url )
+                .append( "username", username )
+                .append( "password", "(REDACTED)" )
+                .append( "port", port )
+                .append( "databaseName", databaseName )
+                .append( "databaseType", databaseType )
+                .append( "trustPath", trustPath )
+                .append( "trustPassword", "(REDACTED)" )
+                .append( "maxPoolSize", maxPoolSize )
+                .append( "maxIdleTime", maxIdleTime )
+                .append( "connectionProperties", connectionProperties )
+                .append( "useSSL", useSSL )
+                .append( "validateSSL", validateSSL )
+                .append( "queryTimeout", queryTimeout )
+                .toString();
+    }
 
-	private void applySystemPropertyOverrides()
+    private void applySystemPropertyOverrides()
 	{
 		String usernameOverride = System.getProperty( "wres.username" );
 		if ( usernameOverride != null )
