@@ -42,8 +42,7 @@ final class DatabaseSettings
 	private String port = "5432";
 	private String databaseName = "wres";
 	private String databaseType = "postgresql";
-	private String trustPath;
-	private String trustPassword = "changeit";
+	private String certificateFileToTrust;
 	private int maxPoolSize = 10;
 	private int maxIdleTime = 30;
 
@@ -76,7 +75,7 @@ final class DatabaseSettings
         postgresqlProperties.put("validate", "sslfactory");
         postgresqlProperties.put("nonValidateAnswer", "org.postgresql.ssl.NonValidatingFactory");
         // If postgresql had a custom "yes" property for validating ssl, that would go here
-
+        postgresqlProperties.put( "validateAnswer", "wres.system.PgSSLSocketFactory" );
         mapping.put("postgresql", postgresqlProperties);
 
         Map<String, String> mysqlProperties = new TreeMap<>();
@@ -296,6 +295,17 @@ final class DatabaseSettings
                         if ( !validateName.isEmpty() && driverProperties.containsKey( "validateAnswer" ) )
                         {
                             connectionProperties.setProperty( validateName, driverProperties.get( "validateAnswer" ) );
+
+                            // Hate to do this, but an additional property is
+                            // needed for postgres. If mariadb or h2 need the
+                            // same, then we can genericize at that moment.
+                            // It looks like mariadb allows something like this
+                            // with the serverSslCert property.
+                            if ( this.getDatabaseType().equals( "postgresql" ) )
+                            {
+                                connectionProperties.setProperty( "sslfactoryarg",
+                                                                  this.certificateFileToTrust );
+                            }
                         }
                         else
                         {
@@ -326,6 +336,7 @@ final class DatabaseSettings
                 }
             }
         }
+
         return this.connectionProperties;
     }
 
@@ -346,9 +357,12 @@ final class DatabaseSettings
 									+ "could not be found.", e );
 		}
 
-        Connection conn = DriverManager.getConnection(connectionString, this.username, this.password);
-	    conn.setClientInfo( this.getConnectionProperties() );
-		return conn;
+		// Copy existing properties, don't modify them.
+		Properties connectionProperties = new Properties( this.getConnectionProperties() );
+		connectionProperties.setProperty( "user", this.getUsername() );
+		connectionProperties.setProperty( "password", this.password );
+
+        return DriverManager.getConnection( connectionString, connectionProperties );
 	}
 
 	ComboPooledDataSource createDatasource()
@@ -477,25 +491,16 @@ final class DatabaseSettings
         return this.validateSSL;
     }
 
-    private void setTrustPath(final String trustPath)
+    private void setCertificateFileToTrust( String certificateFileToTrust )
     {
-        this.trustPath = trustPath;
+        this.certificateFileToTrust = certificateFileToTrust;
     }
 
-    String getTrustPath()
+    private String getCertificateFileToTrust()
     {
-        return this.trustPath;
+        return this.certificateFileToTrust;
     }
 
-    private void setTrustPassword(final String trustPassword)
-    {
-        this.trustPassword = trustPassword;
-    }
-
-    String getTrustPassword()
-    {
-        return this.trustPassword;
-    }
 
 	/**
 	 * Sets the name of the database to connect to
@@ -603,11 +608,8 @@ final class DatabaseSettings
                         case "validate_ssl":
                             this.setValidateSSL(Boolean.parseBoolean( value ));
                             break;
-                        case "trust_path":
-                            this.setTrustPath( value );
-                            break;
-                        case "trust_password":
-                            this.setTrustPassword( value );
+                        case "certificate_file_to_trust":
+                            this.setCertificateFileToTrust( value );
                             break;
                         default:
                             LOGGER.error( "Tag of type: '{}' is not valid for database configuration.",
@@ -647,8 +649,7 @@ final class DatabaseSettings
                 .append( "port", port )
                 .append( "databaseName", databaseName )
                 .append( "databaseType", databaseType )
-                .append( "trustPath", trustPath )
-                .append( "trustPassword", "(REDACTED)" )
+                .append( "certificateFileToTrust", certificateFileToTrust )
                 .append( "maxPoolSize", maxPoolSize )
                 .append( "maxIdleTime", maxIdleTime )
                 .append( "connectionProperties", connectionProperties )
@@ -690,16 +691,10 @@ final class DatabaseSettings
             this.validateSSL = Boolean.parseBoolean( validateSSLOverride );
         }
 
-        String trustPathOverride = System.getProperty( "wres.trust_path" );
-		if (trustPathOverride != null)
+        String certificateFileToTrustOverride = System.getProperty( "wres.certificateFileToTrust" );
+		if ( certificateFileToTrustOverride != null)
         {
-            this.setTrustPath( trustPathOverride );
-        }
-
-        String trustPasswordOverride = System.getProperty( "wres.trust_password" );
-		if (trustPasswordOverride != null)
-        {
-            this.setTrustPassword( trustPasswordOverride );
+            this.setCertificateFileToTrust( certificateFileToTrustOverride );
         }
 
 		String timeoutOverride = System.getProperty( "wres.query_timeout" );
