@@ -1,4 +1,4 @@
-package wres.io.utilities;
+package wres.system;
 
 import java.io.File;
 import java.io.FileInputStream;

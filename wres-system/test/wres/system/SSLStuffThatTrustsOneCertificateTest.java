@@ -1,4 +1,4 @@
-package wres.io.utilities;
+package wres.system;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
