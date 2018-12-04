@@ -29,6 +29,8 @@ import wres.datamodel.sampledata.pairs.EnsemblePair;
 import wres.datamodel.sampledata.pairs.EnsemblePairs;
 import wres.datamodel.sampledata.pairs.SingleValuedPair;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
+import wres.datamodel.sampledata.pairs.TimeSeriesOfEnsemblePairs;
+import wres.datamodel.sampledata.pairs.TimeSeriesOfEnsemblePairs.TimeSeriesOfEnsemblePairsBuilder;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.sampledata.pairs.TimeSeriesOfSingleValuedPairs.TimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.time.Event;
@@ -227,6 +229,50 @@ class SampleDataRetriever extends Retriever
 
         return builder.build();
     }
+    
+    /**
+     * @return the time-series of ensemble pairs using the state of this retriever
+     */
+    
+    private TimeSeriesOfEnsemblePairs createEnsembleTimeSeriesInput()
+    {
+        TimeSeriesOfEnsemblePairsBuilder builder = new TimeSeriesOfEnsemblePairsBuilder();
+
+        List<Event<EnsemblePair>> events = this.getEnsembleEvents( this.getPrimaryPairs() );
+        
+        builder.addTimeSeries( events );
+
+        if (this.getFirstlead() == Long.MAX_VALUE || this.getLastLead() == Long.MIN_VALUE)
+        {
+            throw new RetrievalFailedException(
+                    "No time series data could be loaded from the "
+                    + "database for a time series metric."
+            );
+        }
+
+        TimeWindow fullWindow = TimeWindow.of(
+                Instant.MIN,
+                Instant.MAX,
+                Duration.of(this.getFirstlead(), TimeHelper.LEAD_RESOLUTION),
+                Duration.of(this.getLastLead(), TimeHelper.LEAD_RESOLUTION)
+        );
+
+        OrderedSampleMetadata.Builder copier = OrderedSampleMetadata.Builder.from( this.getSampleMetadata() );
+        copier.setTimeWindow( fullWindow );
+
+        builder.setMetadata( copier.build().getMetadata());
+
+        if (!this.getBaselinePairs().isEmpty())
+        {
+            events = this.getEnsembleEvents( this.getBaselinePairs() );
+            builder.addTimeSeriesDataForBaseline( events );
+            builder.setMetadataForBaseline( this.getSampleMetadata().getBaselineMetadata() );
+        }
+
+        builder.setClimatology( this.getClimatology() );
+
+        return builder.build();
+    }
 
     private EnsemblePairs createEnsembleInput()
     {
@@ -262,6 +308,25 @@ class SampleDataRetriever extends Retriever
 
         return events;
     }
+    
+    /**
+     * Generates {@link Event} that compose {@link EnsemblePair} from the input.
+     * 
+     * @param pairs the input pairs
+     * @return the ensemble events
+     */
+    
+    private List<Event<EnsemblePair>> getEnsembleEvents(List<ForecastedPair> pairs)
+    {
+        List<Event<EnsemblePair>> events = new ArrayList<>(  );
+
+        for (ForecastedPair pair : pairs)
+        {
+                events.add( Event.of( pair.getBasisTime(), pair.getValidTime(), pair.getValues() ) );
+        }
+
+        return Collections.unmodifiableList( events );
+    }    
 
     /**
      * @param pairPairs A set of packaged pairs

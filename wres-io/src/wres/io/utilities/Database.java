@@ -58,21 +58,10 @@ public final class Database {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Database.class);
 
-	private static final long MUTATION_LOCK_KEY = 126357;
-	private static final long MUTATION_LOCK_WAIT_MS = 32000;
+	private static final Integer MUTATION_LOCK_KEY = 126357;
 
-	/**
-	 * An advisory lock only lasts for the duration of a connection. If we
-	 * open and create an advisory lock in a connection, it is lost  when the
-	 * connection is lost. To keep it up, we're going to attempt to store the
-	 * connection and close it to release the lock
-	 */
-	private static Connection advisoryLockConnection = null;
-
-    /**
-     * Protects access to the advisoryLockConnection
-     */
-	private static final Object ADVISORY_LOCK = new Object();
+	private static final DatabaseLockManager DATABASE_LOCK_MANAGER =
+            new DatabaseLockManager( new DatabaseConnectionSupplier() );
 
 	/**
 	 * The standard priority set of connections to the database
@@ -1785,82 +1774,28 @@ public final class Database {
         }
     }
 
+
     /**
-     * Lock the database for mutation so that we can do clean up accurately.
-     * @throws IOException when lock cannot be acquired or db has an error
+     * Lock the database for mutation so that we can do clean up accurately
+     * or ingest without another process cleaning up while this process ingests.
+     *
+     * Try once to get the lock. If it fails, fail quickly.
+     *
+     * @throws IOException when db communication fails
+     * @throws IllegalStateException when lock could not be acquired
      */
+
     public static void lockForMutation() throws IOException
     {
-        final String RESULT_COLUMN = "pg_try_advisory_lock";
-        final String TRY_LOCK_SCRIPT = "SELECT pg_try_advisory_lock( "
-                                       + MUTATION_LOCK_KEY
-                                       + " )";
-        final long START_TIME_MILLIS = System.currentTimeMillis();
-
-        final long BACKOFF_START_MILLIS = 1000;
-        final long BACKOFF_MULTIPLIER = 2;
-        long backoff = BACKOFF_START_MILLIS;
-        Connection connection;
-
         try
         {
-            boolean shouldTryAgain;
-
-            // TODO: Simplify the retry loop; we need to try for a longer period than we do now, but it is not clear at all how the retry loop works
-            do
-            {
-                connection = SystemSettings.getRawDatabaseConnection();
-
-                try (DataProvider  resultSet = Database.getResults( connection, TRY_LOCK_SCRIPT ))
-                {
-                    boolean successfullyLocked = false;
-
-                    if ( resultSet.next() )
-                    {
-                        successfullyLocked = resultSet.getValue( RESULT_COLUMN );
-                    }
-
-                    if ( successfullyLocked )
-                    {
-                        Database.setAdvisoryLockConnection( connection );
-                        LOGGER.info( "Successfully acquired database change privileges." );
-                        break;
-                    }
-                    else
-                    {
-
-                        backoff = backoff * BACKOFF_MULTIPLIER;
-
-                        shouldTryAgain = START_TIME_MILLIS + MUTATION_LOCK_WAIT_MS
-                                         >= System.currentTimeMillis() + backoff;
-
-                        if ( shouldTryAgain )
-                        {
-                            LOGGER.info( "Waiting for another WRES process to finish modifying the database..." );
-                            Thread.sleep( backoff );
-                        }
-                        else
-                        {
-                            throw new IOException( "Another wres process is taking "
-                                                   + "a while. Gave up trying to "
-                                                   + "start ingest. Wait a bit "
-                                                   + "and try again." );
-                        }
-                    }
-                }
-            }
-            while ( true );
-        }
-        catch ( InterruptedException ie )
-        {
-            LOGGER.warn( "Interrupted while pausing before retrying to acquire database change privileges.",
-                         ie );
-            Thread.currentThread().interrupt();
+            DATABASE_LOCK_MANAGER.lock( MUTATION_LOCK_KEY );
+            LOGGER.info( "Successfully acquired database change privileges." );
         }
         catch ( SQLException se )
         {
-            throw new IngestException( "While attempting to acquire database change privileges",
-                                       se );
+            throw new IOException( "Could not acquire database change privileges.",
+                                   se );
         }
     }
 
@@ -1868,65 +1803,23 @@ public final class Database {
     /**
      * Release the lock for database mutation. The lock should also be released
      * automatically by postgres if our process dies.
-     * @throws IOException when anything goes wrong
+     * @throws IOException when db communication fails
+     * @throws IllegalStateException when lock could not be released
      */
 
     public static void releaseLockForMutation() throws IOException
     {
-        // We instead need to release the connection
-        synchronized ( Database.ADVISORY_LOCK )
+        try
         {
-            try
-            {
-                if (Database.advisoryLockConnection == null || Database.advisoryLockConnection.isClosed())
-                {
-                    LOGGER.info("{}The advisory lock was released too early.{}", NEWLINE, NEWLINE);
-                }
-            }
-            catch ( SQLException e )
-            {
-                // The above statement is a diagnostic measure - it doesn't
-                // affect the user, but we do need to log it for our own sakes
-                LOGGER.warn( "Could not get lock status.", e );
-            }
-
-            try
-            {
-                Database.setAdvisoryLockConnection( null );
-            }
-            catch ( SQLException e )
-            {
-                if (Database.advisoryLockConnection == null)
-                {
-                    LOGGER.debug("An error was encountered while attempting to close the "
-                                 + "advisory lock. We don't need to throw an error because "
-                                 + "the desired state was still reached.");
-                }
-                else
-                {
-                    throw new IOException( "Database privileges could not be "
-                                           + "adequately released.", e );
-                }
-            }
+            DATABASE_LOCK_MANAGER.unlock( MUTATION_LOCK_KEY );
+            LOGGER.info( "Successfully released database change privileges." );
         }
-
-        LOGGER.info( "Successfully released database change privileges." );
-    }
-
-    private static void setAdvisoryLockConnection(Connection connection)
-            throws SQLException
-    {
-        synchronized ( Database.ADVISORY_LOCK )
+        catch ( SQLException se )
         {
-            if (Database.advisoryLockConnection != null && connection == null)
-            {
-                Database.advisoryLockConnection.close();
-            }
-
-            Database.advisoryLockConnection = connection;
+            throw new IOException( "Could not release database change privileges.",
+                                   se );
         }
     }
-
 
     /**
      * For system-level monitoring information, return the number of tasks in
