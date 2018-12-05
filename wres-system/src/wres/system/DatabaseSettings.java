@@ -359,8 +359,16 @@ final class DatabaseSettings
 
 		// Copy existing properties, don't modify them.
 		Properties connectionProperties = new Properties( this.getConnectionProperties() );
-		connectionProperties.setProperty( "user", this.getUsername() );
-		connectionProperties.setProperty( "password", this.password );
+
+        if ( this.getUsername() != null )
+        {
+            connectionProperties.setProperty( "user", this.getUsername() );
+        }
+
+        if ( this.password != null )
+        {
+            connectionProperties.setProperty( "password", this.password );
+        }
 
         return DriverManager.getConnection( connectionString, connectionProperties );
 	}
