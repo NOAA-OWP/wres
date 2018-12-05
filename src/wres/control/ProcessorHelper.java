@@ -89,6 +89,9 @@ class ProcessorHelper
         ProgressMonitor.setShowStepDescription( true );
         ProgressMonitor.resetMonitor();
 
+        // Create output directory prior to ingest, fails early when it fails.
+        Path outputDirectory = ProcessorHelper.createTempOutputDirectory();
+
         LOGGER.debug( "Beginning ingest for project {}...", projectConfigPlus );
 
         // Need to ingest first
@@ -121,9 +124,6 @@ class ProcessorHelper
 
         // The project code - ideally project hash
         String projectIdentifier = String.valueOf( projectDetails.getInputCode() );
-
-        // Output directory
-        Path outputDirectory = ProcessorHelper.createTempOutputDirectory( projectIdentifier );
 
         ResolvedProject resolvedProject = ResolvedProject.of( projectConfigPlus,
                                                               decomposedFeatures,
@@ -259,17 +259,13 @@ class ProcessorHelper
     
     /**
      * Creates a temporary directory for the outputs with the correct permissions. 
-     * 
-     * @param projectIdentifier the project identifier, cannot be null
+     *
      * @return the path to the temporary output directory
      * @throws IOException if the temporary directory cannot be created
-     * @throws NullPointerException if the projectIdentifier is null
      */
 
-    private static Path createTempOutputDirectory( final String projectIdentifier ) throws IOException
+    private static Path createTempOutputDirectory() throws IOException
     {
-        Objects.requireNonNull( projectIdentifier, "Cannot create an output directory without an identifier." );
-
         // Where outputs files will be written
         Path outputDirectory = null;
 
@@ -289,17 +285,13 @@ class ProcessorHelper
             FileAttribute<Set<PosixFilePermission>> fileAttribute =
                     PosixFilePermissions.asFileAttribute( permissions );
 
-            outputDirectory = Files.createTempDirectory( "wres_evaluation_output_"
-                                                         + projectIdentifier
-                                                         + "_",
+            outputDirectory = Files.createTempDirectory( "wres_evaluation_output_",
                                                          fileAttribute );
         }
         // Not POSIX-compliant
         else
         {
-            outputDirectory = Files.createTempDirectory( "wres_evaluation_output_"
-                                                         + projectIdentifier
-                                                         + "_" );
+            outputDirectory = Files.createTempDirectory( "wres_evaluation_output_" );
         }
 
         return outputDirectory;
