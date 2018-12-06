@@ -405,13 +405,21 @@ public class AllScenarios {
         return returnValue;
     } // end of this method
 
+	/**
+	* Search and replace a string in a file
+	* @param fileName -- file to read and write
+	* @param searchFor -- a string to search for
+	* @param replace -- a string to replace
+	* @param line -- a specify line number search/replace, or 'g' for global
+	*/
 	public void searchAndReplace(String fileName, String searchFor, String replace, String line) {
 		File file = Paths.get(System.getProperty("user.dir") + "/" + fileName).toFile();
+		/*
 		System.out.println(file.toString() + '\n' +
 			searchFor + '\n' +
 			replace + '\n' +
 			line);
-		// ArrayList<String> arrayList = new ArrayList<String>();
+		*/
 		if (file.exists()) {
 			try {
 				ArrayList<String> arrayList = new ArrayList<String>();
@@ -480,7 +488,7 @@ public class AllScenarios {
 					}
 				} // end while loop
 				bufferedReader.close();
-				searchAndReplace(theFile[1], search[1], replace[1], line[1]);
+				searchAndReplace(theFile[1].trim(), search[1].trim(), replace[1].trim(), line[1].trim());
 			} catch (FileNotFoundException fnfe) {
 				System.err.println( fnfe.getMessage());
 			} catch (IOException ioe) {
