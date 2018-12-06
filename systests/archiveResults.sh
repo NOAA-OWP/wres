@@ -22,6 +22,7 @@ do
 			#echo "$dir"_"$subdir".tar.gz
 			tar -czvf "$dir"_"$subdir".tar.gz $subdir/
 			mv -v "$dir"_"$subdir".tar.gz ../SystemTestsOutputs
+			rm -rf $subdir/
 		fi
 	fi
 	cd ..
