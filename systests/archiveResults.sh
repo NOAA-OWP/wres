@@ -5,7 +5,7 @@
 # Created: December, 2018
 
 LATEST=$1
-dirs=`ls -d scenario0* scenario1* scenario2* scenario3* scenario4* scenario5* scenario6* scenario8*`
+dirs=`ls -d scenario0* scenario1* scenario2* scenario3* scenario4* scenario5* scenario6* scenario8* scenario7*`
 
 mkdir -pv SystemTestsOutputs
 # rm -v SystemTestsOutputs/*
