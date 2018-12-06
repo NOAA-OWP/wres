@@ -43,7 +43,9 @@
 
           <!-- %nopexception: suppress stacktrace here -->
           <!-- %exception{short}: just the first line for each exception -->
-          <pattern>%msg%n%exception{short}</pattern>
+          <!-- %exception{full}: full stacktrace for each exception -->
+          <!-- %logger{0}: show only rightmost part of logger name (class) -->
+          <pattern>%level %logger{0} %msg%n%exception{full}</pattern>
         </encoder>
     </appender>
 
