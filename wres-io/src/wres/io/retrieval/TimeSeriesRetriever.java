@@ -50,6 +50,7 @@ public class TimeSeriesRetriever extends Retriever
     }
 
     @Override
+    @Deprecated
     void writePair( SharedWriterManager sharedWriterManager,
                     Path outputDirectory,
                     ForecastedPair pair,
@@ -194,10 +195,7 @@ public class TimeSeriesRetriever extends Retriever
                     ForecastedPair pair = new ForecastedPair( lead,
                                                               pivottedValues.validTime,
                                                               ensemblePair);
-                    this.writePair( super.getSharedWriterManager(),
-                                    super.getOutputDirectoryForPairs(),
-                                    pair,
-                                    super.getProjectDetails().getRight() );
+
                     this.addPrimaryPair( pair );
                 }
             }
