@@ -88,13 +88,13 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
         //Remove missing values, except for ordered input, such as time-series
         SingleValuedPairs inputNoMissing = input;
 
-        if ( ! ( input instanceof TimeSeriesOfSingleValuedPairs ) )
+        if ( ! this.hasMetrics( SampleDataGroup.SINGLE_VALUED_TIME_SERIES ) )
         {
-            if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED_TIME_SERIES ) )
-            {
-                throw new MetricCalculationException( " The project configuration includes time-series metrics. "
-                                                      + "Expected a time-series of single-valued pairs as input." );
-            }
+            LOGGER.debug( "Removing any single-valued pairs with missing left or right values for {} at "
+                          + "time window {}, since time-series metrics are not required.",
+                          inputNoMissing.getMetadata().getIdentifier(),
+                          inputNoMissing.getMetadata().getTimeWindow() );
+            
             inputNoMissing = Slicer.filter( input, Slicer.leftAndRight( ADMISSABLE_DATA ), ADMISSABLE_DATA );
         }
 
@@ -112,6 +112,12 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
         }
         if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED_TIME_SERIES ) )
         {
+            if ( ! (inputNoMissing instanceof TimeSeriesOfSingleValuedPairs) )
+            {
+                throw new MetricCalculationException( " The project configuration includes time-series metrics. "
+                                                      + "Expected a time-series of single-valued pairs as input." );
+            }
+            
             TimeSeriesOfSingleValuedPairs data = (TimeSeriesOfSingleValuedPairs) inputNoMissing;
             TimeWindow timeWindow = input.getMetadata().getTimeWindow();
             TimeSeriesOfSingleValuedPairsBuilder builder = new TimeSeriesOfSingleValuedPairsBuilder();

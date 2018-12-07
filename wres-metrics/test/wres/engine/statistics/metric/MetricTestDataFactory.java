@@ -260,6 +260,33 @@ public final class MetricTestDataFactory
                                                                              "ESP" ) );
         return SingleValuedPairs.of( Collections.emptyList(), Collections.emptyList(), main, base );
     }
+    
+    /**
+     * Returns a set of single-valued pairs without a baseline.
+     * 
+     * @return single-valued pairs
+     */
+
+    public static SingleValuedPairs getSingleValuedPairsEightWithMissings()
+    {
+        //Construct some single-valued pairs
+        final List<SingleValuedPair> values = new ArrayList<>();
+        values.add( SingleValuedPair.of( 22.9, 22.8 ) );
+        values.add( SingleValuedPair.of( 75.2, 80 ) );
+        values.add( SingleValuedPair.of( 63.2, 65 ) );
+        values.add( SingleValuedPair.of( 29, 30 ) );
+        values.add( SingleValuedPair.of( 5, 2 ) );
+        values.add( SingleValuedPair.of( 2.1, 3.1 ) );
+        values.add( SingleValuedPair.of( 35000, 37000 ) );
+        values.add( SingleValuedPair.of( 8, 7 ) );
+        values.add( SingleValuedPair.of( 12, 12 ) );
+        values.add( SingleValuedPair.of( 93, 94 ) );
+        values.add( SingleValuedPair.of( Double.NaN, 94 ) );
+        values.add( SingleValuedPair.of( 93, Double.NaN ) );
+        values.add( SingleValuedPair.of( Double.NaN, Double.NaN ) );
+
+        return SingleValuedPairs.of( values, SampleMetadata.of() );
+    }    
 
     /**
      * Returns a moderately-sized test dataset of ensemble pairs with the same dataset as a baseline. Reads the pairs 

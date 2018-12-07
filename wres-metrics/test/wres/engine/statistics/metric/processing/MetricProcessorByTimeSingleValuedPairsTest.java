@@ -63,6 +63,7 @@ import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.datamodel.thresholds.ThresholdsByMetric.ThresholdsByMetricBuilder;
+import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
@@ -829,6 +830,54 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         assertTrue( "Actual output differs from expected output for time-series metrics. ",
                     actualScores.equals( expectedScores ) );
     }
+    
+    /**
+     * Tests the construction of a {@link MetricProcessorByTimeSingleValuedPairs} and application of
+     * {@link MetricProcessorByTimeSingleValuedPairs#apply(SingleValuedPairs)} to 
+     * configuration obtained from testinput/metricProcessorSingleValuedPairsByTimeTest/testApplyWithThresholds.xml and 
+     * pairs that contain missing values, which should be removed.
+     * 
+     * @throws IOException if the input data could not be read
+     * @throws InterruptedException if the outputs were interrupted
+     * @throws MetricParameterException if one or more metric parameters is set incorrectly
+     * @throws StatisticException if the results could not be generated 
+     */
+
+    @Test
+    public void testApplyWithMissingPairsForRemoval() throws IOException, MetricParameterException, InterruptedException
+    {
+        String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/testApplyWithThresholds.xml";
+
+        ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
+        MetricProcessor<SingleValuedPairs, StatisticsForProject> processor =
+                MetricFactory.ofMetricProcessorByTimeSingleValuedPairs( config, StatisticGroup.set() );
+        SingleValuedPairs pairs = MetricTestDataFactory.getSingleValuedPairsEightWithMissings();
+
+        // Generate results
+        final TimeWindow window = TimeWindow.of( Instant.MIN,
+                                                 Instant.MAX,
+                                                 Duration.ZERO );
+        final SampleMetadata meta = new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "CMS" ) )
+                                                               .setIdentifier( DatasetIdentifier.of( Location.of( "DRRC2" ),
+                                                                                                     "SQIN",
+                                                                                                     "AHPS" ) )
+                                                               .setTimeWindow( window )
+                                                               .build();
+        processor.apply( SingleValuedPairs.of( pairs.getRawData(), meta ) );
+        
+        // Check the sample size
+        Double size = Slicer.filter( processor.getCachedMetricOutput().getDoubleScoreStatistics(),
+                                     sampleMeta -> sampleMeta.getMetricID() == MetricConstants.SAMPLE_SIZE
+                                                   && !sampleMeta.getSampleMetadata()
+                                                                 .getThresholds()
+                                                                 .first()
+                                                                 .isFinite() )
+                            .getData()
+                            .get( 0 )
+                            .getData();
+                
+        assertTrue( FunctionFactory.doubleEquals().test( 10.0, size ) );
+    }      
 
     /**
      * Tests that the {@link MetricProcessorByTimeSingleValuedPairs#apply(SingleValuedPairs)} throws an expected
