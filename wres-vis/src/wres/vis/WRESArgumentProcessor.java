@@ -15,6 +15,7 @@ import ohd.hseb.hefs.utils.arguments.DefaultArgumentsProcessor;
 import ohd.hseb.hefs.utils.plugins.UniqueGenericParameterList;
 import ohd.hseb.util.misc.HString;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricConstants.StatisticGroup;
 import wres.datamodel.Slicer;
 import wres.datamodel.metadata.DatasetIdentifier;
 import wres.datamodel.metadata.SampleMetadata;
@@ -154,7 +155,8 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         StatisticMetadata meta = displayedPlotInput.getData().get( 0 ).getMetadata();
         extractStandardArgumentsFromMetadata( meta );
 
-        if ( plotType == ChartType.POOLING_WINDOW )
+        // Assemble a collection of smaller time windows where necessary
+        if ( plotType == ChartType.POOLING_WINDOW || meta.getMetricID().isInGroup( StatisticGroup.PAIRED ) )
         {
             SortedSet<TimeWindow> timeWindows =
                     Slicer.discover( displayedPlotInput,

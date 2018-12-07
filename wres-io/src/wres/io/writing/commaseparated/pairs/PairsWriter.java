@@ -1,6 +1,7 @@
 package wres.io.writing.commaseparated.pairs;
 
 import java.io.BufferedWriter;
+import java.io.Closeable;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -22,6 +23,7 @@ import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.TimeScale;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.sampledata.pairs.Pairs;
@@ -34,7 +36,7 @@ import wres.util.TimeHelper;
 /**
  * Abstract base class for writing a time-series of pairs as comma separated values (CSV). There is one 
  * {@link PairsWriter} for each {@link Path} to be written; writing to that {@link Path} is 
- * managed by this {@link PairsWriter}.
+ * managed by this {@link PairsWriter}. The {@link PairsWriter} must be closed after all writing is complete.
  * 
  * @param <S> the decomposed type of pairs to write
  * @param <T> the composed type of pairs to write
@@ -42,14 +44,14 @@ import wres.util.TimeHelper;
  */
 
 public abstract class PairsWriter<S extends Object, T extends Pairs<S> & TimeSeries<S>>
-        implements Consumer<T>, Supplier<Set<Path>>
+        implements Consumer<T>, Supplier<Set<Path>>, Closeable
 {
 
     /**
      * A default name for the pairs.
      */
 
-    public static final String DEFAULT_PAIRS_NAME = "pairs_new.csv";
+    public static final String DEFAULT_PAIRS_NAME = "pairs.csv";
 
     /**
      * Delimiter.
@@ -61,7 +63,7 @@ public abstract class PairsWriter<S extends Object, T extends Pairs<S> & TimeSer
      * A default name for the baseline pairs.
      */
 
-    public static final String DEFAULT_BASELINE_PAIRS_NAME = "baseline_pairs_new.csv";
+    public static final String DEFAULT_BASELINE_PAIRS_NAME = "baseline_pairs.csv";
 
     /**
      * Logger.
@@ -80,7 +82,7 @@ public abstract class PairsWriter<S extends Object, T extends Pairs<S> & TimeSer
      */
 
     private final Path pathToPairs;
-
+    
     /**
      * The time resolution.
      */
@@ -97,7 +99,22 @@ public abstract class PairsWriter<S extends Object, T extends Pairs<S> & TimeSer
      * Is <code>true</code> if the header needs to be written, <code>false</code> when it has already been written. 
      */
 
-    private final AtomicBoolean isHeaderRequired = new AtomicBoolean( true );
+    private final AtomicBoolean isHeaderRequired = new AtomicBoolean( true );   
+    
+    /**
+     * Shared instance of a {@link BufferedWriter} to be closed on completion.
+     */
+
+    private BufferedWriter writer = null;
+    
+    @Override
+    public void close() throws IOException
+    {
+        if( Objects.nonNull( this.writer ) )
+        {
+            writer.close();
+        }        
+    }    
 
     /**
      * Returns a basic header for the pairs from the input. Override this method to add information for specific types
@@ -186,33 +203,55 @@ public abstract class PairsWriter<S extends Object, T extends Pairs<S> & TimeSer
             // Write contents if available
             if ( !pairs.getRawData().isEmpty() )
             {
-                LOGGER.debug( "Writing pairs for {} to {}", pairs.getMetadata().getIdentifier(), this.getPath() );
-
                 // Feature to write, which is fixed across all pairs
-                String featureName = pairs.getMetadata().getIdentifier().getGeospatialID().getLocationName();
+                
+                // TODO: need a more consistent representation of a geographic feature throughout the application
+                // See #55231-131
+                // For now, use the location name OR the coordinates, preferentially
+                Location location =  pairs.getMetadata().getIdentifier().getGeospatialID();
+                String featureName = location.toString();
+                
+                if( location.hasLocationName() )
+                {
+                    featureName = location.getLocationName();
+                }
+                else if( location.hasCoordinates() )
+                {
+                    featureName = Float.toString( location.getLongitude() ) + 
+                            " " + Float.toString( location.getLatitude() );
+                }
 
                 // Time window to write, which is fixed across all pairs
                 TimeWindow timeWindow = pairs.getMetadata().getTimeWindow();
 
-                // Prepare
-                this.getWriteLock().lock();
-                LOGGER.trace( "Acquired pair writing lock on {}", this.getPath() );
+                LOGGER.debug( "Writing pairs for {} at time window {} to {}",
+                              pairs.getMetadata().getIdentifier(),
+                              timeWindow,
+                              this.getPath() );
 
-                // Write by appending
-                try ( BufferedWriter writer = this.getBufferedWriter( true ) )
+                // Lock for writing
+                this.getWriteLock().lock();
+                
+                LOGGER.trace( "Acquired pair writing lock on {}", this.getPath() );
+                
+                // Write using shared instance
+                BufferedWriter sharedWriter = this.getBufferedWriter();
+                
+                try
                 {
+
                     // Iterate in time-series order
                     for ( TimeSeries<S> nextSeries : pairs.basisTimeIterator() )
                     {
-
                         Instant basisTime = nextSeries.getEarliestBasisTime();
 
                         for ( Event<S> nextPair : nextSeries.timeIterator() )
                         {
 
                             // Move to next line
-                            writer.write( System.lineSeparator() );
+                            sharedWriter.write( System.lineSeparator() );
                             
+                            // Compose next line with a string joiner
                             StringJoiner joiner = new StringJoiner( PairsWriter.DELIMITER );
 
                             // Feature description
@@ -241,18 +280,28 @@ public abstract class PairsWriter<S extends Object, T extends Pairs<S> & TimeSer
                             // Write the values
                             joiner.add( this.getPairFormatter().apply( nextPair.getValue() ) );
 
-                            // Write next line
-                            writer.write( joiner.toString() );
+                            // Write the composed line
+                            sharedWriter.write( joiner.toString() );
 
                         }
-                    }
 
-                    LOGGER.trace( "{} pairs written to {}.", pairs.getRawData().size(), this.getPath() );
+                    }
+                    
+                    // Flush the buffer
+                    sharedWriter.flush();
+                    
+                    LOGGER.debug( "{} pairs written to {} for {} at time window {}.",
+                                  pairs.getRawData().size(),
+                                  this.getPath(),
+                                  pairs.getMetadata().getIdentifier(),
+                                  timeWindow );
                 }
                 // Clean-up
                 finally
                 {
+                    // Unlock to expose for other writing
                     this.getWriteLock().unlock();
+                    
                     LOGGER.trace( "Released pair writing lock on {}", this.getPath() );
                 }
             }
@@ -301,26 +350,34 @@ public abstract class PairsWriter<S extends Object, T extends Pairs<S> & TimeSer
     }
 
     /**
-     * Returns a writer that either appends or truncates.
+     * Returns a shared instance of a {@link BufferedWriter}.
      * 
-     * @return a writer
+     * @param path the path to write
      * @param appender is true to append, false to truncate
+     * @return a writer
      * @throws IOException if the writer cannot be constructed
      */
 
-    private BufferedWriter getBufferedWriter( boolean appender ) throws IOException
+    private BufferedWriter getBufferedWriter() throws IOException
     {
-        StandardOpenOption appendOrTruncate = StandardOpenOption.TRUNCATE_EXISTING;
-
-        if ( appender )
+        if( Objects.isNull( this.writer ) )
         {
-            appendOrTruncate = StandardOpenOption.APPEND;
+            this.getWriteLock().lock();
+            
+            try
+            {
+                this.writer = Files.newBufferedWriter( this.getPath(),
+                                                       StandardCharsets.UTF_8,
+                                                       StandardOpenOption.CREATE,
+                                                       StandardOpenOption.TRUNCATE_EXISTING );
+            }
+            finally
+            {
+                this.getWriteLock().unlock();
+            }
         }
 
-        return Files.newBufferedWriter( this.getPath(),
-                                        StandardCharsets.UTF_8,
-                                        StandardOpenOption.CREATE,
-                                        appendOrTruncate );
+        return this.writer;
     }
 
     /**
@@ -342,24 +399,36 @@ public abstract class PairsWriter<S extends Object, T extends Pairs<S> & TimeSer
             // Acquire the header
             final String header = this.getHeaderFromPairs( pairs ).toString();
 
-            // Prepare to write
+            // Lock for writing
             this.getWriteLock().lock();
+            
             LOGGER.trace( "Acquired pair writing lock on {}", this.getPath() );
-
-            // Write by truncation
-            try ( BufferedWriter writer = this.getBufferedWriter( false ) )
+            
+            // Write using shared instance
+            BufferedWriter sharedWriter = this.getBufferedWriter();
+            
+            try
             {
-                writer.write( header );
+                // Check again in case header written between first check and lock acquired
+                if ( this.isHeaderRequired().get() )
+                {
+                    sharedWriter.write( header );
 
-                // Writing succeeded
-                this.isHeaderRequired().set( false );
+                    // Writing succeeded
+                    this.isHeaderRequired().set( false );
 
-                LOGGER.trace( "Header for pairs composed of {} written to {}.", header, this.getPath() );
+                    LOGGER.trace( "Header for pairs composed of {} written to {}.", header, this.getPath() );
+                }
             }
             // Complete writing
             finally
             {
+                // Flush the buffer
+                sharedWriter.flush();
+                
+                // Unlock to expose for other writing
                 this.getWriteLock().unlock();
+                
                 LOGGER.trace( "Released pair writing lock on {}", this.getPath() );
             }
         }

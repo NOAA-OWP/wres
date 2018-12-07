@@ -77,7 +77,8 @@ do
         pairsFileBaseName=$( basename $pairsFile )
 
         # Sort the pairs file.
-        sort -t, -k1d,1 -k4n,4 -k2,2 -k3n,3 $pairsFile > $directory/sorted_$pairsFileBaseName
+        #sort -t, -k1d,1 -k4n,4 -k2,2 -k3n,3 $pairsFile > $directory/sorted_$pairsFileBaseName
+        (head -n 1 $pairsFile && tail -n +2 $pairsFile | sort -t, -k1d,1 -k2,2 -k3,3 -k6n,6 -k7n,7 -k4,4 -k5,5 -k8,8 -k9n,9 ) > $directory/sorted_$pairsFileBaseName
         sortResult=$?
         if [ ${sortResult} -ne 0 ] # Sorting failed.
         then

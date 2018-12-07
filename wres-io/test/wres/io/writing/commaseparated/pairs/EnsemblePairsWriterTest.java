@@ -12,6 +12,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -19,7 +20,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import wres.datamodel.metadata.DatasetIdentifier;
@@ -149,43 +149,111 @@ public final class EnsemblePairsWriterTest
         Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ), PairsWriter.DEFAULT_PAIRS_NAME );
 
         // Create the writer
-        EnsemblePairsWriter writer = EnsemblePairsWriter.of( pathToFile, ChronoUnit.SECONDS );
+        try ( EnsemblePairsWriter writer = EnsemblePairsWriter.of( pathToFile, ChronoUnit.SECONDS ) )
+        {
 
-        TimeSeriesOfEnsemblePairsBuilder tsBuilder = new TimeSeriesOfEnsemblePairsBuilder();
+            TimeSeriesOfEnsemblePairsBuilder tsBuilder = new TimeSeriesOfEnsemblePairsBuilder();
 
-        // Set the measurement units and time scale
-        SampleMetadata meta =
-                new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "SCOOBIES" ) )
-                                           .setIdentifier( DatasetIdentifier.of( Location.of( "PINEAPPLE" ),
-                                                                                 "MORTARS" ) )
-                                           .setTimeScale( TimeScale.of( Duration.ofSeconds( 3600 ),
-                                                                        TimeScaleFunction.MEAN ) )
-                                           .build();
+            // Set the measurement units and time scale
+            SampleMetadata meta =
+                    new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "SCOOBIES" ) )
+                                               .setIdentifier( DatasetIdentifier.of( Location.of( "PINEAPPLE" ),
+                                                                                     "MORTARS" ) )
+                                               .setTimeScale( TimeScale.of( Duration.ofSeconds( 3600 ),
+                                                                            TimeScaleFunction.MEAN ) )
+                                               .build();
 
-        TimeSeriesOfEnsemblePairs emptyPairs =
-                (TimeSeriesOfEnsemblePairs) tsBuilder.addTimeSeries( Collections.emptyList() )
-                                                     .setMetadata( meta )
-                                                     .build();
+            TimeSeriesOfEnsemblePairs emptyPairs =
+                    (TimeSeriesOfEnsemblePairs) tsBuilder.addTimeSeries( Collections.emptyList() )
+                                                         .setMetadata( meta )
+                                                         .build();
 
-        // Write the pairs
-        writer.accept( emptyPairs );
+            // Write the pairs
+            writer.accept( emptyPairs );
 
-        // Read the results
-        List<String> results = Files.readAllLines( pathToFile );
+            // Read the results
+            List<String> results = Files.readAllLines( pathToFile );
 
-        // Assert the expected results
-        assertTrue( results.size() == 1 );
-        assertTrue( results.get( 0 ).equals( "FEATURE DESCRIPTION,"
-                                             + "VALID TIME OF PAIR,"
-                                             + "LEAD DURATION OF PAIR IN SECONDS "
-                                             + "[MEAN OVER PAST 3600 SECONDS],"
-                                             + "LEFT IN SCOOBIES,"
-                                             + "RIGHT IN SCOOBIES" ) );
+            // Assert the expected results
+            assertTrue( results.size() == 1 );
+            assertTrue( results.get( 0 ).equals( "FEATURE DESCRIPTION,"
+                                                 + "VALID TIME OF PAIR,"
+                                                 + "LEAD DURATION OF PAIR IN SECONDS "
+                                                 + "[MEAN OVER PAST 3600 SECONDS],"
+                                                 + "LEFT IN SCOOBIES,"
+                                                 + "RIGHT IN SCOOBIES" ) );
 
-        // If all succeeded, remove the file, otherwise leave to help debugging
-        Files.deleteIfExists( pathToFile );
+            // If all succeeded, remove the file, otherwise leave to help debugging
+            Files.deleteIfExists( pathToFile );
+        }
     }
 
+    /**
+     * Builds a {@link EnsemblePairsWriter}, writes some pairs with {@link Double#NaN} values, and checks that the 
+     * written output matches the
+     * expected output.
+     * @throws IOException if the writing or removal of the paired file fails
+     */
+
+    @Test
+    public void testAcceptWithNaNPairs() throws IOException
+    {
+        // Create the path
+        Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ), PairsWriter.DEFAULT_PAIRS_NAME );
+
+        // Formatter
+        DecimalFormat formatter = new DecimalFormat();
+        formatter.applyPattern( "0.0" );
+        
+        // Create the writer
+        try ( EnsemblePairsWriter writer = EnsemblePairsWriter.of( pathToFile, ChronoUnit.SECONDS, formatter ) )
+        {
+
+            TimeSeriesOfEnsemblePairsBuilder tsBuilder = new TimeSeriesOfEnsemblePairsBuilder();
+
+            tsBuilder.addTimeSeries( Arrays.asList( Event.of( Instant.MIN,
+                                                              Instant.MAX,
+                                                              EnsemblePair.of( Double.NaN,
+                                                                               new double[] { Double.NaN } ) ) ) );
+
+            // Set the measurement units and time scale
+            SampleMetadata meta =
+                    new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "SCOOBIES" ) )
+                                               .setIdentifier( DatasetIdentifier.of( Location.of( "PINEAPPLE" ),
+                                                                                     "MORTARS" ) )
+                                               .setTimeScale( TimeScale.of( Duration.ofSeconds( 3600 ),
+                                                                            TimeScaleFunction.MEAN ) )
+                                               .build();
+
+            TimeSeriesOfEnsemblePairs emptyPairs =
+                    (TimeSeriesOfEnsemblePairs) tsBuilder.addTimeSeries( Collections.emptyList() )
+                                                         .setMetadata( meta )
+                                                         .build();
+
+            // Write the pairs
+            writer.accept( emptyPairs );
+
+            // Read the results
+            List<String> results = Files.readAllLines( pathToFile );
+
+            // Assert the expected results
+            assertTrue( results.size() == 2 );
+            assertEquals( results.get( 0 ),
+                          "FEATURE DESCRIPTION,"
+                                            + "VALID TIME OF PAIR,"
+                                            + "LEAD DURATION OF PAIR IN SECONDS "
+                                            + "[MEAN OVER PAST 3600 SECONDS],"
+                                            + "LEFT IN SCOOBIES,"
+                                            + "RIGHT MEMBER 1 IN SCOOBIES" );
+
+            assertEquals( results.get( 1 ), "PINEAPPLE,+1000000000-12-31T23:59:59.999999999Z,"
+                    + "63113904031622399,NaN,NaN");
+
+            // If all succeeded, remove the file, otherwise leave to help debugging
+            Files.deleteIfExists( pathToFile );
+        }
+    }    
+    
     /**
      * Builds a {@link EnsemblePairsWriter}, writes some pairs, and checks that the written output matches the
      * expected output.
@@ -199,29 +267,31 @@ public final class EnsemblePairsWriterTest
         Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ), PairsWriter.DEFAULT_PAIRS_NAME );
 
         // Create the writer
-        EnsemblePairsWriter writer = EnsemblePairsWriter.of( pathToFile, ChronoUnit.SECONDS );
+        try ( EnsemblePairsWriter writer = EnsemblePairsWriter.of( pathToFile, ChronoUnit.SECONDS ) )
+        {
 
-        // Write the pairs
-        writer.accept( pairs );
+            // Write the pairs
+            writer.accept( pairs );
 
-        // Read the results
-        List<String> results = Files.readAllLines( pathToFile );
+            // Read the results
+            List<String> results = Files.readAllLines( pathToFile );
 
-        // Assert the expected results
-        assertTrue( results.size() == 4 );
-        assertTrue( results.get( 0 ).equals( "FEATURE DESCRIPTION,"
-                                             + "VALID TIME OF PAIR,"
-                                             + "LEAD DURATION OF PAIR IN SECONDS,"
-                                             + "LEFT IN SCOOBIES,"
-                                             + "RIGHT MEMBER 1 IN SCOOBIES,"
-                                             + "RIGHT MEMBER 2 IN SCOOBIES,"
-                                             + "RIGHT MEMBER 3 IN SCOOBIES" ) );
-        assertTrue( results.get( 1 ).equals( "PLUM,1985-01-01T01:00:00Z,3600,1.001,2.0,3.0,4.0" ) );
-        assertTrue( results.get( 2 ).equals( "PLUM,1985-01-01T02:00:00Z,7200,5.0,6.0,7.0,8.0" ) );
-        assertTrue( results.get( 3 ).equals( "PLUM,1985-01-01T03:00:00Z,10800,9.0,10.0,11.0,12.0" ) );
+            // Assert the expected results
+            assertTrue( results.size() == 4 );
+            assertTrue( results.get( 0 ).equals( "FEATURE DESCRIPTION,"
+                                                 + "VALID TIME OF PAIR,"
+                                                 + "LEAD DURATION OF PAIR IN SECONDS,"
+                                                 + "LEFT IN SCOOBIES,"
+                                                 + "RIGHT MEMBER 1 IN SCOOBIES,"
+                                                 + "RIGHT MEMBER 2 IN SCOOBIES,"
+                                                 + "RIGHT MEMBER 3 IN SCOOBIES" ) );
+            assertTrue( results.get( 1 ).equals( "PLUM,1985-01-01T01:00:00Z,3600,1.001,2.0,3.0,4.0" ) );
+            assertTrue( results.get( 2 ).equals( "PLUM,1985-01-01T02:00:00Z,7200,5.0,6.0,7.0,8.0" ) );
+            assertTrue( results.get( 3 ).equals( "PLUM,1985-01-01T03:00:00Z,10800,9.0,10.0,11.0,12.0" ) );
 
-        // If all succeeded, remove the file, otherwise leave to help debugging
-        Files.deleteIfExists( pathToFile );
+            // If all succeeded, remove the file, otherwise leave to help debugging
+            Files.deleteIfExists( pathToFile );
+        }
     }
 
     /**
@@ -231,52 +301,52 @@ public final class EnsemblePairsWriterTest
      */
 
     @Test
-    @Ignore // TODO, re-enable (ignored 2018-12-04)
     public void testAcceptForTwoSetsOfPairsWrittenSync() throws IOException
     {
         // Create the path
         Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ), PairsWriter.DEFAULT_PAIRS_NAME );
 
         // Create the writer
-        EnsemblePairsWriter writer = EnsemblePairsWriter.of( pathToFile, ChronoUnit.SECONDS );
+        try ( EnsemblePairsWriter writer = EnsemblePairsWriter.of( pathToFile, ChronoUnit.SECONDS ) )
+        {
 
-        // Write the pairs
-        writer.accept( pairs );
-        writer.accept( pairsTwo );
+            // Write the pairs
+            writer.accept( pairs );
+            writer.accept( pairsTwo );
 
-        // Read the results
-        List<String> results = Files.readAllLines( pathToFile );
+            // Read the results
+            List<String> results = Files.readAllLines( pathToFile );
 
-        // Assert the expected results
-        assertTrue( results.size() == 7 );
-        assertTrue( results.get( 0 ).equals( "FEATURE DESCRIPTION,"
-                                             + "VALID TIME OF PAIR,"
-                                             + "LEAD DURATION OF PAIR IN SECONDS,"
-                                             + "LEFT IN SCOOBIES,"
-                                             + "RIGHT MEMBER 1 IN SCOOBIES,"
-                                             + "RIGHT MEMBER 2 IN SCOOBIES,"
-                                             + "RIGHT MEMBER 3 IN SCOOBIES" ) );
-        assertTrue( results.get( 1 ).equals( "PLUM,1985-01-01T01:00:00Z,3600,1.001,2.0,3.0,4.0" ) );
-        assertTrue( results.get( 2 ).equals( "PLUM,1985-01-01T02:00:00Z,7200,5.0,6.0,7.0,8.0" ) );
-        assertTrue( results.get( 3 ).equals( "PLUM,1985-01-01T03:00:00Z,10800,9.0,10.0,11.0,12.0" ) );
-        assertTrue( results.get( 4 ).equals( "ORANGE,1985-01-01T04:00:00Z,14400,13.0,14.0,15.0,16.0" ) );
-        assertTrue( results.get( 5 ).equals( "ORANGE,1985-01-01T05:00:00Z,18000,17.0,18.0,19.0,20.0" ) );
-        assertTrue( results.get( 6 ).equals( "ORANGE,1985-01-01T06:00:00Z,21600,21.0,22.0,23.0,24.0" ) );
+            // Assert the expected results
+            assertTrue( results.size() == 7 );
+            assertTrue( results.get( 0 ).equals( "FEATURE DESCRIPTION,"
+                                                 + "VALID TIME OF PAIR,"
+                                                 + "LEAD DURATION OF PAIR IN SECONDS,"
+                                                 + "LEFT IN SCOOBIES,"
+                                                 + "RIGHT MEMBER 1 IN SCOOBIES,"
+                                                 + "RIGHT MEMBER 2 IN SCOOBIES,"
+                                                 + "RIGHT MEMBER 3 IN SCOOBIES" ) );
+            assertTrue( results.get( 1 ).equals( "PLUM,1985-01-01T01:00:00Z,3600,1.001,2.0,3.0,4.0" ) );
+            assertTrue( results.get( 2 ).equals( "PLUM,1985-01-01T02:00:00Z,7200,5.0,6.0,7.0,8.0" ) );
+            assertTrue( results.get( 3 ).equals( "PLUM,1985-01-01T03:00:00Z,10800,9.0,10.0,11.0,12.0" ) );
+            assertTrue( results.get( 4 ).equals( "ORANGE,1985-01-01T04:00:00Z,14400,13.0,14.0,15.0,16.0" ) );
+            assertTrue( results.get( 5 ).equals( "ORANGE,1985-01-01T05:00:00Z,18000,17.0,18.0,19.0,20.0" ) );
+            assertTrue( results.get( 6 ).equals( "ORANGE,1985-01-01T06:00:00Z,21600,21.0,22.0,23.0,24.0" ) );
 
-        // If all succeeded, remove the file, otherwise leave to help debugging
-        Files.deleteIfExists( pathToFile );
+            // If all succeeded, remove the file, otherwise leave to help debugging
+            Files.deleteIfExists( pathToFile );
+        }
     }
 
     /**
-     * Builds a {@link EnsemblePairsWriter}, writes two sets of pairs asynchronously, and checks that the written 
+     * Builds a {@link EnsemblePairsWriter}, writes three sets of pairs asynchronously, and checks that the written 
      * output matches the expected output.
      * @throws IOException if the writing or removal of the paired file fails
      * @throws ExecutionException if the asynchronous execution fails
      * @throws InterruptedException the the execution is interrupted 
      */
 
-    @Test
-    @Ignore // TODO, re-enable (ignored 2018-12-04)
+    @Test 
     public void testAcceptForThreeSetsOfPairsWrittenAsync() throws IOException, InterruptedException, ExecutionException
     {
         // Create the path
@@ -285,42 +355,88 @@ public final class EnsemblePairsWriterTest
         // Create the writer with a decimal format
         DecimalFormat formatter = new DecimalFormat();
         formatter.applyPattern( "0.0" );
-        EnsemblePairsWriter writer = EnsemblePairsWriter.of( pathToFile, ChronoUnit.SECONDS, formatter );
+        try ( EnsemblePairsWriter writer = EnsemblePairsWriter.of( pathToFile, ChronoUnit.SECONDS, formatter ) )
+        {
 
-        // Write the pairs async on the common FJP
-        CompletableFuture.allOf( CompletableFuture.runAsync( () -> writer.accept( pairs ) ),
-                                 CompletableFuture.runAsync( () -> writer.accept( pairsTwo ) ),
-                                 CompletableFuture.runAsync( () -> writer.accept( pairsThree ) ) )
-                         .get();
+            // Write the pairs async on the common FJP
+            CompletableFuture.allOf( CompletableFuture.runAsync( () -> writer.accept( pairs ) ),
+                                     CompletableFuture.runAsync( () -> writer.accept( pairsTwo ) ),
+                                     CompletableFuture.runAsync( () -> writer.accept( pairsThree ) ) )
+                             .get();
 
-        // Read the results
-        List<String> results = Files.readAllLines( pathToFile );
+            // Read the results
+            List<String> results = Files.readAllLines( pathToFile );
 
-        // Sort the results
-        Collections.sort( results, Comparator.naturalOrder() );
+            // Sort the results
+            Collections.sort( results, Comparator.naturalOrder() );
 
-        // Assert the expected results
-        assertTrue( results.size() == 10 );
-        assertTrue( results.get( 0 ).equals( "BANANA,1985-01-01T07:00:00Z,25200,25.0,26.0,27.0,28.0" ) );
-        assertTrue( results.get( 1 ).equals( "BANANA,1985-01-01T08:00:00Z,28800,29.0,30.0,31.0,32.0" ) );
-        assertTrue( results.get( 2 ).equals( "BANANA,1985-01-01T09:00:00Z,32400,33.0,34.0,35.0,36.0" ) );
-        assertTrue( results.get( 3 ).equals( "FEATURE DESCRIPTION,"
-                                             + "VALID TIME OF PAIR,"
-                                             + "LEAD DURATION OF PAIR IN SECONDS,"
-                                             + "LEFT IN SCOOBIES,"
-                                             + "RIGHT MEMBER 1 IN SCOOBIES,"
-                                             + "RIGHT MEMBER 2 IN SCOOBIES,"
-                                             + "RIGHT MEMBER 3 IN SCOOBIES" ) );
-        assertTrue( results.get( 4 ).equals( "ORANGE,1985-01-01T04:00:00Z,14400,13.0,14.0,15.0,16.0" ) );
-        assertTrue( results.get( 5 ).equals( "ORANGE,1985-01-01T05:00:00Z,18000,17.0,18.0,19.0,20.0" ) );
-        assertTrue( results.get( 6 ).equals( "ORANGE,1985-01-01T06:00:00Z,21600,21.0,22.0,23.0,24.0" ) );
-        assertTrue( results.get( 7 ).equals( "PLUM,1985-01-01T01:00:00Z,3600,1.0,2.0,3.0,4.0" ) );
-        assertTrue( results.get( 8 ).equals( "PLUM,1985-01-01T02:00:00Z,7200,5.0,6.0,7.0,8.0" ) );
-        assertTrue( results.get( 9 ).equals( "PLUM,1985-01-01T03:00:00Z,10800,9.0,10.0,11.0,12.0" ) );
+            // Assert the expected results
+            assertTrue( results.size() == 10 );
+            assertTrue( results.get( 0 ).equals( "BANANA,1985-01-01T07:00:00Z,25200,25.0,26.0,27.0,28.0" ) );
+            assertTrue( results.get( 1 ).equals( "BANANA,1985-01-01T08:00:00Z,28800,29.0,30.0,31.0,32.0" ) );
+            assertTrue( results.get( 2 ).equals( "BANANA,1985-01-01T09:00:00Z,32400,33.0,34.0,35.0,36.0" ) );
+            assertTrue( results.get( 3 ).equals( "FEATURE DESCRIPTION,"
+                                                 + "VALID TIME OF PAIR,"
+                                                 + "LEAD DURATION OF PAIR IN SECONDS,"
+                                                 + "LEFT IN SCOOBIES,"
+                                                 + "RIGHT MEMBER 1 IN SCOOBIES,"
+                                                 + "RIGHT MEMBER 2 IN SCOOBIES,"
+                                                 + "RIGHT MEMBER 3 IN SCOOBIES" ) );
+            assertTrue( results.get( 4 ).equals( "ORANGE,1985-01-01T04:00:00Z,14400,13.0,14.0,15.0,16.0" ) );
+            assertTrue( results.get( 5 ).equals( "ORANGE,1985-01-01T05:00:00Z,18000,17.0,18.0,19.0,20.0" ) );
+            assertTrue( results.get( 6 ).equals( "ORANGE,1985-01-01T06:00:00Z,21600,21.0,22.0,23.0,24.0" ) );
+            assertTrue( results.get( 7 ).equals( "PLUM,1985-01-01T01:00:00Z,3600,1.0,2.0,3.0,4.0" ) );
+            assertTrue( results.get( 8 ).equals( "PLUM,1985-01-01T02:00:00Z,7200,5.0,6.0,7.0,8.0" ) );
+            assertTrue( results.get( 9 ).equals( "PLUM,1985-01-01T03:00:00Z,10800,9.0,10.0,11.0,12.0" ) );
 
-        // If all succeeded, remove the file, otherwise leave to help debugging
-        Files.deleteIfExists( pathToFile );
+            // If all succeeded, remove the file, otherwise leave to help debugging
+            Files.deleteIfExists( pathToFile );
+        }
     }
+    
+    /**
+     * Builds a {@link EnsemblePairsWriter}, writes a large number of pairs asynchronously, and checks that the written 
+     * output contains the expected number of rows.
+     * @throws IOException if the writing or removal of the paired file fails
+     * @throws ExecutionException if the asynchronous execution fails
+     * @throws InterruptedException the the execution is interrupted 
+     */
+
+    @Test
+    public void testAcceptForManySetsOfPairsWrittenAsync() throws IOException, InterruptedException, ExecutionException
+    {
+        // Create the path
+        Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ), PairsWriter.DEFAULT_PAIRS_NAME );
+
+        // Create the writer with a decimal format
+        DecimalFormat formatter = new DecimalFormat();
+        formatter.applyPattern( "0.0" );
+        try ( EnsemblePairsWriter writer = EnsemblePairsWriter.of( pathToFile, ChronoUnit.SECONDS, formatter ) )
+        {
+
+            // Write the pairs async on the common FJP
+
+            List<CompletableFuture<Void>> futures = new ArrayList<>();
+            for ( int i = 0; i < 100; i++ )
+            {
+                futures.add( CompletableFuture.runAsync( () -> writer.accept( pairs ) ) );
+            }
+
+            CompletableFuture.allOf( futures.toArray( new CompletableFuture[futures.size()] ) ).get();
+
+            // Read the results
+            List<String> results = Files.readAllLines( pathToFile );
+
+            // Sort the results
+            Collections.sort( results, Comparator.naturalOrder() );
+
+            // Assert the expected results by dimension
+            assertEquals( results.size(), 301 );
+
+            // If all succeeded, remove the file, otherwise leave to help debugging
+            Files.deleteIfExists( pathToFile );
+        }
+    }    
 
     /**
      * Builds a {@link EnsemblePairsWriter}, writes some pairs, and checks that the 
@@ -335,16 +451,18 @@ public final class EnsemblePairsWriterTest
         Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ), PairsWriter.DEFAULT_PAIRS_NAME );
 
         // Create the writer
-        EnsemblePairsWriter writer = EnsemblePairsWriter.of( pathToFile, ChronoUnit.SECONDS );
+        try ( EnsemblePairsWriter writer = EnsemblePairsWriter.of( pathToFile, ChronoUnit.SECONDS ) )
+        {
 
-        // Write the pairs
-        writer.accept( pairs );
+            // Write the pairs
+            writer.accept( pairs );
 
-        // Assert the expected results
-        assertEquals( writer.get(), Collections.singleton( pathToFile ) );
+            // Assert the expected results
+            assertEquals( writer.get(), Collections.singleton( pathToFile ) );
 
-        // If all succeeded, remove the file, otherwise leave to help debugging
-        Files.deleteIfExists( pathToFile );
+            // If all succeeded, remove the file, otherwise leave to help debugging
+            Files.deleteIfExists( pathToFile );
+        }
     }
 
 }
