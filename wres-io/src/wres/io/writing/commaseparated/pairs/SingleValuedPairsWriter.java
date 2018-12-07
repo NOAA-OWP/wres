@@ -84,25 +84,27 @@ public class SingleValuedPairsWriter extends PairsWriter<SingleValuedPair, TimeS
 
     private static Function<SingleValuedPair, String> getPairFormatter( DecimalFormat decimalFormatter )
     {
-        return ( pair ) -> {
+        return pair -> {
 
             StringJoiner joiner = new StringJoiner( PairsWriter.DELIMITER );
 
+            Function<Double, String> handleNaNs = input -> {
+                if ( Double.isNaN( input ) || Objects.isNull( decimalFormatter ) )
+                {
+                    return Double.toString( input );
+                }
 
-            // Format left and right values
-            if ( Objects.nonNull( decimalFormatter ) )
-            {
-                joiner.add( decimalFormatter.format( pair.getLeft() ) );
-                joiner.add( decimalFormatter.format( pair.getRight() ) );
-            }
-            // No format
-            else
-            {
-                joiner.add( Double.toString( pair.getLeft() ) );
-                joiner.add( Double.toString( pair.getRight() ) );
-            }
+                return decimalFormatter.format( input );
+            };
+
+            // Add left
+            joiner.add( handleNaNs.apply( pair.getLeft() ) );
+
+            // Add right
+            joiner.add( handleNaNs.apply( pair.getRight() ) );
 
             return joiner.toString();
+            
         };
     }
 

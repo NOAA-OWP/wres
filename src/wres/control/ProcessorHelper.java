@@ -41,7 +41,6 @@ import wres.io.writing.SharedStatisticsWriters;
 import wres.io.writing.SharedStatisticsWriters.SharedWritersBuilder;
 import wres.io.writing.commaseparated.pairs.PairsWriter;
 import wres.io.writing.netcdf.NetcdfOutputWriter;
-import wres.io.writing.pair.SharedWriterManager;
 import wres.system.ProgressMonitor;
 
 /**
@@ -153,8 +152,6 @@ class ProcessorHelper
                                                                                outputDirectory ) );
         }
 
-        // TODO: remove this deprecated pathway on completion of #55231        
-        SharedWriterManager sharedWriterManager = new SharedWriterManager();
         SharedSampleDataWriters sharedSampleDataWriters = null;
         SharedSampleDataWriters sharedBaselineSampleDataWriters = null;
         
@@ -183,7 +180,6 @@ class ProcessorHelper
             }
         }
 
-
         Set<Path> pathsWrittenTo = new HashSet<>();
 
         // Iterate the features, closing any shared writers on completion
@@ -211,7 +207,7 @@ class ProcessorHelper
                                                                                                            sharedStatisticsWriters,
                                                                                                            sharedSampleDataWriters,
                                                                                                            sharedBaselineSampleDataWriters,
-                                                                                                           sharedWriterManager ),
+                                                                                                           null ),
                                                                                      executors.getFeatureExecutor() )
                                                                        .thenAccept( featureReport );
 
@@ -238,7 +234,14 @@ class ProcessorHelper
         finally
         {
             sharedStatisticsWriters.close();
-            sharedWriterManager.close();
+            if( Objects.nonNull( sharedSampleDataWriters ) )
+            {
+                sharedSampleDataWriters.close();
+            }
+            if( Objects.nonNull( sharedBaselineSampleDataWriters ) )
+            {
+                sharedBaselineSampleDataWriters.close();
+            }
         }
 
         // Find the paths written to by shared writers.
@@ -251,8 +254,6 @@ class ProcessorHelper
         {
             pathsWrittenTo.addAll( sharedBaselineSampleDataWriters.get() ); 
         }
-        
-        pathsWrittenTo.addAll( sharedWriterManager.get() );
         
         return Collections.unmodifiableSet( pathsWrittenTo );
     }

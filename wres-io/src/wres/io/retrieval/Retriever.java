@@ -18,9 +18,9 @@ import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
 import wres.config.generated.TimeScaleConfig;
 import wres.datamodel.VectorOfDoubles;
+import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.pairs.EnsemblePair;
 import wres.datamodel.sampledata.pairs.SingleValuedPair;
-import wres.datamodel.sampledata.SampleData;
 import wres.io.concurrency.WRESCallable;
 import wres.io.config.ConfigHelper;
 import wres.io.config.OrderedSampleMetadata;
@@ -261,10 +261,6 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
                         pair
                 );
 
-                writePair( this.sharedWriterManager,
-                           this.outputDirectoryForPairs,
-                           packagedPair,
-                           dataSourceConfig );
                 pairs.add( packagedPair );
             }
         }
@@ -438,6 +434,7 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
      * @param pair Pair data that will be written
      * @param dataSourceConfig The configuration that led to the creation of the pairs
      */
+    @Deprecated
     abstract void writePair( SharedWriterManager sharedWriterManager,
                              Path outputDirectory,
                              ForecastedPair pair,
@@ -448,6 +445,10 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
 
 
     // TODO: Should we use this as an argument structure to pass to the PairWriter?
+    
+    // TODO: replace this with a wres.datamodel.time.Event, since that is the ultimate abstraction required
+    // to progress the data and it is sufficiently close to this abstraction
+    @Deprecated
     protected static class ForecastedPair
     {
         private final Instant basisTime;

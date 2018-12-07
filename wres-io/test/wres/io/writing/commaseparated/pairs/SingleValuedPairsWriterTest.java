@@ -145,40 +145,42 @@ public final class SingleValuedPairsWriterTest
         Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ), PairsWriter.DEFAULT_PAIRS_NAME );
 
         // Create the writer
-        SingleValuedPairsWriter writer = SingleValuedPairsWriter.of( pathToFile, ChronoUnit.SECONDS );
+        try ( SingleValuedPairsWriter writer = SingleValuedPairsWriter.of( pathToFile, ChronoUnit.SECONDS ) )
+        {
 
-        TimeSeriesOfSingleValuedPairsBuilder tsBuilder = new TimeSeriesOfSingleValuedPairsBuilder();
+            TimeSeriesOfSingleValuedPairsBuilder tsBuilder = new TimeSeriesOfSingleValuedPairsBuilder();
 
-        // Set the measurement units and time scale
-        SampleMetadata meta =
-                new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "SCOOBIES" ) )
-                                           .setIdentifier( DatasetIdentifier.of( Location.of( "PINEAPPLE" ),
-                                                                                 "MORTARS" ) )
-                                           .setTimeScale( TimeScale.of( Duration.ofSeconds( 3600 ),
-                                                                        TimeScaleFunction.MEAN ) )
-                                           .build();
+            // Set the measurement units and time scale
+            SampleMetadata meta =
+                    new SampleMetadataBuilder().setMeasurementUnit( MeasurementUnit.of( "SCOOBIES" ) )
+                                               .setIdentifier( DatasetIdentifier.of( Location.of( "PINEAPPLE" ),
+                                                                                     "MORTARS" ) )
+                                               .setTimeScale( TimeScale.of( Duration.ofSeconds( 3600 ),
+                                                                            TimeScaleFunction.MEAN ) )
+                                               .build();
 
-        TimeSeriesOfSingleValuedPairs emptyPairs =
-                (TimeSeriesOfSingleValuedPairs) tsBuilder.addTimeSeries( Collections.emptyList() )
-                                                         .setMetadata( meta )
-                                                         .build();
+            TimeSeriesOfSingleValuedPairs emptyPairs =
+                    (TimeSeriesOfSingleValuedPairs) tsBuilder.addTimeSeries( Collections.emptyList() )
+                                                             .setMetadata( meta )
+                                                             .build();
 
-        // Write the pairs
-        writer.accept( emptyPairs );
+            // Write the pairs
+            writer.accept( emptyPairs );
 
-        // Read the results
-        List<String> results = Files.readAllLines( pathToFile );
+            // Read the results
+            List<String> results = Files.readAllLines( pathToFile );
 
-        // Assert the expected results
-        assertTrue( results.size() == 1 );
-        assertTrue( results.get( 0 ).equals( "FEATURE DESCRIPTION,"
-                                             + "VALID TIME OF PAIR,"
-                                             + "LEAD DURATION OF PAIR IN SECONDS "
-                                             + "[MEAN OVER PAST 3600 SECONDS],"
-                                             + "LEFT IN SCOOBIES,RIGHT IN SCOOBIES" ) );
+            // Assert the expected results
+            assertTrue( results.size() == 1 );
+            assertTrue( results.get( 0 ).equals( "FEATURE DESCRIPTION,"
+                                                 + "VALID TIME OF PAIR,"
+                                                 + "LEAD DURATION OF PAIR IN SECONDS "
+                                                 + "[MEAN OVER PAST 3600 SECONDS],"
+                                                 + "LEFT IN SCOOBIES,RIGHT IN SCOOBIES" ) );
 
-        // If all succeeded, remove the file, otherwise leave to help debugging
-        Files.deleteIfExists( pathToFile );
+            // If all succeeded, remove the file, otherwise leave to help debugging
+            Files.deleteIfExists( pathToFile );
+        }
     }
 
     /**
@@ -194,26 +196,28 @@ public final class SingleValuedPairsWriterTest
         Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ), PairsWriter.DEFAULT_PAIRS_NAME );
 
         // Create the writer
-        SingleValuedPairsWriter writer = SingleValuedPairsWriter.of( pathToFile, ChronoUnit.SECONDS );
+        try ( SingleValuedPairsWriter writer = SingleValuedPairsWriter.of( pathToFile, ChronoUnit.SECONDS ) )
+        {
 
-        // Write the pairs
-        writer.accept( pairs );
+            // Write the pairs
+            writer.accept( pairs );
 
-        // Read the results
-        List<String> results = Files.readAllLines( pathToFile );
+            // Read the results
+            List<String> results = Files.readAllLines( pathToFile );
 
-        // Assert the expected results
-        assertTrue( results.size() == 4 );
-        assertTrue( results.get( 0 ).equals( "FEATURE DESCRIPTION,"
-                                             + "VALID TIME OF PAIR,"
-                                             + "LEAD DURATION OF PAIR IN SECONDS,"
-                                             + "LEFT IN SCOOBIES,RIGHT IN SCOOBIES" ) );
-        assertTrue( results.get( 1 ).equals( "PLUM,1985-01-01T01:00:00Z,3600,1.001,2.0" ) );
-        assertTrue( results.get( 2 ).equals( "PLUM,1985-01-01T02:00:00Z,7200,3.0,4.0" ) );
-        assertTrue( results.get( 3 ).equals( "PLUM,1985-01-01T03:00:00Z,10800,5.0,6.0" ) );
+            // Assert the expected results
+            assertTrue( results.size() == 4 );
+            assertTrue( results.get( 0 ).equals( "FEATURE DESCRIPTION,"
+                                                 + "VALID TIME OF PAIR,"
+                                                 + "LEAD DURATION OF PAIR IN SECONDS,"
+                                                 + "LEFT IN SCOOBIES,RIGHT IN SCOOBIES" ) );
+            assertTrue( results.get( 1 ).equals( "PLUM,1985-01-01T01:00:00Z,3600,1.001,2.0" ) );
+            assertTrue( results.get( 2 ).equals( "PLUM,1985-01-01T02:00:00Z,7200,3.0,4.0" ) );
+            assertTrue( results.get( 3 ).equals( "PLUM,1985-01-01T03:00:00Z,10800,5.0,6.0" ) );
 
-        // If all succeeded, remove the file, otherwise leave to help debugging
-        Files.deleteIfExists( pathToFile );
+            // If all succeeded, remove the file, otherwise leave to help debugging
+            Files.deleteIfExists( pathToFile );
+        }
     }
 
     /**
@@ -229,60 +233,62 @@ public final class SingleValuedPairsWriterTest
         Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ), PairsWriter.DEFAULT_PAIRS_NAME );
 
         // Create the writer
-        SingleValuedPairsWriter writer = SingleValuedPairsWriter.of( pathToFile, ChronoUnit.SECONDS );
+        try ( SingleValuedPairsWriter writer = SingleValuedPairsWriter.of( pathToFile, ChronoUnit.SECONDS ) )
+        {
 
-        // Create the pairs with a time window
-        TimeSeriesOfSingleValuedPairsBuilder tsBuilder = new TimeSeriesOfSingleValuedPairsBuilder();
-        tsBuilder.addTimeSeries( pairs );
-        tsBuilder.setMetadata( SampleMetadata.of( pairs.getMetadata(),
-                                                  TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                                 Instant.parse( "1990-01-01T00:00:00Z" ) ) ) );
+            // Create the pairs with a time window
+            TimeSeriesOfSingleValuedPairsBuilder tsBuilder = new TimeSeriesOfSingleValuedPairsBuilder();
+            tsBuilder.addTimeSeries( pairs );
+            tsBuilder.setMetadata( SampleMetadata.of( pairs.getMetadata(),
+                                                      TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                                     Instant.parse( "1990-01-01T00:00:00Z" ) ) ) );
 
 
-        // Write the pairs
-        writer.accept( tsBuilder.build() );
+            // Write the pairs
+            writer.accept( tsBuilder.build() );
 
-        // Read the results
-        List<String> results = Files.readAllLines( pathToFile );
+            // Read the results
+            List<String> results = Files.readAllLines( pathToFile );
 
-        // Assert the expected results
-        assertTrue( results.size() == 4 );
-        assertTrue( results.get( 0 ).equals( "FEATURE DESCRIPTION,"
-                                             + "EARLIEST ISSUE TIME,"
-                                             + "LATEST ISSUE TIME,"
-                                             + "EARLIEST VALID TIME,"
-                                             + "LATEST VALID TIME,"
-                                             + "EARLIEST LEAD TIME IN SECONDS,"
-                                             + "LATEST LEAD TIME IN SECONDS,"
-                                             + "VALID TIME OF PAIR,"
-                                             + "LEAD DURATION OF PAIR IN SECONDS,"
-                                             + "LEFT IN SCOOBIES,"
-                                             + "RIGHT IN SCOOBIES" ) );
+            // Assert the expected results
+            assertTrue( results.size() == 4 );
+            assertTrue( results.get( 0 ).equals( "FEATURE DESCRIPTION,"
+                                                 + "EARLIEST ISSUE TIME,"
+                                                 + "LATEST ISSUE TIME,"
+                                                 + "EARLIEST VALID TIME,"
+                                                 + "LATEST VALID TIME,"
+                                                 + "EARLIEST LEAD TIME IN SECONDS,"
+                                                 + "LATEST LEAD TIME IN SECONDS,"
+                                                 + "VALID TIME OF PAIR,"
+                                                 + "LEAD DURATION OF PAIR IN SECONDS,"
+                                                 + "LEFT IN SCOOBIES,"
+                                                 + "RIGHT IN SCOOBIES" ) );
 
-        assertTrue( results.get( 1 )
-                           .equals( "PLUM,1985-01-01T00:00:00Z,"
-                                    + "1990-01-01T00:00:00Z,"
-                                    + Instant.MIN
-                                    + ","
-                                    + Instant.MAX
-                                    + ",0,0,1985-01-01T01:00:00Z,3600,1.001,2.0" ) );
-        assertTrue( results.get( 2 )
-                           .equals( "PLUM,1985-01-01T00:00:00Z,"
-                                    + "1990-01-01T00:00:00Z,"
-                                    + Instant.MIN
-                                    + ","
-                                    + Instant.MAX
-                                    + ",0,0,1985-01-01T02:00:00Z,7200,3.0,4.0" ) );
-        assertTrue( results.get( 3 )
-                           .equals( "PLUM,1985-01-01T00:00:00Z,"
-                                    + "1990-01-01T00:00:00Z,"
-                                    + Instant.MIN
-                                    + ","
-                                    + Instant.MAX
-                                    + ",0,0,1985-01-01T03:00:00Z,10800,5.0,6.0" ) );
+            assertTrue( results.get( 1 )
+                               .equals( "PLUM,1985-01-01T00:00:00Z,"
+                                        + "1990-01-01T00:00:00Z,"
+                                        + Instant.MIN
+                                        + ","
+                                        + Instant.MAX
+                                        + ",0,0,1985-01-01T01:00:00Z,3600,1.001,2.0" ) );
+            assertTrue( results.get( 2 )
+                               .equals( "PLUM,1985-01-01T00:00:00Z,"
+                                        + "1990-01-01T00:00:00Z,"
+                                        + Instant.MIN
+                                        + ","
+                                        + Instant.MAX
+                                        + ",0,0,1985-01-01T02:00:00Z,7200,3.0,4.0" ) );
+            assertTrue( results.get( 3 )
+                               .equals( "PLUM,1985-01-01T00:00:00Z,"
+                                        + "1990-01-01T00:00:00Z,"
+                                        + Instant.MIN
+                                        + ","
+                                        + Instant.MAX
+                                        + ",0,0,1985-01-01T03:00:00Z,10800,5.0,6.0" ) );
 
-        // If all succeeded, remove the file, otherwise leave to help debugging
-        Files.deleteIfExists( pathToFile );
+            // If all succeeded, remove the file, otherwise leave to help debugging
+            Files.deleteIfExists( pathToFile );
+        }
     }
 
     /**
@@ -298,35 +304,37 @@ public final class SingleValuedPairsWriterTest
         Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ), PairsWriter.DEFAULT_PAIRS_NAME );
 
         // Create the writer
-        SingleValuedPairsWriter writer = SingleValuedPairsWriter.of( pathToFile, ChronoUnit.SECONDS );
+        try ( SingleValuedPairsWriter writer = SingleValuedPairsWriter.of( pathToFile, ChronoUnit.SECONDS ) )
+        {
 
-        // Write the pairs
-        writer.accept( pairs );
-        writer.accept( pairsTwo );
+            // Write the pairs
+            writer.accept( pairs );
+            writer.accept( pairsTwo );
 
-        // Read the results
-        List<String> results = Files.readAllLines( pathToFile );
+            // Read the results
+            List<String> results = Files.readAllLines( pathToFile );
 
-        // Assert the expected results
-        assertTrue( results.size() == 7 );
-        assertTrue( results.get( 0 ).equals( "FEATURE DESCRIPTION,"
-                                             + "VALID TIME OF PAIR,"
-                                             + "LEAD DURATION OF PAIR IN SECONDS,"
-                                             + "LEFT IN SCOOBIES,"
-                                             + "RIGHT IN SCOOBIES" ) );
-        assertTrue( results.get( 1 ).equals( "PLUM,1985-01-01T01:00:00Z,3600,1.001,2.0" ) );
-        assertTrue( results.get( 2 ).equals( "PLUM,1985-01-01T02:00:00Z,7200,3.0,4.0" ) );
-        assertTrue( results.get( 3 ).equals( "PLUM,1985-01-01T03:00:00Z,10800,5.0,6.0" ) );
-        assertTrue( results.get( 4 ).equals( "ORANGE,1985-01-01T04:00:00Z,14400,7.0,8.0" ) );
-        assertTrue( results.get( 5 ).equals( "ORANGE,1985-01-01T05:00:00Z,18000,9.0,10.0" ) );
-        assertTrue( results.get( 6 ).equals( "ORANGE,1985-01-01T06:00:00Z,21600,11.0,12.0" ) );
+            // Assert the expected results
+            assertTrue( results.size() == 7 );
+            assertTrue( results.get( 0 ).equals( "FEATURE DESCRIPTION,"
+                                                 + "VALID TIME OF PAIR,"
+                                                 + "LEAD DURATION OF PAIR IN SECONDS,"
+                                                 + "LEFT IN SCOOBIES,"
+                                                 + "RIGHT IN SCOOBIES" ) );
+            assertTrue( results.get( 1 ).equals( "PLUM,1985-01-01T01:00:00Z,3600,1.001,2.0" ) );
+            assertTrue( results.get( 2 ).equals( "PLUM,1985-01-01T02:00:00Z,7200,3.0,4.0" ) );
+            assertTrue( results.get( 3 ).equals( "PLUM,1985-01-01T03:00:00Z,10800,5.0,6.0" ) );
+            assertTrue( results.get( 4 ).equals( "ORANGE,1985-01-01T04:00:00Z,14400,7.0,8.0" ) );
+            assertTrue( results.get( 5 ).equals( "ORANGE,1985-01-01T05:00:00Z,18000,9.0,10.0" ) );
+            assertTrue( results.get( 6 ).equals( "ORANGE,1985-01-01T06:00:00Z,21600,11.0,12.0" ) );
 
-        // If all succeeded, remove the file, otherwise leave to help debugging
-        Files.deleteIfExists( pathToFile );
+            // If all succeeded, remove the file, otherwise leave to help debugging
+            Files.deleteIfExists( pathToFile );
+        }
     }
 
     /**
-     * Builds a {@link SingleValuedPairsWriter}, writes two sets of pairs asynchronously, and checks that the written 
+     * Builds a {@link SingleValuedPairsWriter}, writes three sets of pairs asynchronously, and checks that the written 
      * output matches the expected output.
      * @throws IOException if the writing or removal of the paired file fails
      * @throws ExecutionException if the asynchronous execution fails
@@ -342,39 +350,42 @@ public final class SingleValuedPairsWriterTest
         // Create the writer with a decimal format
         DecimalFormat formatter = new DecimalFormat();
         formatter.applyPattern( "0.0" );
-        SingleValuedPairsWriter writer = SingleValuedPairsWriter.of( pathToFile, ChronoUnit.SECONDS, formatter );
+        try ( SingleValuedPairsWriter writer =
+                SingleValuedPairsWriter.of( pathToFile, ChronoUnit.SECONDS, formatter ) )
+        {
 
-        // Write the pairs async on the common FJP
-        CompletableFuture.allOf( CompletableFuture.runAsync( () -> writer.accept( pairs ) ),
-                                 CompletableFuture.runAsync( () -> writer.accept( pairsTwo ) ),
-                                 CompletableFuture.runAsync( () -> writer.accept( pairsThree ) ) )
-                         .get();
+            // Write the pairs async on the common FJP
+            CompletableFuture.allOf( CompletableFuture.runAsync( () -> writer.accept( pairs ) ),
+                                     CompletableFuture.runAsync( () -> writer.accept( pairsTwo ) ),
+                                     CompletableFuture.runAsync( () -> writer.accept( pairsThree ) ) )
+                             .get();
 
-        // Read the results
-        List<String> results = Files.readAllLines( pathToFile );
+            // Read the results
+            List<String> results = Files.readAllLines( pathToFile );
 
-        // Sort the results
-        Collections.sort( results, Comparator.naturalOrder() );
+            // Sort the results
+            Collections.sort( results, Comparator.naturalOrder() );
 
-        // Assert the expected results
-        assertTrue( results.size() == 10 );
-        assertTrue( results.get( 0 ).equals( "BANANA,1985-01-01T07:00:00Z,25200,13.0,14.0" ) );
-        assertTrue( results.get( 1 ).equals( "BANANA,1985-01-01T08:00:00Z,28800,15.0,16.0" ) );
-        assertTrue( results.get( 2 ).equals( "BANANA,1985-01-01T09:00:00Z,32400,17.0,18.0" ) );
-        assertTrue( results.get( 3 ).equals( "FEATURE DESCRIPTION,"
-                                             + "VALID TIME OF PAIR,"
-                                             + "LEAD DURATION OF PAIR IN SECONDS,"
-                                             + "LEFT IN SCOOBIES,"
-                                             + "RIGHT IN SCOOBIES" ) );
-        assertTrue( results.get( 4 ).equals( "ORANGE,1985-01-01T04:00:00Z,14400,7.0,8.0" ) );
-        assertTrue( results.get( 5 ).equals( "ORANGE,1985-01-01T05:00:00Z,18000,9.0,10.0" ) );
-        assertTrue( results.get( 6 ).equals( "ORANGE,1985-01-01T06:00:00Z,21600,11.0,12.0" ) );
-        assertTrue( results.get( 7 ).equals( "PLUM,1985-01-01T01:00:00Z,3600,1.0,2.0" ) );
-        assertTrue( results.get( 8 ).equals( "PLUM,1985-01-01T02:00:00Z,7200,3.0,4.0" ) );
-        assertTrue( results.get( 9 ).equals( "PLUM,1985-01-01T03:00:00Z,10800,5.0,6.0" ) );
+            // Assert the expected results
+            assertTrue( results.size() == 10 );
+            assertTrue( results.get( 0 ).equals( "BANANA,1985-01-01T07:00:00Z,25200,13.0,14.0" ) );
+            assertTrue( results.get( 1 ).equals( "BANANA,1985-01-01T08:00:00Z,28800,15.0,16.0" ) );
+            assertTrue( results.get( 2 ).equals( "BANANA,1985-01-01T09:00:00Z,32400,17.0,18.0" ) );
+            assertTrue( results.get( 3 ).equals( "FEATURE DESCRIPTION,"
+                                                 + "VALID TIME OF PAIR,"
+                                                 + "LEAD DURATION OF PAIR IN SECONDS,"
+                                                 + "LEFT IN SCOOBIES,"
+                                                 + "RIGHT IN SCOOBIES" ) );
+            assertTrue( results.get( 4 ).equals( "ORANGE,1985-01-01T04:00:00Z,14400,7.0,8.0" ) );
+            assertTrue( results.get( 5 ).equals( "ORANGE,1985-01-01T05:00:00Z,18000,9.0,10.0" ) );
+            assertTrue( results.get( 6 ).equals( "ORANGE,1985-01-01T06:00:00Z,21600,11.0,12.0" ) );
+            assertTrue( results.get( 7 ).equals( "PLUM,1985-01-01T01:00:00Z,3600,1.0,2.0" ) );
+            assertTrue( results.get( 8 ).equals( "PLUM,1985-01-01T02:00:00Z,7200,3.0,4.0" ) );
+            assertTrue( results.get( 9 ).equals( "PLUM,1985-01-01T03:00:00Z,10800,5.0,6.0" ) );
 
-        // If all succeeded, remove the file, otherwise leave to help debugging
-        Files.deleteIfExists( pathToFile );
+            // If all succeeded, remove the file, otherwise leave to help debugging
+            Files.deleteIfExists( pathToFile );
+        }
     }
 
     /**
@@ -390,16 +401,18 @@ public final class SingleValuedPairsWriterTest
         Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ), PairsWriter.DEFAULT_PAIRS_NAME );
 
         // Create the writer
-        SingleValuedPairsWriter writer = SingleValuedPairsWriter.of( pathToFile, ChronoUnit.SECONDS );
+        try ( SingleValuedPairsWriter writer = SingleValuedPairsWriter.of( pathToFile, ChronoUnit.SECONDS ) )
+        {
 
-        // Write the pairs
-        writer.accept( pairs );
+            // Write the pairs
+            writer.accept( pairs );
 
-        // Assert the expected results
-        assertEquals( writer.get(), Collections.singleton( pathToFile ) );
+            // Assert the expected results
+            assertEquals( writer.get(), Collections.singleton( pathToFile ) );
 
-        // If all succeeded, remove the file, otherwise leave to help debugging
-        Files.deleteIfExists( pathToFile );
+            // If all succeeded, remove the file, otherwise leave to help debugging
+            Files.deleteIfExists( pathToFile );
+        }
     }
 
 }

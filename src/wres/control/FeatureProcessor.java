@@ -218,39 +218,34 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                 // in order to form a direct connection between the two. See #54942 and #54731
                 // Form a separate task for the main pairs and baseline pairs, because they are independent tasks
                 // There is one shared writer per output path
-                
-                // Remove this toggle when #55231 is resolved and promote the behavior inside it to unconditional
-                if ( isNewPairsPathwayEnabled() )
+                if ( Objects.nonNull( this.sharedSampleWriters ) )
                 {
-                    if ( Objects.nonNull( this.sharedSampleWriters ) )
-                    {
-                        final CompletableFuture<Set<Path>> sampleDataTask =
-                                CompletableFuture.supplyAsync( new SupplySampleData( nextInput ),
-                                                               this.executors.getProductExecutor() )
-                                                 .thenApplyAsync( sampleData -> {
-                                                     this.sharedSampleWriters.accept( sampleData );
-                                                     return sharedSampleWriters.get();
-                                                 },
-                                                                  this.executors.getProductExecutor() );
+                    final CompletableFuture<Set<Path>> sampleDataTask =
+                            CompletableFuture.supplyAsync( new SupplySampleData( nextInput ),
+                                                           this.executors.getProductExecutor() )
+                                             .thenApplyAsync( sampleData -> {
+                                                 this.sharedSampleWriters.accept( sampleData );
+                                                 return sharedSampleWriters.get();
+                                             },
+                                                              this.executors.getProductExecutor() );
 
-                        listOfFutures.add( sampleDataTask );
-                    }
+                    listOfFutures.add( sampleDataTask );
+                }
 
-                    // Create the baseline pairs if required and a writer has been provided
-                    if ( Objects.nonNull( projectConfig.getInputs().getBaseline() )
-                         && Objects.nonNull( this.sharedBaselineSampleWriters ) )
-                    {
-                        final CompletableFuture<Set<Path>> baselineSampleDataTask =
-                                CompletableFuture.supplyAsync( new SupplySampleData( nextInput ),
-                                                               this.executors.getProductExecutor() )
-                                                 .thenApplyAsync( sampleData -> {
-                                                     this.sharedBaselineSampleWriters.accept( sampleData.getBaselineData() );
-                                                     return sharedSampleWriters.get();
-                                                 },
-                                                                  this.executors.getProductExecutor() );
+                // Create the baseline pairs if required and a writer has been provided
+                if ( Objects.nonNull( projectConfig.getInputs().getBaseline() )
+                     && Objects.nonNull( this.sharedBaselineSampleWriters ) )
+                {
+                    final CompletableFuture<Set<Path>> baselineSampleDataTask =
+                            CompletableFuture.supplyAsync( new SupplySampleData( nextInput ),
+                                                           this.executors.getProductExecutor() )
+                                             .thenApplyAsync( sampleData -> {
+                                                 this.sharedBaselineSampleWriters.accept( sampleData.getBaselineData() );
+                                                 return sharedSampleWriters.get();
+                                             },
+                                                              this.executors.getProductExecutor() );
 
-                        listOfFutures.add( baselineSampleDataTask );
-                    }
+                    listOfFutures.add( baselineSampleDataTask );
                 }
             }
         }
@@ -289,19 +284,6 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
 
         return new FeatureProcessingResult( this.feature.getFeature(),
                                             allPaths );
-    }
-
-    /**
-     * Feature toggle for testing of new pairs pathway. Return <code>true</code> to test the new pathway,
-     * otherwise <code>false</code>. This should be false outside of production until #55231 is resolved. 
-     * Once #55231 is resolved, remove this deprecated method.
-     * 
-     * TODO: eliminate when #55231 is resolved
-     */
-    @Deprecated
-    private boolean isNewPairsPathwayEnabled()
-    {
-        return false;
     }
     
     /**

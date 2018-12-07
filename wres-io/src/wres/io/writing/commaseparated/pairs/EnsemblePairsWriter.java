@@ -95,30 +95,25 @@ public class EnsemblePairsWriter extends PairsWriter<EnsemblePair, TimeSeriesOfE
 
     private static Function<EnsemblePair, String> getPairFormatter( DecimalFormat decimalFormatter )
     {
-        return ( pair ) -> {
+        return pair -> {
 
             StringJoiner joiner = new StringJoiner( PairsWriter.DELIMITER );
 
+            Function<Double, String> handleNaNs = input -> {
+                if ( Double.isNaN( input ) || Objects.isNull( decimalFormatter ) )
+                {
+                    return Double.toString( input );
+                }
 
-            // Format left and right values
-            if ( Objects.nonNull( decimalFormatter ) )
-            {
-                joiner.add( decimalFormatter.format( pair.getLeft() ) );
+                return decimalFormatter.format( input );
+            };
 
-                // Add the ensemble members
-                Arrays.stream( pair.getRight() )
-                      .forEach( nextMember -> joiner.add( decimalFormatter.format( nextMember ) ) );
+            // Add left
+            joiner.add( handleNaNs.apply( pair.getLeft() ) );
 
-            }
-            // No format
-            else
-            {
-                joiner.add( Double.toString( pair.getLeft() ) );
-
-                // Add the ensemble members
-                Arrays.stream( pair.getRight() )
-                      .forEach( nextMember -> joiner.add( Double.toString( nextMember ) ) );
-            }
+            // Add right members
+            Arrays.stream( pair.getRight() )
+                  .forEach( nextMember -> joiner.add( handleNaNs.apply( nextMember ) ) );
 
             return joiner.toString();
         };

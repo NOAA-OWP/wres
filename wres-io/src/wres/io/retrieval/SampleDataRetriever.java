@@ -22,7 +22,6 @@ import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.TimeScaleConfig;
-import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.EnsemblePair;
@@ -147,18 +146,11 @@ class SampleDataRetriever extends Retriever
         {
             if ( this.getProjectDetails().getRight().getType() == DatasourceType.ENSEMBLE_FORECASTS )
             {
-                input = this.createEnsembleInput();
+                input = this.createEnsembleTimeSeriesInput();
             }
             else
             {
-                if ( ProjectConfigs.hasTimeSeriesMetrics(this.getProjectDetails().getProjectConfig()))
-                {
-                    input = this.createSingleValuedTimeSeriesInput( );
-                }
-                else
-                {
-                    input = this.createSingleValuedInput();
-                }
+                input = this.createSingleValuedTimeSeriesInput();
             }
         }
         catch ( SampleDataException mie )
@@ -173,6 +165,7 @@ class SampleDataRetriever extends Retriever
         return input;
     }
 
+    @Deprecated
     private SingleValuedPairs createSingleValuedInput()
     {
         List<SingleValuedPair> primary = convertToPairOfDoubles( this.getPrimaryPairs() );
@@ -192,31 +185,20 @@ class SampleDataRetriever extends Retriever
 
     private TimeSeriesOfSingleValuedPairs createSingleValuedTimeSeriesInput()
     {
+        if ( this.getFirstlead() == Long.MAX_VALUE || this.getLastLead() == Long.MIN_VALUE )
+        {
+            LOGGER.debug( "While retrieving data from the database for {} at time window {}, "
+                          + "one or both of the first and last lead durations were unbounded.",
+                          this.getSampleMetadata().getMetadata().getIdentifier(),
+                          this.getSampleMetadata().getMetadata().getTimeWindow() );
+        }
+
         TimeSeriesOfSingleValuedPairsBuilder builder = new TimeSeriesOfSingleValuedPairsBuilder();
 
         List<Event<SingleValuedPair>> events = this.getSingleValuedEvents( this.getPrimaryPairs() );
         
         builder.addTimeSeries( events );
-
-        if (this.getFirstlead() == Long.MAX_VALUE || this.getLastLead() == Long.MIN_VALUE)
-        {
-            throw new RetrievalFailedException(
-                    "No time series data could be loaded from the "
-                    + "database for a time series metric."
-            );
-        }
-
-        TimeWindow fullWindow = TimeWindow.of(
-                Instant.MIN,
-                Instant.MAX,
-                Duration.of(this.getFirstlead(), TimeHelper.LEAD_RESOLUTION),
-                Duration.of(this.getLastLead(), TimeHelper.LEAD_RESOLUTION)
-        );
-
-        OrderedSampleMetadata.Builder copier = OrderedSampleMetadata.Builder.from( this.getSampleMetadata() );
-        copier.setTimeWindow( fullWindow );
-
-        builder.setMetadata( copier.build().getMetadata());
+        builder.setMetadata( this.getSampleMetadata().getMetadata() );
 
         if (!this.getBaselinePairs().isEmpty())
         {
@@ -236,31 +218,20 @@ class SampleDataRetriever extends Retriever
     
     private TimeSeriesOfEnsemblePairs createEnsembleTimeSeriesInput()
     {
+        if ( this.getFirstlead() == Long.MAX_VALUE || this.getLastLead() == Long.MIN_VALUE )
+        {
+            LOGGER.debug( "While retrieving data from the database for {} at time window {}, "
+                          + "one or both of the first and last lead durations were unbounded.",
+                          this.getSampleMetadata().getMetadata().getIdentifier(),
+                          this.getSampleMetadata().getMetadata().getTimeWindow() );
+        }
+        
         TimeSeriesOfEnsemblePairsBuilder builder = new TimeSeriesOfEnsemblePairsBuilder();
 
         List<Event<EnsemblePair>> events = this.getEnsembleEvents( this.getPrimaryPairs() );
         
         builder.addTimeSeries( events );
-
-        if (this.getFirstlead() == Long.MAX_VALUE || this.getLastLead() == Long.MIN_VALUE)
-        {
-            throw new RetrievalFailedException(
-                    "No time series data could be loaded from the "
-                    + "database for a time series metric."
-            );
-        }
-
-        TimeWindow fullWindow = TimeWindow.of(
-                Instant.MIN,
-                Instant.MAX,
-                Duration.of(this.getFirstlead(), TimeHelper.LEAD_RESOLUTION),
-                Duration.of(this.getLastLead(), TimeHelper.LEAD_RESOLUTION)
-        );
-
-        OrderedSampleMetadata.Builder copier = OrderedSampleMetadata.Builder.from( this.getSampleMetadata() );
-        copier.setTimeWindow( fullWindow );
-
-        builder.setMetadata( copier.build().getMetadata());
+        builder.setMetadata( this.getSampleMetadata().getMetadata() );
 
         if (!this.getBaselinePairs().isEmpty())
         {
@@ -274,6 +245,7 @@ class SampleDataRetriever extends Retriever
         return builder.build();
     }
 
+    @Deprecated
     private EnsemblePairs createEnsembleInput()
     {
         List<EnsemblePair> primary =
@@ -948,10 +920,6 @@ class SampleDataRetriever extends Retriever
                                                              rawPersistenceValues );
             }
 
-            this.writePair( sharedWriterManager,
-                            super.getOutputDirectoryForPairs(),
-                            persistencePair,
-                            dataSourceConfig );
             pairs.add( persistencePair );
         }
 
@@ -1090,6 +1058,7 @@ class SampleDataRetriever extends Retriever
      * @param pair Pair data that will be written
      * @param dataSourceConfig The configuration that led to the creation of the pairs
      */
+    @Deprecated
     @Override
     protected void writePair( SharedWriterManager sharedWriterManager,
                               Path outputDirectory,

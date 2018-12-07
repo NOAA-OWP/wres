@@ -48,6 +48,7 @@ wres_evaluation_output*
 /resources
 /testinput/sharedinput/*
 /src/wres/MainLocal.java
+/wres-io/test/wres/io/writing/commaseparated/pairs/CheckActualPairsAgainstExpectedPairs.java
 /.metadata/
 /wres-metrics/testinput/metricProcessorEnsemblePairsByTimeTest/Contingency.R
 /wres-metrics/testinput/metricProcessorEnsemblePairsByTimeTest/NOTE.txt
