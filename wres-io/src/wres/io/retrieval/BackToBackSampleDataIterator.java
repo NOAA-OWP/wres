@@ -14,7 +14,6 @@ import wres.datamodel.metadata.TimeWindow;
 import wres.io.config.ConfigHelper;
 import wres.io.config.OrderedSampleMetadata;
 import wres.io.data.details.ProjectDetails;
-import wres.io.writing.pair.SharedWriterManager;
 import wres.util.CalculationException;
 import wres.util.TimeHelper;
 
@@ -31,14 +30,12 @@ final class BackToBackSampleDataIterator extends SampleDataIterator
 
     BackToBackSampleDataIterator( Feature feature,
                                   ProjectDetails projectDetails,
-                                  SharedWriterManager sharedWriterManager,
                                   Path outputDirectoryForPairs,
                                   final Collection<OrderedSampleMetadata> sampleMetadataCollection)
             throws IOException
     {
         super( feature,
                projectDetails,
-               sharedWriterManager,
                outputDirectoryForPairs,
                sampleMetadataCollection);
     }

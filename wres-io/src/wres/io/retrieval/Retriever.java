@@ -26,7 +26,6 @@ import wres.io.config.ConfigHelper;
 import wres.io.config.OrderedSampleMetadata;
 import wres.io.data.caching.UnitConversions;
 import wres.io.data.details.ProjectDetails;
-import wres.io.writing.pair.SharedWriterManager;
 import wres.util.CalculationException;
 import wres.util.TimeHelper;
 import wres.util.functional.ExceptionalTriFunction;
@@ -43,7 +42,6 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
     private Boolean shouldThisScale;
     private TimeScaleConfig commonScale;
 
-    private final SharedWriterManager sharedWriterManager;
     private final Path outputDirectoryForPairs;
 
     private OrderedSampleMetadata sampleMetadata;
@@ -54,23 +52,15 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
      * directory can be removed.
      * @param sampleMetadata Information about the sample data that will be retrieved
      * @param getLeftValues getter of left side data
-     * @param sharedWriterManager sink for pairs to write, tracks paths written
      * @param outputDirectoryForPairs the output directory into which to write pairs
      */
     Retriever( OrderedSampleMetadata sampleMetadata,
                CacheRetriever getLeftValues,
-               SharedWriterManager sharedWriterManager,
                Path outputDirectoryForPairs )
     {
         this.sampleMetadata = sampleMetadata;
         this.getLeftValues = getLeftValues;
-        this.sharedWriterManager = sharedWriterManager;
         this.outputDirectoryForPairs = outputDirectoryForPairs;
-    }
-
-    protected SharedWriterManager getSharedWriterManager()
-    {
-        return this.sharedWriterManager;
     }
 
     protected Path getOutputDirectoryForPairs()
@@ -426,19 +416,6 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
 
         return this.commonScale;
     }
-
-    /**
-     * Creates a task to write pair data to a file
-     * @param sharedWriterManager the pair writer tool to use to write pair
-     * @param outputDirectory the directory into which to write pair
-     * @param pair Pair data that will be written
-     * @param dataSourceConfig The configuration that led to the creation of the pairs
-     */
-    @Deprecated
-    abstract void writePair( SharedWriterManager sharedWriterManager,
-                             Path outputDirectory,
-                             ForecastedPair pair,
-                             DataSourceConfig dataSourceConfig );
 
     protected abstract SampleData<?> createInput() throws IOException;
     protected abstract String getLoadScript( final DataSourceConfig dataSourceConfig) throws SQLException, IOException;

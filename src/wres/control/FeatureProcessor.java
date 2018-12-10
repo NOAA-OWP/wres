@@ -33,7 +33,6 @@ import wres.io.retrieval.DataGenerator;
 import wres.io.retrieval.IterationFailedException;
 import wres.io.writing.SharedSampleDataWriters;
 import wres.io.writing.SharedStatisticsWriters;
-import wres.io.writing.pair.SharedWriterManager;
 
 /**
  * Encapsulates a task (with subtasks) for processing all verification results associated with one {@link FeaturePlus}.
@@ -81,11 +80,6 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
     private final SharedStatisticsWriters sharedWriters;
 
     /**
-     * Pairs writers shared state. May need to be reconciled with sharedWriters.
-     */
-    private final SharedWriterManager sharedWriterManager;
-
-    /**
      * Error message.
      */
 
@@ -106,15 +100,12 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
     /**
      * Build a processor. 
      * 
-     * TODO: remove the deprecated {@link SharedWriterManager} on completing #55231.
-     * 
      * @param feature the feature to process
      * @param resolvedProject the resolved project
      * @param projectDetails the project details to use
      * @param executors the executors for pairs, thresholds, and metrics
      * @param sharedSampleWriters writers of sample data that are shared across features
      * @param sharedBaselineSampleWriters writers of baseline sample data that are shared across features
-     * @param sharedWriterManager writers that are shared across features
      */
 
     FeatureProcessor( FeaturePlus feature,
@@ -123,8 +114,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
                       ExecutorServices executors,
                       SharedStatisticsWriters sharedWriters,
                       SharedSampleDataWriters sharedSampleWriters,
-                      SharedSampleDataWriters sharedBaselineSampleWriters,
-                      SharedWriterManager sharedWriterManager )
+                      SharedSampleDataWriters sharedBaselineSampleWriters )
     {
         this.feature = feature;
         this.resolvedProject = resolvedProject;
@@ -133,7 +123,6 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
         this.sharedWriters = sharedWriters;
         this.sharedSampleWriters = sharedSampleWriters;
         this.sharedBaselineSampleWriters = sharedBaselineSampleWriters;
-        this.sharedWriterManager = sharedWriterManager;
 
         // Error message
         String featureDescription = ConfigHelper.getFeatureDescription( this.feature );
@@ -173,7 +162,6 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
         // Build an InputGenerator for the next feature
         DataGenerator metricInputs = Operations.getInputs( this.projectDetails,
                                                            this.feature.getFeature(),
-                                                           this.sharedWriterManager,
                                                            this.resolvedProject.getOutputDirectory() );
 
         // Queue the various tasks by time window (time window is the pooling dimension for metric calculation here)

@@ -15,7 +15,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.generated.DataSourceConfig;
-import wres.config.generated.DestinationConfig;
 import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.pairs.EnsemblePair;
@@ -28,8 +27,6 @@ import wres.io.retrieval.scripting.Scripter;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
-import wres.io.writing.pair.PairSupplier;
-import wres.io.writing.pair.SharedWriterManager;
 
 // TODO: Come up with handling for gridded data
 public class TimeSeriesRetriever extends Retriever
@@ -39,38 +36,12 @@ public class TimeSeriesRetriever extends Retriever
     TimeSeriesRetriever (
             final OrderedSampleMetadata sampleMetadata,
             final CacheRetriever getLeftValues,
-            SharedWriterManager sharedWriterManager,
             Path outputDirectoryForPairs
     )
     {
         super( sampleMetadata,
                getLeftValues,
-               sharedWriterManager,
                outputDirectoryForPairs );
-    }
-
-    @Override
-    @Deprecated
-    void writePair( SharedWriterManager sharedWriterManager,
-                    Path outputDirectory,
-                    ForecastedPair pair,
-                    DataSourceConfig dataSourceConfig )
-    {
-        List<DestinationConfig> destinationConfigs = this.getProjectDetails().getPairDestinations();
-
-        for (DestinationConfig destination : destinationConfigs)
-        {
-            PairSupplier writer = new PairSupplier.Builder()
-                    .setDestinationConfig( destination )
-                    .setDate( pair.getValidTime() )
-                    .setPair(pair.getValues())
-                    .setSampleMetadata( this.getSampleMetadata() )
-                    .setLead( pair.getLeadDuration() )
-                    .setOutputDirectory( outputDirectory )
-                    .build();
-
-            sharedWriterManager.accept( writer );
-        }
     }
 
     

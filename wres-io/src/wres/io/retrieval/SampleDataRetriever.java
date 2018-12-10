@@ -20,7 +20,6 @@ import org.slf4j.LoggerFactory;
 import wres.config.ProjectConfigs;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
-import wres.config.generated.DestinationConfig;
 import wres.config.generated.TimeScaleConfig;
 import wres.datamodel.sampledata.SampleData;
 import wres.datamodel.sampledata.SampleDataException;
@@ -44,8 +43,6 @@ import wres.io.retrieval.scripting.Scripter;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
-import wres.io.writing.pair.PairSupplier;
-import wres.io.writing.pair.SharedWriterManager;
 import wres.util.TimeHelper;
 
 /**
@@ -57,12 +54,10 @@ class SampleDataRetriever extends Retriever
 
     SampleDataRetriever( final OrderedSampleMetadata sampleMetadata,
                          final CacheRetriever getLeftValues,
-                         SharedWriterManager sharedWriterManager,
                          Path outputDirectoryForPairs )
     {
         super( sampleMetadata,
                getLeftValues,
-               sharedWriterManager,
                outputDirectoryForPairs );
     }
 
@@ -85,8 +80,7 @@ class SampleDataRetriever extends Retriever
             {
                 this.setBaselinePairs(
                         this.createPersistencePairs( this.getProjectDetails().getBaseline(),
-                                                     this.getPrimaryPairs(),
-                                                     this.getSharedWriterManager() )
+                                                     this.getPrimaryPairs() )
                 );
             }
             else
@@ -745,8 +739,7 @@ class SampleDataRetriever extends Retriever
      * @throws IOException
      */
     private List<ForecastedPair> createPersistencePairs( DataSourceConfig dataSourceConfig,
-                                                         List<ForecastedPair> primaryPairs,
-                                                         SharedWriterManager sharedWriterManager )
+                                                         List<ForecastedPair> primaryPairs )
             throws RetrievalFailedException
     {
         List<ForecastedPair> pairs = new ArrayList<>( primaryPairs.size() );
@@ -1050,42 +1043,7 @@ class SampleDataRetriever extends Retriever
                                    primaryPair.getValidTime(),
                                    pair );
     }
-
-    /**
-     * Creates a task to write pair data to a file
-     * @param sharedWriterManager sink for pairs, writes the pairs
-     * @param outputDirectory the directory into which to write pairs
-     * @param pair Pair data that will be written
-     * @param dataSourceConfig The configuration that led to the creation of the pairs
-     */
-    @Deprecated
-    @Override
-    protected void writePair( SharedWriterManager sharedWriterManager,
-                              Path outputDirectory,
-                              ForecastedPair pair,
-                              DataSourceConfig dataSourceConfig )
-    {
-        boolean isBaseline = dataSourceConfig.equals( this.getProjectDetails().getBaseline() );
-        List<DestinationConfig> destinationConfigs = this.getProjectDetails().getPairDestinations();
-
-        for ( DestinationConfig dest : destinationConfigs )
-        {
-            // TODO: Since we are passing the ForecastedPair object and the ProjectDetails,
-            // we can probably eliminate a lot of the arguments
-
-            PairSupplier pairWriter = new PairSupplier.Builder()
-                    .setSampleMetadata( this.getSampleMetadata() )
-                    .setDestinationConfig( dest )
-                    .setDate( pair.getValidTime() )
-                    .setPair( pair.getValues() )
-                    .setIsBaseline( isBaseline )
-                    .setLead( pair.getLeadDuration() )
-                    .setOutputDirectory( outputDirectory )
-                    .build();
-
-            sharedWriterManager.accept( pairWriter );
-        }
-    }
+    
 
     @Override
     protected Logger getLogger()
