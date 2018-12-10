@@ -24,7 +24,6 @@ import wres.io.config.OrderedSampleMetadata;
 import wres.io.data.details.ProjectDetails;
 import wres.io.retrieval.left.LeftHandCache;
 import wres.io.utilities.Database;
-import wres.io.writing.pair.SharedWriterManager;
 import wres.system.ProgressMonitor;
 import wres.util.CalculationException;
 import wres.util.TimeHelper;
@@ -39,7 +38,6 @@ abstract class SampleDataIterator implements Iterator<Future<SampleData<?>>>
     LeftHandCache leftCache;
     private VectorOfDoubles climatology;
     private Integer finalPoolingStep;
-    private SharedWriterManager sharedWriterManager;
     private Path outputPathForPairs;
     private final Queue<OrderedSampleMetadata> sampleMetadata = new LinkedList<>(  );
 
@@ -90,7 +88,6 @@ abstract class SampleDataIterator implements Iterator<Future<SampleData<?>>>
 
     SampleDataIterator( Feature feature,
                         ProjectDetails projectDetails,
-                        SharedWriterManager sharedWriterManager,
                         Path outputPathForPairs,
                         final Collection<OrderedSampleMetadata> sampleMetadata)
             throws IOException
@@ -98,7 +95,6 @@ abstract class SampleDataIterator implements Iterator<Future<SampleData<?>>>
 
         this.projectDetails = projectDetails;
         this.feature = feature;
-        this.sharedWriterManager = sharedWriterManager;
         this.outputPathForPairs = outputPathForPairs;
 
         try
@@ -226,11 +222,6 @@ abstract class SampleDataIterator implements Iterator<Future<SampleData<?>>>
         return nextInput;
     }
 
-    protected SharedWriterManager getSharedWriterManager()
-    {
-        return this.sharedWriterManager;
-    }
-
     Path getOutputPathForPairs()
     {
         return this.outputPathForPairs;
@@ -246,7 +237,6 @@ abstract class SampleDataIterator implements Iterator<Future<SampleData<?>>>
         SampleDataRetriever retriever = new SampleDataRetriever(
                 sampleMetadata,
                 this.leftCache::getLeftValues,
-                this.sharedWriterManager,
                 this.outputPathForPairs
         );
 

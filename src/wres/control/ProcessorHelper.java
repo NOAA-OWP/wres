@@ -200,14 +200,15 @@ class ProcessorHelper
         // Create one task per feature
         for ( FeaturePlus feature : decomposedFeatures )
         {
-            CompletableFuture<Void> nextFeatureTask = CompletableFuture.supplyAsync( new FeatureProcessor( feature,
-                                                                                                           resolvedProject,
-                                                                                                           projectDetails,
-                                                                                                           executors,
-                                                                                                           sharedStatisticsWriters,
-                                                                                                           sharedSampleDataWriters,
-                                                                                                           sharedBaselineSampleDataWriters,
-                                                                                                           null ),
+            FeatureProcessor featureProcessor = new FeatureProcessor( feature,
+                                                                      resolvedProject,
+                                                                      projectDetails,
+                                                                      executors,
+                                                                      sharedStatisticsWriters,
+                                                                      sharedSampleDataWriters,
+                                                                      sharedBaselineSampleDataWriters );
+
+            CompletableFuture<Void> nextFeatureTask = CompletableFuture.supplyAsync( featureProcessor,
                                                                                      executors.getFeatureExecutor() )
                                                                        .thenAccept( featureReport );
 

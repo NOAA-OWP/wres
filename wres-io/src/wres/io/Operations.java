@@ -40,7 +40,6 @@ import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
 import wres.io.writing.netcdf.NetCDFCopier;
-import wres.io.writing.pair.SharedWriterManager;
 import wres.system.ProgressMonitor;
 import wres.util.CalculationException;
 
@@ -505,12 +504,10 @@ public final class Operations {
     // TODO: Why are we passing a feature and not a FeatureDetails object, which is custom made for all of this?
     public static DataGenerator getInputs( ProjectDetails projectDetails,
                                            Feature feature,
-                                           SharedWriterManager sharedWriterManager,
                                            Path outputDirectoryForPairs )
     {
         return new DataGenerator( feature,
                                   projectDetails,
-                                  sharedWriterManager,
                                   outputDirectoryForPairs );
     }
 
