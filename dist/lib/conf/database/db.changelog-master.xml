@@ -46,4 +46,5 @@
     <include file="wres.executionlog_v1.xml" relativeToChangelogFile="true" />
     <include file="wres.indexqueue_v1.xml" relativeToChangelogFile="true" />
     <include file="wres.Source_v3.xml" relativeToChangelogFile="true" />
+    <include file="wres.projectsource_v2.xml" relativeToChangelogFile="true" />
 </databaseChangeLog>
