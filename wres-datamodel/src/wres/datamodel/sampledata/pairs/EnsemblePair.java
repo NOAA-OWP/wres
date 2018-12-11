@@ -13,7 +13,7 @@ import wres.datamodel.DataFactory;
  * @author jesse
  * @author james.brown@hydrosolved.com
  */
-public class EnsemblePair implements Comparable<EnsemblePair>
+public class EnsemblePair implements Pair<Double,double[]>, Comparable<EnsemblePair>
 {
 
     /**
@@ -67,7 +67,7 @@ public class EnsemblePair implements Comparable<EnsemblePair>
      * @return the left value
      */
 
-    public double getLeft()
+    public Double getLeft()
     {
         return left;
     }

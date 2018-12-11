@@ -132,6 +132,7 @@ public class SingleValuedPairs extends Pairs<SingleValuedPair>
         {
             return null;
         }
+        
         return SingleValuedPairs.of( this.getRawDataForBaseline(), this.getMetadataForBaseline() );
     }
 

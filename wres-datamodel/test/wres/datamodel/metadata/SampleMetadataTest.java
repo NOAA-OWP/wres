@@ -505,7 +505,7 @@ public class SampleMetadataTest
     public void testToString()
     {
         // Simplest case
-        assertEquals( SampleMetadata.of().toString(), "(DIMENSIONLESS)" );
+        assertEquals( "(DIMENSIONLESS)", SampleMetadata.of().toString() );
 
         // Most complex case
         DatasetIdentifier identifier = DatasetIdentifier.of( Location.of( "A" ), "B" );

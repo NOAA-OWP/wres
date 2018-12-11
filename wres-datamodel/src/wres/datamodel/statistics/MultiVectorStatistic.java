@@ -148,8 +148,9 @@ public class MultiVectorStatistic implements Statistic<Map<MetricDimension, Vect
         {
             throw new StatisticException( "Specify one or more outputs to store." );
         }
+        
         this.statistic = new EnumMap<>( MetricDimension.class );
-        statistic.forEach( ( key, value ) -> this.statistic.put( key, value ) );
+        this.statistic.putAll( statistic );       
         this.meta = meta;
     }
 

@@ -394,6 +394,12 @@ public final class DataFactory
             }
             combinedWindows.add( next.getMetadata().getSampleMetadata().getTimeWindow() );
         }
+        
+        if( Objects.isNull( sourceMeta ) )
+        {
+            throw new IllegalArgumentException( "Cannot find the union of input whose metadata is missing." );
+        }
+        
         TimeWindow unionWindow = null;
         if ( !combinedWindows.isEmpty() )
         {

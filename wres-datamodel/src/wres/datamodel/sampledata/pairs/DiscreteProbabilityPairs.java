@@ -133,6 +133,7 @@ public class DiscreteProbabilityPairs extends Pairs<DiscreteProbabilityPair>
         {
             return null;
         }
+        
         return DiscreteProbabilityPairs.of( getRawDataForBaseline(), getMetadataForBaseline() );
     }
 

@@ -21,9 +21,9 @@ import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.datamodel.statistics.DurationScoreStatistic;
 import wres.datamodel.statistics.ListOfStatistics;
 import wres.datamodel.statistics.MatrixStatistic;
-import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.statistics.MultiVectorStatistic;
 import wres.datamodel.statistics.PairedStatistic;
+import wres.datamodel.statistics.StatisticsForProject;
 import wres.datamodel.statistics.StatisticsForProject.StatisticsForProjectBuilder;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 
@@ -294,81 +294,6 @@ class MetricFuturesByTime
             Objects.requireNonNull( key.getLeft() );
             
             this.doubleScore.add( value );
-
-            return this;
-        }
-
-        /**
-         * Adds a set of future {@link DurationScoreStatistic} to the appropriate internal store.
-         * 
-         * @param value the future result
-         * @return the builder
-         */
-
-        MetricFuturesByTimeBuilder addDurationScoreOutput( Pair<TimeWindow, OneOrTwoThresholds> key,
-                                                           Future<ListOfStatistics<DurationScoreStatistic>> value )
-        {
-            this.durationScore.add( value );
-
-            return this;
-        }
-
-        /**
-         * Adds a set of future {@link MultiVectorStatistic} to the appropriate internal store.
-         * 
-         * @param value the future result
-         * @return the builder
-         */
-
-        MetricFuturesByTimeBuilder addMultiVectorOutput( Pair<TimeWindow, OneOrTwoThresholds> key,
-                                                         Future<ListOfStatistics<MultiVectorStatistic>> value )
-        {
-            this.multiVector.add( value );
-
-            return this;
-        }
-
-        /**
-         * Adds a set of future {@link BoxPlotStatistic} to the appropriate internal store.
-         * 
-         * @param value the future result
-         * @return the builder
-         */
-
-        MetricFuturesByTimeBuilder addBoxPlotOutput( Pair<TimeWindow, OneOrTwoThresholds> key,
-                                                     Future<ListOfStatistics<BoxPlotStatistic>> value )
-        {
-            this.boxplot.add( value );
-
-            return this;
-        }
-
-        /**
-         * Adds a set of future {@link MatrixStatistic} to the appropriate internal store.
-         * 
-         * @param value the future result
-         * @return the builder
-         */
-
-        MetricFuturesByTimeBuilder addPairedOutput( Pair<TimeWindow, OneOrTwoThresholds> key,
-                                                    Future<ListOfStatistics<PairedStatistic<Instant, Duration>>> value )
-        {
-            this.paired.add( value );
-
-            return this;
-        }
-
-        /**
-         * Adds a set of future {@link MatrixStatistic} to the appropriate internal store.
-         * 
-         * @param value the future result
-         * @return the builder
-         */
-
-        MetricFuturesByTimeBuilder addMatrixOutput( Pair<TimeWindow, OneOrTwoThresholds> key,
-                                                    Future<ListOfStatistics<MatrixStatistic>> value )
-        {
-            this.matrix.add( value );
 
             return this;
         }

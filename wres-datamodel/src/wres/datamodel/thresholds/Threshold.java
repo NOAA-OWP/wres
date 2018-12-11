@@ -519,10 +519,10 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
 
         final String c = this.getConditionID();
 
-        String units = "";
+        String stringUnits = "";
         if ( this.hasUnits() )
         {
-            units = " " + this.getUnits().toString();
+            stringUnits = " " + this.getUnits().toString();
         }
 
         // Quantile
@@ -532,18 +532,18 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
             if ( this.hasBetweenCondition() )
             {
                 return ">= " + this.getValues().first()
-                       + units
+                       + stringUnits
                        + common
                        + this.getProbabilities().first()
                        + "] AND < "
                        + this.getValues().second()
-                       + units
+                       + stringUnits
                        + common
                        + this.getProbabilities().second()
                        + "]"
                        + append;
             }
-            return c + this.getValues().first() + units + common + this.getProbabilities().first() + "]" + append;
+            return c + this.getValues().first() + stringUnits + common + this.getProbabilities().first() + "]" + append;
         }
         // Real value only
         else if ( this.hasValues() )
@@ -551,13 +551,13 @@ public class Threshold implements Comparable<Threshold>, DoublePredicate
             if ( this.hasBetweenCondition() )
             {
                 return ">= " + this.getValues().first()
-                       + units
+                       + stringUnits
                        + " AND < "
                        + this.getValues().second()
-                       + units
+                       + stringUnits
                        + append;
             }
-            return c + this.getValues().first() + units + append;
+            return c + this.getValues().first() + stringUnits + append;
         }
         // Probability only
         else

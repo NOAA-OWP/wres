@@ -495,7 +495,7 @@ public final class TimeSeriesOfSingleValuedPairsTest
             assertEquals( next.getValue(), SingleValuedPair.of( i, i ) );
             i++;
         }
-        assertEquals( i, 10 ); // All elements iterated
+        assertEquals( 10, i ); // All elements iterated
 
         // Iterate by basis time
         int j = 1;
@@ -504,7 +504,7 @@ public final class TimeSeriesOfSingleValuedPairsTest
             assertEquals( tsn.timeIterator().iterator().next().getValue(), SingleValuedPair.of( j, j ) );
             j++;
         }
-        assertEquals( j, 10 ); // All elements iterated
+        assertEquals( 10, j ); // All elements iterated
 
         // Iterate by duration
         int k = 1;
@@ -517,7 +517,7 @@ public final class TimeSeriesOfSingleValuedPairsTest
                 k++;
             }
         }
-        assertEquals( k, 10 ); // All elements iterated
+        assertEquals( 10, k ); // All elements iterated
     }
 
     /**

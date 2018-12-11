@@ -13,7 +13,7 @@ import wres.datamodel.sampledata.SampleDataException;
  *
  * @author james.brown@hydrosolved.com
  */
-public class MulticategoryPair
+public class MulticategoryPair implements Pair<boolean[],boolean[]>
 {
 
     /**
@@ -128,35 +128,36 @@ public class MulticategoryPair
         // One occurrence is required for outcomes that comprise more than one category
         if ( left.length > 1 )
         {
-            int leftCount = 0;
-            for ( boolean next : left )
-            {
-                if ( next )
-                {
-                    leftCount++;
-                }
-            }
-            if ( leftCount != 1 )
-            {
-                throw new SampleDataException( "The left input must contain exactly one occurrence: " + leftCount
-                                                + "." );
-            }
-            int rightCount = 0;
-            for ( boolean next : right )
-            {
-                if ( next )
-                {
-                    rightCount++;
-                }
-            }
-            if ( rightCount != 1 )
-            {
-                throw new SampleDataException( "The right input must contain exactly one occurrence: " + rightCount
-                                                + "." );
-            }
+            checkInput( left, "left" );
+            checkInput( right, "right" );
         }
         this.left = left;
         this.right = right;
     }
 
+    /**
+     * Checks the input for precisely one occurrence and throws an exception otherwise. 
+     * 
+     * @param checkMe the array to check
+     * @param messageHelper the string used to identify the input
+     * @throws SampleDataException if the input array does not contain exactly one occurrence
+     */
+    
+    private void checkInput( boolean[] checkMe, String messageHelper )
+    {
+        int count = 0;
+        for ( boolean next : checkMe )
+        {
+            if ( next )
+            {
+                count++;
+            }
+        }
+        if ( count != 1 )
+        {
+            throw new SampleDataException( "The "+messageHelper+" input must contain exactly one occurrence: " + count
+                                            + "." );
+        }        
+    }
+    
 }

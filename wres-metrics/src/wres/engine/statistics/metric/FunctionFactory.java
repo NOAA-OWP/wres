@@ -18,8 +18,8 @@ import org.apache.commons.math3.stat.descriptive.rank.Median;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MissingValues;
 import wres.datamodel.MetricConstants.ScoreGroup;
-import wres.datamodel.sampledata.pairs.SingleValuedPair;
 import wres.datamodel.VectorOfDoubles;
+import wres.datamodel.sampledata.pairs.SingleValuedPair;
 
 /**
  * A factory class for constructing elementary functions.
@@ -276,9 +276,7 @@ public class FunctionFactory
      * No argument constructor.
      */
 
-    private FunctionFactory()
-    {
-    };
+    private FunctionFactory() {}
 
     /**
      * Builds the map of statistics.

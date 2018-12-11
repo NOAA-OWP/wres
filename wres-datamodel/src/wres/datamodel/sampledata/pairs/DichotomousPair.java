@@ -6,7 +6,7 @@ package wres.datamodel.sampledata.pairs;
  * @author james.brown@hydrosolved.com
  */
 
-public class DichotomousPair
+public class DichotomousPair implements Pair<Boolean,Boolean>
 {
 
     /**
@@ -40,7 +40,7 @@ public class DichotomousPair
      * @return the left side
      */
 
-    public boolean getLeft()
+    public Boolean getLeft()
     {
         return left;
     }
@@ -51,7 +51,7 @@ public class DichotomousPair
      * @return the right side
      */
 
-    public boolean getRight()
+    public Boolean getRight()
     {
         return right;
     }

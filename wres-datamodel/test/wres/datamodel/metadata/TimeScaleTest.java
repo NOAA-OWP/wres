@@ -57,9 +57,9 @@ public final class TimeScaleTest
     @Test
     public void testGetFunctionReturnsExpectedFunction()
     {
-        assertEquals( timeScale.getFunction(), TimeScaleFunction.MEAN );
+        assertEquals( TimeScaleFunction.MEAN, timeScale.getFunction() );
         
-        assertEquals( TimeScale.of( Duration.ofSeconds( 1 ) ).getFunction(), TimeScaleFunction.UNKNOWN );        
+        assertEquals( TimeScaleFunction.UNKNOWN, TimeScale.of( Duration.ofSeconds( 1 ) ).getFunction() );        
     }
 
     /**
@@ -148,7 +148,7 @@ public final class TimeScaleTest
     @Test
     public void testToString()
     {
-        assertEquals( timeScale.toString(), "[PT24H,MEAN]" );
+        assertEquals( "[PT24H,MEAN]", timeScale.toString() );
     }
     
     /**
