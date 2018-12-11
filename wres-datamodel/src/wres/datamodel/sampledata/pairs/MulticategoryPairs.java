@@ -95,6 +95,7 @@ public class MulticategoryPairs extends Pairs<MulticategoryPair>
         {
             return null;
         }
+        
         return MulticategoryPairs.ofMulticategoryPairs( this.getRawDataForBaseline(), this.getMetadataForBaseline() );
     }
 

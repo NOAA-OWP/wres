@@ -235,56 +235,41 @@ public class Location
     @Override
     public boolean equals( Object obj )
     {
-        if ( obj instanceof Location )
+        if ( ! ( obj instanceof Location ) )
         {
-            Location other = (Location) obj;
-
-            boolean locationsEqual = true;
-            boolean vectorIDsEqual = true;
-            boolean gageIDsEqual = true;
-            boolean coordinatesEqual = true;
-
-            if ( this.hasLocationName() && other.hasLocationName() )
-            {
-                locationsEqual = this.getLocationName().equalsIgnoreCase( other.getLocationName() );
-            }
-            else if ( this.hasLocationName() || other.hasLocationName() )
-            {
-                return false;
-            }
-
-            if ( this.hasVectorIdentifier() && other.hasVectorIdentifier() )
-            {
-                vectorIDsEqual = this.getVectorIdentifier().equals( other.getVectorIdentifier() );
-            }
-            else if ( this.hasVectorIdentifier() || other.hasVectorIdentifier() )
-            {
-                return false;
-            }
-
-            if ( this.hasGageId() && other.hasGageId() )
-            {
-                gageIDsEqual = this.getGageId().equalsIgnoreCase( other.getGageId() );
-            }
-            else if ( this.hasGageId() || other.hasGageId() )
-            {
-                return false;
-            }
-
-            if ( this.hasCoordinates() && other.hasCoordinates() )
-            {
-                coordinatesEqual = this.getLatitude().equals( other.getLatitude() ) &&
-                                   this.getLongitude().equals( other.getLongitude() );
-            }
-            else if ( this.hasCoordinates() || other.hasCoordinates() )
-            {
-                return false;
-            }
-
-            return locationsEqual && vectorIDsEqual && gageIDsEqual && coordinatesEqual;
+            return false;
         }
 
-        return false;
+        Location other = (Location) obj;
+
+        // Check for equivalent null status
+        boolean nullEquals = this.hasCoordinates() == other.hasCoordinates()
+                             && this.hasGageId() == other.hasGageId()
+                             && this.hasLocationName() == other.hasLocationName()
+                             && this.hasVectorIdentifier() == other.hasVectorIdentifier();
+        
+        if ( !nullEquals )
+        {
+            return false;
+        }
+
+        if ( this.hasLocationName() && !this.getLocationName().equals( other.getLocationName() ) )
+        {
+            return false;
+        }
+
+        if ( this.hasCoordinates() && ! ( this.getLatitude().equals( other.getLatitude() )
+                                          && this.getLongitude().equals( other.getLongitude() ) ) )
+        {
+            return false;
+        }
+
+        if ( this.hasGageId() && ! this.getGageId().equals( other.getGageId() ) )
+        {
+            return false;
+        }
+
+        return ! this.hasVectorIdentifier() || this.getVectorIdentifier().equals( other.getVectorIdentifier() );
     }
 
     @Override
@@ -320,8 +305,7 @@ public class Location
         }
 
         if ( Objects.isNull( vectorIdentifier ) && Objects.isNull( locationName )
-             && Objects.isNull( longitude )
-             && Objects.isNull( latitude )
+             && Objects.isNull( longitude )  // Latitude has same state, as tested above
              && Objects.isNull( gageId ) )
         {
             throw new NullPointerException( "Specify at least one non-null input to qualify the location." );

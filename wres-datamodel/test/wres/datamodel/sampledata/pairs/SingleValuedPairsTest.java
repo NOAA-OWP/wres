@@ -5,6 +5,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.junit.Test;
@@ -29,7 +30,7 @@ public final class SingleValuedPairsTest
     @Test
     public void testSingleValuedPairs()
     {
-        final List<SingleValuedPair> values = new ArrayList<>();
+        final List<SingleValuedPair> values = Arrays.asList( SingleValuedPair.of( 1, 1) );
         final SingleValuedPairsBuilder b = new SingleValuedPairsBuilder();
 
         final SampleMetadata meta = SampleMetadata.of();
@@ -39,7 +40,8 @@ public final class SingleValuedPairsTest
         assertFalse( "Expected a dataset without a baseline [false," + p.hasBaseline() + "].", p.hasBaseline() );
         p = (SingleValuedPairs) b.addDataForBaseline( values ).setMetadataForBaseline( meta ).build(); //Add another
         //Check that a returned dataset contains the expected number of pairs
-        assertTrue( "Expected a main dataset with 0 pairs [0," + p.getRawData().size() + "].", p.getRawData().size() == 0 );
+        assertTrue( "Expected a main dataset with 1 pairs [1," + p.getRawData().size() + "].",
+                    p.getRawData().size() == 1 );
     }
     
     

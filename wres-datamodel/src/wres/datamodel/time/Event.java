@@ -31,7 +31,7 @@ public class Event<T> implements Comparable<Event<T>>
      * The event.
      */
 
-    private final T event;
+    private final T value;
 
     /**
      * Returns an {@link Event}.
@@ -99,7 +99,7 @@ public class Event<T> implements Comparable<Event<T>>
 
     public T getValue()
     {
-        return this.event;
+        return this.value;
     }
 
     /**
@@ -117,7 +117,7 @@ public class Event<T> implements Comparable<Event<T>>
     @Override
     public String toString()
     {
-        return "(" + referenceTime + "," + eventTime + "," + event + ")";
+        return "(" + referenceTime + "," + eventTime + "," + value + ")";
     }
 
     @Override
@@ -130,14 +130,14 @@ public class Event<T> implements Comparable<Event<T>>
 
         Event<?> inEvent = (Event<?>) o;
 
-        return inEvent.event.equals( this.event ) && inEvent.eventTime.equals( this.eventTime )
+        return inEvent.value.equals( this.value ) && inEvent.eventTime.equals( this.eventTime )
                && inEvent.referenceTime.equals( this.referenceTime );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( this.event, this.eventTime, this.referenceTime );
+        return Objects.hash( this.value, this.eventTime, this.referenceTime );
     }
 
     /**
@@ -157,7 +157,7 @@ public class Event<T> implements Comparable<Event<T>>
         
         Objects.requireNonNull( referenceTime, "Specify a non-null reference time." );
 
-        this.event = event;       
+        this.value = event;       
         this.eventTime = eventTime;
         this.referenceTime = referenceTime;
     }

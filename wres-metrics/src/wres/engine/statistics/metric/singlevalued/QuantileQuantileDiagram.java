@@ -14,7 +14,6 @@ import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.sampledata.pairs.SingleValuedPairs;
 import wres.datamodel.statistics.MultiVectorStatistic;
 import wres.engine.statistics.metric.Diagram;
-import wres.engine.statistics.metric.MetricParameterException;
 
 /**
  * Compares the quantiles of two samples at a prescribed number (<code>N</code>) of (evenly-spaced) probabilities on the
@@ -115,22 +114,4 @@ public class QuantileQuantileDiagram extends Diagram<SingleValuedPairs, MultiVec
         this.probCount = DEFAULT_PROBABILITY_COUNT;
     }
 
-    /**
-     * Hidden constructor.
-     * 
-     * @param probCount the number of probabilities to use
-     * @throws MetricParameterException if the probCount is less than one
-     */
-
-    private QuantileQuantileDiagram( int probCount ) throws MetricParameterException
-    {
-        super();
-
-        if ( probCount < 1 )
-        {
-            throw new MetricParameterException( "Specify a probability count greater than zero." );
-        }
-
-        this.probCount = probCount;
-    }
 }

@@ -120,8 +120,7 @@ public final class MetricFuturesByTimeTest
                                                                                      MetricDimension.OBSERVED_VALUE,
                                                                                      MetricDimension.FORECAST_ERROR ) ) );
 
-        builder.addBoxPlotOutput( key,
-                                  CompletableFuture.completedFuture( boxplot ) );
+        builder.addBoxPlotOutput( CompletableFuture.completedFuture( boxplot ) );
 
         // Add a double score future
         doubleScore =
@@ -132,8 +131,7 @@ public final class MetricFuturesByTimeTest
                                                                                                                MetricConstants.MEAN_ERROR,
                                                                                                                MetricConstants.MAIN ) ) ) );
 
-        builder.addDoubleScoreOutput( key,
-                                      CompletableFuture.completedFuture( doubleScore ) );
+        builder.addDoubleScoreOutput( CompletableFuture.completedFuture( doubleScore ) );
 
 
         // Add a duration score future
@@ -145,8 +143,7 @@ public final class MetricFuturesByTimeTest
                                                                                                                  MetricConstants.TIME_TO_PEAK_ERROR,
                                                                                                                  MetricConstants.MAIN ) ) ) );
 
-        builder.addDurationScoreOutput( key,
-                                        CompletableFuture.completedFuture( durationScore ) );
+        builder.addDurationScoreOutput( CompletableFuture.completedFuture( durationScore ) );
 
 
         // Add a matrix output
@@ -159,8 +156,7 @@ public final class MetricFuturesByTimeTest
                                                                                                           MetricConstants.CONTINGENCY_TABLE,
                                                                                                           MetricConstants.MAIN ) ) ) );
 
-        builder.addMatrixOutput( key,
-                                 CompletableFuture.completedFuture( matrix ) );
+        builder.addMatrixOutput( CompletableFuture.completedFuture( matrix ) );
 
         // Add multi-vector output
         multivector =
@@ -172,8 +168,7 @@ public final class MetricFuturesByTimeTest
                                                                                                                                 MetricConstants.CONTINGENCY_TABLE,
                                                                                                                                 MetricConstants.MAIN ) ) ) );
 
-        builder.addMultiVectorOutput( key,
-                                      CompletableFuture.completedFuture( multivector ) );
+        builder.addMultiVectorOutput( CompletableFuture.completedFuture( multivector ) );
 
         // Add paired output
         paired =
@@ -184,8 +179,7 @@ public final class MetricFuturesByTimeTest
                                                                                                           MetricConstants.CONTINGENCY_TABLE,
                                                                                                           MetricConstants.MAIN ) ) ) );
 
-        builder.addPairedOutput( key,
-                                 CompletableFuture.completedFuture( paired ) );
+        builder.addPairedOutput( CompletableFuture.completedFuture( paired ) );
 
         futures = builder.build();
     }
@@ -250,31 +244,19 @@ public final class MetricFuturesByTimeTest
     {
         MetricFuturesByTimeBuilder builder = new MetricFuturesByTimeBuilder();
         // Add once
-        builder.addBoxPlotOutput( key,
-                                  CompletableFuture.completedFuture( boxplot ) );
-        builder.addDoubleScoreOutput( key,
-                                      CompletableFuture.completedFuture( doubleScore ) );
-        builder.addDurationScoreOutput( key,
-                                        CompletableFuture.completedFuture( durationScore ) );
-        builder.addMatrixOutput( key,
-                                 CompletableFuture.completedFuture( matrix ) );
-        builder.addMultiVectorOutput( key,
-                                      CompletableFuture.completedFuture( multivector ) );
-        builder.addPairedOutput( key,
-                                 CompletableFuture.completedFuture( paired ) );
+        builder.addBoxPlotOutput( CompletableFuture.completedFuture( boxplot ) );
+        builder.addDoubleScoreOutput( CompletableFuture.completedFuture( doubleScore ) );
+        builder.addDurationScoreOutput( CompletableFuture.completedFuture( durationScore ) );
+        builder.addMatrixOutput( CompletableFuture.completedFuture( matrix ) );
+        builder.addMultiVectorOutput( CompletableFuture.completedFuture( multivector ) );
+        builder.addPairedOutput( CompletableFuture.completedFuture( paired ) );
         // Add again
-        builder.addBoxPlotOutput( key,
-                                  CompletableFuture.completedFuture( boxplot ) );
-        builder.addDoubleScoreOutput( key,
-                                      CompletableFuture.completedFuture( doubleScore ) );
-        builder.addDurationScoreOutput( key,
-                                        CompletableFuture.completedFuture( durationScore ) );
-        builder.addMatrixOutput( key,
-                                 CompletableFuture.completedFuture( matrix ) );
-        builder.addMultiVectorOutput( key,
-                                      CompletableFuture.completedFuture( multivector ) );
-        builder.addPairedOutput( key,
-                                 CompletableFuture.completedFuture( paired ) );
+        builder.addBoxPlotOutput( CompletableFuture.completedFuture( boxplot ) );
+        builder.addDoubleScoreOutput( CompletableFuture.completedFuture( doubleScore ) );
+        builder.addDurationScoreOutput( CompletableFuture.completedFuture( durationScore ) );
+        builder.addMatrixOutput( CompletableFuture.completedFuture( matrix ) );
+        builder.addMultiVectorOutput( CompletableFuture.completedFuture( multivector ) );
+        builder.addPairedOutput( CompletableFuture.completedFuture( paired ) );
 
         // Check all expected output is present
         MetricFuturesByTime futures = builder.build();
@@ -302,18 +284,12 @@ public final class MetricFuturesByTimeTest
                                                                                                  Operator.GREATER,
                                                                                                  ThresholdDataType.LEFT ) ) );
 
-        builder.addBoxPlotOutput( key,
-                                  CompletableFuture.completedFuture( boxplot ) );
-        builder.addDoubleScoreOutput( key,
-                                      CompletableFuture.completedFuture( doubleScore ) );
-        builder.addDurationScoreOutput( key,
-                                        CompletableFuture.completedFuture( durationScore ) );
-        builder.addMatrixOutput( key,
-                                 CompletableFuture.completedFuture( matrix ) );
-        builder.addMultiVectorOutput( key,
-                                      CompletableFuture.completedFuture( multivector ) );
-        builder.addPairedOutput( key,
-                                 CompletableFuture.completedFuture( paired ) );
+        builder.addBoxPlotOutput( CompletableFuture.completedFuture( boxplot ) );
+        builder.addDoubleScoreOutput( CompletableFuture.completedFuture( doubleScore ) );
+        builder.addDurationScoreOutput( CompletableFuture.completedFuture( durationScore ) );
+        builder.addMatrixOutput( CompletableFuture.completedFuture( matrix ) );
+        builder.addMultiVectorOutput( CompletableFuture.completedFuture( multivector ) );
+        builder.addPairedOutput( CompletableFuture.completedFuture( paired ) );
         builder.addFutures( this.futures );
 
         // Check all expected output is present

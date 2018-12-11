@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 import wres.datamodel.metadata.Location;
 import wres.datamodel.metadata.TimeScale;
 import wres.datamodel.metadata.TimeWindow;
+import wres.datamodel.sampledata.pairs.Pair;
 import wres.datamodel.sampledata.pairs.Pairs;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
@@ -43,7 +44,7 @@ import wres.util.TimeHelper;
  * @author james.brown@hydrosolved.com
  */
 
-public abstract class PairsWriter<S extends Object, T extends Pairs<S> & TimeSeries<S>>
+public abstract class PairsWriter<S extends Pair<?,?>, T extends Pairs<S> & TimeSeries<S>>
         implements Consumer<T>, Supplier<Set<Path>>, Closeable
 {
 

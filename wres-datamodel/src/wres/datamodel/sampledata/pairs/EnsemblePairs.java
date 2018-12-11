@@ -132,6 +132,7 @@ public class EnsemblePairs extends Pairs<EnsemblePair>
         {
             return null;
         }
+        
         return EnsemblePairs.of( this.getRawDataForBaseline(), this.getMetadataForBaseline() );
     }
 

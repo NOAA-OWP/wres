@@ -15,7 +15,6 @@ import wres.datamodel.statistics.DoubleScoreStatistic;
 import wres.engine.statistics.metric.DecomposableScore;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricCalculationException;
-import wres.engine.statistics.metric.MetricParameterException;
 
 /**
  * The Mean Square Error (MSE) Skill Score (SS) measures the reduction in MSE associated with one set of predictions
@@ -123,19 +122,6 @@ public class MeanSquareErrorSkillScore extends DecomposableScore<SingleValuedPai
     private MeanSquareErrorSkillScore()
     {
         super();
-        sse = SumOfSquareError.of();
-    }
-
-    /**
-     * Hidden constructor.
-     * 
-     * @param decompositionId the decomposition identifier
-     * @throws MetricParameterException if one or more parameters is invalid 
-     */
-
-    private MeanSquareErrorSkillScore( ScoreGroup decompositionId ) throws MetricParameterException
-    {
-        super( decompositionId );
         sse = SumOfSquareError.of();
     }
 

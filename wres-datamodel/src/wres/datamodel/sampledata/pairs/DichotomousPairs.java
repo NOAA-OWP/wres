@@ -118,6 +118,7 @@ public class DichotomousPairs extends MulticategoryPairs
      * @return the baseline
      */
 
+    @Override
     public DichotomousPairs getBaselineData()
     {
         if ( Objects.isNull( this.getRawDataForBaseline() ) )

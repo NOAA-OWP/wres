@@ -195,7 +195,7 @@ public class ListOfStatistics<T extends Statistic<?>> implements Iterable<T>
         // Set first, then validate contents
         this.statistics = Collections.unmodifiableList( statistics );
         
-        if ( this.statistics.contains( null ) )
+        if ( this.statistics.contains( (T) null ) )
         {
             throw new StatisticException( "Cannot build a list of outputs with one or more null entries." );
         }

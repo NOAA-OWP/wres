@@ -38,7 +38,7 @@ abstract class BoxPlot
      */
 
     static final VectorOfDoubles DEFAULT_PROBABILITIES =
-            VectorOfDoubles.of( new double[] { 0.0, 0.25, 0.5, 0.75, 1.0 } );
+            VectorOfDoubles.of( 0.0, 0.25, 0.5, 0.75, 1.0 );
 
     /**
      * A vector of probabilities that define the quantiles to plot.

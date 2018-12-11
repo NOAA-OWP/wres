@@ -11,7 +11,7 @@ import java.util.Objects;
  * @author jesse
  * @author james.brown@hydrosolved.com
  */
-public class SingleValuedPair implements Comparable<SingleValuedPair>
+public class SingleValuedPair implements Pair<Double,Double>, Comparable<SingleValuedPair>
 {
 
     /**
@@ -45,7 +45,7 @@ public class SingleValuedPair implements Comparable<SingleValuedPair>
      * @return the left value
      */
 
-    public double getLeft()
+    public Double getLeft()
     {
         return left;
     }
@@ -56,7 +56,7 @@ public class SingleValuedPair implements Comparable<SingleValuedPair>
      * @return the right value
      */
 
-    public double getRight()
+    public Double getRight()
     {
         return right;
     }

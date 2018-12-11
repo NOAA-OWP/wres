@@ -17,17 +17,10 @@ import wres.datamodel.sampledata.SampleDataException;
 /**
  * An abstract base class for storing zero or more paired values. 
  * 
- * Currently, there is no "Pair" type within WRES. Introducing a "Pair" type would require that primitive pairs were 
- * autoboxed/unboxed and that array types were replaced with wrapped types, both of which would 
- * introduce some overhead. However, it would also allow for better conditioning. For example, this class could then be 
- * constrained to store <code>T extends Pair</code>, rather than simply <code>T</code>. TODO: evaluate whether a 
- * generic "Pair" interface is warranted. The Apache Pair is a concrete type, not an interface, so wouldn't work, 
- * except as a composition to aid a specific implementation. 
- * 
  * @param <T> the paired type
  * @author james.brown@hydrosolved.com
  */
-public abstract class Pairs<T> implements SampleData<T>
+public abstract class Pairs<T extends Pair<?,?>> implements SampleData<T>
 {
 
     /**
@@ -229,19 +222,14 @@ public abstract class Pairs<T> implements SampleData<T>
     }
 
     /**
-     * Convenience method that returns the raw data associated with the baseline or null.
+     * Convenience method that returns the raw data associated with the baseline.
      * 
      * @return the raw pairs
      */
 
     List<T> getRawDataForBaseline()
     {
-        if( Objects.isNull( baselineSampleData ) )
-        {
-            return null;
-        }
-        
-        return Collections.unmodifiableList( baselineSampleData );
+        return this.baselineSampleData;
     }
 
     /**
@@ -312,7 +300,7 @@ public abstract class Pairs<T> implements SampleData<T>
             throw new SampleDataException( "Specify a non-null dataset for the metric input." );
         }
 
-        if ( sampleData.contains( null ) )
+        if ( sampleData.contains( (T) null ) )
         {
             throw new SampleDataException( "One or more of the pairs is null." );
         }
@@ -333,7 +321,7 @@ public abstract class Pairs<T> implements SampleData<T>
                                            + "null." );
         }
 
-        if ( Objects.nonNull( baselineSampleData ) && baselineSampleData.contains( null ) )
+        if ( Objects.nonNull( baselineSampleData ) && baselineSampleData.contains( (T) null ) )
         {
             throw new SampleDataException( "One or more of the baseline pairs is null." );
         }

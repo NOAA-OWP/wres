@@ -424,14 +424,6 @@ public class StatisticsForProject
 
                 result.forEach( builder::addStatistic );
             }
-            catch ( InterruptedException e )
-            {
-                // Decorate for context, use .initCause method to chain.
-                throw (InterruptedException) new InterruptedException( "Interrupted while retrieving the results "
-                                                                       + "for group "
-                                                                       + statsGroup
-                                                                       + "." ).initCause( e );
-            }
             catch ( ExecutionException e )
             {
                 // Throw an unchecked exception here, as this is not recoverable

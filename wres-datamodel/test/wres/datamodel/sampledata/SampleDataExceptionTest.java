@@ -28,13 +28,13 @@ public final class SampleDataExceptionTest
         
         assertNotNull( f );
         
-        assertEquals( f.getMessage(), "Test exception." );
+        assertEquals( "Test exception.", f.getMessage() );
         
         SampleDataException g = new SampleDataException( f.getMessage(), e );        
         
         assertNotNull( g );
         
-        assertEquals( g.getMessage(), "Test exception." );
+        assertEquals( "Test exception.", g.getMessage() );
 
         assertEquals( e, g.getCause() );
     }
