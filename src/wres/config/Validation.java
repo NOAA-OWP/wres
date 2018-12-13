@@ -1182,8 +1182,8 @@ public class Validation
     }    
     
     /**
-     * Returns true if the time aggregation period associated with the desiredTimeScaleis valid given the time
-     * aggregation periods associated with the existingTimeScalefor each source.
+     * Returns true if the time aggregation period associated with the desiredTimeScale is valid given the time
+     * aggregation periods associated with the existingTimeScale for each source.
      * 
      * See Redmine issue 40389.
      * 
@@ -1193,13 +1193,13 @@ public class Validation
      * 
      * @param projectConfigPlus the project configuration
      * @param pairConfig the pair configuration
-     * @return true if the time aggregation period associated with the desiredTimeScaleis valid
+     * @return true if the time aggregation period associated with the desiredTimeScale is valid
      */
 
     private static boolean isDesiredTimeScalePeriodValid( ProjectConfigPlus projectConfigPlus,
                                                                 PairConfig pairConfig )
     {
-        // Only proceed if the desiredTimeScaleis non-null and one or more existingTimeScale
+        // Only proceed if the desiredTimeScale is non-null and one or more existingTimeScale
         // are non-null
         TimeScaleConfig timeAgg = pairConfig.getDesiredTimeScale();
         Inputs input = projectConfigPlus.getProjectConfig().getInputs();

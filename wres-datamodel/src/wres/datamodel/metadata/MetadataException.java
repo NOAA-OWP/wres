@@ -8,7 +8,7 @@ import wres.datamodel.DataException;
  * @author james.brown@hydrosolved.com
  */
 
-public final class MetadataException extends DataException
+public class MetadataException extends DataException
 {
 
     /**

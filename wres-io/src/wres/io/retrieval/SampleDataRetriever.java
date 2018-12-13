@@ -181,6 +181,7 @@ class SampleDataRetriever extends Retriever
     {
         if ( this.getFirstlead() == Long.MAX_VALUE || this.getLastLead() == Long.MIN_VALUE )
         {
+            // #58149-17
             LOGGER.debug( "While retrieving data from the database for {} at time window {}, "
                           + "one or both of the first and last lead durations were unbounded.",
                           this.getSampleMetadata().getMetadata().getIdentifier(),
@@ -214,6 +215,7 @@ class SampleDataRetriever extends Retriever
     {
         if ( this.getFirstlead() == Long.MAX_VALUE || this.getLastLead() == Long.MIN_VALUE )
         {
+            // #58149-17
             LOGGER.debug( "While retrieving data from the database for {} at time window {}, "
                           + "one or both of the first and last lead durations were unbounded.",
                           this.getSampleMetadata().getMetadata().getIdentifier(),

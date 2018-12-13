@@ -9,7 +9,7 @@ import java.util.Objects;
 import java.util.SortedSet;
 import java.util.stream.Collectors;
 
-import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.metadata.MetadataHelper;
 import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.sampledata.SampleDataException;
 import wres.datamodel.time.BasicTimeSeries;
@@ -169,7 +169,7 @@ public class TimeSeriesOfSingleValuedPairs extends SingleValuedPairs implements 
             {
                 mainMeta.add( this.mainMeta );
             }
-            this.setMetadata( MetadataFactory.unionOf( mainMeta ) );
+            this.setMetadata( MetadataHelper.unionOf( mainMeta ) );
 
             //Add the baseline data if required
             if ( timeSeries.hasBaseline() )
@@ -209,7 +209,7 @@ public class TimeSeriesOfSingleValuedPairs extends SingleValuedPairs implements 
             {
                 baselineMeta.add( this.baselineMeta );
             }
-            this.setMetadataForBaseline( MetadataFactory.unionOf( baselineMeta ) );
+            this.setMetadataForBaseline( MetadataHelper.unionOf( baselineMeta ) );
 
             return this;
         }
