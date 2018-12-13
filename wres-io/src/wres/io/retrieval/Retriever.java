@@ -47,9 +47,6 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
     private OrderedSampleMetadata sampleMetadata;
 
     /**
-     * As of 2018-10-02, pair writing is performed by retrievers. If we change
-     * pair writing to occur in another way, the writer manager and output
-     * directory can be removed.
      * @param sampleMetadata Information about the sample data that will be retrieved
      * @param getLeftValues getter of left side data
      * @param outputDirectoryForPairs the output directory into which to write pairs
