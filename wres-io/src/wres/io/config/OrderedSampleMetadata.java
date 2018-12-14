@@ -9,7 +9,7 @@ import wres.datamodel.metadata.MeasurementUnit;
 import wres.datamodel.metadata.SampleMetadata;
 import wres.datamodel.metadata.TimeScale;
 import wres.datamodel.metadata.TimeWindow;
-import wres.io.data.details.ProjectDetails;
+import wres.io.project.Project;
 
 /**
  * Container for metadata describing sample data for metrics
@@ -38,7 +38,7 @@ public class OrderedSampleMetadata
     /**
      * Details about the project used for evaluation
      */
-    private final ProjectDetails projectDetails;
+    private final Project project;
 
     /**
      * Details about the feature that the metadata belongs to
@@ -55,20 +55,20 @@ public class OrderedSampleMetadata
      * @param sampleNumber The numerical ID specifying the sample's place in the pipeline for evaluation
      * @param metadata Details concerning the constraints placed on the primary data to evaluate
      * @param baselineMetadata Details concerning the constraints placed on optional baseline data to evaluate
-     * @param projectDetails Details about the project driving the evaluation
+     * @param project Details about the project driving the evaluation
      * @param feature Details about the feature being evaluated
      */
     private OrderedSampleMetadata(
             final int sampleNumber,
             final SampleMetadata metadata,
             final SampleMetadata baselineMetadata,
-            final ProjectDetails projectDetails,
+            final Project project,
             final Feature feature
     )
     {
         this.sampleNumber = sampleNumber;
         this.metadata = metadata;
-        this.projectDetails = projectDetails;
+        this.project = project;
         this.feature = feature;
         this.baselineMetadata = baselineMetadata;
     }
@@ -108,9 +108,9 @@ public class OrderedSampleMetadata
     /**
      * @return Details about the project driving the evaluation
      */
-    public ProjectDetails getProjectDetails()
+    public Project getProject()
     {
-        return projectDetails;
+        return project;
     }
 
     /**
@@ -172,7 +172,7 @@ public class OrderedSampleMetadata
         /**
          * Details about the project driving the evaluation
          */
-        private ProjectDetails projectDetails;
+        private Project project;
 
         /**
          * Details about the feature being evaluated
@@ -221,7 +221,7 @@ public class OrderedSampleMetadata
         public static Builder from(OrderedSampleMetadata sampleMetadata)
         {
             return new Builder().setSampleNumber( sampleMetadata.getSampleNumber() )
-                                .setProject( sampleMetadata.getProjectDetails() )
+                                .setProject( sampleMetadata.getProject() )
                                 .setFeature( sampleMetadata.getFeature() )
                                 .setTimeWindow( sampleMetadata.metadata.getTimeWindow() );
         }
@@ -261,9 +261,9 @@ public class OrderedSampleMetadata
             return this;
         }
 
-        public Builder setProject(final ProjectDetails project)
+        public Builder setProject(final Project project)
         {
-            this.projectDetails = project;
+            this.project = project;
             this.sampleMetadataBuilder.setProjectConfig( project.getProjectConfig() );
             this.sampleMetadataBuilder.setMeasurementUnit( MeasurementUnit.of( project.getDesiredMeasurementUnit() ) );
             this.scenarioID = project.getRight().getLabel();
@@ -272,7 +272,7 @@ public class OrderedSampleMetadata
                     false
             );
 
-            if (projectDetails.hasBaseline())
+            if ( this.project.hasBaseline())
             {
                 this.baselineScenarioID = project.getBaseline().getLabel();
                 this.baselineVariableIdentifier = ConfigHelper.getVariableIdFromProjectConfig(
@@ -281,7 +281,7 @@ public class OrderedSampleMetadata
                 );
             }
 
-            if (projectDetails.getProjectConfig().getPair() != null &&
+            if ( this.project.getProjectConfig().getPair() != null &&
                 project.getProjectConfig().getPair().getDesiredTimeScale() != null)
             {
                 this.sampleMetadataBuilder.setTimeScale(
@@ -305,7 +305,7 @@ public class OrderedSampleMetadata
             SampleMetadata primaryMetadata = this.sampleMetadataBuilder.build();
             SampleMetadata baselineMetadata = null;
 
-            if (this.projectDetails.hasBaseline())
+            if (this.project.hasBaseline())
             {
                 datasetIdentifier = DatasetIdentifier.of(
                     this.geospatialID,
@@ -320,7 +320,7 @@ public class OrderedSampleMetadata
                     this.sampleNumber,
                     primaryMetadata,
                     baselineMetadata,
-                    this.projectDetails,
+                    this.project,
                     this.feature
             );
         }

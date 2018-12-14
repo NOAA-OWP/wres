@@ -18,13 +18,10 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.Feature;
-import wres.datamodel.metadata.SampleMetadata;
-import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.sampledata.pairs.EnsemblePair;
 import wres.io.concurrency.WRESRunnableException;
 import wres.io.config.ConfigHelper;
 import wres.io.config.OrderedSampleMetadata;
-import wres.io.data.details.ProjectDetails;
 import wres.util.CalculationException;
 
 /**

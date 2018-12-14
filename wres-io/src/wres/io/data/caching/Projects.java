@@ -2,7 +2,6 @@ package wres.io.data.caching;
 
 import java.io.IOException;
 import java.sql.Connection;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -18,7 +17,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.generated.ProjectConfig;
 import wres.io.config.LeftOrRightOrBaseline;
-import wres.io.data.details.ProjectDetails;
+import wres.io.project.Project;
 import wres.io.reading.IngestResult;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.Database;
@@ -34,7 +33,7 @@ public class Projects
     private static final String NEWLINE = System.lineSeparator();
 
     private Map<Integer, Integer> keyIndex;
-    private ConcurrentMap<Integer, ProjectDetails> details;
+    private ConcurrentMap<Integer, Project> details;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Projects.class);
     private static Projects instance = null;
@@ -74,7 +73,7 @@ public class Projects
         return this.keyIndex;
     }
 
-    final ConcurrentMap<Integer, ProjectDetails> getDetails()
+    final ConcurrentMap<Integer, Project> getDetails()
     {
         synchronized ( Projects.DETAIL_LOCK )
         {
@@ -121,7 +120,7 @@ public class Projects
         return id;
     }
 
-    private ProjectDetails get(Integer id)
+    private Project get( Integer id)
     {
         return this.getDetails().get(id);
     }
@@ -135,13 +134,13 @@ public class Projects
      * @throws SQLException Thrown if the ID of the element could not be retrieved or the cache could not be
      * updated
      */
-    private void addElement( ProjectDetails element ) throws SQLException
+    private void addElement( Project element ) throws SQLException
     {
         element.save();
         this.add(element);
     }
 
-    private void add( ProjectDetails project )
+    private void add( Project project )
     {
         synchronized (Projects.KEY_LOCK)
         {
@@ -154,18 +153,18 @@ public class Projects
         }
     }
 
-    private static Pair<ProjectDetails,Boolean> getProject( ProjectConfig projectConfig,
-                                                           List<String> leftHashes,
-                                                           List<String> rightHashes,
-                                                           List<String> baselineHashes )
+    private static Pair<Project,Boolean> getProject( ProjectConfig projectConfig,
+                                                     List<String> leftHashes,
+                                                     List<String> rightHashes,
+                                                     List<String> baselineHashes )
             throws SQLException
     {
-        ProjectDetails details = null;
+        Project details = null;
         boolean thisCallCausedInsert = false;
-        Integer inputCode = ProjectDetails.hash( projectConfig,
-                                                 leftHashes,
-                                                 rightHashes,
-                                                 baselineHashes );
+        Integer inputCode = Project.hash( projectConfig,
+                                          leftHashes,
+                                          rightHashes,
+                                          baselineHashes );
 
         if (Projects.getCache().hasID( inputCode ))
         {
@@ -178,8 +177,8 @@ public class Projects
             LOGGER.debug( "Did NOT find project with key {} in cache.",
                           inputCode );
 
-            details = new ProjectDetails( projectConfig,
-                                          inputCode );
+            details = new Project( projectConfig,
+                                   inputCode );
 
             // Caller cannot trust the boolean flag on the details since we are
             // caching the exact details object. Only the creator of the details
@@ -253,8 +252,8 @@ public class Projects
      * @throws IllegalArgumentException when an IngestResult does not have left/right/baseline information
      * @throws IOException when a source identifier cannot be determined
      */
-    public static ProjectDetails getProjectFromIngest( ProjectConfig projectConfig,
-                                                       List<IngestResult> ingestResults )
+    public static Project getProjectFromIngest( ProjectConfig projectConfig,
+                                                List<IngestResult> ingestResults )
             throws SQLException, IOException
     {
         List<String> leftHashes = new ArrayList<>();
@@ -290,12 +289,12 @@ public class Projects
         List<String> finalLeftHashes = Collections.unmodifiableList( leftHashes );
         List<String> finalRightHashes = Collections.unmodifiableList( rightHashes );
         List<String> finalBaselineHashes = Collections.unmodifiableList( baselineHashes );
-        Pair<ProjectDetails,Boolean> detailsResult =
+        Pair<Project,Boolean> detailsResult =
                 Projects.getProject( projectConfig,
                                      finalLeftHashes,
                                      finalRightHashes,
                                      finalBaselineHashes );
-        ProjectDetails details = detailsResult.getLeft();
+        Project details = detailsResult.getLeft();
 
         if ( detailsResult.getRight() )
         {

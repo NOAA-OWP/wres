@@ -25,7 +25,8 @@ import wres.io.concurrency.WRESCallable;
 import wres.io.config.ConfigHelper;
 import wres.io.config.OrderedSampleMetadata;
 import wres.io.data.caching.UnitConversions;
-import wres.io.data.details.ProjectDetails;
+import wres.io.data.details.EnsembleDetails;
+import wres.io.project.Project;
 import wres.io.writing.pair.SharedWriterManager;
 import wres.util.CalculationException;
 import wres.util.TimeHelper;
@@ -73,7 +74,7 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
         return this.sharedWriterManager;
     }
 
-    protected Path getOutputDirectoryForPairs()
+    Path getOutputDirectoryForPairs()
     {
         return this.outputDirectoryForPairs;
     }
@@ -123,9 +124,9 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
         return this.baselinePairs;
     }
 
-    protected ProjectDetails getProjectDetails()
+    protected Project getProjectDetails()
     {
-        return this.sampleMetadata.getProjectDetails();
+        return this.sampleMetadata.getProject();
     }
 
     protected Feature getFeature()
@@ -133,24 +134,12 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
         return this.sampleMetadata.getFeature();
     }
 
-    @Deprecated
-    protected void setPrimaryPairs(final List<ForecastedPair> pairs)
-    {
-        this.primaryPairs.addAll(pairs);
-    }
-
-    protected void addPrimaryPair(final ForecastedPair pair)
+    void addPrimaryPair(final ForecastedPair pair)
     {
         this.primaryPairs.add(pair);
     }
 
-    @Deprecated
-    protected void setBaselinePairs(final List<ForecastedPair> pairs)
-    {
-        this.baselinePairs.addAll(pairs);
-    }
-
-    protected void addBaselinePair(final ForecastedPair pair)
+    void addBaselinePair(final ForecastedPair pair)
     {
         this.baselinePairs.add(pair);
     }
@@ -238,7 +227,6 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
     }
 
     void addPair(
-            final List<ForecastedPair> pairs,
             final PivottedValues pivottedValues,
             final DataSourceConfig dataSourceConfig
     ) throws RetrievalFailedException
@@ -249,23 +237,32 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
 
             if (pair != null)
             {
-                if (this.getProjectDetails().getInputName( dataSourceConfig ).equals(ProjectDetails.RIGHT_MEMBER))
+                if (this.getProjectDetails().getInputName( dataSourceConfig ).equals( Project.RIGHT_MEMBER))
                 {
                     this.lastLead = Math.max( this.lastLead, pivottedValues.lead);
                     this.firstLead = Math.min( this.firstLead, pivottedValues.lead);
                 }
 
                 ForecastedPair packagedPair = new ForecastedPair(
-                        pivottedValues.lead,
-                        pivottedValues.validTime,
-                        pair
-                );
+                            pivottedValues.lead,
+                            pivottedValues.validTime,
+                            pair,
+                            pivottedValues.getEnsembleMembers( )
+                    );
 
                 writePair( this.sharedWriterManager,
                            this.outputDirectoryForPairs,
                            packagedPair,
                            dataSourceConfig );
-                pairs.add( packagedPair );
+
+                if (this.getProjectDetails().getInputName( dataSourceConfig ).equals(Project.RIGHT_MEMBER))
+                {
+                    this.addPrimaryPair( packagedPair );
+                }
+                else
+                {
+                    this.addBaselinePair( packagedPair );
+                }
             }
         }
     }
@@ -447,30 +444,34 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
     protected abstract String getLoadScript( final DataSourceConfig dataSourceConfig) throws SQLException, IOException;
 
 
-    // TODO: Should we use this as an argument structure to pass to the PairWriter?
     protected static class ForecastedPair
     {
         private final Instant basisTime;
         private final Instant validTime;
         private final EnsemblePair values;
+        private final Collection<EnsembleDetails> members;
 
         ForecastedPair( Instant basisTime,
                         Instant validTime,
-                        EnsemblePair values )
+                        EnsemblePair values,
+                        Collection<EnsembleDetails> members)
         {
             this.basisTime = basisTime;
             this.validTime = validTime;
             this.values = values;
+            this.members = members;
         }
 
         ForecastedPair( int leadMinutes,
                         Instant validTime,
-                        EnsemblePair values )
+                        EnsemblePair values,
+                        Collection<EnsembleDetails> members)
         {
             Duration leadTime = Duration.ofMinutes( leadMinutes );
             this.basisTime = validTime.minus( leadTime );
             this.validTime = validTime;
             this.values = values;
+            this.members = members;
         }
 
         Instant getBasisTime()

@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.sql.SQLException;
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -21,7 +22,7 @@ import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.sampledata.SampleData;
 import wres.io.config.ConfigHelper;
 import wres.io.config.OrderedSampleMetadata;
-import wres.io.data.details.ProjectDetails;
+import wres.io.project.Project;
 import wres.io.retrieval.left.LeftHandCache;
 import wres.io.utilities.Database;
 import wres.io.writing.pair.SharedWriterManager;
@@ -35,7 +36,7 @@ abstract class SampleDataIterator implements Iterator<Future<SampleData<?>>>
 
     private final Feature feature;
 
-    private final ProjectDetails projectDetails;
+    private final Project project;
     LeftHandCache leftCache;
     private VectorOfDoubles climatology;
     private Integer finalPoolingStep;
@@ -63,17 +64,17 @@ abstract class SampleDataIterator implements Iterator<Future<SampleData<?>>>
         return this.feature;
     }
 
-    protected ProjectDetails getProjectDetails()
+    protected Project getProject()
     {
-        return this.projectDetails;
+        return this.project;
     }
 
     VectorOfDoubles getClimatology() throws IOException
     {
-        if ( this.getProjectDetails().usesProbabilityThresholds() && this.climatology == null)
+        if ( this.getProject().usesProbabilityThresholds() && this.climatology == null)
         {
-            ClimatologyBuilder climatologyBuilder = new ClimatologyBuilder( this.getProjectDetails(),
-                                                                            this.getProjectDetails().getLeft(),
+            ClimatologyBuilder climatologyBuilder = new ClimatologyBuilder( this.getProject(),
+                                                                            this.getProject().getLeft(),
                                                                             this.getFeature() );
             try
             {
@@ -89,21 +90,35 @@ abstract class SampleDataIterator implements Iterator<Future<SampleData<?>>>
     }
 
     SampleDataIterator( Feature feature,
-                        ProjectDetails projectDetails,
+                        Project project,
                         SharedWriterManager sharedWriterManager,
                         Path outputPathForPairs,
                         final Collection<OrderedSampleMetadata> sampleMetadata)
             throws IOException
     {
+        if (this.getLogger().isTraceEnabled())
+        {
+            this.getLogger().trace( "Iterator created for {}", ConfigHelper.getFeatureDescription( feature ) );
+        }
 
-        this.projectDetails = projectDetails;
+        this.project = project;
         this.feature = feature;
         this.sharedWriterManager = sharedWriterManager;
         this.outputPathForPairs = outputPathForPairs;
 
         try
         {
-            this.leftCache = LeftHandCache.getCache( this.projectDetails, this.feature );
+            if (this.getLogger().isTraceEnabled())
+            {
+                this.getLogger().trace( "Gathering left hand data...");
+            }
+
+            this.leftCache = LeftHandCache.getCache( this.project, this.feature );
+
+            if (this.getLogger().isTraceEnabled())
+            {
+                this.getLogger().trace( "{}: Left hand data gathered.", LocalDateTime.now() );
+            }
         }
         catch ( SQLException e )
         {
@@ -112,7 +127,17 @@ abstract class SampleDataIterator implements Iterator<Future<SampleData<?>>>
 
         try
         {
+            if (this.getLogger().isTraceEnabled())
+            {
+                this.getLogger().trace( "Calculating the final pooling step.");
+            }
+
             this.finalPoolingStep = this.getFinalPoolingStep();
+
+            if (this.getLogger().isTraceEnabled())
+            {
+                this.getLogger().trace( "The final pooling step has been calculated.");
+            }
         }
         catch ( CalculationException e )
         {
@@ -155,19 +180,19 @@ abstract class SampleDataIterator implements Iterator<Future<SampleData<?>>>
         Duration end;
 
         long frequency = TimeHelper.unitsToLeadUnits(
-                this.getProjectDetails().getLeadUnit(),
-                this.getProjectDetails().getLeadFrequency()
+                this.getProject().getLeadUnit(),
+                this.getProject().getLeadFrequency()
         );
 
         long period = TimeHelper.unitsToLeadUnits(
-                this.getProjectDetails().getLeadUnit(),
-                this.getProjectDetails().getLeadPeriod()
+                this.getProject().getLeadUnit(),
+                this.getProject().getLeadPeriod()
         );
 
         Long offset;
         try
         {
-            offset = this.getProjectDetails().getLeadOffset( this.getFeature() ).longValue();
+            offset = this.getProject().getLeadOffset( this.getFeature() ).longValue();
         }
         catch ( IOException | SQLException e )
         {
@@ -195,7 +220,7 @@ abstract class SampleDataIterator implements Iterator<Future<SampleData<?>>>
 
     protected int calculateFinalPoolingStep() throws CalculationException
     {
-        return this.projectDetails.getIssuePoolCount( this.feature );
+        return this.project.getIssuePoolCount( this.feature );
     }
 
     @Override
@@ -216,7 +241,15 @@ abstract class SampleDataIterator implements Iterator<Future<SampleData<?>>>
 
         try
         {
-            nextInput = this.submitForRetrieval(this.sampleMetadata.remove());
+            OrderedSampleMetadata metadataToSubmit = this.sampleMetadata.remove();
+
+            if (this.getLogger().isTraceEnabled())
+            {
+                this.getLogger().trace( "Issuing task for {}", metadataToSubmit );
+            }
+
+            nextInput = this.submitForRetrieval(metadataToSubmit);
+
         }
         catch ( IOException e )
         {
@@ -249,7 +282,6 @@ abstract class SampleDataIterator implements Iterator<Future<SampleData<?>>>
                 this.sharedWriterManager,
                 this.outputPathForPairs
         );
-
         retriever.setClimatology( this.getClimatology() );
 
         return retriever;
@@ -269,17 +301,17 @@ abstract class SampleDataIterator implements Iterator<Future<SampleData<?>>>
 
     protected DataSourceConfig getLeft()
     {
-        return this.getProjectDetails().getLeft();
+        return this.getProject().getLeft();
     }
 
     protected DataSourceConfig getRight()
     {
-        return this.getProjectDetails().getRight();
+        return this.getProject().getRight();
     }
 
     protected DataSourceConfig getBaseline()
     {
-        return this.getProjectDetails().getBaseline();
+        return this.getProject().getBaseline();
     }
 
     abstract Logger getLogger();

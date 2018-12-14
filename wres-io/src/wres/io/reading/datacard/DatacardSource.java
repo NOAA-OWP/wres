@@ -236,9 +236,7 @@ public class DatacardSource extends BasicSource
 			int startIdx;
 			int endIdx;
 
-            DataSourceConfig.Source source =
-                    ConfigHelper.findDataSourceByFilename( dataSourceConfig,
-                                                           filename );
+            DataSourceConfig.Source source = this.getSourceConfig();
 
             ZoneOffset offset = ConfigHelper.getZoneOffset( source );
             LOGGER.debug( "{} is configured offset", offset );

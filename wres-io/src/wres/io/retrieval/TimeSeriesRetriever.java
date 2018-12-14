@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,11 +31,14 @@ import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
 import wres.io.writing.pair.PairSupplier;
 import wres.io.writing.pair.SharedWriterManager;
+import wres.util.CalculationException;
 
 // TODO: Come up with handling for gridded data
 public class TimeSeriesRetriever extends Retriever
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( TimeSeriesRetriever.class );
+
+    private SampleMetadata metadata;
 
     TimeSeriesRetriever (
             final OrderedSampleMetadata sampleMetadata,
@@ -97,9 +101,7 @@ public class TimeSeriesRetriever extends Retriever
     @Override
     protected String getLoadScript( DataSourceConfig dataSourceConfig ) throws SQLException, IOException
     {
-        this.script =  Scripter.getLoadScript( this.getSampleMetadata(),
-                                               dataSourceConfig);
-        return this.script;
+        return Scripter.getLoadScript( this.getSampleMetadata(), dataSourceConfig);
     }
 
     @Override
@@ -190,10 +192,14 @@ public class TimeSeriesRetriever extends Retriever
                         LOGGER.trace("A pair of values could not be created.");
                         continue;
                     }
-                    
-                    ForecastedPair pair = new ForecastedPair( lead,
-                                                              pivottedValues.validTime,
-                                                              ensemblePair);
+
+                    ForecastedPair pair = new ForecastedPair(
+                                lead,
+                                pivottedValues.validTime,
+                                ensemblePair,
+                                pivottedValues.getEnsembleMembers( )
+                        );
+
                     this.writePair( super.getSharedWriterManager(),
                                     super.getOutputDirectoryForPairs(),
                                     pair,
@@ -229,8 +235,8 @@ public class TimeSeriesRetriever extends Retriever
      */
     private PivottedValues formPivottedValues( final long validSeconds, final int lead, final Double[] value)
     {
-        Map<Integer, List<Double>> mappedResult = new TreeMap<>(  );
-        mappedResult.put( 0, Arrays.asList( value ) );
+        Map<PivottedValues.EnsemblePosition, List<Double >> mappedResult = new TreeMap<>(  );
+        mappedResult.put( new PivottedValues.EnsemblePosition( 0, 0 ), Arrays.asList( value ) );
         return new PivottedValues( Instant.ofEpochSecond( validSeconds ), lead, mappedResult );
     }
 
@@ -239,7 +245,4 @@ public class TimeSeriesRetriever extends Retriever
     {
         return TimeSeriesRetriever.LOGGER;
     }
-
-    private String script;
-    private SampleMetadata metadata;
 }

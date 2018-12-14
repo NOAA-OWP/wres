@@ -1,4 +1,4 @@
-package wres.io.data.details;
+package wres.io.project;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -41,21 +41,21 @@ import wres.config.generated.ProjectConfig;
 import wres.config.generated.ThresholdType;
 import wres.config.generated.TimeScaleConfig;
 import wres.config.generated.TimeScaleFunction;
+import wres.io.concurrency.Executor;
+import wres.io.concurrency.OffsetEvaluator;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.Variables;
+import wres.io.data.details.FeatureDetails;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
 import wres.io.utilities.LRUMap;
 import wres.io.utilities.NoDataException;
-import wres.io.utilities.ScriptBuilder;
-import wres.io.utilities.ScriptGenerator;
 import wres.util.CalculationException;
 import wres.util.Collections;
 import wres.util.FormattedStopwatch;
-import wres.util.Strings;
 import wres.util.TimeHelper;
 
 /**
@@ -66,7 +66,7 @@ import wres.util.TimeHelper;
  * TODO: refactor this class and make it immutable, ideally, but otherwise thread-safe. It's also
  * far too large (JBr). See #49511.
  */
-public class ProjectDetails
+public class Project
 {
     /**
      * Controls the type of pair retrieval for the project
@@ -86,7 +86,7 @@ public class ProjectDetails
         BY_TIMESERIES
     }
 
-    private static final Logger LOGGER = LoggerFactory.getLogger( ProjectDetails.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( Project.class );
 
     /**
      * Lock used to protect access to the logic used to determine the left hand scale
@@ -253,6 +253,8 @@ public class ProjectDetails
     private Boolean rightUsesGriddedData = null;
     private Boolean baselineUsesGriddedData = null;
 
+    private final ProjectScriptGenerator scriptGenerator;
+
     /**
      * Guards access to the pool counts
      */
@@ -358,13 +360,14 @@ public class ProjectDetails
         return hashBuilder.toString().hashCode();
     }
 
-    public ProjectDetails( ProjectConfig projectConfig,
-                           Integer inputCode )
+    public Project( ProjectConfig projectConfig,
+                    Integer inputCode )
     {
         Objects.requireNonNull( projectConfig );
         Objects.requireNonNull( inputCode );
         this.projectConfig = projectConfig;
         this.inputCode = inputCode;
+        this.scriptGenerator = new ProjectScriptGenerator( this );
     }
 
     public ProjectConfig getProjectConfig()
@@ -388,15 +391,15 @@ public class ProjectDetails
 
         if (dataSourceConfig.equals( this.getLeft() ))
         {
-            name = ProjectDetails.LEFT_MEMBER;
+            name = Project.LEFT_MEMBER;
         }
         else if (dataSourceConfig.equals( this.getRight() ))
         {
-            name = ProjectDetails.RIGHT_MEMBER;
+            name = Project.RIGHT_MEMBER;
         }
         else if (dataSourceConfig.equals( this.getBaseline() ))
         {
-            name = ProjectDetails.BASELINE_MEMBER;
+            name = Project.BASELINE_MEMBER;
         }
 
         return name;
@@ -428,7 +431,7 @@ public class ProjectDetails
      */
     public Collection<FeatureDetails> getFeatures() throws SQLException
     {
-        synchronized ( ProjectDetails.FEATURE_LOCK )
+        synchronized ( Project.FEATURE_LOCK )
         {
             if ( this.features == null )
             {
@@ -444,7 +447,7 @@ public class ProjectDetails
      */
     private void populateFeatures() throws SQLException
     {
-        synchronized ( ProjectDetails.FEATURE_LOCK )
+        synchronized ( Project.FEATURE_LOCK )
         {
             if ( this.usesGriddedData( this.getRight() ) )
             {
@@ -621,15 +624,15 @@ public class ProjectDetails
         final String side = this.getInputName( dataSourceConfig );
         Integer variableId = null;
 
-        if (ProjectDetails.LEFT_MEMBER.equals( side ))
+        if ( Project.LEFT_MEMBER.equals( side ))
         {
             variableId = this.getLeftVariableID();
         }
-        else if (ProjectDetails.RIGHT_MEMBER.equals( side ))
+        else if ( Project.RIGHT_MEMBER.equals( side ))
         {
             variableId = this.getRightVariableID();
         }
-        else if (ProjectDetails.BASELINE_MEMBER.equals( side ))
+        else if ( Project.BASELINE_MEMBER.equals( side ))
         {
             variableId = this.getBaselineVariableID();
         }
@@ -1277,7 +1280,7 @@ public class ProjectDetails
      */
     public Integer getNumberOfSeriesToRetrieve() throws CalculationException
     {
-        synchronized ( ProjectDetails.SERIES_AMOUNT_LOCK )
+        synchronized ( Project.SERIES_AMOUNT_LOCK )
         {
             if ( this.numberOfSeriesToRetrieve == null )
             {
@@ -1297,7 +1300,7 @@ public class ProjectDetails
                 script.addTab(     5     ).addLine( "INNER JOIN wres.ProjectSource PS" );
                 script.addTab(      6      ).addLine( "ON PS.source_id = TSS.source_id" );
                 script.addTab(     5     ).addLine( "WHERE PS.project_id = ", this.getId() );
-                script.addTab(      6      ).addLine( "AND PS.member = ", ProjectDetails.RIGHT_MEMBER );
+                script.addTab(      6      ).addLine( "AND PS.member = ", Project.RIGHT_MEMBER );
                 script.addTab(     5     ).addLine( "LIMIT 1" );
                 script.addTab(    4    ).addLine( ") AS TS" );
                 script.addTab(    4    ).addLine( "ON TS.timeseries_id = TSV.timeseries_id" );
@@ -1314,7 +1317,7 @@ public class ProjectDetails
                 script.addTab().addLine( "INNER JOIN wres.ProjectSource PS" );
                 script.addTab(  2  ).addLine( "ON PS.source_id = TSS.source_id" );
                 script.addTab().addLine( "WHERE PS.project_id = ", this.getId() );
-                script.addTab(  2  ).addLine( "AND PS.member = ", ProjectDetails.RIGHT_MEMBER );
+                script.addTab(  2  ).addLine( "AND PS.member = ", Project.RIGHT_MEMBER );
                 script.addTab(  2  ).addLine( "AND TS.ensemble_id = E.ensemble_id" );
                 script.addLine( ")" );
 
@@ -1399,10 +1402,10 @@ public class ProjectDetails
 
         switch ( this.getInputName( dataSourceConfig ) )
         {
-            case ProjectDetails.LEFT_MEMBER:
+            case Project.LEFT_MEMBER:
                 usesGriddedData = this.leftUsesGriddedData;
                 break;
-            case ProjectDetails.RIGHT_MEMBER:
+            case Project.RIGHT_MEMBER:
                 usesGriddedData = this.rightUsesGriddedData;
                 break;
             default:
@@ -1426,10 +1429,10 @@ public class ProjectDetails
 
             switch ( this.getInputName( dataSourceConfig ) )
             {
-                case ProjectDetails.LEFT_MEMBER:
+                case Project.LEFT_MEMBER:
                     this.leftUsesGriddedData = usesGriddedData;
                     break;
-                case ProjectDetails.RIGHT_MEMBER:
+                case Project.RIGHT_MEMBER:
                     this.rightUsesGriddedData = usesGriddedData;
                     break;
                 default:
@@ -1532,161 +1535,41 @@ public class ProjectDetails
             timer.start();
         }
 
-        long width = TimeHelper.unitsToLeadUnits( this.getScale().getUnit().value(),
-                                                     this.getScale().getPeriod());
+        DataScripter script = this.scriptGenerator.formVariableFeatureLoadScript();
 
-        String script = ScriptGenerator.formVariableFeatureLoadScript( this, true );
-        ScriptBuilder part = new ScriptBuilder(  );
-
-        part.addLine("SELECT TS.offset");
-        part.addLine("FROM (");
-        part.addTab().add("SELECT TS.initialization_date + INTERVAL '1 MINUTE' * (TSV.lead + ", width, ")");
-
-        if (this.getRight().getTimeShift() != null)
-        {
-            part.add(" + '", this.getRight().getTimeShift().getWidth(), " ", this.getRight().getTimeShift().getUnit().value(), "'");
-        }
-
-        part.addLine(" AS valid_time,");
-        part.addTab(  2  ).addLine("TSV.lead - ", width, " AS offset");
-        part.addTab().addLine("FROM wres.TimeSeries TS");
-        part.addTab().addLine("INNER JOIN wres.TimeSeriesValue TSV");
-        part.addTab(  2  ).addLine("ON TSV.timeseries_id = TS.timeseries_id");
-        part.addTab().add("WHERE TS.variablefeature_id = ");
-
-        String beginning = part.toString();
-
-        part = new ScriptBuilder(  );
-
-        if (this.getMinimumLead() != Integer.MIN_VALUE)
-        {
-            part.addTab(  2  ).addLine( "AND TSV.lead >= ", (this.getMinimumLead() - 60.0) + width);
-        }
-        else
-        {
-            part.addTab(  2  ).addLine( "AND TSV.lead >= ", width);
-        }
-
-        if (this.getMaximumLead() != Integer.MAX_VALUE)
-        {
-            part.addTab(  2  ).addLine( "AND TSV.lead <= ", this.getMaximumLead());
-        }
-
-        if (Strings.hasValue( this.getEarliestIssueDate() ))
-        {
-            part.addTab(  2  ).addLine("AND TS.initialization_date >= '", this.getEarliestIssueDate() + "'");
-        }
-
-        if (Strings.hasValue( this.getLatestIssueDate() ))
-        {
-            part.addTab(  2  ).addLine("AND TS.initialization_date <= '", this.getLatestIssueDate(), "'");
-        }
-
-        part.addTab(  2  ).addLine("AND EXISTS (");
-        part.addTab(   3   ).addLine("SELECT 1");
-        part.addTab(   3   ).addLine("FROM wres.ProjectSource PS");
-        part.addTab(   3   ).addLine("INNER JOIN wres.TimeSeriesSource TSS");
-        part.addTab(    4    ).addLine("ON TSS.source_id = PS.source_id");
-        part.addTab(   3   ).addLine("WHERE PS.project_id = ", this.getId());
-        part.addTab(    4    ).addLine("AND PS.member = 'right'");
-        part.addTab(    4    ).addLine("AND TSS.timeseries_id = TS.timeseries_id");
-        part.addTab(  2  ).addLine(")");
-        part.addTab(  2  ).addLine("GROUP BY TS.initialization_date, TSV.lead");
-        part.addTab(  2  ).addLine("ORDER BY valid_time");
-
-
-        part.addLine(") AS TS");
-        part.addLine("INNER JOIN (");
-        part.addTab().addLine("SELECT O.observation_time");
-        part.addTab().addLine("FROM (");
-        part.addTab(  2  ).addLine("SELECT source_id");
-        part.addTab(  2  ).addLine("FROM wres.ProjectSource PS");
-        part.addTab(  2  ).addLine("WHERE PS.project_id = ", this.getId());
-        part.addTab(   3  ).addLine("AND PS.member = ", ProjectDetails.LEFT_MEMBER);
-        part.addTab().addLine(") AS PS");
-        part.addTab().addLine("INNER JOIN (");
-        part.addTab(  2  ).add("SELECT source_id, observation_time");
-
-        if (this.getLeft().getTimeShift() != null)
-        {
-            part.add(" + '", this.getLeft().getTimeShift().getWidth(), " ", this.getLeft().getTimeShift().getUnit().value(), "'");
-        }
-
-        part.addLine(" AS observation_time");
-        part.addTab(  2  ).addLine("FROM wres.Observation O");
-        part.addTab(  2  ).add("WHERE O.variablefeature_id = ");
-
-        String middle = part.toString();
-
-        part = new ScriptBuilder(  );
-
-        if (Strings.hasValue( this.getEarliestDate() ))
-        {
-            part.addTab(   3   ).addLine("AND O.observation_time >= '", this.getEarliestDate(), "'");
-        }
-
-        if (Strings.hasValue( this.getLatestDate() ))
-        {
-            part.addTab(   3   ).addLine("AND O.observation_time <= '", this.getLatestDate(), "'");
-        }
-
-        part.addTab().addLine(") AS O");
-        part.addTab(  2  ).addLine("ON O.source_id = PS.source_id");
-        part.addLine(") AS OT");
-        part.addTab().addLine("ON OT.observation_time = TS.valid_time");
-        part.addLine("ORDER BY TS.offset");
-        part.addLine("LIMIT 1;");
-
-        String end = part.toString();
-
-        Connection connection = null;
         Map<FeatureDetails.FeatureKey, Future<Integer>> futureOffsets = new LinkedHashMap<>(  );
 
-        try
+        try (DataProvider data = script.getData())
         {
-            connection = Database.getConnection();
+            LOGGER.trace("Variable feature metadata loaded...");
 
-            try (DataProvider data = Database.getResults( connection, script ))
+            while (data.next())
             {
-                LOGGER.trace("Variable feature metadata loaded...");
+                OffsetEvaluator evaluator = new OffsetEvaluator(
+                        this,
+                        data.getInt( "observation_feature" ),
+                        data.getInt("forecast_feature")
+                );
 
-                while (data.next())
-                {
-                    DataScripter finalScript = new DataScripter( );
-                    finalScript.add(beginning);
-                    finalScript.addLine( data.getInt("forecast_feature" ) );
-                    finalScript.add(middle);
-                    finalScript.addLine( data.getInt("observation_feature") );
-                    finalScript.addLine(end);
+                // TODO: Add DataProvider constructor for the key
+                FeatureDetails.FeatureKey key = new FeatureDetails.FeatureKey(
+                        data.getValue("comid"),
+                        data.getValue("lid"),
+                        data.getValue("gage_id"),
+                        data.getValue("huc"),
+                        data.getValue("longitude"),
+                        data.getValue("latitude")
+                );
 
-                    // TODO: Add DataProvider constructor for the key
-                    FeatureDetails.FeatureKey key = new FeatureDetails.FeatureKey(
-                            data.getValue("comid"),
-                            data.getValue("lid"),
-                            data.getValue("gage_id"),
-                            data.getValue("huc"),
-                            data.getValue("longitude"),
-                            data.getValue("latitude")
-                    );
+                futureOffsets.put( key, Executor.submit( evaluator ));
 
-                    futureOffsets.put(key, finalScript.submit( "offset" ));
-
-                    LOGGER.trace( "A task has been created to find the offset for {}.", key );
-                }
+                LOGGER.trace( "A task has been created to find the offset for {}.", key );
             }
         }
         catch ( SQLException e )
         {
             throw new IOException("Tasks used to evaluate lead hour offsets "
                                   + "could not be created.", e);
-        }
-        finally
-        {
-
-            if (connection != null)
-            {
-                Database.returnConnection( connection );
-            }
         }
 
         while (!futureOffsets.isEmpty())
@@ -1820,7 +1703,7 @@ public class ProjectDetails
 
                 try
                 {
-                    DataScripter counter = ScriptGenerator.formIssuePoolCounter( this, feature );
+                    DataScripter counter = scriptGenerator.formIssuePoolCounter( feature );
 
                     counter.consume( row -> {
                         Integer sampleCount = row.getInt( "window_count" );
@@ -2340,223 +2223,10 @@ public class ProjectDetails
         boolean leadIsMissing = !this.lastLeads.containsKey( feature );
         Integer lastLead;
 
-        boolean usesGriddedData;
-
-        try
+        if (leadIsMissing)
         {
-            usesGriddedData = this.usesGriddedData( this.getRight() );
-        }
-        catch ( SQLException e )
-        {
-            throw new CalculationException( "To determine the last possible lead to "
-                                            + "evaluate, the system needs to know whether "
-                                            + "or not ingested data is gridded, but that "
-                                            + "could not be loaded.",
-                                            e );
-        }
+            DataScripter script = this.scriptGenerator.createLastLeadScript( feature );
 
-        if (leadIsMissing && usesGriddedData)
-        {
-            DataScripter script = new DataScripter(  );
-
-            script.addLine("SELECT MAX(S.lead) AS last_lead");
-            script.addLine("FROM (");
-            script.addTab().addLine("SELECT PS.source_id");
-            script.addTab().addLine("FROM wres.ProjectSource PS");
-            script.addTab().addLine("WHERE PS.project_id = ", this.getId());
-            script.addTab(  2  ).addLine("AND PS.member = ", ProjectDetails.RIGHT_MEMBER);
-            script.addLine(") AS PS");
-            script.addLine("INNER JOIN wres.Source S");
-            script.addTab().addLine("ON S.source_id = PS.source_id");
-
-            boolean whereAdded = false;
-
-            if (this.getMinimumLead() != Integer.MAX_VALUE)
-            {
-                whereAdded = true;
-                script.addLine("WHERE S.lead >= ", this.getMinimumLead());
-            }
-
-            if (this.getMaximumLead() != Integer.MIN_VALUE)
-            {
-                if (whereAdded)
-                {
-                    script.addTab().add("AND ");
-                }
-                else
-                {
-                    whereAdded = true;
-                    script.add("WHERE ");
-                }
-
-                script.addLine("S.lead <= ", this.getMaximumLead());
-            }
-
-            if (Strings.hasValue(this.getEarliestIssueDate()))
-            {
-                if (whereAdded)
-                {
-                    script.addTab().add("AND ");
-                }
-                else
-                {
-                    whereAdded = true;
-                    script.add("WHERE ");
-                }
-
-                script.addLine("S.output_time >= '", this.getEarliestIssueDate(), "'");
-            }
-
-            if (Strings.hasValue( this.getLatestIssueDate() ))
-            {
-                if (whereAdded)
-                {
-                    script.addTab().add("AND ");
-                }
-                else
-                {
-                    whereAdded = true;
-                    script.add("WHERE ");
-                }
-
-                script.addLine("S.output_time <= '", this.getLatestIssueDate(), "'");
-            }
-
-            if (Strings.hasValue( this.getEarliestDate() ))
-            {
-                if (whereAdded)
-                {
-                    script.addTab().add("AND ");
-                }
-                else
-                {
-                    whereAdded = true;
-                    script.add("WHERE ");
-                }
-
-                script.addLine("S.output_time + INTERVAL '1 MINUTE' * S.lead >= '", this.getEarliestDate(), "'");
-            }
-
-            if (Strings.hasValue( this.getLatestDate() ))
-            {
-                if (whereAdded)
-                {
-                    script.addTab().add("AND ");
-                }
-                else
-                {
-                    script.add("WHERE ");
-                }
-
-                script.addLine("S.output_time + INTERVAL '1 MINUTE' * S.lead <= '", this.getLatestDate(), "'");
-            }
-            try
-            {
-                this.lastLeads.put( feature, script.retrieve ("last_lead" ));
-            }
-            catch ( SQLException e )
-            {
-                throw new CalculationException( "The calculation used to evaluate the last "
-                                                + "lead for this sample of gridded data failed.",
-                                                e );
-            }
-        }
-        else if (leadIsMissing)
-        {
-            DataScripter script = new DataScripter();
-
-            if ( ConfigHelper.isForecast( this.getRight() ) )
-            {
-                script.addLine("SELECT MAX(TSV.lead) AS last_lead");
-                script.addLine("FROM wres.TimeSeries TS");
-                script.addLine("INNER JOIN wres.TimeSeriesValue TSV");
-                script.addTab().addLine("ON TS.timeseries_id = TSV.timeseries_id");
-                try
-                {
-                    script.addLine("WHERE " +
-                              ConfigHelper.getVariableFeatureClause( feature,
-                                                                     this.getRightVariableID(),
-                                                                     "TS" ));
-                }
-                catch ( SQLException e )
-                {
-                    throw new CalculationException( "The variable is needed to determine the "
-                                                    + "last lead for " +
-                                                    ConfigHelper.getFeatureDescription( feature ) +
-                                                    ", but it could not be loaded.",
-                                                    e);
-                }
-
-                if ( this.getMaximumLead() != Integer.MAX_VALUE )
-                {
-                    script.addTab().addLine("AND TSV.lead <= " + this.getMaximumLead( ));
-                }
-
-                if ( this.getMinimumLead() != Integer.MIN_VALUE )
-                {
-                    script.addTab().addLine("AND TSV.lead >= " + this.getMinimumLead( ));
-                }
-
-                if ( Strings.hasValue( this.getEarliestIssueDate()))
-                {
-                    script.addTab().addLine("AND TS.initialization_date >= '" + this.getEarliestIssueDate() + "'");
-                }
-
-                if (Strings.hasValue( this.getLatestIssueDate()))
-                {
-                    script.addTab().addLine("AND TS.initialization_date <= '" + this.getLatestIssueDate() + "'");
-                }
-
-                if ( Strings.hasValue( this.getEarliestDate() ))
-                {
-                    script.addTab().addLine("AND TS.initialization_date + INTERVAL '1 MINUTE' * TSV.lead >= '" + this.getEarliestDate() + "'");
-                }
-
-                if (Strings.hasValue( this.getLatestDate() ))
-                {
-                    script.addTab().addLine("AND TS.initialization_date + INTERVAL '1 MINUTE' * TSV.lead <= '" + this.getLatestDate() + "'");
-                }
-
-                script.addTab().addLine("AND EXISTS (");
-                script.addTab(  2  ).addLine("SELECT 1");
-                script.addTab(  2  ).addLine("FROM wres.ProjectSource PS");
-                script.addTab(  2  ).addLine("INNER JOIN wres.TimeSeriesSource TSS");
-                script.addTab(   3   ).addLine("ON TSS.source_id = PS.source_id");
-                script.addTab(  2  ).addLine("WHERE PS.project_id = " + this.getId());
-                script.addTab(   3   ).addLine("AND PS.member = " + ProjectDetails.RIGHT_MEMBER);
-                script.addTab(   3   ).addLine("AND TSS.timeseries_id = TS.timeseries_id");
-
-                if (ConfigHelper.usesNetCDFData( this.projectConfig ))
-                {
-                    script.addTab(   3   ).addLine("AND TSS.lead = TSV.lead");
-                }
-
-                script.addTab().addLine(");");
-            }
-            else
-            {
-                script.addLine("SELECT COUNT(*)::int AS last_lead");
-                script.addLine("FROM wres.Observation O");
-                script.addLine("INNER JOIN wres.ProjectSource PS");
-                script.addTab().addLine("ON PS.source_id = O.source_id");
-                script.addLine("WHERE PS.project_id = " + this.getId());
-                try
-                {
-                    script.addTab().addLine("AND " +
-                              ConfigHelper.getVariableFeatureClause(
-                                      feature,
-                                      this.getRightVariableID(),
-                                      "O;" ));
-                }
-                catch ( SQLException e )
-                {
-                    throw new CalculationException( "The variable is needed to determine the "
-                                                    + "number of observations for " +
-                                                    ConfigHelper.getFeatureDescription( feature ) +
-                                                    ", but it could not be loaded.",
-                                                    e);
-                }
-            }
             try
             {
                 lastLead = script.retrieve( "last_lead" );
@@ -2631,6 +2301,16 @@ public class ProjectDetails
         return result;
     }
 
+    public Duration getLeftTimeShift()
+    {
+        return ConfigHelper.getTimeShift(this.getLeft());
+    }
+
+    public Duration getRightTimeShift()
+    {
+        return ConfigHelper.getTimeShift( this.getRight() );
+    }
+
     /**
      * Returns the first date of observation data for the feature, for the given input
      * @param sourceConfig The side of the data whose zero date we are interested in
@@ -2640,20 +2320,18 @@ public class ProjectDetails
      * @throws SQLException Thrown if the initial date could not be loaded
      * from the database.
      */
-    public String getInitialObservationDate( DataSourceConfig sourceConfig, Feature feature) throws SQLException
+    public String getInitialObservationDate( final DataSourceConfig sourceConfig, final Feature feature) throws SQLException
     {
         synchronized ( this.initialObservationDates )
         {
             if (!this.initialObservationDates.containsKey( feature ))
             {
-                String script =
-                        ScriptGenerator.generateInitialObservationDateScript( this,
-                                                                              sourceConfig,
-                                                                              feature );
-                this.initialObservationDates.put(
-                        feature,
-                        Database.getResult( script, "zero_date" )
+                DataScripter script = scriptGenerator.generateInitialObservationDateScript(
+                        sourceConfig,
+                        feature
                 );
+
+                this.initialObservationDates.put(feature, script.retrieve( "zero_date" ));
             }
         }
 
@@ -2666,16 +2344,12 @@ public class ProjectDetails
         {
             if (!this.initialForecastDates.containsKey( feature ))
             {
-                String script = ScriptGenerator.generateInitialForecastDateScript(
-                        this,
+                DataScripter script =  this.scriptGenerator.generateInitialForecastDateScript(
                         sourceConfig,
                         feature
                 );
 
-                this.initialForecastDates.put(
-                        feature,
-                        Database.getResult( script, "zero_date" )
-                );
+                this.initialForecastDates.put(feature, script.retrieve( "zero_date" ));
             }
 
             return this.initialForecastDates.get(feature);
@@ -2741,54 +2415,7 @@ public class ProjectDetails
                 // 6 hours, we'll encounter an error because we're aren't
                 // accounting for that weird gap. By going with the maximum, we
                 // ensure that we will always cover that gap.
-                DataScripter script = new DataScripter();
-                script.addLine("WITH initialization_lag AS");
-                script.addLine("(");
-                script.addTab().addLine("SELECT (");
-                script.addTab(  2  ).addLine("EXTRACT (");
-                script.addTab(   3   ).addLine( "epoch FROM AGE (");
-                script.addTab(    4    ).addLine( "TS.initialization_date,");
-                script.addTab(    4    ).addLine( "(");
-                script.addTab(     5     ).addLine("LAG(TS.initialization_date) OVER (ORDER BY TS.initialization_date)");
-                script.addTab(    4    ).addLine( ")");
-                script.addTab(   3   ).addLine(")");
-                script.addTab(  2  ).addLine(") / 60)::int AS lag -- Divide by 60 to convert seconds into minutes");
-                script.addTab().addLine("FROM wres.TimeSeries TS");
-                script.addTab().add("WHERE ");
-                try
-                {
-                    script.addLine(ConfigHelper.getVariableFeatureClause(
-                            feature,
-                            Variables.getVariableID( sourceConfig ),
-                            "TS" )
-                    );
-                }
-                catch ( SQLException e )
-                {
-                    throw new CalculationException( "The variable is needed to calculate the "
-                                                    + "maximum distance between forecasts for " +
-                                                    ConfigHelper.getFeatureDescription( feature ) +
-                                                    ", but it could not be loaded",
-                                                    e );
-                }
-                script.addTab(  2  ).addLine("AND EXISTS (");
-                script.addTab(   3   ).addLine("SELECT 1");
-                script.addTab(   3   ).addLine("FROM wres.TimeSeriesSource TSS");
-                script.addTab(   3   ).addLine("INNER JOIN wres.ProjectSource PS");
-                script.addTab(    4    ).addLine("ON PS.source_id = TSS.source_id");
-                script.addTab(   3   ).addLine("WHERE PS.project_id = ", this.getId());
-                script.addTab(    4    ).addLine("AND PS.member = ", this.getInputName( sourceConfig ));
-                script.addTab(    4    ).addLine("AND TSS.timeseries_id = TS.timeseries_id");
-                script.addTab(  2  ).addLine(")");
-                script.addTab().addLine("GROUP BY TS.initialization_date");
-                script.addTab().addLine("ORDER BY TS.initialization_date");
-                script.addLine(")");
-                script.addLine("SELECT max(IL.lag) AS typical_gap");
-                script.addLine("-- We take the max to ensure that values are contained within;");
-                script.addLine("--   If we try to take the mode, we risk being too granular");
-                script.addLine("--   and trying to select values that aren't there.");
-                script.addLine("FROM initialization_lag IL");
-                script.addLine("WHERE IL.lag IS NOT NULL;");
+                DataScripter script = this.scriptGenerator.createForecastLagScript( sourceConfig, feature );
 
                 try
                 {
@@ -2829,7 +2456,7 @@ public class ProjectDetails
         return false;
     }
 
-    public int compareTo(ProjectDetails other)
+    public int compareTo(Project other)
     {
         return this.getInputCode().compareTo( other.getInputCode() );
     }
@@ -2838,7 +2465,7 @@ public class ProjectDetails
     public boolean equals( Object obj )
     {
         return obj != null &&
-               obj instanceof ProjectDetails &&
+               obj instanceof Project &&
                this.hashCode() == obj.hashCode();
     }
 
