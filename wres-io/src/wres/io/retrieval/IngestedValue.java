@@ -1,7 +1,5 @@
 package wres.io.retrieval;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.time.Instant;
 import java.time.temporal.TemporalAccessor;
 import java.util.Arrays;
@@ -9,9 +7,8 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import wres.io.data.caching.UnitConversions;
-import wres.io.data.details.ProjectDetails;
+import wres.io.project.Project;
 import wres.io.utilities.DataProvider;
-import wres.io.utilities.Database;
 
 class IngestedValue implements Comparable<IngestedValue>
 {
@@ -22,6 +19,7 @@ class IngestedValue implements Comparable<IngestedValue>
     private final Instant validTime;
     private final int lead;
     private final Double[] measurements;
+    private final Integer[] members;
 
     private static UnitConversions.Conversion getConversion(int measurementUnitID, String desiredUnit)
     {
@@ -44,15 +42,15 @@ class IngestedValue implements Comparable<IngestedValue>
         }
     }
 
-    IngestedValue( DataProvider row, ProjectDetails projectDetails)
+    IngestedValue( DataProvider row, Project project )
     {
         this.validTime = row.getInstant( "value_date" );
         this.measurements = row.getDoubleArray("measurements" );
         this.convertAllMeasurements(
                 row.getInt( "measurementunit_id" ),
-                projectDetails
+                project
         );
-
+        this.members = row.getIntegerArray( "members" );
         this.lead = row.getInt( "lead" );
         this.referenceEpoch = row.getLong("basis_epoch_time");
     }
@@ -62,11 +60,12 @@ class IngestedValue implements Comparable<IngestedValue>
                   int measurementUnitId,
                   int lead,
                   long basisEpoch,
-                  ProjectDetails projectDetails)
+                  Project project )
     {
         this.validTime = validTime;
         this.measurements = measurements;
-        this.convertAllMeasurements( measurementUnitId, projectDetails );
+        this.convertAllMeasurements( measurementUnitId, project );
+        this.members = new Integer[1];
         this.lead = lead;
         this.referenceEpoch = basisEpoch;
     }
@@ -93,6 +92,18 @@ class IngestedValue implements Comparable<IngestedValue>
         return value;
     }
 
+    Integer getMemberID(int index)
+    {
+        Integer member = null;
+
+        if (index >= 0 && index < this.length())
+        {
+            member = this.members[index];
+        }
+
+        return member;
+    }
+
     Instant getValidTime()
     {
         return this.validTime;
@@ -112,25 +123,25 @@ class IngestedValue implements Comparable<IngestedValue>
      * Converts all stored values into the desired measurement unit
      * TODO: Find way to remove the need for a ProjectDetails object
      * @param measurementunitId The ID of the unit of measurement that all collected values are in
-     * @param projectDetails The object storing information about how values should be handled
+     * @param project The object storing information about how values should be handled
      */
-    private void convertAllMeasurements(int measurementunitId, ProjectDetails projectDetails)
+    private void convertAllMeasurements(int measurementunitId, Project project )
     {
         for (int index = 0; index < this.length(); ++index)
         {
             Double value = this.convertMeasurement(
                     this.get( index ),
                     measurementunitId,
-                    projectDetails.getDesiredMeasurementUnit()
+                    project.getDesiredMeasurementUnit()
             );
 
-            if (value < projectDetails.getMinimumValue())
+            if ( value < project.getMinimumValue())
             {
-                value = projectDetails.getDefaultMinimumValue();
+                value = project.getDefaultMinimumValue();
             }
-            else if (value > projectDetails.getMaximumValue())
+            else if ( value > project.getMaximumValue())
             {
-                value = projectDetails.getDefaultMaximumValue();
+                value = project.getDefaultMaximumValue();
             }
 
             if (value == null)
@@ -164,12 +175,11 @@ class IngestedValue implements Comparable<IngestedValue>
     @Override
     public String toString()
     {
-        String builder = "Lead: " + this.getLead() + ", " +
-                         "Valid Date: " + this.getValidTime() + ", " +
-                         "Measurements: " + Arrays.toString( this.measurements )
-                         +
-                         ", Reference Date: " + this.getReferenceTime();
 
-        return builder;
+        return "Lead: " + this.getLead() + ", " +
+               "Valid Date: " + this.getValidTime() + ", " +
+               "Measurements: " + Arrays.toString( this.measurements )
+               +
+               ", Reference Date: " + this.getReferenceTime();
     }
 }

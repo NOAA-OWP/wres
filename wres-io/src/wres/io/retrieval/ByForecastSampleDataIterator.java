@@ -17,7 +17,7 @@ import wres.datamodel.sampledata.SampleData;
 import wres.io.config.ConfigHelper;
 import wres.io.config.OrderedSampleMetadata;
 import wres.io.data.caching.Features;
-import wres.io.data.details.ProjectDetails;
+import wres.io.project.Project;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
 import wres.io.writing.pair.SharedWriterManager;
@@ -30,14 +30,14 @@ public class ByForecastSampleDataIterator extends SampleDataIterator
     private Queue<Integer> timeSeries;
 
     ByForecastSampleDataIterator( Feature feature,
-                                  ProjectDetails projectDetails,
+                                  Project project,
                                   SharedWriterManager sharedWriterManager,
                                   Path outputDirectoryForPairs,
                                   final Collection<OrderedSampleMetadata> sampleMetadataCollection)
             throws IOException
     {
         super( feature,
-               projectDetails,
+               project,
                sharedWriterManager,
                outputDirectoryForPairs,
                sampleMetadataCollection);
@@ -59,8 +59,8 @@ public class ByForecastSampleDataIterator extends SampleDataIterator
             this.timeSeries = new LinkedList<>(  );
         }
 
-        if ( ConfigHelper.usesNetCDFData( this.getProjectDetails().getProjectConfig() ) ||
-             ConfigHelper.usesS3Data( this.getProjectDetails().getProjectConfig() ))
+        if ( ConfigHelper.usesNetCDFData( this.getProject().getProjectConfig() ) ||
+             ConfigHelper.usesS3Data( this.getProject().getProjectConfig() ))
         {
             script = this.getNetcdfWindowScript();
         }
@@ -72,7 +72,7 @@ public class ByForecastSampleDataIterator extends SampleDataIterator
         try ( DataProvider provider = script.getData())
         {
             OrderedSampleMetadata.Builder sampleMetadataBuilder = new OrderedSampleMetadata.Builder();
-            sampleMetadataBuilder.setProject( this.getProjectDetails() ).setFeature( this.getFeature() );
+            sampleMetadataBuilder.setProject( this.getProject() ).setFeature( this.getFeature() );
 
             while (provider.next())
             {
@@ -112,15 +112,15 @@ public class ByForecastSampleDataIterator extends SampleDataIterator
         script.addTab().addLine("ON TSS.timeseries_id = TS.timeseries_id");
         script.addLine("INNER JOIN wres.ProjectSource PS");
         script.addTab().addLine("ON TSS.source_id = PS.source_id");
-        script.addLine("WHERE PS.project_id = ", this.getProjectDetails().getId());
-        script.addTab().addLine("AND PS.member = ", ProjectDetails.RIGHT_MEMBER);
+        script.addLine("WHERE PS.project_id = ", this.getProject().getId());
+        script.addTab().addLine( "AND PS.member = ", Project.RIGHT_MEMBER);
 
         try
         {
             script.addTab().addLine(
                     "AND TS.variablefeature_id = ", Features.getVariableFeatureID(
                             this.getFeature(),
-                            this.getProjectDetails().getRightVariableID()
+                            this.getProject().getRightVariableID()
                     )
             );
         }
@@ -133,10 +133,17 @@ public class ByForecastSampleDataIterator extends SampleDataIterator
 
         script.addTab().addLine("AND TSS.lead >= ", this.getLeastLead());
 
-        if (this.getProjectDetails().getMaximumLead() != Integer.MAX_VALUE)
+        if ( this.getProject().getMaximumLead() != Integer.MAX_VALUE)
         {
-            script.addTab().addLine("AND TSS.lead <= ", this.getProjectDetails().getMaximumLead());
+            script.addTab().addLine("AND TSS.lead <= ", this.getProject().getMaximumLead());
         }
+
+        script.add(
+                ConfigHelper.getSeasonQualifier( this.getProject(),
+                                                 "TS.initialization_date",
+                                                 this.getProject().getRightTimeShift()
+                )
+        );
 
         script.addLine("GROUP BY TS.timeseries_id, TS.initialization_date");
         script.addLine("ORDER BY TS.initialization_date, TS.ensemble_id;");
@@ -159,15 +166,15 @@ public class ByForecastSampleDataIterator extends SampleDataIterator
         script.addTab().addLine("ON PS.source_id = TSS.source_id");
         script.addLine("INNER JOIN wres.TimeSeriesValue TSV");
         script.addTab().addLine("ON TSV.timeseries_id = TS.timeseries_id");
-        script.addLine("WHERE PS.project_id = ", this.getProjectDetails().getId());
-        script.addTab().addLine("AND PS.member = ", ProjectDetails.RIGHT_MEMBER);
+        script.addLine("WHERE PS.project_id = ", this.getProject().getId());
+        script.addTab().addLine( "AND PS.member = ", Project.RIGHT_MEMBER);
 
         try
         {
             script.addTab().addLine(
                     "AND TS.variablefeature_id = ", Features.getVariableFeatureID(
                             this.getFeature(),
-                            this.getProjectDetails().getRightVariableID()
+                            this.getProject().getRightVariableID()
                     )
             );
         }
@@ -180,10 +187,17 @@ public class ByForecastSampleDataIterator extends SampleDataIterator
 
         script.addTab().addLine("AND TSV.lead >= ", this.getLeastLead());
 
-        if (this.getProjectDetails().getMaximumLead() != Integer.MAX_VALUE)
+        if ( this.getProject().getMaximumLead() != Integer.MAX_VALUE)
         {
-            script.addTab().addLine("AND TSV.lead <= ", this.getProjectDetails().getMaximumLead());
+            script.addTab().addLine("AND TSV.lead <= ", this.getProject().getMaximumLead());
         }
+
+        script.add(
+                ConfigHelper.getSeasonQualifier( this.getProject(),
+                                                 "TS.initialization_date",
+                                                 this.getProject().getRightTimeShift()
+                )
+        );
 
         script.addLine("GROUP BY TS.timeseries_id, TS.initialization_date");
         script.addLine("ORDER BY TS.initialization_date, TS.ensemble_id;");
@@ -194,7 +208,7 @@ public class ByForecastSampleDataIterator extends SampleDataIterator
 
     private int getLeastLead()
     {
-        int least = this.getProjectDetails().getMinimumLead();
+        int least = this.getProject().getMinimumLead();
 
         if (least == Integer.MIN_VALUE)
         {

@@ -19,11 +19,10 @@ import wres.grid.client.Request;
 import wres.grid.client.Response;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.UnitConversions;
-import wres.io.data.details.ProjectDetails;
+import wres.io.project.Project;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.NoDataException;
-import wres.io.utilities.ScriptBuilder;
 import wres.util.Collections;
 import wres.util.TimeHelper;
 
@@ -34,9 +33,9 @@ class GridCache implements LeftHandCache
     /**
      * @throws NoDataException when ?
      */
-    GridCache(final ProjectDetails projectDetails) throws SQLException
+    GridCache(final Project project ) throws SQLException
     {
-        this.projectDetails = projectDetails;
+        this.project = project;
         this.cachedSources = new TreeMap<>(  );
         this.loadSourceCache();
     }
@@ -54,8 +53,8 @@ class GridCache implements LeftHandCache
         try
         {
             gridRequest = ConfigHelper.getGridDataRequest(
-                    this.projectDetails,
-                    this.projectDetails.getLeft(),
+                    this.project,
+                    this.project.getLeft(),
                     feature
             );
         }
@@ -117,7 +116,7 @@ class GridCache implements LeftHandCache
                             UnitConversions.convert(
                                     value,
                                     entry.getMeasurementUnit(),
-                                    this.projectDetails.getDesiredMeasurementUnit()
+                                    this.project.getDesiredMeasurementUnit()
                             )
                     );
                 }
@@ -128,7 +127,7 @@ class GridCache implements LeftHandCache
                                            "' because a valid conversion from '" +
                                            entry.getMeasurementUnit() +
                                            "' to '" +
-                                           this.projectDetails.getDesiredMeasurementUnit() +
+                                           this.project.getDesiredMeasurementUnit() +
                                            "' could not be determined.",
                                            e);
                 }
@@ -149,21 +148,21 @@ class GridCache implements LeftHandCache
         script.addLine("FROM wres.Source S");
         script.addLine("WHERE S.is_point_data = FALSE");
 
-        if (projectDetails.getEarliestDate() != null)
+        if ( project.getEarliestDate() != null)
         {
-            script.addTab().addLine("AND S.output_time >= '", projectDetails.getEarliestDate(), "'");
+            script.addTab().addLine( "AND S.output_time >= '", project.getEarliestDate(), "'");
         }
 
-        if (projectDetails.getLatestDate() != null)
+        if ( project.getLatestDate() != null)
         {
-            script.addTab().addLine("AND S.output_time <= '", projectDetails.getLatestDate(), "'");
+            script.addTab().addLine( "AND S.output_time <= '", project.getLatestDate(), "'");
         }
 
         script.addTab().addLine("AND EXISTS (");
         script.addTab(  2  ).addLine("SELECT 1");
         script.addTab(  2  ).addLine("FROM wres.ProjectSource PS");
-        script.addTab(  2  ).addLine("WHERE PS.project_id = ", projectDetails.getId());
-        script.addTab(   3   ).addLine("AND PS.member = ", ProjectDetails.LEFT_MEMBER);
+        script.addTab(  2  ).addLine( "WHERE PS.project_id = ", project.getId());
+        script.addTab(   3   ).addLine( "AND PS.member = ", Project.LEFT_MEMBER);
         script.addTab(   3   ).addLine("AND PS.source_id = S.source_id");
         script.addTab().addLine(");");
 
@@ -183,5 +182,5 @@ class GridCache implements LeftHandCache
     }
 
     private final NavigableMap<LocalDateTime, String> cachedSources;
-    private final ProjectDetails projectDetails;
+    private final Project project;
 }

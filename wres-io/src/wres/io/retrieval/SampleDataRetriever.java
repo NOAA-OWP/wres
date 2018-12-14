@@ -70,11 +70,11 @@ class SampleDataRetriever extends Retriever
     {
         if ( this.getProjectDetails().usesGriddedData( this.getProjectDetails().getRight() ))
         {
-            this.setPrimaryPairs( this.createGriddedPairs( this.getProjectDetails().getRight() ));
+            this.createGriddedPairs( this.getProjectDetails().getRight() );
         }
         else
         {
-            this.setPrimaryPairs( this.createPairs(this.getProjectDetails().getRight()));
+            this.createPairs(this.getProjectDetails().getRight());
         }
 
         if (this.getProjectDetails().hasBaseline())
@@ -82,23 +82,19 @@ class SampleDataRetriever extends Retriever
             if ( ConfigHelper.isPersistence( this.getProjectDetails().getProjectConfig(),
                                              this.getProjectDetails().getBaseline() ) )
             {
-                this.setBaselinePairs(
-                        this.createPersistencePairs( this.getProjectDetails().getBaseline(),
+                this.createPersistencePairs( this.getProjectDetails().getBaseline(),
                                                      this.getPrimaryPairs(),
-                                                     this.getSharedWriterManager() )
-                );
+                                                     this.getSharedWriterManager() );
             }
             else
             {
                 if (this.getProjectDetails().usesGriddedData( this.getProjectDetails().getBaseline() ))
                 {
-                    this.setBaselinePairs( this.createGriddedPairs( this.getProjectDetails().getBaseline() ) );
+                    this.createGriddedPairs( this.getProjectDetails().getBaseline() );
                 }
                 else
                 {
-                    this.setBaselinePairs(
-                            this.createPairs( this.getProjectDetails().getBaseline() )
-                    );
+                    this.createPairs( this.getProjectDetails().getBaseline() );
                 }
             }
         }
@@ -111,9 +107,14 @@ class SampleDataRetriever extends Retriever
         }
         catch ( IOException e )
         {
-            String message = "While calculating pairs for" + this.getSampleMetadata();
+            String message = "While calculating pairs for " + this.getSampleMetadata();
 
             throw new RetrievalFailedException( message, e );
+        }
+
+        if (LOGGER.isTraceEnabled())
+        {
+            LOGGER.trace( "Finished gathering data for {}", this.getSampleMetadata() );
         }
 
         return input;
@@ -300,8 +301,7 @@ class SampleDataRetriever extends Retriever
      * @param multiValuedPairs A set of packaged pairs
      * @return A list of all raw pairs converted into single valued pairs
      */
-    private static List<SingleValuedPair>
-    convertToPairOfDoubles( List<ForecastedPair> multiValuedPairs )
+    private static List<SingleValuedPair> convertToPairOfDoubles( List<ForecastedPair> multiValuedPairs )
     {
         List<SingleValuedPair> pairs = new ArrayList<>(  );
 
@@ -309,9 +309,12 @@ class SampleDataRetriever extends Retriever
         {
             for ( double pairedValue : pair.getValues().getRight() )
             {
-                pairs.add( SingleValuedPair.of( pair.getValues()
-                                                   .getLeft(),
-                                               pairedValue ) );
+                pairs.add(
+                        SingleValuedPair.of(
+                                pair.getValues().getLeft(),
+                                pairedValue
+                        )
+                );
             }
         }
 
@@ -356,9 +359,8 @@ class SampleDataRetriever extends Retriever
         return loadScript;
     }
 
-    private List<ForecastedPair> createGriddedPairs( DataSourceConfig dataSourceConfig )
+    private void createGriddedPairs( DataSourceConfig dataSourceConfig )
     {
-        List<ForecastedPair> pairs = new ArrayList<>(  );
         Response response = this.getGriddedData( dataSourceConfig );
 
         for (List<Response.Series> listOfSeries : response)
@@ -366,16 +368,13 @@ class SampleDataRetriever extends Retriever
             // Until we support many locations per retrieval, we don't need special handling for features
             for ( Response.Series series : listOfSeries)
             {
-                pairs.addAll( this.getSeriesPairs(series, dataSourceConfig) );
+                this.addSeriesPairs( series, dataSourceConfig);
             }
         }
-
-        return pairs;
     }
 
-    private List<ForecastedPair> getSeriesPairs(final Response.Series series, final DataSourceConfig dataSourceConfig)
+    private void addSeriesPairs( final Response.Series series, final DataSourceConfig dataSourceConfig)
     {
-
         int minimumLead = TimeHelper.durationToLead(this.getSampleMetadata().getMinimumLead());
 
         int period = this.getCommonScale().getPeriod();
@@ -390,8 +389,6 @@ class SampleDataRetriever extends Retriever
                 this.getCommonScale().getUnit().value(),
                 frequency
         );
-
-        List<ForecastedPair> pairs = new ArrayList<>(  );
 
         IngestedValueCollection ingestedValues = this.loadGriddedValues( series );
 
@@ -420,7 +417,7 @@ class SampleDataRetriever extends Retriever
 
         while (condensedValue != null)
         {
-            this.addPair( pairs, condensedValue, dataSourceConfig );
+            this.addPair( condensedValue, dataSourceConfig );
             aggregationStep++;
             try
             {
@@ -437,8 +434,6 @@ class SampleDataRetriever extends Retriever
                 throw new RetrievalFailedException( "There was no data available to group." );
             }
         }
-
-        return pairs;
     }
 
     private Response getGriddedData(final DataSourceConfig dataSourceConfig)
@@ -526,11 +521,9 @@ class SampleDataRetriever extends Retriever
     /**
      * Loads pairs from the database and directs them to packaged
      * @param dataSourceConfig The configuration whose pairs to retrieve
-     * @return A packaged set of pair data
      */
-    private List<ForecastedPair> createPairs( DataSourceConfig dataSourceConfig )
+    private void createPairs( DataSourceConfig dataSourceConfig )
     {
-        List<ForecastedPair> pairs = new ArrayList<>();
         String loadScript;
 
         try
@@ -630,7 +623,7 @@ class SampleDataRetriever extends Retriever
 
                         while ( condensedValue != null )
                         {
-                            this.addPair( pairs, condensedValue, dataSourceConfig );
+                            this.addPair(condensedValue, dataSourceConfig );
                             aggregationStep++;
                             condensedValue = ingestedValues.pivot(
                                     aggregationStep,
@@ -667,7 +660,7 @@ class SampleDataRetriever extends Retriever
 
                     while ( condensedValue != null )
                     {
-                        this.addPair( pairs, condensedValue, dataSourceConfig );
+                        this.addPair( condensedValue, dataSourceConfig );
                         aggregationStep++;
                         condensedValue = ingestedValues.pivot(
                                 aggregationStep,
@@ -694,8 +687,6 @@ class SampleDataRetriever extends Retriever
                 Database.returnConnection(connection);
             }
         }
-
-        return Collections.unmodifiableList( pairs );
     }
 
     // TODO: Should persistence pair retrieval end up as its own object?
@@ -703,17 +694,13 @@ class SampleDataRetriever extends Retriever
      * Packages pairs based on persistence forecasting logic
      * @param dataSourceConfig The specification for the baseline
      * @param primaryPairs The set of primary pairs that have already been packaged
-     * @return A packaged set of pairs following persistence forecast generation logic
-     * @throws SQLException
-     * @throws IOException
+     * @throws RetrievalFailedException
      */
-    private List<ForecastedPair> createPersistencePairs( DataSourceConfig dataSourceConfig,
+    private void createPersistencePairs( DataSourceConfig dataSourceConfig,
                                                          List<ForecastedPair> primaryPairs,
                                                          SharedWriterManager sharedWriterManager )
             throws RetrievalFailedException
     {
-        List<ForecastedPair> pairs = new ArrayList<>( primaryPairs.size() );
-
         String loadScript;
 
         try
@@ -887,11 +874,10 @@ class SampleDataRetriever extends Retriever
                             super.getOutputDirectoryForPairs(),
                             persistencePair,
                             dataSourceConfig );
-            pairs.add( persistencePair );
+            this.addBaselinePair( persistencePair );
         }
 
-        LOGGER.trace( "Returning persistence pairs: {}", pairs );
-        return Collections.unmodifiableList( pairs );
+        LOGGER.trace( "Returning persistence pairs: {}", this.getBaselinePairs() );
     }
 
 
@@ -927,7 +913,8 @@ class SampleDataRetriever extends Retriever
 
                 return new ForecastedPair( primaryPair.getBasisTime(),
                                            primaryPair.getValidTime(),
-                                           pair );
+                                           pair,
+                                           null);
             }
         }
 
@@ -1015,7 +1002,8 @@ class SampleDataRetriever extends Retriever
 
         return new ForecastedPair( primaryPair.getBasisTime(),
                                    primaryPair.getValidTime(),
-                                   pair );
+                                   pair,
+                                   null);
     }
 
     /**

@@ -1,15 +1,13 @@
 package wres.io.data.caching;
 
-import java.sql.Connection;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.function.BiPredicate;
 
+import com.google.common.collect.TreeMultiset;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,8 +16,6 @@ import wres.io.data.details.EnsembleDetails;
 import wres.io.data.details.EnsembleDetails.EnsembleKey;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
-import wres.io.utilities.Database;
-import wres.io.utilities.ScriptBuilder;
 import wres.util.NetCDF;
 import wres.util.Strings;
 
@@ -54,6 +50,21 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
      */
 	private static Ensembles instance = new Ensembles();
 
+    public static Collection<EnsembleDetails> getEnsembleDetails(final Collection<Integer> ensembleIDs)
+    {
+        TreeMultiset<EnsembleDetails> ensembleDetails = TreeMultiset.create();
+
+        for (Integer id : ensembleIDs)
+        {
+            if (Ensembles.getCache().getDetails().containsKey( id ))
+            {
+                ensembleDetails.add(Ensembles.getCache().get( id ));
+            }
+        }
+
+        return ensembleDetails;
+    }
+
 	private void populate(DataProvider data)
     {
         EnsembleDetails detail;
@@ -64,8 +75,7 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
             detail.setEnsembleMemberID(String.valueOf(data.getInt("ensemblemember_id")));
             detail.setQualifierID(data.getString("qualifier_id"));
             detail.setID(data.getInt("ensemble_id"));
-
-            this.add(detail.getKey(), detail.getId());
+            this.add( detail );
         }
     }
 
@@ -220,6 +230,8 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
 	{
         try
         {
+            instance.initializeDetails();
+
             DataScripter script = new DataScripter(  );
             script.addLine("SELECT ensemble_id, ensemble_name, qualifier_id, ensemblemember_id");
             script.addLine("FROM wres.Ensemble");

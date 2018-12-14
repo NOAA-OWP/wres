@@ -41,6 +41,7 @@ class PoolingForecastScripter extends Scripter
         this.addLine("))::bigint AS value_date,");
         this.addTab().addLine("TSV.lead,");
         this.addTab().addLine("ARRAY_AGG(TSV.series_value ORDER BY TS.ensemble_id) AS measurements,");
+        this.addTab().addLine("ARRAY_AGG(TS.ensemble_id ORDER BY TS.ensemble_id) AS members,");
         this.addTab().addLine("TS.measurementunit_id");
         this.addLine("FROM wres.TimeSeries TS");
         this.addLine("INNER JOIN wres.TimeSeriesValue TSV");
@@ -117,6 +118,8 @@ class PoolingForecastScripter extends Scripter
                                    this.getProjectDetails().getLatestDate(),
                                    "'" );
         }
+
+        this.applySeasonConstraint();
 
         this.addTab().addLine( "AND EXISTS (" );
         this.addTab( 2 ).addLine( "SELECT 1" );

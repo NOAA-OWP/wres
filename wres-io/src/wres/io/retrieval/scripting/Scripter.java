@@ -5,7 +5,6 @@ import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.time.temporal.TemporalUnit;
 import java.util.List;
 import java.util.Objects;
 import java.util.StringJoiner;
@@ -14,11 +13,10 @@ import wres.config.ProjectConfigException;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.EnsembleCondition;
 import wres.config.generated.Feature;
-import wres.datamodel.metadata.TimeWindow;
 import wres.io.config.ConfigHelper;
 import wres.io.config.OrderedSampleMetadata;
 import wres.io.data.caching.Ensembles;
-import wres.io.data.details.ProjectDetails;
+import wres.io.project.Project;
 import wres.io.utilities.ScriptBuilder;
 
 public abstract class Scripter extends ScriptBuilder
@@ -37,7 +35,7 @@ public abstract class Scripter extends ScriptBuilder
 
         boolean isForecast = ConfigHelper.isForecast( dataSourceConfig );
 
-        switch ( sampleMetadata.getProjectDetails().getPairingMode() )
+        switch ( sampleMetadata.getProject().getPairingMode() )
         {
             case BY_TIMESERIES:
                 loadScripter = new SingleTimeSeriesScripter( sampleMetadata, dataSourceConfig );
@@ -69,7 +67,7 @@ public abstract class Scripter extends ScriptBuilder
                 else
                 {
                     throw new ProjectConfigException(
-                            sampleMetadata.getProjectDetails().getProjectConfig(),
+                            sampleMetadata.getProject().getProjectConfig(),
                             "Only forecasts may perform evaluations based on "
                             + "issue times. This configuration is attempting to "
                             + "use observations or simulations instead." );
@@ -86,7 +84,7 @@ public abstract class Scripter extends ScriptBuilder
                 else
                 {
                     throw new ProjectConfigException(
-                            sampleMetadata.getProjectDetails().getProjectConfig(),
+                            sampleMetadata.getProject().getProjectConfig(),
                             "Only forecasts may perform time series evaluations."
                             + " This configuration is attempting to use "
                             + "observations or simulations instead." );
@@ -109,7 +107,7 @@ public abstract class Scripter extends ScriptBuilder
         Objects.requireNonNull( dataSourceConfig );
         Objects.requireNonNull( basisTimes );
 
-        if ( !ConfigHelper.isPersistence( sampleMetadata.getProjectDetails().getProjectConfig(),
+        if ( !ConfigHelper.isPersistence( sampleMetadata.getProject().getProjectConfig(),
                                           dataSourceConfig ) )
         {
             throw new IllegalArgumentException( "Must pass a persistence dataSourceConfig" );
@@ -127,9 +125,9 @@ public abstract class Scripter extends ScriptBuilder
 
     abstract String getValueDate();
 
-    ProjectDetails getProjectDetails()
+    Project getProjectDetails()
     {
-        return this.sampleMetadata.getProjectDetails();
+        return this.sampleMetadata.getProject();
     }
 
     DataSourceConfig getDataSourceConfig()
@@ -185,11 +183,11 @@ public abstract class Scripter extends ScriptBuilder
     {
         if (this.variableID == null)
         {
-            if (this.getMember().equalsIgnoreCase( ProjectDetails.LEFT_MEMBER))
+            if (this.getMember().equalsIgnoreCase( Project.LEFT_MEMBER))
             {
                 this.variableID = this.getProjectDetails().getLeftVariableID();
             }
-            else if (this.getMember().equalsIgnoreCase( ProjectDetails.RIGHT_MEMBER ))
+            else if (this.getMember().equalsIgnoreCase( Project.RIGHT_MEMBER ))
             {
                 this.variableID = this.getProjectDetails().getRightVariableID();
             }
@@ -254,9 +252,9 @@ public abstract class Scripter extends ScriptBuilder
 
     void applySeasonConstraint()
     {
-        this.add(ConfigHelper.getSeasonQualifier( this.getProjectDetails(),
-                                                  this.getBaseDateName(),
-                                                  this.getTimeShift() ));
+        this.add( ConfigHelper.getSeasonQualifier( this.getProjectDetails(),
+                                                   this.getBaseDateName(),
+                                                   this.getTimeShift() ) );
     }
 
     void applyVariableFeatureClause() throws SQLException

@@ -43,6 +43,8 @@ import wres.io.reading.waterml.timeseries.TimeSeries;
 import wres.io.reading.waterml.timeseries.TimeSeriesValue;
 import wres.io.reading.waterml.timeseries.TimeSeriesValues;
 import wres.io.reading.waterml.variable.Variable;
+import wres.io.utilities.OutOfAttemptsException;
+import wres.io.utilities.WebRetryStrategy;
 import wres.util.functional.ExceptionalConsumer;
 import wres.io.utilities.NoDataException;
 import wres.util.FormattedStopwatch;
@@ -59,6 +61,9 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
     private static final String INSTANTANEOUS_VALUE = "iv";
     private static final String DAILY_VALUE = "dv";
     private static final double EPSILON = 0.0000001;
+
+    private static final int RETRY_COUNT = 5;
+    private static final Duration RETRY_WAIT = Duration.of(5, ChronoUnit.SECONDS);
 
     private static final String EARLIEST_DATE = "2008-01-01T00:00:00Z";
 
@@ -101,65 +106,6 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
         private final String hash;
     }
 
-    private static class WebResponseRetryStrategy
-    {
-        private static final int RETRIES = 10;
-        private static final long WAIT_MILLIS = 1000;
-
-        private int numberOfRetries;
-        private long waitTime;
-        private boolean hasAsked;
-
-        boolean shouldTry()
-        {
-            // If we've never tried, yes, we want to try
-            if (!hasAsked)
-            {
-                this.hasAsked = true;
-                return true;
-            }
-            else if ( numberOfRetries == 0)
-            {
-                // If we've asked if we should try and didn't have to retry,
-                // we're good we don't need to try again.
-                return false;
-            }
-
-            return RETRIES - this.numberOfRetries > 0;
-        }
-
-        void errorOccured(WebApplicationException exception) throws IOException
-        {
-            this.numberOfRetries++;
-
-            if (400 >= exception.getResponse().getStatus() && exception.getResponse().getStatus() < 500)
-            {
-                throw exception;
-            }
-            if (!this.shouldTry())
-            {
-                throw new IOException("", exception);
-            }
-
-            this.waitUntilNextTry();
-        }
-
-        private void waitUntilNextTry()
-        {
-            try
-            {
-                this.waitTime += WAIT_MILLIS;
-                Thread.sleep( this.waitTime );
-            }
-            catch ( InterruptedException interruption )
-            {
-                LOGGER.warn( "Interrupted while pausing before retry.",
-                             interruption );
-                Thread.currentThread().interrupt();
-            }
-        }
-    }
-
     USGSRegionSaver( final Collection<FeatureDetails> region,
                             final ProjectConfig projectConfig,
                             final DataSourceConfig dataSourceConfig)
@@ -191,14 +137,6 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
         }
 
         LOGGER.debug("NWIS Data was loaded from {}", this.requestURL);
-
-        // Throw an error if absolutely nothing came back from USGS (this
-        // is unlikely to ever happen, considering that an error should
-        // have been hit in "load(..)")
-        if (response == null )
-        {
-            throw new IOException( "No USGS data could be loaded with the given configuration." );
-        }
 
         if (response.wasAlreadyRequested())
         {
@@ -263,37 +201,17 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
     
     private WebResponse load() throws IngestException
     {
-        this.requestURL = USGS_URL;
         Client client = null;
-        WebTarget webTarget;
-        
-        
-        Response usgsResponse;
-        WebResponse response = null;
 
         try
         {
             client = ClientBuilder.newClient();
-            webTarget = this.buildWebTarget( client );
+            WebTarget webTarget = this.buildWebTarget( client );
 
-            requestURL = webTarget.getUri().toURL().toString();
-
+            this.requestURL = webTarget.getUri().toURL().toString();
             LOGGER.debug("Requesting data from: {}", requestURL);
 
-            Invocation.Builder invocationBuilder =
-                    webTarget.request( MediaType.APPLICATION_JSON );
-
-            FormattedStopwatch stopwatch = null;
-
-            if (LOGGER.isDebugEnabled())
-            {
-                stopwatch = new FormattedStopwatch();
-                stopwatch.start();
-            }
-
-            // TODO: Separate into another function for easier mocking
-            usgsResponse = invocationBuilder.get( Response.class );
-
+            Response usgsResponse = this.getResponse( webTarget );
             String responseHash = Strings.getMD5Checksum( usgsResponse );
 
             SourceDetails.SourceKey sourceKey =
@@ -301,7 +219,6 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
                                                  operationStartTime,
                                                  null,
                                                  responseHash );
-            SourceDetails usgsDetails = new SourceDetails( sourceKey );
 
             try
             {
@@ -315,46 +232,26 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
                                                             responseHash );
                 }
 
+                SourceDetails usgsDetails = new SourceDetails( sourceKey );
+
                 usgsDetails.save();
 
                 if (!usgsDetails.performedInsert())
                 {
                     LOGGER.debug( "The data for '{}' had been previously ingested.", requestURL );
-                    return new USGSRegionSaver.WebResponse( null,
-                                                            true,
-                                                            usgsDetails.getId(),
-                                                            responseHash );
                 }
+
+                return new USGSRegionSaver.WebResponse(
+                        usgsResponse,
+                        !usgsDetails.performedInsert(),
+                        usgsDetails.getId(),
+                        responseHash
+                );
             }
             catch ( SQLException e )
             {
                 throw new IOException( "Source information about the requested "
                                        + "USGS data could not be found.", e );
-            }
-
-            if (LOGGER.isDebugEnabled() && stopwatch != null)
-            {
-                stopwatch.stop();
-
-                LOGGER.debug( "It took {} to download the USGS data.",
-                              stopwatch.getFormattedDuration() );
-            }
-
-            WebResponseRetryStrategy retryStrategy = new WebResponseRetryStrategy();
-
-            while (retryStrategy.shouldTry())
-            {
-                try
-                {
-                    response = new USGSRegionSaver.WebResponse( usgsResponse,
-                                                                false,
-                                                                usgsDetails.getId(),
-                                                                responseHash );
-                }
-                catch (WebApplicationException exception)
-                {
-                    retryStrategy.errorOccured( exception );
-                }
             }
         }
         catch ( IOException e)
@@ -372,8 +269,6 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
                 client.close();
             }
         }
-        
-        return response;
     }
 
     private WebTarget buildWebTarget(final Client client) throws IngestException
@@ -444,6 +339,33 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
         return webTarget;
     }
 
+    private Response getResponse(final WebTarget webTarget) throws OutOfAttemptsException
+    {
+        WebRetryStrategy strategy = new WebRetryStrategy( RETRY_COUNT, RETRY_WAIT );
+
+        Invocation.Builder invocationBuilder =
+                webTarget.request( MediaType.APPLICATION_JSON );
+
+        FormattedStopwatch stopwatch = null;
+
+        if (LOGGER.isDebugEnabled())
+        {
+            stopwatch = new FormattedStopwatch();
+            stopwatch.start();
+        }
+
+        Response usgsResponse =  strategy.execute( invocationBuilder::get, Response.class );
+
+        if (LOGGER.isDebugEnabled() && stopwatch != null)
+        {
+            stopwatch.stop();
+
+            LOGGER.debug( "It took {} to download the USGS data.",
+                          stopwatch.getFormattedDuration() );
+        }
+
+        return usgsResponse;
+    }
 
     /**
      * @throws NoDataException when gage ids cannot be found
