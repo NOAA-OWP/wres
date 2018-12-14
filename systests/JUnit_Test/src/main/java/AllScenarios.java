@@ -19,7 +19,7 @@ import java.nio.file.*;
  * Usage: ./gradlew run --args='scenario###'
  * Where ### is the scenario series number
  *
- * @author Raymond.Chui@***REMOVED***
+ * @author <a href="mailto:Raymond.Chui@***REMOVED***">
  * @version 1.5
  * Created: November, 2018
  */
@@ -174,7 +174,7 @@ public class AllScenarios {
      }
      
      public void executeConfigFile(String[] files) { 
-        Path tmppath = null;
+        // Path tmppath = null;
         // search for project_config.xml file and execute it
         for (int i = 0; i < files.length; i++) {
 
@@ -188,6 +188,7 @@ public class AllScenarios {
                     Control control = new Control();
                     
                     //System.setProperty( "java.io.tmpdir", System.getProperty( "user.dir"));
+                    // System.setProperty( "java.io.tmpdir", "/tmp");
                     //System.out.println( "java.io.tmpdir before apply = " + System.getProperty( "java.io.tmpdir" ) );
                     // Above java.io.tmpdir setProperty may or may not work in Eclipse! 
                     
@@ -209,13 +210,13 @@ public class AllScenarios {
                                         + path.getParent().toString());
                             File tmpdir = path.getParent().toFile();
                             
-                            /*Path tmppath = Paths.get( System.getProperty( "user.dir" ) + 
-                                                      "/" + 
-                                    path.getParent().getFileName().toString() ); */
-                            tmppath = Paths.get( System.getProperty( "user.dir" ) + 
+                            Path tmppath = Paths.get( System.getProperty( "user.dir" ) + 
                                                       "/" + 
                                     path.getParent().getFileName().toString() );
-                            //System.out.println( "destination tmp path = " + tmppath.toString());
+                            /* tmppath = Paths.get( System.getProperty( "user.dir" ) + 
+                                                      "/" + 
+                                    path.getParent().getFileName().toString() ); */
+                            System.out.println( "destination tmp path = " + tmppath.toString());
                             if (tmpdir.isDirectory()) {
                                 try {
                                     Files.createDirectory( tmppath);
@@ -242,10 +243,11 @@ public class AllScenarios {
                                 } 
                             } // end if
                             // do file comparison vs. (versus) benchmarks
-                            // We can do the file comparison here or do later
-                            fileComparison(tmppath);
+                            //System.out.println( "check the tmp path = " + tmppath.toString());
+                            int ResultCode = fileComparison(tmppath);
+							System.out.println("Files comparison result code: " + ResultCode);
                         } // end if iterator has.next()
-			control = null;
+						// control = null;
                     } // end if hashSet.isEmpty
                 } catch (NullPointerException npe) {
                     System.err.println( "java.io.tmpdir: NullPointerException: " + npe.getMessage() );
@@ -254,7 +256,7 @@ public class AllScenarios {
                 }                
             } // end if for search project_config.xml
         } // end for loop
-	System.out.println("Done with runtest");
+		System.out.println("Done with runtest");
     } // end runTest method
     
 /**
@@ -286,8 +288,11 @@ public class AllScenarios {
     /**
      * Compare the evaluation *.csv files with benchmarks
      * @param evaluationPath -- evaluation directory path
+     * @return 0 no errors; 2 output not found; 4 sort failed; 8 found diff in txt files; 16 found diff in sorted_pairs; 32 found diff in csv files
      */
-    public void fileComparison(Path evaluationPath) {
+    public int fileComparison(Path evaluationPath) {
+		
+		int ResultCode = 0;
         File evaluationDir = evaluationPath.toFile();
         String [] evaluationFileNames = evaluationDir.list();
         
@@ -299,12 +304,18 @@ public class AllScenarios {
         File benchmarksDir = benchmarksPath.toFile();
         
         if (benchmarksDir.exists() && benchmarksDir.isDirectory()) {
-            System.out.println( "Benchmarks Directory = " + benchmarksDir.toString() );
+            //System.out.println( "Benchmarks Directory = " + benchmarksDir.toString() );
             benchmarksFileNames = benchmarksDir.list();
-        }
-                
+        } else {
+			System.err.println(benchmarksPath.toString() + " not found or isn't a directory");
+			ResultCode = 2;
+			return ResultCode;
+		}
+        //System.out.println("Number of benchmarks files = " + benchmarksFileNames.length);        
+		// Save the *.csv and *.txt files from benchmarks directory into a table
         for (int i = 0; i < benchmarksFileNames.length; i++) {
-            if (benchmarksFileNames[i].endsWith( ".csv" )) {
+            if (benchmarksFileNames[i].endsWith( ".csv" ) || 
+					benchmarksFileNames[i].endsWith( ".txt" )) {
                 benchmarksTable.put( benchmarksFileNames[i], 
                                      Paths.get(benchmarksPath.toString() + 
                                                "/" + benchmarksFileNames[i]));
@@ -312,8 +323,10 @@ public class AllScenarios {
         }
         if (benchmarksTable.isEmpty() == false) {
             for (int i = 0; i < evaluationFileNames.length; i++) {
-                if (evaluationFileNames[i].endsWith( ".csv" )) {
+                if (evaluationFileNames[i].endsWith( ".csv" ) ||
+						evaluationFileNames[i].endsWith( ".txt" )) {
                     if (evaluationFileNames[i].startsWith( "pairs" )) {
+						// System.out.println("Ready to sort " + evaluationPath.toString() + "/" + evaluationFileNames[i]);
                         sortPairs(Paths.get(evaluationPath.toString() + "/" 
                                             + evaluationFileNames[i]).toFile());
                         // After sorted, its new name will be sorted_pairs.csv
@@ -324,10 +337,9 @@ public class AllScenarios {
                         
                         File evaluationFile = Paths.get( evaluationPath.toString() + 
                                                   "/" + evaluationFileNames[i]).toFile();
-                        if (compareTheFiles(evaluationFile, benchmarksFile) == false) {
+                        if ((ResultCode = compareTheFiles(evaluationFile, benchmarksFile)) != 0) {
                             System.err.println( "there are differences between " + 
                                     evaluationFile.toString()
-                                    //+ "/" + evaluationFile.getName()
                                     + " and " +
                                     benchmarksFile.toString());
                         } else {
@@ -339,25 +351,28 @@ public class AllScenarios {
                     } else {
                         System.err.println( "Benchmarks file " + evaluationFileNames[i] 
                                 + " not found." );
+						ResultCode = 2;
                     } // end else
                 } // end outer if
             } // end for loop
         } // end if benchmarks is empty
         else {
             System.err.println("No benchmarks file matched");
+			ResultCode = 2;
         }
-	System.out.println("Done with fileComparison");
+		System.out.println("Done with fileComparison");
+		return ResultCode;
     } // end file comparison method
     
     /**
      * Comparing two files 
      * @param evaluationFile -- file
      * @param benchmarksFile -- and benchmarks file
-     * @return true if no differences. Otherwise return false
+     * @return 0 no errors; 2 output not found; 4 sort failed; 8 found diff in txt files; 16 found diff in sorted_pairs; 32 found diff in csv files
      */
-    public boolean compareTheFiles(File evaluationFile, File benchmarksFile) {
+    public int compareTheFiles(File evaluationFile, File benchmarksFile) {
         
-        boolean returnValue;
+        int returnValue = 0;
                         
         if(evaluationFile.exists() && evaluationFile.isFile()) {
             if (benchmarksFile.exists() && benchmarksFile.isFile()) {
@@ -373,12 +388,19 @@ public class AllScenarios {
                     
                     String evaluationLine = "";
                     String benchmarksLine = "";
-                    returnValue = true;
+                    returnValue = 0;
                     while ((evaluationLine = evaluationReader.readLine()) != null) {
                         if ((benchmarksLine = benchmarksReader.readLine()) != null) {
                             //if (evaluationLine.compareTo( benchmarksLine ) != 0) {
                             if (evaluationLine.equals( benchmarksLine ) == false) {
-                                returnValue = false;                               
+								if (evaluationFile.getName().endsWith(".txt"))
+									returnValue = 4;
+								else if (evaluationFile.getName().endsWith("sorted_pairs.csv"))
+									returnValue = 16;
+								else if (evaluationFile.getName().endsWith(".csv"))
+									returnValue = 32;
+								else
+                                	returnValue = 2;                               
                                 /* System.out.println( "DEBUG lines: " + returnValue + "\n" 
                                                     + evaluationLine + "\n" + 
                                                     benchmarksLine); */
@@ -388,19 +410,19 @@ public class AllScenarios {
                     benchmarksReader.close();
                     evaluationReader.close();
                 } catch (FileNotFoundException fnfe) {
-                    returnValue = false;
+                    returnValue = 2;
                     System.err.println( fnfe.getMessage() );
                 } catch (IOException ioe) {
-                    returnValue = false;
+                    returnValue = 2;
                     System.err.println( ioe.getMessage() );
                 }
             } else {
                 System.err.println( "Benchmarks file not exists " + benchmarksFile.toPath().toString());
-                returnValue = false;
+                returnValue = 2;
             }
         } else {
             System.err.println( "Evaluation file not exists " + evaluationFile.toPath().toString());
-            returnValue = false;
+            returnValue = 2;
         }
         return returnValue;
     } // end of this method
@@ -506,7 +528,7 @@ public class AllScenarios {
      */
     public void sortPairs(File pairsFile) {
         
-        // System.out.println( pairsFile.getAbsolutePath() );
+        System.out.println("pairs file = " + pairsFile.getAbsolutePath() );
         try {
             BufferedReader pairsReader = new BufferedReader(new FileReader(pairsFile));
             String aLine = "";
@@ -516,108 +538,66 @@ public class AllScenarios {
                 //StringTokenizer stringTokenizer = new StringTokenizer(aLine, ",");
                 String[] delimiter = aLine.split( "," );
                 ArrayList<String> list = new ArrayList<String>();
-                for (int i = 4; i < delimiter.length; i++) {
+				
+                for (int i = 9; i < delimiter.length; i++) {
                     list.add(delimiter[i]);
                 }
+				
                 arrayList.add( new ThePairs(
-                                     delimiter[0],
-                                     delimiter[1],                                   
-                                      Integer.parseInt( delimiter[2] ),
-                                      Integer.parseInt( delimiter[3]),
-                                      Double.parseDouble( delimiter[4]),
-                                      list
+                                     delimiter[0], // siteID
+                                     delimiter[1], // earlestIssueTime
+                                     delimiter[2], // latestIssueTime
+                                     delimiter[3], // earlestValidTime
+                                     delimiter[4], // latestValieTime
+                                      Integer.parseInt( delimiter[5] ), // earlestLeadTimeInSeconds
+                                      Integer.parseInt( delimiter[6]), // latestLeadTimeInSeconds
+									  delimiter[7], // validTimePairs
+                                      Integer.parseInt( delimiter[8]), // leadDurationPairInSeconds
+                                      list // leftAndrightMemberInCMS
                                       ));
             }
             pairsReader.close();
+			//System.out.println("ready to sort " + arrayList.size());
             Collections.sort( arrayList, new  SortedPairs());
+			//System.out.println("sorted");
             
             // After sorted, let's write to the sorted_pairs.csv file
             String sortedPairs = pairsFile.getParent() + "/" + "sorted_pairs.csv";
             BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(sortedPairs));
 
             bufferedWriter.write( firstLine);
-	    bufferedWriter.newLine();
+			bufferedWriter.newLine();
             for (Iterator<ThePairs> iterator = arrayList.iterator(); iterator.hasNext();) {
                 ThePairs thePairs = iterator.next();
                 
+
                 bufferedWriter.write( 
-                        thePairs.getSiteID() + "," +
-                        thePairs.getValidTime() +  "," +                              
-                        thePairs.getLeadTimeInSeconds().intValue() + "," +
-                        thePairs.getTimeWindowIndex().intValue()
+                        thePairs.getSiteID() + "," + // 1
+                        thePairs.getEarlestIssueTime() +  "," + // 2 
+                        thePairs.getLatestIssueTime() +  "," +  // 3 
+                        thePairs.getEarlestValidTime() +  "," + // 4 
+                        thePairs.getLatestValieTime() +  "," +  // 5 
+                        thePairs.getEarlestLeadTimeInSeconds().intValue() + "," +
+                        thePairs.getLatestLeadTimeInSeconds().intValue() + "," +
+                        thePairs.getValidTimePairs() +  "," +
+                        thePairs.getLeadDurationPairInSeconds().intValue()
                         );
-                for (Iterator<String> iterator2 = thePairs.getArrayList().iterator();
-                        iterator2.hasNext();) {
+                for (Iterator<String> iterator2 = thePairs.getLeftAndRightMemberInCMS().iterator(); iterator2.hasNext();) {
                     bufferedWriter.write("," + 
-                    iterator2.next().toString());
+                     iterator2.next().toString());
                 }
                 bufferedWriter.newLine();
             }
             bufferedWriter.flush();
             bufferedWriter.close();
-            System.out.println( "sorted to " + sortedPairs );
+            //System.out.println( "sorted to " + sortedPairs );
         } catch (FileNotFoundException fnfe) {
             System.err.println( fnfe.getMessage());
+		} catch (NumberFormatException nfe) {
+			System.err.println(nfe.getMessage());
         } catch (IOException ioe) {
-            System.err.print( ioe.getMessage());
+            System.err.println( ioe.getMessage());
         }
 	System.out.println("end of sortPairs");
     } // end this sortPairs method    
 } // end this class
-
-class ThePairs {
-    private String siteID;
-    private String validTime;
-    private Double left;
-    private Integer leadTimeInSeconds;
-    private Integer timeWindowIndex;
-    private ArrayList<String> arrayList;
-    
-    public ThePairs(
-                    String siteID,
-                    String validTime,
-                    Integer leadTimeInSeconds, 
-                    Integer timeWindowIndex,
-                    Double left,
-                    ArrayList<String> arrayList
-            ) {
-        
-        this.siteID = siteID;
-        this.validTime = validTime;
-        this.left = left;
-        this.leadTimeInSeconds = leadTimeInSeconds;
-        this.timeWindowIndex = timeWindowIndex;
-        this.arrayList = arrayList;
-        
-    } // end this construction
-    
-    public String getSiteID() { return this.siteID; }
-    public String getValidTime() { return this.validTime; }
-    public Double getLeft() { return this.left; }
-    public Integer getLeadTimeInSeconds() { return this.leadTimeInSeconds; }
-    public Integer getTimeWindowIndex() { return this.timeWindowIndex; }
-    public ArrayList<String> getArrayList() { return this.arrayList; }
-    
-} // end ThePairs class
-
-class SortedPairs implements Comparator<ThePairs> {
-    
-    // Override the Comparator.compare
-    @Override 
-    public int compare(ThePairs tp1, ThePairs tp2) {
-            int leadTimeInSeconds = tp1.getLeadTimeInSeconds().compareTo( tp2.getLeadTimeInSeconds());
-                if (leadTimeInSeconds == 0) {
-                    int timeWindowIndex = tp1.getTimeWindowIndex().intValue() - tp2.getTimeWindowIndex().intValue();
-                    if (timeWindowIndex == 0) {
-                        int validTime = tp1.getValidTime().compareTo( tp2.getValidTime());
-                        if (validTime == 0) {
-                            double left = tp1.getLeft().doubleValue() - tp2.getLeft().doubleValue();
-                            if (left == 0.0) {
-                                return validTime;
-                            } else return validTime;
-                        } else return timeWindowIndex;
-                    } else return leadTimeInSeconds;
-            } else return leadTimeInSeconds;
-        //} else return validTime;
-    } // end this method
-} // end the SortedPairs class
