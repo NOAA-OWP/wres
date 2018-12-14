@@ -1,21 +1,17 @@
 //package wres.scenarios;
 
 
-//import wres.Main;
-//import wres.MainFunctions;
 import wres.io.Operations;
-//import wres.config.generated.*;
 import wres.control.Control;
 
 import java.sql.SQLException;
-
 import java.util.*;
-
 import java.io.*;
 import java.nio.file.*;
 
 /**
  * Run the scenario tests by JUnit with gradle
+ * Recomplie: ./gradlew build
  * Usage: ./gradlew run --args='scenario###'
  * Where ### is the scenario series number
  *
@@ -45,9 +41,8 @@ public class AllScenarios {
     
 	public static void main(String [] args) {
 		try {
-		//Path path = new AllScenarios().runTest(args[0]);
 			for (int i = 0; i < args.length; i++) {
-				new AllScenarios().runTest(args[i]);
+				new AllScenarios().runScenarioTest(args[i]);
 			}
 			System.out.println("Done all");
 			System.exit(0);
@@ -86,9 +81,9 @@ public class AllScenarios {
     * @return -- false if no deleted; true otherwise
     */
     public boolean deleteOldEvaluationDirectory(String[] files, File testDir) {
-	boolean isDeleted = false;
+		boolean isDeleted = false;
 	// delete wres_evaluation_output_* from previous run.
-	for (int i = 0; i < files.length; i++) {
+		for (int i = 0; i < files.length; i++) {
              if (files[i].startsWith( "wres_evaluation_output" )) {
                 System.out.println( "Need to delete files under output directory ");
                 Path outputPath = FileSystems.getDefault().getPath( testDir.getAbsolutePath() + "/" + files[i]);
@@ -104,16 +99,16 @@ public class AllScenarios {
                             System.err.println( ioe.toString() );
                          }
                     } // end inner for loop
-		try {
+			try {
                     Files.deleteIfExists( outputPath );
                     System.out.println( "Deleted directory " +  outputPath.toString());
                 } catch (IOException ioe) {
                     System.err.println( ioe.toString() );
                 }
-		isDeleted = true;
+			isDeleted = true;
               } // end if
-	} // end outer for loop
-	return isDeleted;
+		} // end outer for loop
+		return isDeleted;
     } // end method
 
     /**
@@ -122,15 +117,15 @@ public class AllScenarios {
     * @return -- false if there is no before script; Otherwise, true
     */
     public boolean doBefore(String[] files) {
-	boolean isABeforeScript = false;
-	for (int i = 0; i < files.length; i++) {
-		if (files[i].startsWith( "before.sh" )) {
-			isABeforeScript = true;
-			System.out.println("Found " + files[i]);
-			searchAndReplace(System.getProperty("user.dir") + "/" + files[i]);
+		boolean isABeforeScript = false;
+		for (int i = 0; i < files.length; i++) {
+			if (files[i].startsWith( "before.sh" )) {
+				isABeforeScript = true;
+				System.out.println("Found " + files[i]);
+				searchAndReplace(System.getProperty("user.dir") + "/" + files[i]);
+			}
 		}
-	}
-	return isABeforeScript;
+		return isABeforeScript;
     }
 
     /**
@@ -155,7 +150,7 @@ public class AllScenarios {
      * @param dir -- scenario test directory name
      * @return -- the tmpdir path
      */
-    public void runTest(String dir) {
+    public void runScenarioTest(String dir) {
 	//setAllProperties();
         System.setProperty( "user.dir", System.getenv( "TESTS_DIR" ) + "/" + dir );
         Path userdirPath = Paths.get(System.getProperty("user.dir"));
@@ -166,20 +161,21 @@ public class AllScenarios {
         //System.setProperty( dir, testDir.getAbsolutePath() );
       
         String files[] = testDir.list();
-	cleanDatabase(files);
+		cleanDatabase(files);
         deleteOldEvaluationDirectory(files, testDir);
-	doBefore(files);
-	executeConfigFile(files);
-	doAfter(files);
+		doBefore(files);
+		executeConfigFile(files);
+		doAfter(files);
      }
      
-     public void executeConfigFile(String[] files) { 
-        // Path tmppath = null;
-        // search for project_config.xml file and execute it
-        for (int i = 0; i < files.length; i++) {
+     public int executeConfigFile(String[] files) { 
 
+        // search for project_config.xml file and execute it
+		int resultCode = 0;
+        for (int i = 0; i < files.length; i++) {
             if (files[i].endsWith( "project_config.xml" )) {
-        	StringBuffer stringBuffer = concatenateFile(files[i]);        
+				//int resultCode = 0;
+        		StringBuffer stringBuffer = concatenateFile(files[i]);        
                 //String executeFile [] = {System.getProperty("user.dir") + "/" + files[i]};
                 //System.out.println( "executing this config file: " + System.getProperty("user.dir") + "/" + files[i]);
                 String executeFile [] = {stringBuffer.toString()};
@@ -193,10 +189,10 @@ public class AllScenarios {
                     // Above java.io.tmpdir setProperty may or may not work in Eclipse! 
                     
                     Integer integer = control.apply( executeFile );
-                    
+                   	resultCode = integer.intValue(); 
                     //System.out.println( "java.io.tmpdir after apply = " + 
                     //                        System.getProperty( "java.io.tmpdir" ) );
-                    System.out.println( "execute returns " + integer.intValue() );
+                    System.out.println( "execute returns " + resultCode);
                     
                  // if the java.io.tmpdir couldn't create under test director, then 
                  // will let it in /tmp, then move it to test directory. It's silly! 
@@ -244,20 +240,27 @@ public class AllScenarios {
                             } // end if
                             // do file comparison vs. (versus) benchmarks
                             //System.out.println( "check the tmp path = " + tmppath.toString());
-                            int ResultCode = fileComparison(tmppath);
-							System.out.println("Files comparison result code: " + ResultCode);
+                            resultCode = fileComparison(tmppath);
+							System.out.println("Files comparison result code: " + resultCode);
                         } // end if iterator has.next()
 						// control = null;
                     } // end if hashSet.isEmpty
                 } catch (NullPointerException npe) {
-                    System.err.println( "java.io.tmpdir: NullPointerException: " + npe.getMessage() );
+					resultCode = 2;
+                    System.err.println("NullPointerException with result code = : " + resultCode + npe.getMessage() );
                 } catch (Exception e) {
+					resultCode = 2;
+					System.err.println("Exception with result code = : " + resultCode);
                     e.printStackTrace();
-                }                
-            } // end if for search project_config.xml
+                }
+				break; // once excuted the project_config.xml file, then get out!
+            } else { // end if for search project_config.xml
+				System.out.println("Won't execute " + files[i]); // do nothing if it isn't project_config.xml file
+			}	
         } // end for loop
-		System.out.println("Done with runtest");
-    } // end runTest method
+		System.out.println("Done with runScenarioTest with result code = " + resultCode);
+		return resultCode;
+    } // end runScenarioTest method
     
 /**
  * concatenate a file and append the lines into a string buffer and return it.
@@ -327,10 +330,14 @@ public class AllScenarios {
 						evaluationFileNames[i].endsWith( ".txt" )) {
                     if (evaluationFileNames[i].startsWith( "pairs" )) {
 						// System.out.println("Ready to sort " + evaluationPath.toString() + "/" + evaluationFileNames[i]);
-                        sortPairs(Paths.get(evaluationPath.toString() + "/" 
+                        ResultCode = sortPairs(Paths.get(evaluationPath.toString() + "/" 
                                             + evaluationFileNames[i]).toFile());
-                        // After sorted, its new name will be sorted_pairs.csv
-                        evaluationFileNames[i] = "sorted_pairs.csv";
+                        if (ResultCode == 0) {
+                        	// After sorted, its new name will be sorted_pairs.csv
+                        	evaluationFileNames[i] = "sorted_pairs.csv";
+							System.out.println("Sorting result code: " + ResultCode);
+						} else
+							System.err.println("Sorting failed with code: " + ResultCode);
                     }
                     if (benchmarksTable.get( evaluationFileNames[i]) != null) {
                         File benchmarksFile = benchmarksTable.get( evaluationFileNames[i]).toFile();
@@ -360,7 +367,7 @@ public class AllScenarios {
             System.err.println("No benchmarks file matched");
 			ResultCode = 2;
         }
-		System.out.println("Done with fileComparison");
+		//System.out.println("Done with fileComparison");
 		return ResultCode;
     } // end file comparison method
     
@@ -525,9 +532,11 @@ public class AllScenarios {
     /**
      * Sort the pairs.csv file and write output to sorted_pairs.csv 
      * @param pairsFile -- pairs.csv file path
+     * @return 0 if passed; greater than 0, otherwise
      */
-    public void sortPairs(File pairsFile) {
+    public int sortPairs(File pairsFile) {
         
+		int resultCode = 0;
         System.out.println("pairs file = " + pairsFile.getAbsolutePath() );
         try {
             BufferedReader pairsReader = new BufferedReader(new FileReader(pairsFile));
@@ -592,12 +601,19 @@ public class AllScenarios {
             bufferedWriter.close();
             //System.out.println( "sorted to " + sortedPairs );
         } catch (FileNotFoundException fnfe) {
-            System.err.println( fnfe.getMessage());
+			resultCode = 2;
+            System.err.println(pairsFile.getName() + " not found, result code = " + resultCode +  fnfe.getMessage());
 		} catch (NumberFormatException nfe) {
-			System.err.println(nfe.getMessage());
+			resultCode = 4;
+			System.err.println(pairsFile.getName() + " number format exception, result code = " + resultCode + nfe.getMessage());
         } catch (IOException ioe) {
-            System.err.println( ioe.getMessage());
-        }
-	System.out.println("end of sortPairs");
+			resultCode = 4;
+            System.err.println("Read/Write file error accured during sorting, result code = " + resultCode + ioe.getMessage());
+        } catch (Exception e) {
+			resultCode = 4;
+            System.err.println("Error accured during sorting, result code = " + resultCode + e.getMessage());
+		}
+		//System.out.println("end of sortPairs with result code: " + resultCode);
+		return resultCode;
     } // end this sortPairs method    
 } // end this class

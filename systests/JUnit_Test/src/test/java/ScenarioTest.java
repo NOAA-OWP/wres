@@ -35,12 +35,12 @@ public class ScenarioTest {
 /*
     public void testScenario007() {
 	AllScenarios allScenarios = new AllScenarios();
-        allScenarios.runTest("scenario007");
+        allScenarios.runSceanrioTest("scenario007");
     }
 */
     public void testScenario008() {
         AllScenarios allScenarios = new AllScenarios();
-        allScenarios.runTest("scenario008");
+        allScenarios.runScenarioTest("scenario008");
     }
 /*
     public void testScenario009() {
