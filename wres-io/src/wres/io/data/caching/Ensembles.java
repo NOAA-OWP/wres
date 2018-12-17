@@ -164,6 +164,7 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
             throws SQLException
     {
         DataScripter script = new DataScripter(  );
+        script.setHighPriority( true );
 
         script.addLine("SELECT E.ensemble_id");
         script.addLine("FROM wres.Ensemble E");
@@ -233,6 +234,8 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
             instance.initializeDetails();
 
             DataScripter script = new DataScripter(  );
+            script.setHighPriority( true );
+
             script.addLine("SELECT ensemble_id, ensemble_name, qualifier_id, ensemblemember_id");
             script.addLine("FROM wres.Ensemble");
             script.addLine("LIMIT ", MAX_DETAILS, ";");
