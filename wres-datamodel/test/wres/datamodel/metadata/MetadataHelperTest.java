@@ -90,6 +90,20 @@ public final class MetadataHelperTest
     }
 
     /**
+     * Tests that the {@link MetadataHelper#unionOf(java.util.List)} throws an expected exception when the input is
+     * contains a null.
+     */
+    @Test
+    public void testUnionOfThrowsExceptionWithOneNullInput()
+    {
+        exception.expect( MetadataException.class );
+        exception.expectMessage( "Cannot find the union of null metadata." );
+
+        MetadataHelper.unionOf( Arrays.asList( (SampleMetadata) null  ) );
+    }
+
+    
+    /**
      * Tests that the {@link MetadataHelper#unionOf(java.util.List)} throws an expected exception when the inputs are
      * unequal on attributes that are expected to be equal.
      */
@@ -207,19 +221,28 @@ public final class MetadataHelperTest
     }
 
     /**
-     * Checks for an expected exception when calling 
+     * Checks for the absence of an exception when calling
      * {@link MetadataHelper#throwExceptionIfChangeOfScaleIsInvalid(TimeScale, TimeScale, java.time.Duration)} with
-     * an existing time scale that is not an integer multiple of the desired time scale.
+     * an existing time scale whose period is an integer multiple of the period associated with the desired time scale.
      */
 
-    @Test
-    public void throwExceptionIfDesiredPeriodDoesNotCommuteFromExistingTimeStep()
+    @Test(expected = Test.None.class /* no exception expected */)
+    public void doNotThrowExceptionIfDesiredPeriodCommutesFromExistingPeriod()
     {
-        // No exception
         MetadataHelper.throwExceptionIfChangeOfScaleIsInvalid( TimeScale.of( Duration.ofSeconds( 1 ) ),
                                                                TimeScale.of( Duration.ofSeconds( 60 ) ),
                                                                Duration.ofMillis( 1 ) );
+    }
+    
+    /**
+     * Checks for an expected exception when calling 
+     * {@link MetadataHelper#throwExceptionIfChangeOfScaleIsInvalid(TimeScale, TimeScale, java.time.Duration)} with
+     * an existing time scale whose period is not an integer multiple of the period associated with the desired time 
+     * scale.
+     */
 
+    public void throwExceptionIfDesiredPeriodDoesNotCommuteFromExistingPeriod()
+    {
         exception.expect( RescalingException.class );
         exception.expectMessage( "The desired period must be an integer multiple of the existing period." );
 

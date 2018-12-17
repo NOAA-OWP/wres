@@ -9,9 +9,14 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.SortedMap;
 import java.util.SortedSet;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import wres.datamodel.Slicer;
 import wres.datamodel.sampledata.SampleDataException;
@@ -24,6 +29,12 @@ import wres.datamodel.sampledata.SampleDataException;
  */
 public class BasicTimeSeries<T> implements TimeSeries<T>
 {
+
+    /**
+     * Logger.
+     */
+
+    private static final Logger LOGGER = LoggerFactory.getLogger( BasicTimeSeries.class );
 
     /**
      * The raw data, which retains the composition of each individual time-series.
@@ -279,7 +290,7 @@ public class BasicTimeSeries<T> implements TimeSeries<T>
                                    .collect( Collectors.toCollection( TreeSet::new ) );
 
         // Set the iterators
-        this.basisTimeIterator = BasicTimeSeries.getBasisTimeIterator( this.data, this.basisTimes );
+        this.basisTimeIterator = BasicTimeSeries.getBasisTimeIterator( this.data );
 
         this.durationIterator = BasicTimeSeries.getDurationIterator( this.data, this.durations );
 
@@ -344,28 +355,36 @@ public class BasicTimeSeries<T> implements TimeSeries<T>
      * Returns an {@link Iterable} view of the atomic time-series by basis time.
      * 
      * @param data the input data to iterate
-     * @param basisTimes the basis times
      * @return an iterable view of the basis times
      */
 
-    private static <T> Iterable<TimeSeries<T>> getBasisTimeIterator( final List<List<Event<T>>> data,
-                                                                     final SortedSet<Instant> basisTimes )
+    private static <T> Iterable<TimeSeries<T>> getBasisTimeIterator( final List<List<Event<T>>> data )
     {
         // The atomic time-series, one for each basis time in each inner list
-        List<List<Event<T>>> atomic = new ArrayList<>();
+        final List<List<Event<T>>> atomic = new ArrayList<>();
+
+        LOGGER.trace( "Creating an iterator for the reference times." );
+
+        // Create a separate time series per reference time
+        // within each inner list of time-series
+        // see #58655
         for ( List<Event<T>> nextSeries : data )
         {
-            for ( Instant nextTime : basisTimes )
-            {
-                List<Event<T>> series = nextSeries.stream()
-                                                  .filter( event -> event.getReferenceTime().equals( nextTime ) )
-                                                  .collect( Collectors.toList() );
-                if ( !series.isEmpty() )
-                {
-                    atomic.add( series );
-                }
-            }
+            // Group events by reference time
+            // Each group represents one time-series
+            // Place in a sorted map from earliest to latest times
+            SortedMap<Instant, List<Event<T>>> grouped =
+                    nextSeries.stream()
+                              .collect( Collectors.groupingBy( Event::getReferenceTime,
+                                                               TreeMap::new,
+                                                               Collectors.toList() ) );
+
+            // Collect into the list of lists, which will preserve 
+            // multiple time-series with the same reference times
+            grouped.forEach( ( key, value ) -> atomic.add( value ) );
         }
+
+        LOGGER.trace( "Finished creating an iterator for the reference times." );
 
         // Construct an iterable view of the basis times
         class IterableTimeSeries implements Iterable<TimeSeries<T>>
