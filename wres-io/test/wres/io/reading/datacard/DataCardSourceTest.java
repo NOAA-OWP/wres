@@ -29,7 +29,7 @@ import wres.config.generated.Format;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.io.data.caching.DataSources;
-import wres.io.data.details.ProjectDetails;
+import wres.io.project.Project;
 
 
 @RunWith( PowerMockRunner.class )
@@ -85,7 +85,8 @@ public class DataCardSourceTest
             + "123|'1949-01-06T17:00'|0.0|456|789";
 
 	@Mock DataSources mockDataSources;
-	@Mock ProjectDetails mockProjectDetails;
+	@Mock
+    Project mockProject;
 
 	@Before
     public void setup() throws Exception
@@ -94,9 +95,9 @@ public class DataCardSourceTest
                     .withAnyArguments()
                     .thenReturn( mockDataSources );
 
-        PowerMockito.whenNew( ProjectDetails.class )
+        PowerMockito.whenNew( Project.class )
                     .withAnyArguments()
-                    .thenReturn( mockProjectDetails );
+                    .thenReturn( mockProject );
 
         when(mockDataSources.hasID( any() ) ).thenReturn( true );
         when(mockDataSources.getID( any() ) ).thenReturn( 0 );

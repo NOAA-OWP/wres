@@ -2,10 +2,17 @@ package wres.io.retrieval;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Objects;
+
+import org.apache.commons.lang3.tuple.Pair;
 
 import wres.config.generated.TimeScaleFunction;
+import wres.io.data.caching.Ensembles;
+import wres.io.data.details.EnsembleDetails;
 import wres.util.Collections;
 
 /**
@@ -37,11 +44,9 @@ class PivottedValues
     final int lead;
 
     /**
-     * The collection of values mapped to their groups
-     * <br><br>
-     * The groups are generally separate ensembles
+     * The collection of values mapped to the position in the arrays they came in as and the id of their ensemble
      */
-    private final Map<Integer, List<Double>> valueMapping;
+    private final Map<EnsemblePosition, List<Double>> valueMapping;
 
     /**
      * Creates a new Condensed set of Ingested Values
@@ -49,11 +54,22 @@ class PivottedValues
      * @param lead The lead at which the final set of values are valid
      * @param valueMapping The collection of values that will be condensed
      */
-    PivottedValues( final Instant validTime, final int lead, final Map<Integer, List<Double>> valueMapping)
+    PivottedValues( final Instant validTime, final int lead, final Map<EnsemblePosition, List<Double>> valueMapping)
     {
         this.validTime = validTime;
         this.lead = lead;
         this.valueMapping = java.util.Collections.unmodifiableMap(valueMapping);
+    }
+
+    /**
+     * @return Ensemble metadata for each element in sorted order
+     */
+    Collection<EnsembleDetails> getEnsembleMembers()
+    {
+        List<Integer> ensembleIDs = new ArrayList<>();
+        this.valueMapping.keySet().forEach( ensemblePosition -> ensembleIDs.add( ensemblePosition.ensembleId ) );
+
+        return Ensembles.getEnsembleDetails(ensembleIDs);
     }
 
     /**
@@ -64,20 +80,66 @@ class PivottedValues
      */
     Double[] getAggregatedValues( Boolean scale, TimeScaleFunction function )
     {
-        List<Double> aggregatedValues = new ArrayList<>(  );
-        for (List<Double> values : valueMapping.values())
+        List<Pair<Integer, Double>> aggregatedValues = new ArrayList<>(  );
+        for (Entry<EnsemblePosition, List<Double>> values : valueMapping.entrySet())
         {
             if (scale)
             {
-                aggregatedValues.add( Collections.aggregate(values, function.value()));
+                // If we're scaling, we want to combine the values and add the result to the list for sorting
+                aggregatedValues.add(
+                        Pair.of(values.getKey().ensembleId,
+                                Collections.aggregate(values.getValue(), function.value()))
+                );
             }
             else
             {
-                aggregatedValues.addAll( values );
+                // Otherwise we just want to add each value from the list
+                for (Double value : values.getValue())
+                {
+                    aggregatedValues.add( Pair.of( values.getKey().ensembleId, value ) );
+                }
             }
         }
 
-        return aggregatedValues.toArray( new Double[aggregatedValues.size()] );
+        // Sort the values in member label order
+        Collection<Double> sortedValues = this.sortAggregatedValues( aggregatedValues );
+        return sortedValues.toArray( new Double[sortedValues.size()] );
+    }
+
+    /**
+     * Creates a collection of values sorted by the labels corresponding to the ensemble ids of the values in aggregatedValues
+     * @param aggregatedValues A collection of values paired to their ensemble id
+     * @return A collection of the values sorted in ensemble label order
+     */
+    private Collection<Double> sortAggregatedValues(final List<Pair<Integer, Double>> aggregatedValues)
+    {
+        List<Double> sortedAggregatedValues = new ArrayList<>();
+
+        // Get the collection of ensembles in label order
+        for (EnsembleDetails member : this.getEnsembleMembers())
+        {
+            Pair<Integer, Double> correspondingMemberValue = null;
+
+            // Find the first value in the passed in list with a matching ensemble id
+            for (Pair<Integer, Double> memberValue : aggregatedValues)
+            {
+                if (memberValue.getLeft().equals(member.getId()))
+                {
+                    correspondingMemberValue = memberValue;
+                    break;
+                }
+            }
+
+            Objects.requireNonNull(correspondingMemberValue, "The value for the ensemble member '" + member + "' could not be found.");
+
+            // Remove the found value pair from the passed in list so that the value isn't retrieved again
+            aggregatedValues.remove( correspondingMemberValue );
+
+            // Add the value to the collection that will be returned
+            sortedAggregatedValues.add( correspondingMemberValue.getValue() );
+        }
+
+        return sortedAggregatedValues;
     }
 
     /**
@@ -86,5 +148,69 @@ class PivottedValues
     boolean isEmpty()
     {
         return valueMapping.isEmpty();
+    }
+
+    /**
+     * A key class combining a) the position of an ensemble id in a returned array and the value of the ensemble id
+     */
+    public static class EnsemblePosition implements Comparable<EnsemblePosition>
+    {
+        /**
+         * The position of the pivotted value in the array that loaded the information to pivot
+         */
+        private final int positionId;
+
+        /**
+         * The id for the member at the given position in the pivotted data
+         */
+        private final int ensembleId;
+
+        /**
+         * Constructor
+         * @param positionId The position of a pivotted value
+         * @param ensembleId The id of the member that the pivotted value belongs to
+         */
+        EnsemblePosition(final int positionId, final int ensembleId)
+        {
+            this.positionId = positionId;
+            this.ensembleId = ensembleId;
+        }
+
+        @Override
+        public boolean equals( Object obj )
+        {
+            if (obj != null && obj instanceof EnsemblePosition)
+            {
+                EnsemblePosition other = (EnsemblePosition)obj;
+                return this.positionId == other.positionId && this.ensembleId == other.positionId;
+            }
+            return false;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return Objects.hash( this.positionId, this.ensembleId );
+        }
+
+        /**
+         * Sort by first the position, then the id of the member
+         * @param ensemblePosition The EnsemblePosition to compare to
+         * @return -1 if this instance has a lower position than ensemblePosition,
+         * 0 if they have the same position id and ensemble id,
+         * and 1 if this instance has a higher position than ensembleMember
+         */
+        @Override
+        public int compareTo( EnsemblePosition ensemblePosition )
+        {
+            int order = Integer.compare( this.positionId, ensemblePosition.positionId );
+
+            if (order == 0)
+            {
+                return Integer.compare( this.ensembleId, ensemblePosition.ensembleId );
+            }
+
+            return order;
+        }
     }
 }

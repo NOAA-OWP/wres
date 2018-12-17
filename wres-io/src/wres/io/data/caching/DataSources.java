@@ -311,17 +311,17 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
                             TimeHelper.durationToLead( window.getLatestLeadDuration() ) );
         }
 
-        if ( isForecast && sampleMetadata.getProjectDetails().getMinimumLead() > Integer.MIN_VALUE )
+        if ( isForecast && sampleMetadata.getProject().getMinimumLead() > Integer.MIN_VALUE )
         {
-            script.addTab().addLine( "AND S.lead >= ", sampleMetadata.getProjectDetails().getMinimumLead() );
+            script.addTab().addLine( "AND S.lead >= ", sampleMetadata.getProject().getMinimumLead() );
         }
 
-        if ( isForecast && sampleMetadata.getProjectDetails().getMaximumLead() < Integer.MAX_VALUE )
+        if ( isForecast && sampleMetadata.getProject().getMaximumLead() < Integer.MAX_VALUE )
         {
-            script.addTab().addLine( "AND S.lead <= ", sampleMetadata.getProjectDetails().getMaximumLead() );
+            script.addTab().addLine( "AND S.lead <= ", sampleMetadata.getProject().getMaximumLead() );
         }
 
-        if ( sampleMetadata.getProjectDetails().getEarliestDate() != null )
+        if ( sampleMetadata.getProject().getEarliestDate() != null )
         {
             script.addTab().add( "AND S.output_time " );
 
@@ -330,10 +330,10 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
                 script.add( "+ INTERVAL '1 ", TimeHelper.LEAD_RESOLUTION, "' * S.lead " );
             }
 
-            script.addLine( ">= '", sampleMetadata.getProjectDetails().getEarliestDate(), "'" );
+            script.addLine( ">= '", sampleMetadata.getProject().getEarliestDate(), "'" );
         }
 
-        if ( sampleMetadata.getProjectDetails().getLatestDate() != null )
+        if ( sampleMetadata.getProject().getLatestDate() != null )
         {
             script.addTab().add( "AND S.output_time " );
 
@@ -342,7 +342,7 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
                 script.add( "+ INTERVAL '1 ", TimeHelper.LEAD_RESOLUTION, "' * S.lead " );
             }
 
-            script.addLine( "<= '", sampleMetadata.getProjectDetails().getLatestDate(), "'" );
+            script.addLine( "<= '", sampleMetadata.getProject().getLatestDate(), "'" );
         }
 
         String issueClause = null;
@@ -386,21 +386,21 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
             script.addTab().addLine(issueClause);
         }
 
-        if (issueClause == null && isForecast && sampleMetadata.getProjectDetails().getEarliestIssueDate() != null)
+        if (issueClause == null && isForecast && sampleMetadata.getProject().getEarliestIssueDate() != null)
         {
-            script.addTab().addLine("AND S.output_time >= '", sampleMetadata.getProjectDetails().getEarliestIssueDate(), "'");
+            script.addTab().addLine( "AND S.output_time >= '", sampleMetadata.getProject().getEarliestIssueDate(), "'");
         }
 
-        if (issueClause == null && isForecast && sampleMetadata.getProjectDetails().getLatestIssueDate() != null)
+        if (issueClause == null && isForecast && sampleMetadata.getProject().getLatestIssueDate() != null)
         {
-            script.addTab().addLine("AND S.output_time <= '", sampleMetadata.getProjectDetails().getLatestIssueDate(), "'");
+            script.addTab().addLine( "AND S.output_time <= '", sampleMetadata.getProject().getLatestIssueDate(), "'");
         }
 
         script.addTab().addLine("AND EXISTS (");
         script.addTab(  2  ).addLine("SELECT 1");
         script.addTab(  2  ).addLine("FROM wres.ProjectSource PS");
-        script.addTab(  2  ).addLine("WHERE PS.project_id = ", sampleMetadata.getProjectDetails().getId());
-        script.addTab(   3   ).addLine("AND PS.member = ", sampleMetadata.getProjectDetails().getInputName( dataSourceConfig ));
+        script.addTab(  2  ).addLine("WHERE PS.project_id = ", sampleMetadata.getProject().getId());
+        script.addTab(   3   ).addLine("AND PS.member = ", sampleMetadata.getProject().getInputName( dataSourceConfig ));
         script.addTab(   3   ).addLine("AND PS.source_id = S.source_id");
         script.addTab().addLine(");");
 

@@ -4,9 +4,7 @@ import java.io.IOException;
 import java.sql.SQLException;
 
 import wres.config.generated.DataSourceConfig;
-import wres.config.generated.Feature;
 import wres.io.config.OrderedSampleMetadata;
-import wres.io.data.details.ProjectDetails;
 
 class SingleTimeSeriesScripter extends Scripter
 {
@@ -31,9 +29,10 @@ class SingleTimeSeriesScripter extends Scripter
 
         this.addLine(")::bigint AS basis_epoch_time,");
         this.addTab().addLine("ARRAY[TSV.series_value] AS measurements,");
+        this.addTab().addLine("ARRAY[TS.ensemble_id] AS members,");
         this.addTab().addLine("TS.measurementunit_id");
         this.addLine("FROM (");
-        this.addTab().addLine("SELECT TS.initialization_date, TS.timeseries_id, TS.measurementunit_id");
+        this.addTab().addLine("SELECT TS.initialization_date, TS.timeseries_id, TS.measurementunit_id, TS.ensemble_id");
         this.addTab().addLine("FROM wres.TimeSeries TS");
         this.addTab().addLine("WHERE TS.timeseries_id = ", this.getSampleMetadata().getSampleNumber());
         this.addLine(") AS TS");

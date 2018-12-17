@@ -594,6 +594,53 @@ class CSVDataProvider implements DataProvider
     }
 
     @Override
+    public Integer[] getIntegerArray( String columnName )
+    {
+        if (this.isClosed())
+        {
+            throw new IllegalStateException( "The data set is inaccessible." );
+        }
+
+        Object array = this.getObject(columnName);
+
+        if (array == null)
+        {
+            return null;
+        }
+
+        String arrayRepresentation = (String)array;
+
+        // Remove all '(', ')', '{', '}', '[', and ']' characters
+        arrayRepresentation = arrayRepresentation.replace( "(\\(|\\)|\\{|\\}|]][|\\])", "" );
+
+        if (arrayRepresentation.isEmpty())
+        {
+            return new Integer[0];
+        }
+
+        String[] numbers = arrayRepresentation.split( "," );
+        Integer[] result;
+        try
+        {
+            result = new Integer[numbers.length];
+
+            for ( int i = 0; i < numbers.length; ++i )
+            {
+                result[i] = Integer.parseInt( numbers[i] );
+            }
+        }
+        catch (NumberFormatException c)
+        {
+            throw new ClassCastException(
+                    "The value '" + array.toString() +
+                    "' in the field '" + columnName +
+                    "' cannot be cast as an integer array." );
+        }
+
+        return result;
+    }
+
+    @Override
     public BigDecimal getBigDecimal( String columnName )
     {
         if (this.isClosed())

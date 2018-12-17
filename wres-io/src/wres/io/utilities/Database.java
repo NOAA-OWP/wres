@@ -209,8 +209,6 @@ public final class Database {
 			watch.start();
 		}
 
-        //ProgressMonitor.resetMonitor();
-
         try
         {
             connection = Database.getConnection();
@@ -572,6 +570,8 @@ public final class Database {
         }
     }
 
+    // TODO: Write a query builder object that can handle all of the parameter permutations rather than just overloading
+
     /**
      * Executes the passed in query in the current thread
      * @param query The query to execute
@@ -871,7 +871,44 @@ public final class Database {
                 connection = Database.getConnection();
             }
 
-            result = Database.getResult( connection, query, label );
+            result = Database.getResult( connection, query, label, null );
+        }
+        finally
+        {
+            if (connection != null)
+            {
+                if (isHighPriority)
+                {
+                    Database.returnHighPriorityConnection( connection );
+                }
+                else
+                {
+                    Database.returnConnection( connection );
+                }
+            }
+        }
+
+        return result;
+    }
+
+    @SuppressWarnings( "unchecked" )
+    static <T> T getResult(final String query, final String label, final Object[] parameters, final boolean isHighPriority) throws SQLException
+    {
+        Connection connection = null;
+        T result;
+
+        try
+        {
+            if (isHighPriority)
+            {
+                connection = Database.getHighPriorityConnection();
+            }
+            else
+            {
+                connection = Database.getConnection();
+            }
+
+            result = Database.getResult( connection, query, label, parameters );
         }
         finally
         {
@@ -895,10 +932,11 @@ public final class Database {
 	@SuppressWarnings("unchecked")
 	private static <T> T getResult(final Connection connection,
 								   final String query,
-								   final String label
+								   final String label,
+                                   final Object[] parameters
     ) throws SQLException
 	{
-		Statement statement = null;
+        PreparedStatement statement = null;
 		ResultSet results = null;
 		T result = null;
 
@@ -910,7 +948,16 @@ public final class Database {
 				LOGGER.trace( query );
 			}
 
-			statement = connection.createStatement();
+			//statement = connection.createStatement();
+            statement = connection.prepareStatement( query );
+
+			if (parameters != null && parameters.length > 0)
+            {
+                for (int i = 0; i < parameters.length; ++i)
+                {
+                    statement.setObject( i + 1, parameters[i] );
+                }
+            }
 			statement.setQueryTimeout( SystemSettings.getQueryTimeout() );
 			statement.setFetchSize(1);
 
@@ -921,7 +968,7 @@ public final class Database {
 				scriptTimer = createScriptTimer( query );
 			}
 
-			results = statement.executeQuery(query);
+			results = statement.executeQuery();
 
 			if (LOGGER.isDebugEnabled() && scriptTimer != null)
 			{

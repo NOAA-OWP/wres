@@ -436,6 +436,19 @@ public class SQLDataProvider implements DataProvider
     }
 
     @Override
+    public Integer[] getIntegerArray(String columnName)
+    {
+        try
+        {
+            return (Integer[])this.resultSet.getArray( columnName ).getArray();
+        }
+        catch (SQLException e)
+        {
+            throw new IllegalStateException( "The data is not accessible.", e );
+        }
+    }
+
+    @Override
     public BigDecimal getBigDecimal( String columnName )
     {
         try

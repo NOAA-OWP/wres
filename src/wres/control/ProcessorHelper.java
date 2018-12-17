@@ -35,7 +35,7 @@ import wres.config.generated.ProjectConfig;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.io.Operations;
 import wres.io.config.ConfigHelper;
-import wres.io.data.details.ProjectDetails;
+import wres.io.project.Project;
 import wres.io.writing.SharedSampleDataWriters;
 import wres.io.writing.SharedStatisticsWriters;
 import wres.io.writing.SharedStatisticsWriters.SharedWritersBuilder;
@@ -94,8 +94,8 @@ class ProcessorHelper
         LOGGER.debug( "Beginning ingest for project {}...", projectConfigPlus );
 
         // Need to ingest first
-        ProjectDetails projectDetails = Operations.ingest( projectConfig );
-        Operations.prepareForExecution( projectDetails );
+        Project project = Operations.ingest( projectConfig );
+        Operations.prepareForExecution( project );
 
         LOGGER.debug( "Finished ingest for project {}...", projectConfigPlus );
 
@@ -105,7 +105,7 @@ class ProcessorHelper
 
         try
         {
-            decomposedFeatures = Operations.decomposeFeatures( projectDetails );
+            decomposedFeatures = Operations.decomposeFeatures( project );
         }
         catch ( SQLException e )
         {
@@ -122,7 +122,7 @@ class ProcessorHelper
         thresholds.putAll( ConfigHelper.readExternalThresholdsFromProjectConfig( projectConfig ) );
 
         // The project code - ideally project hash
-        String projectIdentifier = String.valueOf( projectDetails.getInputCode() );
+        String projectIdentifier = String.valueOf( project.getInputCode() );
 
         ResolvedProject resolvedProject = ResolvedProject.of( projectConfigPlus,
                                                               decomposedFeatures,
@@ -158,12 +158,12 @@ class ProcessorHelper
         // If there are multiple destinations for pairs, ignore these. The system chooses the destination.
         // Writing the same pairs, more than once, to that single destination does not make sense.
         // See #55948-12 and #55948-13. Ultimate solution is to improve the schema to prevent multiple occurrences.
-        if ( !projectDetails.getPairDestinations().isEmpty() )
+        if ( !project.getPairDestinations().isEmpty() )
         {
             DecimalFormat decimalFormatter = null;
-            if ( Objects.nonNull( projectDetails.getPairDestinations().get( 0 ).getDecimalFormat() ) )
+            if ( Objects.nonNull( project.getPairDestinations().get( 0 ).getDecimalFormat() ) )
             {
-                decimalFormatter = ConfigHelper.getDecimalFormatter( projectDetails.getPairDestinations().get( 0 ) );
+                decimalFormatter = ConfigHelper.getDecimalFormatter( project.getPairDestinations().get( 0 ) );
             }
 
             sharedSampleDataWriters =
@@ -202,7 +202,7 @@ class ProcessorHelper
         {
             FeatureProcessor featureProcessor = new FeatureProcessor( feature,
                                                                       resolvedProject,
-                                                                      projectDetails,
+                                                                      project,
                                                                       executors,
                                                                       sharedStatisticsWriters,
                                                                       sharedSampleDataWriters,
@@ -255,7 +255,7 @@ class ProcessorHelper
         {
             pathsWrittenTo.addAll( sharedBaselineSampleDataWriters.get() ); 
         }
-        
+
         return Collections.unmodifiableSet( pathsWrittenTo );
     }
     

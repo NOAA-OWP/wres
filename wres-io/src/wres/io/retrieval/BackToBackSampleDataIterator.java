@@ -13,7 +13,7 @@ import wres.config.generated.Feature;
 import wres.datamodel.metadata.TimeWindow;
 import wres.io.config.ConfigHelper;
 import wres.io.config.OrderedSampleMetadata;
-import wres.io.data.details.ProjectDetails;
+import wres.io.project.Project;
 import wres.util.CalculationException;
 import wres.util.TimeHelper;
 
@@ -29,13 +29,13 @@ final class BackToBackSampleDataIterator extends SampleDataIterator
     }
 
     BackToBackSampleDataIterator( Feature feature,
-                                  ProjectDetails projectDetails,
+                                  Project project,
                                   Path outputDirectoryForPairs,
                                   final Collection<OrderedSampleMetadata> sampleMetadataCollection)
             throws IOException
     {
         super( feature,
-               projectDetails,
+               project,
                outputDirectoryForPairs,
                sampleMetadataCollection);
     }
@@ -47,15 +47,17 @@ final class BackToBackSampleDataIterator extends SampleDataIterator
      */
     protected void calculateSamples() throws CalculationException
     {
+        LOGGER.trace( "{} Calculating the sample metadata...");
         int sampleCount = 0;
-        OrderedSampleMetadata.Builder metadataBuilder = new OrderedSampleMetadata.Builder().setProject( this.getProjectDetails() )
-                                                                                           .setFeature( this.getFeature() );
+        OrderedSampleMetadata.Builder metadataBuilder =
+                new OrderedSampleMetadata.Builder().setProject( this.getProject() )
+                                                   .setFeature( this.getFeature() );
 
 
         // If we are basing samples on forecasts, we want to have the option of
         if (ConfigHelper.isForecast( this.getRight() ))
         {
-            final Duration lastPossibleLead = Duration.of( this.getProjectDetails().getLastLead( this.getFeature() ),
+            final Duration lastPossibleLead = Duration.of( this.getProject().getLastLead( this.getFeature() ),
                                                            TimeHelper.LEAD_RESOLUTION );
 
             int leadIteration = 0;
@@ -66,7 +68,7 @@ final class BackToBackSampleDataIterator extends SampleDataIterator
                    TimeHelper.lessThanOrEqualTo( leadBounds.getRight(), lastPossibleLead ))
             {
                 TimeWindow window = ConfigHelper.getTimeWindow(
-                        this.getProjectDetails(),
+                        this.getProject(),
                         leadBounds.getLeft(),
                         leadBounds.getRight(),
                         0
@@ -89,7 +91,7 @@ final class BackToBackSampleDataIterator extends SampleDataIterator
         {
             // If we are dealing with observation/simulation data, we only need one window
             TimeWindow window = ConfigHelper.getTimeWindow(
-                    this.getProjectDetails(),
+                    this.getProject(),
                     Duration.ZERO,
                     Duration.ZERO,
                     0
@@ -109,5 +111,7 @@ final class BackToBackSampleDataIterator extends SampleDataIterator
         {
             throw new IterationFailedException( "No windows could be generated for evaluation." );
         }
+
+        LOGGER.trace("Sample metadata has been calculated.");
     }
 }

@@ -3,9 +3,7 @@ package wres.io.retrieval.scripting;
 import java.sql.SQLException;
 
 import wres.config.generated.DataSourceConfig;
-import wres.config.generated.Feature;
 import wres.io.config.OrderedSampleMetadata;
-import wres.io.data.details.ProjectDetails;
 
 class BackToBackObservationScripter extends Scripter
 {
@@ -19,7 +17,8 @@ class BackToBackObservationScripter extends Scripter
     {
         this.addLine("-- ", this.getSampleMetadata());
         this.addLine("SELECT ARRAY[O.observed_value] AS measurements,");
-
+        this.addTab().add( "'{1}'::int[] AS members,")
+            .addTab().addLine("-- Assign each observation to the 'default' member");
         this.applyValueDate();
         this.applyBasisTime();
         this.addLine("    0 AS lead,");

@@ -16,10 +16,9 @@ import wres.config.generated.Polygon;
 import wres.config.generated.ProjectConfig;
 import wres.io.config.ConfigHelper;
 import wres.io.data.details.FeatureDetails;
-import wres.io.data.details.ProjectDetails;
+import wres.io.project.Project;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
-import wres.io.utilities.ScriptBuilder;
 import wres.util.NotImplementedException;
 import wres.util.Strings;
 
@@ -365,7 +364,7 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         return details;
     }
 
-    public static List<FeatureDetails> getGriddedDetails(ProjectDetails details)
+    public static List<FeatureDetails> getGriddedDetails(Project details)
             throws SQLException
     {
         List<FeatureDetails> features;

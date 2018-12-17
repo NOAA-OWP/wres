@@ -1,7 +1,7 @@
 package wres.io.config;
 
 import static wres.config.generated.SourceTransformationType.PERSISTENCE;
-import static wres.io.data.details.ProjectDetails.PairingMode.ROLLING;
+import static wres.io.project.Project.PairingMode.ROLLING;
 
 import java.io.IOException;
 import java.net.URLEncoder;
@@ -78,11 +78,11 @@ import wres.datamodel.thresholds.ThresholdsByMetric.ThresholdsByMetricBuilder;
 import wres.grid.client.Fetcher;
 import wres.grid.client.Request;
 import wres.io.data.caching.Features;
-import wres.io.data.details.ProjectDetails;
+import wres.io.project.Project;
 import wres.io.reading.commaseparated.CommaSeparatedReader;
 import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
-import wres.system.SystemSettings;
+import wres.io.utilities.ScriptBuilder;
 import wres.util.Strings;
 import wres.util.TimeHelper;
 
@@ -135,7 +135,7 @@ public class ConfigHelper
     }
 
     public static Request getGridDataRequest(
-            final ProjectDetails projectDetails,
+            final Project project,
             final DataSourceConfig dataSourceConfig,
             final Feature feature) throws SQLException
     {
@@ -147,38 +147,38 @@ public class ConfigHelper
 
         griddedRequest.setIsForecast( isForecast );
 
-        if (isForecast && projectDetails.getMinimumLead() > Integer.MIN_VALUE)
+        if ( isForecast && project.getMinimumLead() > Integer.MIN_VALUE)
         {
             griddedRequest.setEarliestLead(
-                    Duration.of(projectDetails.getMinimumLead(), TimeHelper.LEAD_RESOLUTION)
+                    Duration.of( project.getMinimumLead(), TimeHelper.LEAD_RESOLUTION)
             );
         }
 
-        if (isForecast && projectDetails.getMaximumLead() < Integer.MAX_VALUE)
+        if ( isForecast && project.getMaximumLead() < Integer.MAX_VALUE)
         {
             griddedRequest.setLatestLead(
-                    Duration.of(projectDetails.getMaximumLead(), TimeHelper.LEAD_RESOLUTION)
+                    Duration.of( project.getMaximumLead(), TimeHelper.LEAD_RESOLUTION)
             );
         }
 
-        if (projectDetails.getEarliestDate() != null)
+        if ( project.getEarliestDate() != null)
         {
-            griddedRequest.setEarliestValidTime( Instant.parse( projectDetails.getEarliestDate() ) );
+            griddedRequest.setEarliestValidTime( Instant.parse( project.getEarliestDate() ) );
         }
 
-        if (projectDetails.getLatestDate() != null)
+        if ( project.getLatestDate() != null)
         {
-            griddedRequest.setLatestValidTime( Instant.parse( projectDetails.getLatestDate() ) );
+            griddedRequest.setLatestValidTime( Instant.parse( project.getLatestDate() ) );
         }
 
-        if (isForecast && projectDetails.getEarliestIssueDate() != null)
+        if ( isForecast && project.getEarliestIssueDate() != null)
         {
-            griddedRequest.setEarliestIssueTime( Instant.parse(projectDetails.getEarliestIssueDate()) );
+            griddedRequest.setEarliestIssueTime( Instant.parse( project.getEarliestIssueDate()) );
         }
 
-        if (isForecast && projectDetails.getLatestIssueDate() != null)
+        if ( isForecast && project.getLatestIssueDate() != null)
         {
-            griddedRequest.setLatestIssueTime( Instant.parse(projectDetails.getLatestIssueDate()) );
+            griddedRequest.setLatestIssueTime( Instant.parse( project.getLatestIssueDate()) );
         }
 
         return griddedRequest;
@@ -246,8 +246,7 @@ public class ConfigHelper
         return usesS3;
     }
 
-    // TODO: Move to Project Details
-    // ... or wres-config if useful outside of wres-io
+    // TODO: Move to wres-config
     public static boolean usesNetCDFData( ProjectConfig projectConfig )
     {
         boolean usesNetcdf = wres.util.Collections.exists(
@@ -350,7 +349,7 @@ public class ConfigHelper
         };
     }
 
-    public static int getValueCount( ProjectDetails projectDetails,
+    public static int getValueCount( Project project,
                                      DataSourceConfig dataSourceConfig,
                                      Feature feature )
             throws SQLException
@@ -359,20 +358,20 @@ public class ConfigHelper
         Integer variableId;
         String member;
 
-        if ( projectDetails.getRight().equals( dataSourceConfig ) )
+        if ( project.getRight().equals( dataSourceConfig ) )
         {
-            variableId = projectDetails.getRightVariableID();
-            member = ProjectDetails.RIGHT_MEMBER;
+            variableId = project.getRightVariableID();
+            member = Project.RIGHT_MEMBER;
         }
-        else if ( projectDetails.getLeft().equals( dataSourceConfig ) )
+        else if ( project.getLeft().equals( dataSourceConfig ) )
         {
-            variableId = projectDetails.getLeftVariableID();
-            member = ProjectDetails.LEFT_MEMBER;
+            variableId = project.getLeftVariableID();
+            member = Project.LEFT_MEMBER;
         }
         else
         {
-            variableId = projectDetails.getBaselineVariableID();
-            member = ProjectDetails.BASELINE_MEMBER;
+            variableId = project.getBaselineVariableID();
+            member = Project.BASELINE_MEMBER;
         }
 
         String variableFeatureClause = ConfigHelper.getVariableFeatureClause( feature, variableId, "" );
@@ -390,7 +389,7 @@ public class ConfigHelper
             script.append( "        FROM wres.TimeSeriesSource TSS" ).append( NEWLINE );
             script.append( "        INNER JOIN wres.ProjectSource PS" ).append( NEWLINE );
             script.append( "            ON TSS.source_id = PS.source_id" ).append( NEWLINE );
-            script.append( "        WHERE PS.project_id = " ).append( projectDetails.getId() ).append( NEWLINE );
+            script.append( "        WHERE PS.project_id = " ).append( project.getId() ).append( NEWLINE );
             script.append( "            AND PS.member = " ).append( member ).append( NEWLINE );
             script.append( "            AND TSS.timeseries_id = TS.timeseries_id" ).append( NEWLINE );
             script.append( "    );" );
@@ -402,7 +401,7 @@ public class ConfigHelper
             script.append( "    AND EXISTS (" ).append( NEWLINE );
             script.append( "        SELECT 1" ).append( NEWLINE );
             script.append( "        FROM wres.ProjectSource PS" ).append( NEWLINE );
-            script.append( "        WHERE PS.project_id = " ).append( projectDetails.getId() ).append( NEWLINE );
+            script.append( "        WHERE PS.project_id = " ).append( project.getId() ).append( NEWLINE );
             script.append( "            AND PS.member = " ).append( member ).append( NEWLINE );
             script.append( "            AND PS.source_id = O.source_id" ).append( NEWLINE );
             script.append( "    );" );
@@ -433,37 +432,9 @@ public class ConfigHelper
     }
 
     /**
-     * // TODO: document what returning null means to this method to let the
-     * caller decide what can or can't be done with a null response.
-     * @param dataSourceConfig ?
-     * @param filename ?
-     * @return null when ______ (What does it mean for findDataSourceByFilename
-     * to return null?)
-     */
-    public static DataSourceConfig.Source findDataSourceByFilename( DataSourceConfig dataSourceConfig, String filename )
-    {
-        DataSourceConfig.Source source = null;
-        filename = Paths.get( filename ).toAbsolutePath().toString();
-        String sourcePath = "";
-
-        for ( DataSourceConfig.Source dataSource : dataSourceConfig.getSource() )
-        {
-            String fullDataSourcePath = Paths.get( dataSource.getValue() ).toAbsolutePath().toString();
-
-            if ( filename.startsWith( fullDataSourcePath ) && fullDataSourcePath.length() > sourcePath.length() )
-            {
-                sourcePath = fullDataSourcePath;
-                source = dataSource;
-            }
-        }
-
-        return source;
-    }
-
-    /**
      * Returns the "earliest" datetime from given ProjectConfig Conditions
      *
-     * TODO: Move to ProjectDetails
+     * TODO: Move to ProjectDetails since it is only used when project details are available
      *
      * @param config the project configuration
      * @return the most narrow "earliest" date, null otherwise
@@ -535,7 +506,7 @@ public class ConfigHelper
      * If only one date is specified, that one is returned.
      * If no dates for "latest" are specified, null is returned.
      *
-     * TODO: Move to ProjectDetails
+     * TODO: Move to ProjectDetails since it is only used when that is available
      *
      * @param config the project configuration
      * @return the most narrow "latest" date, null otherwise.
@@ -767,11 +738,6 @@ public class ConfigHelper
         return getDestinationsOfType( config, DestinationType.NUMERIC );
     }
 
-    public static Path getStoredNetcdfPath(final String key)
-    {
-        return Paths.get( SystemSettings.getNetCDFStorePath(), key );
-    }
-
     /**
      * <p>Returns a {@link TimeWindow} from the input configuration using the specified lead time to form the interval
      * on the forecast horizon. The earliest and latest times on the UTC timeline are determined by whichever of the
@@ -788,7 +754,7 @@ public class ConfigHelper
      * the associated formatting requirement. Validation of dates should be conducted at the earliest 
      * opportunity, which may be well before this point.</p>
      * 
-     * @param projectDetails the project configuration
+     * @param project the project configuration
      * @param firstLead the earliest lead time
      * @param lastLead the latest lead time
      * @param sequenceStep the position of the window within a sequence
@@ -796,13 +762,13 @@ public class ConfigHelper
      * @throws NullPointerException if the config is null
      * @throws DateTimeParseException if the configuration contains dates that cannot be parsed
      */
-    public static TimeWindow getTimeWindow( ProjectDetails projectDetails,
+    public static TimeWindow getTimeWindow( Project project,
                                             Duration firstLead,
                                             Duration lastLead,
                                             int sequenceStep )
     {
         // TODO: simplify this method, if possible
-        Objects.requireNonNull( projectDetails );
+        Objects.requireNonNull( project );
 
         Instant earliestReferenceTime = Instant.MIN;
         Instant latestReferenceTime = Instant.MAX;
@@ -812,14 +778,14 @@ public class ConfigHelper
         Duration beginningLead;
 
         // Set the lead durations
-        if ( ProjectConfigs.hasTimeSeriesMetrics( projectDetails.getProjectConfig() ) )
+        if ( ProjectConfigs.hasTimeSeriesMetrics( project.getProjectConfig() ) )
         {
             beginningLead = firstLead;
         }
-        else if ( projectDetails.getProjectConfig().getPair().getLeadTimesPoolingWindow() != null )
+        else if ( project.getProjectConfig().getPair().getLeadTimesPoolingWindow() != null )
         {
             PoolingWindowConfig leadPoolingWindow =
-                    projectDetails.getProjectConfig().getPair().getLeadTimesPoolingWindow();
+                    project.getProjectConfig().getPair().getLeadTimesPoolingWindow();
 
             beginningLead =
                     lastLead.minus( leadPoolingWindow.getPeriod(),
@@ -833,20 +799,20 @@ public class ConfigHelper
         // Set the datetimes
         
         // Rolling sequence
-        if ( projectDetails.getPairingMode() == ROLLING )
+        if ( project.getPairingMode() == ROLLING )
         {
-            long frequencyOffset = TimeHelper.unitsToLeadUnits( projectDetails.getIssuePoolingWindowUnit(),
-                                                                projectDetails.getIssuePoolingWindowFrequency() )
+            long frequencyOffset = TimeHelper.unitsToLeadUnits( project.getIssuePoolingWindowUnit(),
+                                                                project.getIssuePoolingWindowFrequency() )
                                    * sequenceStep;
 
-            earliestReferenceTime = Instant.parse( projectDetails.getEarliestIssueDate() );
+            earliestReferenceTime = Instant.parse( project.getEarliestIssueDate() );
             earliestReferenceTime = earliestReferenceTime.plus( frequencyOffset, ChronoUnit.MINUTES );
 
-            if ( projectDetails.getIssuePoolingWindowPeriod() > 0 )
+            if ( project.getIssuePoolingWindowPeriod() > 0 )
             {
-                latestReferenceTime = earliestReferenceTime.plus( projectDetails.getIssuePoolingWindowPeriod(),
-                                                ChronoUnit.valueOf( projectDetails.getIssuePoolingWindowUnit()
-                                                                                  .toUpperCase() ) );
+                latestReferenceTime = earliestReferenceTime.plus( project.getIssuePoolingWindowPeriod(),
+                                                                  ChronoUnit.valueOf( project.getIssuePoolingWindowUnit()
+                                                                                             .toUpperCase() ) );
             }
             else
             {
@@ -865,17 +831,17 @@ public class ConfigHelper
         else
         {
             //Valid datetimes available
-            if ( projectDetails.getEarliestDate() != null && projectDetails.getLatestDate() != null )
+            if ( project.getEarliestDate() != null && project.getLatestDate() != null )
             {
-                earliestValidTime = Instant.parse( projectDetails.getEarliestDate() );
-                latestValidTime = Instant.parse( projectDetails.getLatestDate() );
+                earliestValidTime = Instant.parse( project.getEarliestDate() );
+                latestValidTime = Instant.parse( project.getLatestDate() );
             }
 
             //Issue datetimes available
-            if ( projectDetails.getEarliestIssueDate() != null && projectDetails.getLatestIssueDate() != null )
+            if ( project.getEarliestIssueDate() != null && project.getLatestIssueDate() != null )
             {
-                earliestReferenceTime = Instant.parse( projectDetails.getEarliestIssueDate() );
-                latestReferenceTime = Instant.parse( projectDetails.getLatestIssueDate() );
+                earliestReferenceTime = Instant.parse( project.getEarliestIssueDate() );
+                latestReferenceTime = Instant.parse( project.getLatestIssueDate() );
             }
         }
 
@@ -1018,7 +984,7 @@ public class ConfigHelper
      * clause, filtering by season specified in the configuration passed in.
      * <br>
      * Caller is responsible for saying which column to compare to.
-     * @param projectDetails the configuration, non-null
+     * @param project the configuration, non-null
      * @param databaseColumnName the column name with a date or time to use
      * @param timeShift the amount of time to shift, null otherwise
      * @return a where clause sql snippet or empty string if no season
@@ -1026,105 +992,85 @@ public class ConfigHelper
      * @throws DateTimeException when the values in the season are invalid
      */
 
-    public static String getSeasonQualifier( ProjectDetails projectDetails,
+    public static String getSeasonQualifier( Project project,
                                              String databaseColumnName,
                                              Duration timeShift )
     {
-        Objects.requireNonNull( projectDetails, "projectDetails needs to exist" );
+        Objects.requireNonNull( project, "projectDetails needs to exist" );
         Objects.requireNonNull( databaseColumnName, "databaseColumnName needs to exist" );
-        StringBuilder s = new StringBuilder();
 
-        // This admittedly makeshift MONTH_MULTIPLIIER is to put the month in
-        // the most significant place in a unified "month and day" integer.
-        // This was simpler than trying to concatenate strings. Why? Because
-        // SQL EXTRACT will only pull out one digit for single digit months.
-        // Maybe could have used postgres-specific SQL, but this technique seems
-        // to work OK so far. If a more elegant or more straightforward way is
-        // found, by all means, eliminate the MONTH_MULTIPLIER.
-        final int MONTH_MULTIPLIER = 100;
-
-        if ( projectDetails.specifiesSeason() )
+        ScriptBuilder script = new ScriptBuilder(  );
+        if ( project.specifiesSeason() )
         {
-            MonthDay earliest = projectDetails.getEarliestDayInSeason();
-            MonthDay latest = projectDetails.getLatestDayInSeason();
+            String dateTemplate = "MAKE_DATE(EXTRACT( YEAR FROM " + databaseColumnName + ")::INTEGER, %d, %d)";
+            MonthDay earliestDay;
+            MonthDay latestDay;
+            boolean daysFlipped = false;
 
-            s.append( "     AND ( " );
-            s.append( MONTH_MULTIPLIER );
-            s.append( " * " );
-
-            s.append( ConfigHelper.getExtractSqlSnippet( "month",
-                                                         databaseColumnName,
-                                                         timeShift ) );
-
-            s.append( " + " );
-
-            s.append( ConfigHelper.getExtractSqlSnippet( "day",
-                                                         databaseColumnName,
-                                                         timeShift ) );
-
-            s.append( " >= " );
-
-            s.append( earliest.getMonthValue() * MONTH_MULTIPLIER
-                      + earliest.getDayOfMonth() );
-
-            if ( earliest.isAfter( latest ) )
+            if ( project.getEarliestDayInSeason().isBefore( project.getLatestDayInSeason()))
             {
-                s.append( " OR " );
+                earliestDay = project.getEarliestDayInSeason();
+                latestDay = project.getLatestDayInSeason();
             }
             else
             {
-                s.append( " AND " );
+                daysFlipped = true;
+                latestDay = project.getEarliestDayInSeason();
+                earliestDay = project.getLatestDayInSeason();
             }
 
-            s.append( MONTH_MULTIPLIER );
-            s.append( " * " );
+            String earliestConstraint = String.format( dateTemplate, earliestDay.getMonthValue(), earliestDay.getDayOfMonth());
+            String latestConstraint = String.format( dateTemplate, latestDay.getMonthValue(), latestDay.getDayOfMonth() );
 
-            s.append( ConfigHelper.getExtractSqlSnippet( "month",
-                                                         databaseColumnName,
-                                                         timeShift ) );
+            if (timeShift != null)
+            {
+                earliestConstraint += " INTERVAL '" + timeShift + "'";
+                latestConstraint += " INTERVAL '" + timeShift + "'";
+            }
 
-            s.append( " + " );
-
-            s.append( ConfigHelper.getExtractSqlSnippet( "day",
-                                                         databaseColumnName,
-                                                         timeShift ) );
-
-            s.append( " <= " );
-
-            s.append( latest.getMonthValue() * MONTH_MULTIPLIER
-                      + latest.getDayOfMonth() );
-
-            s.append( " )" );
-            s.append( System.lineSeparator() );
+            if (daysFlipped)
+            {
+                script.addTab().addLine("AND ( -- The dates should wrap around the end of the year, ",
+                                        "so we're going to check for values before the latest ",
+                                        "date and after the earliest");
+                script.addTab(  2  ).addLine(databaseColumnName, "::DATE <= ", earliestConstraint,
+                                             " -- In the set [1/1, ", earliestDay.getMonthValue(),
+                                             "/", earliestDay.getDayOfMonth(), "]");
+                script.addTab(  2  ).addLine("OR ", databaseColumnName, "::DATE >= ", latestConstraint,
+                                             " -- Or in the set [", latestDay.getMonthValue(),
+                                             "/", latestDay.getDayOfMonth(), ", 12/31]");
+                script.addTab().addLine(")");
+            }
+            else
+            {
+                script.addTab().addLine( "AND ", databaseColumnName + "::DATE >= ", earliestConstraint );
+                script.addTab().addLine( "AND ", databaseColumnName, "::DATE <= ", latestConstraint );
+            }
         }
 
-        LOGGER.trace( "{}", s );
+        LOGGER.trace( "{}", script );
 
-        return s.toString();
+        return script.toString();
     }
 
-    private static String getExtractSqlSnippet( String toExtract,
-                                                String databaseColumnName,
-                                                Duration timeShift )
+    public static Duration getTimeShift(final DataSourceConfig dataSourceConfig)
     {
-        StringBuilder s = new StringBuilder();
+        Duration timeShift = null;
 
-        s.append( "EXTRACT( " );
-        s.append( toExtract );
-        s.append( " from " );
-        s.append( databaseColumnName );
-
-        if ( timeShift != null )
+        if (dataSourceConfig.getTimeShift() != null)
         {
-            s.append( " + INTERVAL '1 HOUR' * " );
-            s.append( timeShift.toHours() );
+            timeShift = Duration.of(
+                    dataSourceConfig.getTimeShift().getWidth(),
+                    ChronoUnit.valueOf(
+                            dataSourceConfig.getTimeShift()
+                                            .getUnit()
+                                            .toString()
+                                            .toUpperCase() )
+            );
         }
 
-        s.append( " )" );
-
-        return s.toString();
+        return timeShift;
     }
-
 
     /**
      * Given a config and a data source, return which kind the datasource is

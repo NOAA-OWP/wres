@@ -28,7 +28,7 @@ import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.processing.MetricProcessorForProject;
 import wres.io.Operations;
 import wres.io.config.ConfigHelper;
-import wres.io.data.details.ProjectDetails;
+import wres.io.project.Project;
 import wres.io.retrieval.DataGenerator;
 import wres.io.retrieval.IterationFailedException;
 import wres.io.writing.SharedSampleDataWriters;
@@ -65,7 +65,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
      * The project details.
      */
 
-    private final ProjectDetails projectDetails;
+    private final Project project;
 
     /**
      * The executors services.
@@ -102,7 +102,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
      * 
      * @param feature the feature to process
      * @param resolvedProject the resolved project
-     * @param projectDetails the project details to use
+     * @param project the project details to use
      * @param executors the executors for pairs, thresholds, and metrics
      * @param sharedSampleWriters writers of sample data that are shared across features
      * @param sharedBaselineSampleWriters writers of baseline sample data that are shared across features
@@ -110,7 +110,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
 
     FeatureProcessor( FeaturePlus feature,
                       ResolvedProject resolvedProject,
-                      ProjectDetails projectDetails,
+                      Project project,
                       ExecutorServices executors,
                       SharedStatisticsWriters sharedWriters,
                       SharedSampleDataWriters sharedSampleWriters,
@@ -118,7 +118,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
     {
         this.feature = feature;
         this.resolvedProject = resolvedProject;
-        this.projectDetails = projectDetails;
+        this.project = project;
         this.executors = executors;
         this.sharedWriters = sharedWriters;
         this.sharedSampleWriters = sharedSampleWriters;
@@ -160,7 +160,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
         }
 
         // Build an InputGenerator for the next feature
-        DataGenerator metricInputs = Operations.getInputs( this.projectDetails,
+        DataGenerator metricInputs = Operations.getInputs( this.project,
                                                            this.feature.getFeature(),
                                                            this.resolvedProject.getOutputDirectory() );
 

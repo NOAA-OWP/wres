@@ -198,7 +198,7 @@ public abstract class BasicSource
 
         if (dataSourceConfig != null)
         {
-            DataSourceConfig.Source source = ConfigHelper.findDataSourceByFilename(dataSourceConfig, this.filename);
+            DataSourceConfig.Source source = this.getSourceConfig();
 
             if (source != null && source.getUnit() != null && !source.getUnit().isEmpty()) {
                 unit = source.getUnit();
@@ -219,7 +219,7 @@ public abstract class BasicSource
 
         if (dataSourceConfig != null)
         {
-            DataSourceConfig.Source source = ConfigHelper.findDataSourceByFilename(dataSourceConfig, this.filename);
+            DataSourceConfig.Source source = this.getSourceConfig();
 
             if (source != null && source.getLocationId() != null && !source.getLocationId().isEmpty())
             {
@@ -244,7 +244,7 @@ public abstract class BasicSource
 
         if (dataSourceConfig != null)
         {
-            DataSourceConfig.Source source = ConfigHelper.findDataSourceByFilename(dataSourceConfig, this.filename);
+            DataSourceConfig.Source source = this.getSourceConfig();
 
             if (source != null && source.getMissingValue() != null && !source.getMissingValue().isEmpty())
             {

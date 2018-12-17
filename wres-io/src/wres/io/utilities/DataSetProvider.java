@@ -600,6 +600,55 @@ public class DataSetProvider implements DataProvider
     }
 
     @Override
+    public Integer[] getIntegerArray( String columnName )
+    {
+        if (this.isClosed())
+        {
+            throw new IllegalStateException( "The data set is inaccessible." );
+        }
+
+        Object array = this.getObject(columnName);
+
+        if (array == null)
+        {
+            return null;
+        }
+        else if (array instanceof Integer[])
+        {
+            return (Integer[])this.getObject(columnName);
+        }
+        else if (array instanceof Number[])
+        {
+            Number[] numbers = (Number[])array;
+            Integer[] result = new Integer[numbers.length];
+
+            for (int i = 0; i < numbers.length; ++i)
+            {
+                result[i] = numbers[i].intValue();
+            }
+
+            return result;
+        }
+        else if (array instanceof String[])
+        {
+            String[] numbers = (String[])array;
+            Integer[] result = new Integer[numbers.length];
+
+            for (int i = 0; i < numbers.length; ++i)
+            {
+                result[i] = Integer.parseInt( numbers[i] );
+            }
+
+            return result;
+        }
+
+        throw new ClassCastException( "The type '" +
+                                      array.getClass().toString() +
+                                      "' in the column '" + columnName +
+                                      "' cannot be casted as a integer array." );
+    }
+
+    @Override
     public BigDecimal getBigDecimal( String columnName )
     {
         if (this.isClosed())
