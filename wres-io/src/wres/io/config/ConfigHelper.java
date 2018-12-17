@@ -820,10 +820,10 @@ public class ConfigHelper
             }
             
             //Valid datetimes available
-            if ( projectDetails.getEarliestDate() != null && projectDetails.getLatestDate() != null )
+            if ( project.getEarliestDate() != null && project.getLatestDate() != null )
             {
-                earliestValidTime = Instant.parse( projectDetails.getEarliestDate() );
-                latestValidTime = Instant.parse( projectDetails.getLatestDate() );
+                earliestValidTime = Instant.parse( project.getEarliestDate() );
+                latestValidTime = Instant.parse( project.getLatestDate() );
             }
 
         }

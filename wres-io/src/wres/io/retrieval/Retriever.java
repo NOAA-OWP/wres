@@ -237,10 +237,6 @@ abstract class Retriever extends WRESCallable<SampleData<?>>
                             pivottedValues.getEnsembleMembers( )
                     );
 
-                writePair( this.outputDirectoryForPairs,
-                           packagedPair,
-                           dataSourceConfig );
-
                 if (this.getProjectDetails().getInputName( dataSourceConfig ).equals(Project.RIGHT_MEMBER))
                 {
                     this.addPrimaryPair( packagedPair );
