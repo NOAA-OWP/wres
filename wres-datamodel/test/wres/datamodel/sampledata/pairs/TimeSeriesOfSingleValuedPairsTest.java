@@ -467,7 +467,6 @@ public final class TimeSeriesOfSingleValuedPairsTest
     @Test
     public void testIterateNonForecasts()
     {
-        //Build a time-series with three basis times 
         List<Event<SingleValuedPair>> data = new ArrayList<>();
         TimeSeriesOfSingleValuedPairsBuilder b = new TimeSeriesOfSingleValuedPairsBuilder();
 
