@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 import java.util.Collection;
 
 import wres.config.generated.Feature;
-import wres.io.data.details.ProjectDetails;
+import wres.io.project.Project;
 import wres.io.utilities.NoDataException;
 
 public interface LeftHandCache
@@ -16,18 +16,18 @@ public interface LeftHandCache
      * @throws NoDataException when no data is found
      */
 
-    static LeftHandCache getCache(final ProjectDetails projectDetails, final Feature feature)
+    static LeftHandCache getCache( final Project project, final Feature feature)
             throws SQLException
     {
         LeftHandCache cache;
 
-        if (projectDetails.usesGriddedData( projectDetails.getLeft() ))
+        if ( project.usesGriddedData( project.getLeft() ))
         {
-            cache = new GridCache( projectDetails );
+            cache = new GridCache( project );
         }
         else
         {
-            cache = new VectorCache( projectDetails, feature );
+            cache = new VectorCache( project, feature );
         }
 
         return cache;

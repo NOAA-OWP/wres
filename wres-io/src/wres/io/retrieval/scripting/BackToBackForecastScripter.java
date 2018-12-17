@@ -24,6 +24,7 @@ class BackToBackForecastScripter extends Scripter
         this.applyValueDate();
         this.addTab().addLine( "TSV.lead,");
         this.addTab().addLine( "ARRAY_AGG(TSV.series_value ORDER BY TS.ensemble_id) AS measurements," );
+        this.addTab().addLine( "ARRAY_AGG(TS.ensemble_id ORDER BY TS.ensemble_id) AS members,");
         this.applyBasisTime();
         this.addTab().addLine( "TS.measurementunit_id" );
         this.addLine( "FROM wres.TimeSeries TS" );

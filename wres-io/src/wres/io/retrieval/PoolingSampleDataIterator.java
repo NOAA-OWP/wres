@@ -13,7 +13,7 @@ import wres.config.generated.Feature;
 import wres.datamodel.metadata.TimeWindow;
 import wres.io.config.ConfigHelper;
 import wres.io.config.OrderedSampleMetadata;
-import wres.io.data.details.ProjectDetails;
+import wres.io.project.Project;
 import wres.util.CalculationException;
 import wres.util.TimeHelper;
 
@@ -23,13 +23,13 @@ class PoolingSampleDataIterator extends SampleDataIterator
             LoggerFactory.getLogger(PoolingSampleDataIterator.class);
 
     PoolingSampleDataIterator( Feature feature,
-                               ProjectDetails projectDetails,
+                               Project project,
                                Path outputDirectoryForPairs,
                                final Collection<OrderedSampleMetadata> sampleMetadataCollection)
             throws IOException
     {
         super( feature,
-               projectDetails,
+               project,
                outputDirectoryForPairs,
                sampleMetadataCollection);
     }
@@ -38,11 +38,12 @@ class PoolingSampleDataIterator extends SampleDataIterator
     protected void calculateSamples() throws CalculationException
     {
         int sampleCount = 0;
-        OrderedSampleMetadata.Builder metadataBuilder = new OrderedSampleMetadata.Builder().setProject( this.getProjectDetails() )
-                                                                                           .setFeature( this.getFeature() );
+        OrderedSampleMetadata.Builder metadataBuilder =
+                new OrderedSampleMetadata.Builder().setProject( this.getProject() )
+                                                   .setFeature( this.getFeature() );
 
 
-        final Duration lastPossibleLead = Duration.of( this.getProjectDetails().getLastLead( this.getFeature() ),
+        final Duration lastPossibleLead = Duration.of( this.getProject().getLastLead( this.getFeature() ),
                                                        TimeHelper.LEAD_RESOLUTION );
 
         final int lastPoolingStep = this.getFinalPoolingStep();
@@ -57,7 +58,7 @@ class PoolingSampleDataIterator extends SampleDataIterator
             for ( int issuePoolStep = 0; issuePoolStep < lastPoolingStep; ++issuePoolStep )
             {
                 TimeWindow window = ConfigHelper.getTimeWindow(
-                        this.getProjectDetails(),
+                        this.getProject(),
                         leadBounds.getLeft(),
                         leadBounds.getRight(),
                         issuePoolStep

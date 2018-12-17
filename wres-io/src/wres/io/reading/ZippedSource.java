@@ -219,8 +219,7 @@ public class ZippedSource extends BasicSource {
         int bytesRead = (int)source.getSize();
         String archivedFileName = Paths.get(this.directoryPath, source.getName()).toString();
         Format sourceType = ReaderFactory.getFiletype( archivedFileName );
-        DataSourceConfig.Source
-                originalSource = ConfigHelper.findDataSourceByFilename( this.getDataSourceConfig(), this.getAbsoluteFilename() );
+        DataSourceConfig.Source originalSource = this.getSourceConfig();
 
         byte[] content = new byte[bytesRead];
 

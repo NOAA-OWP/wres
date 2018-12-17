@@ -7,7 +7,7 @@ import wres.io.concurrency.WRESCallable;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.UnitConversions;
 import wres.io.data.caching.Variables;
-import wres.io.data.details.ProjectDetails;
+import wres.io.project.Project;
 import wres.io.reading.usgs.USGSReader;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
@@ -207,24 +207,24 @@ class ClimatologyBuilder
     private Future<SortedMap<DateRange, List<Double>>> futureClimatologicalDates;
     private VectorOfDoubles climatology;
     private Map<Integer, UnitConversions.Conversion> conversions;
-    private final ProjectDetails projectDetails;
+    private final Project project;
     private final DataSourceConfig dataSourceConfig;
     private final Feature feature;
 
-    ClimatologyBuilder(ProjectDetails projectDetails, DataSourceConfig dataSourceConfig, Feature feature)
+    ClimatologyBuilder( Project project, DataSourceConfig dataSourceConfig, Feature feature)
             throws IOException
     {
-        this.projectDetails = projectDetails;
+        this.project = project;
         this.dataSourceConfig = dataSourceConfig;
         this.feature = feature;
         this.values = new TreeMap<>();
 
         LOGGER.debug( "ClimatologyBuilder constructed with args {}, {}, {}",
-                      projectDetails, dataSourceConfig, feature );
+                      project, dataSourceConfig, feature );
         try
         {
             String earliestDate =
-                    this.projectDetails.getInitialObservationDate( this.dataSourceConfig, this.feature );
+                    this.project.getInitialObservationDate( this.dataSourceConfig, this.feature );
             this.prepareDateLoad( earliestDate );
         }
         catch (SQLException e)
@@ -241,7 +241,7 @@ class ClimatologyBuilder
         LOGGER.debug( "prepareDateLoad called with earliestDate {}",
                       earliestDate );
         PrepareDateLoad loadTask = new PrepareDateLoad( this.feature,
-                                                        this.projectDetails,
+                                                        this.project,
                                                         this.dataSourceConfig,
                                                         earliestDate );
         this.futureClimatologicalDates = Database.submit( loadTask );
@@ -252,17 +252,17 @@ class ClimatologyBuilder
             extends WRESCallable<SortedMap<DateRange, List<Double>>>
     {
         private final Feature feature;
-        private final ProjectDetails projectDetails;
+        private final Project project;
         private final DataSourceConfig dataSourceConfig;
         private final String earliestDate;
 
         PrepareDateLoad( Feature feature,
-                         ProjectDetails projectDetails,
+                         Project project,
                          DataSourceConfig dataSourceConfig,
                          String earliestDate )
         {
             this.feature = feature;
-            this.projectDetails = projectDetails;
+            this.project = project;
             this.dataSourceConfig = dataSourceConfig;
             this.earliestDate = earliestDate;
         }
@@ -287,7 +287,7 @@ class ClimatologyBuilder
 
 
             script.addLine(" + ( member_number || ' ",
-                           this.projectDetails.getScale().getUnit(),
+                           this.project.getScale().getUnit(),
                            "')::INTERVAL)::TEXT AS start_date,");
 
             script.addTab().addLine("(",
@@ -304,21 +304,21 @@ class ClimatologyBuilder
             }
 
             script.addLine(" + ( ( member_number + ",
-                           this.projectDetails.getScale().getPeriod(),
+                           this.project.getScale().getPeriod(),
                            " ) || ' ",
-                           this.projectDetails.getScale().getUnit(),
+                           this.project.getScale().getUnit(),
                            "')::INTERVAL)::TEXT AS end_date");
 
             try
             {
                 script.add("FROM generate_series(0, ",
-                           ConfigHelper.getValueCount(this.projectDetails,
+                           ConfigHelper.getValueCount(this.project,
                                                       this.dataSourceConfig,
                                                       this.feature),
                            " * ",
-                           this.projectDetails.getScale().getPeriod(),
+                           this.project.getScale().getPeriod(),
                            ", ",
-                           this.projectDetails.getScale().getPeriod(),
+                           this.project.getScale().getPeriod(),
                            ") AS member_number;");
             }
             catch ( SQLException e )
@@ -330,9 +330,19 @@ class ClimatologyBuilder
 
             try
             {
+                if (LOGGER.isTraceEnabled())
+                {
+                    LOGGER.trace( "Getting dates of ranges to aggregate..." );
+                }
+
                 script.consume(
                         range -> returnValues.put( new DateRange(range), new ArrayList<>())
                 );
+
+                if (LOGGER.isTraceEnabled())
+                {
+                    LOGGER.trace( "Dates of ranges to aggregate have been collected." );
+                }
             }
             catch ( SQLException e )
             {
@@ -353,10 +363,36 @@ class ClimatologyBuilder
     {
         if (this.climatology == null)
         {
+            if (LOGGER.isTraceEnabled())
+            {
+                LOGGER.trace( "Getting data from the database in order to build the climatology.");
+            }
+
             try
             {
+                if (LOGGER.isTraceEnabled())
+                {
+                    LOGGER.trace( "Setting up dates from the database in order to build the climatology for {}...",
+                                 ConfigHelper.getFeatureDescription( this.feature ) );
+                }
                 this.setupDates();
+
+                if (LOGGER.isTraceEnabled())
+                {
+                    LOGGER.trace(
+                            "Dates from the database have been collected in order to build the climatology for {}",
+                            ConfigHelper.getFeatureDescription( this.feature ) );
+                    LOGGER.trace( "Adding Climatology values for {}",
+                                 ConfigHelper.getFeatureDescription( this.feature ) );
+                }
+
                 this.addValues();
+
+                if (LOGGER.isTraceEnabled())
+                {
+                    LOGGER.trace( "Climatology values for {} have been added.",
+                                 ConfigHelper.getFeatureDescription( this.feature ) );
+                }
             }
             catch ( IOException e )
             {
@@ -368,16 +404,21 @@ class ClimatologyBuilder
 
             List<Double> aggregatedValues = new ArrayList<>();
 
+            if (LOGGER.isTraceEnabled())
+            {
+                LOGGER.trace( "Organizing values...");
+            }
+
             for ( List<Double> valuesToAggregate : this.getValues()
                                                        .values() )
             {
-                if ( this.projectDetails.shouldScale() )
+                if ( this.project.shouldScale() )
                 {
                     Double aggregation = wres.util.Collections.aggregate(
                             valuesToAggregate,
-                            this.projectDetails.getScale()
-                                               .getFunction()
-                                               .value() );
+                            this.project.getScale()
+                                        .getFunction()
+                                        .value() );
                     if ( !Double.isNaN( aggregation ) )
                     {
                         aggregatedValues.add( aggregation );
@@ -387,6 +428,12 @@ class ClimatologyBuilder
                 {
                     aggregatedValues.addAll( valuesToAggregate );
                 }
+            }
+
+            if (LOGGER.isTraceEnabled())
+            {
+                LOGGER.trace( "Values for the climatology for {} have been organized.",
+                             ConfigHelper.getFeatureDescription( this.feature ) );
             }
 
             this.climatology = VectorOfDoubles.of( aggregatedValues.toArray( new Double[aggregatedValues.size()] ) );
@@ -454,17 +501,17 @@ class ClimatologyBuilder
             String message = "The proper variable used to generate climatology ";
             message += "data could not be gleaned from the ";
 
-            message += this.projectDetails.getInputName( this.dataSourceConfig );
+            message += this.project.getInputName( this.dataSourceConfig );
 
             message += " side of the data source specification.";
             throw new IOException( message, e );
         }
 
         // Impose date limitations to keep a consistent climatology for USGS projects
-        if (ConfigHelper.usesUSGSData( this.projectDetails.getProjectConfig() ))
+        if (ConfigHelper.usesUSGSData( this.project.getProjectConfig() ))
         {
             // TODO: This entire section is probably entirely unneccessary now that we don't share USGS data
-            Instant date = ConfigHelper.getEarliestDateTimeFromDataSources( this.projectDetails.getProjectConfig() );
+            Instant date = ConfigHelper.getEarliestDateTimeFromDataSources( this.project.getProjectConfig() );
 
             String earliest = "'";
             String latest = "'";
@@ -480,7 +527,7 @@ class ClimatologyBuilder
 
             earliest += "'";
 
-            date = ConfigHelper.getLatestDateTimeFromDataSources( this.projectDetails.getProjectConfig() );
+            date = ConfigHelper.getLatestDateTimeFromDataSources( this.project.getProjectConfig() );
 
             if (date == null)
             {
@@ -524,9 +571,9 @@ class ClimatologyBuilder
         script.append("    AND EXISTS (").append(NEWLINE);
         script.append("        SELECT 1").append(NEWLINE);
         script.append("        FROM wres.ProjectSource PS").append(NEWLINE);
-        script.append("        WHERE PS.project_id = ").append(this.projectDetails.getId()).append(NEWLINE);
+        script.append("        WHERE PS.project_id = ").append(this.project.getId()).append( NEWLINE);
         script.append("            AND PS.member = ")
-              .append(this.projectDetails.getInputName( this.dataSourceConfig ))
+              .append(this.project.getInputName( this.dataSourceConfig ))
               .append(NEWLINE);
         script.append("        AND PS.source_id = O.source_id").append(NEWLINE);
         script.append(");");
@@ -551,21 +598,21 @@ class ClimatologyBuilder
                     value = this.getConversion( data.getInt(
                             "measurementunit_id" ) ).convert( value );
 
-                    if ( value < this.projectDetails.getMinimumValue() &&
-                         this.projectDetails.getDefaultMinimumValue() != null )
+                    if ( value < this.project.getMinimumValue() &&
+                         this.project.getDefaultMinimumValue() != null )
                     {
 
                         this.addValue( data.getString( "observation_time" ),
-                                       this.projectDetails.getDefaultMinimumValue() );
+                                       this.project.getDefaultMinimumValue() );
                     }
-                    else if ( value > this.projectDetails.getMaximumValue() &&
-                              this.projectDetails.getDefaultMaximumValue() != null )
+                    else if ( value > this.project.getMaximumValue() &&
+                              this.project.getDefaultMaximumValue() != null )
                     {
                         this.addValue( data.getString( "observation_time" ),
-                                       this.projectDetails.getDefaultMaximumValue() );
+                                       this.project.getDefaultMaximumValue() );
                     }
-                    else if ( value >= this.projectDetails.getMinimumValue()
-                              && value <= this.projectDetails.getMaximumValue() )
+                    else if ( value >= this.project.getMinimumValue()
+                              && value <= this.project.getMaximumValue() )
                     {
                         this.addValue( data.getString( "observation_time" ),
                                        value );
@@ -627,7 +674,7 @@ class ClimatologyBuilder
         {
             this.conversions.put(measurementUnitID,
                                  UnitConversions.getConversion( measurementUnitID,
-                                                                this.projectDetails.getDesiredMeasurementUnit() ));
+                                                                this.project.getDesiredMeasurementUnit() ));
         }
 
         return this.conversions.get(measurementUnitID);

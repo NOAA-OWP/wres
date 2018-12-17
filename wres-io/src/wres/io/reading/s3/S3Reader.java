@@ -2,6 +2,7 @@ package wres.io.reading.s3;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -24,6 +25,7 @@ import wres.io.data.details.SourceDetails;
 import wres.io.reading.BasicSource;
 import wres.io.reading.IngestResult;
 import wres.io.utilities.Database;
+import wres.system.SystemSettings;
 import wres.util.FutureQueue;
 
 public abstract class S3Reader extends BasicSource
@@ -80,7 +82,7 @@ public abstract class S3Reader extends BasicSource
 
                 if (!isVector)
                 {
-                    fileExists = Files.exists( ConfigHelper.getStoredNetcdfPath(tagAndKey.getKey()));
+                    fileExists = Files.exists( Paths.get( SystemSettings.getNetCDFStorePath(), tagAndKey.getKey() ));
                 }
 
                 if ( fileExists )

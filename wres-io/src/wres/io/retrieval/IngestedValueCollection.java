@@ -10,10 +10,11 @@ import java.util.Map;
 import java.util.StringJoiner;
 import java.util.TreeMap;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.io.data.details.ProjectDetails;
+import wres.io.project.Project;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.NoDataException;
 import wres.util.Collections;
@@ -140,16 +141,20 @@ class IngestedValueCollection
         }
 
         // Will form a mapping of ensemble positions to each value that will need to be combined underneath it.
-        Map<Integer, List<Double>> valueMapping = new TreeMap<>();
+        Map<PivottedValues.EnsemblePosition, List<Double>> valueMapping = new TreeMap<>();
 
         // If there is only one value, format it and return the result
         if (this.size() == 1 && pivotStep == 0)
         {
             for (int valueIndex = 0; valueIndex < this.first().length(); ++valueIndex)
             {
-                List<Double> value = new ArrayList<>(  );
-                value.add( this.first().get(valueIndex) );
-                valueMapping.put( valueIndex, value );
+                PivottedValues.EnsemblePosition ensemblePosition = new PivottedValues.EnsemblePosition( valueIndex, this.first().getMemberID( valueIndex ) );
+                if (!valueMapping.containsKey( ensemblePosition ))
+                {
+                    valueMapping.put(ensemblePosition, new ArrayList<>(  ));
+                }
+
+                valueMapping.get(ensemblePosition).add(this.first().get(valueIndex));
             }
 
             return new PivottedValues( this.first().getValidTime(),
@@ -265,12 +270,15 @@ class IngestedValueCollection
 
             for ( int index = 0; index < value.length(); ++index )
             {
-                if ( !valueMapping.containsKey( index ) )
+                PivottedValues.EnsemblePosition ensemblePosition = new PivottedValues.EnsemblePosition( index, value.getMemberID( index ) );
+                Pair<Integer, Integer> keyIndex = Pair.of(index, value.getMemberID( index ));
+                Integer key = value.getMemberID( index );
+                if ( !valueMapping.containsKey( ensemblePosition ) )
                 {
-                    valueMapping.put( index, new ArrayList<>() );
+                    valueMapping.put( ensemblePosition, new ArrayList<>() );
                 }
 
-                valueMapping.get( index ).add( value.get( index ) );
+                valueMapping.get( ensemblePosition ).add( value.get( index ) );
             }
         }
         result = new PivottedValues( lastValidTime,
@@ -279,7 +287,6 @@ class IngestedValueCollection
 
         return result;
     }
-
 
     /**
      * Evaluates and returns the most common distance between values
@@ -382,7 +389,6 @@ class IngestedValueCollection
         if (canAdd)
         {
             this.values.add( value );
-            //this.values.sort( Comparator.naturalOrder() );
         }
         else
         {
@@ -390,9 +396,9 @@ class IngestedValueCollection
         }
     }
 
-    void add( DataProvider row, ProjectDetails projectDetails) throws SQLException
+    void add( DataProvider row, Project project ) throws SQLException
     {
-        IngestedValue value = new IngestedValue( row, projectDetails );
+        IngestedValue value = new IngestedValue( row, project );
         this.add( value );
     }
 

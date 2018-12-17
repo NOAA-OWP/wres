@@ -30,7 +30,7 @@ import wres.io.data.caching.Projects;
 import wres.io.data.caching.UnitConversions;
 import wres.io.data.caching.Variables;
 import wres.io.data.details.FeatureDetails;
-import wres.io.data.details.ProjectDetails;
+import wres.io.project.Project;
 import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
 import wres.io.reading.IngestedValues;
@@ -53,14 +53,14 @@ public final class Operations {
     /**
      * Prepares IO operations for evaluation execution checks if evaluations
      * are valid/possible
-     * @param projectDetails The project to evaluate
+     * @param project The project to evaluate
      * @throws IOException Thrown if the project itself could not be prepared
      * @throws IOException Thrown if the process for determining whether or not
      * variables are valid fails
      * @throws NoDataException Thrown if a variable to evaluate is not
      * accessible to the evaluation
      */
-    public static void prepareForExecution( ProjectDetails projectDetails ) throws IOException
+    public static void prepareForExecution( Project project ) throws IOException
     {
         LOGGER.info("Loading preliminary metadata...");
         Future unitConversionLoad = Executor.execute( UnitConversions::initialize );
@@ -71,8 +71,8 @@ public final class Operations {
         Future<Boolean> baselineValid = null;
         try
         {
-            isVector = !(projectDetails.usesGriddedData( projectDetails.getLeft() ) ||
-                        projectDetails.usesGriddedData( projectDetails.getRight() ));
+            isVector = !( project.usesGriddedData( project.getLeft() ) ||
+                          project.usesGriddedData( project.getRight() ));
         }
         catch ( SQLException e )
         {
@@ -83,53 +83,53 @@ public final class Operations {
         if (isVector)
         {
             leftValid = Executor.submit(
-                    () -> Variables.isObservationValid( projectDetails.getId(),
-                                                        ProjectDetails.LEFT_MEMBER,
-                                                        projectDetails.getLeftVariableID()
+                    () -> Variables.isObservationValid( project.getId(),
+                                                        Project.LEFT_MEMBER,
+                                                        project.getLeftVariableID()
                     ) );
         }
 
-        if (isVector && ConfigHelper.isForecast( projectDetails.getRight() ))
+        if (isVector && ConfigHelper.isForecast( project.getRight() ))
         {
             rightValid = Executor.submit(
-                    () -> Variables.isForecastValid( projectDetails.getId(),
-                                                     ProjectDetails.RIGHT_MEMBER,
-                                                     projectDetails.getRightVariableID()
+                    () -> Variables.isForecastValid( project.getId(),
+                                                     Project.RIGHT_MEMBER,
+                                                     project.getRightVariableID()
                     )
             );
         }
         else if (isVector)
         {
             rightValid = Executor.submit(
-                    () -> Variables.isObservationValid( projectDetails.getId(),
-                                                        ProjectDetails.RIGHT_MEMBER,
-                                                        projectDetails.getRightVariableID()
+                    () -> Variables.isObservationValid( project.getId(),
+                                                        Project.RIGHT_MEMBER,
+                                                        project.getRightVariableID()
                     )
             );
         }
 
-        if (isVector && projectDetails.getBaseline() != null && ConfigHelper.isForecast( projectDetails.getBaseline() ))
+        if ( isVector && project.getBaseline() != null && ConfigHelper.isForecast( project.getBaseline() ))
         {
             baselineValid = Executor.submit(
-                    () -> Variables.isForecastValid( projectDetails.getId(),
-                                                     ProjectDetails.BASELINE_MEMBER,
-                                                     projectDetails.getBaselineVariableID()
+                    () -> Variables.isForecastValid( project.getId(),
+                                                     Project.BASELINE_MEMBER,
+                                                     project.getBaselineVariableID()
                     )
             );
         }
-        else if (isVector && projectDetails.getBaseline() != null)
+        else if ( isVector && project.getBaseline() != null)
         {
             baselineValid = Executor.submit(
-                    () -> Variables.isObservationValid( projectDetails.getId(),
-                                                        ProjectDetails.BASELINE_MEMBER,
-                                                        projectDetails.getBaselineVariableID()
+                    () -> Variables.isObservationValid( project.getId(),
+                                                        Project.BASELINE_MEMBER,
+                                                        project.getBaselineVariableID()
                     )
             );
         }
 
         try
         {
-            projectDetails.prepareForExecution();
+            project.prepareForExecution();
         }
         catch (CalculationException | SQLException exception)
         {
@@ -171,17 +171,17 @@ public final class Operations {
             {
 
                 List<String> availableVariables = Variables.getAvailableObservationVariables(
-                        projectDetails.getId(),
-                        ProjectDetails.LEFT_MEMBER
+                        project.getId(),
+                        Project.LEFT_MEMBER
                 );
 
                 StringBuilder message = new StringBuilder(  );
                 message = message.append( "There is no '")
-                                 .append(projectDetails.getLeft().getVariable().getValue())
+                                 .append( project.getLeft().getVariable().getValue())
                                  .append("' data available for the left hand data ")
                                  .append("evaluation dataset.");
 
-                if (availableVariables.isEmpty())
+                if (!availableVariables.isEmpty())
                 {
                     message = message.append(" Available variable(s):");
                     for (String variable : availableVariables)
@@ -201,24 +201,24 @@ public final class Operations {
         catch ( InterruptedException e )
         {
             LOGGER.warn( "The process for determining if '"
-                         + projectDetails.getLeft().getVariable().getValue()
+                         + project.getLeft().getVariable().getValue()
                          + "' is a valid variable was interrupted.", e );
             Thread.currentThread().interrupt();
         }
         catch ( ExecutionException e )
         {
             throw new IOException( "An error occurred while determining whether '"
-                                   + projectDetails.getLeft().getVariable().getValue()
+                                   + project.getLeft().getVariable().getValue()
                                    + "' is a valid variable for left side evaluation.",
                                    e );
         }
         catch ( SQLException e )
         {
-            throw new IOException("'"
-                                  + projectDetails.getLeft().getVariable().getValue()
-                                  + "' is not a valid variable for right hand "
-                                  + "evaluation. Possible alternatives could "
-                                  + "not be found.", e);
+            throw new IOException( "'"
+                                   + project.getLeft().getVariable().getValue()
+                                   + "' is not a valid variable for right hand "
+                                   + "evaluation. Possible alternatives could "
+                                   + "not be found.", e);
         }
 
         try
@@ -229,23 +229,23 @@ public final class Operations {
             {
                 List<String> availableVariables;
 
-                if (ConfigHelper.isForecast( projectDetails.getRight() ))
+                if (ConfigHelper.isForecast( project.getRight() ))
                 {
                     availableVariables = Variables.getAvailableForecastVariables(
-                            projectDetails.getId(),
-                            ProjectDetails.RIGHT_MEMBER
+                            project.getId(),
+                            Project.RIGHT_MEMBER
                     );
                 }
                 else
                 {
                     availableVariables = Variables.getAvailableObservationVariables(
-                            projectDetails.getId(),
-                            ProjectDetails.RIGHT_MEMBER
+                            project.getId(),
+                            Project.RIGHT_MEMBER
                     );
                 }
 
                 String message = "There is no '"
-                                 + projectDetails.getRightVariableName()
+                                 + project.getRightVariableName()
                                  + "' data available for the right hand data "
                                  + "evaluation dataset.";
 
@@ -268,24 +268,24 @@ public final class Operations {
         catch ( InterruptedException e )
         {
             LOGGER.warn( "The process for determining if '"
-                         + projectDetails.getRightVariableName()
+                         + project.getRightVariableName()
                          + "' is a valid variable was interrupted.", e );
             Thread.currentThread().interrupt();
         }
         catch ( ExecutionException e )
         {
             throw new IOException( "An error occurred while determining whether '"
-                                   + projectDetails.getRightVariableName()
+                                   + project.getRightVariableName()
                                    + "' is a valid variable for right side evaluation.",
                                    e );
         }
         catch ( SQLException e )
         {
-            throw new IOException("'"
-                                  + projectDetails.getRightVariableName()
-                                  + "' is not a valid variable for right hand "
-                                  + "evaluation. Possible alternatives could "
-                                  + "not be found.", e);
+            throw new IOException( "'"
+                                   + project.getRightVariableName()
+                                   + "' is not a valid variable for right hand "
+                                   + "evaluation. Possible alternatives could "
+                                   + "not be found.", e);
         }
 
         // If baselineValid is null, then we have no baseline variable to
@@ -304,23 +304,23 @@ public final class Operations {
             {
                 List<String> availableVariables;
 
-                if (ConfigHelper.isForecast( projectDetails.getRight() ))
+                if (ConfigHelper.isForecast( project.getRight() ))
                 {
                     availableVariables = Variables.getAvailableForecastVariables(
-                            projectDetails.getId(),
-                            ProjectDetails.BASELINE_MEMBER
+                            project.getId(),
+                            Project.BASELINE_MEMBER
                     );
                 }
                 else
                 {
                     availableVariables = Variables.getAvailableObservationVariables(
-                            projectDetails.getId(),
-                            ProjectDetails.BASELINE_MEMBER
+                            project.getId(),
+                            Project.BASELINE_MEMBER
                     );
                 }
 
                 String message = "There is no '"
-                                 + projectDetails.getBaseline().getVariable().getValue()
+                                 + project.getBaseline().getVariable().getValue()
                                  + "' data available for the right hand data "
                                  + "evaluation dataset.";
 
@@ -343,24 +343,24 @@ public final class Operations {
         catch ( InterruptedException e )
         {
             LOGGER.warn( "The process for determining if '"
-                         + projectDetails.getBaseline().getVariable().getValue()
+                         + project.getBaseline().getVariable().getValue()
                          + "' is a valid variable was interrupted.", e );
             Thread.currentThread().interrupt();
         }
         catch ( ExecutionException e )
         {
             throw new IOException( "An error occurred while determining whether '"
-                                   + projectDetails.getBaseline().getVariable().getValue()
+                                   + project.getBaseline().getVariable().getValue()
                                    + "' is a valid variable for baseline evaluation.",
                                    e );
         }
         catch ( SQLException e )
         {
-            throw new IOException("'"
-                                  + projectDetails.getBaseline().getVariable().getValue()
-                                  + "' is not a valid variable for right hand "
-                                  + "evaluation. Possible alternatives could "
-                                  + "not be found.", e);
+            throw new IOException( "'"
+                                   + project.getBaseline().getVariable().getValue()
+                                   + "' is not a valid variable for right hand "
+                                   + "evaluation. Possible alternatives could "
+                                   + "not be found.", e);
         }
         LOGGER.info("Preliminary metadata loading is complete.");
     }
@@ -368,10 +368,10 @@ public final class Operations {
     /**
      * Ingests for an evaluation project and returns state regarding the same.
      * @param projectConfig the projectConfig for the evaluation
-     * @return the {@link ProjectDetails} (state about this evaluation)
+     * @return the {@link Project} (state about this evaluation)
      * @throws IOException when anything goes wrong
      */
-    public static ProjectDetails ingest( ProjectConfig projectConfig )
+    public static Project ingest( ProjectConfig projectConfig )
             throws IOException
     {
         Database.lockForMutation();
@@ -393,7 +393,7 @@ public final class Operations {
      * @return the projectdetails object from ingesting this project
      * @throws IOException when anything goes wrong
      */
-    private static ProjectDetails doIngestWork( ProjectConfig projectConfig )
+    private static Project doIngestWork( ProjectConfig projectConfig )
             throws IOException
     {
         boolean orphansDeleted;
@@ -422,7 +422,7 @@ public final class Operations {
             }
         }
 
-        ProjectDetails result = null;
+        Project result = null;
 
         List<IngestResult> projectSources = new ArrayList<>();
 
@@ -502,12 +502,12 @@ public final class Operations {
 
 
     // TODO: Why are we passing a feature and not a FeatureDetails object, which is custom made for all of this?
-    public static DataGenerator getInputs( ProjectDetails projectDetails,
+    public static DataGenerator getInputs( Project project,
                                            Feature feature,
                                            Path outputDirectoryForPairs )
     {
         return new DataGenerator( feature,
-                                  projectDetails,
+                                  project,
                                   outputDirectoryForPairs );
     }
 
@@ -734,7 +734,7 @@ public final class Operations {
     /**
      * Creates a set of {@link wres.config.FeaturePlus Features} to
      * evaluate statistics for
-     * @param projectDetails The object that holds details on what a project
+     * @param project The object that holds details on what a project
      *                       should do
      * @return A set of {@link wres.config.FeaturePlus Features}
      * @throws SQLException Thrown if information about the features could not
@@ -743,13 +743,13 @@ public final class Operations {
      * created
      * @throws NoDataException if there are no features to process
      */
-    public static Set<FeaturePlus> decomposeFeatures( ProjectDetails projectDetails )
+    public static Set<FeaturePlus> decomposeFeatures( Project project )
             throws SQLException, IOException
     {
         Set<FeaturePlus> atomicFeatures = new TreeSet<>( Comparator.comparing(
                 ConfigHelper::getFeatureDescription ));
 
-        for (FeatureDetails details : projectDetails.getFeatures())
+        for (FeatureDetails details : project.getFeatures())
         {
             // Check if the feature has any intersecting values
             Feature feature = details.toFeature();
@@ -758,7 +758,7 @@ public final class Operations {
 
             try
             {
-                hasLeadOffset = projectDetails.getLeadOffset( feature ) != null;
+                hasLeadOffset = project.getLeadOffset( feature ) != null;
             }
             catch ( CalculationException e )
             {
@@ -767,7 +767,7 @@ public final class Operations {
                                        ConfigHelper.getFeatureDescription( feature ) );
             }
 
-            if ( projectDetails.usesGriddedData( projectDetails.getRight() ) ||
+            if ( project.usesGriddedData( project.getRight() ) ||
                  hasLeadOffset)
             {
                 Feature resolvedFeature = details.toFeature();

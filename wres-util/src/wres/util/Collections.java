@@ -126,7 +126,7 @@ public final class Collections
      * @param <U> the type of object
      * @param source The list to filter
      * @param expression The expression used to determine what should be in the list
-     * @return A new list containing  all elements that passed through the filter
+     * @return A new collection containing  all elements that passed through the filter
      */
     public static <U> Collection<U> where(Collection<U> source, Predicate<U> expression) {
         List<U> filteredValues = null;

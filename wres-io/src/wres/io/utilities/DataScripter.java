@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.io.concurrency.SQLExecutor;
 import wres.io.concurrency.ValueRetriever;
+import wres.util.NotImplementedException;
 import wres.util.functional.ExceptionalConsumer;
 import wres.util.functional.ExceptionalFunction;
 
@@ -210,7 +211,7 @@ public class DataScripter extends ScriptBuilder
      */
     public <V> V retrieve(String label) throws SQLException
     {
-        return Database.getResult( this.toString(), label, this.isHighPriority );
+        return Database.getResult( this.toString(), label, this.arguments.toArray(), this.isHighPriority );
     }
 
     /**
@@ -395,6 +396,11 @@ public class DataScripter extends ScriptBuilder
      */
     public void consume(ExceptionalConsumer<DataProvider, SQLException> consumer) throws SQLException
     {
+        if (!this.arguments.isEmpty())
+        {
+            throw new NotImplementedException( "DataScripter.consume doesn't use arguments yet." );
+        }
+
         if (this.isHighPriority)
         {
             Database.highPriorityConsume( this.toString(), consumer );
@@ -419,6 +425,10 @@ public class DataScripter extends ScriptBuilder
      */
     public <U> List<U> interpret( ExceptionalFunction<DataProvider, U, SQLException> interpretor) throws SQLException
     {
+        if (!this.arguments.isEmpty())
+        {
+            throw new NotImplementedException( "DataScripter.consume doesn't use arguments yet." );
+        }
         return Database.interpret( this.toString(), interpretor, this.isHighPriority );
     }
 

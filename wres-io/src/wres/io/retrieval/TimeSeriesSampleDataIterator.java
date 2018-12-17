@@ -18,7 +18,7 @@ import wres.datamodel.sampledata.SampleData;
 import wres.io.concurrency.Executor;
 import wres.io.config.ConfigHelper;
 import wres.io.config.OrderedSampleMetadata;
-import wres.io.data.details.ProjectDetails;
+import wres.io.project.Project;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
 import wres.util.CalculationException;
@@ -33,13 +33,13 @@ public class TimeSeriesSampleDataIterator extends SampleDataIterator
             LoggerFactory.getLogger(TimeSeriesSampleDataIterator.class);
 
     TimeSeriesSampleDataIterator( Feature feature,
-                                  ProjectDetails projectDetails,
+                                  Project project,
                                   Path outputDirectoryForPairs,
                                   final Collection<OrderedSampleMetadata> sampleMetadataCollection)
             throws IOException
     {
         super( feature,
-               projectDetails,
+               project,
                outputDirectoryForPairs,
                sampleMetadataCollection);
     }
@@ -77,7 +77,7 @@ public class TimeSeriesSampleDataIterator extends SampleDataIterator
 
         try
         {
-            String initialDate = this.getProjectDetails().getInitialForecastDate( this.getRight(), this.getFeature() );
+            String initialDate = this.getProject().getInitialForecastDate( this.getRight(), this.getFeature() );
             initialTimeSeriesDate = Instant.from(TimeHelper.convertStringToDate(initialDate));
         }
         catch ( SQLException e )
@@ -85,8 +85,8 @@ public class TimeSeriesSampleDataIterator extends SampleDataIterator
             throw new CalculationException( "The time of issuance for the first time series could not be calculated.", e );
         }
 
-        int forecastLag = this.getProjectDetails().getForecastLag( this.getRight(), this.getFeature() );
-        Integer seriesToRetrieve = this.getProjectDetails().getNumberOfSeriesToRetrieve();
+        int forecastLag = this.getProject().getForecastLag( this.getRight(), this.getFeature() );
+        Integer seriesToRetrieve = this.getProject().getNumberOfSeriesToRetrieve();
 
         //write a script to get the min and max leads
         DataScripter script = new DataScripter(  );
@@ -101,7 +101,7 @@ public class TimeSeriesSampleDataIterator extends SampleDataIterator
             script.addLine("WHERE ",
                            ConfigHelper.getVariableFeatureClause(
                                    this.getFeature(),
-                                   this.getProjectDetails().getRightVariableID(),
+                                   this.getProject().getRightVariableID(),
                                    "TS"
                            )
             );
@@ -111,16 +111,16 @@ public class TimeSeriesSampleDataIterator extends SampleDataIterator
             throw new CalculationException( "The ID for the variable to evaluate could not be calculated.", e );
         }
 
-        script.addTab().addLine("AND TSV.lead >= ", this.getProjectDetails().getMinimumLead());
-        script.addTab().addLine("AND TSV.lead <= ", this.getProjectDetails().getMaximumLead());
+        script.addTab().addLine("AND TSV.lead >= ", this.getProject().getMinimumLead());
+        script.addTab().addLine("AND TSV.lead <= ", this.getProject().getMaximumLead());
 
         script.addTab().addLine("AND EXISTS (");
         script.addTab(  2  ).addLine("SELECT 1");
         script.addTab(  2  ).addLine("FROM wres.ProjectSource PS");
         script.addTab(  2  ).addLine("INNER JOIN wres.TimeSeriesSource TSS");
         script.addTab(   3   ).addLine("ON TSS.source_id = PS.source_id");
-        script.addTab(  2  ).addLine("WHERE PS.project_id = ", this.getProjectDetails().getId());
-        script.addTab(   3   ).addLine("AND PS.member = ", ProjectDetails.RIGHT_MEMBER);
+        script.addTab(  2  ).addLine("WHERE PS.project_id = ", this.getProject().getId());
+        script.addTab(   3   ).addLine( "AND PS.member = ", Project.RIGHT_MEMBER);
         script.addTab(   3   ).addLine("AND TSS.timeseries_id = TS.timeseries_id");
         script.addTab().add(");");
 
@@ -139,7 +139,7 @@ public class TimeSeriesSampleDataIterator extends SampleDataIterator
         }
 
         OrderedSampleMetadata.Builder sampleMetadataBuilder = new OrderedSampleMetadata.Builder();
-        sampleMetadataBuilder.setProject(this.getProjectDetails()).setFeature( this.getFeature() );
+        sampleMetadataBuilder.setProject(this.getProject()).setFeature( this.getFeature() );
 
         // Each iteration should retrieve "seriesToRetrieve" time series back, with a given
         // distance of "forecastLag" between each
@@ -169,7 +169,7 @@ public class TimeSeriesSampleDataIterator extends SampleDataIterator
         String minimumDate;
         try
         {
-            minimumDate = this.getProjectDetails().getInitialForecastDate( this.getRight(), this.getFeature() );
+            minimumDate = this.getProject().getInitialForecastDate( this.getRight(), this.getFeature() );
         }
         catch ( SQLException e )
         {
@@ -178,20 +178,20 @@ public class TimeSeriesSampleDataIterator extends SampleDataIterator
         }
 
         // This will give an estimate of the amount of hours between each Time Series
-        Integer lag = this.getProjectDetails().getForecastLag( this.getRight(), this.getFeature() );
+        Integer lag = this.getProject().getForecastLag( this.getRight(), this.getFeature() );
 
         if (lag == 0)
         {
             return 1;
         }
 
-        Integer seriesToRetrieve = this.getProjectDetails().getNumberOfSeriesToRetrieve();
+        Integer seriesToRetrieve = this.getProject().getNumberOfSeriesToRetrieve();
         String variablePosition;
         try
         {
             variablePosition = ConfigHelper.getVariableFeatureClause(
                     this.getFeature(),
-                    getProjectDetails().getRightVariableID(),
+                    getProject().getRightVariableID(),
                     "TS"
             );
         }
@@ -226,8 +226,8 @@ public class TimeSeriesSampleDataIterator extends SampleDataIterator
         script.addTab(   3   ).addLine("FROM wres.ProjectSource PS");
         script.addTab(   3   ).addLine("INNER JOIN wres.TimeSeriesSource TSS");
         script.addTab(    4    ).addLine("ON TSS.source_id = PS.source_id");
-        script.addTab(   3   ).addLine("WHERE PS.project_id = ", this.getProjectDetails().getId());
-        script.addTab(    4    ).addLine("AND PS.member = ", ProjectDetails.RIGHT_MEMBER);
+        script.addTab(   3   ).addLine("WHERE PS.project_id = ", this.getProject().getId());
+        script.addTab(    4    ).addLine( "AND PS.member = ", Project.RIGHT_MEMBER);
         script.addTab(    4    ).addLine("AND TSS.timeseries_id = TS.timeseries_id");
         script.addTab(  2  ).addLine(")");
         script.addLine(") AS TS;");
