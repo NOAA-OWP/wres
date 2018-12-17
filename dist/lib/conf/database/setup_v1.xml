@@ -21,25 +21,6 @@
         </sql>
         <comment>The wres database role has been created.</comment>
     </changeSet>
-    <changeSet id="Setup wres_user Role v1.0" author="Christopher Tubbs" dbms="PostgreSQL" failOnError="true">
-        <preConditions onFail="MARK_RAN">
-            <sqlCheck expectedResult="f">
-                SELECT EXISTS (
-                    SELECT 1
-                    FROM pg_roles
-                    WHERE rolname = 'wres_user'
-                );
-            </sqlCheck>
-        </preConditions>
-        <sql>
-            CREATE ROLE wres_user LOGIN PASSWORD 'EvalWaterRes'
-                NOSUPERUSER INHERIT NOCREATEDB NOCREATEROLE NOREPLICATION;
-        </sql>
-        <sql>
-            GRANT wres TO wres_user;
-        </sql>
-        <comment>The default wres_user has been added to the database.</comment>
-    </changeSet>
     <changeSet id="Add Self to WRES v1.0" author="Christopher Tubbs" dbms="PostgreSQL" failOnError="true" runAlways="true">
         <preConditions onFail="CONTINUE">
             <and>

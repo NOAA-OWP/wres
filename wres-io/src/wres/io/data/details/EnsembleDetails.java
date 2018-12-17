@@ -125,7 +125,9 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
 		
 		if (comparison == 0)
 		{
-			comparison = this.getEnsembleMemberID().compareTo(other.getEnsembleMemberID());
+		    int thisMember = Integer.parseInt( this.getEnsembleMemberID() );
+		    int otherMember = Integer.parseInt( other.getEnsembleMemberID() );
+			comparison = Integer.compare( thisMember, otherMember );
 		}
 
 		if (comparison == 0)

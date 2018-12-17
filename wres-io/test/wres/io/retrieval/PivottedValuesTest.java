@@ -57,13 +57,13 @@ public class PivottedValuesTest
             Assert.fail("The test could not be properly prepared.");
         }
 
-        PivottedValues pivottedValues = new PivottedValues( Instant.now(), 10, new TreeMap<>() );
+        PivottedValues pivottedValues = new PivottedValues( Instant.now(), 10, this.getValueMapping() );
 
         Collection<Double> sorted = null;
 
         try
         {
-            sorted = Whitebox.invokeMethod( pivottedValues, "sortAggregatedValues", true, aggregatedValues );
+            sorted = Whitebox.invokeMethod( pivottedValues, "sortAggregatedValues", aggregatedValues );
         }
         catch ( Exception e )
         {
@@ -125,13 +125,13 @@ public class PivottedValuesTest
             Assert.fail("The test could not be properly prepared.");
         }
 
-        PivottedValues pivottedValues = new PivottedValues( Instant.now(), 10, new TreeMap<>() );
+        PivottedValues pivottedValues = new PivottedValues( Instant.now(), 10, this.getValueMapping());
 
         Collection<Double> sorted = null;
 
         try
         {
-            sorted = Whitebox.invokeMethod( pivottedValues, "sortAggregatedValues", true, aggregatedValues );
+            sorted = Whitebox.invokeMethod( pivottedValues, "sortAggregatedValues", aggregatedValues );
         }
         catch ( Exception e )
         {
@@ -194,7 +194,22 @@ public class PivottedValuesTest
         aggregatedValues.add(Pair.of(3, 11.0));
         aggregatedValues.add(Pair.of(3, 12.0));
 
-        PivottedValues pivottedValues = new PivottedValues( Instant.now(), 10, new TreeMap<>() );
+        Map<PivottedValues.EnsemblePosition, List<Double>> valueMapping = new TreeMap<>(  );
+
+        valueMapping.put( new PivottedValues.EnsemblePosition( 0, 1 ), Collections.singletonList( 1.0 ) );
+        valueMapping.put( new PivottedValues.EnsemblePosition( 1, 1 ), Collections.singletonList( 2.0 ) );
+        valueMapping.put( new PivottedValues.EnsemblePosition( 2, 1 ), Collections.singletonList( 3.0 ) );
+        valueMapping.put( new PivottedValues.EnsemblePosition( 3, 1 ), Collections.singletonList( 4.0 ) );
+        valueMapping.put( new PivottedValues.EnsemblePosition( 4, 2 ), Collections.singletonList( 5.0 ) );
+        valueMapping.put( new PivottedValues.EnsemblePosition( 5, 2 ), Collections.singletonList( 6.0 ) );
+        valueMapping.put( new PivottedValues.EnsemblePosition( 6, 2 ), Collections.singletonList( 7.0 ) );
+        valueMapping.put( new PivottedValues.EnsemblePosition( 7, 2 ), Collections.singletonList( 8.0 ) );
+        valueMapping.put( new PivottedValues.EnsemblePosition( 8, 3 ), Collections.singletonList( 9.0 ) );
+        valueMapping.put( new PivottedValues.EnsemblePosition( 9, 3 ), Collections.singletonList( 10.0 ) );
+        valueMapping.put( new PivottedValues.EnsemblePosition( 10, 3 ), Collections.singletonList( 11.0 ) );
+        valueMapping.put( new PivottedValues.EnsemblePosition( 11, 3 ), Collections.singletonList( 12.0 ) );
+
+        PivottedValues pivottedValues = new PivottedValues( Instant.now(), 10, valueMapping );
 
         try
         {
@@ -210,7 +225,7 @@ public class PivottedValuesTest
 
         try
         {
-            sorted = Whitebox.invokeMethod( pivottedValues, "sortAggregatedValues", false, aggregatedValues );
+            sorted = Whitebox.invokeMethod( pivottedValues, "sortAggregatedValues", aggregatedValues );
         }
         catch ( Exception e )
         {
@@ -367,5 +382,45 @@ public class PivottedValuesTest
         }
 
         return !(controlValues.hasNext() || experimentValues.hasNext());
+    }
+
+    /**
+     * Creates a consistent mapping of values to test against
+     * <br><br>
+     * Mapped data is:
+     * <ul>
+     *     <li>1: [1.0, 2.0, 3.0, 4.0]</li>
+     *     <li>2: [5.0, 6.0, 7.0, 8.0]</li>
+     *     <li>3: [9.0, 10.0, 11.0, 12.0]</li>
+     * </ul>
+     * @return A mapping of values to test against
+     */
+    private Map<PivottedValues.EnsemblePosition, List<Double>> getValueMapping()
+    {
+        Map<PivottedValues.EnsemblePosition, List<Double>> valueMapping = new TreeMap<>(  );
+
+        List<Double> member1 = new ArrayList<>(  );
+        member1.add( 1.0 );
+        member1.add( 2.0 );
+        member1.add( 3.0 );
+        member1.add( 4.0 );
+
+        List<Double> member2 = new ArrayList<>();
+        member2.add(5.0);
+        member2.add(6.0);
+        member2.add(7.0);
+        member2.add(8.0);
+
+        List<Double> member3 = new ArrayList<>(  );
+        member3.add(9.0);
+        member3.add(10.0);
+        member3.add(11.0);
+        member3.add(12.0);
+
+        valueMapping.put( new PivottedValues.EnsemblePosition( 0, 1 ), member1 );
+        valueMapping.put(new PivottedValues.EnsemblePosition( 1, 2 ), member2);
+        valueMapping.put(new PivottedValues.EnsemblePosition( 2, 3 ), member3);
+
+        return valueMapping;
     }
 }
