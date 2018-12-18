@@ -197,49 +197,6 @@ public final class TimeHelper
     }
 
     /**
-     * Converts the unit and count to the standard resolution of lead times
-     *
-     * @param unit The current unit of time of the count
-     * @param count The number of units
-     * @return The count converted into the standard unit for lead times
-     */
-    public static long unitsToLeadUnits(String unit, Double count)
-    {
-        // The units we're expecting should end in an S (HOURS, MINUTES, SECONDS, et)
-        // ChronoUnit supports other units, but we shouldn't be using units like "millenia"
-        unit = unit.toUpperCase();
-
-        if (!unit.endsWith( "S" ))
-        {
-            unit += "S";
-        }
-        return TimeHelper.durationToLongUnits( Duration.of(count.longValue(),
-                                                           ChronoUnit.valueOf( unit)), TimeHelper.LEAD_RESOLUTION );
-    }
-
-    /**
-     * Converts the unit and count to the standard resolution of lead times
-     *
-     * @param unit The current unit of time of the count
-     * @param count The number of units
-     * @return The count converted into the standard unit for lead times
-     */
-    public static long unitsToLeadUnits(String unit, Long count)
-    {
-        // The units we're expecting should end in an S (HOURS, MINUTES, SECONDS, et)
-        // ChronoUnit supports other units, but we shouldn't be using units like "millenia"
-        unit = unit.toUpperCase();
-
-        if (!unit.endsWith( "S" ))
-        {
-            unit += "S";
-        }
-
-        return TimeHelper.durationToLongUnits( Duration.of(count,
-                                                           ChronoUnit.valueOf( unit)), TimeHelper.LEAD_RESOLUTION );
-    }
-
-    /**
      * Retrieves the specified number of time units from the input duration. Accepted units include:
      * 
      * <ol>

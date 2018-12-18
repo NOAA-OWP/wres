@@ -1,19 +1,13 @@
 package wres.io.data.details;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.io.data.details.EnsembleDetails.EnsembleKey;
-import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
-import wres.io.utilities.ScriptBuilder;
 
 /**
  * Describes basic information used to define an Ensemble from the database
@@ -21,10 +15,10 @@ import wres.io.utilities.ScriptBuilder;
  */
 public final class EnsembleDetails extends CachedDetail<EnsembleDetails, EnsembleKey>
 {
-    public EnsembleDetails (String name, String ensembleMemberID, String qualifierID)
+    public EnsembleDetails ( String name, Integer ensembleMemberIndex, String qualifierID)
     {
         this.ensembleName = name;
-        this.ensembleMemberID = ensembleMemberID;
+        this.ensembleMemberIndex = ensembleMemberIndex;
         this.qualifierID = qualifierID;
     }
 
@@ -39,22 +33,30 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
     // Lock that will prevent the saving of the ensemble multiple times in a row
     private static final Object ENSEMBLE_SAVE_LOCK = new Object();
 	
-	// The name of the ensemble being represented
+	/**
+	 The name of the ensemble being represented
+	  */
 	private String ensembleName = null;
+
+    /**
+     * The index of the member of the ensemble
+     */
+	private Integer ensembleMemberIndex = null;
 	
-	// The "numeric" id of the member of the ensemble
-	private String ensembleMemberID = null;
-	
-	// The serial id of the ensemble in the database
+	/**
+	 * The serial id of the ensemble in the database
+     */
 	private Integer ensembleID = null;
+
+    /**
+     * The qualifier for the ensemble
+     */
+    private String qualifierID = null;
 
 	public void setQualifierID( String qualifierID )
 	{
 		this.qualifierID = qualifierID;
 	}
-
-	// The qualifier for the ensemble
-	private String qualifierID = null;
 	
 	/**
 	 * Updates the ensemble name if necessary. If the update occurs, the serial id is reset
@@ -71,13 +73,13 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
 	
 	/**
 	 * Updates the ensemble member id if necessary. If the update occurs, the serial id is reset
-	 * @param ensembleMemberID The new id for the ensemble member
+	 * @param ensembleMemberIndex The new id for the ensemble member
 	 */
-	public void setEnsembleMemberID(String ensembleMemberID)
+	public void setEnsembleMemberIndex( final Integer ensembleMemberIndex )
 	{
-		if (this.ensembleMemberID == null || !this.ensembleMemberID.equalsIgnoreCase(ensembleMemberID))
+		if ( this.ensembleMemberIndex == null || !this.ensembleMemberIndex.equals( ensembleMemberIndex ))
 		{
-			this.ensembleMemberID = ensembleMemberID;
+			this.ensembleMemberIndex = ensembleMemberIndex;
 			this.ensembleID = null;
 		}
 	}
@@ -106,33 +108,71 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
 	 * Returns a sanitized version of the ensemblemember id for saving and loading values
 	 * @return The id of the ensemble member if one exists, "0" otherwise
 	 */
-	private String getEnsembleMemberID()
+	private Integer getEnsembleMemberIndex()
 	{
-		String id = "0";
-		
-		if (ensembleMemberID != null)
-		{
-			id = this.ensembleMemberID;
-		}
-		
-		return id;
+	    return this.ensembleMemberIndex;
 	}
 
 	@Override
 	public int compareTo(EnsembleDetails other)
 	{
-		int comparison = this.ensembleName.compareToIgnoreCase(other.ensembleName);
+	    int comparison = 0;
+
+        if (this.ensembleName == null && other.ensembleName == null)
+        {
+            comparison = 0;
+        }
+        else if (this.ensembleName != null && other.ensembleName != null)
+        {
+            comparison = this.ensembleName.compareTo( other.ensembleName );
+        }
+        else if (this.ensembleName != null)
+        {
+            comparison = 1;
+        }
+        else
+        {
+            comparison = -1;
+        }
 		
 		if (comparison == 0)
 		{
-		    int thisMember = Integer.parseInt( this.getEnsembleMemberID() );
-		    int otherMember = Integer.parseInt( other.getEnsembleMemberID() );
-			comparison = Integer.compare( thisMember, otherMember );
+            if ( this.getEnsembleMemberIndex() == null && other.getEnsembleMemberIndex() == null)
+            {
+                comparison = 0;
+            }
+            else if ( this.getEnsembleMemberIndex() != null && other.getEnsembleMemberIndex() != null)
+            {
+                comparison = this.getEnsembleMemberIndex().compareTo( other.getEnsembleMemberIndex() );
+            }
+            else if ( this.getEnsembleMemberIndex() != null)
+            {
+                comparison = 1;
+            }
+            else
+            {
+                comparison = -1;
+            }
 		}
 
 		if (comparison == 0)
 		{
-			comparison = this.getQualifierID().compareToIgnoreCase( other.getQualifierID() );
+            if (this.getQualifierID() == null && other.getQualifierID() == null)
+            {
+                comparison = 0;
+            }
+            else if (this.getQualifierID() != null && other.getQualifierID() != null)
+            {
+                comparison = this.getQualifierID().compareTo( other.getQualifierID() );
+            }
+            else if (this.getQualifierID() != null)
+            {
+                comparison = 1;
+            }
+            else
+            {
+                comparison = -1;
+            }
 		}
 
 		return comparison;
@@ -141,7 +181,7 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
 	@Override
 	public EnsembleKey getKey()
 	{
-		return new EnsembleKey(this.ensembleName, this.qualifierID, this.ensembleMemberID);
+		return new EnsembleKey(this.ensembleName, this.qualifierID, this.ensembleMemberIndex );
 	}
 
 	@Override
@@ -181,13 +221,13 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
 		    script.addArgument( this.getQualifierID() );
 		}
 
-		if (this.ensembleMemberID == null)
+		if ( this.ensembleMemberIndex == null)
 		{
 		    script.addArgument( null );
 		}
 		else
 		{
-			script.addArgument( Integer.parseInt( this.getEnsembleMemberID() ) );
+			script.addArgument( this.getEnsembleMemberIndex() );
 		}
 
 		script.addTab().addLine("WHERE NOT EXISTS (");
@@ -199,14 +239,14 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
 
 		script.addTab(   3   ).add("AND ensemblemember_id ");
 
-        if (this.ensembleMemberID == null)
+        if ( this.ensembleMemberIndex == null)
         {
             script.addLine("IS NULL");
         }
         else
         {
             script.addLine("= ?");
-            script.addArgument( Integer.parseInt( this.getEnsembleMemberID() ) );
+            script.addArgument( this.getEnsembleMemberIndex() );
         }
 
 		script.addTab(   3   ).add("AND qualifier_id ");
@@ -237,14 +277,14 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
 
 		script.addTab().add("AND ensemblemember_id ");
 
-        if (this.ensembleMemberID == null)
+        if ( this.ensembleMemberIndex == null)
         {
             script.addLine("IS NULL");
         }
         else
         {
             script.addLine("= ?");
-            script.addArgument( Integer.parseInt( this.getEnsembleMemberID() ) );
+            script.addArgument( this.getEnsembleMemberIndex() );
         }
 
 		script.addTab().add("AND qualifier_id ");
@@ -279,17 +319,16 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
     {
         return "Ensemble: { ID: " + this.ensembleName +
                ", Qualifier: " + this.getQualifierID() +
-               ", Member: " + this.getEnsembleMemberID() + "}";
+               ", Member: " + this.getEnsembleMemberIndex() + "}";
     }
-
-    public static EnsembleKey createKey(String ensembleName, String qualifierID, String memberIndex)
-	{
-	    return new EnsembleKey(ensembleName, qualifierID, memberIndex);
-	}
 	
 	public static class EnsembleKey implements Comparable<EnsembleKey>
 	{
-	    EnsembleKey(String ensembleName, String qualifierID, String memberIndex)
+        private final String ensembleName;
+        private final String qualifierID;
+        private final Integer memberIndex;
+
+	    EnsembleKey(String ensembleName, String qualifierID, Integer memberIndex)
 	    {
 	    	if (ensembleName == null)
 			{
@@ -311,7 +350,7 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
 
 	    	if (memberIndex == null)
             {
-                this.memberIndex = "0";
+                this.memberIndex = 0;
             }
             else
             {
@@ -326,7 +365,22 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
 
             if (equality == 0)
 			{
-				equality = this.getMemberIndex().compareTo( other.getMemberIndex() );
+			    if (this.getMemberIndex() == null && other.getMemberIndex() == null)
+                {
+                    equality = 0;
+                }
+			    else if (this.getMemberIndex() != null && other.getMemberIndex() != null)
+                {
+                    equality = this.getMemberIndex().compareTo( other.getMemberIndex() );
+                }
+                else if (this.getMemberIndex() != null)
+                {
+                    equality = 1;
+                }
+                else
+                {
+                    equality = -1;
+                }
 			}
 
 			if (equality == 0)
@@ -357,7 +411,7 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
             return this.qualifierID;
         }
         
-        public String getMemberIndex()
+        public Integer getMemberIndex()
         {
             return this.memberIndex;
         }
@@ -368,9 +422,5 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
                     this.memberIndex + ", " +
                     this.qualifierID;
         }
-
-        private final String ensembleName;
-        private final String qualifierID;
-        private final String memberIndex;
 	}
 }

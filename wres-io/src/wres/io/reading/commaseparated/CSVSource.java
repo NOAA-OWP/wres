@@ -380,7 +380,7 @@ public class CSVSource extends BasicSource
 
         String ensembleName = "default";
         String qualifierID = null;
-        String ensembleMemberID = null;
+        Integer ensembleMemberID = null;
 
         if (data.hasColumn("ensemble_name"))
         {
@@ -394,7 +394,7 @@ public class CSVSource extends BasicSource
 
         if (data.hasColumn("ensemblemember_id"))
         {
-            ensembleMemberID = data.getString("ensemblemember_id");
+            ensembleMemberID = data.getInt("ensemblemember_id");
         }
 
         Integer ensembleID = Ensembles.getEnsembleID(ensembleName, ensembleMemberID, qualifierID);
