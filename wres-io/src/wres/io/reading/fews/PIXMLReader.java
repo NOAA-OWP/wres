@@ -531,7 +531,12 @@ public final class PIXMLReader extends XMLReader
             currentEnsembleID = null;
 
             //    If we are at the tag for the ensemble member, save it to the ensemble
-            currentEnsembleMemberID = XMLHelper.getXMLText(reader);
+            String member = XMLHelper.getXMLText( reader );
+
+            if (Strings.hasValue( member ))
+            {
+                currentEnsembleMemberID = Integer.parseInt( member );
+            }
         }
         else if ( localName.equalsIgnoreCase("forecastDate") )
         {
@@ -914,7 +919,7 @@ public final class PIXMLReader extends XMLReader
 	/**
 	 * The member ID of the current ensemble
 	 */
-	private String currentEnsembleMemberID = null;
+	private Integer currentEnsembleMemberID = null;
 	
 	/**
 	 * The name of the variable whose values are currently being parsed 

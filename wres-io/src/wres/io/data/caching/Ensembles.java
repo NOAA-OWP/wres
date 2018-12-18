@@ -72,7 +72,7 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
         while (data.next()) {
             detail = new EnsembleDetails();
             detail.setEnsembleName(data.getString("ensemble_name"));
-            detail.setEnsembleMemberID(String.valueOf(data.getInt("ensemblemember_id")));
+            detail.setEnsembleMemberIndex( data.getInt( "ensemblemember_id"));
             detail.setQualifierID(data.getString("qualifier_id"));
             detail.setID(data.getInt("ensemble_id"));
             this.add( detail );
@@ -102,7 +102,7 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
             throws SQLException
     {
 		return Ensembles.getEnsembleID( ensemble.getName(),
-                                           String.valueOf( ensemble.getMember()),
+                                           ensemble.getMember(),
                                            ensemble.getQualifier() );
 	}
 
@@ -122,14 +122,14 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
 	    List<Integer> ids = new ArrayList<>();
 
         BiPredicate<EnsembleCondition, EnsembleKey> namesAreEquivalent = (condition, key) -> {
-            boolean compareNames = ensemble.getName() != null;
+            boolean compareNames = condition.getName() != null;
 
             return !compareNames || condition.getName().equals( key.getEnsembleName() );
         };
 
         BiPredicate<EnsembleCondition, EnsembleKey> membersAreEquivalent = (condition, key) -> {
-            boolean compareMembers = ensemble.getMemberId() != null;
-            return !compareMembers || condition.getMemberId().equals( key.getMemberIndex() );
+            boolean compareMembers = condition.getMemberId() != null;
+            return !compareMembers || Integer.parseInt(condition.getMemberId()) == key.getMemberIndex();
         };
 
         BiPredicate<EnsembleCondition, EnsembleKey> qualifiersAreEquivalent = (condition, key) -> {
@@ -191,15 +191,15 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
 	/**
 	 * Returns the ID of an Ensemble from the global cache based on the combination of its name, member ID, and qualifier
 	 * @param name The name of the Ensemble to retrieve
-	 * @param memberID The Member ID of the Ensemble to retrieve
+	 * @param memberIndex The Member Index of the Ensemble to retrieve
 	 * @param qualifierID The qualifier of the Ensemble to retrieve
 	 * @return The ID of the Ensemble
 	 * @throws SQLException Thrown if the ID could not be retrieved from the database
 	 */
-	public static Integer getEnsembleID(String name, String memberID, String qualifierID) throws SQLException
+	public static Integer getEnsembleID(String name, Integer memberIndex, String qualifierID) throws SQLException
     {
         // If there is no name, but there are either a member ID or a qualifier...
-	    if (name == null && ( Strings.hasValue(memberID) || Strings.hasValue( qualifierID )))
+	    if (name == null && ( memberIndex != null || Strings.hasValue( qualifierID )))
         {
             // just set the name as blank
             name = "";
@@ -211,7 +211,7 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
             return Ensembles.getDefaultEnsembleID();
         }
 
-		return Ensembles.getCache().getID( new EnsembleDetails( name, memberID, qualifierID ) );
+		return Ensembles.getCache().getID( new EnsembleDetails( name, memberIndex, qualifierID ) );
 	}
 
 	public static Integer getDefaultEnsembleID() throws SQLException

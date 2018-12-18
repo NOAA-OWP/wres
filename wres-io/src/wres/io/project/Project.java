@@ -9,6 +9,7 @@ import java.sql.SQLException;
 import java.time.Duration;
 import java.time.MonthDay;
 import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -905,7 +906,7 @@ public class Project
      * @return The length of a period of lead time to retrieve from the database
      * @throws CalculationException Thrown if the scale of the data could not be calculated
      */
-    public Integer getLeadPeriod() throws CalculationException
+    public Duration getLeadPeriod() throws CalculationException
     {
         Integer period;
 
@@ -921,7 +922,7 @@ public class Project
             period = this.getScale().getPeriod();
         }
 
-        return period;
+        return Duration.of(period, this.getLeadUnit());
     }
 
     /**
@@ -949,7 +950,7 @@ public class Project
      * @return The unit of time that leads should be queried in
      * @throws CalculationException Thrown if the scale of the data could not be calculated
      */
-    public String getLeadUnit() throws CalculationException
+    public TemporalUnit getLeadUnit() throws CalculationException
     {
         String unit;
 
@@ -973,7 +974,7 @@ public class Project
             }
         }
 
-        return unit;
+        return ChronoUnit.valueOf( unit.toUpperCase() );
     }
 
     /**
@@ -996,7 +997,7 @@ public class Project
      * @return The frequency will which to retrieve a period of leads
      * @throws CalculationException Thrown if the scale of the data could not be calculated
      */
-    public Integer getLeadFrequency() throws CalculationException
+    public Duration getLeadFrequency() throws CalculationException
     {
         Integer frequency;
 
@@ -1024,7 +1025,7 @@ public class Project
             }
         }
 
-        return frequency;
+        return Duration.of(frequency, this.getLeadUnit());
     }
 
     /**

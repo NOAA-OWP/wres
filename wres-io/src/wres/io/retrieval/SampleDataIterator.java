@@ -175,16 +175,6 @@ abstract class SampleDataIterator implements Iterator<Future<SampleData<?>>>
         Duration beginning;
         Duration end;
 
-        long frequency = TimeHelper.unitsToLeadUnits(
-                this.getProject().getLeadUnit(),
-                this.getProject().getLeadFrequency()
-        );
-
-        long period = TimeHelper.unitsToLeadUnits(
-                this.getProject().getLeadUnit(),
-                this.getProject().getLeadPeriod()
-        );
-
         Long offset;
         try
         {
@@ -199,8 +189,8 @@ abstract class SampleDataIterator implements Iterator<Future<SampleData<?>>>
                                             e );
         }
 
-        beginning = Duration.of(sampleNumber * frequency + offset, TimeHelper.LEAD_RESOLUTION);
-        end = Duration.of(TimeHelper.durationToLead( beginning ) + period, TimeHelper.LEAD_RESOLUTION);
+        beginning = this.getProject().getLeadFrequency().multipliedBy( sampleNumber ).plus( offset, TimeHelper.LEAD_RESOLUTION );
+        end = beginning.plus( this.getProject().getLeadPeriod() );
 
         return Pair.of(beginning, end);
     }

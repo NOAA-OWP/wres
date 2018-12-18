@@ -65,7 +65,10 @@ class IngestedValue implements Comparable<IngestedValue>
         this.validTime = validTime;
         this.measurements = measurements;
         this.convertAllMeasurements( measurementUnitId, project );
-        this.members = new Integer[1];
+        this.members = new Integer[measurements.length];
+        // Each value is the default due to a lack of extra information
+        // Low risk since gridded ensembles are not frequently used
+        Arrays.fill( this.members, 1 );
         this.lead = lead;
         this.referenceEpoch = basisEpoch;
     }

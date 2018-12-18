@@ -51,16 +51,16 @@ public final class NetCDF {
 
     public static class Ensemble
     {
-        public Ensemble(String name, String qualifier, String member)
+        private final String name;
+        private final String qualifier;
+        private final Integer member;
+
+        public Ensemble(String name, String qualifier, Integer member)
         {
             this.name = name;
             this.qualifier = qualifier;
             this.member = member;
         }
-
-        private final String name;
-        private final String qualifier;
-        private final String member;
 
         public String getName()
         {
@@ -72,7 +72,7 @@ public final class NetCDF {
             return this.qualifier;
         }
 
-        public String getMember()
+        public Integer getMember()
         {
             return this.member;
         }
@@ -260,7 +260,9 @@ public final class NetCDF {
     {
         String name = "Unknown";
         String qualifier = "";
-        String member = "0";
+        Integer member = 0;
+
+        String memberString = null;
 
         Attribute modelConfiguration = file.findGlobalAttributeIgnoreCase( "model_configuration" );
         Attribute modelOutputType = file.findGlobalAttributeIgnoreCase( "model_output_type" );
@@ -278,7 +280,12 @@ public final class NetCDF {
 
         if (ensembleMemberNumber != null)
         {
-            member = ensembleMemberNumber.getStringValue();
+            memberString = ensembleMemberNumber.getStringValue();
+
+            if (Strings.isNaturalNumber( memberString ))
+            {
+                member = Integer.parseInt( memberString );
+            }
         }
 
         if (NetCDF.isNWMData( file ) && (ensembleMemberNumber == null || modelConfiguration == null))
@@ -303,7 +310,12 @@ public final class NetCDF {
 
                 if (Strings.hasValue( minus ))
                 {
-                    member = Strings.extractWord( minus, "\\d\\d" );
+                    memberString = Strings.extractWord( minus, "\\d\\d" );
+
+                    if (Strings.isNaturalNumber( memberString ))
+                    {
+                        member = Integer.parseInt( memberString );
+                    }
                 }
             }
         }
