@@ -555,6 +555,7 @@ public class AllScenarios {
             String aLine = "";
             ArrayList<ThePairs> arrayList = new ArrayList<ThePairs>();
             String firstLine = aLine = pairsReader.readLine(); // skip the first line
+			int lineNumber = 1; // start at 2nd line, line 1
             while ((aLine = pairsReader.readLine()) != null) {
                 //StringTokenizer stringTokenizer = new StringTokenizer(aLine, ",");
                 String[] delimiter = aLine.split( "," );
@@ -563,8 +564,9 @@ public class AllScenarios {
                 for (int i = 9; i < delimiter.length; i++) {
                     list.add(delimiter[i]);
                 }
-				
-                arrayList.add( new ThePairs(
+				try {	
+					System.out.println(aLine);
+                	arrayList.add( new ThePairs(
                                      delimiter[0], // siteID
                                      delimiter[1], // earlestIssueTime
                                      delimiter[2], // latestIssueTime
@@ -576,7 +578,13 @@ public class AllScenarios {
                                       Integer.parseInt( delimiter[8]), // leadDurationPairInSeconds
                                       list // leftAndrightMemberInCMS
                                       ));
-            }
+				} catch (NumberFormatException nfe) {
+					resultCode = 4;
+					System.err.println(pairsFile.getName() + " has NumberFormatException: at line " + lineNumber + " with line " + aLine);
+					System.err.println(nfe.getMessage());
+				}
+				lineNumber++;
+            } // end while statement
             pairsReader.close();
 			//System.out.println("ready to sort " + arrayList.size());
             Collections.sort( arrayList, new  SortedPairs());
@@ -615,9 +623,6 @@ public class AllScenarios {
         } catch (FileNotFoundException fnfe) {
 			resultCode = 2;
             System.err.println(pairsFile.getName() + " not found, result code = " + resultCode +  fnfe.getMessage());
-		} catch (NumberFormatException nfe) {
-			resultCode = 4;
-			System.err.println(pairsFile.getName() + " number format exception, result code = " + resultCode + nfe.getMessage());
         } catch (IOException ioe) {
 			resultCode = 4;
             System.err.println("Read/Write file error accured during sorting, result code = " + resultCode + ioe.getMessage());
