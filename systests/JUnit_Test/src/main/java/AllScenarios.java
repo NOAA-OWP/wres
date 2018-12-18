@@ -1,6 +1,5 @@
 //package wres.scenarios;
 
-
 import wres.io.Operations;
 import wres.control.Control;
 
@@ -8,6 +7,11 @@ import java.sql.SQLException;
 import java.util.*;
 import java.io.*;
 import java.nio.file.*;
+
+/*
+import org.junit.Test;
+import static org.junit.Assert.*;
+*/
 
 /**
  * Run the scenario tests by JUnit with gradle
@@ -150,22 +154,30 @@ public class AllScenarios {
      * @param dir -- scenario test directory name
      * @return -- the tmpdir path
      */
-    public void runScenarioTest(String dir) {
+//	@Test
+    public boolean runScenarioTest(String dir) {
 	//setAllProperties();
         System.setProperty( "user.dir", System.getenv( "TESTS_DIR" ) + "/" + dir );
         Path userdirPath = Paths.get(System.getProperty("user.dir"));
         File testDir = userdirPath.toFile();
         System.out.println("testDir = " + testDir.getAbsolutePath());
         
-        System.out.println( "PWD = " + System.getProperty( "user.dir" ) );
+        //System.out.println( "PWD = " + System.getProperty( "user.dir" ) );
         //System.setProperty( dir, testDir.getAbsolutePath() );
       
         String files[] = testDir.list();
 		cleanDatabase(files);
         deleteOldEvaluationDirectory(files, testDir);
 		doBefore(files);
-		executeConfigFile(files);
+		boolean executeCode = true;
+		int e = executeConfigFile(files);	
+		if (e == 0) 
+			 executeCode = true;
+		else
+			executeCode = false;
 		doAfter(files);
+		System.out.println("Run scenario " + dir + " result code = " + executeCode);
+		return executeCode;
      }
      
      public int executeConfigFile(String[] files) { 
