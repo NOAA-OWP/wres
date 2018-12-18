@@ -80,7 +80,7 @@ public final class MetadataHelper
      * it is not currently possible, in practice, to obtain an estimate of a smaller
      * {@link Duration} from a larger {@link Duration}, i.e. to conduct downscaling. 
      * Indeed, downscaling is not currently supported by the application, but is 
-     * supportable, in principle.<p> 
+     * supportable, in principle.</p> 
      * 
      * <p>In addition to validating the desiredTimeScale
      * against the existingTimeScale, the desiredTimeScale is validated against the
