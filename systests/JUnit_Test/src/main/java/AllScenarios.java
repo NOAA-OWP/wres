@@ -565,7 +565,7 @@ public class AllScenarios {
                     list.add(delimiter[i]);
                 }
 				try {	
-					System.out.println(aLine);
+					//System.out.println(aLine);
                 	arrayList.add( new ThePairs(
                                      delimiter[0], // siteID
                                      delimiter[1], // earlestIssueTime
