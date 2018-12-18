@@ -11,7 +11,7 @@ public class ScenarioTest {
     //    testScenario001();
     //    testScenario003();
     //    testScenario007();
-    	testScenario008();
+    	assertNotNull(testScenario008());
         //testScenario009();
         
     }
@@ -38,9 +38,9 @@ public class ScenarioTest {
         allScenarios.runSceanrioTest("scenario007");
     }
 */
-    public void testScenario008() {
+    public boolean testScenario008() {
         AllScenarios allScenarios = new AllScenarios();
-        allScenarios.runScenarioTest("scenario008");
+        return allScenarios.runScenarioTest("scenario008");
     }
 /*
     public void testScenario009() {

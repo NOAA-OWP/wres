@@ -5,6 +5,6 @@ import java.nio.file.*;
 public class Scenario003 {
     @Test public void runtest() {
 	AllScenarios classUnderTest = new AllScenarios();
-	classUnderTest.runScenarioTest("scenario003");
+	assertTrue(classUnderTest.runScenarioTest("scenario003"));
     }
 }
