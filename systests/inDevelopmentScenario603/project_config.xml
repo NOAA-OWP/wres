@@ -3,8 +3,8 @@
     <inputs>
         <left label="NWM Analysis">
             <type>simulations</type>
-            <!--<source format="netCDF">../data/griddedExamples/land_may18/analysis_assim/</source>-->
-            <source format="netCDF">../data/griddedExamples/land_ellicott_city/analysis_assim/</source>
+            <!--<source format="netCDF">data/griddedExamples/land_may18/analysis_assim/</source>-->
+            <source format="netCDF">data/griddedExamples/land_ellicott_city/analysis_assim/</source>
             <variable>ACCET</variable>
             <existingTimeScale>
                 <function>mean</function>
@@ -14,8 +14,8 @@
         </left>
         <right label="NWM Short Range">
             <type>single valued forecasts</type>
-<!--            <source format="netCDF">../data/griddedExamples/land_may18/short_range/</source>-->
-            <source format="netCDF">../data/griddedExamples/land_ellicott_city/short_range/</source>
+<!--            <source format="netCDF">data/griddedExamples/land_may18/short_range/</source>-->
+            <source format="netCDF">data/griddedExamples/land_ellicott_city/short_range/</source>
             <variable>ACCET</variable>
             <existingTimeScale>
                 <function>mean</function>

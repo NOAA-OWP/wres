@@ -8,7 +8,7 @@
         </left>
         <right label="AHPS">
             <type>single valued forecasts</type>
-            <source format="wrds">../smalldata/wrds_json/ahps/</source>
+            <source format="wrds">smalldata/wrds_json/ahps/</source>
             <variable>flow</variable>
         </right>
     </inputs>
