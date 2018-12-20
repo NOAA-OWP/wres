@@ -2,8 +2,6 @@ package wres.io.config;
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
-import java.util.Map;
-import java.util.TreeMap;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -13,7 +11,6 @@ import org.powermock.modules.junit4.PowerMockRunner;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DurationUnit;
-import wres.io.utilities.LRUMap;
 
 @RunWith(PowerMockRunner.class)
 @PowerMockIgnore("javax.management.*")

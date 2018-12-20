@@ -49,17 +49,17 @@ public class ZippedSource extends BasicSource {
 
     private final ThreadPoolExecutor readerService = createReaderService();
 
+    private final Queue<Future<List<IngestResult>>> tasks = new LinkedList<>();
+
+    private final Queue<String> savedFiles = new LinkedList<>();
+
     private ThreadPoolExecutor createReaderService()
     {
-        int threadCount = ((Double)Math.ceil(
-                SystemSettings.maximumThreadCount() / 10F)).intValue();
-        threadCount = Math.max(threadCount, 2);
-
-        ThreadPoolExecutor executor = new ThreadPoolExecutor(threadCount,
-                                                             threadCount,
+        ThreadPoolExecutor executor = new ThreadPoolExecutor(SystemSettings.maximumArchiveThreads(),
+                                                             SystemSettings.maximumArchiveThreads(),
                                                              SystemSettings.poolObjectLifespan(),
                                                              TimeUnit.MILLISECONDS,
-                                                             new ArrayBlockingQueue<>(threadCount));
+                                                             new ArrayBlockingQueue<>(SystemSettings.poolObjectLifespan()));
 
         executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
 
@@ -93,10 +93,6 @@ public class ZippedSource extends BasicSource {
     {
         return tasks.poll();
     }
-
-    private final Queue<Future<List<IngestResult>>> tasks = new LinkedList<>();
-
-    private final Queue<String> savedFiles = new LinkedList<>();
 
 	/**
 	 * Constructor that sets the filename

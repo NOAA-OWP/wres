@@ -48,7 +48,6 @@ public final class SystemSettings extends XMLReader
     private int maximumThreadCount = 10;
     private int poolObjectLifespan = 30000;
     private int fetchSize = 100;
-    private int maximumInserts = 5000;
     private int maximumCopies = 200;
     private int defaultChartWidth = 800;
     private int defaultChartHeight = 600;
@@ -56,8 +55,8 @@ public final class SystemSettings extends XMLReader
     private int minimumCachedNetcdf = 100;
     private int maximumCachedNetcdf = 200;
     private int hardNetcdfCacheLimit = 0;
-	private String remoteNetCDFURL = "http://***REMOVED***dstore.***REMOVED***.***REMOVED***/nwm/";
 	private String netcdfStorePath = "systests/data/";
+	private Integer maximumArchiveThreads = null;
 
 	/**
 	 * The Default constructor
@@ -101,11 +100,11 @@ public final class SystemSettings extends XMLReader
                     case "maximum_thread_count":
                         this.setMaximumThreadCount( reader );
                         break;
+                    case "maximum_archive_threads":
+                        this.setMaximumArchiveThreads(reader);
+                        break;
                     case "pool_object_lifespan":
                         this.setPoolObjectLifespan( reader );
-                        break;
-                    case "maximum_inserts":
-                        this.setMaximumInserts( reader );
                         break;
                     case "maximum_copies":
                         this.setMaximumCopies( reader );
@@ -126,9 +125,6 @@ public final class SystemSettings extends XMLReader
                         break;
                     case "default_chart_height":
                         this.setDefaultChartHeight( reader );
-                        break;
-                    case "netcdf_repo_url":
-                        this.setRemoteNetCDFURL( reader );
                         break;
                     case "netcdf_store_path":
                         this.setNetcdfStorePath( reader );
@@ -165,11 +161,7 @@ public final class SystemSettings extends XMLReader
     @Override
     protected void completeParsing() throws IOException
     {
-        String storePath = System.getProperty( "wres.StorePath" );
-        if (storePath != null)
-        {
-            this.netcdfStorePath = storePath;
-        }
+        this.applySystemPropertyOverrides();
     }
 
 	private void setMinimumCachedNetcdf(XMLStreamReader reader)
@@ -222,6 +214,15 @@ public final class SystemSettings extends XMLReader
         }
     }
 
+    private void setMaximumArchiveThreads(XMLStreamReader reader) throws XMLStreamException
+    {
+        String value = XMLHelper.getXMLText( reader );
+        if (value != null && StringUtils.isNumeric( value ))
+        {
+            this.maximumArchiveThreads = Integer.parseInt( value );
+        }
+    }
+
     private void setPoolObjectLifespan(XMLStreamReader reader)
             throws XMLStreamException
     {
@@ -229,16 +230,6 @@ public final class SystemSettings extends XMLReader
         if (value != null && StringUtils.isNumeric(value))
         {
             this.poolObjectLifespan = Integer.parseInt(value);
-        }
-    }
-
-    private void setMaximumInserts(XMLStreamReader reader)
-            throws XMLStreamException
-    {
-        String value = XMLHelper.getXMLText( reader );
-        if (value != null && StringUtils.isNumeric(value))
-        {
-            this.maximumInserts = Integer.parseInt(value);
         }
     }
 
@@ -292,16 +283,6 @@ public final class SystemSettings extends XMLReader
         }
     }
 
-    private void setRemoteNetCDFURL(XMLStreamReader reader)
-        throws XMLStreamException
-    {
-        String url = XMLHelper.getXMLText( reader);
-        if (Strings.hasValue(url))
-        {
-            this.remoteNetCDFURL = url;
-        }
-    }
-
     private void setNetcdfStorePath(XMLStreamReader reader)
         throws XMLStreamException
     {
@@ -320,20 +301,24 @@ public final class SystemSettings extends XMLReader
         return instance.netcdfStorePath;
     }
 
-    /**
-     * @return The URL where NetCDF files may be downloaded from
-     */
-	public static String getRemoteNetcdfURL()
-    {
-        return instance.remoteNetCDFURL;
-    }
-
 	/**
 	 * @return The number of allowable threads
 	 */
 	public static int maximumThreadCount()
     {
         return instance.maximumThreadCount;
+    }
+
+    public static int maximumArchiveThreads()
+    {
+        if (instance.maximumArchiveThreads == null)
+        {
+            int threadCount = ((Double)Math.ceil(
+                    SystemSettings.maximumThreadCount() / 10F)).intValue();
+            return Math.max(threadCount, 2);
+        }
+
+        return instance.maximumArchiveThreads;
     }
 
 	/**
@@ -436,6 +421,127 @@ public final class SystemSettings extends XMLReader
         return instance.databaseConfiguration.getRawConnection(null);
     }
 
+    private void applySystemPropertyOverrides()
+    {
+        String maxIngestThreads = System.getProperty( "wres.maxIngestThreads" );
+        if (maxIngestThreads != null)
+        {
+            if (StringUtils.isNumeric( maxIngestThreads ))
+            {
+                this.maximumThreadCount = Integer.parseInt( maxIngestThreads );
+            }
+            else
+            {
+                LOGGER.warn( "'{}' is not a valid value for wres.maxIngestThreads. Falling back to {}",
+                             maxIngestThreads, this.maximumThreadCount );
+            }
+        }
+
+        String fetchCount = System.getProperty( "wres.fetchSize" );
+        if (fetchCount != null)
+        {
+            if (StringUtils.isNumeric( fetchCount ))
+            {
+                this.fetchSize = Integer.parseInt( fetchCount );
+            }
+            else
+            {
+                LOGGER.warn( "'{}' is not a valid value for wres.fetchSize. Falling back to {}",
+                             fetchCount, this.fetchSize );
+            }
+        }
+
+        String maxCopies = System.getProperty( "wres.maximumCopies" );
+        if (maxCopies != null)
+        {
+            if (StringUtils.isNumeric( maxCopies ))
+            {
+                this.maximumCopies = Integer.parseInt( maxCopies );
+            }
+            else
+            {
+                LOGGER.warn( "'{}' is not a valid value for wres.maximumCopies. Falling back to {}",
+                             maxCopies, this.maximumCopies );
+            }
+        }
+
+        String netcdfPeriod = System.getProperty( "wres.netcdfCachePeriod" );
+        if (netcdfPeriod != null)
+        {
+            if (StringUtils.isNumeric( netcdfPeriod ))
+            {
+                this.netcdfCachePeriod = Integer.parseInt( netcdfPeriod );
+            }
+            else
+            {
+                LOGGER.warn( "'{}' is not a valid value for wres.netcdfCachePeriod. Falling back to {}",
+                             netcdfPeriod, this.netcdfCachePeriod );
+            }
+        }
+
+        String minimumCache = System.getProperty( "wres.minimumCachedNetcdf" );
+        if (minimumCache != null)
+        {
+            if (StringUtils.isNumeric( minimumCache ))
+            {
+                this.minimumCachedNetcdf = Integer.parseInt( minimumCache );
+            }
+            else
+            {
+                LOGGER.warn( "'{}' is not a valid value for wres.minimumCachedNetcdf. Falling back to {}",
+                             minimumCache, this.minimumCachedNetcdf );
+            }
+        }
+
+        String maximumCache = System.getProperty( "wres.maximumCachedNetcdf" );
+        if (maximumCache != null)
+        {
+            if (StringUtils.isNumeric( maximumCache ))
+            {
+                this.maximumCachedNetcdf = Integer.parseInt( maximumCache );
+            }
+            else
+            {
+                LOGGER.warn( "'{}' is not a valid value for wres.maximumCachedNetcdf. Falling back to {}",
+                             maximumCache, this.maximumCachedNetcdf );
+            }
+        }
+
+        String hardNetcdfLimit = System.getProperty( "wres.hardNetcdfCacheLimit" );
+        if (hardNetcdfLimit != null)
+        {
+            if (StringUtils.isNumeric( hardNetcdfLimit ))
+            {
+                this.hardNetcdfCacheLimit = Integer.parseInt( hardNetcdfLimit );
+            }
+            else
+            {
+                LOGGER.warn( "'{}' is not a valid value for wres.hardNetcdfCacheLimit. Falling back to {}",
+                             hardNetcdfLimit, this.hardNetcdfCacheLimit );
+            }
+        }
+
+        String maxArchiveThreads = System.getProperty( "wres.maximumArchiveThreads" );
+        if (maxArchiveThreads != null)
+        {
+            if (StringUtils.isNumeric( maxArchiveThreads ))
+            {
+                this.maximumArchiveThreads = Integer.parseInt( maxArchiveThreads );
+            }
+            else
+            {
+                LOGGER.warn( "'{}' is not a valid value for wres.maximumArchiveThreads. Falling back to {}",
+                             maxArchiveThreads, this.maximumArchiveThreads );
+            }
+        }
+
+        String storePath = System.getProperty( "wres.StorePath" );
+        if (storePath != null)
+        {
+            this.netcdfStorePath = storePath;
+        }
+    }
+
 	@Override
 	public String toString()
 	{
@@ -450,10 +556,6 @@ public final class SystemSettings extends XMLReader
 		stringRep += System.lineSeparator();
 		stringRep += "Most amount of rows that can be loaded from the database at once:\t";
 		stringRep += String.valueOf(fetchSize);
-		stringRep += System.lineSeparator();
-		stringRep += "Maximum number of inserts into the database at any given time:\t";
-		stringRep += String.valueOf(maximumInserts);
-		stringRep += System.lineSeparator();
 		stringRep += System.lineSeparator();
         stringRep += "Default chart width:\t";
         stringRep += String.valueOf(defaultChartWidth);

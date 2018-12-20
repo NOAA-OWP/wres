@@ -52,7 +52,7 @@ import wres.io.data.details.FeatureDetails;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
-import wres.io.utilities.LRUMap;
+import wres.util.LRUMap;
 import wres.io.utilities.NoDataException;
 import wres.util.CalculationException;
 import wres.util.Collections;

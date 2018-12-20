@@ -178,7 +178,15 @@ public final class TimeSeries
 		}
         this.variableFeatureID = variableFeatureID;
 	}
-	
+
+    /**
+     * @return The ID of the union between the variable and location
+     */
+	public Integer getVariableFeatureID()
+    {
+        return this.variableFeatureID;
+    }
+
 	/**
 	 * Sets the ID of the unit of measurement connected to the ensemble for
      * this Time Series. The ID of the Time Series
@@ -252,6 +260,11 @@ public final class TimeSeries
     public void setTimeStep(final int timeStep)
     {
         this.timeStep = timeStep;
+    }
+
+    public int getEnsembleId()
+    {
+        return this.ensembleID;
     }
 	
 	/**
