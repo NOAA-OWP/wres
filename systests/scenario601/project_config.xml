@@ -4,12 +4,12 @@
     <inputs>
         <left label="NWM Analysis">
             <type>simulations</type>
-            <source format="netCDF" >../data/channel_rt/analysis_assim/</source>
+            <source format="netCDF" >data/channel_rt/analysis_assim/</source>
             <variable>streamflow</variable>
         </left>
         <right label="NWM Short Range">
             <type>single valued forecasts</type>
-            <source format="netCDF">../data/channel_rt/short_range/</source>
+            <source format="netCDF">data/channel_rt/short_range/</source>
             <variable>streamflow</variable>
         </right>
     </inputs>

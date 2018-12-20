@@ -13,8 +13,8 @@
         </left>
         <right label="NWM v2.0 Medium Range Ensemble">
             <type>ensemble forecasts</type>
-            <source format="netCDF" pattern="**/*f00*">../data/channel_rt/medium_range_ens_2.0/nwm.20180827</source>
-            <source format="netCDF" pattern="**/*f00*">../data/channel_rt/medium_range_ens_2.0/nwm.20180828</source>
+            <source format="netCDF" pattern="**/*f00*">data/channel_rt/medium_range_ens_2.0/nwm.20180827</source>
+            <source format="netCDF" pattern="**/*f00*">data/channel_rt/medium_range_ens_2.0/nwm.20180828</source>
             <variable>streamflow</variable>
         </right>
     </inputs>

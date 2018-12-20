@@ -4,20 +4,20 @@
     <inputs>
         <left>
             <type>observations</type>
-            <source>../smalldata/25510317T00_FAKE2_observations.xml</source>
+            <source>smalldata/25510317T00_FAKE2_observations.xml</source>
             <variable>DISCHARGE</variable>
         </left>
         <right>
             <type>single valued forecasts</type>
-            <source>../smalldata/25510317T12_FAKE2_forecast.xml</source>
-            <source>../smalldata/25510318T00_FAKE2_forecast.xml</source>
-            <source>../smalldata/25510318T12_FAKE2_forecast.xml</source>
-            <source>../smalldata/25510319T00_FAKE2_forecast.xml</source>
+            <source>smalldata/25510317T12_FAKE2_forecast.xml</source>
+            <source>smalldata/25510318T00_FAKE2_forecast.xml</source>
+            <source>smalldata/25510318T12_FAKE2_forecast.xml</source>
+            <source>smalldata/25510319T00_FAKE2_forecast.xml</source>
             <variable>STREAMFLOW</variable>
         </right>
         <baseline>
             <type>observations</type>
-            <source>../smalldata/25510317T00_FAKE2_observations.xml</source>
+            <source>smalldata/25510317T00_FAKE2_observations.xml</source>
             <variable>DISCHARGE</variable>
             <!-- Special transformation "persistence" tells system to generate
                  a persistence forecast from the data source that will create

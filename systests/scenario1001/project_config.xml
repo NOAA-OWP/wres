@@ -4,15 +4,15 @@
     <inputs>
         <left>
             <type>observations</type>
-            <source>../smalldata/25510317T00_FAKE3_observations.xml</source>
+            <source>smalldata/25510317T00_FAKE3_observations.xml</source>
             <variable>DISCHARGE</variable>
         </left>
         <right>
             <type>single valued forecasts</type>
-            <source>../smalldata/25510317T12_FAKE3_forecast.xml</source>
-            <source>../smalldata/25510318T00_FAKE3_forecast.xml</source>
-            <source>../smalldata/25510318T12_FAKE3_forecast.xml</source>
-            <source>../smalldata/25510319T00_FAKE3_forecast.xml</source>
+            <source>smalldata/25510317T12_FAKE3_forecast.xml</source>
+            <source>smalldata/25510318T00_FAKE3_forecast.xml</source>
+            <source>smalldata/25510318T12_FAKE3_forecast.xml</source>
+            <source>smalldata/25510319T00_FAKE3_forecast.xml</source>
             <variable>STREAMFLOW</variable>
         </right>
     </inputs>
