@@ -8,6 +8,10 @@ public class SystemTestScenario003
     public void testScenario001()
     {
         String scenarioName = "scenario003";
+        System.out.println( );
+        System.out.println("########################################################## EXECUTION " + scenarioName);
+        System.out.println( );
+        
         SystestsScenarioRunner classUnderTest = new SystestsScenarioRunner( scenarioName );
         
         //TODO Not sure what to do about output at this point.
