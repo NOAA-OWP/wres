@@ -41,6 +41,45 @@ import wres.util.TimeHelper;
  */
 class NWCALReader extends S3Reader
 {
+    private enum NWMFileType
+    {
+        ALL(0),
+        ANALYSIS_ASSIM(1),
+        FORCING_ANALYSIS_ASSIM(2),
+        FORCING_MEDIUM_RANGE(3),
+        FORCING_SHORT_RANGE(4),
+        MEDIUM_RANGE(5),
+        SHORT_RANGE(6),
+        LONG_RANGE_MEM1(7),
+        LONG_RANGE_MEM2(8),
+        LONG_RANGE_MEM3(9),
+        LONG_RANGE_MEM4(10);
+
+        private final int fileType;
+
+        public int getFileType()
+        {
+            return this.fileType;
+        }
+
+        NWMFileType(final int fileType)
+        {
+            this.fileType = fileType;
+        }
+
+        static boolean typeExists(final String name)
+        {
+            for (NWMFileType fileType : NWMFileType.values())
+            {
+                if (fileType.name().equals( name ))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
     private static final Logger LOGGER = LoggerFactory.getLogger( NWCALReader.class );
 
     /**
@@ -58,6 +97,470 @@ class NWCALReader extends S3Reader
      * TODO: Do we want to make this configurable?
      */
     private static final String ENDPOINT_URL = "http://***REMOVED***rgw.***REMOVED***.***REMOVED***:8080";
+
+    /*Here's the fun: we need to hit the file index API like with NWIS. We no longer need to seperate days, but we still need
+    to determine the bookends.  Users will need to indicate first the file type (enum above), then a pattern, like "*land*" or something.
+    We need a query like:
+        "http://***REMOVED***.***REMOVED***.***REMOVED***/api/v1/nwm-file-index/6/?"
+        + "start-date=20181120&"
+        + "end-date=20181121&"
+        + "fields=name"
+        + "%2C%20source_file"
+        + "%2C%20destination_file"
+        + "%2C%20data_datetime"
+        + "%2C%20appearance_datetime"
+        + "%2C%20acquired_datetime"
+        + "%2C%20complete_datetime"
+        + "%2C%20file_size_in_bytes"
+        + "%2C%20file_modification_datetime"
+        + "%2C%20cached_datetime"
+    The hash will be based on those numbers since we wont have enough information otherwise without downloading these files every time.
+
+    that will give us a response like:
+    {
+        "next": null,
+            "previous": null,
+            "results": [
+        {
+            "source_file": "/pub/data/nccf/com/nwm/prod/nwm.20181121/short_range/nwm.t23z.short_range.land.f007.conus.nc",
+                "name": "NWM Land Short Range",
+                "destination_file": "nwm.20181121/short_range/nwm.t23z.short_range.land.f007.conus.nc",
+                "data_datetime": "2018-11-21T23:00:00Z",
+                "appearance_datetime": "2018-11-22T00:45:00Z",
+                "removal_datetime": "2018-11-23T00:00:00Z",
+                "acquired_datetime": "2018-11-27T06:20:21.750273Z",
+                "complete_datetime": "2018-11-27T06:20:25.791354Z",
+                "failed_datetime": "2018-11-22T00:50:07.835130Z",
+                "file_modification_datetime": "2018-11-22T00:38:53Z",
+                "expire_datetime": null,
+                "cleaned_datetime": null,
+                "cached_datetime": "2018-11-22T00:50:07.835130Z",
+                "cached_file": null,
+                "file_size_in_bytes": 42783462,
+                "extra_classes": {
+            "forecast_hour": 7
+        }
+        },
+        {
+            "source_file": "/pub/data/nccf/com/nwm/prod/nwm.20181121/short_range/nwm.t22z.short_range.channel_rt.f005.conus.nc",
+                "name": "NWM Channel Routing Short Range",
+                "destination_file": "nwm.20181121/short_range/nwm.t22z.short_range.channel_rt.f005.conus.nc",
+                "data_datetime": "2018-11-21T22:00:00Z",
+                "appearance_datetime": "2018-11-21T23:45:00Z",
+                "removal_datetime": "2018-11-23T00:00:00Z",
+                "acquired_datetime": "2018-11-27T16:32:17.508714Z",
+                "complete_datetime": "2018-11-27T16:32:28.960181Z",
+                "failed_datetime": "2018-11-21T23:47:58.342677Z",
+                "file_modification_datetime": "2018-11-21T23:38:15Z",
+                "expire_datetime": null,
+                "cleaned_datetime": null,
+                "cached_datetime": "2018-11-21T23:47:58.342677Z",
+                "cached_file": null,
+                "file_size_in_bytes": 11870523,
+                "extra_classes": {
+            "forecast_hour": 5
+        }
+        },
+        {
+            "source_file": "/pub/data/nccf/com/nwm/prod/nwm.20181121/short_range/nwm.t20z.short_range.reservoir.f008.conus.nc",
+                "name": "NWM Reservoir Short Range",
+                "destination_file": "nwm.20181121/short_range/nwm.t20z.short_range.reservoir.f008.conus.nc",
+                "data_datetime": "2018-11-21T20:00:00Z",
+                "appearance_datetime": "2018-11-21T21:45:00Z",
+                "removal_datetime": "2018-11-23T00:00:00Z",
+                "acquired_datetime": "2018-11-27T00:15:48.916723Z",
+                "complete_datetime": "2018-11-27T00:15:49.778110Z",
+                "failed_datetime": "2018-11-21T21:46:40.102993Z",
+                "file_modification_datetime": "2018-11-21T21:41:35Z",
+                "expire_datetime": null,
+                "cleaned_datetime": null,
+                "cached_datetime": "2018-11-21T21:46:40.102993Z",
+                "cached_file": null,
+                "file_size_in_bytes": 54134,
+                "extra_classes": {
+            "forecast_hour": 8
+        }
+        },
+        {
+            "source_file": "/pub/data/nccf/com/nwm/prod/nwm.20181121/short_range/nwm.t19z.short_range.land.f013.conus.nc",
+                "name": "NWM Land Short Range",
+                "destination_file": "nwm.20181121/short_range/nwm.t19z.short_range.land.f013.conus.nc",
+                "data_datetime": "2018-11-21T19:00:00Z",
+                "appearance_datetime": "2018-11-21T20:45:00Z",
+                "removal_datetime": "2018-11-23T00:00:00Z",
+                "acquired_datetime": "2018-11-27T08:46:33.466118Z",
+                "complete_datetime": "2018-11-27T08:46:37.052928Z",
+                "failed_datetime": "2018-11-21T20:48:00.841238Z",
+                "file_modification_datetime": "2018-11-21T20:38:14Z",
+                "expire_datetime": null,
+                "cleaned_datetime": null,
+                "cached_datetime": "2018-11-21T20:48:00.841238Z",
+                "cached_file": null,
+                "file_size_in_bytes": 44461932,
+                "extra_classes": {
+            "forecast_hour": 13
+        }
+        },
+        {
+            "source_file": "/pub/data/nccf/com/nwm/prod/nwm.20181121/short_range/nwm.t17z.short_range.reservoir.f017.conus.nc",
+                "name": "NWM Reservoir Short Range",
+                "destination_file": "nwm.20181121/short_range/nwm.t17z.short_range.reservoir.f017.conus.nc",
+                "data_datetime": "2018-11-21T17:00:00Z",
+                "appearance_datetime": "2018-11-21T18:45:00Z",
+                "removal_datetime": "2018-11-23T00:00:00Z",
+                "acquired_datetime": "2018-11-27T08:16:11.787374Z",
+                "complete_datetime": "2018-11-27T08:16:13.366895Z",
+                "failed_datetime": "2018-11-21T18:50:46.414884Z",
+                "file_modification_datetime": "2018-11-21T18:38:52Z",
+                "expire_datetime": null,
+                "cleaned_datetime": null,
+                "cached_datetime": "2018-11-21T18:50:46.414884Z",
+                "cached_file": null,
+                "file_size_in_bytes": 54152,
+                "extra_classes": {
+            "forecast_hour": 17
+        }
+        },
+        {
+            "source_file": "/pub/data/nccf/com/nwm/prod/nwm.20181121/short_range/nwm.t16z.short_range.channel_rt.f003.conus.nc",
+                "name": "NWM Channel Routing Short Range",
+                "destination_file": "nwm.20181121/short_range/nwm.t16z.short_range.channel_rt.f003.conus.nc",
+                "data_datetime": "2018-11-21T16:00:00Z",
+                "appearance_datetime": "2018-11-21T17:45:00Z",
+                "removal_datetime": "2018-11-23T00:00:00Z",
+                "acquired_datetime": "2018-11-27T07:15:44.096289Z",
+                "complete_datetime": "2018-11-27T07:15:49.225957Z",
+                "failed_datetime": "2018-11-21T17:49:34.477543Z",
+                "file_modification_datetime": "2018-11-21T17:39:32Z",
+                "expire_datetime": null,
+                "cleaned_datetime": null,
+                "cached_datetime": "2018-11-21T17:49:34.477543Z",
+                "cached_file": null,
+                "file_size_in_bytes": 11845140,
+                "extra_classes": {
+            "forecast_hour": 3
+        }
+        },
+        {
+            "source_file": "/pub/data/nccf/com/nwm/prod/nwm.20181121/short_range/nwm.t15z.short_range.channel_rt.f011.conus.nc",
+                "name": "NWM Channel Routing Short Range",
+                "destination_file": "nwm.20181121/short_range/nwm.t15z.short_range.channel_rt.f011.conus.nc",
+                "data_datetime": "2018-11-21T15:00:00Z",
+                "appearance_datetime": "2018-11-21T16:45:00Z",
+                "removal_datetime": "2018-11-23T00:00:00Z",
+                "acquired_datetime": "2018-11-27T07:35:58.803857Z",
+                "complete_datetime": "2018-11-27T07:36:02.797267Z",
+                "failed_datetime": "2018-11-21T16:48:01.448075Z",
+                "file_modification_datetime": "2018-11-21T16:39:59Z",
+                "expire_datetime": null,
+                "cleaned_datetime": null,
+                "cached_datetime": "2018-11-21T16:48:01.448075Z",
+                "cached_file": null,
+                "file_size_in_bytes": 11854617,
+                "extra_classes": {
+            "forecast_hour": 11
+        }
+        },
+        {
+            "source_file": "/pub/data/nccf/com/nwm/prod/nwm.20181121/short_range/nwm.t12z.short_range.land.f002.conus.nc",
+                "name": "NWM Land Short Range",
+                "destination_file": "nwm.20181121/short_range/nwm.t12z.short_range.land.f002.conus.nc",
+                "data_datetime": "2018-11-21T12:00:00Z",
+                "appearance_datetime": "2018-11-21T13:45:00Z",
+                "removal_datetime": "2018-11-23T00:00:00Z",
+                "acquired_datetime": "2018-11-27T21:33:56.527433Z",
+                "complete_datetime": "2018-11-27T21:36:41.531597Z",
+                "failed_datetime": "2018-11-21T14:16:54.880908Z",
+                "file_modification_datetime": "2018-11-21T14:06:13Z",
+                "expire_datetime": null,
+                "cleaned_datetime": null,
+                "cached_datetime": "2018-11-21T14:16:54.880908Z",
+                "cached_file": null,
+                "file_size_in_bytes": 40692301,
+                "extra_classes": {
+            "forecast_hour": 2
+        }
+        },
+        {
+            "source_file": "/pub/data/nccf/com/nwm/prod/nwm.20181121/short_range/nwm.t07z.short_range.terrain_rt.f014.conus.nc",
+                "name": "NWM Terrain Routing Short Range",
+                "destination_file": "nwm.20181121/short_range/nwm.t07z.short_range.terrain_rt.f014.conus.nc",
+                "data_datetime": "2018-11-21T07:00:00Z",
+                "appearance_datetime": "2018-11-21T08:45:00Z",
+                "removal_datetime": "2018-11-23T00:00:00Z",
+                "acquired_datetime": "2018-11-27T08:46:33.553701Z",
+                "complete_datetime": "2018-11-27T08:46:37.720757Z",
+                "failed_datetime": "2018-11-21T08:49:44.065954Z",
+                "file_modification_datetime": "2018-11-21T08:38:32Z",
+                "expire_datetime": null,
+                "cleaned_datetime": null,
+                "cached_datetime": "2018-11-21T08:49:44.065954Z",
+                "cached_file": null,
+                "file_size_in_bytes": 40760291,
+                "extra_classes": {
+            "forecast_hour": 14
+        }
+        },
+        {
+            "source_file": "/pub/data/nccf/com/nwm/prod/nwm.20181121/short_range/nwm.t07z.short_range.terrain_rt.f005.conus.nc",
+                "name": "NWM Terrain Routing Short Range",
+                "destination_file": "nwm.20181121/short_range/nwm.t07z.short_range.terrain_rt.f005.conus.nc",
+                "data_datetime": "2018-11-21T07:00:00Z",
+                "appearance_datetime": "2018-11-21T08:45:00Z",
+                "removal_datetime": "2018-11-23T00:00:00Z",
+                "acquired_datetime": "2018-11-27T06:38:22.943026Z",
+                "complete_datetime": "2018-11-27T06:38:38.836947Z",
+                "failed_datetime": "2018-11-21T08:47:17.071426Z",
+                "file_modification_datetime": "2018-11-21T08:38:39Z",
+                "expire_datetime": null,
+                "cleaned_datetime": null,
+                "cached_datetime": "2018-11-21T08:47:17.071426Z",
+                "cached_file": null,
+                "file_size_in_bytes": 40098543,
+                "extra_classes": {
+            "forecast_hour": 5
+        }
+        },
+        {
+            "source_file": "/pub/data/nccf/com/nwm/prod/nwm.20181121/short_range/nwm.t06z.short_range.terrain_rt.f012.conus.nc",
+                "name": "NWM Terrain Routing Short Range",
+                "destination_file": "nwm.20181121/short_range/nwm.t06z.short_range.terrain_rt.f012.conus.nc",
+                "data_datetime": "2018-11-21T06:00:00Z",
+                "appearance_datetime": "2018-11-21T07:45:00Z",
+                "removal_datetime": "2018-11-23T00:00:00Z",
+                "acquired_datetime": "2018-11-27T08:04:08.119754Z",
+                "complete_datetime": "2018-11-27T08:04:11.110312Z",
+                "failed_datetime": "2018-11-21T08:13:01.487987Z",
+                "file_modification_datetime": "2018-11-21T08:06:12Z",
+                "expire_datetime": null,
+                "cleaned_datetime": null,
+                "cached_datetime": "2018-11-21T08:13:01.487987Z",
+                "cached_file": null,
+                "file_size_in_bytes": 40589214,
+                "extra_classes": {
+            "forecast_hour": 12
+        }
+        },
+        {
+            "source_file": "/pub/data/nccf/com/nwm/prod/nwm.20181121/short_range/nwm.t04z.short_range.reservoir.f017.conus.nc",
+                "name": "NWM Reservoir Short Range",
+                "destination_file": "nwm.20181121/short_range/nwm.t04z.short_range.reservoir.f017.conus.nc",
+                "data_datetime": "2018-11-21T04:00:00Z",
+                "appearance_datetime": "2018-11-21T05:45:00Z",
+                "removal_datetime": "2018-11-23T00:00:00Z",
+                "acquired_datetime": "2018-11-27T07:34:51.769615Z",
+                "complete_datetime": "2018-11-27T07:34:52.436108Z",
+                "failed_datetime": "2018-11-26T03:24:24.120461Z",
+                "file_modification_datetime": "2018-11-21T05:37:46Z",
+                "expire_datetime": null,
+                "cleaned_datetime": null,
+                "cached_datetime": "2018-11-26T03:24:24.120461Z",
+                "cached_file": null,
+                "file_size_in_bytes": 54114,
+                "extra_classes": {
+            "forecast_hour": 17
+        }
+        },
+        {
+            "source_file": "/pub/data/nccf/com/nwm/prod/nwm.20181120/short_range/nwm.t23z.short_range.reservoir.f018.conus.nc",
+                "name": "NWM Reservoir Short Range",
+                "destination_file": "nwm.20181120/short_range/nwm.t23z.short_range.reservoir.f018.conus.nc",
+                "data_datetime": "2018-11-20T23:00:00Z",
+                "appearance_datetime": "2018-11-21T00:45:00Z",
+                "removal_datetime": "2018-11-22T00:00:00Z",
+                "acquired_datetime": "2018-11-27T07:45:54.557858Z",
+                "complete_datetime": "2018-11-27T07:45:56.914155Z",
+                "failed_datetime": "2018-11-21T00:48:08.626265Z",
+                "file_modification_datetime": "2018-11-21T00:39:21Z",
+                "expire_datetime": null,
+                "cleaned_datetime": null,
+                "cached_datetime": "2018-11-21T00:48:08.626265Z",
+                "cached_file": null,
+                "file_size_in_bytes": 54109,
+                "extra_classes": {
+            "forecast_hour": 18
+        }
+        },
+        {
+            "source_file": "/pub/data/nccf/com/nwm/prod/nwm.20181120/short_range/nwm.t22z.short_range.terrain_rt.f005.conus.nc",
+                "name": "NWM Terrain Routing Short Range",
+                "destination_file": "nwm.20181120/short_range/nwm.t22z.short_range.terrain_rt.f005.conus.nc",
+                "data_datetime": "2018-11-20T22:00:00Z",
+                "appearance_datetime": "2018-11-20T23:45:00Z",
+                "removal_datetime": "2018-11-22T00:00:00Z",
+                "acquired_datetime": "2018-11-27T00:01:36.177571Z",
+                "complete_datetime": "2018-11-27T00:01:40.086654Z",
+                "failed_datetime": "2018-11-22T09:42:50.791917Z",
+                "file_modification_datetime": "2018-11-20T23:38:22Z",
+                "expire_datetime": null,
+                "cleaned_datetime": null,
+                "cached_datetime": "2018-11-22T09:42:50.791917Z",
+                "cached_file": null,
+                "file_size_in_bytes": 40379422,
+                "extra_classes": {
+            "forecast_hour": 5
+        }
+        },
+        {
+            "source_file": "/pub/data/nccf/com/nwm/prod/nwm.20181120/short_range/nwm.t22z.short_range.reservoir.f003.conus.nc",
+                "name": "NWM Reservoir Short Range",
+                "destination_file": "nwm.20181120/short_range/nwm.t22z.short_range.reservoir.f003.conus.nc",
+                "data_datetime": "2018-11-20T22:00:00Z",
+                "appearance_datetime": "2018-11-20T23:45:00Z",
+                "removal_datetime": "2018-11-22T00:00:00Z",
+                "acquired_datetime": "2018-11-28T19:30:33.381505Z",
+                "complete_datetime": "2018-11-28T19:30:50.433396Z",
+                "failed_datetime": "2018-11-23T10:24:14.018841Z",
+                "file_modification_datetime": "2018-11-20T23:38:04Z",
+                "expire_datetime": null,
+                "cleaned_datetime": null,
+                "cached_datetime": "2018-11-23T10:24:14.018841Z",
+                "cached_file": null,
+                "file_size_in_bytes": 54122,
+                "extra_classes": {
+            "forecast_hour": 3
+        }
+        },
+        {
+            "source_file": "/pub/data/nccf/com/nwm/prod/nwm.20181120/short_range/nwm.t19z.short_range.reservoir.f003.conus.nc",
+                "name": "NWM Reservoir Short Range",
+                "destination_file": "nwm.20181120/short_range/nwm.t19z.short_range.reservoir.f003.conus.nc",
+                "data_datetime": "2018-11-20T19:00:00Z",
+                "appearance_datetime": "2018-11-20T20:45:00Z",
+                "removal_datetime": "2018-11-22T00:00:00Z",
+                "acquired_datetime": "2018-11-27T07:15:41.467123Z",
+                "complete_datetime": "2018-11-27T07:15:44.089097Z",
+                "failed_datetime": "2018-11-20T20:49:06.689340Z",
+                "file_modification_datetime": "2018-11-20T20:36:34Z",
+                "expire_datetime": null,
+                "cleaned_datetime": null,
+                "cached_datetime": "2018-11-20T20:49:06.689340Z",
+                "cached_file": null,
+                "file_size_in_bytes": 54143,
+                "extra_classes": {
+            "forecast_hour": 3
+        }
+        },
+        {
+            "source_file": "/pub/data/nccf/com/nwm/prod/nwm.20181120/short_range/nwm.t19z.short_range.land.f010.conus.nc",
+                "name": "NWM Land Short Range",
+                "destination_file": "nwm.20181120/short_range/nwm.t19z.short_range.land.f010.conus.nc",
+                "data_datetime": "2018-11-20T19:00:00Z",
+                "appearance_datetime": "2018-11-20T20:45:00Z",
+                "removal_datetime": "2018-11-22T00:00:00Z",
+                "acquired_datetime": "2018-11-27T07:18:40.447625Z",
+                "complete_datetime": "2018-11-27T07:18:43.477484Z",
+                "failed_datetime": "2018-11-20T20:47:35.452905Z",
+                "file_modification_datetime": "2018-11-20T20:36:33Z",
+                "expire_datetime": null,
+                "cleaned_datetime": null,
+                "cached_datetime": "2018-11-20T20:47:35.452905Z",
+                "cached_file": null,
+                "file_size_in_bytes": 43422011,
+                "extra_classes": {
+            "forecast_hour": 10
+        }
+        },
+        {
+            "source_file": "/pub/data/nccf/com/nwm/prod/nwm.20181120/short_range/nwm.t19z.short_range.channel_rt.f010.conus.nc",
+                "name": "NWM Channel Routing Short Range",
+                "destination_file": "nwm.20181120/short_range/nwm.t19z.short_range.channel_rt.f010.conus.nc",
+                "data_datetime": "2018-11-20T19:00:00Z",
+                "appearance_datetime": "2018-11-20T20:45:00Z",
+                "removal_datetime": "2018-11-22T00:00:00Z",
+                "acquired_datetime": "2018-11-27T06:33:18.210130Z",
+                "complete_datetime": "2018-11-27T06:33:31.665699Z",
+                "failed_datetime": "2018-11-20T20:47:05.431570Z",
+                "file_modification_datetime": "2018-11-20T20:36:28Z",
+                "expire_datetime": null,
+                "cleaned_datetime": null,
+                "cached_datetime": "2018-11-20T20:47:05.431570Z",
+                "cached_file": null,
+                "file_size_in_bytes": 11862919,
+                "extra_classes": {
+            "forecast_hour": 10
+        }
+        },
+        {
+            "source_file": "/pub/data/nccf/com/nwm/prod/nwm.20181120/short_range/nwm.t16z.short_range.reservoir.f012.conus.nc",
+                "name": "NWM Reservoir Short Range",
+                "destination_file": "nwm.20181120/short_range/nwm.t16z.short_range.reservoir.f012.conus.nc",
+                "data_datetime": "2018-11-20T16:00:00Z",
+                "appearance_datetime": "2018-11-20T17:45:00Z",
+                "removal_datetime": "2018-11-22T00:00:00Z",
+                "acquired_datetime": "2018-11-27T13:47:49.990681Z",
+                "complete_datetime": "2018-11-27T13:47:50.859096Z",
+                "failed_datetime": "2018-11-20T17:51:14.597557Z",
+                "file_modification_datetime": "2018-11-20T17:36:57Z",
+                "expire_datetime": null,
+                "cleaned_datetime": null,
+                "cached_datetime": "2018-11-20T17:51:14.597557Z",
+                "cached_file": null,
+                "file_size_in_bytes": 54115,
+                "extra_classes": {
+            "forecast_hour": 12
+        }
+        },
+        {
+            "source_file": "/pub/data/nccf/com/nwm/prod/nwm.20181120/short_range/nwm.t13z.short_range.reservoir.f018.conus.nc",
+                "name": "NWM Reservoir Short Range",
+                "destination_file": "nwm.20181120/short_range/nwm.t13z.short_range.reservoir.f018.conus.nc",
+                "data_datetime": "2018-11-20T13:00:00Z",
+                "appearance_datetime": "2018-11-20T14:45:00Z",
+                "removal_datetime": "2018-11-22T00:00:00Z",
+                "acquired_datetime": "2018-11-27T06:38:21.059507Z",
+                "complete_datetime": "2018-11-27T06:38:22.938196Z",
+                "failed_datetime": "2018-11-20T14:46:46.804564Z",
+                "file_modification_datetime": "2018-11-20T14:36:56Z",
+                "expire_datetime": null,
+                "cleaned_datetime": null,
+                "cached_datetime": "2018-11-20T14:46:46.804564Z",
+                "cached_file": null,
+                "file_size_in_bytes": 54109,
+                "extra_classes": {
+            "forecast_hour": 18
+        }
+        },
+        {
+            "source_file": "/pub/data/nccf/com/nwm/prod/nwm.20181120/short_range/nwm.t12z.short_range.land.f013.conus.nc",
+                "name": "NWM Land Short Range",
+                "destination_file": "nwm.20181120/short_range/nwm.t12z.short_range.land.f013.conus.nc",
+                "data_datetime": "2018-11-20T12:00:00Z",
+                "appearance_datetime": "2018-11-20T13:45:00Z",
+                "removal_datetime": "2018-11-22T00:00:00Z",
+                "acquired_datetime": "2018-11-27T06:38:20.841913Z",
+                "complete_datetime": "2018-11-27T06:38:24.540413Z",
+                "failed_datetime": "2018-11-20T14:13:14.830001Z",
+                "file_modification_datetime": "2018-11-20T14:05:16Z",
+                "expire_datetime": null,
+                "cleaned_datetime": null,
+                "cached_datetime": "2018-11-20T14:13:14.830001Z",
+                "cached_file": null,
+                "file_size_in_bytes": 44071679,
+                "extra_classes": {
+            "forecast_hour": 13
+        }
+        },
+        {
+            "source_file": "/pub/data/nccf/com/nwm/prod/nwm.20181120/short_range/nwm.t07z.short_range.reservoir.f014.conus.nc",
+                "name": "NWM Reservoir Short Range",
+                "destination_file": "nwm.20181120/short_range/nwm.t07z.short_range.reservoir.f014.conus.nc",
+                "data_datetime": "2018-11-20T07:00:00Z",
+                "appearance_datetime": "2018-11-20T08:45:00Z",
+                "acquired_datetime": "2018-11-27T06:38:20.887084Z",
+                "complete_datetime": "2018-11-27T06:38:22.309366Z",
+                "file_modification_datetime": "2018-11-20T08:37:41Z",
+                "cleaned_datetime": null,
+                "cached_datetime": "2018-11-26T15:30:23.890346Z",
+                "file_size_in_bytes": 54106
+        }
+  ]
+    }
+
+    we will then use the information in the "destination_file" field to create the link: ENDPOINT + "/" + BUCKET + "/" = destination_file
+    That link will get us our data. We should decide on what destination_file s to download by globbing on the pattern. The user should add in
+    the file type in the path. Ultimately, this probably needs to be a wholly different reader and we should probably have a different tag for this source
+    since so many different attributes are needed.l*/
 
     /**
      * Since the format for immediate sub-buckets in the NWCAL object store is "nwm.yyyyMMdd", we

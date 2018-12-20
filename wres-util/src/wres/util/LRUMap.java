@@ -1,4 +1,4 @@
-package wres.io.utilities;
+package wres.util;
 
 import java.util.LinkedHashMap;
 import java.util.Map;

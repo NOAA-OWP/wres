@@ -25,6 +25,7 @@ import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
 import wres.io.reading.IngestedValues;
 import wres.io.utilities.DataProvider;
+import wres.util.LRUContainer;
 import wres.util.Strings;
 import wres.util.TimeHelper;
 
@@ -34,6 +35,12 @@ public class CSVSource extends BasicSource
 
     // It's probably worth making this configurable
     private static final String DELIMITER = ",";
+
+    private static final int TIME_SERIES_LIMIT = 60;
+
+    private SourceDetails sourceDetails;
+
+    private LRUContainer<TimeSeries> encounteredTimeSeries;
 
     /**
      * Constructor that sets the filename
@@ -95,6 +102,11 @@ public class CSVSource extends BasicSource
     @Override
     protected List<IngestResult> saveForecast() throws IOException
     {
+        if (encounteredTimeSeries == null)
+        {
+            encounteredTimeSeries = new LRUContainer<TimeSeries>( TIME_SERIES_LIMIT );
+        }
+
         try
         {
             sourceDetails = DataSources.get( this.getFilename(), Instant.now().toString(), null, this.getHash());
@@ -154,15 +166,11 @@ public class CSVSource extends BasicSource
                 Instant start = data.getInstant( "start_date" );
                 Instant valueDate = data.getInstant( "value_date" );
                 Double value = data.getDouble( "value" );
+                int ensembleId = this.getEnsembleId( data );
                 int lead = (int) TimeHelper.durationToLongUnits( Duration.between( start, valueDate ),
                                                                  TimeHelper.LEAD_RESOLUTION );
 
-                if ( currentTimeSeries == null ||
-                     !currentTimeSeries.getInitializationDate().equals( start.toString() ) )
-                {
-                    currentTimeSeries = formTimeSeries( data, lead );
-                }
-
+                currentTimeSeries = formTimeSeries( data, ensembleId, lead );
 
                 IngestedValues.addTimeSeriesValue( currentTimeSeries.getTimeSeriesID(), lead, value );
             }
@@ -171,6 +179,30 @@ public class CSVSource extends BasicSource
                 throw new IOException( "Metadata needed to save time series values could not be loaded.", e );
             }
         }
+    }
+
+    private int getEnsembleId(final DataProvider data) throws SQLException
+    {
+        String ensembleName = "default";
+        String qualifierID = null;
+        Integer ensembleMemberID = null;
+
+        if (data.hasColumn("ensemble_name"))
+        {
+            ensembleName = data.getString("ensemble_name");
+        }
+
+        if (data.hasColumn("qualifier_id"))
+        {
+            qualifierID = data.getString("qualifier_id");
+        }
+
+        if (data.hasColumn("ensemblemember_id"))
+        {
+            ensembleMemberID = data.getInt("ensemblemember_id");
+        }
+
+        return Ensembles.getEnsembleID(ensembleName, ensembleMemberID, qualifierID);
     }
 
     private void parseObservations(final DataProvider data) throws IOException
@@ -367,57 +399,48 @@ public class CSVSource extends BasicSource
         }
     }
 
-    private TimeSeries formTimeSeries(final DataProvider data, final int timeStep) throws SQLException
+    private TimeSeries formTimeSeries(final DataProvider data, final int ensembleId, final int timeStep) throws SQLException
     {
-        TimeSeries timeseries = new TimeSeries(
-                this.sourceDetails.getId(),
-                data.getInstant( "start_date" ).toString()
-        );
 
-        String variable = data.getString( "variable_name" );
-        String location = data.getString( "location" );
-        String measurementUnit = data.getString( "measurement_unit" );
+        final String variable = data.getString( "variable_name" );
+        final String location = data.getString( "location" );
+        final String measurementUnit = data.getString( "measurement_unit" );
+        final String startDate = data.getInstant( "start_date" ).toString();
 
-        String ensembleName = "default";
-        String qualifierID = null;
-        Integer ensembleMemberID = null;
-
-        if (data.hasColumn("ensemble_name"))
-        {
-            ensembleName = data.getString("ensemble_name");
-        }
-
-        if (data.hasColumn("qualifier_id"))
-        {
-            qualifierID = data.getString("qualifier_id");
-        }
-
-        if (data.hasColumn("ensemblemember_id"))
-        {
-            ensembleMemberID = data.getInt("ensemblemember_id");
-        }
-
-        Integer ensembleID = Ensembles.getEnsembleID(ensembleName, ensembleMemberID, qualifierID);
-
-        timeseries.setEnsembleID(ensembleID);
-
-        timeseries.setMeasurementUnitID(
-                MeasurementUnits.getMeasurementUnitID(measurementUnit)
-        );
-
-        Integer variableFeatureId = Features.getVariableFeatureIDByLID(
+        final Integer variableFeatureId = Features.getVariableFeatureIDByLID(
                 location,
                 Variables.getVariableID(variable)
         );
 
-        timeseries.setVariableFeatureID( variableFeatureId );
-        timeseries.setScalePeriod( 1 );
-        timeseries.setTimeStep( timeStep );
+        TimeSeries timeSeries = this.encounteredTimeSeries.get(
+                series -> series.getEnsembleId() == ensembleId &&
+                          series.getInitializationDate().equals( startDate ) &&
+                          series.getVariableFeatureID() == variableFeatureId &&
+                          series.getTimeStep() == timeStep
+        );
 
-        return timeseries;
+        if (timeSeries != null)
+        {
+            return timeSeries;
+        }
+
+        timeSeries = new TimeSeries(
+                this.sourceDetails.getId(),
+                data.getInstant( "start_date" ).toString()
+        );
+
+        timeSeries.setEnsembleID(ensembleId);
+
+        timeSeries.setMeasurementUnitID(
+                MeasurementUnits.getMeasurementUnitID(measurementUnit)
+        );
+
+        timeSeries.setVariableFeatureID( variableFeatureId );
+        timeSeries.setScalePeriod( 1 );
+        timeSeries.setTimeStep( timeStep );
+
+        return timeSeries;
     }
-
-    private SourceDetails sourceDetails;
 
     @Override
     protected Logger getLogger()

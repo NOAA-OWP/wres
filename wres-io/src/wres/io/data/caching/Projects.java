@@ -21,7 +21,7 @@ import wres.io.project.Project;
 import wres.io.reading.IngestResult;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.Database;
-import wres.io.utilities.LRUMap;
+import wres.util.LRUMap;
 
 /**
  * Cache of available types of forecast
