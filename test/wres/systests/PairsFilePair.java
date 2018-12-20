@@ -13,6 +13,11 @@ import java.util.Iterator;
  */
 public class PairsFilePair
 {
+    //TODO I don't think this is required anymore.  With the latest system test code, the pairs file is not interpreted, 
+    //just sorted and compared with each line treated as a long string.  May want to remove this class when ready. 
+    //I leave it hear for now.
+    
+   
     private String siteID; // 1
     private String earlestIssueTime; // 2
     private String latestIssueTime; // 3
@@ -24,6 +29,9 @@ public class PairsFilePair
     private Integer leadDurationPairInSeconds; // 9
     private ArrayList<String> leftValueAndRightMembers; // the rest
 
+    /**
+     * @param pairsLine  The line from which to draw the data.  
+     */
     public PairsFilePair( String pairsLine )
     {
         String[] delimiter = pairsLine.split( "," );
