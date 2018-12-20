@@ -2,6 +2,7 @@ package wres.systests;
 
 
 import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.assertTrue;
 import static junit.framework.TestCase.fail;
 
 import java.io.BufferedReader;
@@ -107,7 +108,7 @@ public class SystestsScenarioRunner
     private void setAllPropertiesFromEnvVars()
     {
         //TODO Move these to the SystemTestSuiteRunner... if we choose that approach.
-        
+
         Properties props = System.getProperties();
         props.setProperty( "wres.hostname", System.getenv( "WRES_DB_HOSTNAME" ) );
         props.setProperty( "wres.url", System.getenv( "WRES_DB_HOSTNAME" ) );
@@ -307,8 +308,6 @@ public class SystestsScenarioRunner
      */
     private int compareOutputAgainstBenchmarks( Set<Path> generatedOutputs ) throws IOException, IllegalStateException
     {
-        int overallResultCode = 0;
-
         //Establish the benchmarks directory and obtain a listing of all benchmarked files.
         Path benchmarksPath = Paths.get( scenarioDir.getAbsolutePath(), "benchmarks" );
         File benchmarksDir = benchmarksPath.toFile();
@@ -325,155 +324,169 @@ public class SystestsScenarioRunner
         }
 
         //For every output file...
+        int pairResultCode = 0;
+        int metricCSVResultCode = 0;
+        int txtResultCode = 0;
+        int miscResultCode = 0;
         for ( Path outputFilePath : generatedOutputs )
         {
             String outputFileName = outputFilePath.toFile().getName();
-            int resultCode = 0;
 
             //For the pairs, you need to sort them first.
-            if ( outputFileName.endsWith( "pairs.csv" ) )
+            File benchmarkFile = identifyBenchmarkFile( outputFilePath, benchmarksPath );
+            if ( benchmarkFile != null )
             {
-                String sortedFileName = "sorted_" + outputFileName;
-                File sortedFile = new File( outputFilePath.getParent().toFile(), sortedFileName );
-                File benchmarkFile = new File( benchmarksPath.toFile(), sortedFileName );
-                sortPairs( outputFilePath.toFile(), sortedFile );
-                resultCode = compareFiles( sortedFile, benchmarkFile );
-                benchmarkedFiles.remove( sortedFileName );
+                try
+                {
+                    //Pairs has its own method because it has to sort the lines.
+                    if ( outputFileName.endsWith( "pairs.csv" ) )
+                    {
+                        assertOutputPairsEqualExpectedPairs( outputFilePath.toFile(), benchmarkFile );
+                    }
+                    //Otherwise just do the comparison without sorting.
+                    else
+                    {
+                        assertOutputTextFileMatchesExpected( outputFilePath.toFile(), benchmarkFile );
+                    }
+                }
+                //Modify the result code if an assertion error is reported.
+                catch ( AssertionError e )
+                {
+                    System.out.println( e.getMessage() );
+                    if ( outputFileName.endsWith( "pairs.csv" ) )
+                    {
+                        pairResultCode = 16;
+                    }
+                    //Otherwise just do the comparison without sorting.
+                    else if ( outputFileName.endsWith( ".csv" ) )
+                    {
+                        metricCSVResultCode = 32;
+                    }
+                    else if ( outputFileName.endsWith( ".txt" ) )
+                    {
+                        txtResultCode = 4;
+                    }
+                    else
+                    {
+                        miscResultCode = 2;
+                    }
+                }
+                //Remove the benchmark as one to check.
+                benchmarkedFiles.remove( benchmarkFile.getName() );
             }
-            //Otherwise just do the comparison.
-            else
-            {
-                File outputFile = outputFilePath.toFile();
-                File benchmarkFile = new File( benchmarksPath.toFile(), outputFileName );
-                resultCode = compareFiles( outputFile, benchmarkFile );
-            }
-
-            overallResultCode = Math.max( overallResultCode, resultCode );
-            benchmarkedFiles.remove( outputFileName );
         }
         if ( !benchmarkedFiles.isEmpty() )
         {
             System.out.println( "The following benchmarked files were not present in the evaluation output directory: "
                                 + Arrays.toString( benchmarkedFiles.toArray() ) );
-            return 2;
+            miscResultCode = 2;
         }
 
-        return overallResultCode;
+        return pairResultCode + metricCSVResultCode + txtResultCode + miscResultCode;
     }
 
+
     /**
-     * Comparing two files, line by line.
-     * @param evaluationFile The evaluation output file.
-     * @param benchmarksFile The benchmarks file
-     * @return 0 no errors; 2 output not found; 4 sort failed; 8 found diff in txt files; 16 found diff in sorted_pairs; 32 found diff in csv files
+     * 
+     * @param outputFilePath Output file for which to identify the benchmark.
+     * @param benchmarkDirPath The directory for benchmarks.
+     * @return The file identified or null if none if no appropriate file is found.
      */
-    private int compareFiles( File evaluationFile, File benchmarksFile )
+    private File identifyBenchmarkFile( Path outputFilePath, Path benchmarkDirPath )
     {
-        //TODO Need to look into this routine.  Can it just assert multiple times and report all differences found?
-        //Right now it uses a result code (which I think may be incorrectly implemented, by the way... I think its 
-        //supposed to add the different code not just take one number) which captures multiple differences in a single
-        //value.
-
-        int returnValue = 0;
-
-        //If the evaluationFile does not exist, something very weird happened.  
-        if ( !evaluationFile.exists() || !evaluationFile.isFile() )
+        File benchmarkFile = null;
+        File outputFile = outputFilePath.toFile();
+        if ( outputFile.getName().endsWith( "pairs.csv" ) )
         {
-            throw new IllegalStateException( "The evaluation output file " + evaluationFile.getAbsolutePath()
-                                             + " does not exist or is not a file.  Why did you ask me to compare it?" );
-        }
-
-        //If the benchmark file doesn't exist, then its not being tracked.  Don't worry about it.
-        //If it does, diff it.
-        if ( benchmarksFile.exists() && benchmarksFile.isFile() )
-        {
-            try
+            benchmarkFile = Paths.get( benchmarkDirPath.toString(), outputFile.getName() ).toFile();
+            if ( !benchmarkFile.isFile() || !benchmarkFile.canRead() )
             {
-                BufferedReader evaluationReader = new BufferedReader( new FileReader( evaluationFile ) );
-                BufferedReader benchmarksReader = new BufferedReader( new FileReader( benchmarksFile ) );
-
-                String evaluationLine = "";
-                String benchmarksLine = "";
-                returnValue = 0;
-                while ( ( evaluationLine = evaluationReader.readLine() ) != null )
+                //First attempt wasn't good; look for sorted_*.
+                benchmarkFile = Paths.get( benchmarkDirPath.toString(), "sorted_" + outputFile.getName() ).toFile();
+                if ( !benchmarkFile.isFile() || !benchmarkFile.canRead() )
                 {
-                    if ( ( benchmarksLine = benchmarksReader.readLine() ) != null )
-                    {
-                        //if (evaluationLine.compareTo( benchmarksLine ) != 0) {
-                        if ( evaluationLine.equals( benchmarksLine ) == false )
-                        {
-                            if ( evaluationFile.getName().endsWith( ".txt" ) )
-                                returnValue = 4; //dirListing.txt
-                            else if ( evaluationFile.getName().endsWith( "sorted_pairs.csv" ) )
-                                returnValue = 16; //pairs difference
-                            else if ( evaluationFile.getName().endsWith( ".csv" ) )
-                                returnValue = 32; //metric output difference
-                            else
-                                returnValue = 2; //other file type
-                        }
-                    }
+                    return null;
                 }
-                benchmarksReader.close();
-                evaluationReader.close();
-            }
-            catch ( FileNotFoundException fnfe )
-            {
-                returnValue = 2;
-                System.err.println( fnfe.getMessage() );
-            }
-            catch ( IOException ioe )
-            {
-                returnValue = 2;
-                System.err.println( ioe.getMessage() );
             }
         }
-        return returnValue;
+        //Otherwise just do the comparison.
+        else
+        {
+            benchmarkFile = Paths.get( benchmarkDirPath.toString(), outputFile.getName() ).toFile();
+            if ( !benchmarkFile.isFile() || !benchmarkFile.canRead() )
+            {
+                return null;
+            }
+        }
+        return benchmarkFile;
     }
 
     /**
-     * Sort the pairs.csv file and write output to sorted_pairs.csv 
-     * @param pairsFile -- pairs.csv file path
-     * @throws IOException If a problem is encountered during sorting.
+     * Asserts that the provided file matches that found in the benchmarks, if one exists.  This method will 
+     * only work with text files.  However, as long as binary files are benchmarked, you can pass binary files
+     * into this method and it won't do anything with them because the benchmark won't exist.  
+     * @param outputFile
+     * @param benchmarkFile
+     * @throws IOException 
      */
-    private void sortPairs( File pairsFile, File sortFile ) throws IOException
+    private void assertOutputTextFileMatchesExpected( File outputFile, File benchmarkFile ) throws IOException
     {
-        //TODO Look at what James proposed in #51654.  Should be able to load and compare
-        //pairs in memory after sorting.  Would avoid the need to write the file.  On the
-        //other hand, I wonder if that sorted_pairs.csv file is actually useful to keep?
+        //Ensure that the output is a readable file.  The benchmark file has already been established as such.
+        assertTrue( outputFile.isFile() && outputFile.canRead() );
 
-        System.out.println( "pairs file = " + pairsFile.getAbsolutePath() );
+        //Read in all of the data.  May need a lot of memory!
+        List<String> actualRows = Files.readAllLines( outputFile.toPath() );
+        List<String> expectedRows = Files.readAllLines( benchmarkFile.toPath() );
 
-        //Read in the pairs.
-        ArrayList<PairsFilePair> pairsList = new ArrayList<PairsFilePair>();
-        String firstLine;
-        try ( BufferedReader pairsReader = new BufferedReader( new FileReader( pairsFile ) ) )
+        //Files must not be zero sized and must be identical in number of lines.
+        assertTrue( actualRows.size() > 0 && expectedRows.size() > 0 );
+        assertEquals( actualRows.size(), expectedRows.size() );
+
+        // Verify by row, rather than all at once        
+        for ( int i = 0; i < actualRows.size(); i++ )
         {
-            String aLine = "";
-            firstLine = aLine = pairsReader.readLine(); // skip the first line
-            while ( ( aLine = pairsReader.readLine() ) != null )
-            {
-                pairsList.add( new PairsFilePair( aLine ) );
-            }
-            pairsReader.close(); //TODO Does the try automatically handle closing?  If so, remove this.
+            assertEquals( "For output file, " + outputFile.getName()
+                          + ", row "
+                          + i
+                          + " differs from benchmark.",
+                          actualRows.get( i ).trim(), //TODO Added trimming to handle white space at the ends, but should I?
+                          expectedRows.get( i ).trim() );
         }
+    }
 
-        //Sort the pairs list.
-        Collections.sort( pairsList, new SortedPairsComparator() );
+    /**
+     * Asserts that the output pairs are equal to a benchmark file, if one exists.  
+     * @param pairsFile
+     * @param benchmarkDirPath
+     * @throws IOException
+     */
+    private void assertOutputPairsEqualExpectedPairs( File pairsFile, File benchmarkFile ) throws IOException
+    {
+        //Ensure that the output is a readable file.  The benchmark file has already been established as such.
+        assertTrue( pairsFile.isFile() && pairsFile.canRead() );
 
-        // After sort, write the file back out.
-        try ( BufferedWriter bufferedWriter = new BufferedWriter( new FileWriter( sortFile.getAbsolutePath() ) ) )
+        //Read in all of the data.  May need a lot of memory!
+        List<String> actualRows = Files.readAllLines( pairsFile.toPath() );
+        List<String> expectedRows = Files.readAllLines( benchmarkFile.toPath() );
+
+        //Files must not be zero sized and must be identical in number of lines.
+        assertTrue( actualRows.size() > 0 && expectedRows.size() > 0 );
+        assertEquals( actualRows.size(), expectedRows.size() );
+
+        // Sort in natural order
+        Collections.sort( actualRows );
+        Collections.sort( expectedRows );
+
+        // Verify by row, rather than all at once        
+        for ( int i = 0; i < actualRows.size(); i++ )
         {
-            bufferedWriter.write( firstLine );
-            bufferedWriter.newLine();
-            for ( Iterator<PairsFilePair> iterator = pairsList.iterator(); iterator.hasNext(); )
-            {
-                PairsFilePair pair = iterator.next();
-                pair.writeToPairsFile( bufferedWriter );
-            }
-            bufferedWriter.flush();
-            bufferedWriter.close(); //TODO Does the try automatically handle closing?  If so, remove this.
+            assertEquals( "For pairs file file, " + pairsFile.getName()
+                          + ", after sorting alphabetically, row "
+                          + i
+                          + " differs from benchmark.",
+                          actualRows.get( i ).trim(), //TODO Added trimming to handle white space at the ends, but should I?
+                          expectedRows.get( i ).trim() );
         }
-
     }
 
     //===================================================================================================================
