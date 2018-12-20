@@ -4,127 +4,127 @@
     <inputs>
         <left>
             <type>observations</type>
-            <source>../smalldata/DRRC2QINE_FAKE_19850430.xml</source>
+            <source>smalldata/DRRC2QINE_FAKE_19850430.xml</source>
             <variable>QINE</variable>
         </left>
         <right>
             <type>ensemble forecasts</type>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
 
             <!-- Include this same source 100 times to increase chance of
                  reproducing a race condition if it exists: -->
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
 
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
 
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
 
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
 
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
 
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
 
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
 
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
 
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
 
 
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
 
-            <source>../smalldata/1985043013_DRRC2FAKE1_forecast.xml</source>
-            <source>../smalldata/1985043014_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043013_DRRC2FAKE1_forecast.xml</source>
+            <source>smalldata/1985043014_DRRC2FAKE1_forecast.xml</source>
             <variable>SQIN</variable>
         </right>
     </inputs>

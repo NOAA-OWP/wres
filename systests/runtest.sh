@@ -66,17 +66,17 @@ for scenarioName in $*; do
     echo
 
     startsec=$(date +%s) 
-    executeDir=$systestsDir/$scenarioName
+    scenarioDir=$systestsDir/$scenarioName
 
     # ============================================================
     # Preconditions
     # ============================================================
-    if [ ! -d $executeDir ]; then
-        echo "$echoPrefix Scenario provided, $scenarioName, does not exist in $(pwd).  Aborting..." | tee /dev/stderr
+    if [ ! -d $scenarioDir ]; then
+        echo "$echoPrefix Scenario provided, $scenarioName, does not exist in $systestsDir.  Aborting..." | tee /dev/stderr
         continue 
     fi
-    if [ ! -f $executeDir/$configName ]; then
-        echo "$echoPrefix Scenario project config file, $executeDir/$configName, does not exist.  Aborting..." | tee /dev/stderr
+    if [ ! -f $scenarioDir/$configName ]; then
+        echo "$echoPrefix Scenario project config file, $scenarioDir/$configName, does not exist.  Aborting..." | tee /dev/stderr
         continue
     fi
 
@@ -85,7 +85,7 @@ for scenarioName in $*; do
     # ============================================================
 
     # Clear all old output directories if they exist.
-    for directory in $executeDir/${outputDirPrefix}*
+    for directory in $scenarioDir/${outputDirPrefix}*
     do
         if [ -d $directory ]
         then
@@ -95,15 +95,15 @@ for scenarioName in $*; do
     done
 
     # Remove older (pre-2018-10-02 output directory as well if needed)
-    if [ -d $executeDir/output ]
+    if [ -d $scenarioDir/output ]
     then
-        echo "$echoPrefix Removing existing old output directory $executeDir/output"
-        rm -rf $executeDir/output
+        echo "$echoPrefix Removing existing old output directory $scenarioDir/output"
+        rm -rf $scenarioDir/output
     fi
 
     # Move into the directory.
     echo "$echoPrefix Moving (cd) to execution directory..."
-    cd $executeDir
+#    cd $systestsDir
 
     # ============================================================
     # Process 0-length files, such as CLEAN
@@ -112,12 +112,12 @@ for scenarioName in $*; do
     # Do the clean if CLEAN is found in the scenario directory.
     if [ -z "$WRES_DB_NAME" ]
     then
-    	export WRES_DB_NAME=wres4
+    	export WRES_DB_NAME=wres4 #Standard system testing db.
     fi
 
-    if [ -f CLEAN ]; then
-        echo "$echoPrefix Cleaning the database: ../wres.sh cleandatabase ..."
-        ../wres.sh cleandatabase
+    if [ -f $scenarioDir/CLEAN ]; then
+        echo "$echoPrefix Cleaning the database: ./wres.sh cleandatabase ..."
+        ./wres.sh cleandatabase
         if [[ $? -ne 0 ]]; then
             echo "$echoPrefix WRES clean failed; see above.  Something is wrong with the database $WRES_DB_NAME.  Aborting all tests..." | tee /dev/stderr
             exit 1
@@ -128,11 +128,13 @@ for scenarioName in $*; do
     # Run the "before" script if it exists and is executable.
     # ============================================================
 
-    before_script="before.sh"
+    before_script="$scenarioDir/before.sh"
     if [[ -x $before_script ]]
     then
-        echo "$echoPrefix Found a script to run before this test. Running it."
-        ./$before_script
+        echo "$echoPrefix Found a script to run before this test. Running it from the scenario directory, $scenarioDir."
+        cd $scenarioDir
+        $before_script
+        cd $systestsDir
     fi
 
     # ============================================================
@@ -141,8 +143,8 @@ for scenarioName in $*; do
 
     # If it fails then the file FAILS must exist in the scenario directory or its treated
     # as a test failure.  the file FAILS tells this script that failure is expected.
-    echo "$echoPrefix Executing the project: ../wres.sh execute $configName ..."
-    JAVA_OPTS=$JAVA_OPTS' -Djava.io.tmpdir=.' ../wres.sh execute $configName
+    echo "$echoPrefix Executing the project: ./wres.sh execute $scenarioDir/$configName ..."
+    JAVA_OPTS=$JAVA_OPTS" -Djava.io.tmpdir=$scenarioDir" ./wres.sh execute $scenarioDir/$configName
     executeResult=$?
 
     if [[ executeResult -ne 0 ]]; then
@@ -172,25 +174,27 @@ for scenarioName in $*; do
     # Run the "after" script if it exists and is executable.
     # ============================================================
 
-    after_script="after.sh"
+    after_script="$scenarioDir/after.sh"
     if [[ -x $after_script ]]
     then
-        echo "$echoPrefix Found a script to run after this test. Running it."
-        ./$after_script
+        echo "$echoPrefix Found a script to run after this test. Running it from the scenario directory, $scenarioDir."
+        cd $scenarioDir
+        $after_script
+        cd $systestsDir
     fi
 
 
     # ====================================================
     # Benchmark comparisons.
     # ====================================================
-    cd ${outputDirPrefix}*
+    cd $scenarioDir/${outputDirPrefix}*
 
     #List the contents of the output directory and compare with contents in benchmark.
     echo "$echoPrefix Listing the output contents: ls *.csv *.png > dirListing.txt"
     ls *.csv *.png > dirListing.txt 2>/dev/null 
 
-    #Compare files by calling the script.
-    cd $executeDir
+    #Compare files by calling the script, which assumes we are in the scenario directory.
+    cd $scenarioDir
     ../scripts/determinePairsDiff.sh
     comparisonResult=$?
 
@@ -202,7 +206,9 @@ for scenarioName in $*; do
 
     endsec=$(date +%s)
     echo "$echoPrefix Test completed in $(($endsec - $startsec)) seconds" | tee /dev/stderr
-
+    
+    #Return to the system testing directory. 
+    cd $systestsDir
 done
 
 if [ $overallResult -eq 0 ]

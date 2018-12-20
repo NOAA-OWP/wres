@@ -5,12 +5,12 @@
     <inputs>
         <left label="">
             <type>observations</type>
-            <source format="PI-XML">../data/DRRC2QINE.xml</source>
+            <source format="PI-XML">data/DRRC2QINE.xml</source>
             <variable label="discharge1">QINE</variable>
         </left>
         <right label="HEFS">
             <type>ensemble forecasts</type>
-            <source format="PI-XML">../data/drrc2ForecastsOneMonth/</source>
+            <source format="PI-XML">data/drrc2ForecastsOneMonth/</source>
             <variable label="discharge2">SQIN</variable>
         </right>
     </inputs>
@@ -41,7 +41,7 @@
         <destination type="numeric" decimalFormat="0.000000" />
         <destination type="pairs" decimalFormat="0.000000" />
         <destination type="graphic">
-            <graphical width="800" height="600" template="testTemplateCopiedFromDefault.xml">
+            <graphical width="800" height="600" template="scenario007/testTemplateCopiedFromDefault.xml">
                 <!-- Test of the capability to override chart template options in project configuration. -->
                 <config>
                     <chartDrawingParameters>

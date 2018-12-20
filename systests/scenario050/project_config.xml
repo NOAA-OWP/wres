@@ -3,12 +3,12 @@
     <inputs>
         <left label="">
             <type>simulations</type>
-            <source format="PI-XML">../data/DRRC2QINE.xml</source>
+            <source format="PI-XML">data/DRRC2QINE.xml</source>
             <variable>QINE</variable>
         </left>
         <right label="">
             <type>single valued forecasts</type>
-            <source format="csv" has_header="true">../smalldata/DRRC2_SQIN_FAKE.csv</source>
+            <source format="csv" has_header="true">smalldata/DRRC2_SQIN_FAKE.csv</source>
             <variable>SQIN</variable>
         </right>
     </inputs>
