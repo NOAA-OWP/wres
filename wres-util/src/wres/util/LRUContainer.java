@@ -118,12 +118,4 @@ public class LRUContainer<U>
             }
         }
     }
-
-    /**
-     * @return The number of contained objects
-     */
-    public int getSize()
-    {
-        return this.innerList.size();
-    }
 }
