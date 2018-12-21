@@ -40,6 +40,9 @@ public class CSVSource extends BasicSource
 
     private SourceDetails sourceDetails;
 
+    /**
+     * A container holding referenced TimeSeries entries
+     */
     private LRUContainer<TimeSeries> encounteredTimeSeries;
 
     /**
@@ -104,7 +107,7 @@ public class CSVSource extends BasicSource
     {
         if (encounteredTimeSeries == null)
         {
-            encounteredTimeSeries = new LRUContainer<TimeSeries>( TIME_SERIES_LIMIT );
+            encounteredTimeSeries = new LRUContainer<>( TIME_SERIES_LIMIT );
         }
 
         try
@@ -426,7 +429,7 @@ public class CSVSource extends BasicSource
 
         timeSeries = new TimeSeries(
                 this.sourceDetails.getId(),
-                data.getInstant( "start_date" ).toString()
+                startDate
         );
 
         timeSeries.setEnsembleID(ensembleId);
@@ -438,6 +441,8 @@ public class CSVSource extends BasicSource
         timeSeries.setVariableFeatureID( variableFeatureId );
         timeSeries.setScalePeriod( 1 );
         timeSeries.setTimeStep( timeStep );
+
+        this.encounteredTimeSeries.add(timeSeries);
 
         return timeSeries;
     }
