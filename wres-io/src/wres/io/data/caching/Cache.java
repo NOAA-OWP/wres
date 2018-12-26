@@ -156,7 +156,7 @@ abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
 	    }
 	}
 
-	boolean isEmpty()
+	public boolean isEmpty()
     {
         return this.getKeyIndex().isEmpty();
     }

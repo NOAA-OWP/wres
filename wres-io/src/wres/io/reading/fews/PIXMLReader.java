@@ -2,6 +2,7 @@ package wres.io.reading.fews;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.sql.SQLException;
 import java.time.DateTimeException;
 import java.time.Duration;
@@ -70,15 +71,15 @@ public final class PIXMLReader extends XMLReader
 	 * @param hash the hash code for the source
      * @throws IOException when an attempt to get the file from classpath fails.
 	 */
-    PIXMLReader( String filename,
-                        String hash )
+    PIXMLReader( URI filename,
+				 String hash )
             throws IOException
 	{
 		super(filename);
 		this.hash = hash;
 	}
 
-    public PIXMLReader( String filename,
+    public PIXMLReader( URI filename,
                         InputStream inputStream,
                         String hash )
             throws IOException

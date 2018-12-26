@@ -3,6 +3,7 @@ package wres.io.reading.nwm;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -28,12 +29,12 @@ public class GriddedNWMValueSaver extends WRESRunnable
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(GriddedNWMValueSaver.class);
 
-    private String fileName;
+    private URI fileName;
     private NetcdfFile source;
     private final String hash;
     private final int gridProjectionId;
 
-	GriddedNWMValueSaver(String fileName, final String hash, final int gridProjectionId)
+	GriddedNWMValueSaver( URI fileName, final String hash, final int gridProjectionId )
     {
         this.fileName = fileName;
         this.hash = hash;
@@ -86,7 +87,7 @@ public class GriddedNWMValueSaver extends WRESRunnable
 
         try
         {
-            URL url = new URL(this.fileName);
+            URL url = this.fileName.toURL();
             HttpURLConnection huc = (HttpURLConnection)url.openConnection();
             huc.setRequestMethod( "HEAD" );
             huc.setInstanceFollowRedirects( false );
@@ -117,16 +118,16 @@ public class GriddedNWMValueSaver extends WRESRunnable
             firstNameIndex = nameCount - 4;
         }
 
-        final String originalPath = this.fileName;
+        final URI originalPath = this.fileName;
 
         this.fileName = Paths.get(
                 SystemSettings.getNetCDFStorePath(),
                 path.subpath( firstNameIndex, nameCount ).toString()
-        ).toString();
+        ).toUri();
 
-        if ( !Paths.get( this.fileName, path.getFileName().toString() ).toFile().exists())
+        if ( !Paths.get( this.fileName.toString(), path.getFileName().toString() ).toFile().exists())
         {
-            Downloader downloader = new Downloader(Paths.get(this.fileName), originalPath);
+            Downloader downloader = new Downloader( Paths.get( this.fileName ), originalPath );
             downloader.setDisplayOutput( false );
             downloader.execute();
 
@@ -141,7 +142,7 @@ public class GriddedNWMValueSaver extends WRESRunnable
     {
         if (this.source == null) {
             this.getLogger().trace("Now opening '{}'...", this.fileName);
-            this.source = NetcdfFile.open(this.fileName);
+            this.source = NetcdfFile.open( this.fileName.toString() );
             this.getLogger().trace("'{}' has been opened for parsing.", this.fileName);
         }
         return this.source;

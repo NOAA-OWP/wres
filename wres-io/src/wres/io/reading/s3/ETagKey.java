@@ -1,5 +1,6 @@
 package wres.io.reading.s3;
 
+import java.net.URI;
 import java.util.Objects;
 
 // TODO: Remove in favor of an object that collects 2 non-store strings instead of strings specific to S3.
@@ -10,9 +11,9 @@ import java.util.Objects;
 class ETagKey implements Comparable<ETagKey>
 {
     private final String etag;
-    private final String key;
+    private final URI key;
 
-    ETagKey (final String eTag, final String key)
+    ETagKey ( final String eTag, final URI key )
     {
         this.etag = eTag;
         this.key = key;
@@ -23,7 +24,7 @@ class ETagKey implements Comparable<ETagKey>
         return this.etag;
     }
 
-    String getKey()
+    URI getKey()
     {
         return this.key;
     }

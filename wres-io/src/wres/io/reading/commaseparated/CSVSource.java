@@ -1,6 +1,7 @@
 package wres.io.reading.commaseparated;
 
 import java.io.IOException;
+import java.net.URI;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
@@ -51,7 +52,7 @@ public class CSVSource extends BasicSource
      * @param filename The name of the source file
      */
     public CSVSource( ProjectConfig projectConfig,
-                       String filename )
+                      URI filename )
     {
         super( projectConfig );
         this.setFilename(filename);

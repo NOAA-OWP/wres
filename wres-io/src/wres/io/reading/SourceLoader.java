@@ -3,6 +3,7 @@ package wres.io.reading;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -99,7 +100,7 @@ public class SourceLoader
                                     IngestSaver.createTask()
                                                .withProject( this.projectConfig )
                                                .withDataSourceConfig( config )
-                                               .withFilePath( "usgs" )
+                                               .withFilePath( URI.create( "usgs" ) )
                                                .build()
                             )
                     );
@@ -112,7 +113,7 @@ public class SourceLoader
                                     IngestSaver.createTask()
                                                .withProject( this.projectConfig )
                                                .withDataSourceConfig( config )
-                                               .withFilePath( "s3" )
+                                               .withFilePath( URI.create( "s3" ) )
                                                .withSourceConfig( source )
                                                .build()
                             )
@@ -292,7 +293,7 @@ public class SourceLoader
         String absolutePath = filePath.toAbsolutePath().toString();
         Future<List<IngestResult>> task;
 
-        FileEvaluation checkIngest = shouldIngest( absolutePath,
+        FileEvaluation checkIngest = shouldIngest( filePath.toUri(),
                                                    source );
 
         if ( checkIngest.shouldIngest() )
@@ -307,7 +308,7 @@ public class SourceLoader
             }
 
             task = Executor.submit( IngestSaver.createTask()
-                                               .withFilePath( absolutePath )
+                                               .withFilePath( filePath.toUri() )
                                                .withProject( projectConfig )
                                                .withDataSourceConfig( dataSourceConfig )
                                                .withSourceConfig( source )
@@ -327,7 +328,7 @@ public class SourceLoader
                 // Fake a future, return result immediately.
                 task = IngestResult.fakeFutureSingleItemListFrom( projectConfig,
                                                                   dataSourceConfig,
-                                                                  absolutePath,
+                                                                  filePath.toUri(),
                                                                   checkIngest.getHash() );
             }
             else
@@ -355,7 +356,7 @@ public class SourceLoader
      * @return Whether or not data within the file should be ingested (and hash)
      * @throws PreIngestException when hashing or id lookup cause some exception
      */
-    private static FileEvaluation shouldIngest( String filePath,
+    private static FileEvaluation shouldIngest( URI filePath,
                                                 DataSourceConfig.Source source )
     {
         Format specifiedFormat = source.getFormat();

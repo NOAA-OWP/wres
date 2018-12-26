@@ -336,7 +336,7 @@ public final class Variables extends Cache<VariableDetails, String>
 
             try (DataProvider data = script.getData())
             {
-                instance.populate( script.getData() );
+                instance.populate( data );
             }
         }
         catch ( SQLException sqlException )

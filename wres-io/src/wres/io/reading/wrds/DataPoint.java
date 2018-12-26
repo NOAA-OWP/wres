@@ -2,8 +2,11 @@ package wres.io.reading.wrds;
 
 import java.time.OffsetDateTime;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import wres.util.Strings;
 
+@JsonIgnoreProperties( ignoreUnknown = true )
 public class DataPoint
 {
     public void setFlow( String flow )

@@ -1,6 +1,7 @@
 package wres.io.reading.nwm;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.ResultSet;
@@ -164,20 +165,18 @@ class VectorNWMValueSaver extends WRESRunnable
     private boolean inChargeOfIngest;
     private Integer ensembleId;
 
-    VectorNWMValueSaver (String filename,
+    VectorNWMValueSaver( URI filename,
                          String hash,
                          DataSourceConfig dataSourceConfig)
     {
-        if (!Strings.hasValue( filename ))
-        {
-            throw new IllegalArgumentException("The passed filename is either null or empty.");
-        }
-        else if (!Strings.hasValue( hash ))
+        Objects.requireNonNull( filename, "The passed filename is either null or empty." );
+
+        if (!Strings.hasValue( hash ))
         {
             throw new IllegalArgumentException( "An empty or null hash was passed to the ingestor" );
         }
 
-        this.filePath = Paths.get(filename);
+        this.filePath = Paths.get( filename );
         this.hash = hash;
         this.dataSourceConfig = dataSourceConfig;
         this.futureHash = null;
@@ -244,7 +243,7 @@ class VectorNWMValueSaver extends WRESRunnable
         {
             // TODO: Modify the cache to do this work
             SourceDetails.SourceKey sourceKey = new SourceDetails.SourceKey(
-                    this.filePath.toString(),
+                    this.filePath.toUri(),
                     NetCDF.getReferenceTime( this.getSource() ).toString(),
                     this.getLead(),
                     this.getHash()

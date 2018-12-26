@@ -6,6 +6,8 @@ import static org.powermock.api.mockito.PowerMockito.doNothing;
 import static org.powermock.api.mockito.PowerMockito.when;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -106,7 +108,7 @@ public class DataCardSourceTest
 	@Test
     @Ignore // TODO: revisit this test and determine appropriate output
     public void insertQueryNormalTest()
-			throws IOException
+			throws IOException, URISyntaxException
     {
         String current = new java.io.File( "." ).getCanonicalPath();
         List<DataSourceConfig.Source> sourceList = new ArrayList<DataSourceConfig.Source>();
@@ -176,12 +178,13 @@ public class DataCardSourceTest
                                                          null );
 
         String filePath = current + "/testinput/datacard/short_HOPR1SNE.QME.OBS";
+        URI fileUri = new URI( filePath );
 
         // TODO: Modify the other classes (CopyExecutor, Database, etc) rather than the datacard source to get truer results
-        source = PowerMockito.spy(new wres.io.reading.datacard.DatacardSource( projectConfig, filePath ));
+        source = PowerMockito.spy( new DatacardSource( projectConfig, fileUri ) );
 
         source.setDataSourceConfig(config);
-        Whitebox.setInternalState( source, "variablePositionID", 123 );
+        Whitebox.setInternalState( source, "VariableFeatureID", 123 );
         Whitebox.setInternalState( source, "currentMeasurementUnitID", 456 );
         Whitebox.setInternalState( source, "currentSourceID", 789 );
         doNothing().when( source ).save();
@@ -197,7 +200,7 @@ public class DataCardSourceTest
     @Ignore // TODO restore this test as part of #39721 feature aliasing
 	//Test short record and multiple specified missing values
     public void insertQueryShortRecordTest()
-            throws IOException
+            throws IOException, URISyntaxException
     {
         String current = new java.io.File( "." ).getCanonicalPath();
         List<DataSourceConfig.Source> sourceList = new ArrayList<>();
@@ -266,9 +269,10 @@ public class DataCardSourceTest
                                                          null );
 
         String filePath = current + "/testinput/datacard/short_CCRN6.MAP06_short_record";
+        URI fileUri = new URI( filePath );
 
         // TODO: Modify the other classes (CopyExecutor, Database, etc) rather than the datacard source to get truer results
-        source = PowerMockito.spy(new wres.io.reading.datacard.DatacardSource( projectConfig, filePath ));
+        source = PowerMockito.spy( new DatacardSource( projectConfig, fileUri ) );
 
         source.setDataSourceConfig(config);
         Whitebox.setInternalState( source, "variablePositionID", 123 );

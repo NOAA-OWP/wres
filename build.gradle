@@ -290,6 +290,9 @@ project(':wres-io')
 
         // try out an embedded postgres
         testCompile 'ru.yandex.qatools.embed:postgresql-embedded:2.9'
+
+        // Use mockserver as a mock server for mock API responses
+        testCompile 'org.mock-server:mockserver-netty:5.4.1'
     }
 }
 

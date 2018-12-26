@@ -1,6 +1,7 @@
 package wres.io.reading;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.List;
@@ -85,7 +86,7 @@ public abstract class BasicSource
     /**
      * @return The name of the file that contains the given source data
      */
-	public String getFilename()
+	public URI getFilename()
 	{
 		return filename;
 	}
@@ -94,7 +95,7 @@ public abstract class BasicSource
      * Sets the name of the file containing the data to read
      * @param name The name of the file to read
      */
-	protected void setFilename (String name)
+	protected void setFilename ( URI name )
 	{
 		filename = name;
 	}
@@ -156,7 +157,7 @@ public abstract class BasicSource
     /**
      * The name of the file containing the given source data
      */
-	protected String filename = "";
+	protected URI filename;
 
     /**
      * The MD5 hash of the given file
@@ -196,11 +197,11 @@ public abstract class BasicSource
     {
         String unit = null;
 
-        if (dataSourceConfig != null)
+        if ( this.getSourceConfig() != null )
         {
             DataSourceConfig.Source source = this.getSourceConfig();
 
-            if (source != null && source.getUnit() != null && !source.getUnit().isEmpty()) {
+            if ( source.getUnit() != null && !source.getUnit().isEmpty() ) {
                 unit = source.getUnit();
             }
         }
@@ -217,11 +218,11 @@ public abstract class BasicSource
     {
         String locationID = null;
 
-        if (dataSourceConfig != null)
+        if ( this.getSourceConfig() != null )
         {
             DataSourceConfig.Source source = this.getSourceConfig();
 
-            if (source != null && source.getLocationId() != null && !source.getLocationId().isEmpty())
+            if ( source.getLocationId() != null && !source.getLocationId().isEmpty() )
             {
                 locationID = source.getLocationId();
             }
@@ -242,11 +243,11 @@ public abstract class BasicSource
     {
         String missingValue = null;
 
-        if (dataSourceConfig != null)
+        if ( this.getSourceConfig() != null )
         {
             DataSourceConfig.Source source = this.getSourceConfig();
 
-            if (source != null && source.getMissingValue() != null && !source.getMissingValue().isEmpty())
+            if ( source.getMissingValue() != null && !source.getMissingValue().isEmpty() )
             {
                 missingValue = source.getMissingValue();
 
@@ -302,7 +303,7 @@ public abstract class BasicSource
      * @return Whether or not to ingest the file and the resulting hash
      * @throws IngestException when an exception prevents determining status
      */
-    Pair<Boolean,String> shouldIngest( String filePath,
+    Pair<Boolean,String> shouldIngest( URI filePath,
                                                  DataSourceConfig.Source source,
                                                  byte[] contents )
             throws IngestException
@@ -489,7 +490,7 @@ public abstract class BasicSource
                     this.fileNameToHash = fileNameToHash;
                     return this;
                 }
-            }.init( this.getFilename() );
+            }.init( this.getFilename().toString() );
         }
         else
         {

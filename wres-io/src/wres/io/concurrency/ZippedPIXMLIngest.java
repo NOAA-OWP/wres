@@ -3,6 +3,7 @@ package wres.io.concurrency;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -26,13 +27,13 @@ public final class ZippedPIXMLIngest extends WRESCallable<List<IngestResult>>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(ZippedPIXMLIngest.class);
 
-    private final String fileName;
+    private final URI fileName;
     private final byte[] content;
     private final DataSourceConfig dataSourceConfig;
     private final DataSourceConfig.Source sourceConfig;
     private final ProjectConfig projectConfig;
 
-    public ZippedPIXMLIngest ( final String fileName,
+    public ZippedPIXMLIngest ( final URI fileName,
                                final byte[] content,
                                final DataSourceConfig dataSourceConfig,
                                final DataSourceConfig.Source sourceConfig,

@@ -1,6 +1,7 @@
 package wres.io.reading.usgs;
 
 import java.io.IOException;
+import java.net.URI;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
@@ -12,7 +13,6 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.TreeMap;
 
-import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Invocation;
@@ -57,7 +57,8 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
 
     // Hardcoded because this is the reader for USGS' services, not a generic waterml service
     // If a generic water ML service is required, one should be written for it.
-    private static final String USGS_URL = "https://waterservices.usgs.gov/nwis/";
+    private static final URI USGS_URL =
+            URI.create( "https://waterservices.usgs.gov/nwis/" );
     private static final String INSTANTANEOUS_VALUE = "iv";
     private static final String DAILY_VALUE = "dv";
     private static final double EPSILON = 0.0000001;
@@ -156,8 +157,8 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
             // and after will. In that case, we should continue.
             if (usgsResponse.getValue().getNumberOfPopulatedTimeSeries() == 0)
             {
-                LOGGER.debug( "No timeseries were returned from the query:" );
-                LOGGER.debug( requestURL );
+                LOGGER.debug( "No timeseries were returned from the query: {}",
+                              requestURL );
             }
             else
             {
@@ -208,7 +209,8 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
             client = ClientBuilder.newClient();
             WebTarget webTarget = this.buildWebTarget( client );
 
-            this.requestURL = webTarget.getUri().toURL().toString();
+            requestURL = webTarget.getUri();
+
             LOGGER.debug("Requesting data from: {}", requestURL);
 
             Response usgsResponse = this.getResponse( webTarget );
@@ -643,9 +645,7 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
 
         if (timeStep == null)
         {
-            LOGGER.info("");
-            LOGGER.info(this.requestURL);
-            LOGGER.info("");
+            LOGGER.info("{}{}{}", NEWLINE, this.requestURL, NEWLINE );
         }
 
         IngestedValues.observed(value)
@@ -765,7 +765,7 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
     private final ProjectConfig projectConfig;
     private final DataSourceConfig dataSourceConfig;
     private String operationStartTime;
-    private String requestURL;
+    private URI requestURL;
 
     private ExceptionalConsumer<TimeSeries, IOException> onUpdate;
 

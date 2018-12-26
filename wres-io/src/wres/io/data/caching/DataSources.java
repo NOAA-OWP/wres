@@ -1,5 +1,6 @@
 package wres.io.data.caching;
 
+import java.net.URI;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Instant;
@@ -71,7 +72,7 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
         {
             detail = new SourceDetails();
             detail.setOutputTime( data.getString( "output_time" ) );
-            detail.setSourcePath( data.getString( "path" ) );
+            detail.setSourcePath( URI.create( data.getString( "path" ) ) );
             detail.setHash( data.getString( "hash" ) );
             detail.setIsPointData( data.getBoolean( "is_point_data" ) );
             detail.setID( data.getInt( "source_id" ) );
@@ -102,12 +103,14 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
 	 * @return The ID of the source in the database
 	 * @throws SQLException Thrown when interaction with the database failed
 	 */
-	public static Integer getSourceID(String path, String outputTime, Integer lead, String hash) throws SQLException
+	public static Integer getSourceID( URI path, String outputTime, Integer lead, String hash )
+            throws SQLException
     {
 		return getCache().getID(path, outputTime, lead, hash);
 	}
 
-	public static SourceDetails get(String path, String outputTime, Integer lead, String hash) throws SQLException
+	public static SourceDetails get( URI path, String outputTime, Integer lead, String hash )
+            throws SQLException
     {
         int id = DataSources.getCache().getID( path, outputTime, lead, hash );
         return DataSources.getCache().get( id );
@@ -178,7 +181,7 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
                     sourceDetails.setHash( hash );
                     sourceDetails.setLead( data.getInt( "lead" ) );
                     sourceDetails.setOutputTime( data.getString( "output_time" ) );
-                    sourceDetails.setSourcePath( data.getString( "path" ) );
+                    sourceDetails.setSourcePath( URI.create( data.getString( "path" ) ) );
                     sourceDetails.setID( data.getInt( "source_id" ) );
                     sourceDetails.setIsPointData( data.getBoolean( "is_point_data" ) );
 
@@ -228,7 +231,7 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
                         details.setHash( hash );
                         details.setLead( data.getInt( "lead" ) );
                         details.setOutputTime( data.getString( "output_time" ) );
-                        details.setSourcePath( data.getString( "path" ) );
+                        details.setSourcePath( URI.create( data.getString( "path" ) ) );
                         details.setID( data.getInt( "source_id" ) );
                         details.setIsPointData( data.getBoolean( "is_point_data" ) );
 
@@ -264,7 +267,7 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
 	 * @return The ID of the source in the database
 	 * @throws SQLException Thrown when interaction with the database failed
 	 */
-	Integer getID(String path, String outputTime, Integer lead, String hash) throws SQLException
+	Integer getID( URI path, String outputTime, Integer lead, String hash ) throws SQLException
     {
 		return this.getID(SourceDetails.createKey(path, outputTime, lead, hash));
 	}

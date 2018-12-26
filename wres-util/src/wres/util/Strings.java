@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectOutputStream;
 import java.io.PrintStream;
+import java.net.URI;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
@@ -226,14 +227,14 @@ public final class Strings
 	 * @return The hash that can be used to identify a file's contents
 	 * @throws IOException Thrown if the file could not be read
 	 */
-    public static String getMD5Checksum(String filename) throws IOException
+    public static String getMD5Checksum( URI filename ) throws IOException
     {
         byte[] buffer = new byte[1024];
         MessageDigest complete = Strings.getMD5Algorithm();
         int bytesBuffered;
         int passCount = 0;
 
-        try ( InputStream fileStream = new BufferedInputStream( new FileInputStream( filename ) ))
+        try ( InputStream fileStream = new BufferedInputStream( new FileInputStream( filename.toURL().getFile() ) ))
         {
             do
             {

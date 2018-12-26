@@ -1,7 +1,7 @@
 package wres.io.reading.wrds;
 
 import java.io.IOException;
-import java.net.URL;
+import java.net.URI;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
@@ -35,7 +35,7 @@ public class ReadValueManager
 
     ReadValueManager( final ProjectConfig projectConfig,
                       final DataSourceConfig datasourceConfig,
-                      final URL location )
+                      final URI location )
     {
         this.location = location;
         this.projectConfig = projectConfig;
@@ -46,14 +46,14 @@ public class ReadValueManager
     {
         ObjectMapper mapper = new ObjectMapper();
         Instant now = Instant.now();
-        String hash = Strings.getMD5Checksum( this.location.getFile().getBytes());
+        String hash = Strings.getMD5Checksum( this.location.toURL().getFile().getBytes());
 
         boolean foundAlready;
         SourceDetails source;
 
         try
         {
-            source = DataSources.get(this.location.toString(), now.toString(), null, hash);
+            source = DataSources.get( this.location, now.toString(), null, hash );
             foundAlready = !source.performedInsert();
         }
         catch ( SQLException e )
@@ -69,7 +69,7 @@ public class ReadValueManager
         {
             try
             {
-                ForecastResponse response = mapper.readValue( this.location, ForecastResponse.class );
+                ForecastResponse response = mapper.readValue( this.location.toURL(), ForecastResponse.class );
 
                 if (response.getStatusCode() >= 400)
                 {
@@ -91,7 +91,7 @@ public class ReadValueManager
                 this.projectConfig,
                 this.dataSourceConfig,
                 hash,
-                this.location.toString(),
+                this.location,
                 foundAlready
         );
     }
@@ -99,15 +99,13 @@ public class ReadValueManager
     private void read(final Forecast forecast, final int sourceId) throws SQLException
     {
 
-        DataPoint[] dataPointsList;
+        List<DataPoint> dataPointsList;
 
-        if (forecast.getMembers() != null && forecast.getMembers().length > 0)
+        if ( forecast.getMembers() != null
+             && forecast.getMembers().length > 0
+             && forecast.getMembers()[0].getDataPointsList().size() > 0 )
         {
-            dataPointsList = forecast.getMembers()[0].getDataPointsList();
-        }
-        else if (forecast.getDataPointsList() != null && forecast.getDataPointsList().length > 0)
-        {
-            dataPointsList = forecast.getDataPointsList();
+            dataPointsList = forecast.getMembers()[0].getDataPointsList().get( 0 );
         }
         else
         {
@@ -115,7 +113,14 @@ public class ReadValueManager
             return;
         }
 
-        Duration timeDuration = Duration.between( dataPointsList[0].getTime(), dataPointsList[1].getTime() );
+        if ( dataPointsList.size() < 2 )
+        {
+            LOGGER.warn( "Fewer than two values present in the first forecast '{}' from '{}'.", forecast, this.location );
+            return;
+        }
+
+        Duration timeDuration = Duration.between( dataPointsList.get( 0 ).getTime(),
+                                                  dataPointsList.get( 1 ).getTime() );
 
         long timeStep = TimeHelper.durationToLongUnits(
                 timeDuration, TimeHelper.LEAD_RESOLUTION
@@ -181,7 +186,7 @@ public class ReadValueManager
         return MeasurementUnits.getMeasurementUnitID(forecast.getUnits().getUnitName());
     }
 
-    private final URL location;
+    private final URI location;
     private final ProjectConfig projectConfig;
     private final DataSourceConfig dataSourceConfig;
 }

@@ -1,5 +1,9 @@
 package wres.io.reading.wrds;
 
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+@JsonIgnoreProperties( ignoreUnknown = true )
 public class ParameterCodes
 {
     public String getDuration()

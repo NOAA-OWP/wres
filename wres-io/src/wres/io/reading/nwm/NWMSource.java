@@ -2,6 +2,7 @@ package wres.io.reading.nwm;
 
 import java.io.IOException;
 import java.net.SocketTimeoutException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.SQLException;
@@ -37,7 +38,7 @@ public class NWMSource extends BasicSource
      * @param projectConfig the ProjectConfig causing ingest
 	 * @param filename the file name
 	 */
-	public NWMSource( ProjectConfig projectConfig, String filename )
+	public NWMSource( ProjectConfig projectConfig, URI filename )
     {
         super( projectConfig );
 		this.setFilename(filename);
@@ -52,7 +53,7 @@ public class NWMSource extends BasicSource
 
 	    while (true)
         {
-            try ( NetcdfFile source = NetcdfFile.open( this.getFilename() ) )
+            try ( NetcdfFile source = NetcdfFile.open( this.getFilename().toString() ) )
             {
                 hash = saveNetCDF( source );
                 break;
@@ -75,7 +76,7 @@ public class NWMSource extends BasicSource
 		return IngestResult.singleItemListFrom( this.getProjectConfig(),
 												this.getDataSourceConfig(),
 												hash,
-												this.getAbsoluteFilename(),
+												this.getFilename(),
 												this.alreadyFound );
 	}
 

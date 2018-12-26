@@ -2,9 +2,11 @@ package wres.io.reading;
 
 import java.io.BufferedInputStream;
 import java.io.EOFException;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -51,7 +53,7 @@ public class ZippedSource extends BasicSource {
 
     private final Queue<Future<List<IngestResult>>> tasks = new LinkedList<>();
 
-    private final Queue<String> savedFiles = new LinkedList<>();
+    private final Queue<URI> savedFiles = new LinkedList<>();
 
     private ThreadPoolExecutor createReaderService()
     {
@@ -100,11 +102,11 @@ public class ZippedSource extends BasicSource {
 	 * @param filename The name of the source file
 	 */
     ZippedSource ( ProjectConfig projectConfig,
-                          String filename )
+                   URI filename )
 	{
         super( projectConfig );
 	    this.setFilename(filename);
-	    this.directoryPath = Paths.get(filename).toAbsolutePath().getParent().toString();
+	    this.directoryPath = Paths.get( filename.getPath() ).toAbsolutePath().getParent().toString();
     }
 
     private List<IngestResult> issue()
@@ -179,7 +181,7 @@ public class ZippedSource extends BasicSource {
                 ingestTask = Database.getStoredIngestTask();
             }
 
-            for (String filename : this.savedFiles)
+            for ( URI filename : this.savedFiles)
             {
                 Path path = Paths.get( filename );
                 boolean fileRemoved = Files.deleteIfExists( path );
@@ -213,7 +215,7 @@ public class ZippedSource extends BasicSource {
             throws IOException
     {
         int bytesRead = (int)source.getSize();
-        String archivedFileName = Paths.get(this.directoryPath, source.getName()).toString();
+        URI archivedFileName = Paths.get( this.directoryPath, source.getName() ).toUri();
         Format sourceType = ReaderFactory.getFiletype( archivedFileName );
         DataSourceConfig.Source originalSource = this.getSourceConfig();
 
@@ -302,7 +304,7 @@ public class ZippedSource extends BasicSource {
         }
         else
         {
-            try (FileOutputStream stream = new FileOutputStream(archivedFileName))
+            try ( FileOutputStream stream = new FileOutputStream( new File( archivedFileName ) ) )
             {
                 stream.write(content);
                 this.savedFiles.add(archivedFileName);

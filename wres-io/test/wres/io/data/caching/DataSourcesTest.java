@@ -3,8 +3,8 @@ package wres.io.data.caching;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import java.beans.PropertyVetoException;
-import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -78,7 +78,7 @@ public class DataSourcesTest
     {
         LOGGER.trace("getTwiceFromDataSources began");
 
-        final String path = "/this/is/just/a/test";
+        final URI path = new URI( "/this/is/just/a/test" );
         final String time = "2017-06-16 11:13:00";
 
         Integer result = DataSources.getSourceID(path, time, null, "test");
@@ -115,7 +115,7 @@ public class DataSourcesTest
         // Create one cache that inserts data to set us up for 2nd cache init.
         DataSources sc = new DataSources();
 
-        final String path = "/this/is/just/a/test";
+        final URI path = new URI( "/this/is/just/a/test" );
         final String time = "2017-06-20 16:55:00";
         Integer firstId = sc.getID(path, time, null, "test");
 
@@ -131,7 +131,7 @@ public class DataSourcesTest
     }
 
     @Test
-    public void testAccess()
+    public void testAccess() throws URISyntaxException
     {
         SourceDetails firstDetails = DataSources.getById( 1 );
 
@@ -143,7 +143,7 @@ public class DataSourcesTest
         Assert.assertEquals( firstDetails.getHash(), "1234" );
 
         SourceDetails.SourceKey firstKey = firstDetails.getKey();
-        Assert.assertEquals( firstKey.getSourcePath(), "/somewhere/somewhere/1.ext" );
+        Assert.assertEquals( new URI( "/somewhere/somewhere/1.ext" ), firstKey.getSourcePath() );
         Assert.assertEquals( firstKey.getLead(), null );
         Assert.assertEquals( firstKey.getSourceTime(), "2018-08-08T00:00:00Z");
         Assert.assertEquals( firstKey.getHash(), firstDetails.getHash() );
@@ -153,7 +153,7 @@ public class DataSourcesTest
         try
         {
             secondDetails = DataSources.get(
-                    "/somewhere/somewhere/1.ext",
+                    new URI( "/somewhere/somewhere/1.ext" ),
                     "2018-08-08T00:00:00Z",
                     null,
                     "1234" );
@@ -192,7 +192,7 @@ public class DataSourcesTest
         Assert.assertEquals( thirdDetails.getHash(), "123456" );
 
         SourceDetails.SourceKey thirdKey = thirdDetails.getKey();
-        Assert.assertEquals( thirdKey.getSourcePath(), "/somewhere/somewhere/3.ext" );
+        Assert.assertEquals( new URI ("/somewhere/somewhere/3.ext" ), thirdKey.getSourcePath() );
         Assert.assertEquals( thirdKey.getLead(), null );
         Assert.assertEquals( thirdKey.getSourceTime(), "2018-08-08T02:00:00Z");
         Assert.assertEquals( thirdKey.getHash(), thirdDetails.getHash() );
