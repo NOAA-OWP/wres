@@ -2,9 +2,13 @@ package wres.io.reading.wrds;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import wres.util.Strings;
 
+@JsonIgnoreProperties( ignoreUnknown = true )
 public class Forecast
 {
     public Location getLocation()
@@ -103,15 +107,6 @@ public class Forecast
         this.parameterCodes = parameterCodes;
     }
 
-    public void setDataPointsList( DataPoint[] dataPointsList )
-    {
-        this.dataPointsList = dataPointsList;
-    }
-
-    public DataPoint[] getDataPointsList()
-    {
-        return dataPointsList;
-    }
 
     public Member[] getMembers()
     {
@@ -133,5 +128,4 @@ public class Forecast
     ForecastUnits units;
     ParameterCodes parameterCodes;
     Member[] members;
-    DataPoint[] dataPointsList;
 }

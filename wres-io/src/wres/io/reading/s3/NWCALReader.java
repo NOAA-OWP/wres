@@ -1,6 +1,6 @@
 package wres.io.reading.s3;
 
-import java.io.IOException;
+import java.net.URI;
 import java.nio.file.FileSystems;
 import java.nio.file.PathMatcher;
 import java.nio.file.Paths;
@@ -28,8 +28,6 @@ import com.amazonaws.services.s3.model.ListObjectsRequest;
 import com.amazonaws.services.s3.model.ObjectListing;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ucar.nc2.NetcdfFile;
-import ucar.nc2.Variable;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.ProjectConfig;
@@ -574,9 +572,9 @@ class NWCALReader extends S3Reader
     }
 
     @Override
-    String getKeyURL( String key )
+    URI getKeyURL( String key )
     {
-        return NWCALReader.ENDPOINT_URL + "/" + this.getBucketName() + "/" + key;
+        return URI.create( NWCALReader.ENDPOINT_URL + "/" + this.getBucketName() + "/" + key );
     }
 
     @Override
@@ -708,7 +706,8 @@ class NWCALReader extends S3Reader
                 s3Objects.getObjectSummaries().forEach( summary -> {
                     if (matcher.matches( Paths.get( summary.getKey()) ))
                     {
-                        ingestableObjects.add(new ETagKey( summary.getETag(), summary.getKey() ));
+                        ingestableObjects.add( new ETagKey( summary.getETag(),
+                                                            URI.create( summary.getKey() ) ) );
                     }
                 } );
 

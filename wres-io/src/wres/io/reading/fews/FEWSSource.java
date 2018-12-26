@@ -1,6 +1,7 @@
 package wres.io.reading.fews;
 
 import java.io.IOException;
+import java.net.URI;
 import java.sql.SQLException;
 import java.util.List;
 
@@ -28,7 +29,7 @@ public class FEWSSource extends BasicSource
 	 * @param filename The name of the source file
 	 */
     public FEWSSource( ProjectConfig projectConfig,
-                       String filename )
+                       URI filename )
     {
         super( projectConfig );
 		this.setFilename(filename);
@@ -43,7 +44,7 @@ public class FEWSSource extends BasicSource
         {
             if ( !DataSources.hasSource( this.getHash() ) )
             {
-                PIXMLReader sourceReader = new PIXMLReader( this.getAbsoluteFilename(),
+                PIXMLReader sourceReader = new PIXMLReader( this.getFilename(),
                                                             this.getHash() );
                 sourceReader.setDataSourceConfig( this.getDataSourceConfig() );
                 sourceReader.setSourceConfig( this.getSourceConfig() );

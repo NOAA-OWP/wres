@@ -1,6 +1,7 @@
 package wres.io.reading.s3;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.SQLException;
@@ -82,7 +83,7 @@ public abstract class S3Reader extends BasicSource
 
                 if (!isVector)
                 {
-                    fileExists = Files.exists( Paths.get( SystemSettings.getNetCDFStorePath(), tagAndKey.getKey() ));
+                    fileExists = Files.exists( Paths.get( SystemSettings.getNetCDFStorePath(), tagAndKey.getKey().toString() ));
                 }
 
                 if ( fileExists )
@@ -117,7 +118,7 @@ public abstract class S3Reader extends BasicSource
             {
 
                 WRESCallable<List<IngestResult>> saver = IngestSaver.createTask()
-                                                                    .withFilePath( this.getKeyURL( tagKey.getKey() ) )
+                                                                    .withFilePath( tagKey.getKey() )
                                                                     .withProject( this.getProjectConfig() )
                                                                     .withDataSourceConfig( this.getDataSourceConfig() )
                                                                     .withHash( tagKey.getEtag() )
@@ -153,7 +154,7 @@ public abstract class S3Reader extends BasicSource
      * @param key The key of the object in the object store
      * @return The URL to the file in the object store
      */
-    abstract String getKeyURL(final String key);
+    abstract URI getKeyURL( final String key);
 
     /**
      * Gets the maximum number of object records that may be retrieved at once

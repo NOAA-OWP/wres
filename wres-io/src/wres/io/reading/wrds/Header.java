@@ -1,5 +1,8 @@
 package wres.io.reading.wrds;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+@JsonIgnoreProperties( ignoreUnknown = true )
 public class Header
 {
     public ForecastRequest getRequest()

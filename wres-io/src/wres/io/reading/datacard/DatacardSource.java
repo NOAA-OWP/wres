@@ -2,6 +2,7 @@ package wres.io.reading.datacard;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -57,7 +58,7 @@ public class DatacardSource extends BasicSource
 	 * @param filename the file name
 	 */
     public DatacardSource( ProjectConfig projectConfig,
-                           String filename)
+                           URI filename)
     {
         super( projectConfig );
 		setFilename(filename);

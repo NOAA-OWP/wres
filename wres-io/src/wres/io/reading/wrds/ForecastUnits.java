@@ -1,7 +1,11 @@
 package wres.io.reading.wrds;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import wres.util.Strings;
 
+
+@JsonIgnoreProperties( ignoreUnknown = true )
 public class ForecastUnits
 {
     // Use this rather than 'getFlow' because that will probably be renamed.

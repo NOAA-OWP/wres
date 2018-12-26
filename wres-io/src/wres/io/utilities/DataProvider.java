@@ -2,6 +2,7 @@ package wres.io.utilities;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -582,7 +583,7 @@ public interface DataProvider extends AutoCloseable
      * @return A DataProvider containing the provided CSV data
      * @throws IOException Thrown if the file could not be read
      */
-    static DataProvider fromCSV(final String fileName, final String delimiter) throws IOException
+    static DataProvider fromCSV( final URI fileName, final String delimiter) throws IOException
     {
         return CSVDataProvider.from(fileName, delimiter);
     }
@@ -596,7 +597,7 @@ public interface DataProvider extends AutoCloseable
      * @throws IOException Thrown if the file could not be read
      */
     static DataProvider fromCSV(
-            final String fileName,
+            final URI fileName,
             final String delimiter,
             final String... columnNames)
             throws IOException

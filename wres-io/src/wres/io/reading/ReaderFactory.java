@@ -1,6 +1,7 @@
 package wres.io.reading;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Paths;
 
 import wres.config.generated.Format;
@@ -23,7 +24,7 @@ public class ReaderFactory {
     private ReaderFactory(){}
 
     public static BasicSource getReader( ProjectConfig projectConfig,
-                                         String filename )
+                                         URI filename )
             throws IOException
 	{
         Format typeOfFile = getFiletype( filename );
@@ -68,11 +69,11 @@ public class ReaderFactory {
 		return source;
 	}
 	
-    static Format getFiletype( final String filename )
+    static Format getFiletype( final URI filename )
 	{
         Format type;
 
-		String pathName = Paths.get(filename).getFileName().toString().toLowerCase();
+		String pathName = filename.toString().toLowerCase();
 
 		// Can't do switch because of the PIXML logic
 
@@ -86,11 +87,11 @@ public class ReaderFactory {
 		{
             type = Format.PI_XML;
 		}
-		else if (filename.equalsIgnoreCase( "usgs" ))
+		else if (filename.equals( URI.create( "usgs" ) ) )
         {
             type = Format.USGS;
         }
-        else if (filename.equalsIgnoreCase( "s3" ))
+        else if (filename.equals( URI.create( "s3" ) ) )
         {
             type = Format.S_3;
         }
@@ -98,7 +99,7 @@ public class ReaderFactory {
         {
             type = Format.NET_CDF;
         }
-        else if(pathName.endsWith( ".json" ) || filename.contains( "***REMOVED***eds-app1" ))
+        else if(pathName.endsWith( ".json" ) || filename.toASCIIString().contains( "***REMOVED***eds-app1" ))
         {
             type = Format.WRDS;
         }

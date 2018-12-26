@@ -1,9 +1,11 @@
 package wres.system.xml;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
+import java.net.URI;
 import java.util.Objects;
 import java.util.zip.GZIPInputStream;
 import javax.xml.stream.XMLInputFactory;
@@ -29,7 +31,7 @@ public abstract class XMLReader
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( XMLReader.class );
 
-    private final String filename;
+    private final URI filename;
     private final InputStream inputStream;
     private final XMLInputFactory factory;
 
@@ -38,7 +40,7 @@ public abstract class XMLReader
      * @param filename the file name to look for on the classpath or filesystem.
      * @throws IOException when the file cannot be found.
      */
-    protected XMLReader( String filename )
+    protected XMLReader( URI filename )
             throws IOException
     {
         this( filename, null );
@@ -53,7 +55,7 @@ public abstract class XMLReader
      * @param inputStream null or optionat inputstream to read from
      * @throws IOException when anything goes wrong
      */
-    protected XMLReader( String fileName, InputStream inputStream )
+    protected XMLReader( URI fileName, InputStream inputStream )
             throws IOException
     {
         Objects.requireNonNull( fileName );
@@ -86,9 +88,9 @@ public abstract class XMLReader
             {
                 // Not found on classpath.
                 // Therefore, attempt to create one from the filesystem now.
-                possibleInputStream = new FileInputStream( this.filename );
+                possibleInputStream = new FileInputStream( new File( this.filename.getPath() ) );
 
-                if ( this.filename.endsWith( ".gz" ) )
+                if ( this.filename.toString().endsWith( ".gz" ) )
                 {
                     this.inputStream =
                             new GZIPInputStream( possibleInputStream );
@@ -115,7 +117,7 @@ public abstract class XMLReader
         this.factory = null;
     }
 
-    protected String getFilename()
+    protected URI getFilename()
     {
         return filename;
     }
@@ -126,12 +128,12 @@ public abstract class XMLReader
      * @return InputStream on success, null on failure to find.
      * @throws IOException when getting a gzipped resource fails
      */
-    private static InputStream getFile( String resourceName ) throws IOException
+    private static InputStream getFile( URI resourceName ) throws IOException
     {
         InputStream stream = XMLReader.class.getClassLoader()
-                                            .getResourceAsStream( resourceName );
+                                            .getResourceAsStream( resourceName.getPath() );
 
-        if ( stream != null && resourceName.endsWith( ".gz" ) )
+        if ( stream != null && resourceName.toString().endsWith( ".gz" ) )
         {
             stream = new GZIPInputStream( stream );
         }

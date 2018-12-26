@@ -351,11 +351,11 @@ public final class NetCDF {
         return new Ensemble( name, qualifier, member );
     }
 
-    public static String getUniqueIdentifier(final String filepath) throws IOException
+    public static String getUniqueIdentifier( final URI filepath ) throws IOException
     {
         String uniqueIdentifier;
 
-        if (NetCDF.isGridded( filepath ))
+        if (NetCDF.isGridded( filepath.toURL().getFile() ))
         {
             uniqueIdentifier = NetCDF.getGriddedUniqueIdentifier( filepath );
         }
@@ -367,22 +367,22 @@ public final class NetCDF {
         return uniqueIdentifier;
     }
 
-    public static String getGriddedUniqueIdentifier(final String filepath) throws IOException
+    public static String getGriddedUniqueIdentifier( final URI filepath ) throws IOException
     {
-        try (NetcdfFile file = NetcdfFile.open( filepath ))
+        try (NetcdfFile file = NetcdfFile.open( filepath.toURL().getFile() ))
         {
             return NetCDF.getGriddedUniqueIdentifier( file, filepath );
         }
     }
 
-    public static String getGriddedUniqueIdentifier(final NetcdfFile file, final String target) throws IOException
+    public static String getGriddedUniqueIdentifier( final NetcdfFile file, final URI target ) throws IOException
     {
         String uniqueIdentifier;
         StringJoiner identityJoiner = new StringJoiner( "::" );
 
         identityJoiner.add( InetAddress.getLocalHost().getHostName());
         identityJoiner.add( InetAddress.getLocalHost().getHostAddress() );
-        identityJoiner.add( Paths.get(target).toAbsolutePath().toUri().toURL().toString() );
+        identityJoiner.add( target.toURL().toString() );
 
         NetCDF.addNetcdfIdentifiers( file, identityJoiner );
 

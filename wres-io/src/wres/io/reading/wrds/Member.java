@@ -1,8 +1,13 @@
 package wres.io.reading.wrds;
 
+import java.util.List;
+
 public class Member
 {
-    public DataPoint[] getDataPointsList()
+    String identifier;
+    List<List<DataPoint>> dataPointsList;
+
+    public List<List<DataPoint>> getDataPointsList()
     {
         return dataPointsList;
     }
@@ -12,7 +17,7 @@ public class Member
         return identifier;
     }
 
-    public void setDataPointsList( DataPoint[] dataPointsList )
+    public void setDataPointsList( List<List<DataPoint>> dataPointsList )
     {
         this.dataPointsList = dataPointsList;
     }
@@ -22,6 +27,4 @@ public class Member
         this.identifier = identifier;
     }
 
-    String identifier;
-    DataPoint[] dataPointsList;
 }

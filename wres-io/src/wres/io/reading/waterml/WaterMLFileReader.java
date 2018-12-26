@@ -2,6 +2,7 @@ package wres.io.reading.waterml;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.SQLException;
@@ -32,7 +33,7 @@ public class WaterMLFileReader extends BasicSource
     private static final DeserializationFeature DESERIALIZATION_FEATURE =
             DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
 
-    protected WaterMLFileReader( ProjectConfig projectConfig, String filename )
+    protected WaterMLFileReader( ProjectConfig projectConfig, URI filename )
     {
         super( projectConfig );
         this.setFilename( filename );
@@ -79,7 +80,7 @@ public class WaterMLFileReader extends BasicSource
                 this.getProjectConfig(),
                 this.getDataSourceConfig(),
                 this.getHash(),
-                this.getAbsoluteFilename(),
+                this.getFilename(),
                 wasFoundInCache
         );
     }

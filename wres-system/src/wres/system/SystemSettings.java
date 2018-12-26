@@ -1,12 +1,12 @@
 package wres.system;
 
 import java.io.IOException;
+import java.net.URI;
 import java.sql.Connection;
 import java.sql.SQLException;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
-import javax.xml.transform.TransformerException;
 
 import com.mchange.v2.c3p0.ComboPooledDataSource;
 import org.apache.commons.lang3.StringUtils;
@@ -35,7 +35,7 @@ public final class SystemSettings extends XMLReader
 	{
 		try
         {
-            instance = new SystemSettings( CONFIG_PATH);
+            instance = new SystemSettings( URI.create( CONFIG_PATH ) );
         }
 		catch (IOException ioe)
 		{
@@ -67,7 +67,7 @@ public final class SystemSettings extends XMLReader
 	 * Private because only one SystemSettings should exist as it is the global cache
 	 * of configured system settings
 	 */
-    private SystemSettings(String configPath) throws IOException
+    private SystemSettings( URI configPath ) throws IOException
     {
         super( configPath, null );
         parse();

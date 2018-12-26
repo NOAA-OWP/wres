@@ -2,7 +2,10 @@ package wres.io.reading.wrds;
 
 import javax.xml.bind.annotation.XmlRootElement;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 @XmlRootElement
+@JsonIgnoreProperties( ignoreUnknown = true )
 public class ForecastResponse
 {
     public short getStatusCode()

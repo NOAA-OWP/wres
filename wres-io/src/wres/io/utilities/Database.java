@@ -1634,7 +1634,7 @@ public final class Database {
      * @return The results of the query
      * @throws SQLException Any issue caused by running the query in the database
      */
-    static DataProvider getResults(String query, Object[] parameters, boolean highPriority) throws SQLException
+    public static DataProvider getResults(String query, Object[] parameters, boolean highPriority) throws SQLException
     {
         if (LOGGER.isTraceEnabled())
         {

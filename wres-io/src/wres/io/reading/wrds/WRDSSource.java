@@ -1,6 +1,7 @@
 package wres.io.reading.wrds;
 
 import java.io.IOException;
+import java.net.URI;
 import java.net.URL;
 import java.nio.file.Paths;
 import java.util.List;
@@ -31,7 +32,7 @@ public class WRDSSource extends BasicSource
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( WRDSSource.class );
 
-    public WRDSSource( ProjectConfig projectConfig, final String filename )
+    public WRDSSource( ProjectConfig projectConfig, final URI filename )
     {
         super( projectConfig );
         this.setFilename( filename );
@@ -45,20 +46,9 @@ public class WRDSSource extends BasicSource
             return this.saveObservation();
         }
 
-        URL dataPath;
-
-        if (this.getIsRemote())
-        {
-            dataPath = new URL( this.getFilename() );
-        }
-        else
-        {
-            dataPath = Paths.get(this.getFilename()).toUri().toURL();
-        }
-
         ReadValueManager reader = new ReadValueManager( this.getProjectConfig(),
                                                         this.getDataSourceConfig(),
-                                                        dataPath);
+                                                        this.getFilename() );
 
         return reader.save();
     }

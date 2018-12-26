@@ -1,5 +1,6 @@
 package wres.io.reading;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -24,12 +25,12 @@ public class IngestResult
 {
     private final LeftOrRightOrBaseline leftOrRightOrBaseline;
     private final String hash;
-    private final String name;
+    private final URI name;
     private final boolean foundAlready;
 
     private IngestResult( LeftOrRightOrBaseline leftOrRightOrBaseline,
                           String hash,
-                          String name,
+                          URI name,
                           boolean foundAlready )
     {
         Objects.requireNonNull( hash, "Ingester must include a hash." );
@@ -42,7 +43,7 @@ public class IngestResult
 
     public static IngestResult of( LeftOrRightOrBaseline leftOrRightOrBaseline,
                                    String hash,
-                                   String name,
+                                   URI name,
                                    boolean foundAlready )
     {
         return new IngestResult( leftOrRightOrBaseline, hash, name, foundAlready );
@@ -60,7 +61,7 @@ public class IngestResult
     public static IngestResult from( ProjectConfig projectConfig,
                                      DataSourceConfig dataSourceConfig,
                                      String hash,
-                                     String name,
+                                     URI name,
                                      boolean foundAlready )
     {
         LeftOrRightOrBaseline leftOrRightOrBaseline =
@@ -88,7 +89,7 @@ public class IngestResult
     public static List<IngestResult> singleItemListFrom( ProjectConfig projectConfig,
                                                          DataSourceConfig dataSourceConfig,
                                                          String hash,
-                                                         String name,
+                                                         URI name,
                                                          boolean foundAlready )
     {
         List<IngestResult> result = new ArrayList<>( 1 );
@@ -116,7 +117,7 @@ public class IngestResult
 
     public static Future<List<IngestResult>> fakeFutureSingleItemListFrom( ProjectConfig projectConfig,
                                                                            DataSourceConfig dataSourceConfig,
-                                                                           String name,
+                                                                           URI name,
                                                                            String hash )
     {
         return FakeFutureListOfIngestResults.from( projectConfig,
@@ -168,7 +169,7 @@ public class IngestResult
 
         public static FakeFutureListOfIngestResults from( ProjectConfig projectConfig,
                                                           DataSourceConfig dataSourceConfig,
-                                                          String name,
+                                                          URI name,
                                                           String hash )
         {
             IngestResult results = IngestResult.from( projectConfig,

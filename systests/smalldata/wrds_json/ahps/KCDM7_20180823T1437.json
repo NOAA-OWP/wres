@@ -36,7 +36,7 @@
       "members": [
         {
           "identifier": "1",
-          "dataPointsList": [
+          "dataPointsList": [[
             {
               "time": "2018-08-23T18:00:00+00:00",
               "flow": "109.0"
@@ -149,7 +149,7 @@
               "time": "2018-08-30T12:00:00+00:00",
               "flow": "77.7"
             }
-          ]
+          ]]
         }
       ]
     }

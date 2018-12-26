@@ -1,5 +1,6 @@
 package wres.io.data.details;
 
+import java.net.URI;
 import java.sql.SQLException;
 import java.util.Objects;
 
@@ -22,7 +23,7 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
 	private static final Object SOURCE_SAVE_LOCK = new Object();
     private static final Logger LOGGER = LoggerFactory.getLogger( SourceDetails.class );
 
-	private String sourcePath = null;
+	private URI sourcePath = null;
 	private String outputTime = null;
 	private Integer lead = null;
 	private Integer sourceID = null;
@@ -58,7 +59,7 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
 	 * Sets the path to the source file
 	 * @param path The path to the source file on the file system
 	 */
-	public void setSourcePath(String path) {
+	public void setSourcePath( URI path ) {
 		this.sourcePath = path;
 	}
 	
@@ -96,7 +97,7 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
         return this.isPointData;
     }
 
-    public String getSourcePath()
+    public URI getSourcePath()
     {
         return this.sourcePath;
     }
@@ -152,7 +153,7 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
 	    script.addTab().addLine("INSERT INTO wres.Source (path, output_time, lead, hash, is_point_data)");
 	    script.addTab().addLine("SELECT ?, (?)::timestamp without time zone, ?, ?, ?");
 
-        script.addArgument( this.sourcePath );
+        script.addArgument( this.sourcePath.toString() );
         script.addArgument( this.outputTime );
 	    script.addArgument( this.lead );
 	    script.addArgument( this.hash );
@@ -226,14 +227,14 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
         return this.performedInsert;
     }
 
-	public static SourceKey createKey(String sourcePath, String sourceTime, Integer lead, String hash)
+	public static SourceKey createKey( URI sourcePath, String sourceTime, Integer lead, String hash )
 	{
 	    return new SourceKey( sourcePath, sourceTime, lead, hash);
 	}
 
 	public static class SourceKey implements Comparable<SourceKey>
 	{
-	    public SourceKey(String sourcePath, String sourceTime, Integer lead, String hash)
+	    public SourceKey( URI sourcePath, String sourceTime, Integer lead, String hash )
 	    {
 	        this.sourcePath = sourcePath;
 	        this.sourceTime = sourceTime;
@@ -247,7 +248,7 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
 			return this.hash.compareTo( other.hash );
         }
         
-        public String getSourcePath()
+        public URI getSourcePath()
         {
             return this.sourcePath;
         }
@@ -279,7 +280,7 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
 			return Objects.hash(this.getHash());
 		}
 
-		private final String sourcePath;
+		private final URI sourcePath;
 	    private final String sourceTime;
 	    private final Integer lead;
 	    private final String hash;

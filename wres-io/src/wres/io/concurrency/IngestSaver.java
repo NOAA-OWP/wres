@@ -1,6 +1,7 @@
 package wres.io.concurrency;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -29,7 +30,7 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
 
     public static class IngestBuilder
     {
-        private final String filepath;
+        private final URI filepath;
         private final ProjectConfig projectConfig;
         private final DataSourceConfig dataSourceConfig;
         private final DataSourceConfig.Source sourceConfig;
@@ -48,7 +49,7 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
             this.isRemote = false;
         }
 
-        public IngestBuilder withFilePath(final String filepath)
+        public IngestBuilder withFilePath( final URI filepath )
         {
             return new IngestBuilder(
                     filepath,
@@ -140,7 +141,7 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
         }
 
         private IngestBuilder(
-                final String filepath,
+                final URI filepath,
                 final ProjectConfig projectConfig,
                 final DataSourceConfig dataSourceConfig,
                 final DataSourceConfig.Source sourceConfig,
@@ -194,14 +195,14 @@ public class IngestSaver extends WRESCallable<List<IngestResult>>
         }
     }
 
-    private final String filepath;
+    private final URI filepath;
     private final ProjectConfig projectConfig;
     private final DataSourceConfig dataSourceConfig;
     private final DataSourceConfig.Source sourceConfig;
     private final String hash;
     private final boolean isRemote;
 
-    private IngestSaver( String filepath,
+    private IngestSaver( URI filepath,
                         ProjectConfig projectConfig,
                         DataSourceConfig dataSourceConfig,
                         DataSourceConfig.Source sourceConfig,

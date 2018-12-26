@@ -6,6 +6,7 @@ import wres.util.Strings;
 
 import java.io.InputStream;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -19,7 +20,7 @@ public final class Downloader extends WRESRunnable {
     private static final Logger LOGGER = LoggerFactory.getLogger(Downloader.class);
     private static final Object DIRECTORY_CREATION_LOCK = new Object();
 
-    public Downloader(Path targetPath, String address)
+    public Downloader( Path targetPath, URI address )
     {
         this.targetPath = targetPath;
         this.address = address;
@@ -36,7 +37,7 @@ public final class Downloader extends WRESRunnable {
 
         try
         {
-            final URL fileURL = new URL(address);
+            final URL fileURL = address.toURL();
             HttpURLConnection connection = (HttpURLConnection) fileURL.openConnection();
 
             if (connection.getResponseCode() >= 400)
@@ -103,7 +104,7 @@ public final class Downloader extends WRESRunnable {
     }
 
     private final Path targetPath;
-    private final String address;
+    private final URI address;
     private boolean fileDownloaded = false;
     private boolean displayOutput;
 
