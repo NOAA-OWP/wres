@@ -7,7 +7,7 @@ of the WRES software.
 
 Several submodules are also present here.
 
-To build all of WRES for production distribution, run
+To build WRES core for distribution, run
 
     ./gradlew check javadoc distZip
 
@@ -18,7 +18,7 @@ should be a zip file that is named something more like
 "wres-20180418-2177338-dev.zip" which indicates this software should not be
 sent through the delivery pipeline.
 
-To build all of WRES for local use, run
+To build WRES for local use, run
 
     ./gradlew check javadoc installDist
 
@@ -31,3 +31,6 @@ To run an evaluation with WRES, run
 
 See doc/index.html for more information (either inside build/install/wres or
 inside an unzipped version of WRES).
+
+For additional information regarding WRES in other modes such as cluster mode or running under
+docker, visit https://***REMOVED***/redmine/project/wres/wiki#Resources-for-Developers
