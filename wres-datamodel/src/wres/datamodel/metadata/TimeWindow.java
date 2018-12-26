@@ -7,12 +7,13 @@ import java.util.Objects;
 import java.util.StringJoiner;
 
 /**
- * <p>Metadata that describes the partition of two time lines in which a sample is collated for the purposes of a 
- * statistical calculation. The first timeline is absolute (UTC), and is defined by an earliest time and a latest time 
- * in a specified reference time system. The reference time system is either valid time or forecast issue time. The 
- * second timeline is relative, and comprises an earliest forecast lead duration and a latest forecast lead duration. A 
- * {@link TimeWindow} represents the intersection of these two timelines, i.e. it contains elements that are common to 
- * (the partition of) each timeline.</p> 
+ * <p>Metadata that describes the partition of three time lines in which a sample is collated for the purposes of a 
+ * statistical calculation. The first timeline is a reference timeline in UTC, which may be used to represent
+ * the origin of a forecast (e.g. the issued datetime). The second timeline represents the valid datetime of a 
+ * measurement, also in UTC. The third timeline describes the duration of a measurement, such as a forecast 
+ * lead duration. Each timeline is bounded with an earliest and latest bookend. A {@link TimeWindow} represents 
+ * the intersection of these three timelines, i.e. each of its elements are members of each of the three 
+ * timelines.</p> 
  * 
  * <p>In summary, a {@link TimeWindow} comprises the following required elements:</p>
  * 
@@ -21,18 +22,17 @@ import java.util.StringJoiner;
  * <li>The latest reference time</li>
  * <li>The earliest valid time
  * <li>The latest valid time
- * <li>The earliest forecast lead duration</li>
- * <li>The latest forecast lead duration</li>
+ * <li>The earliest duration</li>
+ * <li>The latest duration</li>
  * </ol>
  * 
- * <p>When describing a sample that does not comprise forecasts, the reference time should be valid time, and the 
- * forecast lead durations should be zero.</p>
+ * <p><b>Implementation Requirements:</b></p>
+ *  
+ * <p>This class is immutable and thread-safe.</p>
  * 
  * <p>TODO: If a future JDK implements something equivalent to an Interval in joda.time, consider replacing the 
  * earliest time and latest time with an Interval.</p>
- * 
- * <p>This class is immutable and thread-safe.</p>
- * 
+ *
  * @author james.brown@hydrosolved.com
  */
 
